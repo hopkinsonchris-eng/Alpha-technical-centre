@@ -73,45 +73,43 @@
         </div>
       </div>
 
-      <!-- Signature element: live 3D WebGL reservoir + integrated asset loop -->
+      <!-- Col 2: live 3D WebGL reservoir canvas -->
       <div class="hero-3d reveal in reveal-delay-2">
         <div class="canvas-wrap" id="wrap">
           <canvas id="rcanvas"></canvas>
           <div class="loading" id="loading" data-en="INITIALISING RESERVOIR MODEL…" data-es="INICIALIZANDO MODELO DE YACIMIENTO…">INITIALISING RESERVOIR MODEL…</div>
-          <!-- Static poster fallback for no-WebGL / reduced-data -->
           <noscript><div class="loading">3D model requires JavaScript</div></noscript>
         </div>
-
-        <!-- INTEGRATED ASSET LOOP -->
-        <div class="loop-hud">
-          <div class="loop-title" data-en="INTEGRATED ASSET LOOP" data-es="CICLO INTEGRADO DEL ACTIVO">INTEGRATED ASSET LOOP</div>
-          <div class="loop-sub" data-en="Every stage optimised against one objective" data-es="Cada etapa optimizada contra un solo objetivo">Every stage optimised against one objective</div>
-          <svg class="loop-svg" viewBox="0 0 220 200" id="loopsvg">
-            <circle cx="110" cy="95" r="72" fill="none" stroke="rgba(201,168,76,.18)" stroke-width="1.5"/>
-            <circle cx="110" cy="95" r="72" fill="none" stroke="#C9A84C" stroke-width="2.5" stroke-dasharray="40 412" stroke-linecap="round" id="signal" transform="rotate(-90 110 95)"/>
-            <g class="node" id="n-res"><circle cx="110" cy="23" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="110" y="27" text-anchor="middle" font-size="13" fill="#C9A84C">⛰</text><text x="110" y="6" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="RESERVOIR" data-es="YACIMIENTO">RESERVOIR</text></g>
-            <g class="node" id="n-well"><circle cx="182" cy="95" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="182" y="99" text-anchor="middle" font-size="12" fill="#C9A84C">⚒</text><text x="182" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="WELLS" data-es="POZOS">WELLS</text></g>
-            <g class="node" id="n-fac"><circle cx="110" cy="167" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="110" y="171" text-anchor="middle" font-size="11" fill="#C9A84C">⬢</text><text x="110" y="190" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="FACILITIES" data-es="INSTALACIONES">FACILITIES</text></g>
-            <g class="node" id="n-exp"><circle cx="38" cy="95" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="38" y="99" text-anchor="middle" font-size="11" fill="#C9A84C">⛴</text><text x="38" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="EXPORT" data-es="EXPORTACIÓN">EXPORT</text></g>
-            <circle cx="110" cy="95" r="30" fill="rgba(201,168,76,.08)" stroke="rgba(201,168,76,.3)" stroke-width="1"/>
-            <text x="110" y="90" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.55)" letter-spacing="1" data-en="PROFIT" data-es="UTILIDAD">PROFIT</text>
-            <text x="110" y="104" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.4)" letter-spacing=".5" data-en="objective" data-es="objetivo">objective</text>
-            <g stroke="rgba(201,168,76,.35)" stroke-width="1" fill="none">
-              <path d="M110,46 L110,63" marker-end="url(#ar)"/><path d="M159,95 L142,95" marker-end="url(#ar)"/>
-              <path d="M110,144 L110,127" marker-end="url(#ar)"/><path d="M61,95 L78,95" marker-end="url(#ar)"/>
-            </g>
-            <defs><marker id="ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="rgba(201,168,76,.5)"/></marker></defs>
-          </svg>
-          <div class="loop-foot">
-            <div class="loop-figure">US$8,890<small>MM</small></div>
-            <div class="loop-cap" data-en="PROJECT NPV10 · THE LOOP'S OUTPUT" data-es="VPN10 DEL PROYECTO · RESULTADO DEL CICLO">PROJECT NPV10 · THE LOOP'S OUTPUT</div>
-          </div>
-        </div>
-
         <div class="sat-scale">
           <span data-en="OIL SATURATION" data-es="SATURACIÓN DE PETRÓLEO">OIL SATURATION</span>
           <div class="sat-bar"></div>
           <div class="sat-ends"><span>Sw</span><span>So</span></div>
+        </div>
+      </div>
+
+      <!-- Col 3: integrated asset loop HUD -->
+      <div class="loop-hud reveal in reveal-delay-3">
+        <div class="loop-title" data-en="INTEGRATED ASSET LOOP" data-es="CICLO INTEGRADO DEL ACTIVO">INTEGRATED ASSET LOOP</div>
+        <div class="loop-sub" data-en="Every stage optimised against one objective" data-es="Cada etapa optimizada contra un solo objetivo">Every stage optimised against one objective</div>
+        <svg class="loop-svg" viewBox="0 0 220 200" id="loopsvg">
+          <circle cx="110" cy="95" r="72" fill="none" stroke="rgba(201,168,76,.18)" stroke-width="1.5"/>
+          <circle cx="110" cy="95" r="72" fill="none" stroke="#C9A84C" stroke-width="2.5" stroke-dasharray="40 412" stroke-linecap="round" id="signal" transform="rotate(-90 110 95)"/>
+          <g class="node" id="n-res"><circle cx="110" cy="23" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="110" y="27" text-anchor="middle" font-size="13" fill="#C9A84C">⛰</text><text x="110" y="6" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="RESERVOIR" data-es="YACIMIENTO">RESERVOIR</text></g>
+          <g class="node" id="n-well"><circle cx="182" cy="95" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="182" y="99" text-anchor="middle" font-size="12" fill="#C9A84C">⚒</text><text x="182" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="WELLS" data-es="POZOS">WELLS</text></g>
+          <g class="node" id="n-fac"><circle cx="110" cy="167" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="110" y="171" text-anchor="middle" font-size="11" fill="#C9A84C">⬢</text><text x="110" y="190" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="FACILITIES" data-es="INSTALACIONES">FACILITIES</text></g>
+          <g class="node" id="n-exp"><circle cx="38" cy="95" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="38" y="99" text-anchor="middle" font-size="11" fill="#C9A84C">⛴</text><text x="38" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="EXPORT" data-es="EXPORTACIÓN">EXPORT</text></g>
+          <circle cx="110" cy="95" r="30" fill="rgba(201,168,76,.08)" stroke="rgba(201,168,76,.3)" stroke-width="1"/>
+          <text x="110" y="90" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.55)" letter-spacing="1" data-en="PROFIT" data-es="UTILIDAD">PROFIT</text>
+          <text x="110" y="104" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.4)" letter-spacing=".5" data-en="objective" data-es="objetivo">objective</text>
+          <g stroke="rgba(201,168,76,.35)" stroke-width="1" fill="none">
+            <path d="M110,46 L110,63" marker-end="url(#ar)"/><path d="M159,95 L142,95" marker-end="url(#ar)"/>
+            <path d="M110,144 L110,127" marker-end="url(#ar)"/><path d="M61,95 L78,95" marker-end="url(#ar)"/>
+          </g>
+          <defs><marker id="ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="rgba(201,168,76,.5)"/></marker></defs>
+        </svg>
+        <div class="loop-foot">
+          <div class="loop-figure">US$8,890<small>MM</small></div>
+          <div class="loop-cap" data-en="PROJECT NPV10 · THE LOOP'S OUTPUT" data-es="VPN10 DEL PROYECTO · RESULTADO DEL CICLO">PROJECT NPV10 · THE LOOP'S OUTPUT</div>
         </div>
       </div>
     </div>
@@ -270,33 +268,61 @@
 
 <style>
   /* ---- Homepage-specific ---- */
-  .hero-layout { display:grid; grid-template-columns: 1.1fr 0.9fr; gap:64px; align-items:center; padding:48px 0; }
+  /* Three-column hero: text | 3D canvas | loop HUD */
+  .hero-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 280px;
+    gap: 32px;
+    align-items: center;
+    padding: 48px 0;
+  }
   .hero-title { color:#fff; margin:18px 0 24px; }
   .hero-title em { color:var(--gold); font-style:italic; }
-  .hero-lede { color:rgba(255,255,255,0.7); font-size:1.15rem; max-width:48ch; }
+  .hero-lede { color:rgba(255,255,255,0.7); font-size:1.05rem; max-width:44ch; }
   .hero-cta { display:flex; gap:14px; margin-top:32px; flex-wrap:wrap; }
 
-  .hero-viz { background:rgba(255,255,255,0.03); border:1px solid rgba(201,168,76,0.18); border-radius:var(--r-lg); padding:24px; }
-  .hero-viz-label { font-family:var(--font-label); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45); margin-bottom:12px; }
-  .decline-svg { width:100%; height:auto; }
-  .curve-main { stroke-dasharray:600; stroke-dashoffset:600; animation:draw 2.2s var(--ease) 0.4s forwards; }
-  .curve-base { stroke-dasharray:600; stroke-dashoffset:600; animation:draw 2.2s var(--ease) 0.2s forwards; }
-  .curve-area { opacity:0; animation:fade 1.2s ease 1.6s forwards; }
-  .viz-dot { opacity:0; animation:fade 0.6s ease 2.2s forwards; }
-  @keyframes draw { to { stroke-dashoffset:0; } }
-  @keyframes fade { to { opacity:1; } }
-  @media (prefers-reduced-motion: reduce) {
-    .curve-main,.curve-base { stroke-dashoffset:0; animation:none; }
-    .curve-area,.viz-dot { opacity:1; animation:none; }
-  }
-  .hero-viz-foot { display:flex; gap:32px; margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.08); }
-  .hero-viz-stat { font-family:var(--font-display); font-size:1.6rem; font-weight:700; color:var(--gold); display:block; line-height:1; }
-  .hero-viz-cap { font-family:var(--font-label); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.4); }
+  /* 3D block: canvas fills its column, loop HUD and sat scale removed from absolute */
+  .hero-3d { position:relative; width:100%; }
+  .hero-3d .canvas-wrap { height:500px; }
 
-  @media (max-width:900px) {
-    .hero { min-height:auto; }
-    .hero-layout { grid-template-columns:1fr; gap:40px; }
-    .hero-viz { order:2; }
+  /* Loop HUD: now its own grid column, not absolute */
+  .loop-hud {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    background: rgba(11,31,58,.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(201,168,76,.25);
+    border-radius: 12px;
+    padding: 20px;
+    pointer-events: none;
+    align-self: center;
+  }
+
+  /* Sat scale: move below canvas inline */
+  .sat-scale {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sat-bar { flex-shrink: 0; }
+
+  @media (max-width:1100px) {
+    /* Two-col: text | canvas+hud stacked */
+    .hero-layout { grid-template-columns: 1fr 1fr; }
+    .loop-hud { grid-column: 2; }
+    .hero-text { grid-row: 1; }
+    .hero-3d { grid-row: 1; }
+  }
+  @media (max-width:768px) {
+    .hero-layout { grid-template-columns: 1fr; gap:32px; }
+    .hero-3d .canvas-wrap { height:360px; }
     .scroll-indicator { display:none; }
   }
 
