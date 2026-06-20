@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: alpha-technical-centre
+    runtime: static
+    staticPublishPath: .
+    buildCommand: ""
+    routes:
+      - type: rewrite
+        source: /
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*.css
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*.js
+        name: Cache-Control
+        value: public, max-age=31536000, immutable

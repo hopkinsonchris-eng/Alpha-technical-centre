@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scope of Work Generator | Alpha Technical Centre</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--navy:#0B1F3A;--navy2:#132845;--gold:#C9A84C;--gold-lt:#E8D08A;--red:#C0392B;--cream:#F8F5EE;--steel:#6B7A8D;--steel-lt:#8FA0B5;--white:#FFF;--border:rgba(201,168,76,0.25);--shadow:0 4px 24px rgba(11,31,58,0.14);--radius:3px;--fd:'Playfair Display',Georgia,serif;--fb:'Barlow',sans-serif;--fc:'Barlow Condensed',sans-serif;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--fb);background:var(--cream);color:var(--navy);font-size:15px;line-height:1.6;min-height:100vh;}
+.site-header{background:var(--navy);position:static;z-index:1;border-bottom:2px solid var(--gold);}
+.header-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;}
+.logo-mark{display:flex;align-items:center;gap:14px;text-decoration:none;}
+.logo-circle{width:40px;height:40px;border:2px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-circle span{font-family:var(--fc);font-weight:700;font-size:18px;color:var(--gold);}
+.logo-text{line-height:1.1;}
+.logo-text .l1{font-family:var(--fc);font-weight:700;font-size:14px;letter-spacing:0.12em;color:var(--white);text-transform:uppercase;}
+.logo-text .l2{font-family:var(--fc);font-weight:400;font-size:10px;letter-spacing:0.18em;color:var(--gold);text-transform:uppercase;}
+.header-badge{font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--steel-lt);border:1px solid var(--steel);padding:4px 10px;border-radius:2px;}
+.consortium-stripe{height:4px;background:linear-gradient(90deg,var(--gold) 0%,var(--red) 50%,var(--navy) 100%);}
+.hero{background:var(--navy2);padding:48px 32px 40px;text-align:center;border-bottom:1px solid var(--border);}
+.hero-eyebrow{font-family:var(--fc);font-size:12px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
+.hero h1{font-family:var(--fd);font-size:clamp(26px,4vw,42px);font-weight:600;color:var(--white);line-height:1.2;margin-bottom:14px;}
+.hero h1 em{font-style:italic;color:var(--gold);}
+.hero-sub{font-size:15px;color:var(--steel-lt);max-width:660px;margin:0 auto;font-weight:300;}
+.app-shell{max-width:1320px;margin:0 auto;padding:40px 32px 80px;display:grid;grid-template-columns:320px 1fr;gap:32px;align-items:start;}
+.selector-panel{position:sticky;top:74px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.panel-head{background:var(--navy);padding:16px 20px;display:flex;align-items:center;gap:10px;}
+.panel-head-icon{width:28px;height:28px;border:1.5px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.panel-head-icon svg{width:14px;height:14px;fill:var(--gold);}
+.panel-head-title{font-family:var(--fc);font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);}
+.selector-body{max-height:calc(100vh - 160px);overflow-y:auto;}
+.selector-body::-webkit-scrollbar{width:6px;}
+.selector-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.l1-item{border-bottom:1px solid rgba(11,31,58,0.08);}
+.l1-btn{width:100%;background:none;border:none;cursor:pointer;padding:14px 20px;display:flex;align-items:flex-start;gap:12px;text-align:left;transition:background 0.15s;}
+.l1-btn:hover{background:var(--cream);}
+.l1-btn.active{background:rgba(201,168,76,0.08);}
+.l1-num{font-family:var(--fc);font-size:11px;font-weight:700;color:var(--gold);margin-top:2px;flex-shrink:0;width:20px;}
+.l1-label{font-family:var(--fc);font-size:13px;font-weight:600;color:var(--navy);line-height:1.3;}
+.l1-chevron{margin-left:auto;flex-shrink:0;margin-top:2px;transition:transform 0.2s;color:var(--steel);font-size:12px;}
+.l1-btn.active .l1-chevron{transform:rotate(90deg);color:var(--gold);}
+.l2-panel{display:none;background:var(--cream);}
+.l2-panel.open{display:block;}
+.l2-item{border-bottom:1px solid rgba(11,31,58,0.06);}
+.l2-btn{width:100%;background:none;border:none;cursor:pointer;padding:10px 20px 10px 52px;display:flex;align-items:flex-start;gap:8px;text-align:left;transition:background 0.15s;}
+.l2-btn:hover{background:rgba(201,168,76,0.07);}
+.l2-btn.active{background:rgba(201,168,76,0.14);}
+.l2-dot{width:6px;height:6px;border-radius:50%;background:var(--steel);flex-shrink:0;margin-top:6px;}
+.l2-btn.active .l2-dot{background:var(--gold);}
+.l2-label{font-size:12.5px;font-weight:500;color:var(--navy);line-height:1.3;}
+.l2-chevron{margin-left:auto;flex-shrink:0;margin-top:1px;color:var(--steel);font-size:11px;transition:transform 0.2s;}
+.l2-btn.active .l2-chevron{transform:rotate(90deg);color:var(--gold);}
+.l3-panel{display:none;background:rgba(248,245,238,0.6);}
+.l3-panel.open{display:block;}
+.l3-btn{width:100%;background:none;border:none;cursor:pointer;padding:8px 20px 8px 70px;display:flex;align-items:center;gap:8px;text-align:left;transition:background 0.15s;}
+.l3-btn:hover{background:rgba(201,168,76,0.09);}
+.l3-btn.active{background:rgba(201,168,76,0.2);}
+.l3-dash{width:10px;height:1px;background:var(--steel-lt);flex-shrink:0;}
+.l3-btn.active .l3-dash{background:var(--gold);}
+.l3-label{font-size:11.5px;font-weight:400;color:var(--steel);line-height:1.3;}
+.l3-btn.active .l3-label{color:var(--navy);font-weight:500;}
+.sow-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.sow-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 40px;text-align:center;gap:16px;}
+.sow-empty-icon{width:64px;height:64px;border:2px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.sow-empty-icon svg{width:28px;height:28px;stroke:var(--steel-lt);fill:none;stroke-width:1.5;}
+.sow-empty h3{font-family:var(--fd);font-size:20px;color:var(--navy);font-weight:400;}
+.sow-empty p{font-size:13px;color:var(--steel);max-width:340px;}
+.sow-content{display:none;}
+.sow-content.visible{display:block;}
+.breadcrumb-strip{background:var(--navy);display:flex;align-items:center;height:36px;overflow:hidden;border-bottom:1px solid var(--border);}
+.bc-item{font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-lt);padding:0 16px;display:flex;align-items:center;height:100%;white-space:nowrap;}
+.bc-item:first-child{padding-left:32px;}
+.bc-item.active{color:var(--gold);}
+.bc-sep{color:var(--steel);padding:0;}
+.sow-banner{background:var(--navy);padding:24px 32px 20px;border-bottom:3px solid var(--gold);}
+.sow-banner-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:14px;}
+.sow-category-path{font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.sow-title{font-family:var(--fd);font-size:clamp(18px,2.5vw,26px);font-weight:600;color:var(--white);line-height:1.2;}
+.partner-badge{flex-shrink:0;background:rgba(201,168,76,0.12);border:1px solid var(--gold);border-radius:2px;padding:8px 14px;text-align:center;}
+.partner-badge .pb-label{font-family:var(--fc);font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--steel-lt);display:block;margin-bottom:3px;}
+.partner-badge .pb-name{font-family:var(--fc);font-size:13px;font-weight:700;color:var(--gold);letter-spacing:0.05em;}
+.sow-meta-row{display:flex;gap:24px;flex-wrap:wrap;}
+.sow-meta-item{display:flex;align-items:center;gap:7px;}
+.sow-meta-item svg{width:13px;height:13px;stroke:var(--gold);fill:none;stroke-width:2;flex-shrink:0;}
+.sow-meta-text{font-family:var(--fc);font-size:12px;color:var(--steel-lt);letter-spacing:0.04em;}
+.sow-meta-text strong{color:var(--white);font-weight:600;}
+.config-zone{background:linear-gradient(180deg,#0E2444 0%,#0B1F3A 100%);padding:24px 32px 28px;border-bottom:1px solid var(--border);}
+.config-title{font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.config-title svg{width:15px;height:15px;stroke:var(--gold);fill:none;stroke-width:2;}
+.config-sub{font-size:12.5px;color:var(--steel-lt);margin-bottom:18px;}
+.scale-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.scale-card{background:rgba(255,255,255,0.04);border:1.5px solid rgba(143,160,181,0.3);border-radius:var(--radius);padding:14px 14px 12px;cursor:pointer;transition:all 0.18s;text-align:left;position:relative;}
+.scale-card:hover{border-color:var(--gold-lt);background:rgba(201,168,76,0.06);}
+.scale-card.active{border-color:var(--gold);background:rgba(201,168,76,0.12);box-shadow:0 0 0 1px var(--gold);}
+.scale-card .sc-tier{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:5px;padding-right:18px;}
+.scale-card .sc-desc{font-size:11.5px;color:var(--steel-lt);line-height:1.4;min-height:48px;}
+.scale-card .sc-mult{font-family:var(--fc);font-size:11px;color:var(--steel);margin-top:8px;padding-top:8px;border-top:1px solid rgba(143,160,181,0.15);}
+.scale-card.active .sc-mult{color:var(--gold-lt);}
+.scale-card .sc-check{position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--steel);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;}
+.scale-card.active .sc-check{opacity:1;border-color:var(--gold);background:var(--gold);}
+.scale-card .sc-check svg{width:9px;height:9px;stroke:var(--navy);fill:none;stroke-width:3;}
+.sow-body{padding:32px;}
+.sow-section{margin-bottom:32px;}
+.sow-section-title{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sow-section-title svg{width:14px;height:14px;stroke:var(--gold);fill:none;stroke-width:2;}
+.section-hint{font-family:var(--fb);font-size:11px;color:var(--steel);font-weight:400;text-transform:none;letter-spacing:0;margin-left:auto;}
+.scope-list{list-style:none;}
+.scope-list li{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(11,31,58,0.06);font-size:13.5px;line-height:1.5;color:var(--navy);}
+.scope-list li:last-child{border-bottom:none;}
+.scope-bullet{width:6px;height:6px;background:var(--gold);border-radius:1px;flex-shrink:0;margin-top:7px;transform:rotate(45deg);}
+.deliverables-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.deliverable-chip{background:var(--cream);border:1px solid var(--border);border-radius:2px;padding:10px 14px;font-size:12px;font-weight:500;color:var(--navy);display:flex;align-items:flex-start;gap:8px;}
+.deliverable-chip::before{content:'';width:4px;height:4px;background:var(--gold);border-radius:50%;flex-shrink:0;margin-top:4px;}
+.timeline{position:relative;padding-left:20px;}
+.timeline::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--gold),var(--red),var(--navy));border-radius:1px;}
+.timeline-item{position:relative;padding:0 0 20px 24px;}
+.timeline-item:last-child{padding-bottom:0;}
+.timeline-dot{position:absolute;left:-25px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--gold);border:2px solid var(--white);box-shadow:0 0 0 1px var(--gold);}
+.timeline-week{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:3px;}
+.timeline-phase{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px;}
+.timeline-desc{font-size:12.5px;color:var(--steel);line-height:1.5;}
+.resource-table{width:100%;border-collapse:collapse;font-size:13px;}
+.resource-table th{font-family:var(--fc);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--steel);text-align:left;padding:8px 12px;background:var(--cream);border-bottom:2px solid var(--border);}
+.resource-table td{padding:10px 12px;border-bottom:1px solid rgba(11,31,58,0.07);color:var(--navy);vertical-align:top;}
+.resource-table tr:last-child td{border-bottom:none;}
+.resource-table tr:hover td{background:rgba(248,245,238,0.6);}
+.discipline-tag{display:inline-block;font-family:var(--fc);font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:rgba(201,168,76,0.12);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
+.addon-list{display:flex;flex-direction:column;gap:10px;}
+.addon-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all 0.15s;}
+.addon-item:hover{border-color:var(--gold-lt);background:rgba(201,168,76,0.05);}
+.addon-item.selected{border-color:var(--gold);background:rgba(201,168,76,0.09);}
+.addon-check{width:20px;height:20px;border:1.5px solid var(--steel);border-radius:3px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:var(--white);}
+.addon-item.selected .addon-check{background:var(--gold);border-color:var(--gold);}
+.addon-check svg{width:12px;height:12px;stroke:var(--navy);fill:none;stroke-width:3;opacity:0;transition:opacity 0.15s;}
+.addon-item.selected .addon-check svg{opacity:1;}
+.addon-body{flex:1;}
+.addon-name{font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:2px;}
+.addon-desc{font-size:12px;color:var(--steel);line-height:1.45;}
+.addon-meta{display:flex;gap:14px;margin-top:6px;}
+.addon-meta span{font-family:var(--fc);font-size:11px;color:var(--steel);letter-spacing:0.03em;}
+.addon-meta span strong{color:var(--gold);font-weight:700;}
+.addon-price{flex-shrink:0;text-align:right;}
+.addon-price .ap-val{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--navy);}
+.addon-price .ap-lab{font-family:var(--fc);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel);}
+.cost-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.cost-card{background:var(--navy);border-radius:var(--radius);padding:16px 18px;text-align:center;}
+.cost-card .cc-label{font-family:var(--fc);font-size:10px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--steel-lt);margin-bottom:6px;}
+.cost-card .cc-value{font-family:var(--fd);font-size:clamp(16px,2vw,22px);font-weight:600;color:var(--gold);}
+.cost-card .cc-sub{font-size:10px;color:var(--steel-lt);margin-top:3px;}
+.cost-breakdown{background:var(--cream);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid rgba(11,31,58,0.07);font-size:13px;}
+.cost-row:last-child{border-bottom:none;}
+.cost-row.subhead{background:rgba(11,31,58,0.04);font-family:var(--fc);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel);font-weight:600;}
+.cost-row.addon-row .cost-row-label{color:var(--navy);padding-left:8px;}
+.cost-row.addon-row .cost-row-label::before{content:'+ ';color:var(--gold);font-weight:700;}
+.cost-row.total-row{background:var(--navy);}
+.cost-row.total-row .cost-row-label{color:var(--gold);font-family:var(--fc);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;}
+.cost-row.total-row .cost-row-value{color:var(--gold);font-family:var(--fd);font-size:19px;font-weight:600;}
+.cost-row-label{color:var(--steel);font-size:12.5px;}
+.cost-row-value{font-weight:600;color:var(--navy);}
+.cost-note{margin-top:10px;font-size:11px;color:var(--steel);font-style:italic;padding:0 4px;}
+.base-package-banner{background:rgba(201,168,76,0.1);border:1px dashed var(--gold);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;}
+.bpb-icon{width:36px;height:36px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.bpb-icon svg{width:18px;height:18px;stroke:var(--navy);fill:none;stroke-width:2;}
+.bpb-text{font-size:12.5px;color:var(--navy);line-height:1.5;}
+.sow-actions{padding:20px 32px 32px;display:flex;gap:12px;border-top:1px solid var(--border);background:var(--cream);}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--navy);border:none;border-radius:var(--radius);padding:11px 22px;font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.btn-primary:hover{background:var(--gold-lt);}
+.btn-primary svg{width:15px;height:15px;stroke:var(--navy);fill:none;stroke-width:2;}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--navy);border:1.5px solid var(--navy);border-radius:var(--radius);padding:11px 22px;font-family:var(--fc);font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.btn-secondary:hover{background:var(--navy);color:var(--white);}
+.btn-secondary svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;}
+@media (max-width:900px){.app-shell{grid-template-columns:1fr;}.selector-panel{position:static;}.selector-body{max-height:none;}.cost-grid{grid-template-columns:1fr;}.scale-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:600px){.app-shell{padding:24px 16px 60px;}.hero{padding:32px 20px 26px;}.sow-body{padding:20px;}.config-zone{padding:20px;}.sow-actions{padding:16px 20px 24px;flex-direction:column;}.header-inner{padding:12px 20px;}.header-badge{display:none;}.scale-grid{grid-template-columns:1fr;}}
+@media print{.site-header,.selector-panel,.sow-actions,.consortium-stripe,.hero{display:none !important;}.app-shell{display:block;padding:0;}.sow-panel{box-shadow:none;border:none;}.scale-card:not(.active){display:none;}.addon-item:not(.selected){display:none;}.config-zone{background:#fff;}.config-title,.config-sub{color:var(--navy) !important;}.scale-card.active .sc-desc,.scale-card.active .sc-mult{color:var(--navy) !important;}}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ALPHA TECHNICAL CENTRE — DESIGN SYSTEM
+   Brand: Alpha Energy Latin America v1.0
+   Fonts: Playfair Display (display) · Barlow (body) · Barlow Condensed (labels)
+   ============================================================ */
+
+/* ---------- GOOGLE FONTS ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap');
+
+/* ---------- CSS CUSTOM PROPERTIES ---------- */
+:root {
+  /* Primary palette */
+  --navy:        #0B1F3A;
+  --navy-mid:    #132845;
+  --gold:        #C9A84C;
+  --gold-light:  #E8C96A;
+  --cream:       #F8F5EE;
+  --white:       #FFFFFF;
+
+  /* Secondary */
+  --steel:       #6B7A8D;
+  --rule:        #D8DCE2;
+  --summa-red:   #C0392B;
+
+  /* Consortium gradient (Gold → Red → Navy) */
+  --grad: linear-gradient(90deg, #C9A84C 0%, #C0392B 50%, #0B1F3A 100%);
+
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Barlow', system-ui, sans-serif;
+  --font-label:   'Barlow Condensed', system-ui, sans-serif;
+
+  /* Spacing */
+  --maxw: 1160px;
+  --nav-h: 72px;
+
+  /* Radius */
+  --r: 6px;
+  --r-lg: 12px;
+
+  /* Transitions */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+/* ---------- GRADIENT RULE (Consortium Signature) ---------- */
+.grad-rule {
+  height: 3px;
+  background: var(--grad);
+  border: none;
+  width: 100%;
+}
+.grad-rule--short {
+  width: 60px;
+  height: 3px;
+  background: var(--grad);
+  display: inline-block;
+}
+
+
+/* ---------- NAVIGATION ---------- */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: rgba(11, 31, 58, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+  transition: background 0.3s var(--ease);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-mark {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nav-mark svg { width: 20px; height: 20px; }
+.nav-wordmark {
+  font-family: var(--font-label);
+  line-height: 1.2;
+}
+.nav-wordmark-main {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--white);
+  text-transform: uppercase;
+}
+.nav-wordmark-sub {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.nav-wordmark-parent {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.nav-links a, .nav-dropdown > button {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+  padding: 8px 14px;
+  border-radius: var(--r);
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.nav-links a:hover, .nav-dropdown > button:hover,
+.nav-links a.active { color: var(--gold); background: rgba(201,168,76,0.08); }
+
+/* Dropdown */
+.nav-dropdown { position: relative; }
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--navy);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--r-lg);
+  padding: 8px;
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s var(--ease);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+}
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.nav-dropdown-menu a {
+  display: block;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+  transition: color 0.15s, background 0.15s;
+}
+.nav-dropdown-menu a:hover { color: var(--gold); background: rgba(201,168,76,0.1); }
+
+/* Lang toggle */
+.nav-lang {
+  display: flex;
+  gap: 4px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255,255,255,0.15);
+}
+.nav-lang button {
+  font-family: var(--font-label);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.45);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  transition: color 0.2s;
+}
+.nav-lang button.active, .nav-lang button:hover { color: var(--gold); }
+
+/* CTA button in nav */
+.btn-nav {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: var(--gold);
+  padding: 9px 18px;
+  border-radius: var(--r);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+.btn-nav:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+/* Mobile nav toggle */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+.nav-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--white);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+@media (max-width: 900px) {
+  .nav-links, .nav-lang, .btn-nav { display: none; }
+  .nav-toggle { display: flex; }
+  .nav-mobile-open .nav-links {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: var(--nav-h);
+    left: 0; right: 0;
+    background: var(--navy);
+    padding: 24px 20px;
+    gap: 4px;
+    border-top: 1px solid rgba(201,168,76,0.2);
+  }
+  .nav-mobile-open .nav-lang,
+  .nav-mobile-open .btn-nav { display: flex; }
+}
+
+
+/* ---------- BUTTONS ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: var(--r);
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  border: none;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+}
+.btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); }
+.btn-outline {
+  background: transparent;
+  color: var(--navy);
+  border: 1.5px solid var(--navy);
+}
+.btn-outline:hover { background: var(--navy); color: var(--white); }
+.btn-ghost-light {
+  background: rgba(255,255,255,0.1);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-ghost-light:hover { background: rgba(255,255,255,0.18); border-color: var(--gold); color: var(--gold); }
+
+
+/* ---------- FOOTER ---------- */
+.footer {
+  background: var(--navy);
+  color: var(--white);
+  padding: 64px 0 32px;
+}
+.footer-grad { height: 3px; background: var(--grad); margin-bottom: 64px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 56px;
+}
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
+.footer-brand .nav-wordmark-main { font-size: 16px; }
+.footer-brand .nav-wordmark-sub { font-size: 10px; }
+.footer-tagline {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.45);
+  margin-top: 16px;
+  max-width: 260px;
+  line-height: 1.6;
+}
+.footer-col h4 {
+  font-family: var(--font-label);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+.footer-col ul li { margin-bottom: 10px; }
+.footer-col ul li a {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.6);
+  transition: color 0.2s;
+}
+.footer-col ul li a:hover { color: var(--gold); }
+.footer-bottom {
+  padding-top: 28px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.footer-bottom p {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.35);
+  max-width: none;
+}
+.footer-conf {
+  font-family: var(--font-label);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(201,168,76,0.5);
+}
+
+
+/* neutralise legacy embedded nav on tool pages */
+.atcnav{display:none !important;}
+.site-header{display:none !important;}
+/* offset for fixed shared nav */
+body{padding-top:0;}
+.nav{position:fixed;}
+.tool-body-offset{padding-top:72px;}
+</style>
+
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre</span>
+        <span class="nav-wordmark-parent">An Alpha Energy company</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
+      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
+      <div class="nav-dropdown">
+        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
+        <div class="nav-dropdown-menu">
+          <a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
+          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
+        </div>
+      </div>
+      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
+      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
+      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
+      <a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a>
+      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
+      <div class="nav-lang">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="tool-body-offset">
+<!-- ============ ATC SHARED NAV ============ -->
+<style>
+.atcnav{position:sticky;top:0;z-index:9999;background:rgba(6,32,26,0.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid rgba(234,243,239,0.13);font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+.atcnav *{box-sizing:border-box;}
+.atcnav-inner{max-width:1180px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:58px;}
+.atcnav-brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;}
+.atcnav-brand .m{font-family:'EB Garamond',Georgia,serif;font-size:17px;font-weight:600;color:#EAF3EF;letter-spacing:.01em;}
+.atcnav-brand .m b{color:#34C795;}
+.atcnav-brand .s{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(234,243,239,0.42);}
+.atcnav-menu{display:flex;align-items:center;gap:6px;}
+.atcnav-it{position:relative;}
+.atcnav-lk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;letter-spacing:.04em;color:rgba(234,243,239,0.66);text-decoration:none;padding:9px 15px;border-radius:8px;transition:.18s;cursor:pointer;border:none;background:none;}
+.atcnav-lk:hover,.atcnav-it:hover .atcnav-lk{color:#EAF3EF;background:rgba(234,243,239,0.07);}
+.atcnav-lk.cur{color:#34C795;}
+.atcnav-lk.cta{color:#06201A;background:linear-gradient(150deg,#34C795 0%,#1D9E75 60%,#0F6E56 100%);font-weight:600;box-shadow:0 8px 20px -10px rgba(29,158,117,0.7);}
+.atcnav-lk.cta:hover{color:#06201A;transform:translateY(-1px);}
+.atcnav-chev{width:9px;height:9px;opacity:.7;transition:transform .2s;}
+.atcnav-it:hover .atcnav-chev{transform:rotate(180deg);}
+.atcnav-dd{position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:#0A2E25;border:1px solid rgba(234,243,239,0.13);border-radius:12px;box-shadow:0 22px 50px -16px rgba(0,0,0,0.6);padding:7px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:.18s;}
+.atcnav-it:hover .atcnav-dd,.atcnav-it:focus-within .atcnav-dd{opacity:1;visibility:visible;transform:translateY(0);}
+.atcnav-ddl{display:block;text-decoration:none;padding:11px 13px;border-radius:8px;transition:background .15s;}
+.atcnav-ddl:hover{background:rgba(52,199,149,0.12);}
+.atcnav-ddl .t{display:block;font-size:13px;font-weight:600;color:#EAF3EF;margin-bottom:2px;}
+.atcnav-ddl .t.cur{color:#34C795;}
+.atcnav-ddl .d{display:block;font-size:11px;color:rgba(234,243,239,0.42);line-height:1.4;}
+.atcnav-tg{display:none;background:none;border:1px solid rgba(234,243,239,0.2);border-radius:8px;width:38px;height:34px;cursor:pointer;align-items:center;justify-content:center;}
+.atcnav-tg svg{width:18px;height:18px;stroke:#EAF3EF;}
+@media print{.atcnav{display:none !important;}}
+@media (max-width:760px){
+.atcnav-inner{padding:0 18px;}
+.atcnav-tg{display:inline-flex;}
+.atcnav-menu{position:fixed;top:58px;left:0;right:0;flex-direction:column;align-items:stretch;gap:2px;background:#0A2E25;border-bottom:1px solid rgba(234,243,239,0.13);padding:12px 16px 18px;transform:translateY(-130%);transition:transform .26s;}
+.atcnav-menu.open{transform:translateY(0);}
+.atcnav-dd{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:none;background:transparent;padding:0 0 0 10px;min-width:0;}
+.atcnav-chev{margin-left:auto;}
+.atcnav-lk.cta{justify-content:center;margin-top:6px;}
+}
+</style>
+<nav class="atcnav">
+ <div class="atcnav-inner">
+  <a class="atcnav-brand" href="index.html"><span class="m">Alpha<b>.</b> Technical Centre</span><span class="s">An Alpha Energy Asset</span></a>
+  <button class="atcnav-tg" aria-label="Menu" onclick="this.parentNode.querySelector('.atcnav-menu').classList.toggle('open')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="atcnav-menu">
+   <div class="atcnav-it">
+    <span class="atcnav-lk" tabindex="0">Modelling <svg class="atcnav-chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4.5 6 7.5 9 4.5"/></svg></span>
+    <div class="atcnav-dd">
+     <a class="atcnav-ddl" href="oil-gas-modelling.html"><span class="t ">Oil &amp; Gas Modelling</span><span class="d">Subsurface, reservoir &amp; production quick-look tools</span></a>
+     <a class="atcnav-ddl" href="financial-modelling.html"><span class="t ">Financial Modelling</span><span class="d">Upstream quick-look economics &amp; contract model</span></a>
+    </div>
+   </div>
+   <a class="atcnav-lk cta " href="plan-your-job.html">Plan Your Job</a>
+  </div>
+ </div>
+</nav>
+
+<header class="site-header"><div class="header-inner">
+<a class="logo-mark" href="#"><div class="logo-circle"><span>A</span></div>
+<div class="logo-text"><div class="l1">Alpha Energy</div><div class="l2">Technical Centre</div></div></a>
+<div class="header-badge">Scope of Work Generator</div></div></header>
+<div class="consortium-stripe"></div>
+<section class="hero">
+<div class="hero-eyebrow">Alpha Technical Centre</div>
+<h1>Scope of Work <em>Generator</em></h1>
+<p class="hero-sub">Select a service, choose your project scale, and configure add-ons to generate a structured, costed scope of work with indicative timeline and resource plan. Every engagement opens with a competitive base package.</p>
+</section>
+<div class="app-shell">
+<aside class="selector-panel">
+<div class="panel-head"><div class="panel-head-icon"><svg viewBox="0 0 16 16"><path d="M2 4h12M2 8h12M2 12h6"/></svg></div><div class="panel-head-title">Select Service</div></div>
+<div class="selector-body" id="selectorBody"></div>
+</aside>
+<main class="sow-panel" id="sowPanel">
+<div class="sow-empty" id="sowEmpty">
+<div class="sow-empty-icon"><svg viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M7 3H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V8l-5-5z"/><path d="M14 3v5h5"/></svg></div>
+<h3>Select a service to begin</h3>
+<p>Navigate the three service levels on the left, then choose your project scale and any add-ons to build a complete, costed scope of work.</p>
+</div>
+<div class="sow-content" id="sowContent"></div>
+</main>
+</div>
+<script>
+const PARTNERS={RE:{name:'Reservoir Engineering & Production',short:'RE&P Manager'},GEO:{name:'Geology',short:'Geology Manager'},INFRA:{name:'Infrastructure',short:'Infrastructure Manager'},SES:{name:'Seismic',short:'Seismic Manager'}};
+const WEEKLY_RATE={Principal:13500,Senior:11000,'Mid-level':8000,Junior:5500};
+const ICON={
+scope:'<svg viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M7 3H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V8l-5-5z"/><path d="M14 3v5h5"/></svg>',
+deliver:'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
+timeline:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+resource:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+cost:'<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+user:'<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+print:'<svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+download:'<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+sliders:'<svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
+check:'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
+calendar:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+};
+const DATA=[{"id":"L1-1","label":"1. Reservoir Simulation & Subsurface Studies","children":[{"id":"L2-1-1","label":"Static Geological Modelling","children":[{"id":"S-1-1-1","title":"Structural & Stratigraphic Framework Modelling","partner":"GEO","description":"Construction of a fit-for-purpose 3D structural-stratigraphic geocellular model integrating available well log, core, and seismic data, with petrophysical property population and volumetric estimation.","scope":["Well data compilation, QC, and normalization (logs, deviation surveys, tops)","Correlation framework: marker picking, zonation, net-pay cut-off analysis","Seismic-to-well tie and horizon interpretation (where data available)","Structural modelling: fault network, pillar gridding, layering scheme","Facies modelling (SIS or object-based) and petrophysical property population","Model upscaling and static volumetrics (STOIIP/GIIP) with P10/P50/P90 range"],"deliverables":["3D geocellular model","Volumetric report (P10/P50/P90)","Data QC report","Facies/property maps","Petrophysical summary"],"base":{"weeks":4,"resources":[{"discipline":"Geologist (Lead)","level":"Senior","count":1},{"discipline":"Petrophysicist","level":"Mid-level","count":1}],"software":8000,"data":3000,"misc":4000},"scales":[{"tier":"Single Block / Pilot","desc":"1 reservoir unit, <5 wells, limited seismic","scopeNote":"single reservoir interval, basic deterministic model","mult":1.0},{"tier":"Standard Field","desc":"Single field, 5-50 wells, 2D/sparse 3D seismic","scopeNote":"multi-zone field model with facies modelling","mult":2.0},{"tier":"Large / Mature Field","desc":"50-300 wells, full 3D seismic, multiple reservoirs","scopeNote":"multi-reservoir model, geostatistical workflows, full uncertainty","mult":3.2},{"tier":"Complex / Multi-Field","desc":"300+ wells, multiple stacked reservoirs / fields","scopeNote":"integrated multi-field model, advanced seismic conditioning","mult":5.0}],"timeline":[{"phase":"Data Assembly & QC","desc":"Well data normalization, seismic loading, baseline audit","frac":0.18},{"phase":"Framework & Correlation","desc":"Stratigraphic correlation, structural interpretation","frac":0.27},{"phase":"Geocellular Model Build","desc":"Structural model, facies, petrophysical population","frac":0.36},{"phase":"Volumetrics & Uncertainty","desc":"STOIIP estimation, Monte Carlo uncertainty","frac":0.1},{"phase":"Review & Delivery","desc":"Technical review, workshop, model handover","frac":0.09}],"addons":[{"name":"Seismic Re-processing & Conditioning","desc":"Pre-conditioning of legacy seismic for improved structural definition","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":48000},{"name":"4D / Time-Lapse Integration","desc":"Incorporate repeat seismic surveys to constrain dynamic changes","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":42000},{"name":"Fracture / DFN Modelling","desc":"Discrete fracture network model for naturally fractured reservoirs","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":58000},{"name":"Geomechanical Property Population","desc":"1D/3D mechanical earth model integration","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":34000}]},{"id":"S-1-1-2","title":"Core & Well Log Petrophysical Analysis","partner":"GEO","description":"Integrated petrophysical analysis combining core data, core-log calibration, and advanced log interpretation to establish formation evaluation parameters and rock-fluid properties.","scope":["Core data review: routine and special core analysis (RCA/SCAL) compilation","Core-to-log depth matching and calibration","Deterministic and probabilistic log interpretation (Vsh, porosity, Sw)","Fluid contacts and pressure gradient analysis from MDT/RFT","Net reservoir / net pay cut-off derivation","Permeability prediction transforms and electrofacies classification"],"deliverables":["Petrophysical interpretation package","Formation evaluation report","Cut-off justification","Permeability transforms","Pressure gradient analysis"],"base":{"weeks":3,"resources":[{"discipline":"Petrophysicist (Lead)","level":"Senior","count":1}],"software":5000,"data":2000,"misc":3000},"scales":[{"tier":"Single Well","desc":"1-2 wells, conventional logs only","scopeNote":"single-well deterministic evaluation","mult":1.0},{"tier":"Multi-Well Field","desc":"5-30 wells, some core control","scopeNote":"field-wide consistent petrophysical model","mult":2.2},{"tier":"Large Field","desc":"30-150 wells, multiple core sets, advanced logs","scopeNote":"probabilistic multi-mineral, full SCAL integration","mult":3.5},{"tier":"Basin / Portfolio","desc":"150+ wells across multiple fields","scopeNote":"standardised basin-wide petrophysical database","mult":5.5}],"timeline":[{"phase":"Data Gathering & QC","desc":"Core compilation, log QC, environmental corrections","frac":0.25},{"phase":"Core-Log Calibration","desc":"Depth matching, SCAL integration, transforms","frac":0.32},{"phase":"Log Interpretation","desc":"Deterministic/probabilistic petrophysics, electrofacies","frac":0.3},{"phase":"Integration & Reporting","desc":"Parameter selection, technical report, delivery","frac":0.13}],"addons":[{"name":"NMR / Advanced Log Interpretation","desc":"NMR, image log, and dielectric interpretation","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":32000},{"name":"SCAL Programme Design & Management","desc":"Design and oversight of a special core analysis lab programme","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":40000},{"name":"Saturation-Height Modelling","desc":"J-function / FZI saturation-height function derivation","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":18000}]},{"id":"S-1-1-3","title":"Analogues Study & Geological Uncertainty Quantification","partner":"GEO","description":"Systematic analogues benchmarking against producing fields of comparable depositional setting and recovery mechanism to constrain geological uncertainty and support development assumptions.","scope":["Analogues database review and selection criteria","Depositional environment and recovery-factor benchmarking","Geological risk matrix construction and uncertainty scoring","Decision tree analysis for key geological uncertainties","Probabilistic range calibration for development input parameters"],"deliverables":["Analogues study report","Recovery-factor range","Geological uncertainty matrix","Risk-weighted parameter distributions","Input assumptions register"],"base":{"weeks":2,"resources":[{"discipline":"Geologist (Lead)","level":"Senior","count":1}],"software":3000,"data":6000,"misc":3000},"scales":[{"tier":"Single Reservoir","desc":"One reservoir / play type","scopeNote":"focused analogue screen, single risk matrix","mult":1.0},{"tier":"Multi-Reservoir Field","desc":"Several reservoirs / mechanisms","scopeNote":"reservoir-by-reservoir benchmarking","mult":1.8},{"tier":"Field Portfolio","desc":"Multiple fields, varied settings","scopeNote":"portfolio-wide analogue framework","mult":2.8}],"timeline":[{"phase":"Analogues Screening","desc":"Database search, selection, initial benchmarking","frac":0.33},{"phase":"Detailed Comparison","desc":"Production performance, recovery factor analysis","frac":0.34},{"phase":"Uncertainty Quantification","desc":"Risk matrix, decision trees, distributions, reporting","frac":0.33}],"addons":[{"name":"Proprietary Analogue Database Access","desc":"Licensed access to commercial analogue datasets","weeks":0,"resources":[],"fee":22000},{"name":"Play-Based Exploration Risking","desc":"CRS/POS risking for exploration upside","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]}]},{"id":"L2-1-2","label":"Dynamic Reservoir Simulation","children":[{"id":"S-1-2-1","title":"Full-Field Numerical Simulation Model Build & History Match","partner":"RE","description":"Construction, initialisation, and history matching of a full-field black-oil or compositional simulation model, calibrated against observed production and pressure data to provide a validated predictive tool.","scope":["Static model upscaling and dynamic grid preparation","PVT review, EOS tuning, and fluid characterisation","Relative permeability and capillary pressure function derivation","Aquifer modelling (analytical or numerical)","Production allocation and facilities back-pressure constraints","Automated and manual history matching (pressure, rates, GOR, WOR)","Uncertainty ensemble generation (experimental design / assisted HM)"],"deliverables":["Calibrated simulation model","History-match report","PVT/SCAL input report","Uncertainty ensemble","Base-case forecast"],"base":{"weeks":5,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1}],"software":12000,"data":3000,"misc":5000},"scales":[{"tier":"Small Field","desc":"<=3 wells, <=2 yrs history, single reservoir","scopeNote":"coarse-grid model, simple history match","mult":1.0},{"tier":"Standard Field","desc":"10-50 wells, 5-10 yrs history","scopeNote":"full-field model, well-by-well history match","mult":2.6},{"tier":"Large Field","desc":"50-300 wells, 10-20 yrs history","scopeNote":"high-resolution model, assisted history matching","mult":4.2},{"tier":"Giant / Mature","desc":"300-1000+ wells, 20+ yrs history","scopeNote":"multi-reservoir, parallelised assisted HM, full ensemble","mult":6.5}],"timeline":[{"phase":"Model Initialisation","desc":"Grid import, PVT, SCAL, aquifer, initial pressure match","frac":0.16},{"phase":"History Match","desc":"Field/well-by-well pressure and rate match","frac":0.38},{"phase":"Uncertainty Analysis","desc":"Experimental design, ensemble runs, forecast range","frac":0.22},{"phase":"Scenario Development","desc":"Development scheme sensitivity runs","frac":0.14},{"phase":"Reporting & Handover","desc":"Final report, presentation, documentation","frac":0.1}],"addons":[{"name":"Compositional / EOS Upgrade","desc":"Convert to compositional model for gas condensate / volatile oil / miscible gas","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":62000},{"name":"Assisted History Matching (AHM)","desc":"Algorithm-driven HM with proxy/ensemble methods","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":50000},{"name":"Coupled Surface Network Integration","desc":"Integrated reservoir-network simulation","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":48000},{"name":"Geomechanics Coupling","desc":"Coupled flow-geomechanics for compaction/subsidence","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":66000}]},{"id":"S-1-2-2","title":"Field Development Scenario Optimisation & Forecast","partner":"RE","description":"Scenario-based production forecasting using a validated simulation model: evaluation of infill drilling, waterflood, injection, and artificial-lift strategies against production and value metrics.","scope":["Base-case depletion forecast as datum","Infill well location optimisation and ranking","Waterflood / injection pattern evaluation","Artificial-lift selection by well and reservoir stage","Development phasing and plateau design","Sensitivity to key subsurface uncertainties"],"deliverables":["Ranked scenarios report","Production profiles (P10/P50/P90)","Infill location maps","Value decision matrix","Recommended scheme"],"base":{"weeks":3,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1}],"software":8000,"data":0,"misc":3000},"scales":[{"tier":"Single Scenario","desc":"1-2 development options","scopeNote":"focused scenario comparison","mult":1.0},{"tier":"Standard Field","desc":"4-6 scenarios, single field","scopeNote":"full scenario matrix with sensitivities","mult":2.0},{"tier":"Large Field","desc":"Many scenarios, infill + IOR combined","scopeNote":"comprehensive optimisation with batch runs","mult":3.2},{"tier":"Portfolio","desc":"Multi-field capital-constrained optimisation","scopeNote":"cross-field development optimisation","mult":4.5}],"timeline":[{"phase":"Base Case & Scenario Design","desc":"Sensitivity matrix, base forecast validation","frac":0.2},{"phase":"Scenario Simulation Runs","desc":"Infill, waterflood, AL scenarios - batch runs","frac":0.45},{"phase":"Economic Integration","desc":"Value ranking, profile export to economics","frac":0.2},{"phase":"Recommendations & Report","desc":"Preferred scheme, input package, presentation","frac":0.15}],"addons":[{"name":"Integrated Economics Coupling","desc":"Direct NPV optimisation within simulation loop","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":34000},{"name":"Well & Pad Sequencing Optimisation","desc":"Drilling schedule and rig-line optimisation","weeks":2,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":24000}]},{"id":"S-1-2-3","title":"Decline Curve Analysis & Production Performance Review","partner":"RE","description":"Production performance diagnostics using Arps decline analysis, rate-transient analysis, and surveillance techniques to support reactivation planning and candidate prioritisation. A fast, competitively-priced screening deliverable.","scope":["Production data compilation, validation, and allocation review","Arps DCA for active and shut-in wells (b-factor justified)","Rate-transient analysis where pressure data available","Watercut and GOR trend / mechanism diagnostics","Well-by-well remaining potential ranking","Reactivation candidate ranking (incremental EUR vs cost)"],"deliverables":["Well performance database","DCA report with EUR estimates","Reactivation candidate ranking","Surveillance dashboard template","Optimisation recommendations"],"base":{"weeks":1,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1}],"software":3000,"data":1000,"misc":1500},"scales":[{"tier":"Single Well / Pad","desc":"1-5 wells","scopeNote":"individual well diagnostics","mult":1.0},{"tier":"Field Screen","desc":"20-100 wells","scopeNote":"field-wide DCA and ranking","mult":2.5},{"tier":"Large Field","desc":"100-500 wells","scopeNote":"full inventory DCA with automated workflows","mult":4.0},{"tier":"Portfolio Screen","desc":"500-1000+ wells","scopeNote":"portfolio surveillance and ranking system","mult":5.5}],"timeline":[{"phase":"Data Compilation & QC","desc":"Production history, well status audit, allocation","frac":0.35},{"phase":"DCA & RTA Analysis","desc":"Well-by-well analysis, EUR estimation","frac":0.45},{"phase":"Ranking & Reporting","desc":"Candidate ranking, dashboard, final report","frac":0.2}],"addons":[{"name":"Automated Surveillance Dashboard","desc":"Deployed live dashboard with data feed configuration","weeks":2,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":26000},{"name":"Type-Well & EUR Distribution Build","desc":"Probabilistic type-well curves for forecasting","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":16000}]}]},{"id":"L2-1-3","label":"IOR / EOR Screening & Feasibility","children":[{"id":"S-1-3-1","title":"Waterflood Feasibility & Design Study","partner":"RE","description":"Assessment of waterflood viability including source water, injection capacity, pattern design, and incremental recovery estimation, benchmarked against relevant field analogues.","scope":["Reservoir quality screening (permeability, heterogeneity, NTG)","Fluid compatibility and souring/scaling risk","Fractional-flow and mobility-ratio analysis","Voidage replacement ratio target and pressure support","Pattern geometry options and sweep-efficiency maps","Injection well requirements and incremental recovery estimate","High-level CAPEX/OPEX for waterflood infrastructure"],"deliverables":["Waterflood feasibility report","Pattern design maps","Fractional-flow analysis","High-level CAPEX estimate","Implementation sequencing"],"base":{"weeks":4,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1}],"software":6000,"data":2000,"misc":4000},"scales":[{"tier":"Pilot / Single Pattern","desc":"One pattern feasibility","scopeNote":"single-pattern pilot evaluation","mult":1.0},{"tier":"Field-Scale","desc":"Full-field waterflood design","scopeNote":"multi-pattern field design with simulation support","mult":2.2},{"tier":"Large Field Expansion","desc":"Phased large-field flood","scopeNote":"phased rollout, infrastructure-integrated design","mult":3.4}],"timeline":[{"phase":"Screening & Data Review","desc":"Reservoir quality, fluid data, injection data","frac":0.28},{"phase":"Technical Evaluation","desc":"Fractional flow, pattern design, voidage modelling","frac":0.42},{"phase":"CAPEX & Implementation","desc":"Infrastructure scoping, phasing, well schedule","frac":0.18},{"phase":"Reporting","desc":"Final feasibility report, recommendations","frac":0.12}],"addons":[{"name":"Low-Salinity / Smart Water Study","desc":"Engineered water injection feasibility and coreflood design","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":44000},{"name":"Conformance & Sweep Surveillance Plan","desc":"Tracer programme and conformance monitoring design","weeks":2,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":24000}]},{"id":"S-1-3-2","title":"EOR Screening: Chemical, Thermal & Gas Injection","partner":"RE","description":"Multi-method EOR screening applying established criteria to evaluate the technical and economic feasibility of polymer, gas, and thermal methods across defined reservoir targets.","scope":["EOR screening matrix (Taber/Martin criteria)","Miscible gas screening with MMP estimation","Polymer flood screening (mobility control, adsorption)","Thermal screening (steam/SAGD/THAI for heavy oil)","Technology readiness assessment per method","Pilot design concept for top-ranked method","Economic and risk-weighted ranking"],"deliverables":["EOR screening matrix","MMP estimation report","Ranked options with risk","Pilot concept","Recommended lab programme"],"base":{"weeks":4,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1}],"software":5000,"data":4000,"misc":4000},"scales":[{"tier":"Single Method","desc":"One EOR method evaluated","scopeNote":"focused single-method feasibility","mult":1.0},{"tier":"Multi-Method Screen","desc":"All methods, single field","scopeNote":"comprehensive screening with pilot concept","mult":2.0},{"tier":"Portfolio EOR Strategy","desc":"Multiple fields, EOR roadmap","scopeNote":"portfolio EOR strategy and staged deployment","mult":3.2}],"timeline":[{"phase":"Data & Screening Matrix","desc":"Reservoir parameters, Taber criteria scoring","frac":0.25},{"phase":"Method-Specific Analysis","desc":"MMP, polymer, thermal feasibility","frac":0.4},{"phase":"Economic & Risk Ranking","desc":"Incremental value, TRL assessment","frac":0.22},{"phase":"Pilot Concept & Reporting","desc":"Preferred-method pilot, final report","frac":0.13}],"addons":[{"name":"Laboratory Programme Management","desc":"Design and oversight of coreflood / fluid-fluid lab work","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":56000},{"name":"EOR Pilot Simulation","desc":"Sector-model simulation of preferred EOR pilot","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":60000}]},{"id":"S-1-3-3","title":"Pressure Maintenance Strategy & Aquifer Modelling","partner":"RE","description":"Reservoir energy assessment covering aquifer support characterisation, material balance, and design of a pressure-maintenance strategy integrating injection timing and voidage economics.","scope":["Pressure data compilation and depletion mapping","Aquifer characterisation (Fetkovich / van Everdingen-Hurst)","Material balance (Havlena-Odeh) and OOIP reconciliation","Depletion vs early pressure-maintenance evaluation","Injection timing optimisation","Compaction/subsidence screening where relevant"],"deliverables":["Pressure maintenance strategy","Aquifer model report","Material balance analysis","VRR target schedule","Compaction risk assessment"],"base":{"weeks":3,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1}],"software":5000,"data":2000,"misc":3000},"scales":[{"tier":"Single Reservoir","desc":"One tank / reservoir unit","scopeNote":"single-tank material balance and aquifer fit","mult":1.0},{"tier":"Multi-Tank Field","desc":"Several connected reservoirs","scopeNote":"multi-tank model with cross-flow","mult":1.9},{"tier":"Large Field","desc":"Complex aquifer, many units","scopeNote":"numerical aquifer model, full pressure strategy","mult":2.8}],"timeline":[{"phase":"Pressure Data Compilation","desc":"BHP/WHP, MDT compilation, normalization","frac":0.28},{"phase":"Aquifer & Material Balance","desc":"Fetkovich/Havlena-Odeh, OOIP reconciliation","frac":0.34},{"phase":"Strategy Development","desc":"Pressure-maintenance options, injection timing","frac":0.25},{"phase":"Reporting","desc":"Final report, VRR schedule, presentation","frac":0.13}],"addons":[{"name":"Numerical Aquifer Model Build","desc":"Full numerical aquifer rather than analytical","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000},{"name":"Subsidence / Compaction Modelling","desc":"Geomechanical compaction and surface subsidence analysis","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":46000}]}]}]},{"id":"L1-2","label":"2. Drilling & Well Engineering","children":[{"id":"L2-2-1","label":"Well Design & Engineering","children":[{"id":"S-2-1-1","title":"Basis of Design & Well Programme Development","partner":"INFRA","description":"Development of a well Basis of Design and detailed drilling programme for vertical, directional, or horizontal wells, integrating subsurface targets, pore-pressure prediction, casing design, and well control.","scope":["Geological target definition and landing window","Offset well review (drilling parameters, NPT, losses)","Pore-pressure / fracture-gradient prediction","Casing design (burst/collapse/tension, shoe depths)","Mud programme and lost-circulation risk","Directional plan and BHA specification","Well control programme and contingency","Cementing design"],"deliverables":["Well Basis of Design","Detailed well programme","Casing design report","PP/FG profiles","Well control programme"],"base":{"weeks":3,"resources":[{"discipline":"Drilling Engineer (Lead)","level":"Senior","count":1}],"software":6000,"data":2000,"misc":4000},"scales":[{"tier":"Single Well","desc":"1 well, established offset data","scopeNote":"single well programme","mult":1.0},{"tier":"Multi-Well Campaign","desc":"5-15 wells, batch design","scopeNote":"campaign template + well-specific programmes","mult":2.2},{"tier":"Field Drilling Campaign","desc":"15-50 wells, multiple well types","scopeNote":"full campaign engineering with optimisation","mult":3.4},{"tier":"Complex / HPHT / Deviated","desc":"ERD, HPHT, or complex trajectories","scopeNote":"advanced well engineering, torque & drag, surge/swab","mult":4.6}],"timeline":[{"phase":"Data Gathering & Offset Analysis","desc":"Well data compilation, offset review, PP/FG baseline","frac":0.25},{"phase":"Casing & Trajectory Design","desc":"Casing strings, directional plan, BHA","frac":0.35},{"phase":"Fluid & Cement Design","desc":"Mud programme, cementing, well control","frac":0.25},{"phase":"Programme Review & Approval","desc":"Peer review, HAZID, final programme","frac":0.15}],"addons":[{"name":"Torque & Drag / Hydraulics Modelling","desc":"Detailed T&D, hydraulics, and ECD modelling for complex wells","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000},{"name":"Anti-Collision / Wellbore Positioning","desc":"Multi-well pad anti-collision survey planning","weeks":1,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":14000},{"name":"Managed Pressure Drilling Design","desc":"MPD engineering for narrow-margin / depleted zones","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":32000}]},{"id":"S-2-1-2","title":"Workover & Well Intervention Engineering","partner":"INFRA","description":"Engineering design for workover, recompletion, and well intervention programmes targeting reactivation, zone additions, and artificial-lift installation. A single-well workover is a fast, competitively-priced base package.","scope":["Candidate selection (production history, integrity, mechanical status)","Wellbore integrity assessment","Workover programme (cleanout, perforation, zone add, squeeze, fishing)","Artificial-lift design (ESP/PCP/gas-lift) with nodal analysis","Stimulation / acidisation design where applicable","Well kill and pressure-control procedures","Rig selection criteria and workover cycle-time estimate"],"deliverables":["Candidate ranking & workover programme","Integrity assessment","Artificial-lift design","Workover AFE","Rig selection criteria"],"base":{"weeks":1,"resources":[{"discipline":"Workover Engineer (Lead)","level":"Senior","count":1}],"software":2000,"data":1000,"misc":2000},"scales":[{"tier":"Single Well Workover","desc":"1 well intervention programme","scopeNote":"single-well workover design & AFE","mult":1.0},{"tier":"Small Campaign","desc":"5-20 wells","scopeNote":"campaign workover programme with prioritisation","mult":3.0},{"tier":"Full-Field Programme","desc":"~100 wells","scopeNote":"full-field workover programme, ranked, ~6 weeks","mult":6.0},{"tier":"Multi-Field Programme","desc":"200+ wells across fields","scopeNote":"portfolio workover campaign with optimisation","mult":9.0}],"timeline":[{"phase":"Candidate Screening","desc":"Production history, mechanical audit, ranking","frac":0.3},{"phase":"Workover Programme Design","desc":"Per-well scope, integrity, AL design","frac":0.45},{"phase":"AFE & Procurement Plan","desc":"Cost estimates, rig requirements, materials list","frac":0.25}],"addons":[{"name":"Artificial-Lift Optimisation Study","desc":"Full nodal analysis and AL conversion economics across candidates","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000},{"name":"Stimulation / Frac Design","desc":"Matrix acid or hydraulic fracture design and modelling","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":34000},{"name":"Coiled-Tubing Programme Design","desc":"CT intervention engineering and procedures","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":16000}]},{"id":"S-2-1-3","title":"Completions & Perforations Design","partner":"INFRA","description":"Integrated completion design covering perforation strategy, completion string, sand control, and production-test requirements to maximise productivity and minimise formation damage.","scope":["Completion type selection","Perforation design (gun system, shot density, phasing, underbalance)","Formation damage assessment","Sand control requirement evaluation","Stimulation / acidisation design","Production string design (tubing, metallurgy, DHSV)","Well test programme design"],"deliverables":["Completion design report","Perforation programme","Sand control recommendation","Acidisation programme","Well test programme"],"base":{"weeks":2,"resources":[{"discipline":"Completions Engineer (Lead)","level":"Senior","count":1}],"software":4000,"data":2000,"misc":3000},"scales":[{"tier":"Single Well","desc":"1 completion design","scopeNote":"single-well completion design","mult":1.0},{"tier":"Multi-Well","desc":"5-20 wells, template completions","scopeNote":"standardised completion templates + well specifics","mult":2.2},{"tier":"Field Campaign","desc":"20-60 wells, varied completions","scopeNote":"full campaign completion engineering","mult":3.2}],"timeline":[{"phase":"Formation Evaluation Review","desc":"Core, log, fluid data for design drivers","frac":0.3},{"phase":"Completion Design","desc":"Perforation, string, sand control, stimulation","frac":0.5},{"phase":"Test Programme & Documentation","desc":"Well test design, procedures, AFE","frac":0.2}],"addons":[{"name":"Intelligent / Multi-Zone Completion Design","desc":"Inflow control devices and downhole flow-control design","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000},{"name":"Sand Control Detailed Design","desc":"Gravel-pack / frac-pack detailed engineering","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000}]}]},{"id":"L2-2-2","label":"Drilling Operations & HSE","children":[{"id":"S-2-2-1","title":"Drilling Risk Assessment & HAZID","partner":"INFRA","description":"Structured drilling risk assessment and Hazard Identification (HAZID) study covering geomechanical, well-control, environmental, and logistical risks. Required for AFE approval and regulatory submission.","scope":["Geomechanical risk register (instability, stuck pipe, losses, overpressure)","Well control risk assessment","H2S / CO2 risk screening","Environmental risk and spill response","Logistics and access risk","Risk mitigation matrix","Emergency Response Plan"],"deliverables":["Drilling HAZID report","Risk register","Well control risk assessment","Emergency Response Plan","Regulatory support package"],"base":{"weeks":2,"resources":[{"discipline":"HSE Engineer (Lead)","level":"Senior","count":1}],"software":2000,"data":1000,"misc":3000},"scales":[{"tier":"Single Well","desc":"One well HAZID","scopeNote":"single-well risk workshop","mult":1.0},{"tier":"Campaign","desc":"Multi-well campaign","scopeNote":"campaign-level HAZID with well-specific addenda","mult":1.8},{"tier":"Complex / High-Risk","desc":"HPHT, sensitive environment","scopeNote":"detailed bow-tie and barrier analysis","mult":2.6}],"timeline":[{"phase":"Risk Identification Workshop","desc":"Multi-discipline HAZID workshop","frac":0.3},{"phase":"Risk Evaluation & Controls","desc":"Scoring, mitigation, ERP","frac":0.45},{"phase":"Documentation & Approval","desc":"Register finalisation, report, regulatory support","frac":0.25}],"addons":[{"name":"Bow-Tie Barrier Analysis","desc":"Formal bow-tie analysis for major accident hazards","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":16000},{"name":"Well Control Bridging Document","desc":"Operator-contractor well control bridging procedures","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":14000}]},{"id":"S-2-2-2","title":"Rig Selection, Tendering & Contracting Support","partner":"INFRA","description":"Drilling contracting cycle support from rig market assessment through ITT, technical bid evaluation, and contract negotiation, including local-content and compliant supply-chain considerations.","scope":["Rig market assessment (regional availability and mobilisation candidates)","Technical minimum requirements definition","ITT preparation (specifications, day-rate structure, incentives)","Technical and commercial bid evaluation","Supply-chain compliance review","Local content compliance","Contract negotiation support"],"deliverables":["Rig market assessment","ITT package","Bid evaluation matrix","Supply-chain compliance checklist","Negotiation support"],"base":{"weeks":4,"resources":[{"discipline":"Drilling Contracts Engineer (Lead)","level":"Senior","count":1}],"software":2000,"data":2000,"misc":5000},"scales":[{"tier":"Single Rig","desc":"One rig contract","scopeNote":"single-rig tender and contract","mult":1.0},{"tier":"Multi-Rig Programme","desc":"2-4 rigs / integrated services","scopeNote":"multi-rig tender + integrated services","mult":1.8},{"tier":"Full Campaign Procurement","desc":"Rig + all major services","scopeNote":"full drilling services procurement programme","mult":2.6}],"timeline":[{"phase":"Market Assessment","desc":"Rig availability survey, specification","frac":0.2},{"phase":"ITT Preparation & Issue","desc":"Technical specs, commercial terms","frac":0.3},{"phase":"Bid Evaluation","desc":"Technical & commercial scoring","frac":0.3},{"phase":"Contract Negotiation","desc":"Term sheet, execution support","frac":0.2}],"addons":[{"name":"Integrated Services Tendering","desc":"Tendering of directional, mud, cementing, wireline packages","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":42000},{"name":"Day-Rate Benchmarking","desc":"Independent regional day-rate and cost benchmarking","weeks":1,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":14000}]},{"id":"S-2-2-3","title":"Real-Time Drilling Monitoring & Daily Reporting","partner":"INFRA","description":"On-call real-time drilling support: remote monitoring, daily drilling report generation, KPI tracking, and technical escalation during active operations. Priced per well or per rig-month.","scope":["Remote monitoring setup (WITSML feed, dashboards, alerts)","Daily Drilling Report compilation","NPT tracking and technical-limit benchmarking","Real-time trajectory monitoring and anti-collision","Bit performance (MSE) tracking","Mud-weight window / ECD monitoring","Morning-call support to wellsite"],"deliverables":["Real-time monitoring dashboard","Daily Drilling Reports","NPT analysis","End-of-well performance report","Lessons-learned log"],"base":{"weeks":2,"resources":[{"discipline":"Drilling Engineer (Remote)","level":"Senior","count":1}],"software":4000,"data":0,"misc":2000},"scales":[{"tier":"Single Well","desc":"One well, spud to TD","scopeNote":"one-well remote monitoring","mult":1.0},{"tier":"Multi-Well (per quarter)","desc":"Continuous campaign cover","scopeNote":"campaign monitoring, rotating cover","mult":3.5},{"tier":"24/7 Operations Centre","desc":"Dedicated RTOC, multiple rigs","scopeNote":"staffed real-time operations centre","mult":6.0}],"timeline":[{"phase":"Mobilisation & Setup","desc":"Dashboard config, WITSML connection, briefing","frac":0.2},{"phase":"Active Monitoring","desc":"Continuous remote monitoring, DDR, KPIs","frac":0.6},{"phase":"End-of-Well Reporting","desc":"Performance analysis, NPT, lessons learned","frac":0.2}],"addons":[{"name":"Geosteering Support","desc":"Real-time geosteering for horizontal / landing sections","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000},{"name":"Drilling Optimisation Analytics","desc":"Offset-calibrated drilling parameter optimisation","weeks":1,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":14000}]}]},{"id":"L2-2-3","label":"Well Integrity & Abandonment","children":[{"id":"S-2-3-1","title":"Well Integrity Audit & Risk Classification","partner":"INFRA","description":"Systematic well integrity audit for the well inventory using a NORSOK D-010 / API RP 100-2 based framework to identify integrity threats and prioritise remediation.","scope":["Well file review and last-known status","Barrier element mapping (primary and secondary)","Annular pressure (SCP) data review","Casing inspection log review","Wellhead inspection","Risk classification matrix","Prioritised remediation programme"],"deliverables":["Well integrity database","Barrier status map","Risk classification register","SCP analysis","Remediation priority list with AFE"],"base":{"weeks":2,"resources":[{"discipline":"Well Integrity Engineer (Lead)","level":"Senior","count":1}],"software":3000,"data":2000,"misc":3000},"scales":[{"tier":"Single Well / Small Set","desc":"1-10 wells","scopeNote":"detailed well-by-well integrity review","mult":1.0},{"tier":"Field Inventory","desc":"30-150 wells","scopeNote":"field-wide integrity audit and database","mult":3.0},{"tier":"Large / Portfolio","desc":"150-500+ wells","scopeNote":"portfolio integrity management system","mult":4.8}],"timeline":[{"phase":"Data Compilation","desc":"Well file review, last integrity test dates","frac":0.25},{"phase":"Barrier Mapping & Assessment","desc":"Element review, SCP analysis, inspection","frac":0.4},{"phase":"Risk Classification","desc":"Matrix scoring, remediation programme","frac":0.22},{"phase":"Reporting & Prioritisation","desc":"Database, remediation AFE, summary","frac":0.13}],"addons":[{"name":"Annular Pressure Diagnostic Modelling","desc":"Detailed SCP build-up / bleed-down diagnostics","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":26000},{"name":"Well Integrity Management System Setup","desc":"WIMS framework, KPIs, and software configuration","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":40000}]},{"id":"S-2-3-2","title":"Plugging & Abandonment Programme Development","partner":"INFRA","description":"Engineering programme for permanent plugging and abandonment of end-of-life wells compliant with applicable regulations and international best practice, with prioritised sequencing.","scope":["Regulatory requirement review","Well selection and screening for P&A","Zonal isolation design (cement/mechanical plugs, barrier standards)","Wellhead removal and site restoration requirements","Barrier verification (pressure test, tagging)","P&A procedures per well class","Cost estimate / AFE development"],"deliverables":["P&A programme per well class","Regulatory compliance checklist","Zonal isolation design","P&A AFE estimates","Site restoration plan"],"base":{"weeks":2,"resources":[{"discipline":"P&A Engineer (Lead)","level":"Senior","count":1}],"software":3000,"data":1000,"misc":3000},"scales":[{"tier":"Single Well","desc":"One well P&A programme","scopeNote":"single-well abandonment design","mult":1.0},{"tier":"Multi-Well Campaign","desc":"10-40 wells","scopeNote":"campaign P&A programme, sequenced","mult":2.6},{"tier":"Field Abandonment","desc":"Full-field decommissioning","scopeNote":"field-wide P&A campaign with logistics","mult":4.0}],"timeline":[{"phase":"Selection & Regulatory Review","desc":"Screening, permit requirements, triggers","frac":0.28},{"phase":"Technical Design","desc":"Cement, plug placement, barrier verification","frac":0.42},{"phase":"Programme & Costing","desc":"Procedures, AFE, scheduling, procurement","frac":0.3}],"addons":[{"name":"Rigless P&A Engineering","desc":"Rigless / hydraulic-workover abandonment methods","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000},{"name":"Decommissioning Cost Benchmarking","desc":"Independent P&A cost benchmarking","weeks":1,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":12000}]},{"id":"S-2-3-3","title":"Wellhead & Christmas Tree Inspection Programme","partner":"INFRA","description":"Design and management of a systematic surface wellhead and Christmas-tree inspection and testing programme to underpin integrity status and support reactivation decisions.","scope":["Inspection scope and wellhead inventory definition","Valve function testing","Pressure integrity testing (API 6A)","Erosion / corrosion assessment","Seal replacement programme","XT refurbishment AFE","Inspection database design"],"deliverables":["Wellhead inspection database","Test procedures & acceptance criteria","Per-well inspection report","Refurbishment AFE","Reactivation-ready status list"],"base":{"weeks":1,"resources":[{"discipline":"Well Integrity Engineer (Lead)","level":"Senior","count":1}],"software":1500,"data":1000,"misc":4000},"scales":[{"tier":"Small Set","desc":"1-15 wellheads","scopeNote":"focused wellhead inspection campaign","mult":1.0},{"tier":"Field Inventory","desc":"50-150 wellheads","scopeNote":"field-wide inspection programme","mult":3.0},{"tier":"Large Portfolio","desc":"150+ wellheads","scopeNote":"portfolio inspection and refurbishment programme","mult":4.5}],"timeline":[{"phase":"Procedure & Planning","desc":"Scope, test procedures, mobilisation","frac":0.3},{"phase":"Field Inspection Execution","desc":"Valve testing, UT, visual inspection","frac":0.45},{"phase":"Reporting & Remediation","desc":"Database, AFE, readiness list","frac":0.25}],"addons":[{"name":"On-Site Inspection Crew Supervision","desc":"Field supervision of inspection / testing contractors","weeks":2,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":22000}]}]}]},{"id":"L1-3","label":"3. Surface & Facilities Engineering","children":[{"id":"L2-3-1","label":"Production Facilities Assessment & Design","children":[{"id":"S-3-1-1","title":"Brownfield Facilities Condition Assessment","partner":"INFRA","description":"Physical condition assessment of existing production processing facilities, pipelines, and utility systems. Baseline deliverable for rehabilitation CAPEX estimation and reactivation planning.","scope":["Facility inventory (separation, treaters, tanks, flares, pumps)","Mechanical integrity (vessel inspection, thickness, corrosion mapping)","Piping and valve condition","Electrical and instrument systems","Pipeline condition survey","Structural assessment","Hazardous-area classification review","Rehabilitation CAPEX estimate (Class 5)"],"deliverables":["Condition assessment report","Mechanical integrity register","Rehabilitation CAPEX (Class 5)","Reactivation priority sequence","Hazardous-area review"],"base":{"weeks":4,"resources":[{"discipline":"Process Engineer (Lead)","level":"Senior","count":1},{"discipline":"Mechanical Engineer","level":"Mid-level","count":1}],"software":5000,"data":2000,"misc":12000},"scales":[{"tier":"Single Station","desc":"One facility / station","scopeNote":"single-station condition assessment","mult":1.0},{"tier":"Field Facilities","desc":"Multiple stations + gathering","scopeNote":"field-wide facilities assessment","mult":2.2},{"tier":"Large Complex","desc":"Major processing complex","scopeNote":"full-complex assessment, all disciplines","mult":3.4},{"tier":"Integrated Infrastructure","desc":"Multi-field surface network","scopeNote":"integrated infrastructure-wide assessment","mult":4.8}],"timeline":[{"phase":"Preparation & Data Collection","desc":"Documentation review, site access planning","frac":0.18},{"phase":"Field Inspection","desc":"Physical inspection, UT, loop testing, walkdowns","frac":0.42},{"phase":"Assessment & Costing","desc":"Findings analysis, Class 5 CAPEX build-up","frac":0.28},{"phase":"Reporting","desc":"Final report, priority matrix, presentation","frac":0.12}],"addons":[{"name":"Rotating Equipment Condition Survey","desc":"Detailed pump/compressor/driver condition and vibration survey","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":42000},{"name":"Electrical Power System Study","desc":"Load flow, short-circuit, and power system condition study","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":44000},{"name":"Tank Integrity (API 653) Assessment","desc":"Storage tank inspection and remaining-life assessment","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]},{"id":"S-3-1-2","title":"Process Design & PFD/P&ID Development (FEED)","partner":"INFRA","description":"Front-End Engineering Design for production processing facilities: process simulation, separation design, PFD and P&ID development, and equipment specification to Class 3 estimate standard.","scope":["Process simulation and fluid characterisation","Separation train design and stabilisation","Gas processing (compression, dehydration, sweetening)","Water handling and injection/disposal","PFD development (mass and heat balance)","P&ID development (tags, valves, tie-ins)","Line list and equipment data sheets","Relief and flare system design"],"deliverables":["Process simulation model","PFDs","P&IDs","Equipment data sheets","PSV register","Class 3 CAPEX estimate"],"base":{"weeks":6,"resources":[{"discipline":"Process Engineer (Lead)","level":"Senior","count":1},{"discipline":"Process Engineer","level":"Mid-level","count":1}],"software":14000,"data":2000,"misc":8000},"scales":[{"tier":"Small Facility / Mod","desc":"Skid / single-train modification","scopeNote":"single-train FEED","mult":1.0},{"tier":"Standard Facility","desc":"New CPF / multi-train","scopeNote":"full multi-train facility FEED","mult":2.0},{"tier":"Large Facility","desc":"Major processing complex","scopeNote":"large-complex FEED, all utilities","mult":3.0},{"tier":"Integrated Development","desc":"Facility + export + utilities","scopeNote":"integrated FEED with export systems","mult":4.2}],"timeline":[{"phase":"Process Basis & Simulation","desc":"Fluid data, basis of design, simulation","frac":0.22},{"phase":"PFD Development","desc":"Mass/heat balance, PFDs, review","frac":0.28},{"phase":"P&ID Development","desc":"P&IDs, line list, datasheets","frac":0.35},{"phase":"HAZOP Prep & Cost Estimate","desc":"HAZOP node list, Class 3 estimate","frac":0.15}],"addons":[{"name":"3D Plot Plan / Layout Model","desc":"3D plant layout model and plot plan development","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":58000},{"name":"Dynamic Process Simulation","desc":"Dynamic simulation for control / surge / blowdown studies","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":48000},{"name":"SIL Determination (LOPA)","desc":"Safety Integrity Level determination via LOPA","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]},{"id":"S-3-1-3","title":"Artificial Lift System Engineering & Optimisation","partner":"INFRA","description":"Integrated artificial-lift engineering covering system selection, design, and optimisation across a well portfolio, including surface power and infrastructure requirements.","scope":["Well inflow/outflow analysis (IPR/VLP)","Artificial-lift screening and selection","ESP design (pump, motor, VSD, cable)","Gas-lift design (injection pressure, valve spacing, compression)","Surface infrastructure (power, transformers, switchgear)","Field-trial and optimisation programme","Failure-mode analysis and predictive surveillance"],"deliverables":["AL selection report","ESP design package","Gas-lift design package","Power infrastructure requirements","Optimisation & surveillance plan"],"base":{"weeks":3,"resources":[{"discipline":"Production Technologist (Lead)","level":"Senior","count":1}],"software":6000,"data":1000,"misc":4000},"scales":[{"tier":"Single Well","desc":"One AL design","scopeNote":"single-well AL design","mult":1.0},{"tier":"Field Population","desc":"20-80 wells","scopeNote":"field-wide AL strategy and design","mult":2.4},{"tier":"Large Field","desc":"80-300 wells","scopeNote":"large AL population with surface system design","mult":3.6}],"timeline":[{"phase":"IPR/VLP Analysis","desc":"Inflow/outflow modelling, AL sensitivity","frac":0.25},{"phase":"Equipment Design","desc":"ESP/gas-lift design, surface sizing","frac":0.4},{"phase":"Field Trial Planning","desc":"Monitoring, KPIs, installation sequence","frac":0.2},{"phase":"Documentation & Handover","desc":"Design package, procurement specs, surveillance","frac":0.15}],"addons":[{"name":"Power Generation & Distribution Design","desc":"Field power generation and distribution network design","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":56000},{"name":"ESP Reliability / DIFA Programme","desc":"Dismantle inspection failure analysis and reliability tracking","weeks":2,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":24000}]}]},{"id":"L2-3-2","label":"Pipeline & Flow Assurance","children":[{"id":"S-3-2-1","title":"Pipeline Integrity Management Programme","partner":"INFRA","description":"Development of a Pipeline Integrity Management programme for flowline, gathering, and trunk-line systems per ASME B31.4/B31.8, including ILI programme design and risk-based inspection scheduling.","scope":["Pipeline inventory and data register","Risk-based inspection (PoF x CoF) framework","Corrosion threat assessment (internal and external)","Intelligent-pig selection","ILI programme design","Cathodic protection assessment","Integrity operating windows","Repair prioritisation"],"deliverables":["Pipeline data register","RBI assessment","ILI programme plan","CP survey report","Integrity Operating Windows","Repair priority list"],"base":{"weeks":4,"resources":[{"discipline":"Pipeline Integrity Engineer (Lead)","level":"Senior","count":1}],"software":5000,"data":3000,"misc":6000},"scales":[{"tier":"Single Line","desc":"One pipeline segment","scopeNote":"single-line integrity assessment","mult":1.0},{"tier":"Field Network","desc":"Gathering + trunk system","scopeNote":"field network PIM programme","mult":2.4},{"tier":"Large Network","desc":"Extensive multi-field network","scopeNote":"network-wide PIM with RBI database","mult":3.6}],"timeline":[{"phase":"Data Compilation","desc":"Register, corrosion data, CP results","frac":0.22},{"phase":"Risk Assessment","desc":"PoF/CoF matrix, threats, IOW","frac":0.34},{"phase":"Programme Design","desc":"ILI scope, CP programme, scheduling","frac":0.28},{"phase":"Reporting & Plan","desc":"PIM document, repair list, maintenance plan","frac":0.16}],"addons":[{"name":"ILI Run Management & Data Analysis","desc":"Specification, vendor management, and analysis of inline inspection","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":46000},{"name":"Corrosion Modelling & Inhibitor Programme","desc":"Predictive corrosion modelling and chemical management","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]},{"id":"S-3-2-2","title":"Flow Assurance Study: Hydrates, Wax & Scale","partner":"INFRA","description":"Integrated flow-assurance study addressing solid-deposition threats (hydrates, wax, asphaltenes, scale) across the production system from reservoir to first processing facility.","scope":["Fluid sampling and compositional analysis","Hydrate equilibrium and operating window","Wax appearance temperature and deposition modelling","Asphaltene instability screening","Scale prediction","Chemical injection requirements","Flowline thermal modelling","Operational procedures (startup, shutdown, pigging)"],"deliverables":["Flow assurance report","Hydrate operating envelope","Chemical injection design","Pigging programme","Thermal model report","Operational procedures"],"base":{"weeks":4,"resources":[{"discipline":"Flow Assurance Engineer (Lead)","level":"Senior","count":1}],"software":9000,"data":6000,"misc":4000},"scales":[{"tier":"Single Flowline","desc":"One tie-back / flowline","scopeNote":"single-line flow assurance","mult":1.0},{"tier":"Field System","desc":"Field gathering network","scopeNote":"network flow assurance study","mult":2.0},{"tier":"Complex / Subsea","desc":"Long offset / subsea / cold environment","scopeNote":"transient multiphase modelling, full mitigation","mult":3.2}],"timeline":[{"phase":"Fluid Data & Modelling Setup","desc":"PVT data, model build, baseline sensitivity","frac":0.25},{"phase":"Solid Deposition Analysis","desc":"Hydrate, wax, asphaltene, scale evaluation","frac":0.4},{"phase":"Mitigation Design","desc":"Chemical injection, pigging, insulation","frac":0.22},{"phase":"Procedures & Reporting","desc":"Operational procedures, final report","frac":0.13}],"addons":[{"name":"Transient Multiphase (OLGA) Modelling","desc":"Transient flow modelling for slugging, startup, ramp-up","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":60000},{"name":"Erosion / Sand Management Study","desc":"Erosional velocity and sand handling assessment","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000}]},{"id":"S-3-2-3","title":"Hydraulic Modelling & Network Optimisation","partner":"INFRA","description":"Steady-state and transient hydraulic network modelling of gathering, trunk, and injection systems to support capacity planning, debottlenecking, and production optimisation.","scope":["Network model build (wells, flowlines, manifolds, separators, export)","Steady-state hydraulics and erosional-velocity check","System deliverability and back-pressure","Debottlenecking analysis","Gas-lift network allocation optimisation","Production-forecast integration","Transient simulation (startup, blowdown, surge)"],"deliverables":["Hydraulic network model","Steady-state report","Debottlenecking options","Gas-lift allocation optimisation","Transient analysis"],"base":{"weeks":2,"resources":[{"discipline":"Production Technologist (Lead)","level":"Senior","count":1}],"software":8000,"data":1000,"misc":2000},"scales":[{"tier":"Simple Network","desc":"Few wells / single manifold","scopeNote":"focused network model","mult":1.0},{"tier":"Field Network","desc":"Full field gathering system","scopeNote":"full field hydraulic model with optimisation","mult":2.2},{"tier":"Complex Network","desc":"Multi-field / looped systems","scopeNote":"complex network with transient analysis","mult":3.2}],"timeline":[{"phase":"Model Build","desc":"Network input data, model construction","frac":0.34},{"phase":"Steady-State Analysis","desc":"Deliverability, constraints, debottlenecking","frac":0.36},{"phase":"Optimisation & Transient","desc":"GL allocation, forecast integration, transients","frac":0.3}],"addons":[{"name":"Compression Optimisation Study","desc":"Compressor staging and gas-handling optimisation","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000}]}]},{"id":"L2-3-3","label":"HAZOP, Safety Studies & Regulatory","children":[{"id":"S-3-3-1","title":"HAZOP Study & Action Closeout","partner":"INFRA","description":"Formal HAZOP study of process and utilities P&IDs per IEC 61882 with an independent chairman, covering all nodes, identifying hazards, assigning actions, and managing closeout.","scope":["HAZOP scope and node-list preparation","HAZOP session facilitation","Deviation evaluation (cause, consequence, safeguard, action)","Action register management","Safety-function (SIF) identification","HAZOP report production","Action closeout tracking"],"deliverables":["HAZOP report with node sheets","Action register","SIF candidate list","Revised P&IDs","Completion certificate"],"base":{"weeks":3,"resources":[{"discipline":"HAZOP Chairman","level":"Senior","count":1},{"discipline":"Process Engineer (Scribe)","level":"Mid-level","count":1}],"software":3000,"data":0,"misc":5000},"scales":[{"tier":"Small / Mod","desc":"<=10 nodes","scopeNote":"focused HAZOP for modification","mult":1.0},{"tier":"Standard Facility","desc":"10-40 nodes","scopeNote":"full facility HAZOP","mult":2.0},{"tier":"Large Complex","desc":"40+ nodes","scopeNote":"large-complex HAZOP, multiple sessions","mult":3.0}],"timeline":[{"phase":"Preparation","desc":"P&ID review, node list, team, schedule","frac":0.2},{"phase":"HAZOP Sessions","desc":"Node-by-node study, daily node sheets","frac":0.4},{"phase":"Report Production","desc":"Full report, action register, SIF list","frac":0.25},{"phase":"Action Closeout","desc":"Priority actions verified, P&ID redraws","frac":0.15}],"addons":[{"name":"LOPA / SIL Determination","desc":"Layer of protection analysis and SIL assignment","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000},{"name":"SIL Verification","desc":"SIL verification calculations for SIF loops","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000}]},{"id":"S-3-3-2","title":"Quantitative Risk Assessment (QRA)","partner":"INFRA","description":"Quantitative Risk Assessment covering individual, societal, and asset risk for production facilities. Supports regulatory approval, land-use planning, and facility siting.","scope":["Hazard identification and inventory","Leak-frequency estimation","Consequence modelling (fire, explosion, toxic dispersion)","Ignition probability modelling","Individual Risk contours and ALARP demonstration","Societal Risk (FN curve)","Occupied-building risk assessment","Risk-reduction recommendations"],"deliverables":["QRA report","Risk contour maps","FN curve","Consequence model library","ALARP demonstration","Risk-reduction recommendations"],"base":{"weeks":6,"resources":[{"discipline":"Risk Engineer (Lead)","level":"Senior","count":1}],"software":12000,"data":2000,"misc":6000},"scales":[{"tier":"Focused QRA","desc":"Single unit / sub-study","scopeNote":"focused QRA for a single area","mult":1.0},{"tier":"Facility QRA","desc":"Full facility","scopeNote":"full-facility QRA, all hazards","mult":1.9},{"tier":"Complex / Multi-Site","desc":"Complex or multi-site","scopeNote":"multi-site QRA with cumulative risk","mult":2.8}],"timeline":[{"phase":"Hazard ID & Inventory","desc":"Component count, failure frequency, nodes","frac":0.18},{"phase":"Consequence Modelling","desc":"Dispersion, thermal, overpressure runs","frac":0.38},{"phase":"Risk Calculation","desc":"IR contours, FN curve, building risk, ALARP","frac":0.26},{"phase":"Reporting & Recommendations","desc":"QRA report, regulatory submission","frac":0.18}],"addons":[{"name":"Fire & Explosion / CFD Modelling","desc":"CFD-based dispersion and explosion overpressure modelling","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":64000},{"name":"Escape, Evacuation & Rescue Analysis","desc":"EERA for offshore / remote facilities","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]},{"id":"S-3-3-3","title":"Environmental & Permitting Support","partner":"INFRA","description":"Preparation of environmental impact assessment and permitting support for upstream production operations, compliant with applicable national environmental law and international standards (e.g. IFC Performance Standards).","scope":["Baseline environmental survey","Socioeconomic baseline","Impact identification and prediction","Significance evaluation","Environmental Management Plan","Spill response and contingency plan","Stakeholder consultation programme","Regulatory submission preparation"],"deliverables":["EIA report","Environmental Management Plan","Spill Response Plan","Stakeholder consultation record","Regulatory submission package"],"base":{"weeks":6,"resources":[{"discipline":"Environmental Specialist (Lead)","level":"Senior","count":1},{"discipline":"Environmental Scientist","level":"Mid-level","count":1}],"software":6000,"data":12000,"misc":12000},"scales":[{"tier":"Screening / Basic","desc":"Permit screening / minor works","scopeNote":"environmental screening and basic permitting","mult":1.0},{"tier":"Standard EIA","desc":"Full field EIA","scopeNote":"full EIA with EMP and consultation","mult":2.2},{"tier":"Complex / Sensitive","desc":"Sensitive environment / major project","scopeNote":"comprehensive ESIA, sensitive receptors","mult":3.4}],"timeline":[{"phase":"Baseline Surveys","desc":"Environmental and socioeconomic baseline","frac":0.28},{"phase":"Impact Assessment","desc":"Significance evaluation, EMP development","frac":0.3},{"phase":"Report Preparation","desc":"Report writing, spill modelling, consultation","frac":0.27},{"phase":"Review & Submission","desc":"Stakeholder review, finalisation, submission","frac":0.15}],"addons":[{"name":"Oil Spill Trajectory Modelling","desc":"Stochastic spill trajectory and fate modelling","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":42000},{"name":"Greenhouse Gas / Flaring Reduction Study","desc":"Emissions inventory and flaring-reduction roadmap","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":40000},{"name":"Biodiversity Action Plan","desc":"Biodiversity baseline and management plan to IFC PS6","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":38000}]}]}]},{"id":"L1-4","label":"4. Economic Modelling & FDP Preparation","children":[{"id":"L2-4-1","label":"Field Development Plan (FDP)","children":[{"id":"S-4-1-1","title":"Integrated Field Development Plan - Full Document","partner":"RE","description":"Preparation of a bankable Field Development Plan integrating subsurface, wells, facilities, schedule, and economics into a regulatory-grade document suitable for approval, lender review, and board sanction.","scope":["Executive summary and investment case","Geology & geophysics chapter","Reservoir engineering chapter (volumes, mechanisms, forecasts)","Drilling & wells chapter","Facilities & infrastructure chapter","Production profiles (P10/P50/P90)","Economic model (CAPEX/OPEX, fiscal terms, NPV/IRR)","Risk register and implementation schedule"],"deliverables":["FDP main report","Technical appendices","Economic model","Production forecast database","Regulatory submission package"],"base":{"weeks":8,"resources":[{"discipline":"Project Manager","level":"Principal","count":1},{"discipline":"Reservoir Engineer","level":"Senior","count":1},{"discipline":"Economist","level":"Senior","count":1}],"software":14000,"data":6000,"misc":12000},"scales":[{"tier":"Single Reservoir","desc":"Small single-reservoir field","scopeNote":"concise FDP for a simple field","mult":1.0},{"tier":"Standard Field","desc":"Multi-reservoir single field","scopeNote":"full FDP, all chapters, single field","mult":1.8},{"tier":"Large Field","desc":"Large / phased development","scopeNote":"comprehensive FDP, phased development","mult":2.6},{"tier":"Multi-Field Programme","desc":"Portfolio / staged developments","scopeNote":"integrated multi-field development plan","mult":3.6}],"timeline":[{"phase":"Technical Input Assembly","desc":"Subsurface, wells, facilities data QC","frac":0.2},{"phase":"Technical Chapter Drafting","desc":"Geology, RE, wells, facilities chapters","frac":0.32},{"phase":"Integration & Economics","desc":"Production profiles, CAPEX/OPEX, economics","frac":0.26},{"phase":"Internal Review & Edit","desc":"Peer review, consistency, exec summary","frac":0.12},{"phase":"Final Issue","desc":"Client/lender review, revision, final issue","frac":0.1}],"addons":[{"name":"Independent Reserves Certification (CPR)","desc":"PRMS-compliant Competent Person Report","weeks":6,"resources":[{"discipline":"","level":"Principal","count":1}],"fee":120000},{"name":"Concept Selection (Pre-FDP) Study","desc":"Structured development concept selection ahead of the FDP","weeks":5,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":78000},{"name":"Execution Schedule & Cost (Level 3)","desc":"Detailed project schedule and Class 3 cost estimate","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":62000}]},{"id":"S-4-1-2","title":"Reserves Certification & Competent Person Report (CPR)","partner":"RE","description":"Independent Competent Person Report for reserves and contingent resources per PRMS 2018, suitable for lender due diligence, regulatory filing, and equity-market use.","scope":["Reserves classification (1P/2P/3P, 1C/2C/3C) per PRMS 2018","Subsurface uncertainty range derivation","Risking framework (geologic, development, commercial)","Production forecasts with decline parameters","Cash-flow model (NPV10 and NPV15 per reserves class)","Narrative CPR report","Independent sign-off and liability statement"],"deliverables":["CPR main report","Reserves summary (1P/2P/3P)","NPV10/NPV15 by class","Technical risk matrix","Independent engineer declaration"],"base":{"weeks":6,"resources":[{"discipline":"Competent Person","level":"Principal","count":1},{"discipline":"Reservoir Engineer","level":"Senior","count":1}],"software":8000,"data":5000,"misc":8000},"scales":[{"tier":"Single Asset","desc":"One field / asset","scopeNote":"single-asset CPR","mult":1.0},{"tier":"Multi-Asset","desc":"Several assets","scopeNote":"multi-asset CPR with consolidation","mult":1.7},{"tier":"Full Portfolio","desc":"Portfolio-wide certification","scopeNote":"portfolio CPR for transaction / listing","mult":2.6}],"timeline":[{"phase":"Data Room Review","desc":"Well data, production history, models","frac":0.18},{"phase":"Subsurface Analysis","desc":"STOIIP range, forecast, recovery factor","frac":0.34},{"phase":"Economic Analysis","desc":"Cash-flow model, NPV by class, sensitivity","frac":0.24},{"phase":"CPR Drafting","desc":"Full narrative, tables, risk section","frac":0.16},{"phase":"Review & Sign-Off","desc":"Client review, sign-off, final issue","frac":0.08}],"addons":[{"name":"Stock Exchange Compliant Reporting","desc":"Reporting tailored to specific exchange listing rules","weeks":2,"resources":[{"discipline":"","level":"Principal","count":1}],"fee":40000},{"name":"Contingent Resource Development Study","desc":"Maturation pathway for contingent resources","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":44000}]},{"id":"S-4-1-3","title":"Phased Development Concept Selection Study","partner":"RE","description":"Structured concept-selection study evaluating alternative development phasing strategies against technical, commercial, and risk criteria to inform the preferred development concept.","scope":["Alternative concept definition","Technical screening (infrastructure, drilling, rate constraints)","Economic evaluation (NPV, IRR, payback, $/bbl)","Risk-adjusted comparison","Production-profile comparison","Sensitivity analysis","Preferred-concept recommendation and decision gates"],"deliverables":["Concept selection report","Option comparison matrix","Economic comparison","Risk-adjusted scoring","Milestone plan"],"base":{"weeks":4,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1},{"discipline":"Economist","level":"Mid-level","count":1}],"software":6000,"data":2000,"misc":4000},"scales":[{"tier":"Few Options","desc":"2-3 concepts","scopeNote":"focused concept comparison","mult":1.0},{"tier":"Full Concept Screen","desc":"Multiple concepts, single field","scopeNote":"full concept-select with sensitivities","mult":1.8},{"tier":"Portfolio Concept","desc":"Cross-field capital allocation","scopeNote":"portfolio concept and capital allocation","mult":2.6}],"timeline":[{"phase":"Concept Definition","desc":"Options scope, parameters, criteria","frac":0.22},{"phase":"Technical & Economic Evaluation","desc":"Profiles, CAPEX, NPV per concept","frac":0.4},{"phase":"Risk & Sensitivity","desc":"Risk-adjusted comparison, sensitivities","frac":0.24},{"phase":"Reporting & Recommendation","desc":"Final report, decision recommendations","frac":0.14}],"addons":[{"name":"Value of Information (VOI) Analysis","desc":"Quantify value of appraisal data acquisition","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000},{"name":"Real Options Valuation","desc":"Decision-tree / real-options valuation of flexibility","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]}]},{"id":"L2-4-2","label":"Financial Modelling & Economics","children":[{"id":"S-4-2-1","title":"Integrated Asset Economic Model Build","partner":"RE","description":"Construction of a fully integrated, multi-asset financial model incorporating phased production profiles, CAPEX/OPEX schedules, fiscal terms, financing structure, and NPV/IRR outputs.","scope":["Production-profile inputs with phase toggles","Revenue build (price, differentials, transport)","CAPEX schedule","OPEX schedule with escalation","Fiscal-terms modelling (royalty, income tax, withholding)","Financing structure (drawdown/repayment, DSCR/LLCR)","Economic metrics (NPV, IRR, payback, peak debt)","Sensitivity and scenario analysis"],"deliverables":["Integrated financial model","Model user guide","Economic metrics summary","Sensitivity charts","Scenario comparison"],"base":{"weeks":3,"resources":[{"discipline":"Financial Modeller (Lead)","level":"Senior","count":1}],"software":4000,"data":2000,"misc":3000},"scales":[{"tier":"Single Asset","desc":"One asset, simple fiscal","scopeNote":"single-asset economic model","mult":1.0},{"tier":"Multi-Asset","desc":"Several assets, financing","scopeNote":"multi-asset model with financing structure","mult":2.0},{"tier":"Portfolio / Project Finance","desc":"Portfolio + debt covenants","scopeNote":"portfolio model with full debt sculpting","mult":3.0}],"timeline":[{"phase":"Input Data Assembly","desc":"Profiles, costs, fiscal terms, financing","frac":0.22},{"phase":"Model Build","desc":"Revenue, CAPEX/OPEX, fiscal, cash flow","frac":0.42},{"phase":"Metrics & Sensitivity","desc":"NPV/IRR, LLCR/DSCR, scenarios","frac":0.24},{"phase":"Review & Handover","desc":"QC, user guide, walkthrough","frac":0.12}],"addons":[{"name":"Monte Carlo Risk Simulation","desc":"Probabilistic economics with simulation","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":18000},{"name":"Model Audit & Assurance","desc":"Independent model integrity audit","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":26000},{"name":"Live Dashboard / Scenario Tool","desc":"Interactive scenario dashboard for management","weeks":2,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":22000}]},{"id":"S-4-2-2","title":"CAPEX/OPEX Benchmarking & Cost Estimation","partner":"INFRA","description":"Independent CAPEX and OPEX benchmarking comparing project cost estimates against analogous redevelopment projects using industry cost databases and AACE estimate classification.","scope":["CAPEX review ($/well, $/bopd, $/km)","OPEX review (lifting cost, water handling, gas processing)","Benchmarking against industry cost databases","Inflation and localisation factors","AACE estimate classification (Class 1-5)","Cost risk register and contingency","Cost-model calibration"],"deliverables":["Benchmarking report","Cost estimate confidence register","Unit-cost database","Contingency recommendation","Calibrated cost inputs"],"base":{"weeks":3,"resources":[{"discipline":"Cost Engineer (Lead)","level":"Senior","count":1}],"software":8000,"data":10000,"misc":4000},"scales":[{"tier":"Single Project","desc":"One development","scopeNote":"single-project benchmarking","mult":1.0},{"tier":"Multi-Project","desc":"Several developments","scopeNote":"multi-project cost benchmarking","mult":1.7},{"tier":"Portfolio Cost Model","desc":"Portfolio cost framework","scopeNote":"portfolio cost database and framework","mult":2.4}],"timeline":[{"phase":"Data Gathering","desc":"Cost database access, analogue data","frac":0.3},{"phase":"Benchmarking Analysis","desc":"Unit-cost comparison, calibration","frac":0.4},{"phase":"Reporting","desc":"Classification, contingency, final report","frac":0.3}],"addons":[{"name":"Detailed Class 3 Estimate","desc":"Bottom-up Class 3 cost estimate build","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":56000},{"name":"Supply Market Analysis","desc":"Regional supply-chain and contractor market study","weeks":2,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":22000}]},{"id":"S-4-2-3","title":"Offtake & Fiscal Terms Analysis","partner":"RE","description":"Analysis of fiscal and regulatory terms applicable to the development, including royalty, corporate tax, export duty, and revenue allocation, plus offtake pricing and structure optimisation.","scope":["Applicable fiscal framework (royalty, income tax, special levies)","Revenue account / allocation mechanics","Offtake pricing and crude quality differential","Payment-mechanism analysis","Commodity price scenario analysis","Comparative fiscal analysis vs peer regimes","Structuring recommendations"],"deliverables":["Fiscal terms analysis","Revenue waterfall model","Offtake pricing framework","Payment economics","Price sensitivity analysis"],"base":{"weeks":3,"resources":[{"discipline":"Commercial Analyst (Lead)","level":"Senior","count":1}],"software":3000,"data":6000,"misc":3000},"scales":[{"tier":"Single Regime","desc":"One fiscal regime / asset","scopeNote":"single-regime fiscal analysis","mult":1.0},{"tier":"Multi-Asset","desc":"Several regimes / contracts","scopeNote":"multi-regime comparative analysis","mult":1.7},{"tier":"Complex Structure","desc":"PSC / oil-for-infra / blended","scopeNote":"complex structure modelling and optimisation","mult":2.4}],"timeline":[{"phase":"Fiscal Framework Review","desc":"Terms, tax, royalty, revenue mechanics","frac":0.34},{"phase":"Offtake & Pricing Analysis","desc":"Crude pricing, payment mechanics, scenarios","frac":0.4},{"phase":"Structuring & Reporting","desc":"Recommendations, final report","frac":0.26}],"addons":[{"name":"Marketing & Logistics Strategy","desc":"Crude marketing, blending, and logistics optimisation","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]}]},{"id":"L2-4-3","label":"Project Finance & Lender Support","children":[{"id":"S-4-3-1","title":"Lender Technical Due Diligence Support","partner":"RE","description":"Technical advisory support through lender technical advisor due diligence, including data-room preparation, management Q&A support, and independent reserves reconciliation.","scope":["Data-room preparation","Reserves and resources reconciliation","Production-forecast defence","CAPEX and cost-estimate review","Facilities concept and schedule review","Management Q&A response preparation","Conditions-precedent technical deliverables"],"deliverables":["Data-room index & package","Reserves reconciliation memo","Q&A response tracker","CP technical deliverables","LTA liaison log"],"base":{"weeks":5,"resources":[{"discipline":"Technical Director","level":"Principal","count":1},{"discipline":"Reservoir Engineer","level":"Senior","count":1}],"software":4000,"data":3000,"misc":6000},"scales":[{"tier":"Single Asset Deal","desc":"One asset financing","scopeNote":"single-asset lender DD support","mult":1.0},{"tier":"Portfolio Financing","desc":"Multi-asset facility","scopeNote":"portfolio financing DD support","mult":1.7},{"tier":"Complex / Syndicated","desc":"Syndicated / multi-lender","scopeNote":"complex syndicated facility support","mult":2.4}],"timeline":[{"phase":"Data Room Preparation","desc":"Document compilation, indexing, access","frac":0.18},{"phase":"LTA IR Responses","desc":"IR tracking, technical responses","frac":0.36},{"phase":"Reserves Reconciliation","desc":"CPR comparison, variance, agreed position","frac":0.26},{"phase":"CP Technical Deliverables","desc":"CP compliance documents, close","frac":0.2}],"addons":[{"name":"Independent Reserves Audit","desc":"Standalone reserves audit to support negotiations","weeks":4,"resources":[{"discipline":"","level":"Principal","count":1}],"fee":90000},{"name":"Model Reconciliation","desc":"Reconcile borrower and lender financial models","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":26000}]},{"id":"S-4-3-2","title":"Pre-Financing / Reserve-Based Lending Support","partner":"RE","description":"Technical advisory for structuring a commodity pre-financing or reserve-based lending facility, including production coverage analysis, covenant modelling, and technical sections of the facility agreement.","scope":["Production-coverage analysis","Drawdown-schedule optimisation","Repayment schedule and sweep provisions","LLCR / DSCR covenant modelling","Borrowing-base redetermination mechanism","Technical representations in facility agreement","Reporting-obligation framework"],"deliverables":["Production coverage model","LLCR/DSCR covenant model","Drawdown/repayment schedule","Technical sections (facility agreement)","Reporting framework"],"base":{"weeks":4,"resources":[{"discipline":"Financial Modeller (Lead)","level":"Senior","count":1}],"software":4000,"data":2000,"misc":4000},"scales":[{"tier":"Single Facility","desc":"One facility","scopeNote":"single-facility structuring support","mult":1.0},{"tier":"Multi-Tranche","desc":"Multi-tranche / multi-asset","scopeNote":"multi-tranche structuring","mult":1.7},{"tier":"Complex RBL","desc":"Full RBL with redetermination","scopeNote":"complex RBL with rolling redetermination","mult":2.4}],"timeline":[{"phase":"Coverage & Drawdown Analysis","desc":"Volume coverage, drawdown, repayment","frac":0.26},{"phase":"Covenant Modelling","desc":"LLCR/DSCR, borrowing base, redetermination","frac":0.38},{"phase":"Facility Agreement Support","desc":"Technical reps, reporting, legal interface","frac":0.22},{"phase":"Final Delivery","desc":"Model handover, lender presentation","frac":0.14}],"addons":[{"name":"Hedging Strategy Advisory","desc":"Commodity hedging strategy to support debt capacity","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]},{"id":"S-4-3-3","title":"Investment Memorandum & Investor Materials","partner":"RE","description":"Preparation of a professional investment memorandum and investor presentation for equity capital raising, incorporating the commercial case, technical summary, and regulatory framework.","scope":["Investment thesis and strategic rationale","Technical summary (investor-accessible)","Financial summary and use of proceeds","Regulatory framework summary","Risk section and mitigations","Management profiles","Term sheet / subscription structure"],"deliverables":["Investment memorandum","Investor presentation deck","Financial one-pager","Term sheet draft","NDA template"],"base":{"weeks":4,"resources":[{"discipline":"Commercial Lead","level":"Principal","count":1},{"discipline":"Technical Author","level":"Mid-level","count":1}],"software":3000,"data":0,"misc":8000},"scales":[{"tier":"Single Asset","desc":"One asset raise","scopeNote":"single-asset IM and deck","mult":1.0},{"tier":"Multi-Asset","desc":"Portfolio raise","scopeNote":"portfolio IM with asset summaries","mult":1.6},{"tier":"Full Platform","desc":"Company / platform raise","scopeNote":"full platform IM, strategy narrative","mult":2.2}],"timeline":[{"phase":"Content Architecture","desc":"Structure, content plan, source review","frac":0.22},{"phase":"Drafting","desc":"Sections drafted, tables, design","frac":0.4},{"phase":"Review & Refinement","desc":"Compliance and management review, edits","frac":0.24},{"phase":"Final Production","desc":"Final layout, print-ready PDF, deck","frac":0.14}],"addons":[{"name":"Data Room Build","desc":"Full virtual data room setup and population","weeks":3,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":32000},{"name":"Management Presentation Coaching","desc":"Roadshow rehearsal and Q&A preparation","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":16000}]}]}]},{"id":"L1-5","label":"5. Full Cycle Asset Management","children":[{"id":"L2-5-1","label":"Production Operations & Surveillance","children":[{"id":"S-5-1-1","title":"Production Operations Management & KPI Framework","partner":"INFRA","description":"Design and implementation of a production operations management system: KPI dashboard, reporting cadence, deferment classification, and performance targets aligned with development production profiles.","scope":["Production KPI framework","Deferment classification system","Daily production reporting structure","Monthly production meeting governance","Surveillance dashboard design","Well-testing programme","Production-optimisation opportunities"],"deliverables":["KPI framework","Deferment classification","Reporting templates","Surveillance dashboard spec","Well test programme"],"base":{"weeks":3,"resources":[{"discipline":"Production Operations Specialist (Lead)","level":"Senior","count":1}],"software":6000,"data":1000,"misc":4000},"scales":[{"tier":"Single Asset","desc":"One asset operation","scopeNote":"single-asset operations framework","mult":1.0},{"tier":"Field Operations","desc":"Full field","scopeNote":"field-wide operations management system","mult":1.8},{"tier":"Multi-Field","desc":"Portfolio operations","scopeNote":"portfolio operations and reporting system","mult":2.6}],"timeline":[{"phase":"Requirements & Design","desc":"Stakeholder requirements, KPI selection","frac":0.3},{"phase":"System Build","desc":"Templates, deferment, dashboard","frac":0.4},{"phase":"Training & Implementation","desc":"Training, trial run, governance rollout","frac":0.3}],"addons":[{"name":"Digital Oilfield / SCADA Integration","desc":"Real-time data integration and SCADA/historian linkage","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":44000},{"name":"Production Allocation System","desc":"Hydrocarbon allocation methodology and system setup","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000}]},{"id":"S-5-1-2","title":"Integrated Production Modelling (IPM)","partner":"RE","description":"Construction and deployment of an integrated production model linking reservoir, wellbore, and surface-network behaviour into a calibrated tool for day-to-day optimisation and short-term forecasting.","scope":["Surface network model build","Well models (tubing, IPR, VLP, AL)","Reservoir / material-balance integration","Model calibration and validation","Short-term production forecasting","Gas-lift / injection optimisation","Routine update workflow"],"deliverables":["Integrated production model","Calibration report","Short-term forecast procedure","Optimisation module","Update workflow guide"],"base":{"weeks":5,"resources":[{"discipline":"Production Technologist (Lead)","level":"Senior","count":1}],"software":12000,"data":2000,"misc":4000},"scales":[{"tier":"Small Field","desc":"<=20 wells, simple network","scopeNote":"compact IPM model","mult":1.0},{"tier":"Standard Field","desc":"20-100 wells","scopeNote":"full field IPM with optimisation","mult":2.2},{"tier":"Large Field","desc":"100-500 wells","scopeNote":"large IPM, automated update workflows","mult":3.4}],"timeline":[{"phase":"Well Model Build","desc":"PVT, tubing, IPR, AL per well","frac":0.25},{"phase":"Network Model Build","desc":"Pipeline network, manifolds, export","frac":0.22},{"phase":"Calibration & Validation","desc":"Historical match, WHP, allocation check","frac":0.25},{"phase":"Optimisation Module","desc":"GL allocation, debottlenecking, forecasts","frac":0.16},{"phase":"Training & Handover","desc":"Training, update workflow, documentation","frac":0.12}],"addons":[{"name":"Production Forecasting Automation","desc":"Automated short-term forecasting and exception reporting","weeks":2,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":26000},{"name":"Optimisation Advisory (Retainer)","desc":"Ongoing monthly model update and optimisation advisory","weeks":0,"resources":[],"fee":18000}]},{"id":"S-5-1-3","title":"Watercut Management & Water Handling Strategy","partner":"RE","description":"Integrated water-management study addressing produced-water forecast, watercut trends, source identification, and produced-water handling capacity planning.","scope":["Watercut trend analysis (WOR, Chan diagnostics)","Water-source identification","Produced-water volume forecast","Water-handling capacity assessment","Debottlenecking options","Conformance-improvement candidates","Disposal strategy"],"deliverables":["Watercut trend analysis","Produced-water forecast","Handling capacity assessment","Conformance candidates","Disposal strategy"],"base":{"weeks":3,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1}],"software":5000,"data":2000,"misc":3000},"scales":[{"tier":"Single Field","desc":"One field water study","scopeNote":"single-field water management","mult":1.0},{"tier":"Large Field","desc":"High watercut mature field","scopeNote":"detailed water study with conformance","mult":1.8},{"tier":"Portfolio","desc":"Multi-field water strategy","scopeNote":"portfolio water management strategy","mult":2.6}],"timeline":[{"phase":"Data & Trend Analysis","desc":"Production database, WOR trends, diagnostics","frac":0.28},{"phase":"Source ID & Forecast","desc":"Source mechanisms, watercut profile","frac":0.36},{"phase":"Capacity & Conformance","desc":"Handling capacity, conformance candidates","frac":0.24},{"phase":"Reporting & Recommendations","desc":"Disposal strategy, CAPEX options","frac":0.12}],"addons":[{"name":"Produced Water Treatment Design","desc":"Water treatment and reinjection facility concept design","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":42000},{"name":"Conformance Pilot Design","desc":"Gel / chemical conformance pilot design","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000}]}]},{"id":"L2-5-2","label":"Maintenance, Reliability & Integrity","children":[{"id":"S-5-2-1","title":"Reliability Centred Maintenance (RCM) Programme","partner":"INFRA","description":"Implementation of a Reliability Centred Maintenance programme applying FMEA/FMECA to define preventive, predictive, and corrective maintenance strategies that maximise uptime while controlling cost.","scope":["Asset criticality ranking","FMEA/FMECA for critical equipment","Preventive maintenance task library","Predictive maintenance strategy","Corrective maintenance classification","Spare-parts criticality review","CMMS setup support"],"deliverables":["Asset criticality register","FMECA report","PM task library","PdM programme","Spare-parts list","CMMS setup guide"],"base":{"weeks":5,"resources":[{"discipline":"Reliability Engineer (Lead)","level":"Senior","count":1}],"software":6000,"data":2000,"misc":6000},"scales":[{"tier":"Critical Equipment Only","desc":"Key rotating/critical items","scopeNote":"critical-equipment RCM","mult":1.0},{"tier":"Full Facility","desc":"Whole facility asset base","scopeNote":"facility-wide RCM and CMMS setup","mult":2.4},{"tier":"Multi-Site","desc":"Multiple facilities","scopeNote":"portfolio RCM programme","mult":3.6}],"timeline":[{"phase":"Asset Inventory & Criticality","desc":"Equipment list, criticality, boundaries","frac":0.18},{"phase":"FMEA/FMECA Studies","desc":"Equipment class failure-mode analysis","frac":0.38},{"phase":"Maintenance Strategy","desc":"PM tasks, PdM, spare parts","frac":0.28},{"phase":"CMMS Setup & Training","desc":"Work-order structure, PM upload, training","frac":0.16}],"addons":[{"name":"Condition Monitoring Programme Setup","desc":"Vibration, thermography, oil analysis programme","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":40000},{"name":"CMMS Implementation Support","desc":"Hands-on CMMS configuration and data migration","weeks":4,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":42000}]},{"id":"S-5-2-2","title":"Asset Integrity Management System (AIMS)","partner":"INFRA","description":"Development and implementation of an Asset Integrity Management System covering pressure vessels, piping, tanks, rotating, structural, and electrical systems, aligned with API RP 580/581 RBI.","scope":["Integrity management plan","Risk-based inspection (API 580/581)","Corrosion-loop definition","Inspection programme (NDE, intervals, criteria)","Pressure-vessel register (API 510)","Storage-tank inspection (API 653)","Structural inspection programme","AIMS performance metrics"],"deliverables":["Asset Integrity Management Plan","RBI assessment","Inspection register & schedule","Corrosion-loop map","AIMS KPI dashboard","Implementation plan"],"base":{"weeks":5,"resources":[{"discipline":"Asset Integrity Engineer (Lead)","level":"Senior","count":1}],"software":8000,"data":3000,"misc":6000},"scales":[{"tier":"Single Facility","desc":"One facility","scopeNote":"single-facility AIMS","mult":1.0},{"tier":"Field-Wide","desc":"Field facilities + pipelines","scopeNote":"field-wide AIMS with RBI database","mult":2.2},{"tier":"Enterprise AIMS","desc":"Multi-site enterprise","scopeNote":"enterprise AIMS framework and rollout","mult":3.4}],"timeline":[{"phase":"Asset Register & Scope","desc":"Inventory, boundaries, data gaps","frac":0.18},{"phase":"RBI Assessment","desc":"PoF/CoF per circuit, intervals","frac":0.36},{"phase":"Programme Development","desc":"Inspection schedule, monitoring, NDE","frac":0.28},{"phase":"Documentation & Rollout","desc":"Management plan, KPIs, training","frac":0.18}],"addons":[{"name":"Integrity Software Configuration","desc":"Configuration of integrity management software platform","weeks":3,"resources":[{"discipline":"","level":"Mid-level","count":1}],"fee":34000},{"name":"Fitness-for-Service Assessment","desc":"API 579 FFS assessment for identified defects","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]},{"id":"S-5-2-3","title":"HSE Management System Implementation","partner":"INFRA","description":"Design and implementation of an HSE Management System aligned with ISO 45001 and ISO 14001 and applicable regulatory requirements for upstream operations.","scope":["HSE policy and commitment","Legal register","Risk-assessment framework (JHA, LOTO, permit to work)","Incident reporting and investigation","Emergency response plan","Competency assurance framework","Environmental monitoring programme","HSE KPI reporting"],"deliverables":["HSE-MS manual","Legal register","Permit-to-work system","Emergency response plan","Competency framework","HSE KPI dashboard"],"base":{"weeks":4,"resources":[{"discipline":"HSE Manager (Lead)","level":"Senior","count":1}],"software":4000,"data":1000,"misc":6000},"scales":[{"tier":"Single Site","desc":"One site HSE-MS","scopeNote":"single-site HSE management system","mult":1.0},{"tier":"Field Operations","desc":"Multiple sites","scopeNote":"field-wide HSE-MS","mult":2.0},{"tier":"Corporate HSE-MS","desc":"Enterprise system","scopeNote":"corporate HSE management system","mult":3.0}],"timeline":[{"phase":"Gap Assessment & Legal Review","desc":"Existing systems review, regulation mapping","frac":0.2},{"phase":"System Design & Documentation","desc":"Procedures, PTW, ERP, competency","frac":0.42},{"phase":"Implementation & Training","desc":"Training, rollout, trial exercises","frac":0.26},{"phase":"KPI Setup & Handover","desc":"Dashboard, reporting cadence, handover","frac":0.12}],"addons":[{"name":"ISO 45001 / 14001 Certification Support","desc":"Pre-audit and certification readiness support","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":36000},{"name":"Process Safety Management Framework","desc":"PSM element framework and barrier management","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":40000}]}]},{"id":"L2-5-3","label":"Decommissioning & Late-Life Management","children":[{"id":"S-5-3-1","title":"Late-Life Asset Optimisation Study","partner":"RE","description":"Technical and economic evaluation of late-life field management options including life extension, economic-limit analysis, cost reduction, and tail-production monetisation.","scope":["Economic-limit calculation","Production life-extension options","Cost-reduction programme","Selective abandonment","Facility right-sizing","Remaining asset-value assessment","Tail-production monetisation options"],"deliverables":["Economic-limit analysis","Life-extension options","OPEX-reduction programme","Selective abandonment list","Facility rationalisation plan","Asset value assessment"],"base":{"weeks":3,"resources":[{"discipline":"Reservoir Engineer (Lead)","level":"Senior","count":1},{"discipline":"Economist","level":"Mid-level","count":1}],"software":5000,"data":2000,"misc":3000},"scales":[{"tier":"Single Field","desc":"One late-life field","scopeNote":"single-field optimisation","mult":1.0},{"tier":"Multi-Field","desc":"Several mature fields","scopeNote":"multi-field late-life strategy","mult":1.8},{"tier":"Portfolio Late-Life","desc":"Portfolio rationalisation","scopeNote":"portfolio late-life and exit strategy","mult":2.6}],"timeline":[{"phase":"Economic Limit & Data Review","desc":"Lifting cost, profiles, tax position","frac":0.26},{"phase":"Extension Options Evaluation","desc":"Infill, recompletion, OPEX reduction","frac":0.38},{"phase":"Optimisation & Rationalisation","desc":"Right-sizing, selective abandonment, NPV","frac":0.24},{"phase":"Reporting","desc":"Final study, plan, sequencing","frac":0.12}],"addons":[{"name":"Divestment Readiness Assessment","desc":"Prepare asset for farm-down / divestiture","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":40000}]},{"id":"S-5-3-2","title":"Decommissioning Cost Estimation & Strategy","partner":"INFRA","description":"Decommissioning scope of work and Class 4 cost estimate for end-of-life facilities, covering well abandonment, pipeline decommissioning, topside removal, and site restoration.","scope":["Well abandonment scope","Pipeline decommissioning options","Topside decommissioning concept","Site restoration","Waste management","Regulatory approval process","Class 4 cost estimate","Decommissioning schedule"],"deliverables":["Decommissioning strategy","Class 4 cost estimate","Well abandonment scope","Pipeline decommissioning plan","Site restoration plan","Regulatory roadmap"],"base":{"weeks":4,"resources":[{"discipline":"Decommissioning PM (Lead)","level":"Senior","count":1}],"software":5000,"data":2000,"misc":6000},"scales":[{"tier":"Single Facility","desc":"One facility / platform","scopeNote":"single-facility decommissioning","mult":1.0},{"tier":"Field Decommissioning","desc":"Full field","scopeNote":"field-wide decommissioning programme","mult":2.2},{"tier":"Multi-Field","desc":"Portfolio decommissioning","scopeNote":"portfolio decommissioning strategy","mult":3.2}],"timeline":[{"phase":"Scope & Regulatory Review","desc":"Inventory, regulatory requirements, boundary","frac":0.2},{"phase":"Concept Design","desc":"Well P&A, pipeline, topside, restoration","frac":0.42},{"phase":"Cost Estimation & Schedule","desc":"Class 4 estimate, schedule, resources","frac":0.26},{"phase":"Strategy & Reporting","desc":"Strategy document, regulatory roadmap","frac":0.12}],"addons":[{"name":"Comparative Assessment (Derogation)","desc":"Comparative assessment for decommissioning options","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":42000}]},{"id":"S-5-3-3","title":"Asset Retirement Obligation (ARO) Modelling","partner":"RE","description":"Calculation and documentation of Asset Retirement Obligations for financial reporting (IFRS / ASC 410), incorporating probabilistic cost estimates, timing assumptions, and discount-rate sensitivity.","scope":["ARO scope per asset","Base-case decommissioning cost estimate","Timing assumptions","Discount-rate selection and ARO NPV","Sensitivity analysis","IFRS/GAAP presentation","ARO update protocol"],"deliverables":["ARO model","ARO accounting memo","Balance-sheet entry values","Sensitivity analysis","Update protocol"],"base":{"weeks":2,"resources":[{"discipline":"Financial Modeller (Lead)","level":"Senior","count":1}],"software":3000,"data":1000,"misc":2000},"scales":[{"tier":"Single Asset","desc":"One asset ARO","scopeNote":"single-asset ARO model","mult":1.0},{"tier":"Multi-Asset","desc":"Several assets","scopeNote":"multi-asset ARO consolidation","mult":1.7},{"tier":"Portfolio ARO","desc":"Full portfolio","scopeNote":"portfolio ARO model and reporting","mult":2.4}],"timeline":[{"phase":"Cost & Timing Inputs","desc":"Cost inputs, retirement timing","frac":0.4},{"phase":"ARO Model & Sensitivity","desc":"NPV, discount rate, IFRS presentation","frac":0.4},{"phase":"Reporting & Handover","desc":"Accounting memo, model handover","frac":0.2}],"addons":[{"name":"Decommissioning Security / Trust Modelling","desc":"Decommissioning security funding and trust analysis","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":16000}]}]}]},{"id":"L1-6","label":"6. M&A Advisory & Transaction Support","children":[{"id":"L2-6-1","label":"Technical Due Diligence","children":[{"id":"S-6-1-1","title":"Upstream Acquisition Technical Due Diligence","partner":"RE","description":"Full technical due diligence of a proposed upstream acquisition covering subsurface, wells, facilities, operations, HSE, and regulatory compliance, to identify material risks and quantify upside.","scope":["Reserves and resources review","Subsurface risk assessment","Production-history analysis","Well-stock review","Facilities inspection (desktop)","HSE and regulatory compliance","Operational cost review","Red-flag report"],"deliverables":["Technical DD report","Reserves & resources assessment","Red-flag summary","Risk-adjusted value range","Post-acquisition opportunity list"],"base":{"weeks":4,"resources":[{"discipline":"Technical Director (Lead)","level":"Principal","count":1},{"discipline":"Reservoir Engineer","level":"Senior","count":1}],"software":6000,"data":5000,"misc":8000},"scales":[{"tier":"Single Asset","desc":"One field / asset","scopeNote":"single-asset technical DD","mult":1.0},{"tier":"Multi-Asset","desc":"Portfolio of assets","scopeNote":"multi-asset DD with consolidation","mult":1.9},{"tier":"Corporate / Platform","desc":"Whole-company acquisition","scopeNote":"full corporate technical DD","mult":2.8}],"timeline":[{"phase":"Data Room & Priority Screen","desc":"Access, priority data, red-flag scan","frac":0.2},{"phase":"Detailed Technical Review","desc":"Reserves, production, wells, facilities, HSE","frac":0.44},{"phase":"Risk Quantification & Valuation","desc":"Risk-adjusted reserves, costs, NPV","frac":0.22},{"phase":"Reporting & Presentation","desc":"TDD report, red-flag summary, presentation","frac":0.14}],"addons":[{"name":"Independent Reserves Audit","desc":"Standalone reserves audit within the DD","weeks":4,"resources":[{"discipline":"","level":"Principal","count":1}],"fee":88000},{"name":"Site Visit & Facilities Inspection","desc":"Physical site visit and facilities walkdown","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":18000},{"name":"Synergy / Upside Quantification","desc":"Detailed quantification of post-deal upside and synergies","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]},{"id":"S-6-1-2","title":"Data Room Management & VDR Support","partner":"RE","description":"Organisation, QC, and management of a Virtual Data Room for asset sale or capital raise, ensuring completeness, consistency, and professional presentation of technical documentation.","scope":["Data-room audit and completeness assessment","Document classification and index","Data-gap identification and remediation","Document QC and version control","VDR platform setup","Q&A process management","Management-presentation preparation"],"deliverables":["Data-room index & completeness assessment","Gap remediation plan","QC-reviewed document set","Configured VDR","Q&A tracker","Management presentation pack"],"base":{"weeks":3,"resources":[{"discipline":"Technical Coordinator (Lead)","level":"Senior","count":1}],"software":4000,"data":3000,"misc":4000},"scales":[{"tier":"Single Asset","desc":"One asset data room","scopeNote":"single-asset VDR support","mult":1.0},{"tier":"Portfolio","desc":"Multi-asset data room","scopeNote":"portfolio VDR with structured indexing","mult":1.8},{"tier":"Corporate Sale","desc":"Full corporate data room","scopeNote":"corporate VDR with full Q&A management","mult":2.6}],"timeline":[{"phase":"Audit & Gap Identification","desc":"Document inventory, completeness, gap list","frac":0.3},{"phase":"QC & VDR Population","desc":"Document QC, index build, upload","frac":0.4},{"phase":"Q&A & Management Meetings","desc":"Q&A management, technical presentations","frac":0.3}],"addons":[{"name":"Vendor Due Diligence Pack","desc":"Pre-emptive vendor DD report for buyers","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":56000}]},{"id":"S-6-1-3","title":"Environmental & Social Due Diligence (ESDD)","partner":"INFRA","description":"Environmental and social due diligence assessing legacy liabilities, compliance status, and remediation obligations against IFC Performance Standards and Equator Principles.","scope":["Environmental baseline and contamination review","Regulatory compliance review","Legacy contamination assessment","Community and social review","Remediation-liability quantification","Compliance-gap action plan","ESG risk rating"],"deliverables":["ESDD report","Legacy-liability cost estimate","Compliance-gap action plan","ESG risk-rating summary","Compliance checklist"],"base":{"weeks":4,"resources":[{"discipline":"Environmental Specialist (Lead)","level":"Senior","count":1}],"software":4000,"data":8000,"misc":10000},"scales":[{"tier":"Single Asset","desc":"One asset ESDD","scopeNote":"single-asset ESDD","mult":1.0},{"tier":"Multi-Asset","desc":"Portfolio ESDD","scopeNote":"portfolio ESDD with consolidation","mult":1.8},{"tier":"Corporate / Sensitive","desc":"Corporate or sensitive sites","scopeNote":"full ESDD with field sampling","mult":2.6}],"timeline":[{"phase":"Desktop Review & Planning","desc":"Document review, site visit planning","frac":0.25},{"phase":"Field Assessment & Interviews","desc":"Site visit, sampling, community interviews","frac":0.38},{"phase":"Liability Quantification","desc":"Contamination cost, gaps, ESG scoring","frac":0.24},{"phase":"Reporting","desc":"ESDD report, liability estimate, action plan","frac":0.13}],"addons":[{"name":"Contaminated Land Investigation","desc":"Intrusive soil and groundwater investigation","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":46000},{"name":"Decarbonisation / Transition Assessment","desc":"Emissions profile and energy-transition risk review","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000}]}]},{"id":"L2-6-2","label":"Asset Valuation","children":[{"id":"S-6-2-1","title":"Independent Asset Valuation - Income Approach","partner":"RE","description":"Independent technical and economic valuation of upstream assets using a risked DCF income approach, with sensitivity analysis across price, production, cost, and discount-rate variables.","scope":["Reserves and resources classification","Production forecast per reserves class","Revenue build (pricing, differentials, transport)","Cost build (OPEX, sustaining CAPEX, abandonment)","Fiscal terms","Risked DCF (NPV10/NPV15/NPV20)","Sensitivity / Tornado analysis","Market-multiple cross-check"],"deliverables":["Valuation report","Production forecast","DCF model","Sensitivity / Tornado","Market-multiple cross-check"],"base":{"weeks":4,"resources":[{"discipline":"Valuation Specialist (Lead)","level":"Principal","count":1}],"software":6000,"data":5000,"misc":5000},"scales":[{"tier":"Single Asset","desc":"One asset valuation","scopeNote":"single-asset valuation","mult":1.0},{"tier":"Multi-Asset","desc":"Several assets","scopeNote":"multi-asset valuation","mult":1.8},{"tier":"Portfolio / Corporate","desc":"Portfolio or corporate valuation","scopeNote":"portfolio / corporate valuation with NAV build","mult":2.6}],"timeline":[{"phase":"Data Review & Classification","desc":"Production data, CPR review, classification","frac":0.22},{"phase":"Production & Economics Modelling","desc":"Profiles, DCF build, fiscal modelling","frac":0.4},{"phase":"Sensitivity & Cross-Check","desc":"Tornado, scenarios, multiples","frac":0.24},{"phase":"Valuation Report","desc":"Final report, sign-off, presentation","frac":0.14}],"addons":[{"name":"Risked Exploration Upside Valuation","desc":"Risked valuation of exploration / appraisal upside","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000},{"name":"Comparable Transactions Analysis","desc":"Detailed precedent-transaction multiple analysis","weeks":1,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":16000}]},{"id":"S-6-2-2","title":"Portfolio Rationalisation & Asset Ranking Study","partner":"RE","description":"Multi-asset portfolio assessment providing comparative ranking by NPV, breakeven, resource quality, and strategic fit to support capital allocation, divestiture, and prioritisation.","scope":["Asset universe definition","Standardised valuation (NPV15 per asset)","Capital-efficiency metrics","Strategic-fit matrix","Composite asset ranking","Divest/hold/grow recommendations","Capital-allocation optimisation"],"deliverables":["Portfolio ranking report","Standardised valuation table","Capital-efficiency metrics","Strategic-fit matrix","Divest/hold/grow classification","Allocation recommendation"],"base":{"weeks":3,"resources":[{"discipline":"Economist / Analyst (Lead)","level":"Senior","count":1}],"software":6000,"data":4000,"misc":3000},"scales":[{"tier":"Small Portfolio","desc":"Up to ~5 assets","scopeNote":"small-portfolio ranking","mult":1.0},{"tier":"Standard Portfolio","desc":"5-20 assets","scopeNote":"standard portfolio rationalisation","mult":1.8},{"tier":"Large Portfolio","desc":"20+ assets","scopeNote":"large-portfolio ranking and allocation model","mult":2.6}],"timeline":[{"phase":"Data Standardisation","desc":"Asset data, profiles, cost basis","frac":0.3},{"phase":"Valuation & Metrics","desc":"NPV, efficiency, breakeven per asset","frac":0.4},{"phase":"Ranking & Recommendations","desc":"Composite ranking, allocation","frac":0.3}],"addons":[{"name":"Capital Allocation Optimisation Model","desc":"Constrained-capital optimisation tool","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000}]},{"id":"S-6-2-3","title":"Price Deck & Market Analysis","partner":"RE","description":"Development of a proprietary oil and gas price deck informed by futures curves, analyst consensus, cost-of-supply analysis, and crude quality differentials, with netback analysis.","scope":["Crude price scenarios (flat/futures/consensus/stress)","Crude quality differential analysis","Netback analysis","Refinery-margin context","Gas price analysis where applicable","Price-deck documentation (base/high/low)"],"deliverables":["Price-deck spreadsheet","Crude differential analysis","Netback model","Refinery-margin note","Price-deck memorandum"],"base":{"weeks":2,"resources":[{"discipline":"Commodity Economist (Lead)","level":"Senior","count":1}],"software":3000,"data":8000,"misc":3000},"scales":[{"tier":"Standard Deck","desc":"Single benchmark + differentials","scopeNote":"standard price deck","mult":1.0},{"tier":"Multi-Region Deck","desc":"Several benchmarks / crudes","scopeNote":"multi-region deck with netbacks","mult":1.6},{"tier":"Full Market Study","desc":"Deck + market outlook report","scopeNote":"full market study and outlook","mult":2.4}],"timeline":[{"phase":"Research & Data Compilation","desc":"Futures, consensus, differentials, margins","frac":0.5},{"phase":"Deck Development & Documentation","desc":"Scenarios, netback, assumptions","frac":0.5}],"addons":[{"name":"Long-Term Market Outlook Report","desc":"Supply-demand balance and long-term price outlook","weeks":3,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":40000}]}]},{"id":"L2-6-3","label":"Bid Preparation & Deal Execution","children":[{"id":"S-6-3-1","title":"Bid Preparation & Technical Qualification","partner":"INFRA","description":"Technical preparation support for competitive bid submission in response to a tender or RFP, covering technical volumes, work programme, and compliance documentation.","scope":["RFP review and compliance matrix","Technical proposal (qualifications, approach, programme)","Work programme and budget","Resource plan and key-personnel CVs","Financial qualification support","Local-content plan","Risk and HSE section","Presentation preparation"],"deliverables":["Technical proposal volume","Work programme & budget","Compliance matrix","Local-content plan","Key personnel CVs","Oral presentation pack"],"base":{"weeks":4,"resources":[{"discipline":"Technical Director (Lead)","level":"Principal","count":1},{"discipline":"Technical Author","level":"Mid-level","count":1}],"software":2000,"data":3000,"misc":6000},"scales":[{"tier":"Single Block Bid","desc":"One block / licence","scopeNote":"single-bid technical preparation","mult":1.0},{"tier":"Multi-Block Round","desc":"Several blocks in a round","scopeNote":"multi-block bid preparation","mult":1.8},{"tier":"Major Tender","desc":"Large integrated tender","scopeNote":"major tender with full work programme","mult":2.6}],"timeline":[{"phase":"RFP Review & Compliance Matrix","desc":"Requirements analysis, structure, assignment","frac":0.2},{"phase":"Technical Volume Drafting","desc":"Work programme, qualifications, risk, HSE","frac":0.42},{"phase":"Review & QC","desc":"Internal review, compliance check, editing","frac":0.22},{"phase":"Submission & Presentation Prep","desc":"Formatting, submission, rehearsal","frac":0.16}],"addons":[{"name":"Work Programme Cost & Schedule","desc":"Detailed costed work programme and schedule","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":28000},{"name":"Bid Economics Model","desc":"Bid economics and signature-bonus optimisation","weeks":2,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":30000}]},{"id":"S-6-3-2","title":"Sale Process & Divestiture Support","partner":"RE","description":"Technical advisory support through an asset divestiture: teaser and information memorandum preparation, data-room management, bidder Q&A, management presentations, and bid evaluation.","scope":["Asset teaser","Confidential Information Memorandum","Data-room preparation and management","Technical Q&A management","Management presentations","Bid evaluation","Preferred-bidder support"],"deliverables":["Asset teaser","Confidential Information Memorandum","Data-room package","Q&A response log","Management presentation pack","Bid evaluation scorecard"],"base":{"weeks":6,"resources":[{"discipline":"Technical Director (Lead)","level":"Principal","count":1},{"discipline":"Technical Author","level":"Senior","count":1}],"software":5000,"data":3000,"misc":8000},"scales":[{"tier":"Single Asset","desc":"One asset sale","scopeNote":"single-asset divestiture support","mult":1.0},{"tier":"Portfolio Sale","desc":"Package of assets","scopeNote":"portfolio divestiture support","mult":1.7},{"tier":"Corporate Sale","desc":"Full company sale","scopeNote":"corporate sale process support","mult":2.5}],"timeline":[{"phase":"Marketing Materials","desc":"Teaser, CIM drafting, data-room prep","frac":0.28},{"phase":"Process Management","desc":"Q&A, management meetings, site visits","frac":0.34},{"phase":"Bid Evaluation","desc":"Technical scoring, preferred-bidder selection","frac":0.22},{"phase":"Confirmatory DD Support","desc":"Preferred-bidder support, completion","frac":0.16}],"addons":[{"name":"Vendor Due Diligence Report","desc":"Independent vendor DD report for the sale","weeks":5,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":72000}]},{"id":"S-6-3-3","title":"Joint Venture Structuring & Operatorship Agreements","partner":"RE","description":"Technical support for joint-venture structuring and negotiation of operatorship and joint operating agreements, covering technical schedules, work-programme governance, and operatorship obligations.","scope":["JOA technical schedules","Operatorship obligations","AFE approval thresholds and voting","Production-allocation methodology","Information rights and reporting obligations","Non-operated interest management","Contract-specific provisions"],"deliverables":["JOA technical schedules","Work programme & budget annex","Production-allocation methodology","Technical committee governance","Interface obligations summary"],"base":{"weeks":4,"resources":[{"discipline":"Technical Director / Commercial Lead","level":"Principal","count":1}],"software":2000,"data":2000,"misc":5000},"scales":[{"tier":"Standard JOA","desc":"One JV / JOA","scopeNote":"standard JOA technical support","mult":1.0},{"tier":"Complex JV","desc":"Multi-party / unitisation","scopeNote":"complex JV / unitisation support","mult":1.8},{"tier":"Portfolio of JVs","desc":"Multiple JV interests","scopeNote":"portfolio JV governance support","mult":2.5}],"timeline":[{"phase":"Requirements & Structure Review","desc":"Term-sheet review, schedule requirements","frac":0.22},{"phase":"Technical Schedule Drafting","desc":"WP&B, allocation, operatorship obligations","frac":0.42},{"phase":"Negotiation Support","desc":"Counterparty review, negotiation, redlines","frac":0.24},{"phase":"Finalisation & Execution","desc":"Final schedules, execution, handover","frac":0.12}],"addons":[{"name":"Unitisation & Equity Redetermination","desc":"Technical support for unitisation and equity redetermination","weeks":4,"resources":[{"discipline":"","level":"Senior","count":1}],"fee":62000}]}]}]}];
+/* ─── STATE ─── */
+let state={scope:null,l1:'',l2:'',scaleIdx:1,addons:new Set()};
+
+function blendedWeekly(resources){let s=0;resources.forEach(r=>{s+=(WEEKLY_RATE[r.level]||8000)*r.count;});return s;}
+function roundWeeks(w){if(w<1)return Math.max(0.5,Math.round(w*2)/2);if(w<=4)return Math.round(w*2)/2;return Math.round(w);}
+function fmtWk(w){return Number.isInteger(w)?String(w):w.toFixed(1);}
+
+function computeScaled(item,scaleIdx){
+  const scale=item.scales[scaleIdx];const mult=scale.mult;
+  const weeks=roundWeeks(item.base.weeks*mult);
+  const resources=item.base.resources.map(r=>{
+    let count=r.count;
+    if(!/Lead|Chairman|Director|Person|Manager|Principal|Coordinator|Specialist \(Lead\)/i.test(r.discipline)){
+      count=Math.max(r.count,Math.round(r.count*Math.sqrt(mult)));
+    }
+    return {discipline:r.discipline,level:r.level,count:count,weeks:weeks};
+  });
+  const labour=Math.round(blendedWeekly(resources)*weeks);
+  const software=Math.round(item.base.software*(0.6+0.4*mult));
+  const data=Math.round(item.base.data*(0.7+0.3*mult));
+  const misc=Math.round(item.base.misc*(0.6+0.4*mult));
+  return {weeks,resources,labour,software,data,misc,total:labour+software+data+misc,scale};
+}
+function addonCost(item,name){const a=item.addons.find(x=>x.name===name);if(!a)return 0;if(a.fee)return a.fee;return Math.round(blendedWeekly(a.resources)*a.weeks);}
+function formatUSD(n){if(n>=1000000)return '$'+(n/1000000).toFixed(2)+'M';if(n>=1000)return '$'+Math.round(n/1000)+'k';return '$'+Math.round(n).toLocaleString();}
+function partnerInfo(k){return PARTNERS[k]||PARTNERS.RE;}
+
+/* ─── SELECTOR ─── */
+function buildSelector(){
+  const body=document.getElementById('selectorBody');let html='';
+  DATA.forEach((l1,i1)=>{
+    html+='<div class="l1-item"><button class="l1-btn" onclick="toggleL1('+i1+')" id="l1-'+i1+'"><span class="l1-num">0'+(i1+1)+'</span><span class="l1-label">'+l1.label.replace(/^\d+\.\s*/,'')+'</span><span class="l1-chevron">\u203A</span></button><div class="l2-panel" id="l2-panel-'+i1+'">';
+    l1.children.forEach((l2,i2)=>{
+      html+='<div class="l2-item"><button class="l2-btn" onclick="toggleL2('+i1+','+i2+')" id="l2-'+i1+'-'+i2+'"><span class="l2-dot"></span><span class="l2-label">'+l2.label+'</span><span class="l2-chevron">\u203A</span></button><div class="l3-panel" id="l3-panel-'+i1+'-'+i2+'">';
+      l2.children.forEach(l3=>{html+='<button class="l3-btn" onclick="selectScope(\''+l3.id+'\')" id="l3-'+l3.id+'"><span class="l3-dash"></span><span class="l3-label">'+l3.title+'</span></button>';});
+      html+='</div></div>';
+    });
+    html+='</div></div>';
+  });
+  body.innerHTML=html;
+}
+function toggleL1(i1){const p=document.getElementById('l2-panel-'+i1),b=document.getElementById('l1-'+i1);const open=p.classList.contains('open');document.querySelectorAll('.l2-panel').forEach(x=>x.classList.remove('open'));document.querySelectorAll('.l1-btn').forEach(x=>x.classList.remove('active'));if(!open){p.classList.add('open');b.classList.add('active');}}
+function toggleL2(i1,i2){const p=document.getElementById('l3-panel-'+i1+'-'+i2),b=document.getElementById('l2-'+i1+'-'+i2);const open=p.classList.contains('open');DATA[i1].children.forEach((_,j)=>{const pp=document.getElementById('l3-panel-'+i1+'-'+j);if(pp)pp.classList.remove('open');const bb=document.getElementById('l2-'+i1+'-'+j);if(bb)bb.classList.remove('active');});if(!open){p.classList.add('open');b.classList.add('active');}}
+
+function selectScope(id){
+  let found=null,l1='',l2='';
+  DATA.forEach(a=>a.children.forEach(b=>b.children.forEach(c=>{if(c.id===id){found=c;l1=a.label;l2=b.label;}})));
+  if(!found)return;
+  state={scope:found,l1:l1,l2:l2,scaleIdx:1,addons:new Set()};
+  document.querySelectorAll('.l3-btn').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('l3-'+id);if(el)el.classList.add('active');
+  render();
+}
+function setScale(i){state.scaleIdx=i;render();}
+function toggleAddon(name){if(state.addons.has(name))state.addons.delete(name);else state.addons.add(name);render();}
+
+/* ─── RENDER ─── */
+function render(){
+  const item=state.scope;if(!item)return;
+  const partner=partnerInfo(item.partner);
+  const calc=computeScaled(item,state.scaleIdx);
+  const peoplePeak=calc.resources.reduce((s,r)=>s+r.count,0);
+  const addonTotal=[...state.addons].reduce((s,n)=>s+addonCost(item,n),0);
+  const grand=calc.total+addonTotal;
+  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const bcL1=state.l1.replace(/^\d+\.\s*/,'').split(' ').slice(0,3).join(' ');
+
+  // Scale cards
+  let scaleHtml='';
+  item.scales.forEach((s,i)=>{
+    scaleHtml+='<div class="scale-card '+(i===state.scaleIdx?'active':'')+'" onclick="setScale('+i+')"><div class="sc-check">'+ICON.check+'</div><div class="sc-tier">'+s.tier+'</div><div class="sc-desc">'+s.desc+'</div><div class="sc-mult">Scope: '+s.scopeNote+'</div></div>';
+  });
+
+  // Timeline
+  let wkCursor=0;
+  const tlHtml=item.timeline.map(t=>{
+    const span=Math.max(0.5,roundWeeks(calc.weeks*t.frac));
+    const start=wkCursor+1,end=wkCursor+span;wkCursor=end;
+    const label=calc.weeks<=1?t.phase:(start===end?('Week '+fmtWk(start)):('Weeks '+fmtWk(start)+'\u2013'+fmtWk(end)));
+    return '<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-week">'+label+'</div><div class="timeline-phase">'+t.phase+'</div><div class="timeline-desc">'+t.desc+'</div></div>';
+  }).join('');
+
+  // Resources
+  const resHtml=calc.resources.map(r=>{
+    const isLead=/Lead|Chairman|Director|Person|Manager|Principal|Coordinator/i.test(r.discipline);
+    return '<tr><td><span class="discipline-tag">'+(isLead?'\u2605 ':'')+r.discipline+'</span></td><td style="color:var(--steel);font-size:12px;">'+r.level+'</td><td style="font-weight:600;">'+r.count+'</td><td style="color:var(--steel);">'+fmtWk(r.weeks)+'</td></tr>';
+  }).join('');
+
+  // Add-ons
+  const addonHtml=item.addons.map(a=>{
+    const sel=state.addons.has(a.name);
+    const fee=addonCost(item,a.name);
+    const wkLabel=a.weeks>0?('+'+fmtWk(a.weeks)+' wk'):'Concurrent';
+    return '<div class="addon-item '+(sel?'selected':'')+'" onclick="toggleAddon(\''+a.name.replace(/'/g,"\\'")+'\')"><div class="addon-check">'+ICON.check+'</div><div class="addon-body"><div class="addon-name">'+a.name+'</div><div class="addon-desc">'+a.desc+'</div><div class="addon-meta"><span><strong>'+wkLabel+'</strong></span></div></div><div class="addon-price"><div class="ap-val">'+formatUSD(fee)+'</div><div class="ap-lab">Add-on</div></div></div>';
+  }).join('');
+
+  // Add-on cost rows
+  const addonRows=[...state.addons].map(n=>'<div class="cost-row addon-row"><span class="cost-row-label">'+n+'</span><span class="cost-row-value">'+formatUSD(addonCost(item,n))+'</span></div>').join('');
+
+  let html=''
+  +'<div class="breadcrumb-strip"><span class="bc-item">'+bcL1+'</span><span class="bc-item bc-sep">\u203A</span><span class="bc-item">'+state.l2+'</span><span class="bc-item bc-sep">\u203A</span><span class="bc-item active">'+item.title+'</span></div>'
+  +'<div class="sow-banner"><div class="sow-banner-top"><div><div class="sow-category-path">'+state.l1.replace(/^\d+\.\s*/,'')+' \u00B7 '+state.l2+'</div><div class="sow-title">'+item.title+'</div></div><div class="partner-badge"><span class="pb-label">Technical Lead</span><span class="pb-name">'+partner.short+'</span></div></div>'
+  +'<div class="sow-meta-row">'
+  +'<div class="sow-meta-item">'+ICON.clock+'<span class="sow-meta-text"><strong>'+fmtWk(calc.weeks)+(calc.weeks===1?' Week':' Weeks')+'</strong> Duration</span></div>'
+  +'<div class="sow-meta-item">'+ICON.user+'<span class="sow-meta-text"><strong>'+peoplePeak+(peoplePeak===1?' Engineer':' Engineers')+'</strong> Peak resource</span></div>'
+  +'<div class="sow-meta-item">'+ICON.cost+'<span class="sow-meta-text"><strong>'+formatUSD(grand)+'</strong> Total Estimate</span></div>'
+  +'<div class="sow-meta-item">'+ICON.calendar+'<span class="sow-meta-text">Generated: <strong>'+today+'</strong></span></div>'
+  +'</div></div>'
+  // CONFIG ZONE
+  +'<div class="config-zone"><div class="config-title">'+ICON.sliders+' Configure Project Scale</div><div class="config-sub">Select the size of the problem. This adjusts duration, resourcing, and cost. The base package is a competitive entry point \u2014 add scope below as required.</div><div class="scale-grid">'+scaleHtml+'</div></div>'
+  // BODY
+  +'<div class="sow-body">'
+  +'<div class="sow-section"><div style="font-size:14px;line-height:1.7;color:var(--navy);padding:16px 20px;background:var(--cream);border-left:3px solid var(--gold);border-radius:var(--radius);">'+item.description+'</div></div>'
+  +'<div class="base-package-banner"><div class="bpb-icon">'+ICON.check+'</div><div class="bpb-text"><strong>Base package \u2014 '+calc.scale.tier+'.</strong> Scope tuned for: '+calc.scale.scopeNote+'. Fixed competitive rate of <strong>'+formatUSD(calc.total)+'</strong> over <strong>'+fmtWk(calc.weeks)+(calc.weeks===1?' week':' weeks')+'</strong>. Extend with optional add-ons below.</div></div>'
+  +'<div class="sow-section"><div class="sow-section-title">'+ICON.scope+' Base Scope of Work</div><ul class="scope-list">'+item.scope.map(s=>'<li><span class="scope-bullet"></span><span>'+s+'</span></li>').join('')+'</ul></div>'
+  +'<div class="sow-section"><div class="sow-section-title">'+ICON.deliver+' Key Deliverables</div><div class="deliverables-grid">'+item.deliverables.map(d=>'<div class="deliverable-chip">'+d+'</div>').join('')+'</div></div>'
+  +'<div class="sow-section"><div class="sow-section-title">'+ICON.timeline+' Indicative Timeline<span class="section-hint">Scaled to '+calc.scale.tier+'</span></div><div class="timeline">'+tlHtml+'</div></div>'
+  +'<div class="sow-section"><div class="sow-section-title">'+ICON.resource+' Resource Plan</div><table class="resource-table"><thead><tr><th>Discipline</th><th>Level</th><th>Head Count</th><th>Duration (Wks)</th></tr></thead><tbody>'+resHtml+'</tbody></table></div>'
+  // ADD-ONS
+  +'<div class="sow-section"><div class="sow-section-title">'+ICON.deliver+' Optional Add-Ons<span class="section-hint">Select to extend scope</span></div><div class="addon-list">'+addonHtml+'</div></div>'
+  // COST
+  +'<div class="sow-section"><div class="sow-section-title">'+ICON.cost+' Indicative Cost Estimate</div>'
+  +'<div class="cost-grid"><div class="cost-card"><div class="cc-label">Base Package</div><div class="cc-value">'+formatUSD(calc.total)+'</div><div class="cc-sub">'+calc.scale.tier+'</div></div><div class="cost-card"><div class="cc-label">Add-Ons</div><div class="cc-value">'+formatUSD(addonTotal)+'</div><div class="cc-sub">'+state.addons.size+' selected</div></div><div class="cost-card"><div class="cc-label">Total</div><div class="cc-value">'+formatUSD(grand)+'</div><div class="cc-sub">ex. VAT</div></div></div>'
+  +'<div class="cost-breakdown">'
+  +'<div class="cost-row subhead"><span>Base Package \u2014 '+calc.scale.tier+'</span><span></span></div>'
+  +'<div class="cost-row"><span class="cost-row-label">Professional fees (labour)</span><span class="cost-row-value">'+formatUSD(calc.labour)+'</span></div>'
+  +'<div class="cost-row"><span class="cost-row-label">Software licences</span><span class="cost-row-value">'+formatUSD(calc.software)+'</span></div>'
+  +'<div class="cost-row"><span class="cost-row-label">Data acquisition / third-party</span><span class="cost-row-value">'+formatUSD(calc.data)+'</span></div>'
+  +'<div class="cost-row"><span class="cost-row-label">Travel, subsistence & miscellaneous</span><span class="cost-row-value">'+formatUSD(calc.misc)+'</span></div>'
+  +(addonRows?('<div class="cost-row subhead"><span>Selected Add-Ons</span><span></span></div>'+addonRows):'')
+  +'<div class="cost-row total-row"><span class="cost-row-label">Total Estimate (ex. VAT)</span><span class="cost-row-value">'+formatUSD(grand)+'</span></div>'
+  +'</div>'
+  +'<p class="cost-note">Indicative estimate only. Final scope, duration, and cost depend on data availability, field complexity, and project-specific requirements. Estimates reflect Q2 2026 industry rate benchmarks. A detailed proposal and AFE will be issued prior to contract execution.</p>'
+  +'</div>'
+  +'</div>'
+  // ACTIONS
+  +'<div class="sow-actions"><button class="btn-primary" onclick="window.print()">'+ICON.print+' Print / Save PDF</button><button class="btn-secondary" onclick="copySOW(event)">'+ICON.download+' Copy to Clipboard</button></div>';
+
+  document.getElementById('sowEmpty').style.display='none';
+  const c=document.getElementById('sowContent');c.innerHTML=html;c.classList.add('visible');
+}
+
+function copySOW(ev){
+  if(!state.scope)return;
+  const item=state.scope,partner=partnerInfo(item.partner),calc=computeScaled(item,state.scaleIdx);
+  const addonTotal=[...state.addons].reduce((s,n)=>s+addonCost(item,n),0);
+  const grand=calc.total+addonTotal;
+  let t='ALPHA TECHNICAL CENTRE \u2014 SCOPE OF WORK\n'+'='.repeat(60)+'\n\n';
+  t+=item.title+'\n';
+  t+='Category: '+state.l1+' > '+state.l2+'\n';
+  t+='Technical Lead: '+partner.name+'\n';
+  t+='Project Scale: '+calc.scale.tier+' ('+calc.scale.desc+')\n';
+  t+='Duration: '+fmtWk(calc.weeks)+' weeks\n';
+  t+='Base Package: USD '+calc.total.toLocaleString()+'\n';
+  if(state.addons.size){t+='Add-Ons: USD '+addonTotal.toLocaleString()+'\n';}
+  t+='TOTAL ESTIMATE: USD '+grand.toLocaleString()+'\n\n';
+  t+='DESCRIPTION\n'+item.description+'\n\n';
+  t+='BASE SCOPE OF WORK\n'+item.scope.map((s,i)=>(i+1)+'. '+s).join('\n')+'\n\n';
+  t+='DELIVERABLES\n'+item.deliverables.map(d=>'- '+d).join('\n')+'\n\n';
+  if(state.addons.size){t+='SELECTED ADD-ONS\n'+[...state.addons].map(n=>'+ '+n+' (USD '+addonCost(item,n).toLocaleString()+')').join('\n')+'\n\n';}
+  t+='COST BREAKDOWN (Base Package)\nProfessional Fees: USD '+calc.labour.toLocaleString()+'\nSoftware: USD '+calc.software.toLocaleString()+'\nData: USD '+calc.data.toLocaleString()+'\nMiscellaneous: USD '+calc.misc.toLocaleString()+'\n\n';
+  t+='Alpha Energy Technical Centre \u2014 Confidential. Indicative estimate, Q2 2026 basis.\n';
+  navigator.clipboard.writeText(t).then(()=>{
+    const btn=ev.target.closest('button');const o=btn.innerHTML;btn.innerHTML='\u2713 Copied';setTimeout(()=>{btn.innerHTML=o;},2000);
+  });
+}
+
+buildSelector();
+</script>
+</div>
+<footer class="footer">
+  <div class="footer-grad"></div>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-wordmark">
+          <span class="nav-wordmark-main">Alpha</span>
+          <span class="nav-wordmark-sub">Technical Centre</span>
+        </span>
+        <p class="footer-tagline" data-en="Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates." data-es="Planificación integral del desarrollo de campos. Una empresa de propiedad total de Alpha Energy, disponible para mandatos técnicos externos.">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Capabilities" data-es="Capacidades">Capabilities</h4>
+        <ul>
+          <li><a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Petróleo y Gas">Oil &amp; Gas Modelling</a></li>
+          <li><a href="financial-modelling.html" data-en="Financial Modelling" data-es="Financiera">Financial Modelling</a></li>
+          <li><a href="plan-your-job.html" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Company" data-es="Empresa">Company</h4>
+        <ul>
+          <li><a href="about.html" data-en="About" data-es="Nosotros">About</a></li>
+          <li><a href="team.html" data-en="Team" data-es="Equipo">Team</a></li>
+          <li><a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a></li>
+          <li><a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Connect" data-es="Contacto">Connect</h4>
+        <ul>
+          <li><a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
+          <li><a href="mailto:info@alphalatinamerica.com">info@alphalatinamerica.com</a></li>
+          <li><a href="https://alphaenergylatinamerica.com" data-en="Alpha Energy ↗" data-es="Alpha Energy ↗">Alpha Energy ↗</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p data-en="© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC" data-es="© 2026 Alpha Latin America LLC · Houston, Texas · Subsidiaria de Alpha LLC">© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC</p>
+      <span class="footer-conf" data-en="Strictly Confidential" data-es="Estrictamente Confidencial">Strictly Confidential</span>
+    </div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>

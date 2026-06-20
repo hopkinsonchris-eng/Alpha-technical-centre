@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alpha Technical Centre — Integrated Field Development</title>
+<meta name="description" content="Alpha Technical Centre — physics-based field development planning, financial modelling and reservoir evaluation. A wholly-owned Alpha Energy company.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre</span>
+        <span class="nav-wordmark-parent">An Alpha Energy company</span>
+      </span>
+    </a>
+
+    <div class="nav-links">
+      <a href="index.html" class="active" data-en="Home" data-es="Inicio">Home</a>
+      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
+      <div class="nav-dropdown">
+        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
+        <div class="nav-dropdown-menu">
+          <a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
+          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
+        </div>
+      </div>
+      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
+      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
+      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
+      <a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a>
+      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
+      <div class="nav-lang">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
+    </div>
+
+    <button class="nav-toggle" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-bg-glow"></div>
+  <div class="wrap" style="position:relative; z-index:2;">
+    <div class="hero-layout">
+      <div class="hero-text">
+        <span class="label reveal in" data-en="Integrated Field Development" data-es="Desarrollo Integral de Campos">Integrated Field Development</span>
+        <h1 class="hero-title reveal in" data-en="The model is the &lt;em&gt;asset&lt;/em&gt;.">The model is the <em>asset</em>.</h1>
+        <p class="hero-lede reveal in reveal-delay-1" data-en="Alpha Technical Centre turns subsurface uncertainty into decisions you can defend. Physics-based reservoir engineering, transparent financial models, and the tools to run them — built by operators who have done this before."
+           data-es="Alpha Technical Centre convierte la incertidumbre del subsuelo en decisiones defendibles. Ingeniería de yacimientos basada en física, modelos financieros transparentes y las herramientas para ejecutarlos — creados por operadores con experiencia probada.">
+           Alpha Technical Centre turns subsurface uncertainty into decisions you can defend. Physics-based reservoir engineering, transparent financial models, and the tools to run them — built by operators who have done this before.
+        </p>
+        <div class="hero-cta reveal in reveal-delay-2">
+          <a href="tools.html" class="btn btn-primary" data-en="Explore the tools" data-es="Ver herramientas">Explore the tools</a>
+          <a href="plan-your-job.html" class="btn btn-ghost-light" data-en="Plan your job" data-es="Planifique su proyecto">Plan your job</a>
+        </div>
+      </div>
+
+      <!-- Signature element: live 3D WebGL reservoir + integrated asset loop -->
+      <div class="hero-3d reveal in reveal-delay-2">
+        <div class="canvas-wrap" id="wrap">
+          <canvas id="rcanvas"></canvas>
+          <div class="loading" id="loading" data-en="INITIALISING RESERVOIR MODEL…" data-es="INICIALIZANDO MODELO DE YACIMIENTO…">INITIALISING RESERVOIR MODEL…</div>
+          <!-- Static poster fallback for no-WebGL / reduced-data -->
+          <noscript><div class="loading">3D model requires JavaScript</div></noscript>
+        </div>
+
+        <!-- INTEGRATED ASSET LOOP -->
+        <div class="loop-hud">
+          <div class="loop-title" data-en="INTEGRATED ASSET LOOP" data-es="CICLO INTEGRADO DEL ACTIVO">INTEGRATED ASSET LOOP</div>
+          <div class="loop-sub" data-en="Every stage optimised against one objective" data-es="Cada etapa optimizada contra un solo objetivo">Every stage optimised against one objective</div>
+          <svg class="loop-svg" viewBox="0 0 220 200" id="loopsvg">
+            <circle cx="110" cy="95" r="72" fill="none" stroke="rgba(201,168,76,.18)" stroke-width="1.5"/>
+            <circle cx="110" cy="95" r="72" fill="none" stroke="#C9A84C" stroke-width="2.5" stroke-dasharray="40 412" stroke-linecap="round" id="signal" transform="rotate(-90 110 95)"/>
+            <g class="node" id="n-res"><circle cx="110" cy="23" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="110" y="27" text-anchor="middle" font-size="13" fill="#C9A84C">⛰</text><text x="110" y="6" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="RESERVOIR" data-es="YACIMIENTO">RESERVOIR</text></g>
+            <g class="node" id="n-well"><circle cx="182" cy="95" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="182" y="99" text-anchor="middle" font-size="12" fill="#C9A84C">⚒</text><text x="182" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="WELLS" data-es="POZOS">WELLS</text></g>
+            <g class="node" id="n-fac"><circle cx="110" cy="167" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="110" y="171" text-anchor="middle" font-size="11" fill="#C9A84C">⬢</text><text x="110" y="190" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="FACILITIES" data-es="INSTALACIONES">FACILITIES</text></g>
+            <g class="node" id="n-exp"><circle cx="38" cy="95" r="15" fill="#13263f" stroke="#C9A84C" stroke-width="1.5"/><text x="38" y="99" text-anchor="middle" font-size="11" fill="#C9A84C">⛴</text><text x="38" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)" letter-spacing=".5" data-en="EXPORT" data-es="EXPORTACIÓN">EXPORT</text></g>
+            <circle cx="110" cy="95" r="30" fill="rgba(201,168,76,.08)" stroke="rgba(201,168,76,.3)" stroke-width="1"/>
+            <text x="110" y="90" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.55)" letter-spacing="1" data-en="PROFIT" data-es="UTILIDAD">PROFIT</text>
+            <text x="110" y="104" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.4)" letter-spacing=".5" data-en="objective" data-es="objetivo">objective</text>
+            <g stroke="rgba(201,168,76,.35)" stroke-width="1" fill="none">
+              <path d="M110,46 L110,63" marker-end="url(#ar)"/><path d="M159,95 L142,95" marker-end="url(#ar)"/>
+              <path d="M110,144 L110,127" marker-end="url(#ar)"/><path d="M61,95 L78,95" marker-end="url(#ar)"/>
+            </g>
+            <defs><marker id="ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="rgba(201,168,76,.5)"/></marker></defs>
+          </svg>
+          <div class="loop-foot">
+            <div class="loop-figure">US$8,890<small>MM</small></div>
+            <div class="loop-cap" data-en="PROJECT NPV10 · THE LOOP'S OUTPUT" data-es="VPN10 DEL PROYECTO · RESULTADO DEL CICLO">PROJECT NPV10 · THE LOOP'S OUTPUT</div>
+          </div>
+        </div>
+
+        <div class="sat-scale">
+          <span data-en="OIL SATURATION" data-es="SATURACIÓN DE PETRÓLEO">OIL SATURATION</span>
+          <div class="sat-bar"></div>
+          <div class="sat-ends"><span>Sw</span><span>So</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-indicator" data-en="Scroll" data-es="Desliza">Scroll</div>
+</header>
+
+<!-- ============ TRUST / STATS STRIP ============ -->
+<section class="section-cream" style="padding:64px 0;">
+  <div class="wrap">
+    <div class="stats-bar reveal">
+      <div class="stat"><div class="stat-num"><span data-count="150" data-suffix="k">0</span></div><div class="stat-label" data-en="bopd Target Portfolio" data-es="bopd Cartera Objetivo">bopd Target Portfolio</div></div>
+      <div class="stat"><div class="stat-num"><span data-count="7">0</span></div><div class="stat-label" data-en="Field Mandates" data-es="Mandatos de Campo">Field Mandates</div></div>
+      <div class="stat"><div class="stat-num"><span data-count="100" data-suffix="+">0</span></div><div class="stat-label" data-en="Years Combined" data-es="Años Combinados">Years Combined</div></div>
+      <div class="stat"><div class="stat-num"><span data-count="4">0</span></div><div class="stat-label" data-en="Core Partners" data-es="Socios Principales">Core Partners</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT WE DO ============ -->
+<section class="section-white">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="label" data-en="What we do" data-es="Qué hacemos">What we do</span>
+      <h2 data-en="From first screening to final investment decision" data-es="Desde el cribado inicial hasta la decisión final de inversión">From first screening to final investment decision</h2>
+      <p data-en="Three disciplines, one integrated workflow. Each feeds the next, so assumptions stay consistent from the rock all the way to the cash flow." data-es="Tres disciplinas, un flujo de trabajo integrado. Cada una alimenta a la siguiente, manteniendo coherencia desde la roca hasta el flujo de caja.">Three disciplines, one integrated workflow. Each feeds the next, so assumptions stay consistent from the rock all the way to the cash flow.</p>
+    </div>
+    <div class="grid-3">
+      <a class="card reveal" href="oil-gas-modelling.html">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 12 Q7 4 12 12 T21 12"/><line x1="3" y1="20" x2="21" y2="20"/></svg></div>
+        <h3 data-en="Oil &amp; Gas Modelling" data-es="Modelización de Petróleo y Gas">Oil &amp; Gas Modelling</h3>
+        <p style="margin-top:10px; font-size:0.92rem;" data-en="Petrophysics, static and dynamic reservoir models, production forecasting, and network hydraulics — grounded in the physics of the rock." data-es="Petrofísica, modelos estáticos y dinámicos de yacimientos, pronóstico de producción e hidráulica de redes — basados en la física de la roca.">Petrophysics, static and dynamic reservoir models, production forecasting, and network hydraulics — grounded in the physics of the rock.</p>
+      </a>
+      <a class="card reveal reveal-delay-1" href="financial-modelling.html">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="4" y2="10"/><line x1="10" y1="20" x2="10" y2="4"/><line x1="16" y1="20" x2="16" y2="13"/><line x1="22" y1="20" x2="22" y2="7"/></svg></div>
+        <h3 data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</h3>
+        <p style="margin-top:10px; font-size:0.92rem;" data-en="Transparent, auditable cash-flow models. Fiscal regimes, sensitivities and Monte Carlo — every number traceable to an assumption you can challenge." data-es="Modelos de flujo de caja transparentes y auditables. Regímenes fiscales, sensibilidades y Monte Carlo — cada cifra trazable a un supuesto que puede cuestionar.">Transparent, auditable cash-flow models. Fiscal regimes, sensitivities and Monte Carlo — every number traceable to an assumption you can challenge.</p>
+      </a>
+      <a class="card reveal reveal-delay-2" href="plan-your-job.html">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg></div>
+        <h3 data-en="Plan Your Job" data-es="Planifique su Proyecto">Plan Your Job</h3>
+        <p style="margin-top:10px; font-size:0.92rem;" data-en="Scope, resource and price a technical mandate in minutes with our interactive Scope-of-Work generator. Know the cost before you commit." data-es="Defina alcance, recursos y precio de un mandato técnico en minutos con nuestro generador interactivo de alcance de trabajo. Conozca el costo antes de comprometerse.">Scope, resource and price a technical mandate in minutes with our interactive Scope-of-Work generator. Know the cost before you commit.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FLAGSHIP TOOLS ============ -->
+<section class="section-dark">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="label" data-en="Our Tools" data-es="Nuestras Herramientas">Our Tools</span>
+      <h2 data-en="Software that changes how the work gets done" data-es="Software que transforma la manera de trabajar">Software that changes how the work gets done</h2>
+      <p data-en="We build the tools we wished we had. Two of them are reshaping how our industry approaches evaluation and economics." data-es="Construimos las herramientas que siempre quisimos tener. Dos de ellas están redefiniendo cómo nuestra industria aborda la evaluación y la economía.">We build the tools we wished we had. Two of them are reshaping how our industry approaches evaluation and economics.</p>
+    </div>
+    <div class="grid-2">
+      <div class="tool-card reveal">
+        <div class="tool-card-header">
+          <span class="chip" data-en="Live" data-es="Disponible">Live</span>
+          <div class="tool-card-title" data-en="Upstream Quick-Look Financial Model" data-es="Modelo Financiero Upstream Quick-Look">Upstream Quick-Look Financial Model</div>
+        </div>
+        <div class="tool-card-body">
+          <p class="tool-card-desc" data-en="Run full-cycle project economics in the browser — NPV, IRR, payback and sensitivities — without a single spreadsheet. Change an assumption, watch every output move." data-es="Ejecute la economía de proyectos de ciclo completo en el navegador — VPN, TIR, repago y sensibilidades — sin una sola hoja de cálculo. Cambie un supuesto y vea moverse cada resultado.">Run full-cycle project economics in the browser — NPV, IRR, payback and sensitivities — without a single spreadsheet. Change an assumption, watch every output move.</p>
+          <a href="financial-modelling.html" class="btn btn-primary" data-en="Open the model" data-es="Abrir el modelo">Open the model</a>
+        </div>
+      </div>
+      <div class="tool-card reveal reveal-delay-1">
+        <div class="tool-card-header">
+          <span class="chip chip--coming" data-en="Coming soon" data-es="Próximamente">Coming soon</span>
+          <div class="tool-card-title" data-en="Oil &amp; Gas Evaluation System" data-es="Sistema de Evaluación de Petróleo y Gas">Oil &amp; Gas Evaluation System</div>
+        </div>
+        <div class="tool-card-body">
+          <p class="tool-card-desc" data-en="A full subsurface-to-economics evaluation engine. Petrophysics, volumetrics, decline analysis and economics in one integrated system — the way evaluation should have worked all along." data-es="Un motor de evaluación completo, del subsuelo a la economía. Petrofísica, volumetría, análisis de declinación y economía en un solo sistema integrado — como la evaluación siempre debió funcionar.">A full subsurface-to-economics evaluation engine. Petrophysics, volumetrics, decline analysis and economics in one integrated system — the way evaluation should have worked all along.</p>
+          <a href="tools.html" class="btn btn-ghost-light" data-en="Register interest" data-es="Registrar interés">Register interest</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APPROACH / SEVEN STAGES ============ -->
+<section class="section-cream">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="label" data-en="Our approach" data-es="Nuestro enfoque">Our approach</span>
+      <h2 data-en="A seven-stage lifecycle — we join where you need us" data-es="Un ciclo de vida de siete etapas — nos sumamos donde nos necesite">A seven-stage lifecycle — we join where you need us</h2>
+      <p data-en="Scope narrows per engagement. Not every mandate needs every stage — but the full picture is always in view." data-es="El alcance se ajusta por encargo. No todo mandato requiere todas las etapas — pero siempre se mantiene la visión completa.">Scope narrows per engagement. Not every mandate needs every stage — but the full picture is always in view.</p>
+    </div>
+    <div class="lifecycle reveal">
+      <div class="lc-stage"><span class="lc-num">I</span><span class="lc-name" data-en="Asset screening &amp; selection" data-es="Cribado y selección de activos">Asset screening &amp; selection</span></div>
+      <div class="lc-stage"><span class="lc-num">II</span><span class="lc-name" data-en="Valuation &amp; deal structuring" data-es="Valoración y estructuración">Valuation &amp; deal structuring</span></div>
+      <div class="lc-stage"><span class="lc-num">III</span><span class="lc-name" data-en="Deal execution" data-es="Ejecución de la transacción">Deal execution</span></div>
+      <div class="lc-stage"><span class="lc-num">IV</span><span class="lc-name" data-en="Strategy &amp; FDP development" data-es="Estrategia y desarrollo del PDC">Strategy &amp; FDP development</span></div>
+      <div class="lc-stage"><span class="lc-num">V</span><span class="lc-name" data-en="Operations setup &amp; management" data-es="Configuración y gestión de operaciones">Operations setup &amp; management</span></div>
+      <div class="lc-stage"><span class="lc-num">VI</span><span class="lc-name" data-en="Capitalisation growth" data-es="Crecimiento de capitalización">Capitalisation growth</span></div>
+      <div class="lc-stage"><span class="lc-num">VII</span><span class="lc-name" data-en="IPO or trade sale support" data-es="Apoyo a OPV o venta">IPO or trade sale support</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA BAND ============ -->
+<section class="cta-band">
+  <div class="wrap cta-band-inner reveal">
+    <div>
+      <h2 style="color:#fff;" data-en="Have a field, a deal, or a question?" data-es="¿Tiene un campo, una transacción o una pregunta?">Have a field, a deal, or a question?</h2>
+      <p style="color:rgba(255,255,255,0.7); margin-top:12px;" data-en="Tell us the scope. We'll tell you what it takes." data-es="Cuéntenos el alcance. Le diremos qué se necesita.">Tell us the scope. We'll tell you what it takes.</p>
+    </div>
+    <a href="contact.html" class="btn btn-primary" data-en="Request a quote" data-es="Solicitar cotización">Request a quote</a>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="footer-grad"></div>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-wordmark">
+          <span class="nav-wordmark-main">Alpha</span>
+          <span class="nav-wordmark-sub">Technical Centre</span>
+        </span>
+        <p class="footer-tagline" data-en="Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates." data-es="Planificación integral del desarrollo de campos. Una empresa de propiedad total de Alpha Energy, disponible para mandatos técnicos externos.">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Capabilities" data-es="Capacidades">Capabilities</h4>
+        <ul>
+          <li><a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Petróleo y Gas">Oil &amp; Gas Modelling</a></li>
+          <li><a href="financial-modelling.html" data-en="Financial Modelling" data-es="Financiera">Financial Modelling</a></li>
+          <li><a href="plan-your-job.html" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Company" data-es="Empresa">Company</h4>
+        <ul>
+          <li><a href="about.html" data-en="About" data-es="Nosotros">About</a></li>
+          <li><a href="team.html" data-en="Team" data-es="Equipo">Team</a></li>
+          <li><a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a></li>
+          <li><a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Connect" data-es="Contacto">Connect</h4>
+        <ul>
+          <li><a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
+          <li><a href="mailto:info@alphalatinamerica.com">info@alphalatinamerica.com</a></li>
+          <li><a href="https://alphaenergylatinamerica.com" data-en="Alpha Energy ↗" data-es="Alpha Energy ↗">Alpha Energy ↗</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p data-en="© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC" data-es="© 2026 Alpha Latin America LLC · Houston, Texas · Subsidiaria de Alpha LLC">© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC</p>
+      <span class="footer-conf" data-en="Strictly Confidential" data-es="Estrictamente Confidencial">Strictly Confidential</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* ---- Homepage-specific ---- */
+  .hero-layout { display:grid; grid-template-columns: 1.1fr 0.9fr; gap:64px; align-items:center; padding:48px 0; }
+  .hero-title { color:#fff; margin:18px 0 24px; }
+  .hero-title em { color:var(--gold); font-style:italic; }
+  .hero-lede { color:rgba(255,255,255,0.7); font-size:1.15rem; max-width:48ch; }
+  .hero-cta { display:flex; gap:14px; margin-top:32px; flex-wrap:wrap; }
+
+  .hero-viz { background:rgba(255,255,255,0.03); border:1px solid rgba(201,168,76,0.18); border-radius:var(--r-lg); padding:24px; }
+  .hero-viz-label { font-family:var(--font-label); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45); margin-bottom:12px; }
+  .decline-svg { width:100%; height:auto; }
+  .curve-main { stroke-dasharray:600; stroke-dashoffset:600; animation:draw 2.2s var(--ease) 0.4s forwards; }
+  .curve-base { stroke-dasharray:600; stroke-dashoffset:600; animation:draw 2.2s var(--ease) 0.2s forwards; }
+  .curve-area { opacity:0; animation:fade 1.2s ease 1.6s forwards; }
+  .viz-dot { opacity:0; animation:fade 0.6s ease 2.2s forwards; }
+  @keyframes draw { to { stroke-dashoffset:0; } }
+  @keyframes fade { to { opacity:1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .curve-main,.curve-base { stroke-dashoffset:0; animation:none; }
+    .curve-area,.viz-dot { opacity:1; animation:none; }
+  }
+  .hero-viz-foot { display:flex; gap:32px; margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.08); }
+  .hero-viz-stat { font-family:var(--font-display); font-size:1.6rem; font-weight:700; color:var(--gold); display:block; line-height:1; }
+  .hero-viz-cap { font-family:var(--font-label); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.4); }
+
+  @media (max-width:900px) {
+    .hero { min-height:auto; }
+    .hero-layout { grid-template-columns:1fr; gap:40px; }
+    .hero-viz { order:2; }
+    .scroll-indicator { display:none; }
+  }
+
+  /* lifecycle */
+  .lifecycle { display:grid; grid-template-columns:repeat(7,1fr); gap:0; background:var(--white); border:1px solid var(--rule); border-radius:var(--r-lg); overflow:hidden; }
+  .lc-stage { padding:24px 18px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:10px; transition:background 0.2s; }
+  .lc-stage:last-child { border-right:none; }
+  .lc-stage:hover { background:var(--cream); }
+  .lc-num { font-family:var(--font-display); font-size:1.3rem; font-weight:700; color:var(--gold); }
+  .lc-name { font-size:0.82rem; color:var(--navy-mid); line-height:1.4; }
+  @media (max-width:900px) { .lifecycle { grid-template-columns:1fr 1fr; } .lc-stage:nth-child(2n){border-right:none;} .lc-stage{border-bottom:1px solid var(--rule);} }
+  @media (max-width:600px) { .lifecycle { grid-template-columns:1fr; } .lc-stage{border-right:none;} }
+
+  /* CTA band */
+  .cta-band { background:linear-gradient(135deg, var(--navy-mid), var(--navy)); padding:72px 0; }
+  .cta-band-inner { display:flex; align-items:center; justify-content:space-between; gap:32px; flex-wrap:wrap; }
+</style>
+
+<script src="main.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js" }}
+</script>
+<script type="module" src="hero.js"></script>
+</body>
+</html>

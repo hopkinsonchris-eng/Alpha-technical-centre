@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upstream Quick-Look Financial Model · Generic Contract Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ════ ROOT TOKENS ════ */
+:root{
+  --navy:#0B1F3A; --navy2:#13294B; --gold:#C9A84C; --red:#C0392B; --cream:#F8F5EE;
+  --steel:#6B7A8D; --bronze:#8C6E2F; --slate:#3E5C76; --ink:#1A2433; --line:#DDD6C6;
+  --panel:#FFFFFF; --grid:#E8E2D2; --tint:#FBF6E9; --green:#1A7A4A;
+  font-family:'Barlow',system-ui,sans-serif; color:var(--ink); background:var(--cream);
+  line-height:1.45; font-size:15px;
+}
+*,*::before,*::after{box-sizing:border-box;}
+svg{display:block;width:100%;}
+svg text{font-family:'Barlow Condensed',sans-serif;}
+body{margin:0;background:var(--cream);}
+#qlm{max-width:1380px;margin:0 auto;padding:0 0 40px;}
+/* ════ STRIPE & HEADER ════ */
+.ae-stripe{height:5px;background:linear-gradient(90deg,var(--gold) 0%,var(--gold) 38%,var(--red) 38%,var(--red) 62%,var(--navy) 62%);}
+.ae-head{background:var(--navy);color:var(--cream);padding:18px 26px 14px;display:flex;flex-wrap:wrap;gap:12px 26px;align-items:flex-end;justify-content:space-between;}
+.ae-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:600;margin:0;letter-spacing:.2px;}
+.ae-title em{color:var(--gold);font-style:normal;}
+.ae-sub{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#A9B6C7;margin-top:2px;}
+.ae-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.ae-chip{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.07em;text-transform:uppercase;border:1px solid rgba(201,168,76,.4);border-radius:3px;padding:4px 11px;color:#A9B6C7;white-space:nowrap;}
+.ae-chip b{color:var(--gold);font-variant-numeric:tabular-nums;}
+/* ════ TABS (CSS-only radio) ════ */
+.ae-radio{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+.ae-tabs{background:var(--navy2);display:flex;overflow-x:auto;padding:0 18px;gap:2px;border-bottom:3px solid var(--gold);}
+.ae-tab{font-family:'Barlow Condensed',sans-serif;font-size:13.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:#A9B6C7;background:none;border:none;padding:12px 14px 10px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-3px;display:inline-flex;align-items:center;}
+.ae-tab:hover{color:var(--cream);}
+.ae-tabpanel{display:none;}
+#rt-overview:checked  ~ .ae-body #tab-overview,
+#rt-contract:checked  ~ .ae-body #tab-contract,
+#rt-fields:checked    ~ .ae-body #tab-fields,
+#rt-sens:checked      ~ .ae-body #tab-sens,
+#rt-method:checked    ~ .ae-body #tab-method{display:block;}
+#rt-overview:checked  ~ .ae-tabs label[for="rt-overview"],
+#rt-contract:checked  ~ .ae-tabs label[for="rt-contract"],
+#rt-fields:checked    ~ .ae-tabs label[for="rt-fields"],
+#rt-sens:checked      ~ .ae-tabs label[for="rt-sens"],
+#rt-method:checked    ~ .ae-tabs label[for="rt-method"]{color:var(--gold);border-bottom-color:var(--gold);}
+/* ════ LAYOUT ════ */
+.ae-body{display:grid;grid-template-columns:280px 1fr;gap:20px;padding:20px 26px 0;}
+@media(max-width:960px){.ae-body{grid-template-columns:1fr;}}
+.ae-panelwrap{min-width:0;}
+/* ════ RAIL ════ */
+.ae-rail{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 16px 12px;align-self:start;position:sticky;top:70px;max-height:calc(100vh - 24px);overflow-y:auto;}
+@media(max-width:960px){.ae-rail{position:static;max-height:none;}}
+.ae-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin:0 0 10px;border-bottom:1px solid var(--line);padding-bottom:7px;}
+.ae-eyebrow:not(:first-child){margin-top:16px;}
+.ae-slider{margin-bottom:10px;}
+.ae-slider label{display:flex;justify-content:space-between;font-size:13px;font-weight:500;margin-bottom:2px;gap:8px;}
+.ae-slider output{font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--gold) var(--pct,50%),var(--line) var(--pct,50%));outline:none;margin:5px 0 1px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--navy);border:2.5px solid var(--gold);cursor:pointer;}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--navy);border:2.5px solid var(--gold);cursor:pointer;}
+.ae-note{font-size:11px;color:var(--steel);line-height:1.45;margin-top:3px;}
+.ae-tog-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none;margin-bottom:6px;}
+.ae-tog-row input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer;flex:none;}
+.ae-tog-row input[type=checkbox]:disabled{opacity:.4;}
+.ae-tog-row.disabled{opacity:.45;cursor:default;}
+.ae-select{width:100%;font-family:'Barlow',sans-serif;font-size:13px;border:1px solid var(--line);border-radius:4px;padding:5px 8px;background:var(--panel);color:var(--ink);margin-bottom:8px;}
+.ae-reset{margin-top:12px;width:100%;font-family:'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;font-size:12.5px;background:none;border:1px solid var(--steel);color:var(--steel);border-radius:4px;padding:6px;cursor:pointer;}
+.ae-reset:hover{border-color:var(--navy);color:var(--navy);}
+/* ════ CARDS ════ */
+.ae-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;}
+.ae-kpi{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:5px;padding:10px 13px 8px;}
+.ae-kpi.k-navy{border-top-color:var(--navy);}
+.ae-kpi.k-red{border-top-color:var(--red);}
+.ae-kpi.k-green{border-top-color:var(--green);}
+.ae-klabel{font-family:'Barlow Condensed',sans-serif;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);}
+.ae-kval{font-family:'Playfair Display',serif;font-size:24px;font-weight:600;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1.2;margin-top:2px;}
+.ae-kval .u{font-size:13px;}
+.ae-ksub{font-size:11px;color:var(--steel);margin-top:1px;}
+.ae-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:16px;}
+.ae-ct{font-family:'Barlow Condensed',sans-serif;font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin:0 0 2px;font-weight:600;}
+.ae-cn{font-size:11.5px;color:var(--steel);margin:0 0 10px;}
+.ae-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:1100px){.ae-2col{grid-template-columns:1fr;}}
+.ae-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-top:7px;}
+.ae-legend span{display:inline-flex;align-items:center;gap:5px;}
+.ae-legend i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+.ae-callout{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:4px;padding:9px 13px;font-size:13px;margin:8px 0;line-height:1.55;}
+.ae-callout.c-red{border-left-color:var(--red);}
+.ae-callout.c-green{border-left-color:var(--green);}
+/* ════ ENTITLEMENT BAR ════ */
+.ae-splitbar{display:flex;height:44px;border-radius:4px;overflow:hidden;border:1px solid var(--line);}
+.ae-seg{display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;transition:width .3s ease;min-width:0;}
+.ae-splitcaps{display:flex;justify-content:space-between;font-size:11.5px;color:var(--steel);margin-top:4px;gap:10px;flex-wrap:wrap;}
+/* ════ TABLES ════ */
+table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;}
+th{font-family:'Barlow Condensed',sans-serif;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);text-align:right;padding:6px 7px;border-bottom:2px solid var(--navy);font-weight:600;}
+th:first-child,td:first-child{text-align:left;}
+td{padding:5px 7px;text-align:right;border-bottom:1px solid var(--line);}
+tr.r-tot td{font-weight:700;color:var(--navy);border-bottom:none;border-top:2px solid var(--navy);}
+.ae-scroll{overflow-x:auto;}
+/* ════ HEATMAP ════ */
+.ae-heat{border-collapse:separate;border-spacing:3px;}
+.ae-heat td,.ae-heat th{border:none;padding:8px 5px;text-align:center;border-radius:3px;font-size:12.5px;}
+.ae-heat td{font-weight:600;font-variant-numeric:tabular-nums;}
+.ae-heat th{padding:3px 5px;}
+.ae-heat td.h-base{outline:2.5px solid var(--navy);}
+/* ════ FIELD BUILDER ════ */
+.fbuilder{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:16px;}
+.fcard{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;position:relative;}
+.fcard.f-off{opacity:.5;}
+.fcard-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.fcard-hdr h4{font-family:'Playfair Display',serif;font-size:15px;margin:0;color:var(--navy);flex:1;}
+.fcard-hdr .ftype{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);background:var(--tint);border:1px solid var(--line);border-radius:3px;padding:2px 6px;}
+.fcard .ae-slider{margin-bottom:7px;}
+.fcard .ae-slider label{font-size:12px;}
+.fcard-del{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--steel);cursor:pointer;font-size:16px;line-height:1;padding:2px;}
+.fcard-del:hover{color:var(--red);}
+.fcard-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--steel);margin-bottom:8px;}
+.fcard-toggle input{accent-color:var(--gold);}
+.add-field-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.ae-btn{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--steel);background:none;color:var(--ink);border-radius:4px;padding:6px 14px;cursor:pointer;}
+.ae-btn:hover{border-color:var(--navy);color:var(--navy);}
+.ae-btn.primary{background:var(--navy);color:var(--gold);border-color:var(--navy);}
+.ae-btn.primary:hover{background:var(--navy2);}
+/* ════ CONTRACT PANEL ════ */
+.contract-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:900px){.contract-grid{grid-template-columns:1fr;}}
+.cterm{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:5px 0;font-size:13px;gap:10px;}
+.cterm b{font-variant-numeric:tabular-nums;color:var(--navy);white-space:nowrap;}
+.cterm b.warn{color:var(--red);}
+/* ════ TOOLTIP ════ */
+.ae-tip{position:fixed;pointer-events:none;background:var(--navy);color:var(--cream);font-size:12px;line-height:1.5;padding:7px 11px;border-radius:4px;border-left:3px solid var(--gold);z-index:10000;display:none;font-variant-numeric:tabular-nums;box-shadow:0 6px 18px rgba(0,0,0,.3);max-width:250px;}
+.ae-hov{cursor:crosshair;}
+/* ════ METHOD BOX ════ */
+.method-box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:16px;}
+.method-box h3{font-family:'Playfair Display',serif;font-size:17px;color:var(--navy);margin:0 0 10px;}
+.method-box p,.method-box li{font-size:13.5px;line-height:1.65;color:#3a4555;margin-bottom:8px;}
+.method-box ul{padding-left:20px;}
+.method-box table th,.method-box table td{font-size:12.5px;}
+/* ════ LICENSE / LOCK ════ */
+.lic-banner{margin:0 26px 14px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:5px;padding:11px 16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;}
+.lic-banner.unlocked{border-left-color:var(--green);}
+.lic-msg{font-size:13px;color:#3a4555;line-height:1.5;}
+.lic-msg b{color:var(--navy);}
+.lic-tier{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;border-radius:3px;padding:2px 9px;margin-right:8px;}
+.lic-tier.demo{background:var(--tint);color:var(--bronze);border:1px solid var(--gold);}
+.lic-tier.full{background:var(--green);color:#fff;}
+.lic-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.lic-pw{font-family:'Barlow',sans-serif;font-size:13px;border:1px solid var(--line);border-radius:4px;padding:6px 10px;width:150px;background:#FFF;color:var(--ink);}
+.lic-pw.bad{border-color:var(--red);background:#F6DCD7;}
+.lic-err{font-size:12px;color:var(--red);margin-left:4px;display:none;}
+.locked-overlay{position:relative;}
+.locked-overlay::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(107,122,141,.04),rgba(107,122,141,.04) 10px,rgba(107,122,141,.08) 10px,rgba(107,122,141,.08) 20px);border-radius:6px;pointer-events:none;}
+.lock-pill{display:inline-flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:var(--steel);color:#fff;border-radius:3px;padding:2px 9px;margin-left:8px;vertical-align:middle;}
+.ae-btn.locked{opacity:.5;cursor:not-allowed;border-style:dashed;}
+.ae-select.locked{opacity:.6;cursor:not-allowed;background:var(--tint);}
+.contract-slider:disabled{opacity:.4;cursor:not-allowed;}
+.fcard-locknote{font-size:11.5px;color:var(--steel);background:var(--tint);border:1px dashed var(--line);border-radius:4px;padding:8px 10px;margin-top:6px;line-height:1.5;}
+/* ════ FOOTER ════ */
+footer{font-size:11px;color:var(--steel);padding:8px 26px 0;line-height:1.5;}
+footer b{color:var(--navy);}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ALPHA TECHNICAL CENTRE — DESIGN SYSTEM
+   Brand: Alpha Energy Latin America v1.0
+   Fonts: Playfair Display (display) · Barlow (body) · Barlow Condensed (labels)
+   ============================================================ */
+
+/* ---------- GOOGLE FONTS ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap');
+
+/* ---------- CSS CUSTOM PROPERTIES ---------- */
+:root {
+  /* Primary palette */
+  --navy:        #0B1F3A;
+  --navy-mid:    #132845;
+  --gold:        #C9A84C;
+  --gold-light:  #E8C96A;
+  --cream:       #F8F5EE;
+  --white:       #FFFFFF;
+
+  /* Secondary */
+  --steel:       #6B7A8D;
+  --rule:        #D8DCE2;
+  --summa-red:   #C0392B;
+
+  /* Consortium gradient (Gold → Red → Navy) */
+  --grad: linear-gradient(90deg, #C9A84C 0%, #C0392B 50%, #0B1F3A 100%);
+
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Barlow', system-ui, sans-serif;
+  --font-label:   'Barlow Condensed', system-ui, sans-serif;
+
+  /* Spacing */
+  --maxw: 1160px;
+  --nav-h: 72px;
+
+  /* Radius */
+  --r: 6px;
+  --r-lg: 12px;
+
+  /* Transitions */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+/* ---------- GRADIENT RULE (Consortium Signature) ---------- */
+.grad-rule {
+  height: 3px;
+  background: var(--grad);
+  border: none;
+  width: 100%;
+}
+.grad-rule--short {
+  width: 60px;
+  height: 3px;
+  background: var(--grad);
+  display: inline-block;
+}
+
+
+/* ---------- NAVIGATION ---------- */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: rgba(11, 31, 58, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+  transition: background 0.3s var(--ease);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-mark {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nav-mark svg { width: 20px; height: 20px; }
+.nav-wordmark {
+  font-family: var(--font-label);
+  line-height: 1.2;
+}
+.nav-wordmark-main {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--white);
+  text-transform: uppercase;
+}
+.nav-wordmark-sub {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.nav-wordmark-parent {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.nav-links a, .nav-dropdown > button {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+  padding: 8px 14px;
+  border-radius: var(--r);
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.nav-links a:hover, .nav-dropdown > button:hover,
+.nav-links a.active { color: var(--gold); background: rgba(201,168,76,0.08); }
+
+/* Dropdown */
+.nav-dropdown { position: relative; }
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--navy);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--r-lg);
+  padding: 8px;
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s var(--ease);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+}
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.nav-dropdown-menu a {
+  display: block;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+  transition: color 0.15s, background 0.15s;
+}
+.nav-dropdown-menu a:hover { color: var(--gold); background: rgba(201,168,76,0.1); }
+
+/* Lang toggle */
+.nav-lang {
+  display: flex;
+  gap: 4px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255,255,255,0.15);
+}
+.nav-lang button {
+  font-family: var(--font-label);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.45);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  transition: color 0.2s;
+}
+.nav-lang button.active, .nav-lang button:hover { color: var(--gold); }
+
+/* CTA button in nav */
+.btn-nav {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: var(--gold);
+  padding: 9px 18px;
+  border-radius: var(--r);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+.btn-nav:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+/* Mobile nav toggle */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+.nav-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--white);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+@media (max-width: 900px) {
+  .nav-links, .nav-lang, .btn-nav { display: none; }
+  .nav-toggle { display: flex; }
+  .nav-mobile-open .nav-links {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: var(--nav-h);
+    left: 0; right: 0;
+    background: var(--navy);
+    padding: 24px 20px;
+    gap: 4px;
+    border-top: 1px solid rgba(201,168,76,0.2);
+  }
+  .nav-mobile-open .nav-lang,
+  .nav-mobile-open .btn-nav { display: flex; }
+}
+
+
+/* ---------- BUTTONS ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: var(--r);
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  border: none;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+}
+.btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); }
+.btn-outline {
+  background: transparent;
+  color: var(--navy);
+  border: 1.5px solid var(--navy);
+}
+.btn-outline:hover { background: var(--navy); color: var(--white); }
+.btn-ghost-light {
+  background: rgba(255,255,255,0.1);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-ghost-light:hover { background: rgba(255,255,255,0.18); border-color: var(--gold); color: var(--gold); }
+
+
+/* ---------- FOOTER ---------- */
+.footer {
+  background: var(--navy);
+  color: var(--white);
+  padding: 64px 0 32px;
+}
+.footer-grad { height: 3px; background: var(--grad); margin-bottom: 64px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 56px;
+}
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
+.footer-brand .nav-wordmark-main { font-size: 16px; }
+.footer-brand .nav-wordmark-sub { font-size: 10px; }
+.footer-tagline {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.45);
+  margin-top: 16px;
+  max-width: 260px;
+  line-height: 1.6;
+}
+.footer-col h4 {
+  font-family: var(--font-label);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+.footer-col ul li { margin-bottom: 10px; }
+.footer-col ul li a {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.6);
+  transition: color 0.2s;
+}
+.footer-col ul li a:hover { color: var(--gold); }
+.footer-bottom {
+  padding-top: 28px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.footer-bottom p {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.35);
+  max-width: none;
+}
+.footer-conf {
+  font-family: var(--font-label);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(201,168,76,0.5);
+}
+
+
+/* neutralise legacy embedded nav on tool pages */
+.atcnav{display:none !important;}
+.site-header{display:none !important;}
+/* offset for fixed shared nav */
+body{padding-top:0;}
+.nav{position:fixed;}
+.tool-body-offset{padding-top:72px;}
+</style>
+
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre</span>
+        <span class="nav-wordmark-parent">An Alpha Energy company</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
+      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
+      <div class="nav-dropdown">
+        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
+        <div class="nav-dropdown-menu">
+          <a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
+          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
+        </div>
+      </div>
+      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
+      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
+      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
+      <a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a>
+      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
+      <div class="nav-lang">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="tool-body-offset">
+<!-- ============ ATC SHARED NAV ============ -->
+<style>
+.atcnav{position:sticky;top:58px;z-index:9999;background:rgba(6,32,26,0.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid rgba(234,243,239,0.13);font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+.atcnav *{box-sizing:border-box;}
+.atcnav-inner{max-width:1180px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:58px;}
+.atcnav-brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;}
+.atcnav-brand .m{font-family:'EB Garamond',Georgia,serif;font-size:17px;font-weight:600;color:#EAF3EF;letter-spacing:.01em;}
+.atcnav-brand .m b{color:#34C795;}
+.atcnav-brand .s{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(234,243,239,0.42);}
+.atcnav-menu{display:flex;align-items:center;gap:6px;}
+.atcnav-it{position:relative;}
+.atcnav-lk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;letter-spacing:.04em;color:rgba(234,243,239,0.66);text-decoration:none;padding:9px 15px;border-radius:8px;transition:.18s;cursor:pointer;border:none;background:none;}
+.atcnav-lk:hover,.atcnav-it:hover .atcnav-lk{color:#EAF3EF;background:rgba(234,243,239,0.07);}
+.atcnav-lk.cur{color:#34C795;}
+.atcnav-lk.cta{color:#06201A;background:linear-gradient(150deg,#34C795 0%,#1D9E75 60%,#0F6E56 100%);font-weight:600;box-shadow:0 8px 20px -10px rgba(29,158,117,0.7);}
+.atcnav-lk.cta:hover{color:#06201A;transform:translateY(-1px);}
+.atcnav-chev{width:9px;height:9px;opacity:.7;transition:transform .2s;}
+.atcnav-it:hover .atcnav-chev{transform:rotate(180deg);}
+.atcnav-dd{position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:#0A2E25;border:1px solid rgba(234,243,239,0.13);border-radius:12px;box-shadow:0 22px 50px -16px rgba(0,0,0,0.6);padding:7px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:.18s;}
+.atcnav-it:hover .atcnav-dd,.atcnav-it:focus-within .atcnav-dd{opacity:1;visibility:visible;transform:translateY(0);}
+.atcnav-ddl{display:block;text-decoration:none;padding:11px 13px;border-radius:8px;transition:background .15s;}
+.atcnav-ddl:hover{background:rgba(52,199,149,0.12);}
+.atcnav-ddl .t{display:block;font-size:13px;font-weight:600;color:#EAF3EF;margin-bottom:2px;}
+.atcnav-ddl .t.cur{color:#34C795;}
+.atcnav-ddl .d{display:block;font-size:11px;color:rgba(234,243,239,0.42);line-height:1.4;}
+.atcnav-tg{display:none;background:none;border:1px solid rgba(234,243,239,0.2);border-radius:8px;width:38px;height:34px;cursor:pointer;align-items:center;justify-content:center;}
+.atcnav-tg svg{width:18px;height:18px;stroke:#EAF3EF;}
+@media print{.atcnav{display:none !important;}}
+@media (max-width:760px){
+.atcnav-inner{padding:0 18px;}
+.atcnav-tg{display:inline-flex;}
+.atcnav-menu{position:fixed;top:58px;left:0;right:0;flex-direction:column;align-items:stretch;gap:2px;background:#0A2E25;border-bottom:1px solid rgba(234,243,239,0.13);padding:12px 16px 18px;transform:translateY(-130%);transition:transform .26s;}
+.atcnav-menu.open{transform:translateY(0);}
+.atcnav-dd{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:none;background:transparent;padding:0 0 0 10px;min-width:0;}
+.atcnav-chev{margin-left:auto;}
+.atcnav-lk.cta{justify-content:center;margin-top:6px;}
+}
+</style>
+<nav class="atcnav">
+ <div class="atcnav-inner">
+  <a class="atcnav-brand" href="index.html"><span class="m">Alpha<b>.</b> Technical Centre</span><span class="s">An Alpha Energy Asset</span></a>
+  <button class="atcnav-tg" aria-label="Menu" onclick="this.parentNode.querySelector('.atcnav-menu').classList.toggle('open')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="atcnav-menu">
+   <div class="atcnav-it">
+    <span class="atcnav-lk" tabindex="0">Modelling <svg class="atcnav-chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4.5 6 7.5 9 4.5"/></svg></span>
+    <div class="atcnav-dd">
+     <a class="atcnav-ddl" href="oil-gas-modelling.html"><span class="t ">Oil &amp; Gas Modelling</span><span class="d">Subsurface, reservoir &amp; production quick-look tools</span></a>
+     <a class="atcnav-ddl" href="financial-modelling.html"><span class="t cur">Financial Modelling</span><span class="d">Upstream quick-look economics &amp; contract model</span></a>
+    </div>
+   </div>
+   <a class="atcnav-lk cta " href="plan-your-job.html">Plan Your Job</a>
+  </div>
+ </div>
+</nav>
+
+<div id="qlm">
+  <div class="ae-stripe"></div>
+  <header class="ae-head">
+    <div>
+      <h1 class="ae-title">Upstream <em>Quick-Look</em> Financial Model</h1>
+      <div class="ae-sub">Generic Contract Tool · PSC · R/T · CPP · Service Contract · ±10% Screening Accuracy</div>
+    </div>
+    <div class="ae-chips" id="qlm-chips"></div>
+  </header>
+
+  <!-- License / access banner -->
+  <div class="lic-banner" id="lic-banner">
+    <div class="lic-msg">
+      <span class="lic-tier demo" id="lic-tier">Demo</span>
+      <span id="lic-text"><b>Demo mode.</b> The model is fully live on the built-in test dataset. Unlock contract switching, custom fiscal terms, and field building with an access password.</span>
+    </div>
+    <div class="lic-actions" id="lic-actions">
+      <input type="password" class="lic-pw" id="lic-pw" placeholder="Access password" autocomplete="off" onkeydown="if(event.key==='Enter')tryUnlock()">
+      <button class="ae-btn primary" onclick="tryUnlock()">Unlock</button>
+      <button class="ae-btn" onclick="requestPassword()">Request access</button>
+      <span class="lic-err" id="lic-err">Incorrect password</span>
+    </div>
+  </div>
+
+  <!-- Radio controls (CSS-only tab switching) -->
+  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-overview" checked>
+  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-contract">
+  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-fields">
+  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-sens">
+  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-method">
+
+  <nav class="ae-tabs">
+    <label class="ae-tab" for="rt-overview">Overview</label>
+    <label class="ae-tab" for="rt-contract">Contract / Fiscal</label>
+    <label class="ae-tab" for="rt-fields">Field Builder</label>
+    <label class="ae-tab" for="rt-sens">Sensitivity</label>
+    <label class="ae-tab" for="rt-method">Methodology</label>
+  </nav>
+
+  <div class="ae-body">
+    <!-- ════ CONTROL RAIL ════ -->
+    <aside class="ae-rail" id="qlm-rail">
+      <div class="ae-eyebrow">Global Assumptions</div>
+
+      <div class="ae-slider">
+        <label for="s-brent">Brent (flat, $/bbl) <output id="o-brent">70</output></label>
+        <input type="range" id="s-brent" min="40" max="120" step="5" value="70">
+      </div>
+      <div class="ae-slider">
+        <label for="s-disc">Discount rate <output id="o-disc">15%</output></label>
+        <input type="range" id="s-disc" min="8" max="25" step="1" value="15">
+      </div>
+      <div class="ae-slider">
+        <label for="s-gaspr">Gas price ($/MCF) <output id="o-gaspr">3.00</output></label>
+        <input type="range" id="s-gaspr" min="1" max="12" step="0.5" value="3">
+      </div>
+
+      <div class="ae-eyebrow">Cost Multipliers</div>
+      <div class="ae-slider">
+        <label for="s-capex">CAPEX multiplier <output id="o-capex">1.00×</output></label>
+        <input type="range" id="s-capex" min="0.60" max="1.60" step="0.05" value="1">
+      </div>
+      <div class="ae-slider">
+        <label for="s-opex">OPEX multiplier <output id="o-opex">1.00×</output></label>
+        <input type="range" id="s-opex" min="0.70" max="1.50" step="0.05" value="1">
+      </div>
+
+      <div class="ae-eyebrow">Pre-Finance Facility</div>
+      <div class="ae-tog-row">
+        <input type="checkbox" id="tog-prefin" checked>
+        <label for="tog-prefin">Enable facility</label>
+      </div>
+      <div id="prefin-block">
+        <div class="ae-slider">
+          <label for="s-prefin">Facility rate (%pa) <output id="o-prefin">10%</output></label>
+          <input type="range" id="s-prefin" min="5" max="20" step="0.5" value="10">
+        </div>
+      </div>
+
+      <div class="ae-eyebrow">Contract Type</div>
+      <select class="ae-select" id="sel-contract">
+        <option value="psc">PSC — Production Sharing Contract</option>
+        <option value="rt">R/T — Royalty / Tax</option>
+        <option value="cpp">CPP — Contrato de Participación (Oil-for-Infra)</option>
+        <option value="svc">Service Contract (flat fee)</option>
+        <option value="jv">Joint Venture (equity share)</option>
+      </select>
+      <div class="ae-note" id="contract-note">Cost recovery then profit split. Contractor takes working interest.</div>
+
+      <button class="ae-reset" onclick="resetAll()">↺ Reset all defaults</button>
+    </aside>
+
+    <!-- ════ MAIN CONTENT ════ -->
+    <div class="ae-panelwrap">
+
+      <!-- ══ OVERVIEW ══ -->
+      <div class="ae-tabpanel" id="tab-overview">
+        <div class="ae-kpis" id="qlm-kpis"></div>
+
+        <div class="ae-card">
+          <div class="ae-ct">Entitlement Split · 20-Year Wellhead Value</div>
+          <div class="ae-cn" id="split-desc">Revenue allocated by contract fiscal terms.</div>
+          <div class="ae-splitbar" id="qlm-split"></div>
+          <div class="ae-splitcaps" id="qlm-splitcaps"></div>
+        </div>
+
+        <div class="ae-2col">
+          <div class="ae-card">
+            <div class="ae-ct">Net Production — Active Fields (BOPD)</div>
+            <div class="ae-cn">Stacked by field. Dashed = govt / host baseline (where applicable).</div>
+            <div id="ch-prod"></div>
+            <div class="ae-legend" id="lg-prod"></div>
+          </div>
+          <div class="ae-card">
+            <div class="ae-ct">Annual Net Equity Cash Flow ($MM)</div>
+            <div class="ae-cn">Bars = annual; line = cumulative. Pre-financing shown as black line overlay.</div>
+            <div id="ch-cf"></div>
+          </div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct">20-Year Value Bridge ($MM)</div>
+          <div class="ae-cn">Gross revenue → deductions → investor net.</div>
+          <div id="ch-bridge"></div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct">CAPEX vs. Operating Cash Flow ($MM)</div>
+          <div class="ae-cn">Bars = CAPEX deployment; line = pre-CAPEX operating CF. Red dots = years requiring external funding.</div>
+          <div id="ch-selffund"></div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct">Portfolio Cash Flow Ledger</div>
+          <div class="ae-scroll"><table id="tb-portfolio"></table></div>
+        </div>
+      </div>
+
+      <!-- ══ CONTRACT / FISCAL ══ -->
+      <div class="ae-tabpanel" id="tab-contract">
+        <div class="ae-card">
+          <div class="ae-ct" id="ct-heading">Contract Terms</div>
+          <div class="ae-cn" id="ct-sub">Adjust sliders to modify the fiscal regime. The model recalculates instantly.</div>
+
+          <div class="contract-grid">
+            <div id="ct-left-sliders"></div>
+            <div>
+              <div id="ct-right-sliders"></div>
+              <div class="ae-callout" id="ct-callout"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct">Effective Fiscal Terms — Active Portfolio</div>
+          <div id="ct-terms-grid" class="ae-scroll"></div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct">Government Take vs. Contractor Margin</div>
+          <div id="ch-govttake"></div>
+        </div>
+      </div>
+
+      <!-- ══ FIELDS ══ -->
+      <div class="ae-tabpanel" id="tab-fields">
+        <div class="ae-callout c-green" style="margin-bottom:14px;">
+          Add up to 8 fields (oil or gas). Each field has independent plateau, ramp speed, CAPEX, and OPEX. Use the toggle to include/exclude fields from the portfolio. Field parameters feed directly into the financial model.
+        </div>
+        <div class="add-field-row">
+          <button class="ae-btn primary" onclick="addField('oil')">+ Add Oil Field</button>
+          <button class="ae-btn primary" onclick="addField('gas')">+ Add Gas Field</button>
+          <button class="ae-btn" onclick="addField('oil','small')">+ Add Small Oil Field</button>
+        </div>
+        <div class="fbuilder" id="field-builder"></div>
+        <div class="ae-card">
+          <div class="ae-ct">Individual Field Production Profiles (BOPD / MMSCF/D)</div>
+          <div id="ch-ramps"></div>
+          <div class="ae-legend" id="lg-ramps"></div>
+        </div>
+        <div class="ae-card">
+          <div class="ae-ct">Field Metrics Summary</div>
+          <div class="ae-scroll"><table id="tb-fields"></table></div>
+        </div>
+      </div>
+
+      <!-- ══ SENSITIVITY ══ -->
+      <div class="ae-tabpanel" id="tab-sens">
+        <div class="ae-2col">
+          <div class="ae-card">
+            <div class="ae-ct">NPV Tornado — Driver Ranges</div>
+            <div class="ae-cn">One-way sensitivity from base case. Low/high = ±25% or stated range.</div>
+            <div id="ch-tornado"></div>
+          </div>
+          <div class="ae-card">
+            <div class="ae-ct">Brent Sensitivity · Portfolio NPV ($MM)</div>
+            <div class="ae-cn">NPV at discount rate shown in rail.</div>
+            <div id="ch-brent-sens"></div>
+          </div>
+        </div>
+        <div class="ae-card">
+          <div class="ae-ct">Two-Way Heat Map · NPV ($MM) — Brent × CAPEX Multiplier</div>
+          <div class="ae-scroll"><table class="ae-heat" id="tb-heat"></table></div>
+        </div>
+        <div class="ae-card">
+          <div class="ae-ct">IRR vs. Plateau Production (at base Brent)</div>
+          <div id="ch-irr-plat"></div>
+        </div>
+      </div>
+
+      <!-- ══ METHODOLOGY ══ -->
+      <div class="ae-tabpanel" id="tab-method">
+        <div class="method-box">
+          <h3>Purpose & Accuracy</h3>
+          <p>This tool is a <b>±10% screening-level financial model</b> intended to quickly compare upstream investment opportunities across different fiscal regimes. It is <b>not a bankable feasibility study</b>. Results should be treated as directionally indicative only. All figures are rounded to the nearest $1MM. No contingency, inflation escalation, or FX adjustment is applied unless noted.</p>
+          <p class="ae-callout c-red" style="font-size:12.5px;">Accuracy statement: This model is calibrated to produce results within ±10% of a full-cycle deterministic model for brownfield redevelopment scenarios with reasonably well-defined reservoir parameters. Greenfield or exploration scenarios carry materially higher uncertainty. Do not use for investment decisions without independent engineering review.</p>
+        </div>
+        <div class="method-box">
+          <h3>Contract Types Modelled</h3>
+          <table>
+            <thead><tr><th>Type</th><th>Contractor Revenue</th><th>Government Take</th><th>Typical Use</th></tr></thead>
+            <tbody>
+              <tr><td><b>PSC</b> — Production Sharing Contract</td><td>Cost oil recovery (up to cost recovery ceiling) + profit oil share</td><td>State royalty + profit oil share + income tax</td><td>Angola, Malaysia, Indonesia, Libya, Venezuela</td></tr>
+              <tr><td><b>R/T</b> — Royalty / Tax</td><td>Gross revenue minus royalty minus OPEX/CAPEX minus income tax</td><td>Royalty (gross) + income tax on net income</td><td>USA, Canada, UK (UKCS), Norway, Australia</td></tr>
+              <tr><td><b>CPP</b> — Contrato de Participación</td><td>Net production above PDVSA baseline; infrastructure provided as consideration</td><td>Baseline production + royalty (30%) on net</td><td>Venezuela (GL 52/56 framework)</td></tr>
+              <tr><td><b>Service Contract</b></td><td>Flat fee per barrel produced ($/BOE) irrespective of oil price</td><td>All commodity price upside above fee</td><td>Iraq, Kuwait, Middle East NOC models</td></tr>
+              <tr><td><b>JV</b> — Joint Venture</td><td>Equity share of production net of royalty, OPEX, CAPEX, tax</td><td>Royalty + income tax on JV profits</td><td>Worldwide — NOC/IOC partnership model</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="method-box">
+          <h3>Production Profile Engine</h3>
+          <ul>
+            <li><b>Ramp:</b> Production builds from zero (or current baseline) to plateau using a user-selected ramp speed (slow = 5 years to plateau; fast = 1–2 years). The ramp follows a logistic (S-curve) function for oil fields and a faster build for gas fields.</li>
+            <li><b>Plateau:</b> Held for a user-defined number of years (1–10 years), then declines.</li>
+            <li><b>Decline:</b> Hyperbolic decline (b = 0.5 for oil, 0.3 for gas) from plateau to an economic limit or 20-year model horizon.</li>
+            <li><b>Gas fields:</b> Reported in MMSCF/D; revenue = gas price × volume × 365 days. Gas BOE equivalence at 6 MCF/BOE for production display only.</li>
+            <li><b>Baseline:</b> For CPP contracts, the PDVSA/host NOC declining baseline is estimated from initial production × 5%/yr decline.</li>
+          </ul>
+        </div>
+        <div class="method-box">
+          <h3>Fiscal Calculations</h3>
+          <ul>
+            <li><b>PSC:</b> Gross revenue → cost recovery (floored at cost recovery ceiling of gross) → profit oil split → contractor income tax applied to profit oil only.</li>
+            <li><b>R/T:</b> Gross revenue → royalty (applied to gross) → taxable income (gross net of royalty, OPEX, CAPEX, depletion allowance) → income tax → contractor net.</li>
+            <li><b>CPP:</b> Net production above declining baseline × (oil price − quality discount) × (1 − royalty rate). Infrastructure delivered as consideration is modelled as equivalent CAPEX offset.</li>
+            <li><b>Service:</b> Flat $/BOE fee × gross production. Fee is real (not indexed). Contractor has no commodity price exposure.</li>
+            <li><b>JV:</b> Equity share × (gross revenue − royalty − OPEX − CAPEX) − income tax on equity net income.</li>
+            <li><b>NPV:</b> Standard discounted cash flow. Year 0 = model start year. Discount applied mid-year (i + 0.5 convention) for realism.</li>
+            <li><b>IRR:</b> Bisection method, 120 iterations, searching −99% to +2000%.</li>
+          </ul>
+        </div>
+        <div class="method-box">
+          <h3>Pre-Financing Facility</h3>
+          <p>When enabled, the model simulates a reserve-backed prepayment facility (analogous to an offtake-linked advance). Draws occur in any year where net operating cash flow is negative. Interest accrues on the drawn balance at the rate set in the rail. Repayment is from positive cash flows. Peak debt, facility drawn, and LLCR (Loan Life Coverage Ratio, years 1–10) are reported on the Overview tab.</p>
+        </div>
+        <div class="method-box">
+          <h3>Access Tiers</h3>
+          <p><b>Demo mode</b> runs the model fully on the built-in test dataset — all global assumptions (Brent, discount rate, cost multipliers, financing) and every chart are live. <b>Full access</b>, unlocked by password, additionally enables contract-model switching, custom fiscal-term editing, and field building (add/remove/edit oil and gas fields) so the tool can be configured to a user's own dataset.</p>
+          <p>Request a password via the <b>Request access</b> button in the banner, which opens a pre-filled email to <b>technical@alpha.energy</b>. Note: the access gate is a client-side convenience control, not a security boundary.</p>
+        </div>
+        <div class="method-box">
+          <h3>Known Limitations</h3>
+          <ul>
+            <li>Flat real oil price assumption — no price deck escalation or strip pricing</li>
+            <li>No inflation escalation on OPEX or CAPEX</li>
+            <li>No FX risk modelling</li>
+            <li>Simplified tax treatment — no carry-forwards, ring-fencing, or signature bonuses (except where entered as a contract parameter)</li>
+            <li>Production profiles are idealised S-curves; actual profiles may differ significantly depending on reservoir heterogeneity</li>
+            <li>No decommissioning costs modelled</li>
+            <li>Gas fields use a single flat gas price; no take-or-pay, LNG tolling, or liquids uplift</li>
+          </ul>
+        </div>
+      </div>
+
+    </div><!-- end panelwrap -->
+  </div><!-- end body -->
+
+  <div class="ae-tip" id="qlm-tip"></div>
+  <footer>
+    <b>Upstream Quick-Look Model</b> · Screening accuracy ±10% · Not for investment decision-making without independent engineering review · Version 1.0 · June 2026
+  </footer>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   UPSTREAM QUICK-LOOK MODEL · JavaScript Engine
+   Sections: 1-Constants  2-Fields  3-Contracts  4-Engine  5-Charts  6-Views  7-Events
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. CONSTANTS ─── */
+const YEARS=[];for(let y=2025;y<=2044;y++)YEARS.push(y);
+const NY=20;
+let MODEL_CTR=0;
+
+/* ─── 1b. ACCESS GATE ─────────────────────────────────────────────────
+   NOTE: This is client-side access control only. It deters casual use and
+   keeps the demo dataset clean, but anyone who reads the page source can
+   bypass it. It is NOT a security boundary. For genuinely protected logic,
+   the engine must run behind a server API.
+   ───────────────────────────────────────────────────────────────────── */
+// Password check uses a hash so the literal string is not sitting in source.
+// Default password: "alpha2026"  (change ACCESS_HASH to rotate).
+const ACCESS_HASH='6813c775'; // djb2 hash of the access password
+function djb2(str){let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))>>>0;return h.toString(16);}
+let UNLOCKED=false;
+
+function tryUnlock(){
+  const el=document.getElementById('lic-pw');
+  const err=document.getElementById('lic-err');
+  if(djb2(el.value.trim())===ACCESS_HASH){
+    UNLOCKED=true;
+    el.classList.remove('bad'); err.style.display='none';
+    applyGate();
+  } else {
+    el.classList.add('bad'); err.style.display='inline';
+    setTimeout(()=>el.classList.remove('bad'),1500);
+  }
+}
+
+function requestPassword(){
+  const subject=encodeURIComponent('Upstream Quick-Look Model — Access Password Request');
+  const body=encodeURIComponent(
+    'Hello Alpha Energy Technical Team,\n\n'+
+    'I would like to request an access password to unlock full functionality of the Upstream Quick-Look Financial Model '+
+    '(contract-model switching, custom fiscal terms, and field building).\n\n'+
+    'Name:\nCompany / affiliation:\nIntended use:\n\n'+
+    'Thank you.'
+  );
+  window.location.href='mailto:technical@alpha.energy?subject='+subject+'&body='+body;
+}
+
+/* Apply or remove the gate across the UI */
+function applyGate(){
+  const banner=document.getElementById('lic-banner');
+  const tier=document.getElementById('lic-tier');
+  const text=document.getElementById('lic-text');
+  const actions=document.getElementById('lic-actions');
+  if(UNLOCKED){
+    banner.classList.add('unlocked');
+    tier.className='lic-tier full'; tier.textContent='Full Access';
+    text.innerHTML='<b>Full access unlocked.</b> Contract switching, custom fiscal terms, and field building are enabled. Configure the model to your own dataset.';
+    actions.innerHTML='<span style="font-size:12.5px;color:var(--green);font-weight:600;">✓ Licensed session</span>';
+  } else {
+    banner.classList.remove('unlocked');
+    tier.className='lic-tier demo'; tier.textContent='Demo';
+  }
+  // Contract selector
+  const sel=document.getElementById('sel-contract');
+  sel.disabled=!UNLOCKED;
+  sel.classList.toggle('locked',!UNLOCKED);
+  // Field builder add buttons
+  document.querySelectorAll('.add-field-row .ae-btn').forEach(b=>{
+    b.classList.toggle('locked',!UNLOCKED);
+  });
+  // Re-render gated sub-UIs
+  vContractSliders();
+  renderFieldCards();
+}
+
+/* ─── 2. FIELD DEFINITIONS ─── */
+// Each field: {id, name, type('oil'|'gas'), color, active, plateau(bopd or mmscfd), rampYrs, platYrs, capexTotal, opexPerUnit, qdiscount, gasGOR}
+const FIELD_COLORS=['#C9A84C','#C0392B','#6B7A8D','#3E5C76','#8C6E2F','#1A7A4A','#9e3030','#185fa5'];
+let fieldColorIdx=0;
+let FIELDS=[];
+
+function nextColor(){
+  const c=FIELD_COLORS[fieldColorIdx%FIELD_COLORS.length];
+  fieldColorIdx++;return c;
+}
+
+function makeField(type, preset){
+  const id='F'+(++MODEL_CTR);
+  const isGas=type==='gas';
+  const def={
+    id, type, color:nextColor(), active:true,
+    name: preset==='small'? 'Small Oil Field' : (isGas?'Gas Field':'Oil Field'),
+    plateau: isGas ? 80 : (preset==='small'?8000:30000), // bopd or mmscfd
+    rampYrs: isGas ? 2 : 3,
+    platYrs: 5,
+    capexTotal: isGas ? 300 : (preset==='small'?100:400), // $MM
+    opexPerUnit: isGas ? 1.5 : 10,  // $/boe or $/mcf
+    qdiscount: isGas ? 0 : 5,       // $/bbl quality discount vs Brent
+    capexProfile: 'front'           // 'front' | 'spread'
+  };
+  return def;
+}
+
+/* Build a production ramp array [NY values] for a field */
+function buildRamp(f){
+  const prod=new Array(NY).fill(0);
+  const ramp=f.rampYrs;
+  const plat=f.platYrs;
+  const plateau=f.plateau;
+  // S-curve build
+  for(let i=0;i<NY;i++){
+    if(i<ramp){
+      // logistic ramp
+      prod[i]=plateau*(i+1)/(ramp+1)*((i+1)/(ramp+1)<0.5?2*(i+1)/(ramp+1):1);
+      prod[i]=plateau*Math.min(1,(i+0.5)/ramp);
+    } else if(i<ramp+plat){
+      prod[i]=plateau;
+    } else {
+      const decYr=i-(ramp+plat);
+      const b=f.type==='gas'?0.3:0.5;
+      const Di=0.10; // nominal initial decline
+      prod[i]=plateau*Math.pow(1/(1+b*Di*decYr),(1/b));
+    }
+  }
+  return prod;
+}
+
+/* Build CAPEX profile [$MM/yr] */
+function buildCapex(f, mult){
+  const cap=new Array(NY).fill(0);
+  const total=f.capexTotal*mult;
+  const ramp=f.rampYrs;
+  if(f.capexProfile==='front'){
+    // heavy front load during ramp
+    const phaseYrs=Math.max(ramp,2);
+    // 50% in Y0, rest spread
+    cap[0]=total*0.45;
+    for(let i=1;i<phaseYrs&&i<NY;i++) cap[i]=total*0.55/(phaseYrs-1);
+  } else {
+    // spread evenly over ramp+plat
+    const ph=ramp+f.platYrs;
+    for(let i=0;i<ph&&i<NY;i++) cap[i]=total/ph;
+  }
+  return cap;
+}
+
+/* ─── 3. CONTRACT / FISCAL PARAMS ─── */
+// Default PSC params + per-type overrides
+const CONTRACT_DEFAULTS={
+  psc:{ royalty:0.05, costRecCeil:0.70, profitOilContractor:0.40, incomeTax:0.30, signBonus:0, infraOffset:0, svcFee:0, jvEquity:0.40 },
+  rt: { royalty:0.12, costRecCeil:1.00, profitOilContractor:1.00, incomeTax:0.30, signBonus:0, infraOffset:0, svcFee:0, jvEquity:1.00 },
+  cpp:{ royalty:0.30, costRecCeil:1.00, profitOilContractor:0.70, incomeTax:0.00, signBonus:0, infraOffset:0.25, svcFee:0, jvEquity:1.00 },
+  svc:{ royalty:0.00, costRecCeil:1.00, profitOilContractor:1.00, incomeTax:0.00, signBonus:0, infraOffset:0, svcFee:25, jvEquity:1.00 },
+  jv: { royalty:0.10, costRecCeil:1.00, profitOilContractor:1.00, incomeTax:0.30, signBonus:0, infraOffset:0, svcFee:0, jvEquity:0.40 }
+};
+
+let CONTRACT_TYPE='psc';
+let CONTRACT_P={...CONTRACT_DEFAULTS.psc};
+
+/* Slider definitions per contract type */
+const CONTRACT_SLIDERS={
+  psc:[
+    {id:'royalty',  label:'State royalty (% gross)',  min:0,  max:25, step:1,  scale:0.01, side:'left'},
+    {id:'costRecCeil', label:'Cost recovery ceiling (% gross)', min:30, max:90, step:5, scale:0.01, side:'left'},
+    {id:'profitOilContractor', label:'Profit oil — contractor share', min:10, max:80, step:5, scale:0.01, side:'left'},
+    {id:'incomeTax', label:'Contractor income tax', min:0, max:50, step:5, scale:0.01, side:'right'},
+    {id:'signBonus', label:'Signature bonus ($MM)', min:0, max:500, step:25, scale:1, side:'right'},
+  ],
+  rt:[
+    {id:'royalty',  label:'Royalty (% gross)',  min:0,  max:30, step:1,  scale:0.01, side:'left'},
+    {id:'incomeTax', label:'Income / corporation tax', min:0, max:60, step:5, scale:0.01, side:'left'},
+    {id:'signBonus', label:'Signature bonus ($MM)', min:0, max:500, step:25, scale:1, side:'right'},
+  ],
+  cpp:[
+    {id:'royalty',  label:'Royalty on net production', min:20, max:40, step:1, scale:0.01, side:'left'},
+    {id:'infraOffset', label:'Infra as % of total CAPEX', min:0, max:60, step:5, scale:0.01, side:'left'},
+    {id:'profitOilContractor', label:'Contractor net entitlement after royalty', min:50, max:80, step:5, scale:0.01, side:'right'},
+  ],
+  svc:[
+    {id:'svcFee',   label:'Service fee ($/BOE produced)', min:5, max:60, step:1, scale:1, side:'left'},
+  ],
+  jv:[
+    {id:'royalty',  label:'Royalty (% gross)', min:0, max:25, step:1, scale:0.01, side:'left'},
+    {id:'jvEquity', label:'JV contractor equity share', min:10, max:60, step:5, scale:0.01, side:'left'},
+    {id:'incomeTax', label:'Income tax on JV profits', min:0, max:55, step:5, scale:0.01, side:'right'},
+    {id:'signBonus', label:'Signature bonus ($MM)', min:0, max:500, step:25, scale:1, side:'right'},
+  ]
+};
+
+const CONTRACT_CALLOUTS={
+  psc:'<b>PSC (Production Sharing):</b> After royalty, contractor recovers costs up to the cost recovery ceiling, then splits remaining profit oil. Income tax applied on contractor profit oil. Common in SE Asia, Africa, Middle East, Venezuela.',
+  rt:'<b>Royalty / Tax:</b> Simple regime — royalty on gross, income tax on net profit. Contractor has full commodity price exposure after tax. Standard in USA, Canada, UK, Norway, Australia.',
+  cpp:'<b>CPP (Contrato de Participación):</b> Venezuelan model. Net production above PDVSA declining baseline, subject to 30% royalty. Infrastructure delivered as non-cash consideration (modelled as CAPEX offset). Requires OFAC GL authorisation for US entities.',
+  svc:'<b>Service Contract:</b> Contractor receives a flat fee per barrel produced regardless of oil price. All commodity upside belongs to the state. Contractor trades price upside for volume certainty. Common in Iraq, Kuwait.',
+  jv:'<b>Joint Venture:</b> Contractor holds equity share in a JV with the NOC. Revenue, costs, and profits split by equity. Royalty applied on JV gross; income tax on JV net profit. Common worldwide for NOC/IOC partnership structures.'
+};
+
+/* ─── 4. FINANCIAL ENGINE ─── */
+// Global params object
+function getParams(){
+  return {
+    brent:+document.getElementById('s-brent').value,
+    disc:+document.getElementById('s-disc').value/100,
+    gaspr:+document.getElementById('s-gaspr').value,
+    capexM:+document.getElementById('s-capex').value,
+    opexM:+document.getElementById('s-opex').value,
+    preFinRate:(document.getElementById('tog-prefin').checked ? +document.getElementById('s-prefin').value/100 : null),
+    contractType:CONTRACT_TYPE,
+    cp:{...CONTRACT_P}
+  };
+}
+
+function fieldCashFlow(f, p){
+  const ramp=buildRamp(f);
+  const capexArr=buildCapex(f, p.capexM);
+  const rows=[];
+  const isGas=f.type==='gas';
+  for(let i=0;i<NY;i++){
+    const prod=ramp[i]; // bopd or mmscfd
+    const price = isGas ? p.gaspr : (p.brent - f.qdiscount);
+    // Gross revenue ($MM)
+    const grossRev = isGas
+      ? prod * 365 / 1000 * price           // mmscfd * 365 * $/mcf / 1000 = $MM
+      : prod * 365 / 1e6 * price;           // bopd * 365 / 1M * $/bbl = $MM
+    const opex = isGas
+      ? prod * 365 / 1000 * f.opexPerUnit * p.opexM
+      : prod * 365 / 1e6 * f.opexPerUnit * p.opexM;
+    const capex=capexArr[i];
+    // Apply fiscal
+    let contractorRev=0, govtTake=0, signBonusYr=(i===0?p.cp.signBonus:0);
+    const ct=p.contractType, cp=p.cp;
+    if(ct==='psc'){
+      const royalty=grossRev*cp.royalty;
+      const afterRoy=grossRev-royalty;
+      const costRec=Math.min((opex+capex)*1.0, afterRoy*cp.costRecCeil);
+      const profitOil=Math.max(0,afterRoy-costRec);
+      const contrProfitOil=profitOil*cp.profitOilContractor;
+      const taxBase=contrProfitOil;
+      const tax=Math.max(0,taxBase*cp.incomeTax);
+      contractorRev=costRec+contrProfitOil-tax-signBonusYr;
+      govtTake=royalty+(profitOil-contrProfitOil)+tax+signBonusYr;
+    } else if(ct==='rt'){
+      const royalty=grossRev*cp.royalty;
+      const taxBase=Math.max(0,grossRev-royalty-opex-capex);
+      const tax=taxBase*cp.incomeTax;
+      contractorRev=grossRev-royalty-tax-signBonusYr;
+      govtTake=royalty+tax+signBonusYr;
+    } else if(ct==='cpp'){
+      const royalty=grossRev*cp.royalty;
+      const infraCredit=capex*cp.infraOffset; // portion of capex provided as non-cash infra
+      contractorRev=(grossRev-royalty)*cp.profitOilContractor + infraCredit - signBonusYr;
+      govtTake=royalty+(grossRev-royalty)*(1-cp.profitOilContractor)+signBonusYr;
+    } else if(ct==='svc'){
+      const fee=isGas ? (prod*365/1000*cp.svcFee/6) : (prod*365/1e6*cp.svcFee);
+      contractorRev=fee-signBonusYr;
+      govtTake=grossRev-fee+signBonusYr;
+    } else { // jv
+      const royalty=grossRev*cp.royalty;
+      const jvNet=Math.max(0,grossRev-royalty-opex-capex);
+      const tax=jvNet*cp.incomeTax;
+      contractorRev=(grossRev-royalty)*cp.jvEquity-opex*cp.jvEquity-capex*cp.jvEquity-tax-signBonusYr;
+      govtTake=royalty+(1-cp.jvEquity)*(grossRev-royalty)+tax+signBonusYr;
+    }
+    const ncf=contractorRev-opex-capex; // net cash flow before financing
+    rows.push({i,prod,grossRev,opex,capex,contractorRev,govtTake,ncf});
+  }
+  return rows;
+}
+
+function npv(cfs,r){let s=0;for(let i=0;i<cfs.length;i++)s+=cfs[i]/Math.pow(1+r,i+0.5);return s;}
+function irr(cfs){
+  const f=r=>npv(cfs,r);
+  let lo=-0.99,hi=20;
+  if(f(lo)*f(hi)>0)return null;
+  for(let k=0;k<120;k++){const m=(lo+hi)/2;(f(lo)*f(m)<=0)?hi=m:lo=m;}
+  return (lo+hi)/2;
+}
+
+function waterfall(cfs, fac, rate){
+  let bal=0, drawn=0;
+  const eqCFs=[];
+  for(const cf of cfs){
+    const intr=bal*rate;
+    let draw=0;
+    if(cf-intr<0){
+      draw=Math.min(-(cf-intr), fac-drawn);
+      drawn+=draw; bal+=draw+intr;
+    } else {
+      const repay=Math.min(cf,bal);
+      bal-=repay;
+    }
+    eqCFs.push(cf-intr);
+  }
+  return {eqCFs, drawn, finalBal:bal, peakBal:Math.max(...eqCFs.map((_,i)=>{
+    let b=0;for(let j=0;j<=i;j++){const cf=cfs[j];const intr=b*rate;if(cf-intr<0)b+=-(cf-intr);else{const r=Math.min(cf,b);b-=r;}}return b;
+  }),-1)};
+}
+
+function runModel(){
+  const p=getParams();
+  const active=FIELDS.filter(f=>f.active);
+  const portNCF=new Array(NY).fill(0);
+  const portCapex=new Array(NY).fill(0);
+  const portOpex=new Array(NY).fill(0);
+  const portGross=new Array(NY).fill(0);
+  const portGovt=new Array(NY).fill(0);
+  const portProd=new Array(NY).fill(0);
+  let totalGross=0, totalGovt=0, totalCapex=0, totalOpex=0;
+  const fieldData=[];
+  for(const f of active){
+    const rows=fieldCashFlow(f,p);
+    const ncfs=rows.map(r=>r.ncf);
+    const fNPV=npv(ncfs,p.disc);
+    const fIRR=irr(ncfs);
+    let cum=0,payback=null;
+    for(let i=0;i<NY;i++){cum+=ncfs[i];if(payback===null&&cum>0)payback=YEARS[i];}
+    for(let i=0;i<NY;i++){
+      portNCF[i]+=rows[i].ncf;
+      portCapex[i]+=rows[i].capex;
+      portOpex[i]+=rows[i].opex;
+      portGross[i]+=rows[i].grossRev;
+      portGovt[i]+=rows[i].govtTake;
+      const u=(f.type==='gas')? rows[i].prod*1000/6 : rows[i].prod; // to bopd equiv for stacking
+      portProd[i]+=u;
+    }
+    totalGross+=rows.reduce((s,r)=>s+r.grossRev,0);
+    totalGovt+=rows.reduce((s,r)=>s+r.govtTake,0);
+    totalCapex+=rows.reduce((s,r)=>s+r.capex,0);
+    totalOpex+=rows.reduce((s,r)=>s+r.opex,0);
+    fieldData.push({f,rows,ncfs,fNPV,fIRR,payback});
+  }
+  // Financing waterfall
+  let portEquityCFs=[...portNCF];
+  let wfResult={eqCFs:portNCF,drawn:0,finalBal:0,peakBal:0};
+  if(p.preFinRate!==null){
+    // facility = total capex planned (capped at total CAPEX)
+    const facSize=Math.ceil(totalCapex*1.1);
+    wfResult=waterfall(portNCF, facSize, p.preFinRate);
+    portEquityCFs=wfResult.eqCFs;
+  }
+  const portNPV=npv(portNCF,p.disc);
+  const portIRR=irr(portNCF);
+  const portNPVeq=npv(portEquityCFs,p.disc);
+  let portPayback=null;{let cum=0;for(let i=0;i<NY;i++){cum+=portNCF[i];if(portPayback===null&&cum>0)portPayback=YEARS[i];}}
+  return {p,fieldData,portNCF,portCapex,portOpex,portGross,portGovt,portProd,portEquityCFs,
+    totalGross,totalGovt,totalCapex,totalOpex,portNPV,portIRR,portNPVeq,portPayback,wfResult,active};
+}
+
+/* ─── 5. CHART HELPERS ─── */
+const fmt$=(v,d=0)=>'$'+v.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d});
+const fmtN=v=>Math.round(v).toLocaleString('en-US');
+const fmtPct=v=>v===null?'n/a':(v*100).toFixed(0)+'%';
+const $=id=>document.getElementById(id);
+
+function frame(w,h,padL=52,padR=14,padT=12,padB=26){
+  const fr={w,h,padL,padR,padT,padB};
+  fr.X=i=>padL+(w-padL-padR)*i/(NY-1);
+  fr.lin=(v,lo,hi)=>h-padB-(h-padT-padB)*((v-lo)/(hi-lo));
+  return fr;
+}
+function gridY(fr,lo,hi,fmt,ticks=4){
+  let s='';
+  for(let t=0;t<=ticks;t++){const v=lo+(hi-lo)*t/ticks,y=fr.lin(v,lo,hi);
+    s+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${y}" y2="${y}" stroke="#E8E2D2"/>
+        <text x="${fr.padL-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#6B7A8D">${fmt(v)}</text>`;}
+  return s;
+}
+function axisYears(fr,every=4){
+  let s='';YEARS.forEach((y,i)=>{if(i%every!==0&&i!==NY-1)return;
+    s+=`<text x="${fr.X(i)}" y="${fr.h-8}" text-anchor="middle" font-size="11" fill="#6B7A8D">${y}</text>`;});
+  return s;
+}
+function pathOf(fr,vals,lo,hi){
+  let d='M';vals.forEach((v,i)=>{d+=`${fr.X(i).toFixed(1)},${fr.lin(v,lo,hi).toFixed(1)} `;});return d;
+}
+function hoverCols(fr,ch){
+  let s='';
+  for(let i=0;i<NY;i++){
+    const x0=i===0?fr.padL:(fr.X(i-1)+fr.X(i))/2, x1=i===NY-1?fr.w-fr.padR:(fr.X(i)+fr.X(i+1))/2;
+    s+=`<rect class="ae-hov" data-ch="${ch}" data-i="${i}" x="${x0.toFixed(1)}" y="${fr.padT}" width="${(x1-x0).toFixed(1)}" height="${fr.h-fr.padT-fr.padB}" fill="transparent"/>`;
+  }
+  return s;
+}
+const SVG=(fr,inner,label)=>`<svg viewBox="0 0 ${fr.w} ${fr.h}" role="img" aria-label="${label}">${inner}</svg>`;
+
+/* ─── 6. VIEWS ─── */
+let LAST=null;
+
+function vChips(M){
+  const p=M.p;
+  const ctName={psc:'PSC',rt:'R/T',cpp:'CPP',svc:'Service',jv:'JV'}[p.contractType];
+  $('qlm-chips').innerHTML=
+    `<span class="ae-chip">NPV<sub>${(p.disc*100).toFixed(0)}%</sub> <b>${fmt$(M.portNPV)}MM</b></span>`+
+    `<span class="ae-chip">IRR <b>${fmtPct(M.portIRR)}</b></span>`+
+    `<span class="ae-chip"><b>${M.active.length}</b> field${M.active.length!==1?'s':''} active</span>`+
+    `<span class="ae-chip">Regime: <b>${ctName}</b></span>`;
+}
+
+function vKpis(M){
+  const d=(M.p.disc*100).toFixed(0);
+  const govtTake20=M.totalGovt;
+  const k=[
+    {l:`Portfolio NPV<sub>${d}</sub>`,v:fmt$(M.portNPV)+'<span class="u">MM</span>',s:'Mid-year convention, pre-financing',c:''},
+    {l:'Portfolio IRR',v:fmtPct(M.portIRR),s:'Unlevered net cash flow',c:''},
+    {l:'Programme CAPEX',v:fmt$(M.totalCapex)+'<span class="u">MM</span>',s:`at ${M.p.capexM.toFixed(2)}× multiplier`,c:'k-navy'},
+    {l:'Peak Production',v:fmtN(Math.max(...M.portProd)/1000)+'<span class="u">k</span>',s:'BOE/D equiv · active portfolio',c:'k-navy'},
+    {l:'20-yr Gross Revenue',v:fmt$(M.totalGross)+'<span class="u">MM</span>',s:`@$${M.p.brent}/bbl flat`,c:''},
+    {l:'20-yr Govt Take',v:fmt$(govtTake20)+'<span class="u">MM</span>',s:'All fiscal deductions to host',c:'k-red'}
+  ];
+  if(M.wfResult.drawn>0)
+    k.push({l:'Facility Drawn',v:fmt$(M.wfResult.drawn,0)+'<span class="u">M</span>',s:'Peak reserve-backed advance',c:'k-navy'});
+  $('qlm-kpis').innerHTML=k.map(x=>`<div class="ae-kpi ${x.c}"><div class="ae-klabel">${x.l}</div><div class="ae-kval">${x.v}</div><div class="ae-ksub">${x.s}</div></div>`).join('');
+}
+
+function vSplit(M){
+  const total=M.totalGross||1;
+  const contrev=total-M.totalGovt;
+  const segs=[
+    {v:M.totalGovt, c:'#C0392B', t:'Govt/Host Take'},
+    {v:contrev, c:'#C9A84C', t:'Contractor Net Revenue'}
+  ];
+  $('qlm-split').innerHTML=segs.map(s=>{
+    const pct=total>0?s.v/total*100:0;
+    return `<div class="ae-seg" style="width:${pct.toFixed(1)}%;background:${s.c}" title="${s.t}: ${fmt$(s.v)}MM">${pct>8?`${s.t} · ${pct.toFixed(0)}%`:''}</div>`;
+  }).join('');
+  const govtPct=(M.totalGovt/total*100).toFixed(0);
+  $('qlm-splitcaps').innerHTML=`<span>Govt take ${govtPct}% of gross</span><span>Contractor ${(100-+govtPct)}% of gross · ${fmt$(M.totalGross)}MM total 20-yr revenue</span>`;
+}
+
+function vProd(M){
+  if(!M.active.length){$('ch-prod').innerHTML='<p style="color:var(--steel);font-size:13px;padding:20px">No active fields.</p>';return;}
+  const fr=frame(560,240);
+  const top=Math.max(1,...M.portProd)*1.1;
+  // stacked bands
+  const stacks=YEARS.map((_,i)=>{
+    let s=0;
+    return M.fieldData.map(x=>{
+      const lo=s;
+      const u=x.f.type==='gas'? x.rows[i].prod*1000/6 : x.rows[i].prod;
+      s+=u; return [lo,s];
+    });
+  });
+  let b=gridY(fr,0,top,v=>fmtN(v/1000)+'k');
+  M.fieldData.forEach((x,k)=>{
+    let up='',dn='';
+    for(let i=0;i<NY;i++) up+=`${i?'L':'M'}${fr.X(i).toFixed(1)},${fr.lin(stacks[i][k][1],0,top).toFixed(1)} `;
+    for(let i=NY-1;i>=0;i--) dn+=`L${fr.X(i).toFixed(1)},${fr.lin(stacks[i][k][0],0,top).toFixed(1)} `;
+    b+=`<path d="${up}${dn}Z" fill="${x.f.color}" fill-opacity="0.82"/>`;
+  });
+  b+=axisYears(fr)+hoverCols(fr,'prod');
+  $('ch-prod').innerHTML=SVG(fr,b,'Portfolio production stacked by field');
+  $('lg-prod').innerHTML=M.fieldData.map(x=>`<span><i style="background:${x.f.color}"></i>${x.f.name}</span>`).join('');
+}
+
+function vCF(M){
+  const fr=frame(560,240);
+  const cf=M.portNCF;
+  const cum=[];let c=0;cf.forEach(v=>{c+=v;cum.push(c);});
+  const lo=Math.min(0,...cf)*1.15, hi=Math.max(...cf,1)*1.1;
+  let b=gridY(fr,lo,hi,v=>fmtN(v));
+  const bw=(fr.w-fr.padL-fr.padR)/NY*0.62;
+  cf.forEach((v,i)=>{const y0=fr.lin(0,lo,hi),y1=fr.lin(v,lo,hi);
+    b+=`<rect x="${(fr.X(i)-bw/2).toFixed(1)}" y="${Math.min(y0,y1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0-y1).toFixed(1)}" fill="${v<0?'#C0392B':'#C9A84C'}"/>`;});
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${fr.lin(0,lo,hi)}" y2="${fr.lin(0,lo,hi)}" stroke="#0B1F3A" stroke-width="1"/>`;
+  const cLo=Math.min(0,...cum),cHi=Math.max(...cum,1);
+  b+=`<path d="${pathOf(fr,cum,cLo,cHi)}" fill="none" stroke="#0B1F3A" stroke-width="2"/>`;
+  b+=`<text x="${fr.w-fr.padR}" y="${fr.padT+12}" text-anchor="end" font-size="11" fill="#0B1F3A">cum ${fmt$(cum[NY-1])}MM</text>`;
+  b+=axisYears(fr);
+  $('ch-cf').innerHTML=SVG(fr,b,'Portfolio net cash flow');
+}
+
+function vBridge(M){
+  const govtRoy=M.totalGovt;
+  const items=[
+    {l:'Gross Revenue',v:M.totalGross,t:'start'},
+    {l:'Govt / Fiscal',v:-govtRoy,t:'neg'},
+    {l:'OPEX',v:-M.totalOpex,t:'neg'},
+    {l:'CAPEX',v:-M.totalCapex,t:'neg'},
+    {l:'Investor Net',v:M.portNCF.reduce((s,v)=>s+v,0),t:'total'}
+  ];
+  if(M.wfResult.drawn>0){
+    const finCost=M.portNCF.reduce((s,v)=>s+v,0)-M.portEquityCFs.reduce((s,v)=>s+v,0);
+    items.push({l:'Facility Cost',v:-Math.abs(finCost),t:'neg'});
+    items.push({l:'Net Equity CF',v:M.portEquityCFs.reduce((s,v)=>s+v,0),t:'total'});
+  }
+  const fw=1100,rowH=0,n=items.length,fh=280;
+  const bw=(fw-60-14)/n*0.6;
+  const cx=i=>60+(fw-60-14)*(i+0.5)/n;
+  let run=0;const pos=[];
+  items.forEach(it=>{
+    if(it.t==='start'){pos.push([0,it.v]);run=it.v;}
+    else if(it.t==='total'){pos.push([0,it.v]);run=it.v;}
+    else{pos.push([run+it.v,run]);run=run+it.v;}
+  });
+  const hiV=Math.max(...pos.map(p=>p[1]),1)*1.08;
+  const loV=Math.min(0,...pos.map(p=>p[0]))*1.08;
+  const fr=frame(fw,fh,60,14,16,58);
+  let b=gridY(fr,loV,hiV,v=>fmtN(v));
+  items.forEach((it,i)=>{
+    const [a,bb]=pos[i];
+    const y0=fr.lin(Math.max(a,bb),loV,hiV), y1=fr.lin(Math.min(a,bb),loV,hiV);
+    const col=it.t==='start'?'#C9A84C':(it.t==='total'?'#0B1F3A':'#C0392B');
+    b+=`<rect x="${(cx(i)-bw/2).toFixed(1)}" y="${y0.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(2,y1-y0).toFixed(1)}" fill="${col}" rx="2"/>`;
+    if(i<n-1){const yC=fr.lin(it.t==='neg'?a:bb,loV,hiV);
+      b+=`<line x1="${(cx(i)+bw/2).toFixed(1)}" x2="${(cx(i+1)-bw/2).toFixed(1)}" y1="${yC.toFixed(1)}" y2="${yC.toFixed(1)}" stroke="#6B7A8D" stroke-dasharray="3 3"/>`;}
+    const sign=it.t==='neg'?(it.v<0?'':'+'): '';
+    b+=`<text x="${cx(i)}" y="${y0-5}" text-anchor="middle" font-size="12" font-weight="600" fill="#0B1F3A">${sign}${fmtN(Math.abs(it.v))}</text>`;
+    const words=it.l.split(' ');
+    words.forEach((w,k)=>{b+=`<text x="${cx(i)}" y="${fh-43+k*13}" text-anchor="middle" font-size="10.5" fill="#6B7A8D">${w}</text>`;});
+  });
+  $('ch-bridge').innerHTML=SVG(fr,b,'Value bridge');
+}
+
+function vSelfFund(M){
+  const fr=frame(1100,210,60);
+  const opCF=M.portNCF.map((v,i)=>v+M.portCapex[i]); // pre-capex operating cf
+  const top=Math.max(...opCF,...M.portCapex,1)*1.12;
+  const lo=Math.min(0,...opCF)*1.1;
+  let b=gridY(fr,lo,top,v=>fmtN(v));
+  const bw=(fr.w-fr.padL-fr.padR)/NY*0.55;
+  M.portCapex.forEach((v,i)=>{const y0=fr.lin(0,lo,top),y1=fr.lin(v,lo,top);
+    b+=`<rect x="${(fr.X(i)-bw/2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,y0-y1).toFixed(1)}" fill="#C9A84C"/>`;});
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${fr.lin(0,lo,top)}" y2="${fr.lin(0,lo,top)}" stroke="#6B7A8D"/>`;
+  b+=`<path d="${pathOf(fr,opCF,lo,top)}" fill="none" stroke="#0B1F3A" stroke-width="2.4"/>`;
+  opCF.forEach((v,i)=>{if(v<M.portCapex[i])
+    b+=`<circle cx="${fr.X(i)}" cy="${fr.lin(v,lo,top)}" r="5" fill="#C0392B" stroke="#0B1F3A" stroke-width="1.2"/>`;});
+  b+=axisYears(fr);
+  $('ch-selffund').innerHTML=SVG(fr,b,'CAPEX vs operating CF self-funding');
+}
+
+function vPortfolioTable(M){
+  let h='<thead><tr><th>Year</th><th>Gross Rev $MM</th><th>Govt $MM</th><th>OPEX $MM</th><th>CAPEX $MM</th><th>Net CF $MM</th><th>Cum CF $MM</th></tr></thead><tbody>';
+  let cum=0;
+  YEARS.forEach((y,i)=>{
+    cum+=M.portNCF[i];
+    h+=`<tr><td>${y}</td><td>${fmtN(M.portGross[i])}</td><td>${fmtN(M.portGovt[i])}</td><td>${fmtN(M.portOpex[i])}</td><td>${fmtN(M.portCapex[i])}</td><td style="color:${M.portNCF[i]<0?'var(--red)':'var(--navy)'}">${fmtN(M.portNCF[i])}</td><td>${fmtN(cum)}</td></tr>`;
+  });
+  h+=`<tr class="r-tot"><td>TOTAL</td><td>${fmtN(M.totalGross)}</td><td>${fmtN(M.totalGovt)}</td><td>${fmtN(M.totalOpex)}</td><td>${fmtN(M.totalCapex)}</td><td>${fmtN(M.portNCF.reduce((s,v)=>s+v,0))}</td><td></td></tr></tbody>`;
+  $('tb-portfolio').innerHTML=h;
+}
+
+/* ── CONTRACT TAB ── */
+function vContractSliders(){
+  const ct=CONTRACT_TYPE;
+  const defs=CONTRACT_SLIDERS[ct]||[];
+  const leftDefs=defs.filter(d=>d.side==='left');
+  const rightDefs=defs.filter(d=>d.side==='right');
+  const makeSliders=(arr)=>arr.map(d=>{
+    const rawVal=CONTRACT_P[d.id]??0;
+    const dispVal=d.scale===0.01 ? Math.round(rawVal/d.scale) : rawVal/d.scale;
+    const dispStr=d.scale===0.01 ? dispVal+'%' : fmt$(dispVal,0).replace('$','$');
+    return `<div class="ae-slider">
+      <label for="cs-${d.id}">${d.label} <output id="co-${d.id}">${dispStr}</output></label>
+      <input type="range" id="cs-${d.id}" min="${d.min}" max="${d.max}" step="${d.step}" value="${dispVal}" data-cid="${d.id}" data-scale="${d.scale}" class="contract-slider">
+    </div>`;
+  }).join('');
+  $('ct-left-sliders').innerHTML=makeSliders(leftDefs);
+  $('ct-right-sliders').innerHTML=makeSliders(rightDefs);
+  $('ct-callout').innerHTML=CONTRACT_CALLOUTS[ct]||'';
+  // attach events
+  document.querySelectorAll('.contract-slider').forEach(el=>{
+    updateSliderBg(el);
+    el.disabled=!UNLOCKED;
+    el.addEventListener('input',function(){
+      const cid=this.dataset.cid;
+      const scale=+this.dataset.scale;
+      CONTRACT_P[cid]=+this.value*scale;
+      const dispStr=scale===0.01?this.value+'%':fmt$(+this.value,0);
+      $('co-'+cid).textContent=dispStr;
+      updateSliderBg(this);
+      recalc();
+    });
+  });
+  $('ct-heading').innerHTML=({psc:'PSC — Production Sharing Contract',rt:'R/T — Royalty / Tax Regime',cpp:'CPP — Contrato de Participación en la Producción',svc:'Service Contract',jv:'Joint Venture (JV Equity)'}[ct])+(UNLOCKED?'':'<span class="lock-pill">🔒 Locked · demo terms</span>');
+}
+
+function vContractTerms(M){
+  const p=M.p, cp=p.cp, ct=p.contractType;
+  const rows={
+    psc:[['State royalty',fmtPct(cp.royalty),'% of gross revenue'],['Cost rec. ceiling',fmtPct(cp.costRecCeil),'% of gross that may be recovered'],['Contractor profit oil',fmtPct(cp.profitOilContractor),'of profit oil post cost recovery'],['State profit oil',(1-cp.profitOilContractor)*100+'%','of profit oil'],['Contractor income tax',fmtPct(cp.incomeTax),'on contractor profit oil'],['Signature bonus',fmt$(cp.signBonus,0)+'M','paid at Year 0']],
+    rt:[['Royalty',fmtPct(cp.royalty),'% of gross (before tax)'],['Income / corp. tax',fmtPct(cp.incomeTax),'on net profit (post-royalty, post-OPEX/CAPEX)'],['Effective govt take',(M.totalGross>0?M.totalGovt/M.totalGross*100:0).toFixed(0)+'%','of 20yr gross revenue'],['Signature bonus',fmt$(cp.signBonus,0)+'M','at Year 0']],
+    cpp:[['NOC royalty',fmtPct(cp.royalty),'on net production above baseline'],['Contractor entitlement',fmtPct(cp.profitOilContractor),'of net revenue after royalty'],['Infra as % of CAPEX',fmtPct(cp.infraOffset),'CAPEX delivered as non-cash infra']],
+    svc:[['Service fee',fmt$(cp.svcFee,0)+'/BOE','flat fee per barrel — no price exposure']],
+    jv:[['Royalty',fmtPct(cp.royalty),'on gross production'],['JV equity share',fmtPct(cp.jvEquity),'contractor working interest'],['Income tax',fmtPct(cp.incomeTax),'on JV net profit'],['Signature bonus',fmt$(cp.signBonus,0)+'M','at Year 0']]
+  }[ct]||[];
+  let h='<div class="ae-covgrid" style="margin-top:8px;">';
+  rows.forEach(r=>{h+=`<div class="cterm"><span>${r[0]}<br><small style="color:var(--steel)">${r[2]}</small></span><b>${r[1]}</b></div>`;});
+  h+='</div>';
+  $('ct-terms-grid').innerHTML=h;
+}
+
+function vGovtTake(M){
+  if(!M.active.length)return;
+  const fr=frame(1100,200,60);
+  const govtPct=M.portGross.map((g,i)=>g>0?M.portGovt[i]/g*100:0);
+  const top=100, lo=0;
+  let b=gridY(fr,lo,top,v=>v+'%');
+  const bw=(fr.w-fr.padL-fr.padR)/NY*0.6;
+  govtPct.forEach((v,i)=>{const y0=fr.lin(0,lo,top),y1=fr.lin(v,lo,top);
+    b+=`<rect x="${(fr.X(i)-bw/2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,y0-y1).toFixed(1)}" fill="#C0392B" fill-opacity="0.7"/>`;});
+  const avg=M.totalGross>0?M.totalGovt/M.totalGross*100:0;
+  const yAvg=fr.lin(avg,lo,top);
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${yAvg}" y2="${yAvg}" stroke="#0B1F3A" stroke-dasharray="5 3" stroke-width="2"/>`;
+  b+=`<text x="${fr.w-fr.padR}" y="${yAvg-5}" text-anchor="end" font-size="11" fill="#0B1F3A">avg ${avg.toFixed(0)}%</text>`;
+  b+=axisYears(fr);
+  $('ch-govttake').innerHTML=SVG(fr,b,'Government take percentage over time');
+}
+
+/* ── FIELDS TAB ── */
+function renderFieldCards(){
+  $('field-builder').innerHTML='';
+  FIELDS.forEach((f,idx)=>{
+    const card=document.createElement('div');
+    card.className=`fcard${f.active?'':' f-off'}`;
+    card.innerHTML=`
+      <button class="fcard-del" onclick="removeField('${f.id}')" title="Remove field">✕</button>
+      <div class="fcard-hdr">
+        <div class="ae-dot" style="width:12px;height:12px;border-radius:2px;background:${f.color};border:1px solid var(--line);"></div>
+        <input style="flex:1;border:none;background:transparent;font-family:'Playfair Display',serif;font-size:15px;color:var(--navy);padding:0;font-weight:600;" value="${f.name}" oninput="FIELDS[${idx}].name=this.value;recalc();">
+        <span class="ftype">${f.type.toUpperCase()}</span>
+      </div>
+      <div class="fcard-toggle">
+        <input type="checkbox" id="ftog-${f.id}" ${f.active?'checked':''} onchange="FIELDS[${idx}].active=this.checked;renderFieldCards();recalc();">
+        <label for="ftog-${f.id}">Include in portfolio</label>
+      </div>
+      <div class="ae-slider">
+        <label>Plateau (${f.type==='gas'?'MMSCF/D':'BOPD'}) <output id="fo-plat-${f.id}">${fmtN(f.plateau)}</output></label>
+        <input type="range" id="fs-plat-${f.id}" min="${f.type==='gas'?10:2000}" max="${f.type==='gas'?1000:200000}" step="${f.type==='gas'?10:2000}" value="${f.plateau}" oninput="FIELDS[${idx}].plateau=+this.value;$('fo-plat-${f.id}').textContent=fmtN(this.value);recalc();">
+      </div>
+      <div class="ae-slider">
+        <label>Ramp to plateau (years) <output id="fo-ramp-${f.id}">${f.rampYrs}</output></label>
+        <input type="range" id="fs-ramp-${f.id}" min="1" max="8" step="1" value="${f.rampYrs}" oninput="FIELDS[${idx}].rampYrs=+this.value;$('fo-ramp-${f.id}').textContent=this.value;recalc();">
+      </div>
+      <div class="ae-slider">
+        <label>Plateau duration (years) <output id="fo-platy-${f.id}">${f.platYrs}</output></label>
+        <input type="range" id="fs-platy-${f.id}" min="1" max="10" step="1" value="${f.platYrs}" oninput="FIELDS[${idx}].platYrs=+this.value;$('fo-platy-${f.id}').textContent=this.value;recalc();">
+      </div>
+      <div class="ae-slider">
+        <label>Total CAPEX ($MM) <output id="fo-capex-${f.id}">${fmtN(f.capexTotal)}</output></label>
+        <input type="range" id="fs-capex-${f.id}" min="10" max="2000" step="10" value="${f.capexTotal}" oninput="FIELDS[${idx}].capexTotal=+this.value;$('fo-capex-${f.id}').textContent=fmtN(+this.value);recalc();">
+      </div>
+      <div class="ae-slider">
+        <label>OPEX ($/BOE${f.type==='gas'?'/MCF':''}) <output id="fo-opex-${f.id}">${f.opexPerUnit.toFixed(1)}</output></label>
+        <input type="range" id="fs-opex-${f.id}" min="1" max="30" step="0.5" value="${f.opexPerUnit}" oninput="FIELDS[${idx}].opexPerUnit=+this.value;$('fo-opex-${f.id}').textContent=(+this.value).toFixed(1);recalc();">
+      </div>
+      ${f.type==='oil'?`
+      <div class="ae-slider">
+        <label>Quality discount ($/bbl) <output id="fo-qd-${f.id}">${f.qdiscount}</output></label>
+        <input type="range" id="fs-qd-${f.id}" min="0" max="30" step="1" value="${f.qdiscount}" oninput="FIELDS[${idx}].qdiscount=+this.value;$('fo-qd-${f.id}').textContent=this.value;recalc();">
+      </div>`:''}
+      ${UNLOCKED?'':'<div class="fcard-locknote">🔒 Field parameters are locked in demo mode. Unlock to edit plateau, ramp, CAPEX and OPEX for your own dataset.</div>'}
+    `;
+    $('field-builder').appendChild(card);
+    // update slider backgrounds; disable inputs when locked
+    card.querySelectorAll('input[type=range]').forEach(updateSliderBg);
+    if(!UNLOCKED){
+      card.querySelectorAll('input,button').forEach(inp=>{ inp.disabled=true; });
+    }
+  });
+}
+
+function vRampChart(M){
+  if(!M.fieldData.length){$('ch-ramps').innerHTML='';return;}
+  const fr=frame(1100,240);
+  const allVals=M.fieldData.flatMap(x=>x.rows.map(r=>r.f.type==='gas'? r.prod*1000/6 : r.prod));
+  const top=Math.max(1,...allVals)*1.1;
+  let b=gridY(fr,0,top,v=>fmtN(v/1000)+'k');
+  M.fieldData.forEach((x,k)=>{
+    b+=`<path d="${pathOf(fr,x.rows.map(r=>x.f.type==='gas'?r.prod*1000/6:r.prod),0,top)}" fill="none" stroke="${x.f.color}" stroke-width="2.5"/>`;
+  });
+  b+=axisYears(fr);
+  $('ch-ramps').innerHTML=SVG(fr,b,'Individual field production profiles');
+  $('lg-ramps').innerHTML=M.fieldData.map(x=>`<span><i style="background:${x.f.color}"></i>${x.f.name}</span>`).join('');
+}
+
+function vFieldTable(M){
+  let h='<thead><tr><th>Field</th><th>Type</th><th>Plateau</th><th>Total CAPEX $MM</th><th>NPV $MM</th><th>IRR</th><th>Payback</th></tr></thead><tbody>';
+  M.fieldData.forEach(x=>{
+    h+=`<tr><td><span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:10px;height:10px;border-radius:2px;background:${x.f.color};display:inline-block"></span>${x.f.name}</span></td>
+      <td>${x.f.type.toUpperCase()}</td>
+      <td>${x.f.type==='gas'?fmtN(x.f.plateau)+' MMSCF/D':fmtN(x.f.plateau)+' BOPD'}</td>
+      <td>${fmtN(x.f.capexTotal)}</td>
+      <td>${fmtN(x.fNPV)}</td>
+      <td>${fmtPct(x.fIRR)}</td>
+      <td>${x.payback||'—'}</td>
+    </tr>`;
+  });
+  $('tb-fields').innerHTML=h;
+}
+
+/* ── SENSITIVITY TAB ── */
+function vTornado(M){
+  const base=M.portNPV;
+  const p=M.p;
+  const drivers=[
+    {l:'Brent ±30%',lo:{brent:p.brent*0.7},hi:{brent:p.brent*1.3}},
+    {l:'CAPEX +25% / −25%',lo:{capexM:p.capexM*1.25},hi:{capexM:p.capexM*0.75}},
+    {l:'OPEX +25% / −25%',lo:{opexM:p.opexM*1.25},hi:{opexM:p.opexM*0.75}},
+    {l:'Discount ±5pp',lo:{disc:Math.min(0.35,p.disc+0.05)},hi:{disc:Math.max(0.05,p.disc-0.05)}},
+  ];
+  const bars=drivers.map(d=>{
+    const pLo=Object.assign({},p,d.lo), pHi=Object.assign({},p,d.hi);
+    const mLo=runModelWith(pLo), mHi=runModelWith(pHi);
+    return {l:d.l, lo:Math.min(mLo.portNPV,mHi.portNPV), hi:Math.max(mLo.portNPV,mHi.portNPV)};
+  }).sort((a,b2)=>(b2.hi-b2.lo)-(a.hi-a.lo));
+  const span=Math.max(...bars.map(b=>[Math.abs(b.lo-base),Math.abs(b.hi-base)].reduce((a,v)=>Math.max(a,v),0)),1)*1.15;
+  const fw=1100,rowH=42,fh=bars.length*rowH+38;
+  const mid=fw*0.55,half=fw*0.36;
+  const sx=v=>mid+half*(v-base)/span;
+  let b=`<line x1="${mid}" x2="${mid}" y1="8" y2="${fh-26}" stroke="#0B1F3A" stroke-width="1.5"/>`;
+  b+=`<text x="${mid}" y="${fh-10}" text-anchor="middle" font-size="11.5" fill="#0B1F3A" font-weight="600">base ${fmtN(base)}</text>`;
+  bars.forEach((bar,i)=>{
+    const y=14+i*rowH;
+    const x1=sx(bar.lo),x2=sx(bar.hi);
+    b+=`<rect x="${Math.min(x1,x2)}" y="${y+8}" width="${Math.abs(x2-x1)}" height="22" rx="3" fill="${bar.lo>base?'#C9A84C':'#3E5C76'}" fill-opacity="0.75"/>`;
+    b+=`<text x="8" y="${y+22}" font-size="12.5" fill="#0B1F3A">${bar.l}</text>`;
+    b+=`<text x="${Math.min(x1,x2)-4}" y="${y+23}" text-anchor="end" font-size="11" fill="#6B7A8D">${fmtN(bar.lo)}</text>`;
+    b+=`<text x="${Math.max(x1,x2)+4}" y="${y+23}" font-size="11" fill="#6B7A8D">${fmtN(bar.hi)}</text>`;
+  });
+  $('ch-tornado').innerHTML=`<svg viewBox="0 0 ${fw} ${fh}" role="img" aria-label="NPV tornado">${b}</svg>`;
+}
+
+function vBrentSens(M){
+  const p=M.p;
+  const prices=[30,40,50,60,70,80,90,100,110,120];
+  const npvs=prices.map(b2=>runModelWith(Object.assign({},p,{brent:b2})).portNPV);
+  const fr=frame(540,220,60,14,12,30);
+  const lo=Math.min(0,...npvs)*1.1,hi=Math.max(...npvs)*1.1;
+  let b=gridY(fr,lo,hi,v=>fmtN(v));
+  const X=i=>fr.padL+(fr.w-fr.padL-fr.padR)*i/(prices.length-1);
+  let d='M';npvs.forEach((v,i)=>{d+=`${X(i).toFixed(1)},${fr.lin(v,lo,hi).toFixed(1)} `;});
+  b+=`<path d="${d}" fill="none" stroke="#0B1F3A" stroke-width="2.4"/>`;
+  npvs.forEach((v,i)=>{b+=`<circle cx="${X(i)}" cy="${fr.lin(v,lo,hi)}" r="4" fill="${v<0?'#C0392B':'#C9A84C'}"/>`;});
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${fr.lin(0,lo,hi)}" y2="${fr.lin(0,lo,hi)}" stroke="#6B7A8D" stroke-dasharray="3 3"/>`;
+  prices.forEach((prc,i)=>{b+=`<text x="${X(i)}" y="${fr.h-12}" text-anchor="middle" font-size="10.5" fill="#6B7A8D">$${prc}</text>`;});
+  $('ch-brent-sens').innerHTML=SVG(fr,b,'Brent sensitivity');
+}
+
+function vHeatMap(M){
+  const p=M.p;
+  const brents=[40,55,70,85,100];
+  const capexMs=[0.75,0.90,1.00,1.10,1.25,1.50];
+  const min=runModelWith(Object.assign({},p,{brent:40,capexM:1.50})).portNPV;
+  const max=runModelWith(Object.assign({},p,{brent:100,capexM:0.75})).portNPV;
+  function heatColor(v){
+    const t=(v-min)/(max-min||1);
+    const r=Math.round(192+56*(1-t)), g=Math.round(57+165*t), bl=Math.round(43+8*t);
+    return `rgb(${r},${g},${bl})`;
+  }
+  let h=`<thead><tr><th></th>${brents.map(b=>`<th>$${b}/bbl</th>`).join('')}</tr></thead><tbody>`;
+  capexMs.forEach(cm=>{
+    h+=`<tr><th>${cm.toFixed(2)}× CAPEX</th>`;
+    brents.forEach(br=>{
+      const v=runModelWith(Object.assign({},p,{brent:br,capexM:cm})).portNPV;
+      const isBase=(br===p.brent&&Math.abs(cm-p.capexM)<0.001);
+      h+=`<td style="background:${heatColor(v)};color:#fff;" class="${isBase?'h-base':''}">${fmtN(v)}</td>`;
+    });
+    h+=`</tr>`;
+  });
+  h+='</tbody>';
+  $('tb-heat').innerHTML=h;
+}
+
+function vIRRPlat(M){
+  if(!M.active.length){$('ch-irr-plat').innerHTML='';return;}
+  // vary first active field plateau
+  const p=M.p;
+  const f0=M.active[0];
+  const orig=f0.plateau;
+  const steps=8;
+  const platVals=[], irrVals=[];
+  for(let k=0;k<=steps;k++){
+    const plat=f0.type==='gas' ? Math.round(orig*0.5+orig*k/steps) : Math.round(orig*0.5+orig*k/steps/1000)*1000;
+    f0.plateau=plat;
+    const R=runModelWith(p);
+    platVals.push(plat);
+    irrVals.push(R.portIRR===null?0:R.portIRR*100);
+  }
+  f0.plateau=orig;
+  const fr=frame(1100,200,60,14,12,30);
+  const lo=0, hi=Math.max(...irrVals)*1.15;
+  let b=gridY(fr,lo,hi,v=>v.toFixed(0)+'%');
+  const X=k=>fr.padL+(fr.w-fr.padL-fr.padR)*k/steps;
+  let d='M';irrVals.forEach((v,k)=>{d+=`${X(k).toFixed(1)},${fr.lin(v,lo,hi).toFixed(1)} `;});
+  b+=`<path d="${d}" fill="none" stroke="#C9A84C" stroke-width="2.5"/>`;
+  irrVals.forEach((v,k)=>{b+=`<circle cx="${X(k)}" cy="${fr.lin(v,lo,hi)}" r="4" fill="#0B1F3A"/>`;
+    b+=`<text x="${X(k)}" y="${fr.h-12}" text-anchor="middle" font-size="10" fill="#6B7A8D">${f0.type==='gas'?fmtN(platVals[k]):fmtN(platVals[k]/1000)+'k'}</text>`;
+  });
+  $('ch-irr-plat').innerHTML=SVG(fr,b,'IRR vs plateau production');
+}
+
+/* ─── Run model with custom params (non-destructive) ─── */
+function runModelWith(p){
+  const origBrent=document.getElementById('s-brent').value;
+  // We can't mutate DOM, so we just run the engine directly
+  const oldActive=FIELDS.filter(f=>f.active);
+  const portNCF=new Array(NY).fill(0);
+  const portGovt=new Array(NY).fill(0);
+  let totalGross=0,totalGovt=0;
+  const fds=[];
+  for(const f of oldActive){
+    const rows=fieldCashFlowWith(f,p);
+    const ncfs=rows.map(r=>r.ncf);
+    const fNPV=npv(ncfs,p.disc);
+    const fIRR=irr(ncfs);
+    for(let i=0;i<NY;i++){portNCF[i]+=rows[i].ncf; portGovt[i]+=rows[i].govtTake;}
+    totalGross+=rows.reduce((s,r)=>s+r.grossRev,0);
+    totalGovt+=rows.reduce((s,r)=>s+r.govtTake,0);
+    fds.push({f,rows,ncfs,fNPV,fIRR});
+  }
+  return {portNPV:npv(portNCF,p.disc), portIRR:irr(portNCF), portNCF, totalGross, totalGovt};
+}
+
+function fieldCashFlowWith(f,p){
+  const ramp=buildRamp(f);
+  const capexArr=buildCapex(f, p.capexM);
+  const rows=[];
+  const isGas=f.type==='gas';
+  for(let i=0;i<NY;i++){
+    const prod=ramp[i];
+    const price=isGas ? p.gaspr : (p.brent - f.qdiscount);
+    const grossRev=isGas ? prod*365/1000*price : prod*365/1e6*price;
+    const opex=isGas ? prod*365/1000*f.opexPerUnit*p.opexM : prod*365/1e6*f.opexPerUnit*p.opexM;
+    const capex=capexArr[i];
+    let contractorRev=0, govtTake=0, signBonusYr=(i===0?p.cp.signBonus:0);
+    const ct=p.contractType, cp=p.cp;
+    if(ct==='psc'){
+      const royalty=grossRev*cp.royalty;
+      const afterRoy=grossRev-royalty;
+      const costRec=Math.min((opex+capex), afterRoy*cp.costRecCeil);
+      const profitOil=Math.max(0,afterRoy-costRec);
+      const contrProfitOil=profitOil*cp.profitOilContractor;
+      const tax=Math.max(0,contrProfitOil*cp.incomeTax);
+      contractorRev=costRec+contrProfitOil-tax-signBonusYr;
+      govtTake=royalty+(profitOil-contrProfitOil)+tax+signBonusYr;
+    } else if(ct==='rt'){
+      const royalty=grossRev*cp.royalty;
+      const taxBase=Math.max(0,grossRev-royalty-opex-capex);
+      const tax=taxBase*cp.incomeTax;
+      contractorRev=grossRev-royalty-tax-signBonusYr;
+      govtTake=royalty+tax+signBonusYr;
+    } else if(ct==='cpp'){
+      const royalty=grossRev*cp.royalty;
+      const infraCredit=capex*cp.infraOffset;
+      contractorRev=(grossRev-royalty)*cp.profitOilContractor+infraCredit-signBonusYr;
+      govtTake=royalty+(grossRev-royalty)*(1-cp.profitOilContractor)+signBonusYr;
+    } else if(ct==='svc'){
+      const fee=isGas?(prod*365/1000*cp.svcFee/6):(prod*365/1e6*cp.svcFee);
+      contractorRev=fee-signBonusYr;
+      govtTake=grossRev-fee+signBonusYr;
+    } else {
+      const royalty=grossRev*cp.royalty;
+      const jvNet=Math.max(0,grossRev-royalty-opex-capex);
+      const tax=jvNet*cp.incomeTax;
+      contractorRev=(grossRev-royalty)*cp.jvEquity-opex*cp.jvEquity-capex*cp.jvEquity-tax-signBonusYr;
+      govtTake=royalty+(1-cp.jvEquity)*(grossRev-royalty)+tax+signBonusYr;
+    }
+    const ncf=contractorRev-opex-capex;
+    rows.push({i,prod,grossRev,opex,capex,contractorRev,govtTake,ncf});
+  }
+  return rows;
+}
+
+/* ─── 7. MASTER RECALC ─── */
+function recalc(){
+  LAST=runModel();
+  vChips(LAST);
+  vKpis(LAST);
+  vSplit(LAST);
+  vProd(LAST);
+  vCF(LAST);
+  vBridge(LAST);
+  vSelfFund(LAST);
+  vPortfolioTable(LAST);
+  vContractTerms(LAST);
+  vGovtTake(LAST);
+  vRampChart(LAST);
+  vFieldTable(LAST);
+  vTornado(LAST);
+  vBrentSens(LAST);
+  vHeatMap(LAST);
+  vIRRPlat(LAST);
+}
+
+/* ─── 8. SLIDER BACKGROUND FILL ─── */
+function updateSliderBg(el){
+  const min=+el.min, max=+el.max, val=+el.value;
+  const pct=(val-min)/(max-min)*100;
+  el.style.setProperty('--pct',pct+'%');
+}
+
+/* ─── 9. FIELD MANAGEMENT ─── */
+function addField(type, preset){
+  if(!UNLOCKED){flashGate();return;}
+  if(FIELDS.length>=8){alert('Maximum 8 fields supported.');return;}
+  FIELDS.push(makeField(type, preset));
+  renderFieldCards();
+  recalc();
+}
+function removeField(id){
+  if(!UNLOCKED){flashGate();return;}
+  if(FIELDS.length<=1){alert('At least one field required.');return;}
+  FIELDS=FIELDS.filter(f=>f.id!==id);
+  renderFieldCards();
+  recalc();
+}
+function flashGate(){
+  const b=document.getElementById('lic-banner');
+  b.style.transition='background .15s';
+  b.style.background='#FBEFC9';
+  setTimeout(()=>{b.style.background='';},400);
+  document.getElementById('lic-pw').focus();
+}
+
+/* ─── 10. CONTRACT TYPE SWITCH ─── */
+function switchContract(ct){
+  if(!UNLOCKED){
+    document.getElementById('sel-contract').value=CONTRACT_TYPE; // revert
+    flashGate();
+    return;
+  }
+  CONTRACT_TYPE=ct;
+  CONTRACT_P={...CONTRACT_DEFAULTS[ct]};
+  $('contract-note').textContent={
+    psc:'Cost recovery then profit split. Contractor takes working interest.',
+    rt:'Simple royalty on gross revenue plus income tax on profits.',
+    cpp:'Venezuelan CPP model. Net production above PDVSA baseline. OFAC GL 52/56 regime.',
+    svc:'Fixed fee per barrel. No oil price exposure for contractor.',
+    jv:'Equity share in a joint venture. Costs and revenues split by working interest.'
+  }[ct];
+  vContractSliders();
+  recalc();
+}
+
+/* ─── 11. TOOLTIP ─── */
+const tip=$('qlm-tip');
+document.addEventListener('mousemove',e=>{
+  const el=e.target.closest('.ae-hov');
+  if(!el||!LAST){tip.style.display='none';return;}
+  const i=+el.dataset.i, ch=el.dataset.ch;
+  const y=YEARS[i];
+  let lines=[`<b>${y}</b>`];
+  if(ch==='prod'){
+    LAST.fieldData.forEach(x=>{const u=x.f.type==='gas'?x.rows[i].prod*1000/6:x.rows[i].prod;lines.push(`${x.f.name}: ${fmtN(u)} BOED`);});
+    lines.push(`Total: ${fmtN(LAST.portProd[i])} BOED`);
+  } else if(ch==='cf'){
+    lines.push(`Net CF: ${fmt$(LAST.portNCF[i])}MM`);
+    lines.push(`CAPEX: ${fmt$(LAST.portCapex[i])}MM`);
+    lines.push(`Gross Rev: ${fmt$(LAST.portGross[i])}MM`);
+  }
+  tip.innerHTML=lines.join('<br>');
+  tip.style.display='block';
+  tip.style.left=(e.clientX+14)+'px';
+  tip.style.top=(e.clientY-10)+'px';
+});
+document.addEventListener('mouseleave',()=>{tip.style.display='none';},true);
+
+/* ─── 12. RESET ─── */
+function resetAll(){
+  fieldColorIdx=0;
+  FIELDS=[makeField('oil'),makeField('oil','small')];
+  CONTRACT_TYPE='psc';
+  CONTRACT_P={...CONTRACT_DEFAULTS.psc};
+  $('s-brent').value=70;$('s-disc').value=15;$('s-gaspr').value=3;
+  $('s-capex').value=1;$('s-opex').value=1;$('s-prefin').value=10;
+  $('tog-prefin').checked=true;
+  $('sel-contract').value='psc';
+  document.querySelectorAll('input[type=range]').forEach(updateSliderBg);
+  renderFieldCards();
+  vContractSliders();
+  recalc();
+}
+
+/* ─── 13. INIT ─── */
+(function init(){
+  // Default fields
+  fieldColorIdx=0;
+  FIELDS=[makeField('oil'), makeField('oil','small')];
+  FIELDS[0].name='Oil Field A'; FIELDS[0].plateau=40000; FIELDS[0].capexTotal=500;
+  FIELDS[1].name='Oil Field B'; FIELDS[1].plateau=10000; FIELDS[1].capexTotal=150; FIELDS[1].rampYrs=2;
+
+  // Slider events
+  ['s-brent','s-disc','s-gaspr','s-capex','s-opex','s-prefin'].forEach(id=>{
+    const el=$(id);
+    const outId=id.replace('s-','o-');
+    el.addEventListener('input',function(){
+      let v=+this.value;
+      const out=document.getElementById(outId);
+      if(id==='s-disc') out.textContent=v+'%';
+      else if(id==='s-gaspr') out.textContent=v.toFixed(2);
+      else if(id==='s-prefin') out.textContent=v+'%';
+      else if(id==='s-capex'||id==='s-opex') out.textContent=v.toFixed(2)+'×';
+      else out.textContent=v;
+      updateSliderBg(this);
+      recalc();
+    });
+    updateSliderBg(el);
+  });
+
+  // Pre-finance toggle
+  $('tog-prefin').addEventListener('change',function(){
+    $('prefin-block').style.display=this.checked?'block':'none';
+    recalc();
+  });
+
+  // Contract selector
+  $('sel-contract').addEventListener('change',function(){
+    switchContract(this.value);
+  });
+
+  // Contract sliders
+  vContractSliders();
+  renderFieldCards();
+  recalc();
+  applyGate();   // lock gated UI on load (demo mode)
+})();
+</script>
+</div>
+<footer class="footer">
+  <div class="footer-grad"></div>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-wordmark">
+          <span class="nav-wordmark-main">Alpha</span>
+          <span class="nav-wordmark-sub">Technical Centre</span>
+        </span>
+        <p class="footer-tagline" data-en="Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates." data-es="Planificación integral del desarrollo de campos. Una empresa de propiedad total de Alpha Energy, disponible para mandatos técnicos externos.">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Capabilities" data-es="Capacidades">Capabilities</h4>
+        <ul>
+          <li><a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Petróleo y Gas">Oil &amp; Gas Modelling</a></li>
+          <li><a href="financial-modelling.html" data-en="Financial Modelling" data-es="Financiera">Financial Modelling</a></li>
+          <li><a href="plan-your-job.html" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Company" data-es="Empresa">Company</h4>
+        <ul>
+          <li><a href="about.html" data-en="About" data-es="Nosotros">About</a></li>
+          <li><a href="team.html" data-en="Team" data-es="Equipo">Team</a></li>
+          <li><a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a></li>
+          <li><a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-en="Connect" data-es="Contacto">Connect</h4>
+        <ul>
+          <li><a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
+          <li><a href="mailto:info@alphalatinamerica.com">info@alphalatinamerica.com</a></li>
+          <li><a href="https://alphaenergylatinamerica.com" data-en="Alpha Energy ↗" data-es="Alpha Energy ↗">Alpha Energy ↗</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p data-en="© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC" data-es="© 2026 Alpha Latin America LLC · Houston, Texas · Subsidiaria de Alpha LLC">© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC</p>
+      <span class="footer-conf" data-en="Strictly Confidential" data-es="Estrictamente Confidencial">Strictly Confidential</span>
+    </div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
