@@ -121,7 +121,7 @@
 <section class="section-cream" style="padding:64px 0;">
   <div class="wrap">
     <div class="stats-bar reveal">
-      <div class="stat"><div class="stat-num"><span data-count="150" data-suffix="k">0</span></div><div class="stat-label" data-en="bopd Target Portfolio" data-es="bopd Cartera Objetivo">bopd Target Portfolio</div></div>
+      <div class="stat"><div class="stat-num"><span data-count="450" data-suffix="k">0</span></div><div class="stat-label" data-en="bopd Target Portfolio" data-es="bopd Cartera Objetivo">bopd Target Portfolio</div></div>
       <div class="stat"><div class="stat-num"><span data-count="7">0</span></div><div class="stat-label" data-en="Field Mandates" data-es="Mandatos de Campo">Field Mandates</div></div>
       <div class="stat"><div class="stat-num"><span data-count="100" data-suffix="+">0</span></div><div class="stat-label" data-en="Years Combined" data-es="Años Combinados">Years Combined</div></div>
       <div class="stat"><div class="stat-num"><span data-count="4">0</span></div><div class="stat-label" data-en="Core Partners" data-es="Socios Principales">Core Partners</div></div>
@@ -346,5 +346,381 @@
 { "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js" }}
 </script>
 <script type="module" src="hero.js"></script>
+
+<style>
+/* ============================================================
+   INTERACTIVITY & ANIMATION LAYER
+   ============================================================ */
+
+/* --- Hero entrance --- */
+.hero-text .label,
+.hero-title,
+.hero-lede,
+.hero-cta {
+  opacity: 0;
+  transform: translateY(22px);
+  animation: heroFadeUp 0.7s cubic-bezier(.22,.68,0,1.1) forwards;
+}
+.hero-title        { animation-delay: 0.12s; }
+.hero-lede         { animation-delay: 0.26s; }
+.hero-cta          { animation-delay: 0.40s; }
+.hero-text .label  { animation-delay: 0.04s; }
+
+@keyframes heroFadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Hero glow parallax --- */
+.hero-bg-glow {
+  transition: transform 0.1s linear;
+  will-change: transform;
+}
+
+/* --- Scroll reveal (enhanced) --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s cubic-bezier(.22,.68,0,1.05), transform 0.65s cubic-bezier(.22,.68,0,1.05);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+.reveal-delay-1 { transition-delay: 0.12s; }
+.reveal-delay-2 { transition-delay: 0.24s; }
+.reveal-delay-3 { transition-delay: 0.36s; }
+
+/* --- Stats bar: counter pop --- */
+.stat {
+  cursor: default;
+  transition: transform 0.2s ease;
+}
+.stat:hover { transform: translateY(-3px); }
+.stat-num {
+  transition: color 0.2s ease;
+}
+.stat:hover .stat-num { color: #C9A84C; }
+
+/* --- Cards: lift + border glow --- */
+.card, .tool-card {
+  transition: transform 0.25s cubic-bezier(.22,.68,0,1.1),
+              box-shadow 0.25s ease,
+              border-color 0.25s ease !important;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 18px 40px -12px rgba(201,168,76,0.18), 0 4px 16px -4px rgba(0,0,0,0.12);
+  border-color: rgba(201,168,76,0.35) !important;
+}
+.tool-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 44px -14px rgba(201,168,76,0.22);
+  border-color: rgba(201,168,76,0.4) !important;
+}
+
+/* Card icon pulse on hover */
+.card:hover .card-icon svg {
+  stroke: #C9A84C;
+  transition: stroke 0.2s ease;
+}
+
+/* --- Lifecycle stages: active highlight --- */
+.lc-stage {
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease !important;
+  position: relative;
+}
+.lc-stage::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: #C9A84C;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.lc-stage:hover::after,
+.lc-stage.active::after { transform: scaleX(1); }
+.lc-stage:hover .lc-num,
+.lc-stage.active .lc-num { color: #C9A84C; }
+.lc-stage:hover .lc-name,
+.lc-stage.active .lc-name { color: var(--navy, #0B1F3A); }
+.lc-stage.active { background: rgba(201,168,76,0.06) !important; }
+
+/* Lifecycle tooltip */
+.lc-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0B1F3A;
+  color: #C9A84C;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  border: 1px solid rgba(201,168,76,0.3);
+  pointer-events: none;
+  z-index: 10;
+}
+.lc-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(201,168,76,0.3);
+}
+.lc-stage:hover .lc-tooltip { display: block; }
+
+/* --- Loop HUD: animated signal & node pulses --- */
+#signal {
+  animation: signalOrbit 3.5s linear infinite;
+}
+@keyframes signalOrbit {
+  to { stroke-dashoffset: -452; }
+}
+
+.node circle {
+  transition: filter 0.2s ease;
+}
+.node:hover circle {
+  filter: drop-shadow(0 0 6px rgba(201,168,76,0.7));
+}
+
+/* Node pulse animation (staggered) */
+#n-res circle  { animation: nodePulse 3.5s 0.0s ease-in-out infinite; }
+#n-well circle { animation: nodePulse 3.5s 0.875s ease-in-out infinite; }
+#n-fac circle  { animation: nodePulse 3.5s 1.75s ease-in-out infinite; }
+#n-exp circle  { animation: nodePulse 3.5s 2.625s ease-in-out infinite; }
+
+@keyframes nodePulse {
+  0%, 85%, 100% { stroke-width: 1.5; stroke: #C9A84C; }
+  /* pulse briefly at full signal arrival */
+  72% { stroke-width: 3; stroke: #e8c96a; filter: drop-shadow(0 0 5px rgba(201,168,76,0.8)); }
+}
+
+/* Loop figure: subtle shimmer */
+.loop-figure {
+  animation: figureShimmer 4s 1.5s ease-in-out infinite;
+}
+@keyframes figureShimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+/* --- CTA band: button pulse --- */
+.cta-band .btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+.cta-band .btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.12);
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
+}
+.cta-band .btn-primary:hover::after {
+  transform: translateX(0);
+}
+
+/* --- Nav: active link indicator --- */
+.nav-links a.active {
+  position: relative;
+}
+.nav-links a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0; right: 0;
+  height: 2px;
+  background: #C9A84C;
+  border-radius: 1px;
+}
+
+/* --- Scroll indicator animation --- */
+.scroll-indicator {
+  animation: scrollBob 2s ease-in-out infinite;
+}
+@keyframes scrollBob {
+  0%, 100% { opacity: 0.5; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 1; transform: translateX(-50%) translateY(6px); }
+}
+
+/* --- Reduced motion: respect preference --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── 1. SCROLL REVEAL ─────────────────────────────────── */
+  const revealEls = document.querySelectorAll('.reveal:not(.in)');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    revealEls.forEach(el => io.observe(el));
+  } else {
+    revealEls.forEach(el => el.classList.add('in'));
+  }
+
+  /* ── 2. ANIMATED COUNTERS ─────────────────────────────── */
+  function animateCounter(el) {
+    const target = parseInt(el.dataset.count, 10);
+    const suffix = el.dataset.suffix || '';
+    const duration = 1800;
+    const start = performance.now();
+
+    function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+
+    function tick(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const value = Math.round(easeOutQuart(progress) * target);
+      el.textContent = value + suffix;
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  const statCounters = document.querySelectorAll('.stat-num [data-count]');
+  if ('IntersectionObserver' in window) {
+    const counterIO = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          animateCounter(e.target);
+          counterIO.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.5 });
+    statCounters.forEach(el => counterIO.observe(el));
+  }
+
+  /* ── 3. LIFECYCLE STAGE INTERACTIONS ─────────────────── */
+  const stages = document.querySelectorAll('.lc-stage');
+
+  // Inject tooltip text
+  const stageTooltips = [
+    'Screen & select the right asset',
+    'Value it. Structure the deal.',
+    'Execute with precision',
+    'Build the development plan',
+    'Stand up operations',
+    'Drive production growth',
+    'Position for exit'
+  ];
+
+  stages.forEach((stage, i) => {
+    // Add tooltip
+    const tip = document.createElement('div');
+    tip.className = 'lc-tooltip';
+    tip.textContent = stageTooltips[i] || '';
+    stage.appendChild(tip);
+
+    stage.addEventListener('mouseenter', () => {
+      stages.forEach(s => s.classList.remove('active'));
+      stage.classList.add('active');
+    });
+    stage.addEventListener('mouseleave', () => {
+      stage.classList.remove('active');
+    });
+  });
+
+  /* ── 4. HERO PARALLAX GLOW ────────────────────────────── */
+  const heroGlow = document.querySelector('.hero-bg-glow');
+  if (heroGlow) {
+    document.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 18;
+      const y = (e.clientY / window.innerHeight - 0.5) * 12;
+      heroGlow.style.transform = `translate(${x}px, ${y}px)`;
+    });
+  }
+
+  /* ── 5. LOOP SVG: stroke-dashoffset init ──────────────── */
+  // The CSS animation handles the orbit; ensure initial offset is set
+  const signal = document.getElementById('signal');
+  if (signal) {
+    signal.style.strokeDashoffset = '0';
+  }
+
+  /* ── 6. CARD ICON COLOUR INIT ─────────────────────────── */
+  // Ensure card SVGs have stroke set for transition
+  document.querySelectorAll('.card-icon svg').forEach(svg => {
+    svg.style.stroke = 'currentColor';
+    svg.style.transition = 'stroke 0.2s ease';
+  });
+
+  /* ── 7. STATS BAR: staggered reveal ──────────────────── */
+  const statsBar = document.querySelector('.stats-bar');
+  if (statsBar) {
+    const statItems = statsBar.querySelectorAll('.stat');
+    statItems.forEach((s, i) => {
+      s.style.transitionDelay = `${i * 0.08}s`;
+      s.style.opacity = '0';
+      s.style.transform = 'translateY(16px)';
+      s.style.transition = 'opacity 0.5s ease, transform 0.5s ease, color 0.2s ease';
+    });
+
+    const barIO = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        statItems.forEach(s => {
+          s.style.opacity = '1';
+          s.style.transform = 'none';
+        });
+        barIO.disconnect();
+      }
+    }, { threshold: 0.3 });
+    barIO.observe(statsBar);
+  }
+
+  /* ── 8. TOOL CARDS: tilt on mouse move ───────────────── */
+  document.querySelectorAll('.tool-card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (e.clientX - cx) / (rect.width / 2);
+      const dy = (e.clientY - cy) / (rect.height / 2);
+      card.style.transform = `translateY(-4px) rotateX(${-dy * 2.5}deg) rotateY(${dx * 2.5}deg)`;
+      card.style.transition = 'transform 0.1s ease, box-shadow 0.25s ease, border-color 0.25s ease';
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+      card.style.transition = 'transform 0.35s ease, box-shadow 0.25s ease, border-color 0.25s ease';
+    });
+  });
+
+  /* ── 9. SMOOTH SCROLL for anchor links ───────────────── */
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+})();
+</script>
 </body>
 </html>
