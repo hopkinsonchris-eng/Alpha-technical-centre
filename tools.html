@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Our Tools — Alpha Technical Centre</title><meta name="description" content="Flagship tools: Upstream Quick-Look Financial Model and the Oil & Gas Evaluation System."><link rel="stylesheet" href="style.css"></head>
+<title>Our Tools — Alpha Technical Centre</title><meta name="description" content="Flagship tools: Upstream Quick-Look Financial Model, Nodal Analysis Well Optimiser, and the Oil & Gas Evaluation System."><link rel="stylesheet" href="style.css"></head>
 <body>
 <nav class="nav">
   <div class="wrap nav-inner">
@@ -65,8 +65,27 @@
           <a href="financial-modelling.html" class="btn btn-primary" data-en="Open the model" data-es="Abrir el modelo">Open the model</a>
         </div>
       </div>
-      <!-- O&G Evaluation System (coming soon) -->
+      <!-- Nodal Analysis (live, new) -->
       <div class="tool-card reveal reveal-delay-1" style="border:1px solid var(--rule);">
+        <div class="tool-card-header">
+          <span class="chip" data-en="Live · New" data-es="Disponible · Nuevo">Live · New</span>
+          <div class="tool-card-title" data-en="Nodal Analysis — Well Performance Optimiser" data-es="Análisis Nodal — Optimizador de Pozos">Nodal Analysis — Well Performance Optimiser</div>
+        </div>
+        <div class="tool-card-body">
+          <p class="tool-card-desc" data-en="Find the operating point where reservoir inflow meets tubing lift. Optimise oil or gas wells in real time — drag a slider and the IPR/VLP intersection, sensitivity matrix and diagnosis update instantly. Field or metric units." data-es="Encuentre el punto de operación donde el aporte del yacimiento se encuentra con la elevación de la tubería. Optimice pozos de petróleo o gas en tiempo real — mueva un control y la intersección IPR/VLP, la matriz de sensibilidad y el diagnóstico se actualizan al instante. Unidades de campo o métricas.">Find the operating point where reservoir inflow meets tubing lift. Optimise oil or gas wells in real time — drag a slider and the IPR/VLP intersection, sensitivity matrix and diagnosis update instantly. Field or metric units.</p>
+          <ul style="list-style:none;margin:0 0 22px;padding:0;">
+            <li style="font-size:.88rem;color:var(--navy-mid);padding:6px 0;border-bottom:1px solid var(--rule);" data-en="✓ Composite Darcy–Vogel &amp; gas backpressure IPR" data-es="✓ IPR compuesta Darcy–Vogel y contrapresión de gas">✓ Composite Darcy–Vogel &amp; gas backpressure IPR</li>
+            <li style="font-size:.88rem;color:var(--navy-mid);padding:6px 0;border-bottom:1px solid var(--rule);" data-en="✓ Drawdown × skin sensitivity matrix" data-es="✓ Matriz de sensibilidad drawdown × daño">✓ Drawdown × skin sensitivity matrix</li>
+            <li style="font-size:.88rem;color:var(--navy-mid);padding:6px 0;" data-en="✓ Live operating-point solver" data-es="✓ Solucionador de punto de operación en vivo">✓ Live operating-point solver</li>
+          </ul>
+          <a href="nodal-analysis.html" class="btn btn-primary" data-en="Open the optimiser" data-es="Abrir el optimizador">Open the optimiser</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="gap:28px;margin-top:28px;">
+      <!-- O&G Evaluation System (coming soon) -->
+      <div class="tool-card reveal" style="border:1px solid var(--rule);">
         <div class="tool-card-header">
           <span class="chip chip--coming" data-en="Coming soon" data-es="Próximamente">Coming soon</span>
           <div class="tool-card-title" data-en="Oil &amp; Gas Evaluation System" data-es="Sistema de Evaluación de Petróleo y Gas">Oil &amp; Gas Evaluation System</div>
@@ -81,17 +100,21 @@
           <a href="contact.html" class="btn btn-outline" data-en="Register interest" data-es="Registrar interés">Register interest</a>
         </div>
       </div>
-    </div>
-
-    <!-- SOW generator callout -->
-    <div class="reveal" style="margin-top:28px;">
-      <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap;background:var(--cream);">
-        <div style="flex:1;min-width:280px;">
+      <!-- SOW generator card -->
+      <div class="tool-card reveal reveal-delay-1" style="border:1px solid var(--rule);background:var(--cream);">
+        <div class="tool-card-header">
           <span class="chip" data-en="Live" data-es="Disponible">Live</span>
-          <h3 style="margin:12px 0 8px;" data-en="Plan Your Job — Scope-of-Work Generator" data-es="Planifique su Proyecto — Generador de Alcance">Plan Your Job — Scope-of-Work Generator</h3>
-          <p style="font-size:.95rem;color:var(--steel);max-width:60ch;" data-en="Scope, resource and price a technical mandate in minutes. Pick the work, set the field scale, and get an indicative timeline and cost before you commit." data-es="Defina alcance, recursos y precio de un mandato técnico en minutos. Elija el trabajo, defina la escala del campo y obtenga un cronograma y costo indicativos antes de comprometerse.">Scope, resource and price a technical mandate in minutes. Pick the work, set the field scale, and get an indicative timeline and cost before you commit.</p>
+          <div class="tool-card-title" data-en="Plan Your Job — Scope-of-Work Generator" data-es="Planifique su Proyecto — Generador de Alcance">Plan Your Job — Scope-of-Work Generator</div>
         </div>
-        <a href="plan-your-job.html" class="btn btn-primary" data-en="Launch generator" data-es="Iniciar generador">Launch generator</a>
+        <div class="tool-card-body">
+          <p class="tool-card-desc" data-en="Scope, resource and price a technical mandate in minutes. Pick the work, set the field scale, and get an indicative timeline and cost before you commit." data-es="Defina alcance, recursos y precio de un mandato técnico en minutos. Elija el trabajo, defina la escala del campo y obtenga un cronograma y costo indicativos antes de comprometerse.">Scope, resource and price a technical mandate in minutes. Pick the work, set the field scale, and get an indicative timeline and cost before you commit.</p>
+          <ul style="list-style:none;margin:0 0 22px;padding:0;">
+            <li style="font-size:.88rem;color:var(--navy-mid);padding:6px 0;border-bottom:1px solid var(--rule);" data-en="✓ Discipline &amp; scope selection" data-es="✓ Selección de disciplina y alcance">✓ Discipline &amp; scope selection</li>
+            <li style="font-size:.88rem;color:var(--navy-mid);padding:6px 0;border-bottom:1px solid var(--rule);" data-en="✓ Indicative timeline &amp; cost" data-es="✓ Cronograma y costo indicativos">✓ Indicative timeline &amp; cost</li>
+            <li style="font-size:.88rem;color:var(--navy-mid);padding:6px 0;" data-en="✓ Generates a costed scope of work" data-es="✓ Genera un alcance de trabajo con costo">✓ Generates a costed scope of work</li>
+          </ul>
+          <a href="plan-your-job.html" class="btn btn-primary" data-en="Launch generator" data-es="Iniciar generador">Launch generator</a>
+        </div>
       </div>
     </div>
   </div>
@@ -112,6 +135,7 @@
         <ul>
           <li><a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Petróleo y Gas">Oil &amp; Gas Modelling</a></li>
           <li><a href="financial-modelling.html" data-en="Financial Modelling" data-es="Financiera">Financial Modelling</a></li>
+          <li><a href="nodal-analysis.html" data-en="Nodal Analysis" data-es="Análisis Nodal">Nodal Analysis</a></li>
           <li><a href="plan-your-job.html" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a></li>
         </ul>
       </div>

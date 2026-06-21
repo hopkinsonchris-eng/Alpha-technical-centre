@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nodal Analysis — Well Performance Optimiser | Alpha Technical Centre</title>
+<meta name="description" content="Interactive nodal analysis tool. Find the operating point where reservoir inflow (IPR) meets tubing lift (VLP) and optimise oil or gas well performance in real time.">
+<style>
+:root{
+  --navy:#0B1F3A; --navy-deep:#071529; --navy-mid:#13263f; --navy-panel:#0f2742;
+  --gold:#C9A84C; --gold-bright:#e8c96a; --gold-deep:#9c7f33;
+  --paper:#F4F1E8; --line:rgba(201,168,76,0.22);
+  --ipr:#34C795; --vlp:#5b9bd5; --op:#C9A84C;
+  --on-dark:#EAF0F7; --on-dark-mute:rgba(234,240,247,0.62); --on-dark-faint:rgba(234,240,247,0.34);
+  --radius:12px; --radius-lg:16px;
+  --font-display:'Georgia','Times New Roman',serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:'SF Mono','Roboto Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:var(--font-body); background:var(--navy-deep); color:var(--on-dark);
+  line-height:1.55; -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 70% -10%, rgba(201,168,76,0.10), transparent 60%),
+    linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+  background-attachment:fixed; min-height:100vh;
+}
+
+/* ---- Layout shell ---- */
+.shell{max-width:1340px; margin:0 auto; padding:0 28px;}
+
+/* ---- Header ---- */
+.tool-head{padding:38px 0 26px; border-bottom:1px solid var(--line);}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:10px; color:var(--gold);
+  font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:600; margin-bottom:14px;
+}
+.eyebrow::before{content:''; width:22px; height:1px; background:var(--gold); display:inline-block;}
+.tool-head h1{
+  font-family:var(--font-display); font-weight:400; font-size:clamp(1.9rem,4vw,2.9rem);
+  line-height:1.08; letter-spacing:-0.01em;
+}
+.tool-head h1 em{color:var(--gold); font-style:italic;}
+.tool-head .sub{color:var(--on-dark-mute); max-width:62ch; margin-top:14px; font-size:1.02rem;}
+
+/* ---- Mode toggle ---- */
+.mode-row{display:flex; align-items:center; gap:18px; margin-top:26px; flex-wrap:wrap;}
+.mode-toggle{
+  display:inline-flex; background:var(--navy-panel); border:1px solid var(--line);
+  border-radius:999px; padding:4px; gap:2px;
+}
+.mode-toggle button{
+  font-family:var(--font-body); font-size:0.82rem; font-weight:600; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--on-dark-mute); background:none; border:none;
+  padding:9px 22px; border-radius:999px; cursor:pointer; transition:all .25s ease;
+}
+.mode-toggle button.active{background:linear-gradient(135deg,var(--gold-bright),var(--gold-deep)); color:var(--navy-deep);}
+.mode-toggle button:not(.active):hover{color:var(--on-dark);}
+#unitToggle{background:rgba(91,155,213,0.06);}
+#unitToggle button.active{background:linear-gradient(135deg,#7fb2e0,#4a7fb0); color:var(--navy-deep);}
+.mode-hint{font-size:0.86rem; color:var(--on-dark-faint); font-style:italic;}
+
+/* ---- Main grid ---- */
+.work{display:grid; grid-template-columns:340px 1fr; gap:30px; padding:34px 0 60px; align-items:start;}
+@media (max-width:1040px){ .work{grid-template-columns:1fr;} }
+
+/* ---- Controls panel ---- */
+.panel{
+  background:linear-gradient(180deg, var(--navy-panel), var(--navy-mid));
+  border:1px solid var(--line); border-radius:var(--radius-lg); padding:24px 22px;
+  position:sticky; top:20px;
+}
+@media (max-width:1040px){ .panel{position:static;} }
+.panel-title{
+  font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--gold);
+  font-weight:700; margin-bottom:4px;
+}
+.panel-grp{margin-top:22px; padding-top:20px; border-top:1px solid rgba(201,168,76,0.12);}
+.panel-grp:first-of-type{border-top:none; padding-top:6px; margin-top:16px;}
+.grp-label{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--on-dark-faint); margin-bottom:14px; font-weight:600;}
+
+.ctrl{margin-bottom:18px;}
+.ctrl:last-child{margin-bottom:0;}
+.ctrl-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px;}
+.ctrl-name{font-size:0.86rem; color:var(--on-dark); font-weight:500;}
+.ctrl-val{font-family:var(--font-mono); font-size:0.9rem; color:var(--gold-bright); font-weight:600;}
+.ctrl-val small{color:var(--on-dark-faint); font-size:0.72rem; margin-left:3px;}
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:4px;
+  background:linear-gradient(90deg, var(--gold) var(--fill,50%), rgba(255,255,255,0.12) var(--fill,50%));
+  outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; width:17px; height:17px; border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, var(--gold-bright), var(--gold-deep));
+  border:2px solid var(--navy-deep); box-shadow:0 0 0 1px var(--gold), 0 2px 6px rgba(0,0,0,0.4);
+  transition:transform .12s ease;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);}
+input[type=range]::-moz-range-thumb{
+  width:17px; height:17px; border-radius:50%; border:2px solid var(--navy-deep);
+  background:var(--gold-bright); box-shadow:0 0 0 1px var(--gold);
+}
+
+/* ---- Chart card ---- */
+.chart-card{
+  background:linear-gradient(180deg, rgba(15,39,66,0.7), rgba(11,31,58,0.5));
+  border:1px solid var(--line); border-radius:var(--radius-lg); padding:22px 24px 16px;
+}
+.chart-head{display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px; margin-bottom:8px;}
+.chart-head h2{font-family:var(--font-display); font-weight:400; font-size:1.3rem;}
+.legend{display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
+.legend span{display:inline-flex; align-items:center; gap:7px; font-size:0.78rem; color:var(--on-dark-mute);}
+.legend i{width:16px; height:3px; border-radius:2px; display:inline-block;}
+.legend .dot{width:10px; height:10px; border-radius:50%; border:2px solid var(--navy-deep);}
+
+.chart-wrap{position:relative; width:100%;}
+svg.plot{width:100%; height:auto; display:block; touch-action:none;}
+
+/* axis + curves */
+.grid-line{stroke:rgba(234,240,247,0.07); stroke-width:1;}
+.axis-line{stroke:rgba(234,240,247,0.28); stroke-width:1.2;}
+.axis-label{fill:var(--on-dark-mute); font-size:12px; font-family:var(--font-body);}
+.tick-label{fill:var(--on-dark-faint); font-size:10.5px; font-family:var(--font-mono);}
+.curve{fill:none; stroke-width:2.6; stroke-linejoin:round; stroke-linecap:round;}
+.curve-ipr{stroke:var(--ipr); filter:drop-shadow(0 0 4px rgba(52,199,149,0.4));}
+.curve-vlp{stroke:var(--vlp); filter:drop-shadow(0 0 4px rgba(91,155,213,0.4));}
+.op-marker{fill:var(--gold-bright); stroke:var(--navy-deep); stroke-width:2.5; filter:drop-shadow(0 0 8px rgba(201,168,76,0.9));}
+.op-ring{fill:none; stroke:var(--gold); stroke-width:1.5; opacity:0.5;}
+.op-drop{stroke:var(--gold); stroke-width:1; stroke-dasharray:4 4; opacity:0.5;}
+.curve-fill-ipr{fill:url(#iprGrad); opacity:0.08;}
+
+/* ---- Readouts ---- */
+.readout-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:22px;}
+@media (max-width:680px){ .readout-row{grid-template-columns:repeat(2,1fr);} }
+.readout{
+  background:var(--navy-panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:16px 18px; position:relative; overflow:hidden;
+}
+.readout.hero-read{border-color:rgba(201,168,76,0.5); background:linear-gradient(135deg, rgba(201,168,76,0.12), var(--navy-panel));}
+.readout-label{font-size:9.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--on-dark-faint); font-weight:600;}
+.readout-val{font-family:var(--font-display); font-size:1.7rem; font-weight:400; color:var(--on-dark); margin-top:5px; line-height:1; letter-spacing:-0.01em;}
+.readout.hero-read .readout-val{color:var(--gold-bright);}
+.readout-unit{font-size:0.72rem; color:var(--on-dark-faint); font-family:var(--font-body); margin-left:4px;}
+.readout-val.tick{animation:tickPulse .4s ease;}
+@keyframes tickPulse{0%{transform:scale(1);}40%{transform:scale(1.07);}100%{transform:scale(1);}}
+
+/* ---- Insight strip ---- */
+.insight{
+  margin-top:20px; padding:16px 20px; border-radius:var(--radius);
+  background:rgba(52,199,149,0.07); border:1px solid rgba(52,199,149,0.22);
+  font-size:0.9rem; color:var(--on-dark-mute); display:flex; gap:12px; align-items:flex-start;
+}
+.insight.warn{background:rgba(213,120,91,0.09); border-color:rgba(213,120,91,0.3);}
+.insight.crit{background:rgba(213,91,91,0.1); border-color:rgba(213,91,91,0.35);}
+.insight-ic{flex:none; width:18px; height:18px; margin-top:1px;}
+.insight b{color:var(--on-dark); font-weight:600;}
+
+/* ---- Scenario chips ---- */
+.scenarios{display:flex; gap:10px; flex-wrap:wrap; margin-top:20px;}
+.chip{
+  font-size:0.78rem; font-weight:500; color:var(--on-dark-mute); cursor:pointer;
+  background:var(--navy-panel); border:1px solid var(--line); border-radius:999px;
+  padding:8px 16px; transition:all .2s ease;
+}
+.chip:hover{border-color:var(--gold); color:var(--on-dark); transform:translateY(-1px);}
+
+/* ---- Footnote ---- */
+.foot{margin-top:30px; padding-top:22px; border-top:1px solid var(--line); color:var(--on-dark-faint); font-size:0.8rem; max-width:80ch;}
+.foot code{font-family:var(--font-mono); color:var(--on-dark-mute); background:rgba(255,255,255,0.04); padding:1px 6px; border-radius:4px; font-size:0.9em;}
+.foot a{color:var(--gold);}
+
+.reset{
+  margin-top:20px; width:100%; font-family:var(--font-body); font-size:0.8rem; font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--on-dark-mute);
+  background:none; border:1px solid var(--line); border-radius:8px; padding:11px; cursor:pointer;
+  transition:all .2s ease;
+}
+.reset:hover{border-color:var(--gold); color:var(--gold);}
+
+/* ---- Sensitivity matrix ---- */
+.sens-card{
+  margin-top:30px;
+  background:linear-gradient(180deg, rgba(15,39,66,0.7), rgba(11,31,58,0.5));
+  border:1px solid var(--line); border-radius:var(--radius-lg); padding:24px 24px 18px;
+}
+.sens-head{display:flex; justify-content:space-between; align-items:flex-start; gap:24px; flex-wrap:wrap; margin-bottom:18px;}
+.sens-head h2{font-family:var(--font-display); font-weight:400; font-size:1.3rem; margin-bottom:8px;}
+.sens-sub{color:var(--on-dark-mute); font-size:0.9rem; max-width:64ch; line-height:1.5;}
+.sens-legend{display:flex; align-items:center; gap:8px; flex:none; padding-top:4px;}
+.sens-legend-label{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--on-dark-faint); font-weight:600; margin-right:2px;}
+.sens-grad{width:90px; height:9px; border-radius:5px;
+  background:linear-gradient(90deg,#1d3a5f 0%, #2f6f57 38%, #C9A84C 72%, #e8c96a 100%);}
+.sens-swatch{font-size:10px; color:var(--on-dark-faint);}
+
+.sens-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:var(--radius);}
+.sens-table{border-collapse:separate; border-spacing:3px; width:100%; min-width:560px;}
+.sens-table th, .sens-table td{
+  text-align:center; padding:9px 10px; border-radius:7px; font-variant-numeric:tabular-nums;
+  font-family:var(--font-mono); font-size:0.85rem; white-space:nowrap;
+}
+.sens-table thead th{
+  background:var(--navy-deep); color:var(--gold); font-weight:600;
+  font-size:0.78rem; letter-spacing:.02em;
+}
+.sens-table .corner{
+  background:transparent; color:var(--on-dark-faint); font-family:var(--font-body);
+  font-size:0.7rem; line-height:1.25; text-transform:uppercase; letter-spacing:.08em; text-align:right; padding-right:14px;
+}
+.sens-table tbody th{
+  background:var(--navy-deep); color:var(--gold); font-weight:600; font-family:var(--font-mono);
+  text-align:right; padding-right:14px; position:sticky; left:0; z-index:2;
+}
+.sens-table td{
+  color:var(--navy-deep); font-weight:600; cursor:default; position:relative;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.sens-table td:hover{transform:scale(1.06); box-shadow:0 0 0 2px var(--gold-bright), 0 4px 14px rgba(0,0,0,0.4); z-index:3;}
+.sens-table td.dead{background:rgba(120,40,40,0.35)!important; color:var(--on-dark-mute)!important;}
+.sens-table td.op-cell{box-shadow:0 0 0 2px var(--gold-bright), 0 0 14px rgba(201,168,76,0.6); z-index:1;}
+.sens-table td.op-cell::after{
+  content:'NOW'; position:absolute; top:2px; right:4px; font-size:7px; font-family:var(--font-body);
+  letter-spacing:.1em; color:var(--navy-deep); font-weight:700; opacity:0.7;
+}
+.col-head-axis, .row-head-axis{color:var(--on-dark-faint);}
+
+.sens-foot{margin-top:16px; padding-top:14px; border-top:1px solid rgba(201,168,76,0.12);
+  font-size:0.85rem; color:var(--on-dark-mute); line-height:1.55;}
+.sens-foot b{color:var(--gold-bright); font-weight:600;}
+.sens-axis-tag{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--on-dark-faint); font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ============ HEADER ============ -->
+  <header class="tool-head">
+    <span class="eyebrow">Demo Tool · Well Performance</span>
+    <h1>Where the reservoir <em>meets</em> the tubing.</h1>
+    <p class="sub">Nodal analysis finds the one rate a well will actually flow — the point where the reservoir's ability to push fluid in (inflow) balances the tubing's ability to lift it out (outflow). Move a slider and watch the operating point chase the new equilibrium in real time.</p>
+
+    <div class="mode-row">
+      <div class="mode-toggle" id="modeToggle">
+        <button class="active" data-mode="oil">Oil Well</button>
+        <button data-mode="gas">Gas Well</button>
+      </div>
+      <div class="mode-toggle" id="unitToggle" aria-label="Unit system">
+        <button class="active" data-unit="field">Imperial</button>
+        <button data-unit="metric">Metric</button>
+      </div>
+      <span class="mode-hint" id="modeHint">Composite Darcy + Vogel inflow, two-phase tubing lift</span>
+    </div>
+  </header>
+
+  <!-- ============ WORKSPACE ============ -->
+  <div class="work">
+
+    <!-- ---- CONTROLS ---- -->
+    <aside class="panel">
+      <div class="panel-title">Well Parameters</div>
+
+      <div class="panel-grp">
+        <div class="grp-label">Reservoir · Inflow</div>
+        <div id="inflowControls"></div>
+      </div>
+
+      <div class="panel-grp">
+        <div class="grp-label">Wellbore · Outflow</div>
+        <div id="outflowControls"></div>
+      </div>
+
+      <button class="reset" id="resetBtn">Reset to base case</button>
+    </aside>
+
+    <!-- ---- CHART + READOUTS ---- -->
+    <main>
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2 id="chartTitle">Inflow / Outflow — Operating Point</h2>
+          <div class="legend">
+            <span><i class="curve-ipr" style="background:var(--ipr)"></i> IPR (inflow)</span>
+            <span><i class="curve-vlp" style="background:var(--vlp)"></i> VLP (outflow)</span>
+            <span><i class="dot" style="background:var(--gold-bright)"></i> Operating point</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="plot" id="plot" viewBox="0 0 760 460" preserveAspectRatio="xMidYMid meet" aria-label="Nodal analysis pressure versus rate plot">
+            <defs>
+              <linearGradient id="iprGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--ipr)"/>
+                <stop offset="100%" stop-color="var(--ipr)" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- populated by JS -->
+          </svg>
+        </div>
+      </div>
+
+      <!-- readouts -->
+      <div class="readout-row">
+        <div class="readout hero-read">
+          <div class="readout-label" id="rateLabel">Operating Rate</div>
+          <div class="readout-val"><span id="opRate">—</span><span class="readout-unit" id="rateUnit">bopd</span></div>
+        </div>
+        <div class="readout">
+          <div class="readout-label">Flowing BHP</div>
+          <div class="readout-val"><span id="opPwf">—</span><span class="readout-unit" data-dim="pressure">psia</span></div>
+        </div>
+        <div class="readout">
+          <div class="readout-label" id="aofLabel">Absolute Open Flow</div>
+          <div class="readout-val"><span id="aof">—</span><span class="readout-unit" id="aofUnit">bopd</span></div>
+        </div>
+        <div class="readout">
+          <div class="readout-label">Drawdown</div>
+          <div class="readout-val"><span id="drawdown">—</span><span class="readout-unit" data-dim="pressure">psi</span></div>
+        </div>
+      </div>
+
+      <!-- insight -->
+      <div class="insight" id="insight">
+        <svg class="insight-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div id="insightText">Adjust a parameter to see how the operating point responds.</div>
+      </div>
+
+      <!-- scenarios -->
+      <div class="scenarios" id="scenarios">
+        <div class="chip" data-scn="tubing">↑ Bigger tubing</div>
+        <div class="chip" data-scn="choke">↓ Lower wellhead pressure</div>
+        <div class="chip" data-scn="stim">✦ Stimulate (remove skin)</div>
+        <div class="chip" data-scn="deplete">↓ Depleted reservoir</div>
+      </div>
+
+      <!-- ===== SENSITIVITY MATRIX ===== -->
+      <div class="sens-card">
+        <div class="sens-head">
+          <div>
+            <h2>Production Sensitivity — Drawdown × Skin</h2>
+            <p class="sens-sub">Each cell is the inflow rate the reservoir delivers at that combination of drawdown (ΔP) and skin. Read left-to-right to see the prize from pulling the well harder; read top-to-bottom to see the prize from stimulation. The diagonal toward the bottom-right is where both levers compound.</p>
+          </div>
+          <div class="sens-legend">
+            <span class="sens-legend-label">Rate</span>
+            <span class="sens-swatch low">low</span>
+            <span class="sens-grad"></span>
+            <span class="sens-swatch high">high</span>
+          </div>
+        </div>
+        <div class="sens-scroll">
+          <table class="sens-table" id="sensTable"></table>
+        </div>
+        <div class="sens-foot" id="sensFoot"></div>
+      </div>
+
+      <p class="foot">
+        <strong style="color:var(--on-dark-mute)">The physics.</strong>
+        Oil inflow uses a composite model — straight-line productivity index above the bubble point, <code>q = J(P̄ − P<sub>wf</sub>)</code>, transitioning to Vogel's two-phase relation <code>q/q<sub>max</sub> = 1 − 0.2(P<sub>wf</sub>/P<sub>b</sub>) − 0.8(P<sub>wf</sub>/P<sub>b</sub>)²</code> below it. Gas inflow uses the backpressure deliverability equation <code>q = C(P̄² − P<sub>wf</sub>²)<sup>n</sup></code>. The outflow (VLP) curve sums a hydrostatic head — lightened by produced gas — and a friction term that grows with the square of rate and falls steeply with tubing diameter, reproducing the characteristic J-shape and its low-rate liquid-loading hook. The operating point is the numerical intersection. Figures are illustrative and tuned for responsiveness, not a substitute for a calibrated PVT and multiphase-correlation model.
+      </p>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   PARAMETER DEFINITIONS  (base cases per mode)
+   ============================================================ */
+// Each parameter carries a `dim` tag. All val/min/max/step are stored in
+// FIELD (imperial) units — the physics engine always runs in field units.
+// The units layer converts only for display when metric is selected.
+const PARAMS = {
+  oil: {
+    inflow: [
+      {id:'Pr',   name:'Reservoir pressure',  dim:'pressure',  min:1500, max:5000, step:50, val:3600},
+      {id:'Pb',   name:'Bubble-point pressure',dim:'pressure', min:500,  max:4000, step:50, val:2400},
+      {id:'J',    name:'Productivity index',   dim:'pi',        min:0.2,  max:8,    step:0.1, val:2.2},
+      {id:'skin', name:'Skin factor',          dim:'none',      min:-6,   max:25,   step:0.5, val:3},
+    ],
+    outflow: [
+      {id:'depth',name:'Tubing depth (TVD)',   dim:'length',min:3000, max:12000,step:250, val:7500},
+      {id:'thp',  name:'Wellhead pressure',    dim:'pressure',min:80, max:1200, step:20,  val:250},
+      {id:'tbg',  name:'Tubing ID',            dim:'diameter',min:1.5,max:4.5,  step:0.05,val:2.99},
+      {id:'wc',   name:'Water cut',            dim:'pct',   min:0,    max:95,   step:1,   val:25},
+      {id:'glr',  name:'Gas–liquid ratio',     dim:'glr',   min:50,   max:2500, step:25,  val:600},
+    ]
+  },
+  gas: {
+    inflow: [
+      {id:'Pr',   name:'Reservoir pressure',  dim:'pressure',  min:1500, max:7000, step:50, val:4200},
+      {id:'C',    name:'Deliverability coeff.', dim:'none',    min:0.001,max:0.03,step:0.001, val:0.011},
+      {id:'n',    name:'Deliverability exp. n', dim:'none',    min:0.5,  max:1.0,  step:0.01, val:0.85},
+      {id:'skin', name:'Skin factor',          dim:'none',     min:-6,   max:25,   step:0.5, val:4},
+    ],
+    outflow: [
+      {id:'depth',name:'Tubing depth (TVD)',   dim:'length',min:3000, max:14000,step:250, val:9000},
+      {id:'thp',  name:'Wellhead pressure',    dim:'pressure',min:100,max:2000, step:25,  val:500},
+      {id:'tbg',  name:'Tubing ID',            dim:'diameter',min:1.5,max:4.5,  step:0.05,val:2.44},
+      {id:'sg',   name:'Gas gravity',          dim:'none',  min:0.55, max:1.1,  step:0.01, val:0.68},
+      {id:'cgr',  name:'Condensate–gas ratio', dim:'cgr',   min:0,    max:120,  step:2,   val:15},
+    ]
+  }
+};
+
+/* ============================================================
+   UNITS LAYER  — converts field <-> metric for DISPLAY ONLY.
+   Physics state is always held in field units.
+   ============================================================ */
+let unitSys = 'field';   // 'field' | 'metric'
+
+// conversion factors (field -> metric multiply)
+const K = {
+  pressure: 0.0689476,   // psi -> bar
+  length:   0.3048,      // ft  -> m
+  diameter: 25.4,        // in  -> mm
+  oilRate:  0.158987,    // bopd (bbl/d) -> m³/d
+  gasRate:  0.0283168,   // mscf/d (10³ft³/d) -> 10³m³/d  (1 mscf = 28.317 m³ = 0.0283 ×10³m³)
+  pi_field_to_metric: 0.158987/0.0689476, // (bbl/d/psi) -> (m³/d/bar)
+};
+
+// unit LABELS per dimension per system
+const UNIT_LABELS = {
+  field:  {pressure:'psia', length:'ft', diameter:'in', pi:'bopd/psi', glr:'scf/stb', cgr:'stb/mmscf', pct:'%', none:''},
+  metric: {pressure:'bar',  length:'m',  diameter:'mm', pi:'m³/d/bar',  glr:'sm³/m³',  cgr:'m³/10³m³',  pct:'%', none:''},
+};
+
+// convert a stored FIELD value to the active display system
+function toDisplay(dim, vField){
+  if(unitSys==='field') return vField;
+  switch(dim){
+    case 'pressure': return vField*K.pressure;
+    case 'length':   return vField*K.length;
+    case 'diameter': return vField*K.diameter;
+    case 'pi':       return vField*K.pi_field_to_metric;
+    case 'glr':      return vField*0.1781;   // scf/stb -> sm³/m³
+    case 'cgr':      return vField*0.005615;  // stb/mmscf -> m³/10³m³
+    default:         return vField;           // none, pct unchanged
+  }
+}
+// convert a DISPLAY value back to field units for storage
+function toField(dim, vDisp){
+  if(unitSys==='field') return vDisp;
+  switch(dim){
+    case 'pressure': return vDisp/K.pressure;
+    case 'length':   return vDisp/K.length;
+    case 'diameter': return vDisp/K.diameter;
+    case 'pi':       return vDisp/K.pi_field_to_metric;
+    case 'glr':      return vDisp/0.1781;
+    case 'cgr':      return vDisp/0.005615;
+    default:         return vDisp;
+  }
+}
+function unitLabel(dim){ return UNIT_LABELS[unitSys][dim] || ''; }
+
+// rate (oil/gas output) conversions for axis + readouts
+function rateToDisplay(qField){
+  if(unitSys==='field') return qField;
+  return mode==='oil' ? qField*K.oilRate : qField*K.gasRate;
+}
+function rateUnitLabel(){
+  if(mode==='oil') return unitSys==='field'?'bopd':'m³/d';
+  return unitSys==='field'?'mscf/d':'10³m³/d';
+}
+function pressureToDisplay(pField){ return unitSys==='field'?pField:pField*K.pressure; }
+function pressureUnit(){ return unitSys==='field'?'psia':'bar'; }
+
+let mode = 'oil';
+let state = {};   // current values — ALWAYS stored in field units
+
+/* ============================================================
+   PHYSICS  — IPR (inflow)
+   ============================================================ */
+
+// Skin reduces effective J / C. Simple, monotonic, bounded.
+function skinFactor(skin){
+  // ratio of productivity vs zero-skin; ~ ln(re/rw)/(ln(re/rw)+s)
+  const base = 7.0; // ln(re/rw) typical ~7
+  return base / (base + skin);
+}
+
+// OIL: composite Darcy + Vogel. Returns rate (bopd) for a given Pwf.
+function iprOil(pwf, s){
+  const Pr = s.Pr, Pb = Math.min(s.Pb, Pr), Jeff = s.J * skinFactor(s.skin);
+  if(pwf >= Pr) return 0;
+  if(Pr <= Pb){
+    // fully saturated — pure Vogel referenced to Pr
+    const qmax = Jeff * Pr / 1.8;
+    const r = pwf/Pr;
+    return qmax * (1 - 0.2*r - 0.8*r*r);
+  }
+  // undersaturated
+  const qb = Jeff * (Pr - Pb);                 // rate at bubble point
+  if(pwf >= Pb){
+    return Jeff * (Pr - pwf);                   // straight-line region
+  }
+  // below bubble point: Vogel increment added to qb
+  const qmaxV = Jeff * Pb / 1.8;               // Vogel max increment
+  const r = pwf/Pb;
+  const qv = qmaxV * (1 - 0.2*r - 0.8*r*r);
+  return qb + qv;
+}
+
+// GAS: backpressure deliverability equation. Returns rate (mscf/d).
+// Slider 'C' is a 0..1 "deliverability" handle; mapped to physical coefficient
+// so AOF spans roughly 8,000 – 90,000 mscf/d across the range.
+function iprGas(pwf, s){
+  const Pr = s.Pr;
+  if(pwf >= Pr) return 0;
+  // map slider C (0.0001..0.02) onto a coefficient that yields sensible AOF
+  const Ck = s.C * 12.0;                 // physical-ish coefficient
+  const Ceff = Ck * skinFactor(s.skin);
+  const dp2 = Pr*Pr - pwf*pwf;
+  return Ceff * Math.pow(Math.max(dp2,0), s.n);
+}
+
+function ipr(pwf, s){ return mode==='oil' ? iprOil(pwf,s) : iprGas(pwf,s); }
+
+// AOF — rate at Pwf = atmospheric (14.7)
+function aof(s){ return ipr(14.7, s); }
+
+/* ============================================================
+   PHYSICS — VLP (outflow)
+   Pwf_required = THP + hydrostatic + friction
+   ============================================================ */
+
+function vlpOil(q, s){
+  const thp = s.thp, depth = s.depth, d = s.tbg;
+  const wc = s.wc/100, glr = s.glr;
+  // --- liquid density: blend oil (~0.83) & water (1.0) by water cut, in psi/ft ---
+  const oilGrad = 0.34, watGrad = 0.433;          // psi/ft
+  let liqGrad = oilGrad*(1-wc) + watGrad*wc;
+  // --- gas lightens the column: more GLR -> lower average gradient (gas voidage) ---
+  // empirical void fraction rising with GLR, saturating
+  const voidFrac = Math.min(0.62, glr/(glr+1400));
+  let avgGrad = liqGrad * (1 - voidFrac);
+  const hydrostatic = avgGrad * depth;
+  // --- friction: ~ q^2 / d^5  (Fanning-like), grows with liquid rate ---
+  const qL = Math.max(q,1);
+  const fricK = 3.4e-5;
+  let friction = fricK * (qL*qL) * depth / Math.pow(d,5);
+  // --- liquid-loading hook: at very low rate, gas can't lift liquid -> extra dp ---
+  const critRate = 120 + glr*0.02;
+  let loading = 0;
+  if(qL < critRate){
+    const deficit = (critRate - qL)/critRate;
+    loading = deficit*deficit * (hydrostatic*0.55);
+  }
+  return thp + hydrostatic + friction + loading;
+}
+
+function vlpGas(q, s){
+  const thp = s.thp, depth = s.depth, d = s.tbg, sg = s.sg, cgr = s.cgr;
+  // gas column hydrostatic via average pressure & gravity (simplified Cullender-ish)
+  // gradient grows with pressure; approximate with THP-referenced static term
+  const Tavg = 580; // R, ~120F
+  const sExp = 0.0375 * sg * depth / Tavg;          // dimensionless column factor
+  const hydro = thp * (Math.exp(sExp) - 1);          // pressure added by gas weight
+  // condensate adds liquid load
+  const qG = Math.max(q,1);                          // mscf/d
+  const condGrad = cgr * 0.0008 * depth;             // psi from condensate
+  // friction ~ q^2 / d^5  (calibrated for mscf/d magnitudes)
+  const fricK = 3.0e-8;
+  const friction = fricK * (qG*qG) * depth / Math.pow(d,5);
+  // liquid loading for gas: critical (Turner) — falls hard below threshold
+  const critRate = 1200 + cgr*6;
+  let loading = 0;
+  if(qG < critRate){
+    const deficit = (critRate - qG)/critRate;
+    loading = deficit*deficit * (hydro*0.4 + condGrad);
+  }
+  return thp + hydro + friction + condGrad + loading;
+}
+
+function vlp(q, s){ return mode==='oil' ? vlpOil(q,s) : vlpGas(q,s); }
+
+/* ============================================================
+   OPERATING POINT — intersection of IPR & VLP
+   IPR gives q(Pwf) decreasing; VLP gives Pwf(q) increasing.
+   Solve f(q) = vlp(q) - ipr_pwf(q) = 0 by scanning + bisection.
+   We need IPR as Pwf->q; invert numerically by sampling.
+   ============================================================ */
+
+function buildIPRtable(s, n){
+  // returns array of {pwf, q} from Pr down to 14.7
+  const Pr = s.Pr, pts=[];
+  for(let i=0;i<=n;i++){
+    const pwf = Pr - (Pr-14.7)*(i/n);
+    pts.push({pwf, q: ipr(pwf,s)});
+  }
+  return pts;
+}
+
+// given q, what Pwf does the IPR allow? (inverse) — interpolate on table
+function iprPwfAtRate(q, table){
+  // table q increases as pwf decreases; find bracketing
+  for(let i=0;i<table.length-1;i++){
+    const a=table[i], b=table[i+1];
+    if((q>=a.q && q<=b.q) || (q<=a.q && q>=b.q)){
+      const t = (q-a.q)/((b.q-a.q)||1e-9);
+      return a.pwf + t*(b.pwf-a.pwf);
+    }
+  }
+  return q>table[table.length-1].q ? 14.7 : table[0].pwf;
+}
+
+function solveOperating(s){
+  const table = buildIPRtable(s, 200);
+  const qMax = aof(s);
+  // f(q) = vlp(q) - iprPwf(q); root where outflow demand = inflow supply
+  let lo=1, hi=qMax, flo, fhi;
+  const f = (q)=> vlp(q,s) - iprPwfAtRate(q, table);
+  flo=f(lo); fhi=f(hi);
+  // if no sign change, well may be dead (VLP above IPR everywhere) or open
+  if(flo>0 && fhi>0){
+    // outflow always exceeds inflow capacity -> well won't flow (dead)
+    return {q:0, pwf:s.Pr, dead:true, table, qMax};
+  }
+  // bisection
+  for(let i=0;i<60;i++){
+    const mid=(lo+hi)/2, fm=f(mid);
+    if(Math.abs(fm)<0.01) { lo=hi=mid; break; }
+    if((fm>0)===(flo>0)){ lo=mid; flo=fm; } else { hi=mid; fhi=fm; }
+  }
+  const q=(lo+hi)/2;
+  return {q, pwf:vlp(q,s), dead:false, table, qMax};
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const PLOT_W=760, PLOT_H=460;
+const M = {l:64, r:24, t:24, b:54};
+const plot = document.getElementById('plot');
+
+function fmt(n){
+  if(n>=1000) return Math.round(n).toLocaleString();
+  if(n>=100) return Math.round(n);
+  if(n>=10) return n.toFixed(0);
+  return n.toFixed(1);
+}
+
+let prevRate=null;
+function render(){
+  const s = state;
+  const sol = solveOperating(s);
+  const Pr = s.Pr;
+  const qMax = Math.max(sol.qMax, 1);
+
+  // axis scales
+  const xMax = qMax*1.12;
+  const yMax = Pr*1.06;
+  const px = q => M.l + (q/xMax)*(PLOT_W-M.l-M.r);
+  const py = p => PLOT_H-M.b - (p/yMax)*(PLOT_H-M.t-M.b);
+
+  let svg='';
+
+  // grid  (geometry in field units; labels converted to display units)
+  const yticks=5, xticks=6;
+  for(let i=0;i<=yticks;i++){
+    const p=yMax*i/yticks, y=py(p);
+    svg+=`<line class="grid-line" x1="${M.l}" y1="${y}" x2="${PLOT_W-M.r}" y2="${y}"/>`;
+    svg+=`<text class="tick-label" x="${M.l-8}" y="${y+3}" text-anchor="end">${fmt(pressureToDisplay(p))}</text>`;
+  }
+  for(let i=0;i<=xticks;i++){
+    const q=xMax*i/xticks, x=px(q);
+    svg+=`<line class="grid-line" x1="${x}" y1="${M.t}" x2="${x}" y2="${PLOT_H-M.b}"/>`;
+    svg+=`<text class="tick-label" x="${x}" y="${PLOT_H-M.b+16}" text-anchor="middle">${fmt(rateToDisplay(q))}</text>`;
+  }
+
+  // axes
+  svg+=`<line class="axis-line" x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${PLOT_H-M.b}"/>`;
+  svg+=`<line class="axis-line" x1="${M.l}" y1="${PLOT_H-M.b}" x2="${PLOT_W-M.r}" y2="${PLOT_H-M.b}"/>`;
+  const rateName = mode==='oil'?'Liquid rate':'Gas rate';
+  const rateAxis = `${rateName}  (${rateUnitLabel()})`;
+  svg+=`<text class="axis-label" x="${(M.l+PLOT_W-M.r)/2}" y="${PLOT_H-12}" text-anchor="middle">${rateAxis}</text>`;
+  svg+=`<text class="axis-label" x="${-(M.t+PLOT_H-M.b)/2}" y="18" text-anchor="middle" transform="rotate(-90 0 0)" style="transform-box:fill-box">Flowing bottomhole pressure  (${pressureUnit()})</text>`;
+
+  // IPR curve (from table)
+  let iprPath='', iprFill='';
+  sol.table.forEach((pt,i)=>{
+    const x=px(pt.q), y=py(pt.pwf);
+    iprPath += (i===0?'M':'L')+x.toFixed(1)+' '+y.toFixed(1)+' ';
+  });
+  // fill underneath IPR
+  iprFill = iprPath + `L${px(sol.table[sol.table.length-1].q).toFixed(1)} ${py(0).toFixed(1)} L${px(0).toFixed(1)} ${py(0).toFixed(1)} Z`;
+  svg+=`<path class="curve-fill-ipr" d="${iprFill}"/>`;
+  svg+=`<path class="curve curve-ipr" d="${iprPath}"/>`;
+
+  // VLP curve
+  let vlpPath='';
+  const N=120;
+  for(let i=0;i<=N;i++){
+    const q = xMax*i/N;
+    const p = vlp(Math.max(q,0.5), s);
+    const x=px(q), y=py(Math.min(p,yMax));
+    vlpPath += (i===0?'M':'L')+x.toFixed(1)+' '+y.toFixed(1)+' ';
+  }
+  svg+=`<path class="curve curve-vlp" d="${vlpPath}"/>`;
+
+  // operating point
+  if(!sol.dead && sol.q>1){
+    const ox=px(sol.q), oy=py(sol.pwf);
+    svg+=`<line class="op-drop" x1="${ox}" y1="${oy}" x2="${ox}" y2="${PLOT_H-M.b}"/>`;
+    svg+=`<line class="op-drop" x1="${M.l}" y1="${oy}" x2="${ox}" y2="${oy}"/>`;
+    svg+=`<circle class="op-ring" cx="${ox}" cy="${oy}" r="13"><animate attributeName="r" values="9;15;9" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.6;0.1;0.6" dur="2.4s" repeatCount="indefinite"/></circle>`;
+    svg+=`<circle class="op-marker" cx="${ox}" cy="${oy}" r="6.5"/>`;
+  }
+
+  plot.innerHTML = `<defs>
+      <linearGradient id="iprGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--ipr)"/>
+        <stop offset="100%" stop-color="var(--ipr)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>` + svg;
+
+  // ---- readouts (converted to display units) ----
+  const rate = sol.dead?0:sol.q;
+  const opRateEl = document.getElementById('opRate');
+  opRateEl.textContent = sol.dead ? 'DEAD' : fmt(rateToDisplay(rate));
+  if(prevRate!==null && Math.abs(rate-prevRate)>0.5){
+    opRateEl.parentElement.classList.remove('tick'); void opRateEl.offsetWidth;
+    opRateEl.parentElement.classList.add('tick');
+  }
+  prevRate=rate;
+  document.getElementById('opPwf').textContent = sol.dead?'—':fmt(pressureToDisplay(sol.pwf));
+  document.getElementById('aof').textContent = fmt(rateToDisplay(qMax));
+  document.getElementById('drawdown').textContent = sol.dead?'—':fmt(pressureToDisplay(Pr - sol.pwf));
+
+  updateInsight(s, sol, rate, qMax);
+  renderSensitivity(s, sol);
+}
+
+/* ============================================================
+   SENSITIVITY MATRIX — rate vs (drawdown × skin)
+   Uses the same IPR physics; varies skin per row and ΔP per column.
+   Geometry/physics in field units; display converted at output.
+   ============================================================ */
+function iprAtDrawdownSkin(dP, skin, s){
+  // build a state clone with overridden skin, evaluate IPR at Pwf = Pr - dP
+  const clone = Object.assign({}, s, {skin: skin});
+  const pwf = s.Pr - dP;
+  if(pwf <= 14.7) return ipr(14.7, clone);   // cap at AOF
+  return ipr(pwf, clone);
+}
+
+function renderSensitivity(s, sol){
+  const Pr = s.Pr;
+  // --- column axis: drawdown values, from modest to near-full ---
+  // span 5% .. 85% of reservoir pressure, 6 columns
+  const dpFracs = [0.05, 0.15, 0.30, 0.45, 0.65, 0.85];
+  const dPs = dpFracs.map(f => Math.round(Pr*f));
+  // --- row axis: skin from stimulated floor to damaged, 7 rows ---
+  const skins = [-6, -4, -2, 0, 4, 10, 20];
+
+  // current operating drawdown & skin (to mark nearest cell)
+  const opDP = sol.dead ? null : (Pr - sol.pwf);
+  const opSkin = s.skin;
+
+  // compute all rates first (field units) to set the colour scale
+  let cells = [], maxRate = 0;
+  skins.forEach((sk,ri)=>{
+    cells[ri]=[];
+    dPs.forEach((dp,ci)=>{
+      const q = iprAtDrawdownSkin(dp, sk, s);
+      cells[ri][ci] = q;
+      if(isFinite(q) && q>maxRate) maxRate = q;
+    });
+  });
+  if(maxRate<=0) maxRate = 1;
+
+  // heat colour: blue(low) -> teal -> gold(high)
+  function heat(t){
+    t = Math.max(0, Math.min(1, t));
+    // piecewise: 0 #1d3a5f, 0.4 #2f6f57, 0.72 #C9A84C, 1 #e8c96a
+    const stops=[[0,29,58,95],[0.4,47,111,87],[0.72,201,168,76],[1,232,201,106]];
+    let a=stops[0], b=stops[stops.length-1];
+    for(let i=0;i<stops.length-1;i++){ if(t>=stops[i][0] && t<=stops[i+1][0]){ a=stops[i]; b=stops[i+1]; break; } }
+    const span=(b[0]-a[0])||1, lt=(t-a[0])/span;
+    const r=Math.round(a[1]+(b[1]-a[1])*lt), g=Math.round(a[2]+(b[2]-a[2])*lt), bl=Math.round(a[3]+(b[3]-a[3])*lt);
+    return `rgb(${r},${g},${bl})`;
+  }
+
+  // find nearest cell to operating point
+  let opRi=-1, opCi=-1;
+  if(opDP!==null){
+    let best=1e18;
+    skins.forEach((sk,ri)=>dPs.forEach((dp,ci)=>{
+      const d=Math.abs(dp-opDP)/Pr + Math.abs(sk-opSkin)/30;
+      if(d<best){best=d; opRi=ri; opCi=ci;}
+    }));
+  }
+
+  // --- build HTML ---
+  const pu = pressureUnit();
+  let html = `<thead><tr>`;
+  html += `<th class="corner">skin&nbsp;↓ &nbsp;/&nbsp; ΔP&nbsp;→<br><span class="sens-axis-tag">${pu}</span></th>`;
+  dPs.forEach(dp=>{
+    html += `<th>${fmt(pressureToDisplay(dp))}<br><span class="col-head-axis" style="font-size:9px">${pu}</span></th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  skins.forEach((sk,ri)=>{
+    const skLabel = sk>0 ? '+'+sk : sk;
+    html += `<tr><th>${skLabel}</th>`;
+    dPs.forEach((dp,ci)=>{
+      const q = cells[ri][ci];
+      const t = q/maxRate;
+      const isOp = (ri===opRi && ci===opCi);
+      const cls = isOp ? ' class="op-cell"' : '';
+      html += `<td${cls} style="background:${heat(t)}">${fmt(rateToDisplay(q))}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody>`;
+  document.getElementById('sensTable').innerHTML = html;
+
+  // --- footnote: quantify the two levers from the current operating point ---
+  const ru = rateUnitLabel();
+  const foot = document.getElementById('sensFoot');
+  if(opDP!==null && opRi>=0){
+    const baseQ = cells[opRi][opCi];
+    // lever 1: same skin, push drawdown to the highest column
+    const maxDPQ = cells[opRi][dPs.length-1];
+    // lever 2: same drawdown, stimulate to the -6 row
+    const minSkinQ = cells[0][opCi];
+    // both: top-right corner (max ΔP, min skin)
+    const bothQ = cells[0][dPs.length-1];
+    const up = (a,b)=> b>0 ? '+'+Math.round((a-b)/b*100)+'%' : '—';
+    foot.innerHTML =
+      `From the current operating cell (<b>${fmt(rateToDisplay(baseQ))} ${ru}</b>): pulling drawdown to ${fmt(pressureToDisplay(dPs[dPs.length-1]))} ${pu} alone lifts inflow to <b>${fmt(rateToDisplay(maxDPQ))} ${ru}</b> (${up(maxDPQ,baseQ)}). Stimulating to skin −6 alone reaches <b>${fmt(rateToDisplay(minSkinQ))} ${ru}</b> (${up(minSkinQ,baseQ)}). Doing both compounds to <b>${fmt(rateToDisplay(bothQ))} ${ru}</b> (${up(bothQ,baseQ)}) — though remember the well only delivers what the tubing can lift, so the achievable gain is bounded by the VLP intersection above.`;
+  } else {
+    foot.innerHTML = `The well is currently dead at the operating point — but the matrix shows the inflow potential that stimulation (moving up the rows) or added drawdown (moving right) would unlock if the outflow side were brought back into contact.`;
+  }
+}
+
+/* ============================================================
+   INSIGHT ENGINE — plain-English diagnosis
+   ============================================================ */
+function updateInsight(s, sol, rate, qMax){
+  const box=document.getElementById('insight');
+  const txt=document.getElementById('insightText');
+  box.className='insight';
+  let html='';
+
+  if(sol.dead){
+    box.classList.add('crit');
+    html = `<b>The well won't flow.</b> Outflow pressure demand exceeds what the reservoir can supply at every rate — the VLP sits entirely above the IPR. Drop the wellhead pressure, lighten the column with gas lift, or stimulate the inflow to bring the curves back into contact.`;
+  } else {
+    const util = rate/qMax;
+    const dd = s.Pr - sol.pwf;
+    if(mode==='oil'){
+      const loadingRisk = rate < (120 + s.glr*0.02)*1.15;
+      if(loadingRisk){
+        box.classList.add('warn');
+        html = `<b>Near the liquid-loading hook.</b> The operating point sits on the unstable left limb of the VLP, where the gas can barely lift the liquid column. A smaller tubing ID or some gas lift would steepen velocity and pull the point back to stable flow.`;
+      } else if(util>0.72){
+        html = `<b>Outflow-limited.</b> The well is producing ${(util*100).toFixed(0)}% of its absolute open-flow potential — the reservoir has more to give. Reducing backpressure or friction (lower wellhead pressure, larger tubing) would unlock further rate.`;
+      } else {
+        html = `<b>Inflow-limited.</b> Drawdown is ${Math.round(dd)} psi and the well flows at ${(util*100).toFixed(0)}% of AOF. The constraint is the reservoir, not the tubing — stimulation to cut skin, or a higher PI, moves the IPR right and lifts the rate.`;
+      }
+    } else {
+      const loadingRisk = rate < (1200 + s.cgr*6)*1.15;
+      if(loadingRisk){
+        box.classList.add('warn');
+        html = `<b>Below critical gas velocity.</b> The point is near the loading threshold where condensate begins to accumulate downhole. Smaller tubing raises velocity above the Turner limit and restores stable lift.`;
+      } else if(util>0.72){
+        html = `<b>Tubing-constrained.</b> At ${(util*100).toFixed(0)}% of AOF the friction term dominates. A larger tubing ID or lower line pressure would meaningfully raise deliverability.`;
+      } else {
+        html = `<b>Reservoir-constrained.</b> Drawdown is ${Math.round(dd)} psi at ${(util*100).toFixed(0)}% of AOF. Deliverability is set by the inflow — reducing skin or raising C shifts the IPR outward.`;
+      }
+    }
+  }
+  txt.innerHTML = html + ` <span style="color:var(--on-dark-faint)">Operating rate updates the instant any curve moves.</span>`;
+}
+
+/* ============================================================
+   UI WIRING
+   ============================================================ */
+function buildControls(){
+  const inDiv=document.getElementById('inflowControls');
+  const outDiv=document.getElementById('outflowControls');
+  inDiv.innerHTML=''; outDiv.innerHTML='';
+  state={};
+  PARAMS[mode].inflow.forEach(p=>{ state[p.id]=p.val; inDiv.appendChild(makeCtrl(p)); });
+  PARAMS[mode].outflow.forEach(p=>{ state[p.id]=p.val; outDiv.appendChild(makeCtrl(p)); });
+}
+
+// choose display decimals by dimension + step
+function dispDecimals(p){
+  const dim=p.dim;
+  if(dim==='diameter') return unitSys==='metric'?1:2;   // mm vs in
+  if(dim==='pressure') return unitSys==='metric'?1:0;   // bar vs psi
+  if(dim==='length')   return unitSys==='metric'?0:0;   // m vs ft
+  if(dim==='pi')       return 2;
+  if(dim==='glr'||dim==='cgr') return unitSys==='metric'?1:0;
+  // fall back to step-based
+  return p.step<1 ? (p.step<0.01?4:2) : 0;
+}
+
+function makeCtrl(p){
+  const wrap=document.createElement('div'); wrap.className='ctrl';
+  const dec = dispDecimals(p);
+  // convert the stored field range into display units for the slider
+  const dMin = toDisplay(p.dim, p.min);
+  const dMax = toDisplay(p.dim, p.max);
+  const dStepRaw = toDisplay(p.dim, p.min + p.step) - dMin; // step in display space
+  const dStep = dStepRaw>0 ? dStepRaw : p.step;
+  const dVal = toDisplay(p.dim, state[p.id]);
+
+  wrap.innerHTML=`
+    <div class="ctrl-top">
+      <span class="ctrl-name">${p.name}</span>
+      <span class="ctrl-val"><span id="v-${p.id}">${dVal.toFixed(dec)}</span><small id="u-${p.id}">${unitLabel(p.dim)}</small></span>
+    </div>
+    <input type="range" id="r-${p.id}" min="${dMin}" max="${dMax}" step="${dStep}" value="${dVal}">
+  `;
+  const input=wrap.querySelector('input');
+  const setFill=()=>{ const f=((input.value-dMin)/(dMax-dMin))*100; input.style.setProperty('--fill', f+'%'); };
+  setFill();
+  input.addEventListener('input', ()=>{
+    const disp=parseFloat(input.value);
+    state[p.id]=toField(p.dim, disp);          // store field units
+    document.getElementById('v-'+p.id).textContent=disp.toFixed(dec);
+    setFill();
+    render();
+  });
+  return wrap;
+}
+
+// keep readout unit captions in sync with mode + unit system
+function syncReadoutUnits(){
+  document.getElementById('rateUnit').textContent = rateUnitLabel();
+  document.getElementById('aofUnit').textContent  = rateUnitLabel();
+  document.querySelectorAll('.readout .readout-unit').forEach(el=>{
+    // pressure-based readouts carry data-dim="pressure"
+    if(el.dataset.dim==='pressure') el.textContent = pressureUnit();
+  });
+}
+
+// mode toggle
+document.getElementById('modeToggle').addEventListener('click', e=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  mode=btn.dataset.mode;
+  document.querySelectorAll('#modeToggle button').forEach(b=>b.classList.toggle('active', b===btn));
+  document.getElementById('modeHint').textContent = mode==='oil'
+    ? 'Composite Darcy + Vogel inflow, two-phase tubing lift'
+    : 'Backpressure deliverability inflow, gas-column outflow';
+  document.getElementById('rateLabel').textContent = 'Operating Rate';
+  syncReadoutUnits();
+  buildControls(); render();
+});
+
+// unit-system toggle — rebuilds sliders in the new units, physics unchanged
+document.getElementById('unitToggle').addEventListener('click', e=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  unitSys=btn.dataset.unit;
+  document.querySelectorAll('#unitToggle button').forEach(b=>b.classList.toggle('active', b===btn));
+  syncReadoutUnits();
+  rebuildControlsKeepState();
+  render();
+});
+
+// rebuild sliders WITHOUT resetting the current field-unit state
+function rebuildControlsKeepState(){
+  const saved={...state};
+  const inDiv=document.getElementById('inflowControls');
+  const outDiv=document.getElementById('outflowControls');
+  inDiv.innerHTML=''; outDiv.innerHTML='';
+  PARAMS[mode].inflow.forEach(p=>{ state[p.id]=saved[p.id]; inDiv.appendChild(makeCtrl(p)); });
+  PARAMS[mode].outflow.forEach(p=>{ state[p.id]=saved[p.id]; outDiv.appendChild(makeCtrl(p)); });
+}
+
+// reset
+document.getElementById('resetBtn').addEventListener('click', ()=>{ buildControls(); render(); });
+
+// scenarios
+document.getElementById('scenarios').addEventListener('click', e=>{
+  const chip=e.target.closest('.chip'); if(!chip) return;
+  const scn=chip.dataset.scn;
+  const setVal=(id,valField)=>{
+    if(state[id]===undefined) return;
+    const all=[...PARAMS[mode].inflow,...PARAMS[mode].outflow].find(p=>p.id===id);
+    const vF=Math.max(all.min, Math.min(all.max, valField));  // clamp in field units
+    state[id]=vF;
+    const inp=document.getElementById('r-'+id);
+    if(inp){
+      const dispV=toDisplay(all.dim, vF);
+      const dMin=toDisplay(all.dim, all.min), dMax=toDisplay(all.dim, all.max);
+      const dec=dispDecimals(all);
+      inp.value=dispV;
+      document.getElementById('v-'+id).textContent=dispV.toFixed(dec);
+      inp.style.setProperty('--fill', ((dispV-dMin)/(dMax-dMin)*100)+'%');
+    }
+  };
+  if(scn==='tubing') setVal('tbg', state.tbg+0.6);
+  if(scn==='choke') setVal('thp', state.thp*0.5);
+  if(scn==='stim') setVal('skin', -2);
+  if(scn==='deplete') setVal('Pr', state.Pr*0.7);
+  render();
+});
+
+// init
+buildControls();
+render();
+
+})();
+</script>
+</body>
+</html>
