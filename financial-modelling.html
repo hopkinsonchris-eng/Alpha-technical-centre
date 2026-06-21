@@ -1632,7 +1632,12 @@ function vTornado(M){
   bars.forEach((bar,i)=>{
     const y=14+i*rowH;
     const x1=sx(bar.lo),x2=sx(bar.hi);
-    b+=`<rect x="${Math.min(x1,x2)}" y="${y+8}" width="${Math.abs(x2-x1)}" height="22" rx="3" fill="${bar.lo>base?'#C9A84C':'#3E5C76'}" fill-opacity="0.75"/>`;
+    const xMid=sx(base);
+    // downside half (lo side, below base) in steel blue; upside half (hi side) in gold
+    const downL=Math.min(x1,xMid), downW=Math.abs(xMid-Math.min(x1,xMid));
+    const upL=xMid, upW=Math.abs(Math.max(x2,xMid)-xMid);
+    if(downW>0.5) b+=`<rect x="${downL}" y="${y+8}" width="${downW}" height="22" rx="3" fill="#3E5C76" fill-opacity="0.82"/>`;
+    if(upW>0.5)   b+=`<rect x="${upL}" y="${y+8}" width="${upW}" height="22" rx="3" fill="#C9A84C" fill-opacity="0.82"/>`;
     b+=`<text x="8" y="${y+22}" font-size="12.5" fill="#0B1F3A">${bar.l}</text>`;
     b+=`<text x="${Math.min(x1,x2)-4}" y="${y+23}" text-anchor="end" font-size="11" fill="#6B7A8D">${fmtN(bar.lo)}</text>`;
     b+=`<text x="${Math.max(x1,x2)+4}" y="${y+23}" font-size="11" fill="#6B7A8D">${fmtN(bar.hi)}</text>`;
@@ -1690,7 +1695,10 @@ function vIRRPlat(M){
   const steps=8;
   const platVals=[], irrVals=[];
   for(let k=0;k<=steps;k++){
-    const plat=f0.type==='gas' ? Math.round(orig*0.5+orig*k/steps) : Math.round(orig*0.5+orig*k/steps/1000)*1000;
+    // sweep plateau from 50% to 150% of the base case
+    const frac=0.5 + (k/steps);            // 0.5 .. 1.5
+    const raw=orig*frac;
+    const plat=f0.type==='gas' ? Math.round(raw/10)*10 : Math.round(raw/1000)*1000;
     f0.plateau=plat;
     const R=runModelWith(p);
     platVals.push(plat);
@@ -1698,14 +1706,22 @@ function vIRRPlat(M){
   }
   f0.plateau=orig;
   const fr=frame(1100,200,60,14,12,30);
-  const lo=0, hi=Math.max(...irrVals)*1.15;
+  // keep only points where IRR is computable (>0); null/0 means uneconomic at that plateau
+  const pts=irrVals.map((v,k)=>({k,v,plat:platVals[k]})).filter(o=>o.v>0);
+  const validIrr=pts.map(o=>o.v);
+  const lo=0, hi=Math.max(1,(validIrr.length?Math.max(...validIrr):1))*1.15;
   let b=gridY(fr,lo,hi,v=>v.toFixed(0)+'%');
   const X=k=>fr.padL+(fr.w-fr.padL-fr.padR)*k/steps;
-  let d='M';irrVals.forEach((v,k)=>{d+=`${X(k).toFixed(1)},${fr.lin(v,lo,hi).toFixed(1)} `;});
-  b+=`<path d="${d}" fill="none" stroke="#C9A84C" stroke-width="2.5"/>`;
-  irrVals.forEach((v,k)=>{b+=`<circle cx="${X(k)}" cy="${fr.lin(v,lo,hi)}" r="4" fill="#0B1F3A"/>`;
-    b+=`<text x="${X(k)}" y="${fr.h-12}" text-anchor="middle" font-size="10" fill="#6B7A8D">${f0.type==='gas'?fmtN(platVals[k]):fmtN(platVals[k]/1000)+'k'}</text>`;
-  });
+  if(pts.length>=2){
+    let d='M';pts.forEach((o,j)=>{d+=`${(j===0?'':'L')}${X(o.k).toFixed(1)},${fr.lin(o.v,lo,hi).toFixed(1)} `;});
+    b+=`<path d="${d}" fill="none" stroke="#C9A84C" stroke-width="2.5"/>`;
+  }
+  pts.forEach(o=>{b+=`<circle cx="${X(o.k)}" cy="${fr.lin(o.v,lo,hi)}" r="4" fill="#0B1F3A"/>`;});
+  // x-axis labels for all steps
+  platVals.forEach((plat,k)=>{b+=`<text x="${X(k)}" y="${fr.h-12}" text-anchor="middle" font-size="10" fill="#6B7A8D">${f0.type==='gas'?fmtN(plat):fmtN(plat/1000)+'k'}</text>`;});
+  if(pts.length<2){
+    b+=`<text x="${fr.w/2}" y="${fr.h/2}" text-anchor="middle" font-size="13" fill="#6B7A8D">Insufficient economic return to plot at these plateaus</text>`;
+  }
   $('ch-irr-plat').innerHTML=SVG(fr,b,'IRR vs plateau production');
 }
 
