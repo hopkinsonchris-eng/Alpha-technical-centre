@@ -851,6 +851,7 @@ function updateInsight(s, sol, rate, qMax){
   } else {
     const util = rate/qMax;
     const dd = s.Pr - sol.pwf;
+    const ddTxt = `${fmt(pressureToDisplay(dd))} ${pressureUnit()}`;
     if(mode==='oil'){
       const loadingRisk = rate < (120 + s.glr*0.02)*1.15;
       if(loadingRisk){
@@ -859,7 +860,7 @@ function updateInsight(s, sol, rate, qMax){
       } else if(util>0.72){
         html = `<b>Outflow-limited.</b> The well is producing ${(util*100).toFixed(0)}% of its absolute open-flow potential — the reservoir has more to give. Reducing backpressure or friction (lower wellhead pressure, larger tubing) would unlock further rate.`;
       } else {
-        html = `<b>Inflow-limited.</b> Drawdown is ${Math.round(dd)} psi and the well flows at ${(util*100).toFixed(0)}% of AOF. The constraint is the reservoir, not the tubing — stimulation to cut skin, or a higher PI, moves the IPR right and lifts the rate.`;
+        html = `<b>Inflow-limited.</b> Drawdown is ${ddTxt} and the well flows at ${(util*100).toFixed(0)}% of AOF. The constraint is the reservoir, not the tubing — stimulation to cut skin, or a higher PI, moves the IPR right and lifts the rate.`;
       }
     } else {
       const loadingRisk = rate < (1200 + s.cgr*6)*1.15;
@@ -869,7 +870,7 @@ function updateInsight(s, sol, rate, qMax){
       } else if(util>0.72){
         html = `<b>Tubing-constrained.</b> At ${(util*100).toFixed(0)}% of AOF the friction term dominates. A larger tubing ID or lower line pressure would meaningfully raise deliverability.`;
       } else {
-        html = `<b>Reservoir-constrained.</b> Drawdown is ${Math.round(dd)} psi at ${(util*100).toFixed(0)}% of AOF. Deliverability is set by the inflow — reducing skin or raising C shifts the IPR outward.`;
+        html = `<b>Reservoir-constrained.</b> Drawdown is ${ddTxt} at ${(util*100).toFixed(0)}% of AOF. Deliverability is set by the inflow — reducing skin or raising C shifts the IPR outward.`;
       }
     }
   }
