@@ -163,29 +163,43 @@
     <div class="section-head reveal">
       <span class="label" data-en="Our Tools" data-es="Nuestras Herramientas">Our Tools</span>
       <h2 data-en="Software that changes how the work gets done" data-es="Software que transforma la manera de trabajar">Software that changes how the work gets done</h2>
-      <p data-en="We build the tools we wished we had. Two of them are reshaping how our industry approaches evaluation and economics." data-es="Construimos las herramientas que siempre quisimos tener. Dos de ellas están redefiniendo cómo nuestra industria aborda la evaluación y la economía.">We build the tools we wished we had. Two of them are reshaping how our industry approaches evaluation and economics.</p>
+      <p data-en="We build the tools we wished we had. Some are reshaping how our industry approaches evaluation and economics." data-es="Construimos las herramientas que siempre quisimos tener. Algunas están redefiniendo cómo nuestra industria aborda la evaluación y la economía.">We build the tools we wished we had. Some are reshaping how our industry approaches evaluation and economics.</p>
     </div>
-    <div class="grid-2">
-      <div class="tool-card reveal">
-        <div class="tool-card-header">
-          <span class="chip" data-en="Live" data-es="Disponible">Live</span>
-          <div class="tool-card-title" data-en="Upstream Quick-Look Financial Model" data-es="Modelo Financiero Upstream Quick-Look">Upstream Quick-Look Financial Model</div>
+    <div class="tool-list reveal">
+
+      <div class="tool-row">
+        <div class="tool-row-main">
+          <div class="tool-row-top">
+            <span class="chip" data-en="Live" data-es="Disponible">Live</span>
+            <h3 class="tool-row-title" data-en="Upstream Quick-Look Financial Model" data-es="Modelo Financiero Upstream Quick-Look">Upstream Quick-Look Financial Model</h3>
+          </div>
+          <p class="tool-row-desc" data-en="Full-cycle project economics in the browser — NPV, IRR, payback and live sensitivities. No spreadsheet required." data-es="Economía de proyectos de ciclo completo en el navegador — VPN, TIR, repago y sensibilidades en vivo. Sin hojas de cálculo.">Full-cycle project economics in the browser — NPV, IRR, payback and live sensitivities. No spreadsheet required.</p>
         </div>
-        <div class="tool-card-body">
-          <p class="tool-card-desc" data-en="Run full-cycle project economics in the browser — NPV, IRR, payback and sensitivities — without a single spreadsheet. Change an assumption, watch every output move." data-es="Ejecute la economía de proyectos de ciclo completo en el navegador — VPN, TIR, repago y sensibilidades — sin una sola hoja de cálculo. Cambie un supuesto y vea moverse cada resultado.">Run full-cycle project economics in the browser — NPV, IRR, payback and sensitivities — without a single spreadsheet. Change an assumption, watch every output move.</p>
-          <a href="financial-modelling.html" class="btn btn-primary" data-en="Open the model" data-es="Abrir el modelo">Open the model</a>
-        </div>
+        <a href="financial-modelling.html" class="btn btn-primary tool-row-btn" data-en="Open the model" data-es="Abrir el modelo">Open the model</a>
       </div>
-      <div class="tool-card reveal reveal-delay-1">
-        <div class="tool-card-header">
-          <span class="chip chip--coming" data-en="Coming soon" data-es="Próximamente">Coming soon</span>
-          <div class="tool-card-title" data-en="Oil &amp; Gas Evaluation System" data-es="Sistema de Evaluación de Petróleo y Gas">Oil &amp; Gas Evaluation System</div>
+
+      <div class="tool-row">
+        <div class="tool-row-main">
+          <div class="tool-row-top">
+            <span class="chip" data-en="Live · New" data-es="Disponible · Nuevo">Live · New</span>
+            <h3 class="tool-row-title" data-en="Nodal Analysis — Well Performance Optimiser" data-es="Análisis Nodal — Optimizador de Pozos">Nodal Analysis — Well Performance Optimiser</h3>
+          </div>
+          <p class="tool-row-desc" data-en="Find the operating point where reservoir inflow meets tubing lift. Optimise oil or gas wells in real time, with a live sensitivity matrix — field or metric units." data-es="Encuentre el punto de operación donde el aporte del yacimiento se encuentra con la elevación de la tubería. Optimice pozos de petróleo o gas en tiempo real, con una matriz de sensibilidad en vivo — unidades de campo o métricas.">Find the operating point where reservoir inflow meets tubing lift. Optimise oil or gas wells in real time, with a live sensitivity matrix — field or metric units.</p>
         </div>
-        <div class="tool-card-body">
-          <p class="tool-card-desc" data-en="A full subsurface-to-economics evaluation engine. Petrophysics, volumetrics, decline analysis and economics in one integrated system — the way evaluation should have worked all along." data-es="Un motor de evaluación completo, del subsuelo a la economía. Petrofísica, volumetría, análisis de declinación y economía en un solo sistema integrado — como la evaluación siempre debió funcionar.">A full subsurface-to-economics evaluation engine. Petrophysics, volumetrics, decline analysis and economics in one integrated system — the way evaluation should have worked all along.</p>
-          <a href="tools.html" class="btn btn-ghost-light" data-en="Register interest" data-es="Registrar interés">Register interest</a>
-        </div>
+        <a href="nodal-analysis.html" class="btn btn-primary tool-row-btn" data-en="Open the optimiser" data-es="Abrir el optimizador">Open the optimiser</a>
       </div>
+
+      <div class="tool-row tool-row--coming">
+        <div class="tool-row-main">
+          <div class="tool-row-top">
+            <span class="chip chip--coming" data-en="Coming soon" data-es="Próximamente">Coming soon</span>
+            <h3 class="tool-row-title" data-en="Oil &amp; Gas Evaluation System" data-es="Sistema de Evaluación de Petróleo y Gas">Oil &amp; Gas Evaluation System</h3>
+          </div>
+          <p class="tool-row-desc" data-en="A full subsurface-to-economics evaluation engine. Petrophysics, volumetrics, decline analysis and economics in one integrated system." data-es="Un motor de evaluación completo, del subsuelo a la economía. Petrofísica, volumetría, análisis de declinación y economía en un solo sistema integrado.">A full subsurface-to-economics evaluation engine. Petrophysics, volumetrics, decline analysis and economics in one integrated system.</p>
+        </div>
+        <a href="tools.html" class="btn btn-ghost-light tool-row-btn" data-en="Register interest" data-es="Registrar interés">Register interest</a>
+      </div>
+
     </div>
   </div>
 </section>
@@ -268,6 +282,39 @@
 
 <style>
   /* ---- Homepage-specific ---- */
+
+  /* Flagship tools — compact list of rows in a dark section */
+  .tool-list { display:flex; flex-direction:column; gap:16px; }
+  .tool-row {
+    display:flex; align-items:center; justify-content:space-between; gap:28px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(201,168,76,0.22);
+    border-radius:14px;
+    padding:22px 26px;
+    transition:border-color .25s ease, background .25s ease, transform .25s ease;
+  }
+  .tool-row:hover {
+    border-color:rgba(201,168,76,0.5);
+    background:rgba(255,255,255,0.05);
+    transform:translateY(-2px);
+  }
+  .tool-row--coming { opacity:0.82; }
+  .tool-row-main { flex:1; min-width:0; }
+  .tool-row-top { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+  .tool-row-title {
+    font-family:var(--font-display); color:#fff; font-size:1.3rem; line-height:1.2; margin:0;
+  }
+  .tool-row-desc {
+    color:rgba(255,255,255,0.66); font-size:.95rem; max-width:74ch; margin:0;
+  }
+  .tool-row-btn { flex:none; white-space:nowrap; }
+
+  @media (max-width:760px){
+    .tool-row { flex-direction:column; align-items:flex-start; gap:18px; padding:20px; }
+    .tool-row-btn { width:100%; text-align:center; }
+    .tool-row-title { font-size:1.15rem; }
+  }
+
   /* Three-column hero: text | 3D canvas | loop HUD */
   .hero-layout {
     display: grid;
