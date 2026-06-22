@@ -771,19 +771,41 @@
 </script>
 
 <script>
-// Staff portal shortcut — type 'atc' in sequence (any case, within 3s)
+// Staff portal — triple-tap logo (touch) or type 'atc' (desktop)
 (function(){
-  const SEQ='atc';let buf='',timer=null;
-  document.addEventListener('keypress',function(e){
+  // Triple-tap logo
+  var taps=0,tapTimer=null;
+  var logo=document.querySelector('.nav-mark');
+  if(logo){
+    logo.addEventListener('click',function(e){
+      e.preventDefault();
+      taps++;
+      clearTimeout(tapTimer);
+      if(taps>=3){taps=0;window.location.href='admin.html';return;}
+      tapTimer=setTimeout(function(){
+        taps=0;
+        window.location.href='index.html';
+      },2000);
+    });
+  }
+  // Type 'atc' on keyboard
+  var buf='',keyTimer=null;
+  document.addEventListener('keydown',function(e){
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
-    const k=e.key.toLowerCase();
-    if(k===SEQ[buf.length]){
-      buf+=k;
-      clearTimeout(timer);
-      if(buf===SEQ){buf='';window.location.href='admin.html';return;}
-      timer=setTimeout(function(){buf='';},3000);
+    var k=e.key.toLowerCase();
+    if(k==='a'||k==='t'||k==='c'){
+      if(k==='atc'[buf.length]){
+        buf+=k;
+        clearTimeout(keyTimer);
+        if(buf==='atc'){buf='';window.location.href='admin.html';return;}
+        keyTimer=setTimeout(function(){buf='';},2000);
+      } else {
+        buf=(k==='a')?'a':'';
+        clearTimeout(keyTimer);
+        if(buf)keyTimer=setTimeout(function(){buf='';},2000);
+      }
     } else {
-      buf='';clearTimeout(timer);
+      buf='';clearTimeout(keyTimer);
     }
   });
 })();
