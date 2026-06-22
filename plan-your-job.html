@@ -672,7 +672,14 @@ body{padding-top:0;}
 </div>
 <script>
 const PARTNERS={RE:{name:'Reservoir Engineering & Production',short:'RE&P Manager'},GEO:{name:'Geology',short:'Geology Manager'},INFRA:{name:'Infrastructure',short:'Infrastructure Manager'},SES:{name:'Seismic',short:'Seismic Manager'}};
-const WEEKLY_RATE={Principal:13500,Senior:11000,'Mid-level':8000,Junior:5500};
+// Load rates from Staff Portal admin config (admin.html) — falls back to defaults
+const _ATC_DEFAULTS={Principal:13500,Senior:11000,'Mid-level':8000,Junior:5500};
+let _atcCfg={};try{_atcCfg=JSON.parse(localStorage.getItem('atc_admin_config'))||{};}catch(e){}
+const WEEKLY_RATE=Object.assign({},_ATC_DEFAULTS,_atcCfg.rates||{});
+const _SW_MULT=(_atcCfg.swMult||100)/100;
+const _MISC_MULT=(_atcCfg.miscMult||100)/100;
+const _DATA_MULT=(_atcCfg.dataMult||100)/100;
+const _MARGIN=(1+(_atcCfg.margin||0)/100);
 const ICON={
 scope:'<svg viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M7 3H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V8l-5-5z"/><path d="M14 3v5h5"/></svg>',
 deliver:'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
@@ -706,10 +713,12 @@ function computeScaled(item,scaleIdx){
     return {discipline:r.discipline,level:r.level,count:count,weeks:weeks};
   });
   const labour=Math.round(blendedWeekly(resources)*weeks);
-  const software=Math.round(item.base.software*(0.6+0.4*mult));
-  const data=Math.round(item.base.data*(0.7+0.3*mult));
-  const misc=Math.round(item.base.misc*(0.6+0.4*mult));
-  return {weeks,resources,labour,software,data,misc,total:labour+software+data+misc,scale};
+  const software=Math.round(item.base.software*(0.6+0.4*mult)*_SW_MULT);
+  const data=Math.round(item.base.data*(0.7+0.3*mult)*_DATA_MULT);
+  const misc=Math.round(item.base.misc*(0.6+0.4*mult)*_MISC_MULT);
+  const subtotal=labour+software+data+misc;
+  const total=Math.round(subtotal*_MARGIN);
+  return {weeks,resources,labour,software,data,misc,total,scale};
 }
 function addonCost(item,name){const a=item.addons.find(x=>x.name===name);if(!a)return 0;if(a.fee)return a.fee;return Math.round(blendedWeekly(a.resources)*a.weeks);}
 function formatUSD(n){if(n>=1000000)return '$'+(n/1000000).toFixed(2)+'M';if(n>=1000)return '$'+Math.round(n/1000)+'k';return '$'+Math.round(n).toLocaleString();}

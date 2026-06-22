@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Portal — Alpha Technical Centre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#0B1F3A;--navy2:#0E2444;--navy3:#162F50;
+  --gold:#C9A84C;--gold-lt:#D4B46A;--gold-dk:#A8862E;
+  --steel:#8FA0B5;--steel-lt:#B8C8D8;
+  --white:#F0EDE6;--cream:#F8F5EE;
+  --green:#1D9E75;--red:#C0392B;
+  --border:rgba(143,160,181,0.18);
+  --radius:8px;
+}
+html{background:var(--navy);min-height:100vh;}
+body{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--white);background:var(--navy);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  position:fixed;inset:0;background:linear-gradient(160deg,#060F1E 0%,var(--navy) 60%,#0E2A20 100%);
+  display:flex;align-items:center;justify-content:center;z-index:1000;
+}
+.login-box{
+  width:380px;background:rgba(14,36,68,0.8);border:1px solid var(--border);
+  border-radius:14px;padding:44px 40px;backdrop-filter:blur(20px);
+  box-shadow:0 40px 80px rgba(0,0,0,0.5);
+}
+.login-mark{width:48px;height:48px;margin:0 auto 24px;display:block;}
+.login-title{font-family:'EB Garamond',serif;font-size:26px;font-weight:500;text-align:center;color:var(--white);margin-bottom:6px;}
+.login-sub{font-size:12px;color:var(--steel);text-align:center;letter-spacing:.04em;margin-bottom:32px;}
+.login-field{margin-bottom:16px;}
+.login-field label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);margin-bottom:7px;}
+.login-field input{
+  width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  border-radius:6px;padding:11px 14px;font-size:13.5px;color:var(--white);
+  font-family:'DM Sans',sans-serif;outline:none;transition:.18s;
+}
+.login-field input:focus{border-color:var(--gold);background:rgba(201,168,76,0.06);}
+.login-btn{
+  width:100%;background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dk) 100%);
+  color:var(--navy);border:none;border-radius:6px;padding:13px;font-family:'Barlow Condensed',sans-serif;
+  font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+  margin-top:8px;transition:.18s;
+}
+.login-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+.login-err{font-size:12px;color:#E87070;text-align:center;margin-top:12px;min-height:18px;}
+
+/* ── APP SHELL ── */
+#app{display:none;}
+.topbar{
+  background:rgba(6,15,30,0.95);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:56px;position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(12px);
+}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.topbar-brand svg{width:28px;height:28px;}
+.topbar-name{font-family:'EB Garamond',serif;font-size:17px;color:var(--white);}
+.topbar-name b{color:var(--gold);}
+.topbar-sub{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-left:4px;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.pill{display:inline-flex;align-items:center;gap:6px;background:rgba(29,158,117,0.12);border:1px solid rgba(29,158,117,0.3);border-radius:100px;padding:4px 12px;font-size:10.5px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#34C795;}
+.pill::before{content:'';width:5px;height:5px;border-radius:50%;background:#34C795;box-shadow:0 0 0 3px rgba(52,199,149,0.2);}
+.logout-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--steel);padding:6px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;}
+.logout-btn:hover{border-color:var(--steel);color:var(--white);}
+
+.main{max-width:980px;margin:0 auto;padding:40px 32px 80px;}
+.page-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.page-title{font-family:'EB Garamond',serif;font-size:34px;font-weight:500;color:var(--white);margin-bottom:6px;}
+.page-desc{font-size:13.5px;color:var(--steel);line-height:1.65;max-width:58ch;margin-bottom:40px;}
+
+/* ── CARDS ── */
+.card{background:rgba(14,36,68,0.6);border:1px solid var(--border);border-radius:var(--radius);padding:28px 28px 24px;margin-bottom:24px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+.card-hint{font-size:11.5px;color:var(--steel);font-style:italic;}
+
+/* ── RATE TABLE ── */
+.rate-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:600px){.rate-grid{grid-template-columns:1fr;}}
+.rate-row{display:flex;flex-direction:column;gap:6px;}
+.rate-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--steel-lt);display:flex;align-items:center;gap:8px;}
+.level-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.06em;}
+.badge-principal{background:rgba(201,168,76,0.18);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
+.badge-senior{background:rgba(143,160,181,0.14);color:var(--steel-lt);border:1px solid rgba(143,160,181,0.22);}
+.badge-mid{background:rgba(143,160,181,0.08);color:var(--steel);border:1px solid rgba(143,160,181,0.15);}
+.badge-junior{background:rgba(11,31,58,0.6);color:var(--steel);border:1px solid var(--border);}
+.rate-input-wrap{position:relative;}
+.rate-input-wrap .sym{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--gold);font-weight:600;font-size:14px;pointer-events:none;}
+.rate-input{
+  width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:6px;padding:10px 12px 10px 28px;font-size:15px;font-weight:600;
+  color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:.18s;
+}
+.rate-input:focus{border-color:var(--gold);background:rgba(201,168,76,0.05);}
+.rate-sub{font-size:11px;color:var(--steel);margin-top:2px;}
+
+/* ── DISCIPLINE TABLE ── */
+.disc-table{width:100%;border-collapse:collapse;}
+.disc-table th{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);text-align:left;padding:8px 12px 10px;border-bottom:1px solid var(--border);}
+.disc-table td{padding:9px 12px;border-bottom:1px solid rgba(143,160,181,0.08);vertical-align:middle;}
+.disc-table tr:last-child td{border-bottom:none;}
+.disc-table tr:hover td{background:rgba(255,255,255,0.02);}
+.disc-name{font-size:13px;color:var(--white);}
+.disc-input{
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:5px;
+  padding:6px 10px;font-size:13px;color:var(--white);font-family:'DM Sans',sans-serif;
+  outline:none;transition:.15s;width:90px;text-align:center;
+}
+.disc-input:focus{border-color:var(--gold);}
+.disc-note{font-size:11px;color:var(--steel);font-style:italic;}
+
+/* ── ACTIONS ── */
+.actions{display:flex;align-items:center;gap:12px;margin-top:32px;}
+.btn-save{
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dk) 100%);
+  color:var(--navy);border:none;border-radius:6px;padding:12px 28px;
+  font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.18s;
+}
+.btn-save:hover{filter:brightness(1.08);transform:translateY(-1px);}
+.btn-reset{
+  background:none;border:1px solid var(--border);border-radius:6px;
+  color:var(--steel);padding:12px 22px;font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  cursor:pointer;transition:.15s;
+}
+.btn-reset:hover{border-color:var(--steel);color:var(--white);}
+.save-status{font-size:12.5px;font-style:italic;}
+.save-ok{color:#34C795;}
+.save-err{color:#E87070;}
+
+/* ── PREVIEW PANEL ── */
+.preview{background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-top:24px;}
+.preview-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-bottom:14px;}
+.preview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.preview-item{text-align:center;}
+.preview-val{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--gold);letter-spacing:.02em;}
+.preview-lbl{font-size:10.5px;color:var(--steel);margin-top:2px;}
+
+/* ── INFO BOX ── */
+.info-box{background:rgba(29,158,117,0.07);border:1px solid rgba(29,158,117,0.2);border-radius:6px;padding:14px 18px;display:flex;gap:12px;align-items:flex-start;margin-bottom:22px;}
+.info-box svg{width:16px;height:16px;stroke:#34C795;flex:none;margin-top:1px;}
+.info-box p{font-size:12.5px;color:rgba(240,237,230,0.7);line-height:1.6;}
+.info-box strong{color:var(--white);}
+
+.divider{height:1px;background:var(--border);margin:32px 0;}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <svg class="login-mark" viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="23" stroke="#C9A84C" stroke-width="1.2" opacity=".4"/>
+      <path d="M24 8 L38 40 L30 40 L24 26 L18 40 L10 40 Z" fill="#C9A84C"/>
+      <rect x="19" y="31" width="10" height="4" fill="#0B1F3A"/>
+    </svg>
+    <div class="login-title">Staff Portal</div>
+    <div class="login-sub">Alpha Technical Centre · Internal access only</div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="usr" placeholder="username" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="pwd" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <svg viewBox="0 0 48 48" fill="none">
+        <path d="M24 6 L38 42 L30 42 L24 22 L18 42 L10 42 Z" fill="#C9A84C"/>
+        <rect x="19.5" y="32" width="9" height="3.5" fill="#0B1F3A"/>
+      </svg>
+      <span class="topbar-name"><b>Alpha</b> Technical Centre</span>
+      <span class="topbar-sub">Staff Portal</span>
+    </div>
+    <div class="topbar-right">
+      <span class="pill">Authenticated</span>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-eyebrow">Rate Configuration</div>
+    <h1 class="page-title">Engineer Day Rates &amp; Timings</h1>
+    <p class="page-desc">Changes saved here update the Plan Your Job tool in real time. Weekly rates are used to calculate all engagement costs across the service catalogue. Adjust, preview, then save.</p>
+
+    <div class="info-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p>These rates feed directly into <strong>plan-your-job.html</strong>. The tool reads saved rates on every page load — no code changes required. Rates are stored in the browser and should be updated on the primary machine used to serve or demo the site.</p>
+    </div>
+
+    <!-- WEEKLY RATES -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Weekly Labour Rates (USD)</span>
+        <span class="card-hint">per resource, per week</span>
+      </div>
+      <div class="rate-grid">
+        <div class="rate-row">
+          <div class="rate-label"><span class="level-badge badge-principal">Principal</span></div>
+          <div class="rate-input-wrap"><span class="sym">$</span><input class="rate-input" id="r-principal" type="number" min="0" step="500"></div>
+          <div class="rate-sub">Technical directors, competent persons, deal leads</div>
+        </div>
+        <div class="rate-row">
+          <div class="rate-label"><span class="level-badge badge-senior">Senior</span></div>
+          <div class="rate-input-wrap"><span class="sym">$</span><input class="rate-input" id="r-senior" type="number" min="0" step="500"></div>
+          <div class="rate-sub">Lead engineers, discipline heads — most engagements</div>
+        </div>
+        <div class="rate-row">
+          <div class="rate-label"><span class="level-badge badge-mid">Mid-level</span></div>
+          <div class="rate-input-wrap"><span class="sym">$</span><input class="rate-input" id="r-mid" type="number" min="0" step="250"></div>
+          <div class="rate-sub">Supporting engineers, scribes, analysts</div>
+        </div>
+        <div class="rate-row">
+          <div class="rate-label"><span class="level-badge badge-junior">Junior</span></div>
+          <div class="rate-input-wrap"><span class="sym">$</span><input class="rate-input" id="r-junior" type="number" min="0" step="250"></div>
+          <div class="rate-sub">Graduate / junior support roles</div>
+        </div>
+      </div>
+
+      <!-- live preview -->
+      <div class="preview" id="rate-preview">
+        <div class="preview-title">Implied day rates (÷ 5 working days)</div>
+        <div class="preview-grid">
+          <div class="preview-item"><div class="preview-val" id="d-principal">—</div><div class="preview-lbl">Principal / day</div></div>
+          <div class="preview-item"><div class="preview-val" id="d-senior">—</div><div class="preview-lbl">Senior / day</div></div>
+          <div class="preview-item"><div class="preview-val" id="d-mid">—</div><div class="preview-lbl">Mid-level / day</div></div>
+          <div class="preview-item"><div class="preview-val" id="d-junior">—</div><div class="preview-lbl">Junior / day</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GLOBAL MULTIPLIERS -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Cost Components — Global Adjustments</span>
+        <span class="card-hint">applied to all services</span>
+      </div>
+      <div class="rate-grid">
+        <div class="rate-row">
+          <div class="rate-label">Software / Tools Uplift (%)</div>
+          <div class="rate-input-wrap"><input class="rate-input" id="sw-mult" type="number" min="0" max="500" step="5" style="padding-left:14px;"></div>
+          <div class="rate-sub">100 = no change · 120 = +20% on all software line items</div>
+        </div>
+        <div class="rate-row">
+          <div class="rate-label">Misc / Expenses Uplift (%)</div>
+          <div class="rate-input-wrap"><input class="rate-input" id="misc-mult" type="number" min="0" max="500" step="5" style="padding-left:14px;"></div>
+          <div class="rate-sub">100 = no change · 80 = –20% on all misc line items</div>
+        </div>
+        <div class="rate-row">
+          <div class="rate-label">Data / Research Uplift (%)</div>
+          <div class="rate-input-wrap"><input class="rate-input" id="data-mult" type="number" min="0" max="500" step="5" style="padding-left:14px;"></div>
+          <div class="rate-sub">100 = no change</div>
+        </div>
+        <div class="rate-row">
+          <div class="rate-label">Contractor Margin (%)</div>
+          <div class="rate-input-wrap"><input class="rate-input" id="margin" type="number" min="0" max="100" step="1" style="padding-left:14px;"></div>
+          <div class="rate-sub">Applied on top of all costs — 0 = cost-plus only</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTNER CODES -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Partner Assignment</span>
+        <span class="card-hint">initials shown on scope-of-work documents</span>
+      </div>
+      <table class="disc-table">
+        <thead>
+          <tr><th>Partner</th><th>Role</th><th>Initials</th></tr>
+        </thead>
+        <tbody id="partner-tbody">
+          <!-- rendered by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="actions">
+      <button class="btn-save" onclick="saveAll()">Save &amp; Apply Changes</button>
+      <button class="btn-reset" onclick="resetDefaults()">Reset to Defaults</button>
+      <span class="save-status" id="save-status"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ CREDENTIALS (change these) ══
+const CREDENTIALS = {
+  'alpha': 'atc2026',
+  'chris': 'hopkinson',
+  'admin': 'alpha2026'
+};
+
+// ══ DEFAULTS (must match plan-your-job.html) ══
+const DEFAULTS = {
+  rates: { Principal: 13500, Senior: 11000, 'Mid-level': 8000, Junior: 5500 },
+  swMult: 100, miscMult: 100, dataMult: 100, margin: 0,
+  partners: [
+    { code: 'RE',    name: 'Chris Hopkinson',   role: 'Reservoir Engineer / Lead' },
+    { code: 'GEO',   name: 'Pavel Markman',      role: 'Geoscience Lead' },
+    { code: 'INFRA', name: 'Dmitry Sazonenko',   role: 'Infrastructure / Facilities' },
+    { code: 'COM',   name: 'Anton Agafonov',     role: 'Commercial / Finance' },
+  ]
+};
+
+const STORAGE_KEY = 'atc_admin_config';
+
+// ══ LOGIN ══
+function doLogin() {
+  const u = document.getElementById('usr').value.trim().toLowerCase();
+  const p = document.getElementById('pwd').value;
+  const err = document.getElementById('login-err');
+  if (CREDENTIALS[u] && CREDENTIALS[u] === p) {
+    sessionStorage.setItem('atc_auth', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadValues();
+  } else {
+    err.textContent = 'Incorrect username or password.';
+    document.getElementById('pwd').value = '';
+  }
+}
+function doLogout() {
+  sessionStorage.removeItem('atc_auth');
+  location.reload();
+}
+if (sessionStorage.getItem('atc_auth') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+// ══ LOAD / SAVE ══
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function loadValues() {
+  const cfg = getConfig();
+  const r = cfg.rates || DEFAULTS.rates;
+  document.getElementById('r-principal').value = r['Principal'];
+  document.getElementById('r-senior').value    = r['Senior'];
+  document.getElementById('r-mid').value       = r['Mid-level'];
+  document.getElementById('r-junior').value    = r['Junior'];
+  document.getElementById('sw-mult').value     = cfg.swMult   ?? DEFAULTS.swMult;
+  document.getElementById('misc-mult').value   = cfg.miscMult ?? DEFAULTS.miscMult;
+  document.getElementById('data-mult').value   = cfg.dataMult ?? DEFAULTS.dataMult;
+  document.getElementById('margin').value      = cfg.margin   ?? DEFAULTS.margin;
+  renderPartners(cfg.partners || DEFAULTS.partners);
+  updatePreview();
+}
+function saveAll() {
+  const partners = [];
+  document.querySelectorAll('.partner-row').forEach(row => {
+    partners.push({
+      code: row.dataset.code,
+      name: row.querySelector('.p-name').value,
+      role: row.querySelector('.p-role').textContent
+    });
+  });
+  const cfg = {
+    rates: {
+      Principal:   parseFloat(document.getElementById('r-principal').value) || DEFAULTS.rates.Principal,
+      Senior:      parseFloat(document.getElementById('r-senior').value)    || DEFAULTS.rates.Senior,
+      'Mid-level': parseFloat(document.getElementById('r-mid').value)       || DEFAULTS.rates['Mid-level'],
+      Junior:      parseFloat(document.getElementById('r-junior').value)    || DEFAULTS.rates.Junior,
+    },
+    swMult:   parseFloat(document.getElementById('sw-mult').value)   || 100,
+    miscMult: parseFloat(document.getElementById('misc-mult').value) || 100,
+    dataMult: parseFloat(document.getElementById('data-mult').value) || 100,
+    margin:   parseFloat(document.getElementById('margin').value)    || 0,
+    partners,
+    savedAt: new Date().toISOString()
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    showStatus('Changes saved — Plan Your Job will use these rates on next load.', true);
+  } catch(e) {
+    showStatus('Save failed: ' + e.message, false);
+  }
+  updatePreview();
+}
+function resetDefaults() {
+  if (!confirm('Reset all rates to factory defaults?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  loadValues();
+  showStatus('Reset to defaults.', true);
+}
+function showStatus(msg, ok) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.className = 'save-status ' + (ok ? 'save-ok' : 'save-err');
+  setTimeout(() => { el.textContent = ''; el.className = 'save-status'; }, 5000);
+}
+
+// ══ LIVE PREVIEW ══
+function updatePreview() {
+  const ids = ['principal','senior','mid','junior'];
+  const keys = ['Principal','Senior','Mid-level','Junior'];
+  ids.forEach((id, i) => {
+    const weekly = parseFloat(document.getElementById('r-' + id).value) || 0;
+    const daily = Math.round(weekly / 5);
+    document.getElementById('d-' + id).textContent = daily ? '$' + daily.toLocaleString() : '—';
+  });
+}
+['r-principal','r-senior','r-mid','r-junior'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', updatePreview);
+});
+
+// ══ PARTNER TABLE ══
+function renderPartners(partners) {
+  const tbody = document.getElementById('partner-tbody');
+  tbody.innerHTML = partners.map(p => `
+    <tr class="partner-row" data-code="${p.code}">
+      <td><span class="level-badge badge-senior" style="font-size:11px;">${p.code}</span></td>
+      <td><span class="disc-note p-role">${p.role}</span></td>
+      <td><input class="disc-input p-name" value="${p.name}" style="width:180px;text-align:left;"></td>
+    </tr>
+  `).join('');
+}
+
+// ══ INIT ══
+if (document.getElementById('app').style.display === 'block') loadValues();
+</script>
+</body>
+</html>
