@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Same Water, Different Flag: Why Gulf Coast Shallow Operations Are the Blueprint for Maracaibo — Alpha Technical Centre Insights</title>
+<meta name="description" content="The technical skills, service infrastructure and operational discipline developed across decades of Gulf Coast shallow water operations are the closest analogue in the world to what Lake Maracaibo requires. The question is not whether the expertise exists — it is whether the supply chain can get there.">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+.ins-hero{
+  background:linear-gradient(155deg,#060F1E 0%,#0F1E0A 55%,#0B1F3A 100%);
+  padding:72px 0 64px;position:relative;overflow:hidden;
+}
+.ins-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 80% 30%,rgba(201,168,76,0.06) 0%,transparent 65%),
+             radial-gradient(ellipse 40% 60% at 10% 70%,rgba(29,158,117,0.05) 0%,transparent 60%);
+  pointer-events:none;
+}
+.ins-meta{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+.ins-tag{
+  font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#C9A84C;
+  display:flex;align-items:center;gap:8px;
+}
+.ins-tag::before{content:'';width:20px;height:1px;background:#C9A84C;opacity:.6;}
+.ins-date{font-family:'Barlow',sans-serif;font-size:11.5px;color:rgba(240,237,230,0.38);letter-spacing:.04em;}
+.ins-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(30px,4.5vw,52px);font-weight:700;
+  line-height:1.08;letter-spacing:-.02em;color:#F0EDE6;margin-bottom:20px;
+}
+.ins-title em{color:#C9A84C;font-style:italic;}
+.ins-standfirst{
+  font-family:'Barlow',sans-serif;font-size:17px;line-height:1.72;
+  color:rgba(240,237,230,0.62);max-width:62ch;font-weight:300;
+  border-left:2px solid rgba(201,168,76,0.4);padding-left:20px;
+}
+.ins-byline{
+  display:flex;align-items:center;gap:12px;margin-top:36px;
+  padding-top:24px;border-top:1px solid rgba(201,168,76,0.15);
+}
+.ins-byline-mark{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.ins-byline-author{font-family:'Barlow',sans-serif;font-size:12px;color:rgba(240,237,230,0.8);font-weight:500;}
+.ins-byline-org{font-family:'Barlow',sans-serif;font-size:11px;color:rgba(240,237,230,0.38);margin-top:1px;}
+
+.ins-body{max-width:720px;margin:0 auto;padding:64px 32px 80px;}
+.ins-body h2{
+  font-family:'Playfair Display',serif;font-size:clamp(20px,2.5vw,26px);
+  font-weight:600;color:#0B1F3A;line-height:1.2;
+  margin:52px 0 18px;padding-top:8px;
+  border-top:2px solid rgba(201,168,76,0.25);
+}
+.ins-body h2:first-of-type{margin-top:0;border-top:none;padding-top:0;}
+.ins-body p{
+  font-family:'Barlow',sans-serif;font-size:15.5px;line-height:1.8;
+  color:#2D3748;margin-bottom:22px;font-weight:400;
+}
+.ins-body strong{color:#0B1F3A;font-weight:600;}
+.ins-body em{font-style:italic;}
+
+.ins-pull{
+  margin:40px 0;padding:24px 28px;
+  border-left:3px solid #C9A84C;
+  background:rgba(201,168,76,0.05);border-radius:0 4px 4px 0;
+}
+.ins-pull p{
+  font-family:'Playfair Display',serif;font-size:19px;font-weight:400;
+  line-height:1.55;color:#0B1F3A;margin:0;font-style:italic;
+}
+
+.ins-compare{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border:1px solid rgba(11,31,58,0.1);border-radius:4px;
+  overflow:hidden;margin:36px 0;
+}
+.ins-compare-col{padding:24px 22px;}
+.ins-compare-col:first-child{
+  background:#0B1F3A;border-right:2px solid #C9A84C;
+}
+.ins-compare-col:last-child{background:#F8F5EE;}
+.ins-compare-head{
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px;
+}
+.ins-compare-col:first-child .ins-compare-head{color:#C9A84C;}
+.ins-compare-col:last-child .ins-compare-head{color:#0B1F3A;}
+.ins-compare-item{
+  font-family:'Barlow',sans-serif;font-size:13px;line-height:1.6;
+  padding:8px 0;border-bottom:1px solid;display:flex;gap:10px;
+}
+.ins-compare-col:first-child .ins-compare-item{
+  color:rgba(240,237,230,0.72);border-color:rgba(201,168,76,0.12);
+}
+.ins-compare-col:last-child .ins-compare-item{
+  color:#3D4A5C;border-color:rgba(11,31,58,0.08);
+}
+.ins-compare-item:last-child{border-bottom:none;}
+.ins-compare-item::before{
+  content:'';width:4px;height:4px;border-radius:50%;
+  background:#C9A84C;flex:none;margin-top:7px;
+}
+
+.ins-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0;}
+@media(max-width:600px){.ins-stat-row{grid-template-columns:1fr 1fr;}.ins-compare{grid-template-columns:1fr;}.ins-compare-col:first-child{border-right:none;border-bottom:2px solid #C9A84C;}}
+.ins-stat{
+  background:#fff;border:1px solid rgba(11,31,58,0.09);
+  border-radius:4px;padding:20px 18px;text-align:center;
+}
+.ins-stat-val{
+  font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;
+  color:#C9A84C;letter-spacing:-.01em;line-height:1;
+}
+.ins-stat-lbl{font-family:'Barlow',sans-serif;font-size:11px;color:#5A6A7E;margin-top:6px;line-height:1.4;}
+
+.ins-divider{height:1px;background:linear-gradient(90deg,rgba(201,168,76,0.3),transparent);margin:48px 0;}
+
+.ins-cta{
+  background:#0B1F3A;border-radius:4px;padding:36px 36px;margin-top:56px;
+  border:1px solid rgba(201,168,76,0.15);
+}
+.ins-cta h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:#F0EDE6;margin-bottom:10px;}
+.ins-cta p{font-family:'Barlow',sans-serif;font-size:13.5px;color:rgba(240,237,230,0.55);margin-bottom:20px;font-weight:300;line-height:1.65;}
+.ins-cta-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#C9A84C;color:#0B1F3A;border:none;border-radius:2px;
+  padding:12px 24px;font-family:'Barlow Condensed',sans-serif;font-size:13px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:.18s;
+}
+.ins-cta-btn:hover{filter:brightness(1.08);}
+
+.ins-footer-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:28px 0;margin-top:48px;border-top:1px solid rgba(11,31,58,0.1);flex-wrap:wrap;gap:12px;
+}
+.ins-footer-nav a{
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:#5A6A7E;text-decoration:none;transition:.15s;
+}
+.ins-footer-nav a:hover{color:#C9A84C;}
+@media(max-width:600px){.ins-body{padding:40px 20px 60px;}.ins-hero{padding:52px 0 46px;}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre</span>
+        <span class="nav-wordmark-parent">An Alpha Energy company</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
+      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
+      <div class="nav-dropdown">
+        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
+        <div class="nav-dropdown-menu">
+          <a href="oil-gas-modelling.html">Oil &amp; Gas Modelling</a>
+          <a href="financial-modelling.html">Financial Modelling</a>
+        </div>
+      </div>
+      <a href="tools.html">Our Tools</a>
+      <a href="case-studies.html">Case Studies</a>
+      <a href="team.html">Team</a>
+      <a href="insights.html" class="active">Insights</a>
+      <a href="contact.html">Contact</a>
+      <div class="nav-lang">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+      <a href="plan-your-job.html" class="btn-nav">Plan Your Job</a>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="ins-hero">
+  <div class="wrap" style="position:relative;z-index:2;">
+    <div class="ins-meta">
+      <span class="ins-tag">Insights · Field</span>
+      <span class="ins-date">June 2026 · Alpha Technical Centre</span>
+    </div>
+    <h1 class="ins-title">Same Water,<br><em>Different Flag</em></h1>
+    <p class="ins-standfirst">Gulf Coast shallow water operations and Lake Maracaibo are more than analogous — they share a common technological lineage. The skills, tooling and supply chain infrastructure built across decades of Louisiana and Texas shelf operations are the closest match in the world to what Maracaibo requires. The question is not whether the expertise exists. It is whether the industry recognises the connection and acts on it.</p>
+    <div class="ins-byline">
+      <div class="ins-byline-mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ins-byline-author">Alpha Technical Centre Editorial</div>
+        <div class="ins-byline-org">Houston, Texas · alphalatinamerica.com</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="ins-body">
+
+  <h2>A Shared Origin</h2>
+
+  <p>The connection between Gulf Coast shallow water operations and Lake Maracaibo is not merely technical — it is historical. In the late 1920s, a US merchant mariner named Captain Louis Giliasso was working the Lake Maracaibo fields when he designed and patented the world's first submersible steel drilling barge. The idea was to mount a rig on a vessel that could be ballasted down onto a mud bottom, drill the well, then be refloated and moved to the next location. Giliasso could not sell the idea to the Venezuelan operators he worked for. He sold the patent to the Texas Company instead. In 1934, they built the first steel submersible barge, named it the Giliasso in his honour, and deployed it not in Venezuela — but in the shallow coastal waters of Louisiana, forty miles southwest of Houma.</p>
+
+  <p>The technology that opened the Louisiana shelf was invented on Lake Maracaibo. What followed over the next nine decades — the entire institutional knowledge base of Gulf Coast shallow water operations — is the intellectual descendant of that original Venezuelan problem. The current moment, as Venezuela's rehabilitation begins in earnest, is in some sense a homecoming.</p>
+
+  <div class="ins-divider"></div>
+
+  <h2>The Geological Parallel</h2>
+
+  <p>The reservoir analogy is as strong as the historical one. Both settings produce primarily from <strong>Tertiary clastic sequences — Miocene and Eocene sandstones</strong> deposited in deltaic, fluvial and shallow marine environments. The character of these reservoirs is strikingly similar on both sides of the Caribbean.</p>
+
+  <div class="ins-compare">
+    <div class="ins-compare-col">
+      <div class="ins-compare-head">Gulf Coast Louisiana Shelf</div>
+      <div class="ins-compare-item">Miocene–Pliocene deltaic sandstones; gulfward thickening wedge</div>
+      <div class="ins-compare-item">High porosity 25–35%, high permeability — often multi-darcy</div>
+      <div class="ins-compare-item">Unconsolidated to poorly consolidated sands; sand production a primary operational challenge</div>
+      <div class="ins-compare-item">Growth fault-controlled traps; listric normal faulting on salt withdrawal surfaces</div>
+      <div class="ins-compare-item">Stacked pay intervals; multiple thin sands requiring selective completion</div>
+      <div class="ins-compare-item">Water depths 10–120 ft; swamp barges, liftboats and fixed platforms</div>
+      <div class="ins-compare-item">Mature fields; high water cut, artificial lift essential, frequent workovers</div>
+    </div>
+    <div class="ins-compare-col">
+      <div class="ins-compare-head">Lake Maracaibo Bolivar Coastal Field</div>
+      <div class="ins-compare-item">Miocene–Eocene sandstones; Tertiary deltaic and shoreface deposition</div>
+      <div class="ins-compare-item">Porosity 25–40%, permeability averaging ~600 md; Miocene reservoirs often multi-darcy</div>
+      <div class="ins-compare-item">Nonconsolidated and poorly consolidated sands; fines migration the primary formation damage mechanism</div>
+      <div class="ins-compare-item">Fault-controlled accumulations; Icotea and related normal fault system bounding major fields</div>
+      <div class="ins-compare-item">Multiple stacked pay zones; Miocene Norte area documented with remaining oil in poorly-contacted sands at existing well spacing</div>
+      <div class="ins-compare-item">Water depths 10–120 ft maximum; barges and jackups; jackups disassembled to pass under the Maracaibo bridge</div>
+      <div class="ins-compare-item">Heavily mature; significant remaining oil in bypassed sands; underbalanced drilling required for sub-hydrostatic zones</div>
+    </div>
+  </div>
+
+  <p>The parallels extend to the operational environment. Both settings involve shallow, brackish or estuarine water bodies with soft mud bottoms, constrained navigable waterways, dense existing wellhead infrastructure, frequent weather events that interrupt operations, and the logistical complexity of moving equipment in confined spaces. Engineers who have spent careers managing well density, pipeline routing, platform congestion and workover scheduling on the Louisiana shelf are operating in a mental model that transfers almost directly to Maracaibo.</p>
+
+  <div class="ins-divider"></div>
+
+  <h2>The Technical Skill Set That Transfers</h2>
+
+  <p>Gulf Coast shallow water operations have developed a specific and highly refined technical discipline over decades. It is worth being explicit about what that discipline contains and why it maps so cleanly to what Maracaibo needs.</p>
+
+  <p><strong>Sand management.</strong> Poorly consolidated Miocene sands produce fines. They always have, on both sides of the Caribbean. Gulf Coast operators have developed a comprehensive toolkit — gravel packing, resin-coated sand, frac-and-pack completions, downhole sand exclusion screens, chemical consolidation, and real-time production surveillance to catch early sand influx before it kills a pump. This is not generic oilfield knowledge. It is specific, hard-won experience in exactly the reservoir type that dominates Maracaibo's producing inventory.</p>
+
+  <p><strong>Artificial lift in high-water-cut environments.</strong> Mature Gulf Coast fields run at water cuts that would have been considered uneconomic a generation ago. The optimisation of ESP selection, setting depth, motor sizing, and run-life management in unconsolidated-sand, high-GOR, high-water-cut wells is a core Gulf Coast competency. Maracaibo's fields are at a comparable or more advanced stage of depletion. The artificial lift challenge is essentially the same problem with Venezuelan wellbore geometry.</p>
+
+  <p><strong>Stacked pay recompletions.</strong> When a producing interval is depleted or watered out, Gulf Coast operators routinely recomplete into shallower or deeper intervals within the same wellbore. The ability to identify remaining pay in a stack of thin Miocene sands — using a combination of vintage logs, production history, pressure data and modern petrophysical reinterpretation — is a skill that translates directly to the Maracaibo Miocene Norte situation, where published SPE work has documented that remaining oil in poorly-contacted sandstones of 400,000 to 1.2 million STB per 20-acre drainage area sits behind existing well spacing that is simply too wide to drain it efficiently.</p>
+
+  <p><strong>Underbalanced and coiled tubing operations.</strong> Sub-hydrostatic reservoir pressures in mature Maracaibo fields — the primary reason Baker Hughes deployed the Galileo underbalanced drilling barge on the lake in 1998 — are identical in character to the pressure regimes encountered in depleted Gulf Coast shelf reservoirs. Coiled tubing re-entry, slim-hole sidetrack drilling and underbalanced workover operations are standard practice in the Gulf. The equipment, the procedures, and the engineering experience to execute them are concentrated in the Houston and Lafayette service corridor.</p>
+
+  <p><strong>Barge and liftboat operations in constrained water.</strong> The Gulf Coast has the world's most developed liftboat industry. These self-elevating service vessels — designed to work in 20–200 ft water depth, move quickly between locations, and support well intervention without a full jackup rig — are exactly the unit operations that Maracaibo requires. The Prisa project barges commissioned by PDVSA and Schlumberger in 1998 were explicitly designed to replicate Gulf Coast liftboat capability adapted for Maracaibo's specific constraints, including the height restriction imposed by the General Rafael Urdaneta Bridge, which limits equipment that can transit into the lake.</p>
+
+  <div class="ins-pull">
+    <p>"The engineer who has spent twenty years managing stacked Miocene pays, sand exclusion completions and ESP run-life on the Louisiana shelf has been solving Maracaibo problems without knowing it."</p>
+  </div>
+
+  <div class="ins-divider"></div>
+
+  <h2>The Supply Chain Advantage</h2>
+
+  <p>Technical skill is one dimension. Supply chain proximity is another — and arguably the more immediate commercial advantage.</p>
+
+  <p>The Gulf Coast service corridor — running from Corpus Christi through Houston to New Orleans and Lafayette — is the deepest concentration of oilfield services capability on earth for exactly the application Maracaibo requires. Shallow water barges, liftboats, swamp boats, coiled tubing units, ESP strings, gravel pack tooling, wireline services, sand control screens, chemical injection systems, pipeline repair equipment — all of this sits in yards and warehouses along the US Gulf Coast, largely idle in a market that has structurally shifted toward deepwater and Permian Basin unconventional.</p>
+
+  <div class="ins-stat-row">
+    <div class="ins-stat">
+      <div class="ins-stat-val">~60m</div>
+      <div class="ins-stat-lbl">Max water depth, Lake Maracaibo central basin</div>
+    </div>
+    <div class="ins-stat">
+      <div class="ins-stat-val">3,700+</div>
+      <div class="ins-stat-lbl">Wells drilled in Lake Maracaibo historically</div>
+    </div>
+    <div class="ins-stat">
+      <div class="ins-stat-val">~1,500 mi</div>
+      <div class="ins-stat-lbl">Distance Houston to Maracaibo by sea — closer than many US Gulf deepwater logistics runs</div>
+    </div>
+  </div>
+
+  <p>Maracaibo is approximately 1,500 nautical miles from the Houston Ship Channel — a barge voyage of around ten days. For equipment already suited to shallow water work, the mobilisation cost from the US Gulf to Venezuela is modest compared to the value of the rehabilitation programme it would support. The alternative — sourcing shallow water service equipment from other international markets — involves longer supply lines, less familiar equipment configurations, and a steeper technical learning curve for the crews operating in the Maracaibo environment.</p>
+
+  <p>There is also a regulatory and contractual dimension that matters. Gulf Coast operators and service companies are experienced in BSEE and EPA environmental management frameworks. While Venezuelan regulatory requirements differ, the institutional discipline of operating in a heavily regulated, ecologically sensitive shallow water environment — exactly what the Louisiana coastal marsh and estuary system demands — is a cultural asset that translates to Maracaibo's similarly sensitive lake environment, where decades of production have already caused measurable ecological stress that any responsible rehabilitation programme will need to manage.</p>
+
+  <div class="ins-divider"></div>
+
+  <h2>What the Rehabilitation Actually Requires</h2>
+
+  <p>The scale of what Maracaibo needs is well documented, even if the timeline for delivering it remains uncertain. Production has fallen from a peak above 1.4 million barrels per day to below 900,000 bpd, with the BCF fields — historically the most productive in the basin — severely underperforming their geological potential due to deferred workovers, failed artificial lift, degraded infrastructure and incomplete injection programmes.</p>
+
+  <p>Restoring meaningful production requires, in approximate order of priority: reactivating idle wells with failed or absent artificial lift; executing a systematic workover and recletion programme to access bypassed pays in existing wellbores; rehabilitating water injection infrastructure to restore pressure support; executing a targeted infill drilling programme in areas of documented bypassed oil; and progressively rebuilding the gathering, processing and export infrastructure that has deteriorated alongside production.</p>
+
+  <p>Every one of these activities is a Gulf Coast core competency. None of them is exotic or requires technology that does not already exist in Houston-area service company inventories. <strong>The rehabilitation of Maracaibo is not a technology problem. It is a mobilisation, logistics and investment problem</strong> — and the Gulf Coast is uniquely positioned to solve it.</p>
+
+  <div class="ins-divider"></div>
+
+  <h2>Alpha Technical Centre's Role</h2>
+
+  <p>The bridge between a Gulf Coast service supply chain and a Maracaibo rehabilitation programme is not built automatically. It requires someone who understands both sides — the reservoir engineering and production systems of shallow Tertiary sands, the operational environment of shallow lake drilling, and the economic framework that makes a capital deployment decision defensible to investors.</p>
+
+  <p>That is the work Alpha Technical Centre does. We bring the reservoir characterisation, decline analysis, well performance modelling and integrated production systems engineering that defines what the opportunity actually is — how many barrels are behind existing wellbores, what the artificial lift and injection requirements are, what the decline trajectory looks like with and without intervention, and what the economics are at different oil price assumptions. We then connect that technical case to the service and supply chain capabilities that can execute it.</p>
+
+  <p>The parallel between Gulf Coast shallow operations and Lake Maracaibo is not an abstract geological observation. It is a commercial thesis. The expertise and infrastructure that built the Louisiana shelf is sitting largely underutilised, a ten-day barge ride from one of the world's most significant rehabilitation opportunities. Making that connection work — technically, commercially and logistically — is precisely the kind of problem this team was assembled to solve.</p>
+
+  <div class="ins-cta">
+    <h3>Evaluating a Maracaibo or Gulf Coast shallow water asset?</h3>
+    <p>Alpha Technical Centre's team has direct experience across shallow Tertiary sand reservoirs in both environments. Use the Plan Your Job configurator to scope what your evaluation or redevelopment study requires.</p>
+    <a href="plan-your-job.html" class="ins-cta-btn">
+      Plan Your Job
+      <svg viewBox="0 0 16 16" fill="none" style="width:13px;height:13px;"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+
+  <div class="ins-footer-nav">
+    <a href="insights.html">← All Insights</a>
+    <a href="insights-us-energy-dominance-venezuela.html">Read: The DOMINANCE Act →</a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-grad"></div>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-wordmark">
+          <span class="nav-wordmark-main">Alpha</span>
+          <span class="nav-wordmark-sub">Technical Centre</span>
+        </span>
+        <p class="footer-tagline">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
+      </div>
+      <div class="footer-col"><h4>Capabilities</h4>
+        <ul>
+          <li><a href="oil-gas-modelling.html">Oil &amp; Gas Modelling</a></li>
+          <li><a href="financial-modelling.html">Financial Modelling</a></li>
+          <li><a href="tools.html">Our Tools</a></li>
+          <li><a href="plan-your-job.html">Plan Your Job</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About</a></li>
+          <li><a href="team.html">Team</a></li>
+          <li><a href="case-studies.html">Case Studies</a></li>
+          <li><a href="insights.html">Insights</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Connect</h4>
+        <ul>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="mailto:info@alphalatinamerica.com">info@alphalatinamerica.com</a></li>
+          <li><a href="https://alphaenergylatinamerica.com">Alpha Energy ↗</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC</p>
+      <span class="footer-conf">Strictly Confidential</span>
+    </div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
