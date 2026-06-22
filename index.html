@@ -771,18 +771,19 @@
 </script>
 
 <script>
-// Staff portal shortcut — Shift + A + T + C (sequential, within 1.5s)
+// Staff portal shortcut — type 'atc' in sequence (any case, within 3s)
 (function(){
-  const SEQ=['A','T','C'];let pos=0,timer=null;
-  document.addEventListener('keydown',function(e){
+  const SEQ='atc';let buf='',timer=null;
+  document.addEventListener('keypress',function(e){
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
-    if(e.shiftKey&&e.key.toUpperCase()===SEQ[pos]){
-      pos++;
+    const k=e.key.toLowerCase();
+    if(k===SEQ[buf.length]){
+      buf+=k;
       clearTimeout(timer);
-      if(pos===SEQ.length){pos=0;window.location.href='admin.html';return;}
-      timer=setTimeout(function(){pos=0;},1500);
+      if(buf===SEQ){buf='';window.location.href='admin.html';return;}
+      timer=setTimeout(function(){buf='';},3000);
     } else {
-      pos=0;clearTimeout(timer);
+      buf='';clearTimeout(timer);
     }
   });
 })();
