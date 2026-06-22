@@ -1,133 +1,255 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Oil & Gas Modelling — Alpha Technical Centre</title><meta name="description" content="Decision-grade subsurface and production models: static, dynamic and quick-look reservoir modelling."><link rel="stylesheet" href="style.css"></head>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oil &amp; Gas Modelling — Alpha Technical Centre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--ink:#06201A;--forest:#0A2E25;--green:#1D9E75;--green-bright:#34C795;--green-deep:#0F6E56;--mint:#E4F5EE;--paper:#FAFAF7;--surface:#F2F4F0;--card:#FFFFFF;--text:#16221E;--muted:#5b6862;--subtle:#8a958f;--on-dark:#EAF3EF;--on-dark-mute:rgba(234,243,239,0.62);--on-dark-faint:rgba(234,243,239,0.40);--line:rgba(8,40,32,0.11);--radius:10px;--radius-lg:14px;--maxw:940px;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 48px;}
+.serif{font-family:'EB Garamond',serif;}
+em{font-style:italic;}
+@media (max-width:600px){.wrap{padding:0 22px;}}
+
+.hero{position:relative;overflow:hidden;background:radial-gradient(120% 140% at 82% -10%,rgba(52,199,149,0.16) 0%,rgba(52,199,149,0) 46%),linear-gradient(155deg,#0B3327 0%,var(--ink) 62%,#04190F 100%);color:var(--on-dark);}
+.hero-grain{position:absolute;inset:0;opacity:.5;background-image:radial-gradient(rgba(255,255,255,0.025) .5px,transparent .5px);background-size:4px 4px;pointer-events:none;}
+.hero-inner{position:relative;padding:64px 0 72px;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:11px;margin-bottom:22px;color:var(--green-bright);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.7;}
+.hero-eyebrow span:last-child{color:var(--on-dark-faint);}
+.hero-title{font-family:'EB Garamond',serif;font-weight:400;font-size:46px;line-height:1.1;letter-spacing:-.01em;max-width:18ch;margin-bottom:24px;}
+.hero-title em{color:var(--green-bright);font-style:italic;}
+.hero-sub{font-size:15px;line-height:1.78;color:var(--on-dark-mute);max-width:64ch;}
+.hero-rule{height:2px;width:100%;margin-top:44px;background:linear-gradient(90deg,var(--green-bright) 0%,var(--green) 22%,rgba(52,199,149,0) 75%);border-radius:2px;}
+@media (max-width:720px){.hero-title{font-size:34px;}}
+@media (max-width:600px){.hero-title{font-size:29px;}.hero-inner{padding:46px 0 54px;}}
+
+.section{padding:64px 0;}
+.section-eyebrow{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;color:var(--green-deep);margin-bottom:14px;}
+.section-title{font-family:'EB Garamond',serif;font-size:30px;font-weight:500;line-height:1.18;margin-bottom:14px;color:var(--ink);}
+.section-lead{font-size:15px;color:var(--muted);max-width:62ch;margin-bottom:38px;}
+
+.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media (max-width:820px){.cap-grid{grid-template-columns:1fr;}}
+.cap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);padding:26px 24px;transition:transform .2s,box-shadow .2s,border-color .2s;}
+.cap:hover{transform:translateY(-3px);box-shadow:0 18px 40px -22px rgba(8,40,32,0.4);border-color:rgba(29,158,117,0.3);}
+.cap-ic{width:42px;height:42px;border-radius:10px;background:linear-gradient(150deg,rgba(52,199,149,0.16),rgba(29,158,117,0.08));display:flex;align-items:center;justify-content:center;margin-bottom:18px;}
+.cap-ic svg{width:22px;height:22px;stroke:var(--green-deep);fill:none;stroke-width:1.6;}
+.cap h3{font-family:'EB Garamond',serif;font-size:19px;font-weight:600;margin-bottom:9px;color:var(--ink);}
+.cap p{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:14px;}
+.cap ul{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.cap li{font-size:12.5px;color:var(--text);display:flex;gap:9px;align-items:flex-start;}
+.cap li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green-bright);flex:none;margin-top:7px;}
+
+.cta-band{background:linear-gradient(150deg,#0B3327 0%,var(--ink) 70%);color:var(--on-dark);border-radius:var(--radius-lg);padding:46px 44px;display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap;}
+.cta-band h2{font-family:'EB Garamond',serif;font-size:27px;font-weight:500;line-height:1.2;max-width:20ch;}
+.cta-band h2 em{color:var(--green-bright);}
+.cta-band p{font-size:13px;color:var(--on-dark-mute);margin-top:10px;max-width:48ch;}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13.5px;letter-spacing:.01em;text-decoration:none;padding:13px 22px;border-radius:100px;border:1px solid transparent;cursor:pointer;transition:.2s;white-space:nowrap;}
+.btn svg{width:15px;height:15px;}
+.btn-primary{background:linear-gradient(150deg,var(--green-bright) 0%,var(--green) 58%,var(--green-deep) 100%);color:#fff;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 32px -10px rgba(29,158,117,0.7);}
+
+.status-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(234,243,239,0.22);border-radius:100px;padding:6px 14px;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--on-dark-mute);margin-bottom:22px;}
+.status-pill::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green-bright);box-shadow:0 0 0 3px rgba(52,199,149,0.25);}
+
+.footer{background:var(--ink);color:var(--on-dark-faint);padding:40px 0;font-size:12px;}
+.footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;}
+.footer a{color:var(--on-dark-mute);text-decoration:none;}
+.footer a:hover{color:var(--green-bright);}
+</style>
+</head>
 <body>
-<nav class="nav">
-  <div class="wrap nav-inner">
-    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
-      <span class="nav-mark">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
-          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
-        </svg>
-      </span>
-      <span class="nav-wordmark">
-        <span class="nav-wordmark-main">Alpha</span>
-        <span class="nav-wordmark-sub">Technical Centre</span>
-        <span class="nav-wordmark-parent">An Alpha Energy company</span>
-      </span>
-    </a>
-    <div class="nav-links">
-      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
-      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
-      <div class="nav-dropdown">
-        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
-        <div class="nav-dropdown-menu">
-          <a href="oil-gas-modelling.html" class="active" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
-          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
-        </div>
-      </div>
-      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
-      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
-      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
-      <a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a>
-      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
-      <div class="nav-lang">
-        <button data-lang="en" class="active">EN</button>
-        <button data-lang="es">ES</button>
-      </div>
-      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
+<!-- ============ ATC SHARED NAV ============ -->
+<style>
+.atcnav{position:sticky;top:0;z-index:9999;background:rgba(6,32,26,0.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid rgba(234,243,239,0.13);font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+.atcnav *{box-sizing:border-box;}
+.atcnav-inner{max-width:1180px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:58px;}
+.atcnav-brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;}
+.atcnav-brand .m{font-family:'EB Garamond',Georgia,serif;font-size:17px;font-weight:600;color:#EAF3EF;letter-spacing:.01em;}
+.atcnav-brand .m b{color:#34C795;}
+.atcnav-brand .s{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(234,243,239,0.42);}
+.atcnav-menu{display:flex;align-items:center;gap:6px;}
+.atcnav-it{position:relative;}
+.atcnav-lk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;letter-spacing:.04em;color:rgba(234,243,239,0.66);text-decoration:none;padding:9px 15px;border-radius:8px;transition:.18s;cursor:pointer;border:none;background:none;}
+.atcnav-lk:hover,.atcnav-it:hover .atcnav-lk{color:#EAF3EF;background:rgba(234,243,239,0.07);}
+.atcnav-lk.cur{color:#34C795;}
+.atcnav-lk.cta{color:#06201A;background:linear-gradient(150deg,#34C795 0%,#1D9E75 60%,#0F6E56 100%);font-weight:600;box-shadow:0 8px 20px -10px rgba(29,158,117,0.7);}
+.atcnav-lk.cta:hover{color:#06201A;transform:translateY(-1px);}
+.atcnav-chev{width:9px;height:9px;opacity:.7;transition:transform .2s;}
+.atcnav-it:hover .atcnav-chev{transform:rotate(180deg);}
+.atcnav-dd{position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:#0A2E25;border:1px solid rgba(234,243,239,0.13);border-radius:12px;box-shadow:0 22px 50px -16px rgba(0,0,0,0.6);padding:7px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:.18s;}
+.atcnav-it:hover .atcnav-dd,.atcnav-it:focus-within .atcnav-dd{opacity:1;visibility:visible;transform:translateY(0);}
+.atcnav-ddl{display:block;text-decoration:none;padding:11px 13px;border-radius:8px;transition:background .15s;}
+.atcnav-ddl:hover{background:rgba(52,199,149,0.12);}
+.atcnav-ddl .t{display:block;font-size:13px;font-weight:600;color:#EAF3EF;margin-bottom:2px;}
+.atcnav-ddl .t.cur{color:#34C795;}
+.atcnav-ddl .d{display:block;font-size:11px;color:rgba(234,243,239,0.42);line-height:1.4;}
+.atcnav-tg{display:none;background:none;border:1px solid rgba(234,243,239,0.2);border-radius:8px;width:38px;height:34px;cursor:pointer;align-items:center;justify-content:center;}
+.atcnav-tg svg{width:18px;height:18px;stroke:#EAF3EF;}
+@media print{.atcnav{display:none !important;}}
+@media (max-width:760px){
+.atcnav-inner{padding:0 18px;}
+.atcnav-tg{display:inline-flex;}
+.atcnav-menu{position:fixed;top:58px;left:0;right:0;flex-direction:column;align-items:stretch;gap:2px;background:#0A2E25;border-bottom:1px solid rgba(234,243,239,0.13);padding:12px 16px 18px;transform:translateY(-130%);transition:transform .26s;}
+.atcnav-menu.open{transform:translateY(0);}
+.atcnav-dd{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:none;background:transparent;padding:0 0 0 10px;min-width:0;}
+.atcnav-chev{margin-left:auto;}
+.atcnav-lk.cta{justify-content:center;margin-top:6px;}
+}
+</style>
+<nav class="atcnav">
+ <div class="atcnav-inner">
+  <a class="atcnav-brand" href="index.html"><span class="m">Alpha<b>.</b> Technical Centre</span><span class="s">An Alpha Energy Asset</span></a>
+  <button class="atcnav-tg" aria-label="Menu" onclick="this.parentNode.querySelector('.atcnav-menu').classList.toggle('open')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="atcnav-menu">
+   <div class="atcnav-it">
+    <span class="atcnav-lk" tabindex="0">Modelling <svg class="atcnav-chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4.5 6 7.5 9 4.5"/></svg></span>
+    <div class="atcnav-dd">
+     <a class="atcnav-ddl" href="oil-gas-modelling.html"><span class="t cur">Oil &amp; Gas Modelling</span><span class="d">Subsurface, reservoir &amp; production quick-look tools</span></a>
+     <a class="atcnav-ddl" href="financial-modelling.html"><span class="t ">Financial Modelling</span><span class="d">Upstream quick-look economics &amp; contract model</span></a>
     </div>
-    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+   </div>
+   <a class="atcnav-lk cta " href="plan-your-job.html">Plan Your Job</a>
   </div>
+ </div>
 </nav>
 
-<header class="page-hero"><div class="page-hero-bg hero-bg-grid"></div><div class="hero-bg-glow"></div>
-<div class="wrap page-hero-content"><span class="label reveal in" data-en="Capabilities · Oil &amp; Gas Modelling" data-es="Capacidades · Modelización Petróleo y Gas">Capabilities · Oil &amp; Gas Modelling</span>
-<h1 class="reveal in reveal-delay-1" data-en="Decision-grade subsurface &amp; production models" data-es="Modelos de subsuelo y producción de grado decisión">Decision-grade subsurface &amp; production models</h1>
-<p class="reveal in reveal-delay-2" data-en="A complete quick-look-to-full-field toolset spanning the subsurface workflow — from geocellular framework to integrated production modelling. Every engagement can be scoped and priced through Plan Your Job." data-es="Un conjunto completo de herramientas, del análisis rápido al campo completo, que abarca todo el flujo de trabajo del subsuelo — desde el marco geocelular hasta el modelado integrado de producción. Cada encargo puede definirse y cotizarse a través de Planifique su Proyecto.">A complete quick-look-to-full-field toolset spanning the subsurface workflow — from geocellular framework to integrated production modelling. Every engagement can be scoped and priced through Plan Your Job.</p></div></header>
-<section class="section-white">
+
+<header class="hero">
+  <div class="hero-grain"></div>
+  <div class="wrap hero-inner">
+    <span class="status-pill">Capability · Available on Mandate</span>
+    <div class="hero-eyebrow"><span>Modelling</span><span class="dot"></span><span>Subsurface &amp; Production</span></div>
+    <h1 class="hero-title">Oil &amp; Gas <em>Modelling</em></h1>
+    <p class="hero-sub">Subsurface and production modelling delivered by senior reservoir, geoscience, and production engineers. From rapid quick-look screening through to full numerical simulation and history-matched forecasting — calibrated to the data you have, scaled to the decision you face.</p>
+    <div class="hero-rule"></div>
+  </div>
+</header>
+
+<section class="section">
   <div class="wrap">
-    <div class="section-head reveal">
-      <span class="label" data-en="Three disciplines" data-es="Tres disciplinas">Three disciplines</span>
-      <h2 data-en="From the geocellular grid to the production forecast" data-es="Del modelo geocelular al pronóstico de producción">From the geocellular grid to the production forecast</h2>
+    <div class="section-eyebrow">What We Model</div>
+    <h2 class="section-title">Decision-grade subsurface &amp; production models</h2>
+    <p class="section-lead">A complete quick-look-to-full-field toolset spanning the subsurface workflow. Engagements run through the Plan Your Job configurator, where scope, scale, and add-ons are priced transparently.</p>
+    <div class="cap-grid">
+
+      <div class="cap">
+        <div class="cap-ic"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></div>
+        <h3>Static &amp; Geological</h3>
+        <p>3D geocellular framework modelling, petrophysical evaluation, and volumetric estimation with full uncertainty.</p>
+        <ul>
+          <li>Structural &amp; stratigraphic framework</li>
+          <li>Facies &amp; property population</li>
+          <li>STOIIP / GIIP with P10/P50/P90</li>
+        </ul>
+      </div>
+
+      <div class="cap">
+        <div class="cap-ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
+        <h3>Dynamic Simulation</h3>
+        <p>Numerical model build, history matching, and scenario forecasting from single-pattern to giant-field scale.</p>
+        <ul>
+          <li>Black-oil &amp; compositional builds</li>
+          <li>Assisted history matching</li>
+          <li>Development scenario optimisation</li>
+        </ul>
+      </div>
+
+      <div class="cap">
+        <div class="cap-ic"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 19v-6M12 19v-9M16 19v-4M20 19V8"/></svg></div>
+        <h3>Production &amp; Quick-Look</h3>
+        <p>Rapid decline-curve and rate-transient screening, integrated production modelling, and surveillance.</p>
+        <ul>
+          <li>DCA / RTA &amp; EUR ranking</li>
+          <li>Integrated production modelling (IPM)</li>
+          <li>Reactivation candidate screening</li>
+        </ul>
+      </div>
+
     </div>
-    <div class="grid-3">
-      <div class="card reveal">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 7 L12 3 L21 7 V17 L12 21 L3 17 Z"/><path d="M3 7 L12 11 L21 7 M12 11 V21"/></svg></div>
-        <h3 data-en="Static &amp; Geological" data-es="Estática y Geológica">Static &amp; Geological</h3>
-        <p style="margin:10px 0 16px;font-size:.92rem;color:var(--steel);" data-en="3D geocellular framework modelling, petrophysical evaluation, and volumetric estimation with full uncertainty quantification." data-es="Modelado de marco geocelular 3D, evaluación petrofísica y estimación volumétrica con cuantificación completa de incertidumbre.">3D geocellular framework modelling, petrophysical evaluation, and volumetric estimation with full uncertainty quantification.</p>
-        <ul style="list-style:none;margin:0;padding:0;"><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ Facies &amp; property population" data-es="✓ Poblamiento de facies y propiedades">✓ Facies &amp; property population</li><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ STOIIP / GIIP with P10/P50/P90" data-es="✓ STOIIP / GIIP con P10/P50/P90">✓ STOIIP / GIIP with P10/P50/P90</li><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ Petrophysical evaluation" data-es="✓ Evaluación petrofísica">✓ Petrophysical evaluation</li></ul>
-      </div>
-      <div class="card reveal reveal-delay-1">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 7 L12 3 L21 7 V17 L12 21 L3 17 Z"/><path d="M3 7 L12 11 L21 7 M12 11 V21"/></svg></div>
-        <h3 data-en="Dynamic Simulation" data-es="Simulación Dinámica">Dynamic Simulation</h3>
-        <p style="margin:10px 0 16px;font-size:.92rem;color:var(--steel);" data-en="Numerical model build, history matching, and scenario forecasting from single-pattern to giant-field scale." data-es="Construcción de modelos numéricos, ajuste histórico y pronóstico de escenarios desde patrón único hasta escala de campo gigante.">Numerical model build, history matching, and scenario forecasting from single-pattern to giant-field scale.</p>
-        <ul style="list-style:none;margin:0;padding:0;"><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ Black-oil &amp; compositional builds" data-es="✓ Modelos black-oil y composicionales">✓ Black-oil &amp; compositional builds</li><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ Assisted history matching" data-es="✓ Ajuste histórico asistido">✓ Assisted history matching</li><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ Development scenario optimisation" data-es="✓ Optimización de escenarios de desarrollo">✓ Development scenario optimisation</li></ul>
-      </div>
-      <div class="card reveal reveal-delay-2">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 7 L12 3 L21 7 V17 L12 21 L3 17 Z"/><path d="M3 7 L12 11 L21 7 M12 11 V21"/></svg></div>
-        <h3 data-en="Production &amp; Quick-Look" data-es="Producción y Quick-Look">Production &amp; Quick-Look</h3>
-        <p style="margin:10px 0 16px;font-size:.92rem;color:var(--steel);" data-en="Rapid decline-curve and rate-transient screening, integrated production modelling, and surveillance." data-es="Cribado rápido de curvas de declinación y transitorios de tasa, modelado integrado de producción y vigilancia.">Rapid decline-curve and rate-transient screening, integrated production modelling, and surveillance.</p>
-        <ul style="list-style:none;margin:0;padding:0;"><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ DCA / RTA &amp; EUR ranking" data-es="✓ DCA / RTA y clasificación EUR">✓ DCA / RTA &amp; EUR ranking</li><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ Integrated production modelling (IPM)" data-es="✓ Modelado integrado de producción (IPM)">✓ Integrated production modelling (IPM)</li><li style="font-size:.88rem;color:var(--navy-mid);padding:7px 0;border-bottom:1px solid var(--rule);" data-en="✓ Reactivation candidate screening" data-es="✓ Cribado de candidatos a reactivación">✓ Reactivation candidate screening</li></ul>
-      </div></div>
   </div>
 </section>
-<section class="section-cream">
+
+<section class="section" style="padding-top:0;">
   <div class="wrap">
-    <div class="card reveal" style="display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:280px;">
-        <span class="label" data-en="Scope &amp; price" data-es="Alcance y precio">Scope &amp; price</span>
-        <h3 style="margin:12px 0 8px;" data-en="Scope and price a modelling job in minutes" data-es="Defina y cotice un trabajo de modelado en minutos">Scope and price a modelling job in minutes</h3>
-        <p style="font-size:.95rem;color:var(--steel);max-width:62ch;" data-en="Use the Plan Your Job configurator to select a discipline, set the scale of the problem, add optional scope, and generate a costed scope of work." data-es="Use el configurador Planifique su Proyecto para seleccionar una disciplina, definir la escala del problema, agregar alcance opcional y generar un alcance de trabajo con costo.">Use the Plan Your Job configurator to select a discipline, set the scale of the problem, add optional scope, and generate a costed scope of work.</p>
+    <div class="section-eyebrow">Interactive Tools</div>
+    <h2 class="section-title">Deployed intelligence, ready to run</h2>
+    <p class="section-lead">Proprietary web applications built by Alpha Technical Centre engineers — live, browser-based, no installation required.</p>
+
+    <div class="tool-card">
+      <div class="tool-card-left">
+        <div class="tool-badge">Live</div>
+        <div class="tool-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <h3 class="tool-name">APEX</h3>
+        <p class="tool-tag">Oil &amp; Gas Asset Intelligence</p>
       </div>
-      <a href="plan-your-job.html" class="btn btn-primary" data-en="Plan your job" data-es="Planifique su proyecto">Plan your job</a>
+      <div class="tool-card-right">
+        <p class="tool-desc">A full-stack asset evaluation platform — reservoir performance, production intelligence, and economic screening in a single integrated environment. Built for engineers who need answers fast, without sacrificing rigour.</p>
+        <ul class="tool-features">
+          <li>Asset performance diagnostics &amp; decline analysis</li>
+          <li>Integrated production &amp; economic screening</li>
+          <li>Multi-field portfolio intelligence</li>
+          <li>Node.js backend · SQLite · browser-native UI</li>
+        </ul>
+        <a class="btn btn-primary tool-btn" href="https://apex-app2.onrender.com" target="_blank" rel="noopener">
+          <span>Launch APEX</span>
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
     </div>
   </div>
 </section>
+
+<style>
+.tool-card{display:grid;grid-template-columns:220px 1fr;gap:0;background:linear-gradient(135deg,#0B3327 0%,#06201A 60%,#0A2E25 100%);border:1px solid rgba(52,199,149,0.22);border-radius:var(--radius-lg);overflow:hidden;position:relative;}
+.tool-card::before{content:'';position:absolute;top:0;right:0;width:300px;height:300px;background:radial-gradient(circle,rgba(52,199,149,0.08) 0%,transparent 70%);pointer-events:none;}
+.tool-card-left{padding:36px 28px;border-right:1px solid rgba(52,199,149,0.15);display:flex;flex-direction:column;align-items:flex-start;gap:12px;}
+.tool-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(52,199,149,0.12);border:1px solid rgba(52,199,149,0.3);border-radius:100px;padding:4px 12px;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--green-bright);}
+.tool-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green-bright);box-shadow:0 0 0 3px rgba(52,199,149,0.25);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(52,199,149,0.25);}50%{box-shadow:0 0 0 6px rgba(52,199,149,0.08);}}
+.tool-icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(150deg,rgba(52,199,149,0.2),rgba(29,158,117,0.1));border:1px solid rgba(52,199,149,0.2);display:flex;align-items:center;justify-content:center;}
+.tool-icon svg{width:26px;height:26px;stroke:var(--green-bright);}
+.tool-name{font-family:'EB Garamond',serif;font-size:32px;font-weight:500;color:#EAF3EF;line-height:1;letter-spacing:-.01em;}
+.tool-tag{font-size:11.5px;color:rgba(234,243,239,0.5);letter-spacing:.04em;}
+.tool-card-right{padding:36px 38px;display:flex;flex-direction:column;justify-content:center;gap:20px;}
+.tool-desc{font-size:14.5px;line-height:1.75;color:rgba(234,243,239,0.72);max-width:58ch;}
+.tool-features{list-style:none;display:flex;flex-direction:column;gap:9px;}
+.tool-features li{font-size:12.5px;color:rgba(234,243,239,0.55);display:flex;gap:10px;align-items:flex-start;}
+.tool-features li::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--green-bright);flex:none;margin-top:6px;opacity:.7;}
+.tool-btn{align-self:flex-start;margin-top:4px;}
+@media(max-width:720px){.tool-card{grid-template-columns:1fr;}.tool-card-left{border-right:none;border-bottom:1px solid rgba(52,199,149,0.15);padding:28px 24px;flex-direction:row;align-items:center;flex-wrap:wrap;gap:14px;}.tool-name{font-size:26px;}}
+</style>
+
+<section class="section" style="padding-top:0;">
+  <div class="wrap">
+    <div class="cta-band">
+      <div>
+        <h2>Scope and price a modelling job in <em>minutes</em></h2>
+        <p>Use the Plan Your Job configurator to select a discipline, set the scale of the problem, add optional scope, and generate a costed scope of work.</p>
+      </div>
+      <a class="btn btn-primary" href="plan-your-job.html"><span>Plan Your Job</span><svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </div>
+  </div>
+</section>
+
 <footer class="footer">
-  <div class="footer-grad"></div>
   <div class="wrap">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <span class="nav-wordmark">
-          <span class="nav-wordmark-main">Alpha</span>
-          <span class="nav-wordmark-sub">Technical Centre</span>
-        </span>
-        <p class="footer-tagline" data-en="Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates." data-es="Planificación integral del desarrollo de campos. Una empresa de propiedad total de Alpha Energy, disponible para mandatos técnicos externos.">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
-      </div>
-      <div class="footer-col">
-        <h4 data-en="Capabilities" data-es="Capacidades">Capabilities</h4>
-        <ul>
-          <li><a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Petróleo y Gas">Oil &amp; Gas Modelling</a></li>
-          <li><a href="financial-modelling.html" data-en="Financial Modelling" data-es="Financiera">Financial Modelling</a></li>
-          <li><a href="plan-your-job.html" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4 data-en="Company" data-es="Empresa">Company</h4>
-        <ul>
-          <li><a href="about.html" data-en="About" data-es="Nosotros">About</a></li>
-          <li><a href="team.html" data-en="Team" data-es="Equipo">Team</a></li>
-          <li><a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a></li>
-          <li><a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4 data-en="Connect" data-es="Contacto">Connect</h4>
-        <ul>
-          <li><a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
-          <li><a href="mailto:info@alphalatinamerica.com">info@alphalatinamerica.com</a></li>
-          <li><a href="https://alphaenergylatinamerica.com" data-en="Alpha Energy ↗" data-es="Alpha Energy ↗">Alpha Energy ↗</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p data-en="© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC" data-es="© 2026 Alpha Latin America LLC · Houston, Texas · Subsidiaria de Alpha LLC">© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC</p>
-      <span class="footer-conf" data-en="Strictly Confidential" data-es="Estrictamente Confidencial">Strictly Confidential</span>
-    </div>
+    <span>Alpha Technical Centre — an Alpha Energy asset. Strictly confidential.</span>
+    <span><a href="index.html">Home</a> &nbsp;·&nbsp; <a href="financial-modelling.html">Financial Modelling</a> &nbsp;·&nbsp; <a href="plan-your-job.html">Plan Your Job</a></span>
   </div>
 </footer>
-
-<script src="main.js"></script>
-</body></html>
+</body>
+</html>
