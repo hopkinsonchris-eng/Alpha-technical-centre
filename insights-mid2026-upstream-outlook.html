@@ -5,347 +5,250 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Upstream in 2026: Discipline, Divergence and the Latin America Opportunity — Alpha Technical Centre Insights</title>
 <meta name="description" content="A mid-2026 synthesis of upstream oil and gas market conditions, the Iran war price shock, investment trends and what they mean for asset owners operating in Latin America.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ── Reset & Base ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --ink: #06201A; --forest: #0A2E25; --forest-2: #0E3D2F;
-  --green: #1D9E75; --green-bright: #34C795; --green-deep: #0F6E56; --green-dark: #085041;
-  --mint: #E4F5EE; --mint-mid: #9FE1CB;
-  --gold: #C9A84C; --gold-dim: rgba(201,168,76,0.15); --gold-line: rgba(201,168,76,0.3);
-  --paper: #FAFAF7; --surface: #F2F4F0; --card: #FFFFFF;
-  --text: #16221E; --muted: #5b6862; --subtle: #8a958f;
-  --navy: #0B1F3A;
-  --on-dark: #EAF3EF; --on-dark-mute: rgba(234,243,239,0.62); --on-dark-faint: rgba(234,243,239,0.40);
-  --line: rgba(8,40,32,0.11); --line-soft: rgba(8,40,32,0.06);
-  --radius: 10px; --radius-lg: 14px;
-  --maxw: 940px;
-  --alert: #C0392B; --alert-bg: rgba(192,57,43,0.06); --alert-line: rgba(192,57,43,0.25);
+/* ── Hero ── */
+.ins-hero{
+  background:linear-gradient(155deg,#060F1E 0%,#0B1F3A 55%,#0A1A0D 100%);
+  padding:72px 0 64px;position:relative;overflow:hidden;
 }
-html { scroll-behavior: smooth; }
-body {
-  font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
-  background: var(--paper); line-height: 1.6; -webkit-font-smoothing: antialiased;
+.ins-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 80% 30%,rgba(201,168,76,0.07) 0%,transparent 65%);
+  pointer-events:none;
 }
-.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 48px; }
-@media (max-width: 600px) { .wrap { padding: 0 22px; } }
+.ins-meta{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+.ins-tag{
+  font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#C9A84C;
+  display:flex;align-items:center;gap:8px;
+}
+.ins-tag::before{content:'';width:20px;height:1px;background:#C9A84C;opacity:.6;}
+.ins-date{font-family:'Barlow',sans-serif;font-size:11.5px;color:rgba(240,237,230,0.38);letter-spacing:.04em;}
+.ins-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(30px,4.5vw,52px);font-weight:700;
+  line-height:1.1;letter-spacing:-.02em;color:#F0EDE6;margin-bottom:20px;
+}
+.ins-title em{color:#C9A84C;font-style:italic;}
+.ins-standfirst{
+  font-family:'Barlow',sans-serif;font-size:17px;line-height:1.72;
+  color:rgba(240,237,230,0.62);max-width:62ch;font-weight:300;
+  border-left:2px solid rgba(201,168,76,0.4);padding-left:20px;
+}
+.ins-byline{
+  display:flex;align-items:center;gap:12px;margin-top:36px;
+  padding-top:24px;border-top:1px solid rgba(201,168,76,0.15);
+}
+.ins-byline-mark{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.ins-byline-author{font-family:'Barlow',sans-serif;font-size:12px;color:rgba(240,237,230,0.8);font-weight:500;}
+.ins-byline-org{font-family:'Barlow',sans-serif;font-size:11px;color:rgba(240,237,230,0.38);margin-top:1px;}
 
-/* ── NAV ── */
-.nav {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(6,32,26,0.96); backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(52,199,149,0.1);
+/* ── Body ── */
+.ins-body{max-width:720px;margin:0 auto;padding:64px 32px 80px;}
+.ins-body h2{
+  font-family:'Playfair Display',serif;font-size:clamp(20px,2.5vw,26px);
+  font-weight:600;color:#0B1F3A;line-height:1.2;
+  margin:52px 0 18px;padding-top:8px;
+  border-top:2px solid rgba(201,168,76,0.25);
+  scroll-margin-top:80px;
 }
-.nav-inner {
-  display: flex; align-items: center; justify-content: space-between;
-  height: 58px; gap: 20px;
+.ins-body h2:first-of-type{margin-top:0;border-top:none;padding-top:0;}
+.ins-body h2.crisis-heading{
+  color:#C0392B;border-top-color:rgba(192,57,43,0.25);
 }
-.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; flex: none; }
-.nav-mark svg { width: 22px; height: 22px; display: block; }
-.nav-wordmark { display: flex; flex-direction: column; }
-.nav-wordmark-main { font-family: 'EB Garamond', serif; font-size: 15.5px; font-weight: 600; color: var(--on-dark); letter-spacing: 0.01em; line-height: 1.1; }
-.nav-wordmark-sub { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--on-dark-faint); }
-.nav-links { display: flex; align-items: center; gap: 6px; }
-.nav-links a {
-  font-size: 12.5px; color: var(--on-dark-mute); text-decoration: none;
-  padding: 5px 10px; border-radius: 6px; transition: color .18s, background .18s;
+.ins-body p{
+  font-family:'Barlow',sans-serif;font-size:15.5px;line-height:1.8;
+  color:#2D3748;margin-bottom:22px;font-weight:400;
 }
-.nav-links a:hover, .nav-links a.active { color: var(--on-dark); }
-.nav-links a.active { color: var(--green-bright); }
-.nav-dropdown { position: relative; }
-.nav-dropdown button {
-  font-size: 12.5px; color: var(--on-dark-mute); background: none; border: none; cursor: pointer;
-  padding: 5px 10px; border-radius: 6px; font-family: inherit; transition: color .18s;
-}
-.nav-dropdown button:hover { color: var(--on-dark); }
-.nav-dropdown-menu {
-  display: none; position: absolute; top: calc(100% + 8px); left: 0;
-  background: var(--forest); border: 1px solid rgba(52,199,149,0.12); border-radius: 8px;
-  padding: 6px; min-width: 200px; box-shadow: 0 16px 32px rgba(0,0,0,0.3);
-}
-.nav-dropdown:hover .nav-dropdown-menu { display: block; }
-.nav-dropdown-menu a { display: block; padding: 8px 12px; font-size: 12px; border-radius: 5px; }
-.btn-nav {
-  font-size: 12px; font-weight: 600; background: var(--green); color: #fff;
-  text-decoration: none; padding: 8px 16px; border-radius: 7px; letter-spacing: 0.02em;
-  transition: background .18s; flex: none;
-}
-.btn-nav:hover { background: var(--green-deep); }
-.nav-lang { display: flex; gap: 4px; }
-.nav-lang button {
-  font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; background: none; border: none;
-  color: var(--on-dark-faint); cursor: pointer; padding: 4px 7px; border-radius: 4px;
-  font-family: inherit; transition: color .15s;
-}
-.nav-lang button.active { color: var(--green-bright); }
-@media (max-width: 800px) { .nav-links { display: none; } }
+.ins-body strong{color:#0B1F3A;font-weight:600;}
+.ins-body em{font-style:italic;}
 
-/* ── HERO ── */
-.ins-hero {
-  background:
-    radial-gradient(ellipse 60% 80% at 80% 30%, rgba(201,168,76,0.08) 0%, transparent 65%),
-    radial-gradient(120% 140% at 82% -10%, rgba(52,199,149,0.10) 0%, rgba(52,199,149,0) 46%),
-    linear-gradient(155deg, #060F1E 0%, var(--navy) 55%, #0A1A0D 100%);
-  padding: 72px 0 64px; position: relative; overflow: hidden; color: var(--on-dark);
+/* ── Pull quote ── */
+.ins-pull{
+  margin:40px 0;padding:24px 28px;
+  border-left:3px solid #C9A84C;
+  background:rgba(201,168,76,0.05);border-radius:0 4px 4px 0;
 }
-.ins-hero::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background-image: radial-gradient(rgba(255,255,255,0.018) 0.5px, transparent 0.5px);
-  background-size: 4px 4px;
+.ins-pull p{
+  font-family:'Playfair Display',serif;font-size:19px;font-weight:400;
+  line-height:1.55;color:#0B1F3A;margin:0;font-style:italic;
 }
-.ins-meta { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
-.ins-tag {
-  font-size: 10.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--gold); display: flex; align-items: center; gap: 8px;
-}
-.ins-tag::before { content: ''; width: 20px; height: 1px; background: var(--gold); opacity: 0.6; }
-.ins-date { font-size: 11.5px; color: var(--on-dark-faint); letter-spacing: 0.04em; }
-.ins-title {
-  font-family: 'EB Garamond', serif; font-size: clamp(30px, 4.5vw, 52px);
-  font-weight: 600; line-height: 1.08; letter-spacing: -0.02em; color: #F0EDE6; margin-bottom: 20px;
-}
-.ins-title em { color: var(--gold); font-style: italic; }
-.ins-standfirst {
-  font-size: 16px; line-height: 1.75; color: var(--on-dark-mute); max-width: 62ch;
-  font-weight: 300; border-left: 2px solid rgba(201,168,76,0.4); padding-left: 20px;
-}
-.ins-byline {
-  display: flex; align-items: center; gap: 12px; margin-top: 36px;
-  padding-top: 24px; border-top: 1px solid rgba(201,168,76,0.15);
-}
-.ins-byline-mark {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.25);
-  display: flex; align-items: center; justify-content: center; flex: none;
-}
-.ins-byline-mark svg { width: 18px; height: 18px; }
-.ins-byline-author { font-size: 12px; font-weight: 500; color: var(--on-dark-mute); }
-.ins-byline-org { font-size: 11px; color: var(--on-dark-faint); margin-top: 1px; }
 
-/* ── READING PROGRESS ── */
-.reading-progress {
-  position: fixed; top: 58px; left: 0; right: 0; height: 2px;
-  background: rgba(255,255,255,0.05); z-index: 99;
+/* ── Stat row ── */
+.ins-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0;}
+@media(max-width:600px){.ins-stat-row{grid-template-columns:1fr 1fr;}}
+.ins-stat{
+  background:#fff;border:1px solid rgba(11,31,58,0.09);
+  border-radius:4px;padding:20px 18px;text-align:center;
+  transition:transform .22s,box-shadow .22s;
 }
-.reading-progress-bar {
-  height: 100%; background: linear-gradient(90deg, var(--green-bright), var(--gold));
-  width: 0%; transition: width 0.1s linear;
+.ins-stat:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(11,31,58,0.10);}
+.ins-stat-val{
+  font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;
+  color:#C9A84C;letter-spacing:-.01em;line-height:1;
+}
+.ins-stat-lbl{font-family:'Barlow',sans-serif;font-size:11px;color:#5A6A7E;margin-top:6px;line-height:1.4;}
+.ins-stat.crisis .ins-stat-val{color:#C0392B;}
+.ins-stat.crisis{border-color:rgba(192,57,43,0.2);}
+
+/* ── Divider ── */
+.ins-divider{height:1px;background:linear-gradient(90deg,rgba(201,168,76,0.3),transparent);margin:48px 0;}
+
+/* ── Callout (dark, navy) ── */
+.ins-callout{
+  background:#0B1F3A;border-radius:4px;padding:28px 32px;margin:40px 0;
+  border-left:3px solid #C9A84C;
+}
+.ins-callout p{
+  font-family:'Barlow',sans-serif;font-size:14px;line-height:1.72;
+  color:rgba(240,237,230,0.65);margin:0;font-weight:300;
+}
+.ins-callout strong{color:#F0EDE6;}
+
+/* ── Alert (crisis — red) ── */
+.ins-alert{
+  margin:32px 0;padding:22px 26px;
+  background:rgba(192,57,43,0.05);
+  border:1px solid rgba(192,57,43,0.2);
+  border-left:4px solid #C0392B;
+  border-radius:0 4px 4px 0;
+}
+.ins-alert-label{
+  font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#C0392B;margin-bottom:8px;
+}
+.ins-alert p{
+  font-family:'Barlow',sans-serif;font-size:14px;line-height:1.7;
+  color:#4A2020;margin-bottom:0;
 }
 
 /* ── TOC ── */
-.ins-toc {
-  background: var(--card); border: 1px solid var(--line-soft); border-radius: var(--radius-lg);
-  padding: 22px 24px; margin-bottom: 48px;
-  box-shadow: 0 2px 12px rgba(6,32,26,0.06);
+.ins-toc{
+  background:#fff;border:1px solid rgba(11,31,58,0.08);
+  border-radius:4px;padding:22px 24px;margin-bottom:48px;
 }
-.ins-toc-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--subtle); margin-bottom: 14px;
+.ins-toc-label{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#5A6A7E;margin-bottom:14px;
 }
-.ins-toc ol { padding-left: 0; list-style: none; counter-reset: toc; }
-.ins-toc li { counter-increment: toc; margin-bottom: 8px; display: flex; align-items: baseline; gap: 10px; }
-.ins-toc li::before {
-  content: counter(toc, decimal-leading-zero);
-  font-family: 'EB Garamond', serif; font-size: 13px; color: var(--green); flex: none;
+.ins-toc ol{padding-left:0;list-style:none;counter-reset:toc;}
+.ins-toc li{counter-increment:toc;margin-bottom:8px;display:flex;align-items:baseline;gap:10px;}
+.ins-toc li::before{
+  content:counter(toc,decimal-leading-zero);
+  font-family:'Playfair Display',serif;font-size:13px;color:#C9A84C;flex:none;
 }
-.ins-toc a {
-  font-size: 13px; color: var(--muted); text-decoration: none; transition: color .15s;
-  line-height: 1.4;
+.ins-toc a{
+  font-family:'Barlow',sans-serif;font-size:13px;color:#5A6A7E;
+  text-decoration:none;transition:color .15s;line-height:1.4;
 }
-.ins-toc a:hover { color: var(--green-deep); }
-/* Special highlight for new section */
-.ins-toc li.toc-new::before { color: var(--alert); }
-.ins-toc li.toc-new a { color: var(--text); font-weight: 500; }
-.ins-toc li.toc-new a::after {
-  content: 'NEW'; font-size: 8.5px; font-weight: 700; letter-spacing: 0.15em;
-  background: var(--alert); color: #fff; padding: 1px 5px; border-radius: 3px;
-  margin-left: 8px; vertical-align: middle;
-}
-
-/* ── ARTICLE BODY ── */
-.ins-body { max-width: 720px; margin: 0 auto; padding: 64px 32px 80px; }
-.ins-body h2 {
-  font-family: 'EB Garamond', serif; font-size: clamp(20px, 2.5vw, 27px);
-  font-weight: 600; color: var(--navy); line-height: 1.2;
-  margin: 52px 0 18px; padding-top: 8px;
-  border-top: 2px solid rgba(11,31,58,0.1);
-  scroll-margin-top: 80px;
-}
-.ins-body h2:first-of-type { margin-top: 0; border-top: none; padding-top: 0; }
-.ins-body h2.crisis-heading {
-  color: var(--alert);
-  border-top-color: var(--alert-line);
-}
-.ins-body p {
-  font-size: 15.5px; line-height: 1.82; color: #2D3748;
-  margin-bottom: 22px; font-weight: 400;
-}
-.ins-body strong { color: var(--navy); font-weight: 600; }
-.ins-body em { font-style: italic; }
-
-/* ── ALERT CALLOUT (crisis section) ── */
-.ins-alert {
-  margin: 32px 0; padding: 22px 26px;
-  background: var(--alert-bg);
-  border: 1px solid var(--alert-line);
-  border-left: 4px solid var(--alert);
-  border-radius: 0 var(--radius) var(--radius) 0;
-}
-.ins-alert-label {
-  font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--alert); margin-bottom: 8px;
-}
-.ins-alert p {
-  font-size: 14px; line-height: 1.7; color: #4A2020; margin-bottom: 0;
+.ins-toc a:hover{color:#0B1F3A;}
+.ins-toc li.toc-new::before{color:#C0392B;}
+.ins-toc li.toc-new a{color:#2D3748;font-weight:500;}
+.ins-toc li.toc-new a::after{
+  content:'NEW';font-size:8px;font-weight:700;letter-spacing:.15em;
+  background:#C0392B;color:#fff;padding:1px 5px;border-radius:2px;
+  margin-left:8px;vertical-align:middle;
+  font-family:'Barlow Condensed',sans-serif;
 }
 
-/* ── PULL QUOTE ── */
-.ins-pull {
-  margin: 40px 0; padding: 24px 28px;
-  border-left: 3px solid var(--gold); background: var(--gold-dim); border-radius: 0 4px 4px 0;
+/* ── Reading progress ── */
+.reading-progress{
+  position:fixed;top:0;left:0;right:0;height:2px;
+  background:rgba(11,31,58,0.08);z-index:9999;pointer-events:none;
 }
-.ins-pull p {
-  font-family: 'EB Garamond', serif; font-size: 20px; font-weight: 400;
-  line-height: 1.55; color: var(--navy); margin: 0; font-style: italic;
+.reading-progress-bar{
+  height:100%;
+  background:linear-gradient(90deg,#C9A84C,#E8C96A);
+  width:0%;transition:width .08s linear;
 }
 
-/* ── STAT ROWS ── */
-.ins-stat-row {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 36px 0;
+/* ── Crisis timeline ── */
+.crisis-timeline{margin:36px 0;}
+.crisis-timeline-item{display:flex;gap:16px;margin-bottom:22px;position:relative;}
+.crisis-timeline-item::before{
+  content:'';position:absolute;left:19px;top:40px;bottom:-22px;
+  width:1px;background:rgba(192,57,43,0.2);
 }
-@media (max-width: 600px) { .ins-stat-row { grid-template-columns: 1fr 1fr; } }
-.ins-stat {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: var(--radius); padding: 20px 18px; text-align: center;
-  transition: transform .25s, box-shadow .25s;
+.crisis-timeline-item:last-child::before{display:none;}
+.crisis-tl-dot{
+  width:38px;height:38px;border-radius:50%;flex:none;
+  background:rgba(192,57,43,0.06);border:1.5px solid rgba(192,57,43,0.25);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:9.5px;font-weight:700;color:#C0392B;letter-spacing:.04em;
 }
-.ins-stat:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(6,32,26,0.10); }
-.ins-stat-val {
-  font-family: 'EB Garamond', serif; font-size: 30px; font-weight: 500;
-  color: var(--green-deep); letter-spacing: -0.01em; line-height: 1;
+.crisis-tl-body{padding-top:4px;}
+.crisis-tl-date{
+  font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:#C0392B;margin-bottom:4px;
 }
-.ins-stat-lbl { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+.crisis-tl-text{font-family:'Barlow',sans-serif;font-size:14px;line-height:1.65;color:#5A6A7E;}
+.crisis-tl-text strong{color:#2D3748;}
 
-/* Crisis stats get red tones */
-.ins-stat.crisis .ins-stat-val { color: var(--alert); }
-.ins-stat.crisis { border-color: var(--alert-line); }
-
-/* ── PRICE CHART (interactive) ── */
-.price-chart-wrap {
-  background: var(--card); border: 1px solid var(--line-soft); border-radius: var(--radius-lg);
-  padding: 28px 24px 20px; margin: 36px 0;
+/* ── Price chart ── */
+.price-chart-wrap{
+  background:#fff;border:1px solid rgba(11,31,58,0.08);
+  border-radius:4px;padding:28px 24px 20px;margin:36px 0;position:relative;
 }
-.price-chart-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--subtle); margin-bottom: 6px;
+.price-chart-label{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;color:#5A6A7E;margin-bottom:4px;
 }
-.price-chart-title { font-family: 'EB Garamond', serif; font-size: 18px; color: var(--navy); margin-bottom: 20px; }
-.price-chart-svg { width: 100%; height: 180px; display: block; }
-.price-chart-tooltip {
-  background: var(--navy); color: #fff; font-size: 11.5px;
-  padding: 6px 10px; border-radius: 5px; pointer-events: none;
-  position: absolute; display: none; white-space: nowrap; z-index: 10;
+.price-chart-title{
+  font-family:'Playfair Display',serif;font-size:17px;color:#0B1F3A;margin-bottom:20px;
 }
-.price-chart-legend {
-  display: flex; gap: 18px; margin-top: 12px; flex-wrap: wrap;
+.price-chart-svg{width:100%;height:180px;display:block;}
+.price-chart-tooltip{
+  background:#0B1F3A;color:#F0EDE6;
+  font-family:'Barlow',sans-serif;font-size:11.5px;
+  padding:7px 11px;border-radius:3px;pointer-events:none;
+  position:absolute;display:none;white-space:nowrap;z-index:10;
+  border-left:2px solid #C9A84C;
 }
-.price-chart-legend span {
-  font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px;
+.price-chart-legend{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap;}
+.price-chart-legend span{
+  font-family:'Barlow',sans-serif;font-size:11px;color:#5A6A7E;
+  display:flex;align-items:center;gap:6px;
 }
-.price-chart-legend span::before {
-  content: ''; width: 16px; height: 2px; border-radius: 2px;
-  display: inline-block;
+.price-chart-legend span::before{
+  content:'';width:16px;height:2px;border-radius:2px;display:inline-block;
 }
-.price-chart-legend .leg-oil::before { background: var(--green); }
-.price-chart-legend .leg-crisis::before { background: var(--alert); }
-.price-chart-legend .leg-gas::before { background: var(--gold); }
-
-/* ── TIMELINE (Iran crisis) ── */
-.crisis-timeline { margin: 36px 0; }
-.crisis-timeline-item {
-  display: flex; gap: 16px; margin-bottom: 20px; position: relative;
-}
-.crisis-timeline-item::before {
-  content: ''; position: absolute; left: 19px; top: 38px; bottom: -20px;
-  width: 1px; background: var(--alert-line);
-}
-.crisis-timeline-item:last-child::before { display: none; }
-.crisis-tl-dot {
-  width: 38px; height: 38px; border-radius: 50%; flex: none;
-  background: var(--alert-bg); border: 1.5px solid var(--alert-line);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: var(--alert); letter-spacing: 0.02em;
-}
-.crisis-tl-body { padding-top: 4px; }
-.crisis-tl-date { font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--alert); margin-bottom: 4px; }
-.crisis-tl-text { font-size: 14px; line-height: 1.65; color: var(--muted); }
-.crisis-tl-text strong { color: var(--text); }
-
-/* ── DIVIDER ── */
-.ins-divider {
-  height: 1px; background: linear-gradient(90deg, rgba(201,168,76,0.3), transparent);
-  margin: 52px 0;
-}
+.leg-pre::before{background:#1D9E75;}
+.leg-crisis::before{background:#C0392B;}
 
 /* ── CTA ── */
-.ins-cta {
-  background: var(--navy); border-radius: var(--radius-lg);
-  padding: 36px; margin-top: 56px;
-  border: 1px solid rgba(201,168,76,0.15);
+.ins-cta{
+  background:#0B1F3A;border-radius:4px;padding:36px 36px;margin-top:56px;
+  border:1px solid rgba(201,168,76,0.15);
 }
-.ins-cta h3 {
-  font-family: 'EB Garamond', serif; font-size: 22px; font-weight: 600;
-  color: #F0EDE6; margin-bottom: 10px;
+.ins-cta h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:#F0EDE6;margin-bottom:10px;}
+.ins-cta p{font-family:'Barlow',sans-serif;font-size:13.5px;color:rgba(240,237,230,0.55);margin-bottom:20px;font-weight:300;line-height:1.65;}
+.ins-cta-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#C9A84C;color:#0B1F3A;border:none;border-radius:2px;
+  padding:12px 24px;font-family:'Barlow Condensed',sans-serif;font-size:13px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:.18s;
 }
-.ins-cta p {
-  font-size: 13.5px; color: var(--on-dark-mute); margin-bottom: 20px; font-weight: 300; line-height: 1.65;
-}
-.ins-cta-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--gold); color: var(--navy);
-  border: none; border-radius: var(--radius); padding: 13px 26px;
-  font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  text-decoration: none; transition: filter .18s, transform .18s;
-}
-.ins-cta-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.ins-cta-btn:hover{filter:brightness(1.08);}
 
-/* ── FOOTER NAV ── */
-.ins-footer-nav {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 28px 0; margin-top: 48px; border-top: 1px solid var(--line-soft);
-  flex-wrap: wrap; gap: 12px;
+/* ── Footer nav ── */
+.ins-footer-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:28px 0;margin-top:48px;border-top:1px solid rgba(11,31,58,0.1);flex-wrap:wrap;gap:12px;
 }
-.ins-footer-nav a {
-  font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--muted); text-decoration: none; transition: color .15s;
+.ins-footer-nav a{
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:#5A6A7E;text-decoration:none;transition:.15s;
 }
-.ins-footer-nav a:hover { color: var(--green-deep); }
+.ins-footer-nav a:hover{color:#C9A84C;}
 
-/* ── FOOTER ── */
-.footer {
-  background: linear-gradient(155deg, #0B3327 0%, var(--ink) 70%, #04190F 100%);
-  color: var(--on-dark); margin-top: 64px;
-}
-.footer-rule { height: 2px; background: linear-gradient(90deg, var(--green-bright) 0%, var(--green) 22%, rgba(52,199,149,0) 70%); }
-.footer-inner { padding: 38px 0 40px; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
-.footer-mark { font-family: 'EB Garamond', serif; font-size: 22px; font-weight: 600; }
-.footer-mark b { color: var(--green-bright); }
-.footer-tag { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--on-dark-faint); margin-top: 6px; }
-.footer-right { font-size: 10px; color: var(--on-dark-faint); text-align: right; line-height: 1.8; letter-spacing: 0.04em; }
-.footer-right .conf { color: var(--green-bright); letter-spacing: 0.18em; text-transform: uppercase; }
-
-/* ── REVEAL ANIMATION ── */
-.reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.3,1); }
-.reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
-
-@media (max-width: 600px) {
-  .ins-hero { padding: 52px 0 46px; }
-  .ins-body { padding: 40px 20px 60px; }
-}
+@media(max-width:600px){.ins-body{padding:40px 20px 60px;}.ins-hero{padding:52px 0 46px;}}
 </style>
 </head>
 <body>
@@ -353,26 +256,26 @@ body {
 <!-- ── READING PROGRESS ── -->
 <div class="reading-progress"><div class="reading-progress-bar" id="readingBar"></div></div>
 
-<!-- ── NAV ── -->
 <nav class="nav">
   <div class="wrap nav-inner">
     <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
       <span class="nav-mark">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#34C795"/>
-          <rect x="9.5" y="15" width="5" height="2.2" fill="#06201A"/>
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
         </svg>
       </span>
       <span class="nav-wordmark">
-        <span class="nav-wordmark-main">Alpha Technical Centre</span>
-        <span class="nav-wordmark-sub">An Alpha Energy company</span>
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre</span>
+        <span class="nav-wordmark-parent">An Alpha Energy company</span>
       </span>
     </a>
     <div class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
+      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
+      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
       <div class="nav-dropdown">
-        <button>Capabilities ▾</button>
+        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
         <div class="nav-dropdown-menu">
           <a href="oil-gas-modelling.html">Oil &amp; Gas Modelling</a>
           <a href="financial-modelling.html">Financial Modelling</a>
@@ -384,15 +287,15 @@ body {
       <a href="insights.html" class="active">Insights</a>
       <a href="contact.html">Contact</a>
       <div class="nav-lang">
-        <button class="active" onclick="setLang('en')">EN</button>
-        <button onclick="setLang('es')">ES</button>
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
       </div>
       <a href="plan-your-job.html" class="btn-nav">Plan Your Job</a>
     </div>
+    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
   </div>
 </nav>
 
-<!-- ── HERO ── -->
 <header class="ins-hero">
   <div class="wrap" style="position:relative;z-index:2;">
     <div class="ins-meta">
@@ -403,7 +306,7 @@ body {
     <p class="ins-standfirst">Global upstream investment is holding steady under sustained price pressure — then the Iran war broke out and changed the calculus overnight. As North American shale matures and majors retrench, Latin America is emerging as the decade's most compelling frontier for disciplined capital. Here is what the data says, and what it means for asset owners.</p>
     <div class="ins-byline">
       <div class="ins-byline-mark">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
           <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
           <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
         </svg>
@@ -416,11 +319,10 @@ body {
   </div>
 </header>
 
-<!-- ── BODY ── -->
 <div class="ins-body">
 
   <!-- TABLE OF CONTENTS -->
-  <div class="ins-toc reveal">
+  <div class="ins-toc">
     <div class="ins-toc-label">In this article</div>
     <ol>
       <li><a href="#section-backdrop">The Global Backdrop: Discipline Holds, But Cracks Are Showing</a></li>
@@ -440,7 +342,7 @@ body {
 
   <p>Natural gas told a different story. Henry Hub averaged well above $3.50/MMBtu through H1 2026 — a dramatic recovery from the sub-$2 levels of 2024 — driven by LNG export demand and a colder-than-average northern hemisphere winter. <strong>Over 90 bcm/year of new LNG liquefaction capacity reached FID in 2025</strong>, with the United States accounting for the majority. Gas-weighted portfolios were performing considerably better than oil-heavy ones going into the conflict.</p>
 
-  <div class="ins-stat-row reveal">
+  <div class="ins-stat-row">
     <div class="ins-stat">
       <div class="ins-stat-val">$535B</div>
       <div class="ins-stat-lbl">Upstream oil investment forecast 2025 (IEA)</div>
@@ -457,7 +359,7 @@ body {
 
   <p>Major international oil companies responded to the price weakness predictably. Overall capex from the largest players declined 3–5% from 2025 levels, with portfolio restructuring accelerating. Nearly 70% of listed US oil and gas companies actively divested non-core assets, and asset-level M&amp;A accounted for nearly half of all deal value.</p>
 
-  <div class="ins-pull reveal">
+  <div class="ins-pull">
     <p>"The companies winning in this environment are not those chasing production — they are those who have optimised their existing assets hard enough to generate free cash at $55 oil."</p>
   </div>
 
@@ -465,70 +367,67 @@ body {
 
   <div class="ins-divider"></div>
 
-  <!-- SECTION 2 — NEW -->
+  <!-- SECTION 2 — NEW: IRAN WAR -->
   <h2 id="section-iran" class="crisis-heading">The Iran War: The Price Shock That Changed Everything</h2>
 
-  <div class="ins-alert reveal">
+  <div class="ins-alert">
     <div class="ins-alert-label">⚡ Major market event — February–June 2026</div>
-    <p>On 28 February 2026, Operation Epic Fury — the joint US-Israel campaign against Iran — triggered the largest oil supply disruption in the history of the global market. The effects are still reverberating. This section has been added to update our original analysis in light of these events.</p>
+    <p>On 28 February 2026, Operation Epic Fury — the joint US-Israel campaign against Iran — triggered the largest oil supply disruption in the history of the global market. The effects are still reverberating. This section updates our original analysis in light of these events.</p>
   </div>
 
   <p>When the US-Israel coalition struck Iran in late February 2026, <strong>the entire framework of oil price expectations for the year was rewritten within days</strong>. Iran moved immediately to restrict traffic through the Strait of Hormuz — the narrow passage through which approximately 20 million barrels per day of crude and petroleum products normally flow, representing roughly one-fifth of global supply. The IEA described the resulting disruption as <em>"the largest supply disruption in the history of the global oil market."</em></p>
 
   <!-- INTERACTIVE PRICE CHART -->
-  <div class="price-chart-wrap reveal" style="position:relative;">
+  <div class="price-chart-wrap">
     <div class="price-chart-label">Interactive · Hover for detail</div>
     <div class="price-chart-title">Brent Crude Price Journey — 2026</div>
-    <svg class="price-chart-svg" id="priceChart" viewBox="0 0 660 180" preserveAspectRatio="none" aria-label="Brent crude oil price chart 2026">
-      <!-- Grid lines -->
-      <line x1="40" y1="20" x2="640" y2="20" stroke="#E8E2D2" stroke-width="0.5"/>
-      <line x1="40" y1="55" x2="640" y2="55" stroke="#E8E2D2" stroke-width="0.5"/>
-      <line x1="40" y1="90" x2="640" y2="90" stroke="#E8E2D2" stroke-width="0.5"/>
-      <line x1="40" y1="125" x2="640" y2="125" stroke="#E8E2D2" stroke-width="0.5"/>
-      <line x1="40" y1="155" x2="640" y2="155" stroke="#E8E2D2" stroke-width="0.5"/>
-      <!-- Y axis labels -->
-      <text x="34" y="24" text-anchor="end" font-size="9" fill="#8a958f">$130</text>
-      <text x="34" y="59" text-anchor="end" font-size="9" fill="#8a958f">$110</text>
-      <text x="34" y="94" text-anchor="end" font-size="9" fill="#8a958f">$90</text>
-      <text x="34" y="129" text-anchor="end" font-size="9" fill="#8a958f">$70</text>
-      <text x="34" y="159" text-anchor="end" font-size="9" fill="#8a958f">$60</text>
-      <!-- X axis labels -->
-      <text x="60" y="172" text-anchor="middle" font-size="9" fill="#8a958f">Jan</text>
-      <text x="145" y="172" text-anchor="middle" font-size="9" fill="#8a958f">Feb</text>
-      <text x="230" y="172" text-anchor="middle" font-size="9" fill="#8a958f">Mar</text>
-      <text x="315" y="172" text-anchor="middle" font-size="9" fill="#8a958f">Apr</text>
-      <text x="400" y="172" text-anchor="middle" font-size="9" fill="#8a958f">May</text>
-      <text x="490" y="172" text-anchor="middle" font-size="9" fill="#8a958f">Jun</text>
+    <svg class="price-chart-svg" id="priceChart" viewBox="0 0 660 180" preserveAspectRatio="none" aria-label="Brent crude oil price 2026">
+      <!-- Grid -->
+      <line x1="40" y1="20" x2="640" y2="20" stroke="#F0EDE6" stroke-width="1"/>
+      <line x1="40" y1="55" x2="640" y2="55" stroke="#F0EDE6" stroke-width="1"/>
+      <line x1="40" y1="90" x2="640" y2="90" stroke="#F0EDE6" stroke-width="1"/>
+      <line x1="40" y1="125" x2="640" y2="125" stroke="#F0EDE6" stroke-width="1"/>
+      <line x1="40" y1="155" x2="640" y2="155" stroke="#F0EDE6" stroke-width="1"/>
+      <!-- Y labels -->
+      <text x="34" y="24" text-anchor="end" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">$130</text>
+      <text x="34" y="59" text-anchor="end" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">$110</text>
+      <text x="34" y="94" text-anchor="end" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">$90</text>
+      <text x="34" y="129" text-anchor="end" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">$70</text>
+      <text x="34" y="159" text-anchor="end" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">$60</text>
+      <!-- X labels -->
+      <text x="70" y="172" text-anchor="middle" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">Jan</text>
+      <text x="155" y="172" text-anchor="middle" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">Feb</text>
+      <text x="240" y="172" text-anchor="middle" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">Mar</text>
+      <text x="325" y="172" text-anchor="middle" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">Apr</text>
+      <text x="410" y="172" text-anchor="middle" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">May</text>
+      <text x="500" y="172" text-anchor="middle" font-size="9" fill="#8a9aae" font-family="Barlow,sans-serif">Jun</text>
       <!-- Crisis zone shading -->
-      <rect x="230" y="15" width="210" height="148" fill="rgba(192,57,43,0.04)" rx="2"/>
-      <line x1="230" y1="15" x2="230" y2="163" stroke="rgba(192,57,43,0.3)" stroke-width="1" stroke-dasharray="4,3"/>
-      <text x="233" y="28" font-size="8.5" fill="rgba(192,57,43,0.7)" font-weight="600">WAR BEGINS</text>
-      <!-- Pre-war price line (green) -->
-      <polyline id="prePriceLine"
-        points="60,130 100,128 145,125 185,123 230,124"
+      <rect x="240" y="15" width="200" height="148" fill="rgba(192,57,43,0.04)" rx="2"/>
+      <line x1="240" y1="15" x2="240" y2="163" stroke="rgba(192,57,43,0.28)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="244" y="28" font-size="8" fill="rgba(192,57,43,0.65)" font-weight="600" font-family="Barlow Condensed,sans-serif" letter-spacing=".06em">WAR BEGINS</text>
+      <!-- Pre-war line (green) -->
+      <polyline points="70,130 115,128 155,125 200,123 240,124"
         fill="none" stroke="#1D9E75" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- Crisis / post price line (red) -->
-      <polyline id="crisisPriceLine"
-        points="230,124 250,105 265,70 285,38 315,32 345,45 375,68 400,72 440,80 490,85 540,88 590,90 630,92"
+      <!-- Crisis line (red) -->
+      <polyline points="240,124 260,104 275,68 295,36 325,30 355,44 385,67 410,71 450,79 500,84 545,87 590,89 630,91"
         fill="none" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- Area fill for crisis -->
-      <polygon
-        points="230,163 230,124 250,105 265,70 285,38 315,32 345,45 375,68 400,72 440,80 490,85 540,88 590,90 630,92 630,163"
-        fill="rgba(192,57,43,0.05)"/>
-      <!-- Key event markers -->
-      <circle cx="230" cy="124" r="4" fill="#C0392B"/>
-      <circle cx="315" cy="32" r="4" fill="#C0392B"/>
-      <circle cx="400" cy="72" r="4" fill="#C9A84C"/>
-      <!-- Hover overlay rects (invisible) -->
-      <rect id="hov-jan" x="40" y="15" width="85" height="148" fill="transparent" class="price-hov" data-label="Jan 2026" data-price="~$63" data-note="Pre-war baseline"/>
-      <rect id="hov-feb" x="125" y="15" width="105" height="148" fill="transparent" class="price-hov" data-label="Late Feb 2026" data-price="~$65" data-note="Operation Epic Fury begins"/>
-      <rect id="hov-march" x="230" y="15" width="85" height="148" fill="transparent" class="price-hov" data-label="Early Mar 2026" data-price="$80–82" data-note="Hormuz restricted; initial surge"/>
-      <rect id="hov-march2" x="315" y="15" width="85" height="148" fill="transparent" class="price-hov" data-label="Mid-Mar 2026" data-price=">$120" data-note="Full Hormuz closure; peak disruption"/>
-      <rect id="hov-april" x="400" y="15" width="90" height="148" fill="transparent" class="price-hov" data-label="Apr 2026" data-price="$100+" data-note="Ceasefire announced; partial retracement"/>
-      <rect id="hov-may" x="490" y="15" width="100" height="148" fill="transparent" class="price-hov" data-label="May–Jun 2026" data-price="~$88–92" data-note="Hormuz re-opening; traffic still below normal"/>
+      <!-- Area under crisis line -->
+      <polygon points="240,163 240,124 260,104 275,68 295,36 325,30 355,44 385,67 410,71 450,79 500,84 545,87 590,89 630,91 630,163"
+        fill="rgba(192,57,43,0.04)"/>
+      <!-- Event dots -->
+      <circle cx="240" cy="124" r="3.5" fill="#C0392B"/>
+      <circle cx="325" cy="30" r="3.5" fill="#C0392B"/>
+      <circle cx="410" cy="71" r="3.5" fill="#C9A84C"/>
+      <!-- Invisible hover zones -->
+      <rect class="price-hov" x="40" y="15" width="110" height="148" fill="transparent" data-label="Jan 2026" data-price="~$63/bbl" data-note="Pre-war baseline"/>
+      <rect class="price-hov" x="150" y="15" width="90" height="148" fill="transparent" data-label="Late Feb 2026" data-price="~$65/bbl" data-note="Operation Epic Fury begins 28 Feb"/>
+      <rect class="price-hov" x="240" y="15" width="85" height="148" fill="transparent" data-label="Early Mar 2026" data-price="$80–82/bbl" data-note="Hormuz restricted; initial 10–13% surge"/>
+      <rect class="price-hov" x="325" y="15" width="85" height="148" fill="transparent" data-label="Mid-Mar 2026" data-price=">$120/bbl" data-note="Full Hormuz closure; largest disruption in history"/>
+      <rect class="price-hov" x="410" y="15" width="90" height="148" fill="transparent" data-label="Apr 2026" data-price="$100+/bbl" data-note="Ceasefire 8 Apr; partial retracement"/>
+      <rect class="price-hov" x="500" y="15" width="130" height="148" fill="transparent" data-label="May–Jun 2026" data-price="~$88–92/bbl" data-note="Hormuz re-opening; $14/bbl risk premium persists"/>
     </svg>
     <div class="price-chart-legend">
-      <span class="leg-oil">Pre-war trajectory</span>
+      <span class="leg-pre">Pre-war trajectory</span>
       <span class="leg-crisis">Iran war disruption</span>
     </div>
     <div class="price-chart-tooltip" id="priceTooltip"></div>
@@ -536,7 +435,7 @@ body {
 
   <p>The price sequence was dramatic. <strong>Brent surged 10–13% within the first 72 hours</strong>, reaching $80–82/bbl by 2 March 2026. When Qatar announced that Iranian drone strikes had halted all gas production at its facilities and QatarEnergy declared force majeure, markets moved sharply again. <strong>By mid-March, with the Hormuz closure now effectively total, Brent crossed $120 per barrel</strong> — levels not seen since the post-Ukraine spike of 2022. Some analysts forecast $150 if disruptions persisted.</p>
 
-  <div class="crisis-timeline reveal">
+  <div class="crisis-timeline">
     <div class="crisis-timeline-item">
       <div class="crisis-tl-dot">FEB</div>
       <div class="crisis-tl-body">
@@ -548,29 +447,29 @@ body {
       <div class="crisis-tl-dot">MAR</div>
       <div class="crisis-tl-body">
         <div class="crisis-tl-date">2–12 March 2026</div>
-        <div class="crisis-tl-text"><strong>Peak disruption.</strong> Gulf producers collectively lose 6.7–10 MMbpd. QatarEnergy declares force majeure. Dutch TTF gas nearly doubles to €60/MWh. Gulf GCC collective oil production drops by at least 10 MMbpd by 12 March. European Commission advises member states to fill gas storage early.</div>
+        <div class="crisis-tl-text"><strong>Peak disruption.</strong> Gulf producers collectively lose 6.7–10 MMbpd. QatarEnergy declares force majeure on all exports. Dutch TTF gas nearly doubles to €60/MWh. The European Commission advises member states to fill gas storage early.</div>
       </div>
     </div>
     <div class="crisis-timeline-item">
       <div class="crisis-tl-dot">APR</div>
       <div class="crisis-tl-body">
         <div class="crisis-tl-date">8 April 2026</div>
-        <div class="crisis-tl-text"><strong>Ceasefire announced</strong> between Iran and the United States. A two-week ceasefire opens the Strait, but tanker traffic remains well below pre-war levels. Brent retraces from peak but holds above $100 as risk premium persists.</div>
+        <div class="crisis-tl-text"><strong>Ceasefire announced</strong> between Iran and the United States. A two-week ceasefire partially opens the Strait, but tanker traffic remains well below pre-war levels. Brent retraces from peak but holds above $100.</div>
       </div>
     </div>
     <div class="crisis-timeline-item">
       <div class="crisis-tl-dot">JUN</div>
       <div class="crisis-tl-body">
         <div class="crisis-tl-date">June 2026 — Current</div>
-        <div class="crisis-tl-text"><strong>Partial normalisation.</strong> Brent trades in the $88–$95 range. Ship traffic through Hormuz remains far below pre-war levels. The IEA estimates only 4.2 MMbpd of the disrupted Hormuz flows can be redirected via alternative pipelines — <strong>leaving ~16 MMbpd still at structural risk</strong>. Goldman Sachs estimates a residual $14/bbl geopolitical risk premium remains embedded in the oil price.</div>
+        <div class="crisis-tl-text"><strong>Partial normalisation.</strong> Brent trades in the $88–$95 range. Ship traffic through Hormuz remains far below pre-war levels. Goldman Sachs estimates a residual <strong>$14/bbl geopolitical risk premium</strong> remains embedded in the oil price, with ~16 MMbpd still at structural risk.</div>
       </div>
     </div>
   </div>
 
-  <div class="ins-stat-row reveal">
+  <div class="ins-stat-row">
     <div class="ins-stat crisis">
       <div class="ins-stat-val">$120+</div>
-      <div class="ins-stat-lbl">Brent peak, mid-March 2026 (Hormuz closure)</div>
+      <div class="ins-stat-lbl">Brent peak, mid-March 2026 (Hormuz full closure)</div>
     </div>
     <div class="ins-stat crisis">
       <div class="ins-stat-val">20 MMbpd</div>
@@ -582,15 +481,15 @@ body {
     </div>
   </div>
 
-  <p>The implications for the upstream sector are significant and are still unfolding. In the near term, the price surge delivered a windfall to producers outside the Gulf — US, Brazilian, and Latin American operators with no Hormuz exposure saw margins expand sharply. For asset owners with producing fields, the crisis demonstrated exactly why <strong>low-cost, low-geopolitical-risk production in the Western Hemisphere commands a structural premium</strong> that the market had perhaps under-appreciated in the drift toward $60 oil.</p>
+  <p>The implications for the upstream sector are significant and still unfolding. In the near term, the price surge delivered a windfall to producers outside the Gulf — US, Brazilian, and Latin American operators with no Hormuz exposure saw margins expand sharply. For asset owners with producing fields, the crisis demonstrated exactly why <strong>low-cost, low-geopolitical-risk production in the Western Hemisphere commands a structural premium</strong> that the market had perhaps under-appreciated in the drift toward $60 oil.</p>
 
-  <p>For gas, the war supercharged an already constructive picture. European buyers, scrambling to replace disrupted LNG flows from Qatar, moved aggressively to secure alternative supply. US LNG exports hit new records. TTF gas prices that had been expected to moderate instead surged again — and operators with Atlantic-basin LNG exposure are now looking at a demand backdrop that exceeds even the most optimistic pre-war projections. <strong>For Argentina's Vaca Muerta and Brazil's deepwater gas ambitions, the war has pulled forward the case for development by years.</strong></p>
+  <p>For gas, the war supercharged an already constructive picture. European buyers scrambled to replace disrupted LNG flows from Qatar and moved aggressively to secure alternative supply. US LNG exports hit new records. TTF gas prices that had been expected to moderate instead surged again — and operators with Atlantic-basin LNG exposure are now looking at a demand backdrop that exceeds even the most optimistic pre-war projections. <strong>For Argentina's Vaca Muerta and Brazil's deepwater gas ambitions, the war has pulled forward the development case by years.</strong></p>
 
-  <div class="ins-pull reveal">
+  <div class="ins-pull">
     <p>"The Iran war did not just spike the oil price — it exposed which assets are structurally insulated from geopolitical risk, and which are not. Latin America's answer to that question is compelling."</p>
   </div>
 
-  <p>The medium-term uncertainty is substantial. Even with the ceasefire nominally holding, tanker traffic through the Strait remains severely disrupted. Analysts at CEPR estimate that even under an optimistic scenario — Hormuz closed for one quarter, gradual resumption thereafter — US headline inflation rises 0.6 percentage points in 2026. For operators planning capital programs and operators' economics, the price deck assumptions made in late 2025 are now materially different from the world being navigated today.</p>
+  <p>The medium-term uncertainty is substantial. Even with the ceasefire nominally holding, tanker traffic through the Strait remains severely disrupted. Analysts at CEPR estimate that even under an optimistic scenario — Hormuz closed for one quarter, gradual resumption thereafter — US headline inflation rises 0.6 percentage points in 2026. For operators planning capital programmes, the price deck assumptions made in late 2025 are materially different from the world being navigated today.</p>
 
   <div class="ins-divider"></div>
 
@@ -601,11 +500,11 @@ body {
 
   <p>The region is not a single investment thesis — it is a patchwork of very different stories at different stages of maturity. But taken together, <strong>Latin America is the only region currently capable of delivering meaningful incremental supply over the next decade</strong> at breakeven prices that work in a $60–$80 world, with no structural dependence on Middle East transit routes. That combination is rare, and the market is recognising it with urgency it lacked six months ago.</p>
 
-  <p><strong>Brazil</strong> is the anchor. Petrobras hit 5.3 million boe/day in February 2026 — a 16% year-on-year increase — and the company's pre-salt breakeven prices have fallen to levels that compete with the best conventional basins anywhere on earth. A five-year, $109 billion investment plan runs through 2030, with $78 billion directed to upstream. The April 2026 FID for the Sergipe Águas Profundas deepwater gas project — a $6 billion development — signals that the frontier is still yielding material new resources even as the basin matures. Critically, all Brazilian production reaches market without touching the Strait of Hormuz.</p>
+  <p><strong>Brazil</strong> is the anchor. Petrobras hit 5.3 million boe/day in February 2026 — a 16% year-on-year increase — and the company's pre-salt breakeven prices have fallen to levels that compete with the best conventional basins anywhere on earth. A five-year, $109 billion investment plan runs through 2030, with $78 billion directed to upstream. The April 2026 FID for the Sergipe Águas Profundas deepwater gas project — a $6 billion development — signals that the frontier is still yielding material new resources even as the basin matures.</p>
 
   <p><strong>Argentina</strong> has arguably been 2026's most significant upstream story, and the Iran war has only reinforced its strategic value. The Vaca Muerta shale formation now accounts for nearly 70% of the country's oil output and 65% of gas production, and it is growing fast. Milei's Large Investment Incentives Regime (RIGI) has unlocked capital that was previously sitting on the sidelines: YPF is spending $5.6 billion this year, $4.5 billion of it upstream. The first RIGI-approved LNG export project — a 6 MTPA floating terminal — is now being evaluated in the context of a European gas market willing to pay significant premiums for non-Middle East supply. The Vaca Muerta Sur pipeline Phase 1, due for completion in Q3 2026, will enable evacuation of 190,000 barrels per day.</p>
 
-  <div class="ins-stat-row reveal">
+  <div class="ins-stat-row">
     <div class="ins-stat">
       <div class="ins-stat-val">$91B</div>
       <div class="ins-stat-lbl">Petrobras upstream spend 2026–2030</div>
@@ -633,15 +532,15 @@ body {
 
   <p><strong>Western Hemisphere production is now priced differently.</strong> The war has crystallised something investors had understood abstractly but not yet priced fully: assets outside the Middle East and outside the Hormuz transit risk zone carry a structural premium that is now visible in deal pricing, in financing terms, and in operator strategy. Latin American upstream assets with demonstrable production and credible reserves are trading in a materially different market than they were in January 2026.</p>
 
-  <p><strong>Existing production is worth more than it was.</strong> In a volatile, capital-disciplined environment, the premium on well-performing producing assets increases further. Operators with fields generating reliable cash at $60–80 oil are not looking to sell — they are looking to optimise. The demand for rigorous, physics-based production surveillance, artificial lift optimisation, and decline mitigation work is higher than it has been in several years. The question is no longer "how do we grow?" — it is "how do we hold this and extract maximum value from it?"</p>
+  <p><strong>Existing production is worth more than it was.</strong> In a volatile, capital-disciplined environment, the premium on well-performing producing assets increases further. Operators with fields generating reliable cash at $60–80 oil are not looking to sell — they are looking to optimise. The demand for rigorous, physics-based production surveillance, artificial lift optimisation, and decline mitigation work is higher than it has been in several years.</p>
 
   <p><strong>The evaluation bottleneck is real.</strong> Capital is available for Latin American upstream assets, and the Iran war has accelerated flows of that capital into the region. But the pipeline of credible, independently evaluated opportunities is not keeping pace with investor appetite. Deals are being delayed or mispriced not because of a lack of interest but because of a lack of rigorous technical work. Petrophysical evaluation, volumetric uncertainty quantification, decline analysis, and economics that genuinely integrate subsurface risk — these are the disciplines that unlock transactions.</p>
 
-  <div class="ins-pull reveal">
+  <div class="ins-pull">
     <p>"Capital is available. The bottleneck is not money — it is the technical credibility that turns an asset into a fundable opportunity."</p>
   </div>
 
-  <p><strong>The gas story deserves more attention than it is getting.</strong> European buyers, burned twice now by dependence on unreliable supply corridors, are actively seeking long-term LNG offtake agreements from Atlantic-basin producers. Upstream gas development in Latin America — whether Vaca Muerta unconventional, Brazilian deepwater, or Colombian offshore — is being driven by a combination of domestic power demand and LNG export ambitions that is now structurally underwritten by a European market with an urgent need to diversify. Operators and investors who are thinking primarily about oil are missing half the picture.</p>
+  <p><strong>The gas story deserves more attention than it is getting.</strong> European buyers, burned twice now by dependence on unreliable supply corridors, are actively seeking long-term LNG offtake agreements from Atlantic-basin producers. Upstream gas development in Latin America — whether Vaca Muerta unconventional, Brazilian deepwater, or Colombian offshore — is being driven by a combination of domestic power demand and LNG export ambitions that is now structurally underwritten by a European market with an urgent need to diversify.</p>
 
   <p><strong>Digital tools are changing the standard of evidence.</strong> In competitive asset processes, the quality of reservoir modelling and production forecasting presented to buyers and investors is shifting. Operators who can demonstrate real-time production surveillance, history-matched models, and transparently constructed economics are commanding better terms than those who cannot. The bar for "good enough" technical work is rising.</p>
 
@@ -667,86 +566,86 @@ body {
 
   <div class="ins-footer-nav">
     <a href="insights.html">← All Insights</a>
-    <a href="contact.html">Discuss this with our team →</a>
+    <a href="insights-us-energy-dominance-venezuela.html">Read: Energy Dominance &amp; Venezuela →</a>
   </div>
 
 </div>
 
-<!-- ── FOOTER ── -->
 <footer class="footer">
-  <div class="footer-rule"></div>
-  <div class="wrap footer-inner">
-    <div>
-      <div class="footer-mark"><b>Alpha</b> Technical Centre</div>
-      <div class="footer-tag">Integrated Field Development Planning</div>
+  <div class="footer-grad"></div>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-wordmark">
+          <span class="nav-wordmark-main">Alpha</span>
+          <span class="nav-wordmark-sub">Technical Centre</span>
+        </span>
+        <p class="footer-tagline">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
+      </div>
+      <div class="footer-col"><h4>Capabilities</h4>
+        <ul>
+          <li><a href="oil-gas-modelling.html">Oil &amp; Gas Modelling</a></li>
+          <li><a href="financial-modelling.html">Financial Modelling</a></li>
+          <li><a href="tools.html">Our Tools</a></li>
+          <li><a href="plan-your-job.html">Plan Your Job</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About</a></li>
+          <li><a href="team.html">Team</a></li>
+          <li><a href="case-studies.html">Case Studies</a></li>
+          <li><a href="insights.html">Insights</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Connect</h4>
+        <ul>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="mailto:info@alphalatinamerica.com">info@alphalatinamerica.com</a></li>
+          <li><a href="https://alphaenergylatinamerica.com">Alpha Energy ↗</a></li>
+        </ul>
+      </div>
     </div>
-    <div class="footer-right">
-      <span class="conf">Strictly Confidential</span><br>
-      © 2026 Alpha Latin America LLC · Houston, Texas
+    <div class="footer-bottom">
+      <p>© 2026 Alpha Latin America LLC · Houston, Texas · A subsidiary of Alpha LLC</p>
+      <span class="footer-conf">Strictly Confidential</span>
     </div>
   </div>
 </footer>
 
+<script src="main.js"></script>
 <script>
-/* ── Reading Progress ── */
-const bar = document.getElementById('readingBar');
-window.addEventListener('scroll', () => {
-  const doc = document.documentElement;
-  const scrolled = doc.scrollTop || document.body.scrollTop;
-  const max = doc.scrollHeight - doc.clientHeight;
-  bar.style.width = max > 0 ? (scrolled / max * 100) + '%' : '0%';
-}, { passive: true });
-
-/* ── Reveal on scroll ── */
-(function () {
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const items = document.querySelectorAll('.reveal');
-  if (reduce || !('IntersectionObserver' in window)) {
-    items.forEach(el => el.classList.add('in'));
-    return;
-  }
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-  }, { threshold: 0.10, rootMargin: '0px 0px -6% 0px' });
-  items.forEach(el => io.observe(el));
+/* ── Reading progress bar ── */
+(function(){
+  var bar=document.getElementById('readingBar');
+  if(!bar)return;
+  window.addEventListener('scroll',function(){
+    var doc=document.documentElement;
+    var scrolled=doc.scrollTop||document.body.scrollTop;
+    var max=doc.scrollHeight-doc.clientHeight;
+    bar.style.width=(max>0?(scrolled/max*100):0)+'%';
+  },{passive:true});
 })();
 
 /* ── Price chart tooltip ── */
-const tooltip = document.getElementById('priceTooltip');
-const chartWrap = document.querySelector('.price-chart-wrap');
-document.querySelectorAll('.price-hov').forEach(rect => {
-  rect.style.cursor = 'crosshair';
-  rect.addEventListener('mouseenter', e => {
-    const r = e.target.getBoundingClientRect();
-    const wr = chartWrap.getBoundingClientRect();
-    tooltip.style.display = 'block';
-    tooltip.innerHTML = `<strong>${e.target.dataset.label}</strong><br>Brent: ${e.target.dataset.price}<br><span style="opacity:.7;font-size:10.5px;">${e.target.dataset.note}</span>`;
-    // Position tooltip above the hover zone
-    const left = r.left - wr.left + r.width / 2;
-    tooltip.style.left = Math.min(Math.max(left - 80, 0), wr.width - 180) + 'px';
-    tooltip.style.top = '-68px';
+(function(){
+  var tooltip=document.getElementById('priceTooltip');
+  var wrap=document.querySelector('.price-chart-wrap');
+  if(!tooltip||!wrap)return;
+  document.querySelectorAll('.price-hov').forEach(function(rect){
+    rect.style.cursor='crosshair';
+    rect.addEventListener('mouseenter',function(e){
+      var r=e.target.getBoundingClientRect();
+      var wr=wrap.getBoundingClientRect();
+      tooltip.style.display='block';
+      tooltip.innerHTML='<strong>'+e.target.dataset.label+'</strong><br>Brent: '+e.target.dataset.price+'<br><span style="opacity:.6;font-size:10.5px;">'+e.target.dataset.note+'</span>';
+      var left=r.left-wr.left+r.width/2-90;
+      tooltip.style.left=Math.min(Math.max(left,0),wr.offsetWidth-200)+'px';
+      tooltip.style.top='-72px';
+    });
+    rect.addEventListener('mouseleave',function(){tooltip.style.display='none';});
   });
-  rect.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-});
-
-/* ── Language stub ── */
-function setLang(lang) {
-  document.querySelectorAll('.nav-lang button').forEach(b => b.classList.toggle('active', b.textContent === lang.toUpperCase()));
-}
-
-/* ── Stat counter animation ── */
-function animateCounters() {
-  document.querySelectorAll('.ins-stat-val').forEach(el => {
-    el.style.transition = 'opacity 0.5s';
-    el.style.opacity = '0';
-    setTimeout(() => { el.style.opacity = '1'; }, 100);
-  });
-}
-const statsIO = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) { animateCounters(); statsIO.disconnect(); } });
-}, { threshold: 0.3 });
-const firstStats = document.querySelector('.ins-stat-row');
-if (firstStats) statsIO.observe(firstStats);
+})();
 </script>
 </body>
 </html>
