@@ -165,15 +165,17 @@ tr.r-tot td{font-weight:700;color:var(--navy);border-bottom:none;border-top:2px 
 /* ════ APEX IMPORT PANEL ════ */
 .apex-banner{background:var(--navy);border-radius:6px;padding:16px 20px;margin-bottom:16px;border:1px solid rgba(34,211,164,0.3);border-left:4px solid #22d3a4;}
 .apex-banner-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#22d3a4;margin-bottom:6px;}
-.apex-banner-body{font-size:13px;color:#A9B6C7;line-height:1.55;}
+.apex-banner-body{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.55;}
+.apex-banner-body strong{color:#fff;}
 .apex-scenario-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:14px 0;}
-.apex-scenario-col{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:12px 14px;}
+.apex-scenario-col{background:var(--tint);border:1px solid var(--line);border-radius:5px;padding:12px 14px;}
 .apex-scenario-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px;}
-.apex-scenario-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.apex-scenario-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line);color:var(--steel);}
 .apex-scenario-row:last-child{border-bottom:none;}
-.apex-scenario-val{font-weight:600;color:#fff;font-variant-numeric:tabular-nums;}
+.apex-scenario-val{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
 .apex-intv-list{margin-top:10px;font-size:11.5px;}
-.apex-intv-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);color:#A9B6C7;}
+.apex-intv-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);color:var(--steel);font-size:12.5px;gap:8px;}
+.apex-intv-row span:first-child{flex:1;}
 @media(max-width:700px){.apex-scenario-grid{grid-template-columns:1fr;}}
 /* ════ FOOTER ════ */
 footer{font-size:11px;color:var(--steel);padding:8px 26px 0;line-height:1.5;}
@@ -2172,7 +2174,7 @@ function resetAll(){
             '<span>'+i.well+' — '+i.type+'</span>'+
             '<span class="apex-scenario-val">+'+i.incrBOPD+'</span>'+
             '<span>'+fmtK(i.costK)+'</span>'+
-            '<span style="color:#22c55e;">+'+fmtK(i.npvK)+'</span></div>';
+            '<span style="color:#1A7A4A;font-weight:600;">+'+fmtK(i.npvK)+'</span></div>';
         }).join('');
     }
 
@@ -2181,6 +2183,10 @@ function resetAll(){
       if(typeof FIELDS==='undefined'||typeof recalc==='undefined'){
         setTimeout(tryInject,100); return;
       }
+      /* Temporarily unlock so renderFieldCards/recalc work for APEX data */
+      var wasUnlocked = (typeof UNLOCKED !== 'undefined') ? UNLOCKED : false;
+      if(typeof UNLOCKED !== 'undefined') UNLOCKED = true;
+
       FIELDS.length=0;
       function mf(f,i){
         return {id:'APEX'+i,type:'oil',color:i===0?'#6B7A8D':'#22d3a4',active:true,
@@ -2191,7 +2197,12 @@ function resetAll(){
       FIELDS.push(mf(base,0)); FIELDS.push(mf(opt,1));
       if(typeof renderFieldCards==='function') renderFieldCards();
       if(typeof recalc==='function') recalc();
-      /* Re-assert tab after recalc */
+
+      /* Restore unlock state and re-apply gate UI */
+      if(typeof UNLOCKED !== 'undefined') UNLOCKED = wasUnlocked;
+      if(typeof applyGate === 'function') applyGate();
+
+      /* Re-assert APEX tab after recalc */
       setTimeout(activateTab, 300);
     }
     tryInject();
