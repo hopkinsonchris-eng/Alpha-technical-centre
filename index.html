@@ -368,9 +368,40 @@
     .hero-3d { grid-row: 1; }
   }
   @media (max-width:768px) {
-    .hero-layout { grid-template-columns: 1fr; gap:32px; }
+    .hero-layout { grid-template-columns: 1fr; gap:24px; }
     .hero-3d .canvas-wrap { height:360px; }
     .scroll-indicator { display:none; }
+  }
+
+  /* ── MOBILE OVERFLOW FIX ── */
+  /* Hard-stop any horizontal scroll at the root */
+  html, body { overflow-x: hidden; }
+
+  @media (max-width:768px) {
+    /* Clip anything inside the hero that bleeds right */
+    .hero { overflow: hidden; }
+
+    /* Canvas and its wrapper must never exceed viewport width */
+    .hero-3d,
+    .hero-3d .canvas-wrap,
+    .hero-3d #rcanvas {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+    }
+    .hero-3d .canvas-wrap { height: 320px !important; }
+
+    /* Loop HUD: already a grid column, just ensure it fits */
+    .loop-hud { width: 100% !important; box-sizing: border-box; }
+
+    /* Prevent wrap from triggering scroll */
+    .wrap { overflow-x: hidden; }
+  }
+
+  @media (max-width:480px) {
+    .hero-3d .canvas-wrap { height: 260px !important; }
+    .hero-title { font-size: clamp(1.9rem, 8vw, 2.6rem) !important; }
+    .hero-lede { font-size: 0.95rem; }
   }
 
   /* lifecycle */
