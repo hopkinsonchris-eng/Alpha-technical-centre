@@ -745,6 +745,20 @@ body{padding-top:0;}
     <!-- ════ MAIN CONTENT ════ -->
     <div class="ae-panelwrap">
 
+      <!-- ══ APEX IMPORT (shown only when ?apex= URL param present) ══ -->
+      <div class="ae-tabpanel" id="tab-apex-compare" style="padding:4px 0;">
+        <div class="apex-banner">
+          <div class="apex-banner-title">⚡ APEX Optimisation Import</div>
+          <div class="apex-banner-body" id="apexBannerBody">Loading APEX data…</div>
+        </div>
+        <div class="apex-scenario-grid" id="apexScenarioGrid"></div>
+        <div class="ae-card">
+          <div class="ae-ct">Intervention Detail</div>
+          <div class="ae-cn">Selected interventions from APEX Well Screener</div>
+          <div class="apex-intv-list" id="apexIntvList"></div>
+        </div>
+      </div>
+
       <!-- ══ OVERVIEW ══ -->
       <div class="ae-tabpanel" id="tab-overview">
         <div class="ae-kpis" id="qlm-kpis"></div>
@@ -815,19 +829,6 @@ body{padding-top:0;}
       </div>
 
       <!-- ══ FIELDS ══ -->
-      <!-- APEX IMPORT BANNER (shown only when ?apex= payload present) -->
-<div class="ae-tabpanel" id="tab-apex-compare" style="display:none;padding:4px 0;">
-  <div class="apex-banner">
-    <div class="apex-banner-title">⚡ APEX Optimisation Import</div>
-    <div class="apex-banner-body" id="apexBannerBody">Loading APEX data…</div>
-  </div>
-  <div class="apex-scenario-grid" id="apexScenarioGrid"></div>
-  <div class="ae-card">
-    <div class="ae-ct">Intervention Detail</div>
-    <div class="ae-cn">Selected interventions from APEX Well Screener</div>
-    <div class="apex-intv-list" id="apexIntvList"></div>
-  </div>
-</div>
 <div class="ae-tabpanel" id="tab-fields">
         <div class="ae-callout c-green" style="margin-bottom:14px;">
           Add up to 8 fields (oil or gas). Each field has independent plateau, ramp speed, CAPEX, and OPEX. Use the toggle to include/exclude fields from the portfolio. Field parameters feed directly into the financial model.
@@ -2060,13 +2061,21 @@ function resetAll(){
     if(!p||p.version!==1) return;
     var base = p.base, opt = p.opt, meta = p.meta;
 
-    // Show the APEX tab
+    // Show the APEX tab label
     var tabLabel = document.getElementById('apexTabLabel');
     if(tabLabel) tabLabel.style.display='';
 
-    // Activate the APEX tab
+    // Activate the APEX tab — use direct DOM style switching because
+    // programmatically setting radio.checked doesn't reliably trigger CSS :checked
+    // Hide all tabpanels, show apex one; deactivate all tab labels, activate apex one
+    document.querySelectorAll('.ae-tabpanel').forEach(function(p){ p.style.display='none'; });
+    var apexPanel = document.getElementById('tab-apex-compare');
+    if(apexPanel) apexPanel.style.display='block';
+    document.querySelectorAll('.ae-tab').forEach(function(l){ l.style.color=''; l.style.borderBottomColor=''; });
+    if(tabLabel){ tabLabel.style.color='#22d3a4'; tabLabel.style.borderBottomColor='#22d3a4'; }
+    // Also check the radio so CSS state is consistent
     var radio = document.getElementById('rt-apex');
-    if(radio){ radio.checked=true; }
+    if(radio) radio.checked=true;
 
     // Banner
     var banner = document.getElementById('apexBannerBody');
