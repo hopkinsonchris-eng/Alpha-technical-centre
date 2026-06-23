@@ -2048,13 +2048,36 @@ function resetAll(){
   function fmtN(v){ return v==null?'—':v.toLocaleString(); }
 
   function readApexPayload(){
+    // METHOD 1: localStorage relay (primary — set by APEX on export)
     try{
-      var qs = window.location.search;
-      var match = qs.match(/[?&]apex=([^&]+)/);
-      if(!match) return null;
-      var json = decodeURIComponent(escape(atob(match[1])));
-      return JSON.parse(json);
-    } catch(e){ console.warn('APEX payload parse error',e); return null; }
+      var relay = localStorage.getItem('apex_fm_relay');
+      if(relay){
+        var r = JSON.parse(relay);
+        // Only use if recent (within 5 minutes) to avoid stale data
+        if(r && r.payload && r.ts && (Date.now()-r.ts) < 300000){
+          var parsed = JSON.parse(r.payload);
+          if(parsed && parsed.version===1){
+            localStorage.removeItem('apex_fm_relay'); // consume it
+            return parsed;
+          }
+        }
+      }
+    } catch(e){ console.warn('APEX relay read error:', e); }
+
+    // METHOD 2: URL query parameter (fallback)
+    try{
+      var search = window.location.search;
+      var match = search.match(/[?&]apex=([^&\s#]+)/);
+      if(match){
+        var b64 = match[1].replace(/-/g,'+').replace(/_/g,'/');
+        while(b64.length % 4){ b64 += '='; }
+        var json = decodeURIComponent(escape(atob(b64)));
+        var parsed = JSON.parse(json);
+        if(parsed && parsed.version===1) return parsed;
+      }
+    } catch(e){ console.warn('APEX URL param parse error:', e); }
+
+    return null;
   }
 
   function applyApexPayload(p){
@@ -2162,14 +2185,53 @@ function resetAll(){
       FIELDS.push(apexToField(opt,  1));
       if(typeof renderFieldCards==='function') renderFieldCards();
       if(typeof recalc==='function') recalc();
+
+      // Re-assert the APEX tab after recalc (which may reset tab visibility)
+      setTimeout(function(){
+        document.querySelectorAll('.ae-tabpanel').forEach(function(el){ el.style.display='none'; });
+        var apexPanel = document.getElementById('tab-apex-compare');
+        if(apexPanel) apexPanel.style.display='block';
+        var tabLabel = document.getElementById('apexTabLabel');
+        if(tabLabel){
+          tabLabel.style.display='';
+          tabLabel.style.color='#22d3a4';
+          tabLabel.style.borderBottomColor='#22d3a4';
+        }
+        // Deactivate other tab labels
+        document.querySelectorAll('.ae-tab').forEach(function(l){
+          if(l !== tabLabel){ l.style.color=''; l.style.borderBottomColor=''; }
+        });
+      }, 150);
     }, 400);
   }
 
-  // Run on page load
-  document.addEventListener('DOMContentLoaded', function(){
+  // Run after page and model have fully initialised
+  // Use multiple timing strategies to ensure we run after the model's own init
+  function tryApply(){
     var payload = readApexPayload();
-    if(payload) applyApexPayload(payload);
-  });
+    if(payload){
+      applyApexPayload(payload);
+      return true;
+    }
+    return false;
+  }
+
+  // Run at multiple points to catch all timing scenarios
+  // 1. Immediately (in case DOM is already ready)
+  if(!tryApply()){
+    // 2. After DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function(){
+      if(!tryApply()){
+        setTimeout(tryApply, 200);
+        setTimeout(tryApply, 600);
+      }
+    });
+    // 3. After full load (belt-and-braces)
+    window.addEventListener('load', function(){
+      setTimeout(tryApply, 100);
+      setTimeout(tryApply, 500);
+    });
+  }
 })();
 </script>
 </body>
