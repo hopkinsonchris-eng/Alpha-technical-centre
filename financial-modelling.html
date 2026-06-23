@@ -2044,141 +2044,146 @@ function resetAll(){
 <script>
 /* ════ APEX IMPORT READER ════ */
 (function(){
-  function fmtK(v){ return v>=1000?'$'+(v/1000).toFixed(1)+'M':'$'+Math.round(v)+'k'; }
-  function fmtN(v){ return v==null?'—':v.toLocaleString(); }
 
+  /* ── Read payload from URL ?apex= param ── */
   function readApexPayload(){
-    // METHOD 1: localStorage relay (primary — set by APEX on export)
     try{
-      var relay = localStorage.getItem('apex_fm_relay');
-      if(relay){
-        var r = JSON.parse(relay);
-        // Only use if recent (within 5 minutes) to avoid stale data
-        if(r && r.payload && r.ts && (Date.now()-r.ts) < 300000){
-          var parsed = JSON.parse(r.payload);
-          if(parsed && parsed.version===1){
-            localStorage.removeItem('apex_fm_relay'); // consume it
-            return parsed;
-          }
-        }
-      }
-    } catch(e){ console.warn('APEX relay read error:', e); }
-
-    // METHOD 2: URL query parameter (fallback)
-    try{
-      var search = window.location.search;
-      var match = search.match(/[?&]apex=([^&\s#]+)/);
-      if(match){
-        var b64 = match[1].replace(/-/g,'+').replace(/_/g,'/');
-        while(b64.length % 4){ b64 += '='; }
-        var json = decodeURIComponent(escape(atob(b64)));
-        var parsed = JSON.parse(json);
-        if(parsed && parsed.version===1) return parsed;
-      }
-    } catch(e){ console.warn('APEX URL param parse error:', e); }
-
-    return null;
+      var href = window.location.href;
+      var idx  = href.indexOf('apex=');
+      if(idx === -1) return null;
+      var raw = href.substring(idx + 5);
+      // Strip anything after the next & or #
+      raw = raw.split('&')[0].split('#')[0];
+      // URL-decode first (in case browser encoded it)
+      raw = decodeURIComponent(raw);
+      // Fix URL-safe base64
+      var b64 = raw.replace(/-/g,'+').replace(/_/g,'/');
+      while(b64.length % 4){ b64 += '='; }
+      var json = decodeURIComponent(escape(atob(b64)));
+      var parsed = JSON.parse(json);
+      return (parsed && parsed.version === 1) ? parsed : null;
+    } catch(e){
+      console.warn('[APEX] parse error:', e);
+      return null;
+    }
   }
 
+  /* ── Format helpers ── */
+  function fmtK(v){ return v >= 1000 ? '$'+(v/1000).toFixed(1)+'M' : '$'+Math.round(v)+'k'; }
+  function fmtN(v){ return v == null ? '—' : v.toLocaleString(); }
+
+  /* ── Show debug banner so we can see what's happening ── */
+  function showDebug(msg, colour){
+    var el = document.getElementById('apexDebug');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'apexDebug';
+      el.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:9999;max-width:400px;font-size:11px;font-family:monospace;padding:10px 14px;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.3);line-height:1.5;';
+      document.body.appendChild(el);
+    }
+    el.style.background = colour === 'green' ? '#064e3b' : colour === 'red' ? '#450a0a' : '#1e293b';
+    el.style.color = colour === 'green' ? '#6ee7b7' : colour === 'red' ? '#fca5a5' : '#94a3b8';
+    el.style.border = '1px solid ' + (colour === 'green' ? '#065f46' : colour === 'red' ? '#7f1d1d' : '#334155');
+    el.innerHTML = msg;
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 8000);
+  }
+
+  /* ── Apply the payload ── */
   function applyApexPayload(p){
-    if(!p||p.version!==1) return;
     var base = p.base, opt = p.opt, meta = p.meta;
 
-    // Show the APEX tab label
+    // Show APEX tab label
     var tabLabel = document.getElementById('apexTabLabel');
-    if(tabLabel) tabLabel.style.display='';
+    if(tabLabel) tabLabel.style.display = '';
 
-    // Activate the APEX tab — use direct DOM style switching because
-    // programmatically setting radio.checked doesn't reliably trigger CSS :checked
-    // Hide all tabpanels, show apex one; deactivate all tab labels, activate apex one
-    document.querySelectorAll('.ae-tabpanel').forEach(function(p){ p.style.display='none'; });
+    // Switch to APEX tab by directly controlling display
+    document.querySelectorAll('.ae-tabpanel').forEach(function(el){
+      el.style.display = 'none';
+    });
     var apexPanel = document.getElementById('tab-apex-compare');
-    if(apexPanel) apexPanel.style.display='block';
+    if(apexPanel) apexPanel.style.display = 'block';
+
+    // Style the active tab label
     document.querySelectorAll('.ae-tab').forEach(function(l){ l.style.color=''; l.style.borderBottomColor=''; });
     if(tabLabel){ tabLabel.style.color='#22d3a4'; tabLabel.style.borderBottomColor='#22d3a4'; }
-    // Also check the radio so CSS state is consistent
     var radio = document.getElementById('rt-apex');
-    if(radio) radio.checked=true;
+    if(radio) radio.checked = true;
 
-    // Banner
+    // Populate banner
     var banner = document.getElementById('apexBannerBody');
     if(banner){
-      banner.innerHTML = 'Imported from <strong style="color:#22d3a4;">APEX</strong> · <strong>'+meta.fieldName+'</strong> · '+
-        meta.nInterventions+' interventions selected · Total cost: <strong>'+fmtK(meta.totalCostK)+'</strong> · '+
-        'Exported: '+new Date(meta.exportedAt).toLocaleDateString();
+      banner.innerHTML = 'Imported from <strong style="color:#22d3a4;">APEX</strong> · <strong>' +
+        (meta.fieldName||'Field') + '</strong> · ' + (meta.nInterventions||0) +
+        ' interventions · Cost: <strong>' + fmtK(meta.totalCostK||0) + '</strong>';
     }
 
     // Scenario grid
     var grid = document.getElementById('apexScenarioGrid');
     if(grid){
-      var netPrice = meta.oilPrice - (base.qdiscount||0) - (base.opexPerUnit||0);
-      var baseNPV=0, optNPVv=0;
-      for(var y=0;y<meta.npvYrs;y++){
-        var disc=Math.pow(1+(meta.discRate||0.15),y+0.5);
-        baseNPV += base.plateau*365*netPrice/1000/disc;
-        optNPVv += opt.plateau*365*netPrice/1000/disc;
+      var disc = meta.discRate || 0.15;
+      var ny   = meta.npvYrs  || 5;
+      var netP = (meta.oilPrice||70) - (base.qdiscount||0) - (base.opexPerUnit||12);
+      var baseNPV = 0, optNPVv = -((opt.capexTotal||0)*1000);
+      for(var y=0;y<ny;y++){
+        var d = Math.pow(1+disc, y+0.5);
+        baseNPV  += (base.plateau||0)*365*netP/1000/d;
+        optNPVv  += (opt.plateau||0)*365*netP/1000/d;
       }
-      optNPVv -= (opt.capexTotal||0)*1000;
-
       grid.innerHTML = [
-        {label:'BASE CASE', color:'#6B7A8D', labelCol:'#A9B6C7', rows:[
+        {label:'BASE CASE', colour:'#A9B6C7', rows:[
           ['Peak rate', fmtN(base.plateau)+' bopd'],
-          ['Programme NPV', fmtK(baseNPV)],
+          ['NPV ('+ny+'yr)', fmtK(baseNPV)],
           ['Intervention cost','—'],
         ]},
-        {label:'OPTIMISED', color:'#22d3a4', labelCol:'#22d3a4', rows:[
+        {label:'OPTIMISED', colour:'#22d3a4', rows:[
           ['Peak rate', fmtN(opt.plateau)+' bopd'],
-          ['Programme NPV', fmtK(optNPVv)],
+          ['NPV ('+ny+'yr)', fmtK(optNPVv)],
           ['Intervention cost', fmtK((opt.capexTotal||0)*1000)],
         ]},
-        {label:'INCREMENT', color:'#C9A84C', labelCol:'#C9A84C', rows:[
-          ['Rate uplift', '+'+fmtN(opt.plateau-base.plateau)+' bopd'],
+        {label:'INCREMENT', colour:'#C9A84C', rows:[
+          ['Rate uplift', '+'+fmtN((opt.plateau||0)-(base.plateau||0))+' bopd'],
           ['NPV uplift', '+'+fmtK(optNPVv-baseNPV)],
-          ['Uplift multiple', (opt.capexTotal>0?((optNPVv-baseNPV)/((opt.capexTotal||1)*1000)).toFixed(1):'—')+'×'],
+          ['Multiple', ((opt.capexTotal||0)*1000>0 ? ((optNPVv-baseNPV)/((opt.capexTotal||1)*1000)).toFixed(1) : '—')+'×'],
         ]},
-      ].map(col=>`
-        <div class="apex-scenario-col">
-          <div class="apex-scenario-label" style="color:${col.labelCol};">${col.label}</div>
-          ${col.rows.map(r=>'<div class="apex-scenario-row"><span style="color:#A9B6C7;">'+r[0]+'</span><span class="apex-scenario-val">'+r[1]+'</span></div>').join('')}
-        </div>
-      `).join('');
+      ].map(function(col){
+        return '<div class="apex-scenario-col">' +
+          '<div class="apex-scenario-label" style="color:'+col.colour+';">'+col.label+'</div>' +
+          col.rows.map(function(r){
+            return '<div class="apex-scenario-row"><span style="color:#A9B6C7;">'+r[0]+'</span>'+
+              '<span class="apex-scenario-val">'+r[1]+'</span></div>';
+          }).join('') + '</div>';
+      }).join('');
     }
 
     // Intervention list
     var intvList = document.getElementById('apexIntvList');
-    if(intvList && meta.interventions){
-      intvList.innerHTML = [
-        '<div class="apex-intv-row" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6B7A8D;border-bottom:2px solid rgba(255,255,255,0.1);"><span>Well / Intervention</span><span>Incr BOPD</span><span>Cost</span><span>NPV</span></div>'
-      ].concat(meta.interventions.map(i=>`
-        <div class="apex-intv-row">
-          <span>${i.well} — ${i.type}</span>
-          <span class="apex-scenario-val">+${i.incrBOPD}</span>
-          <span>${fmtK(i.costK)}</span>
-          <span style="color:#22c55e;">+${fmtK(i.npvK)}</span>
-        </div>
-      `)).join('');
+    if(intvList && meta.interventions && meta.interventions.length){
+      intvList.innerHTML =
+        '<div class="apex-intv-row" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6B7A8D;border-bottom:2px solid rgba(201,168,76,0.2);">'+
+        '<span>Well / Intervention</span><span>+BOPD</span><span>Cost</span><span>NPV</span></div>' +
+        meta.interventions.map(function(i){
+          return '<div class="apex-intv-row"><span>'+i.well+' — '+i.type+'</span>'+
+            '<span class="apex-scenario-val">+'+i.incrBOPD+'</span>'+
+            '<span>'+fmtK(i.costK)+'</span>'+
+            '<span style="color:#22c55e;">+'+fmtK(i.npvK)+'</span></div>';
+        }).join('');
     }
 
-    // Inject fields into the financial model FIELDS array
-    // Wait for model to initialise then push our fields
-    setTimeout(function(){
-      if(typeof FIELDS === 'undefined') return;
-      // Replace FIELDS with our two APEX scenarios
+    // Inject fields into FIELDS array after model initialises
+    function injectFields(){
+      if(typeof FIELDS === 'undefined' || typeof recalc === 'undefined'){
+        setTimeout(injectFields, 100);
+        return;
+      }
       FIELDS.length = 0;
-      // Map to financial model field structure
       function apexToField(f, idx){
         return {
-          id: 'APEX'+idx, type:'oil',
+          id:'APEX'+idx, type:'oil',
           color: idx===0 ? '#6B7A8D' : '#22d3a4',
-          active: true,
-          name: f.name,
-          plateau: f.plateau,
-          rampYrs: f.rampYrs||0,
-          platYrs: f.platYrs||3,
-          capexTotal: f.capexTotal||0,
-          opexPerUnit: f.opexPerUnit||12,
-          qdiscount: f.qdiscount||3,
-          capexProfile: f.capexProfile||'front',
+          active:true, name:f.name,
+          plateau:f.plateau||0, rampYrs:f.rampYrs||0, platYrs:f.platYrs||3,
+          capexTotal:f.capexTotal||0, opexPerUnit:f.opexPerUnit||12,
+          qdiscount:f.qdiscount||3, capexProfile:f.capexProfile||'front',
         };
       }
       FIELDS.push(apexToField(base, 0));
@@ -2186,52 +2191,45 @@ function resetAll(){
       if(typeof renderFieldCards==='function') renderFieldCards();
       if(typeof recalc==='function') recalc();
 
-      // Re-assert the APEX tab after recalc (which may reset tab visibility)
+      // Re-assert APEX tab after recalc
       setTimeout(function(){
         document.querySelectorAll('.ae-tabpanel').forEach(function(el){ el.style.display='none'; });
-        var apexPanel = document.getElementById('tab-apex-compare');
-        if(apexPanel) apexPanel.style.display='block';
-        var tabLabel = document.getElementById('apexTabLabel');
-        if(tabLabel){
-          tabLabel.style.display='';
-          tabLabel.style.color='#22d3a4';
-          tabLabel.style.borderBottomColor='#22d3a4';
-        }
-        // Deactivate other tab labels
-        document.querySelectorAll('.ae-tab').forEach(function(l){
-          if(l !== tabLabel){ l.style.color=''; l.style.borderBottomColor=''; }
-        });
-      }, 150);
-    }, 400);
+        var ap = document.getElementById('tab-apex-compare');
+        if(ap) ap.style.display='block';
+      }, 200);
+    }
+    injectFields();
   }
 
-  // Run after page and model have fully initialised
-  // Use multiple timing strategies to ensure we run after the model's own init
-  function tryApply(){
+  /* ── Entry point ── */
+  function init(){
+    var href = window.location.href;
+    var hasApex = href.indexOf('apex=') !== -1;
+    var hasRelay = href.indexOf('apex_relay=1') !== -1;
+
+    if(!hasApex && !hasRelay){
+      // No APEX param — normal page load, do nothing
+      return;
+    }
+
     var payload = readApexPayload();
     if(payload){
+      showDebug('✓ APEX payload loaded — ' + (payload.meta&&payload.meta.nInterventions||'?') + ' interventions', 'green');
       applyApexPayload(payload);
-      return true;
+    } else {
+      showDebug('✗ APEX param found but could not parse payload. URL length: ' + href.length + '. Check console for details.', 'red');
+      console.warn('[APEX] Full href:', href.substring(0,500));
     }
-    return false;
   }
 
-  // Run at multiple points to catch all timing scenarios
-  // 1. Immediately (in case DOM is already ready)
-  if(!tryApply()){
-    // 2. After DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', function(){
-      if(!tryApply()){
-        setTimeout(tryApply, 200);
-        setTimeout(tryApply, 600);
-      }
-    });
-    // 3. After full load (belt-and-braces)
-    window.addEventListener('load', function(){
-      setTimeout(tryApply, 100);
-      setTimeout(tryApply, 500);
-    });
+  // Run at the right moment
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 50); });
+  } else {
+    setTimeout(init, 50);
   }
+  window.addEventListener('load', function(){ setTimeout(init, 100); });
+
 })();
 </script>
 </body>
