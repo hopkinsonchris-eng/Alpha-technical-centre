@@ -41,12 +41,14 @@ body{margin:0;background:var(--cream);}
 #rt-contract:checked  ~ .ae-body #tab-contract,
 #rt-fields:checked    ~ .ae-body #tab-fields,
 #rt-sens:checked      ~ .ae-body #tab-sens,
-#rt-method:checked    ~ .ae-body #tab-method{display:block;}
+#rt-method:checked    ~ .ae-body #tab-method,
+#rt-apex:checked      ~ .ae-body #tab-apex-compare{display:block;}
 #rt-overview:checked  ~ .ae-tabs label[for="rt-overview"],
 #rt-contract:checked  ~ .ae-tabs label[for="rt-contract"],
 #rt-fields:checked    ~ .ae-tabs label[for="rt-fields"],
 #rt-sens:checked      ~ .ae-tabs label[for="rt-sens"],
 #rt-method:checked    ~ .ae-tabs label[for="rt-method"]{color:var(--gold);border-bottom-color:var(--gold);}
+#rt-apex:checked      ~ .ae-tabs label[for="rt-apex"]{color:#22d3a4;border-bottom-color:#22d3a4;}
 /* ════ LAYOUT ════ */
 .ae-body{display:grid;grid-template-columns:280px 1fr;gap:20px;padding:20px 26px 0;}
 @media(max-width:960px){.ae-body{grid-template-columns:1fr;}}
@@ -160,6 +162,19 @@ tr.r-tot td{font-weight:700;color:var(--navy);border-bottom:none;border-top:2px 
 .ae-select.locked{opacity:.6;cursor:not-allowed;background:var(--tint);}
 .contract-slider:disabled{opacity:.4;cursor:not-allowed;}
 .fcard-locknote{font-size:11.5px;color:var(--steel);background:var(--tint);border:1px dashed var(--line);border-radius:4px;padding:8px 10px;margin-top:6px;line-height:1.5;}
+/* ════ APEX IMPORT PANEL ════ */
+.apex-banner{background:var(--navy);border-radius:6px;padding:16px 20px;margin-bottom:16px;border:1px solid rgba(34,211,164,0.3);border-left:4px solid #22d3a4;}
+.apex-banner-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#22d3a4;margin-bottom:6px;}
+.apex-banner-body{font-size:13px;color:#A9B6C7;line-height:1.55;}
+.apex-scenario-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:14px 0;}
+.apex-scenario-col{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:12px 14px;}
+.apex-scenario-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px;}
+.apex-scenario-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.apex-scenario-row:last-child{border-bottom:none;}
+.apex-scenario-val{font-weight:600;color:#fff;font-variant-numeric:tabular-nums;}
+.apex-intv-list{margin-top:10px;font-size:11.5px;}
+.apex-intv-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);color:#A9B6C7;}
+@media(max-width:700px){.apex-scenario-grid{grid-template-columns:1fr;}}
 /* ════ FOOTER ════ */
 footer{font-size:11px;color:var(--steel);padding:8px 26px 0;line-height:1.5;}
 footer b{color:var(--navy);}
@@ -660,13 +675,15 @@ body{padding-top:0;}
   <!-- Radio controls (CSS-only tab switching) -->
   <input class="ae-radio" type="radio" name="qlm-tab" id="rt-overview" checked>
   <input class="ae-radio" type="radio" name="qlm-tab" id="rt-contract">
-  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-fields">
+  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-apex">
+<input class="ae-radio" type="radio" name="qlm-tab" id="rt-fields">
   <input class="ae-radio" type="radio" name="qlm-tab" id="rt-sens">
   <input class="ae-radio" type="radio" name="qlm-tab" id="rt-method">
 
   <nav class="ae-tabs">
     <label class="ae-tab" for="rt-overview">Overview</label>
     <label class="ae-tab" for="rt-contract">Contract / Fiscal</label>
+    <label class="ae-tab" id="apexTabLabel" for="rt-apex" style="display:none;color:#22d3a4;">⚡ APEX Scenarios</label>
     <label class="ae-tab" for="rt-fields">Field Builder</label>
     <label class="ae-tab" for="rt-sens">Sensitivity</label>
     <label class="ae-tab" for="rt-method">Methodology</label>
@@ -798,7 +815,20 @@ body{padding-top:0;}
       </div>
 
       <!-- ══ FIELDS ══ -->
-      <div class="ae-tabpanel" id="tab-fields">
+      <!-- APEX IMPORT BANNER (shown only when ?apex= payload present) -->
+<div class="ae-tabpanel" id="tab-apex-compare" style="display:none;padding:4px 0;">
+  <div class="apex-banner">
+    <div class="apex-banner-title">⚡ APEX Optimisation Import</div>
+    <div class="apex-banner-body" id="apexBannerBody">Loading APEX data…</div>
+  </div>
+  <div class="apex-scenario-grid" id="apexScenarioGrid"></div>
+  <div class="ae-card">
+    <div class="ae-ct">Intervention Detail</div>
+    <div class="ae-cn">Selected interventions from APEX Well Screener</div>
+    <div class="apex-intv-list" id="apexIntvList"></div>
+  </div>
+</div>
+<div class="ae-tabpanel" id="tab-fields">
         <div class="ae-callout c-green" style="margin-bottom:14px;">
           Add up to 8 fields (oil or gas). Each field has independent plateau, ramp speed, CAPEX, and OPEX. Use the toggle to include/exclude fields from the portfolio. Field parameters feed directly into the financial model.
         </div>
@@ -2010,5 +2040,128 @@ function resetAll(){
 </footer>
 
 <script src="main.js"></script>
+<script>
+/* ════ APEX IMPORT READER ════ */
+(function(){
+  function fmtK(v){ return v>=1000?'$'+(v/1000).toFixed(1)+'M':'$'+Math.round(v)+'k'; }
+  function fmtN(v){ return v==null?'—':v.toLocaleString(); }
+
+  function readApexPayload(){
+    try{
+      var qs = window.location.search;
+      var match = qs.match(/[?&]apex=([^&]+)/);
+      if(!match) return null;
+      var json = decodeURIComponent(escape(atob(match[1])));
+      return JSON.parse(json);
+    } catch(e){ console.warn('APEX payload parse error',e); return null; }
+  }
+
+  function applyApexPayload(p){
+    if(!p||p.version!==1) return;
+    var base = p.base, opt = p.opt, meta = p.meta;
+
+    // Show the APEX tab
+    var tabLabel = document.getElementById('apexTabLabel');
+    if(tabLabel) tabLabel.style.display='';
+
+    // Activate the APEX tab
+    var radio = document.getElementById('rt-apex');
+    if(radio){ radio.checked=true; }
+
+    // Banner
+    var banner = document.getElementById('apexBannerBody');
+    if(banner){
+      banner.innerHTML = 'Imported from <strong style="color:#22d3a4;">APEX</strong> · <strong>'+meta.fieldName+'</strong> · '+
+        meta.nInterventions+' interventions selected · Total cost: <strong>'+fmtK(meta.totalCostK)+'</strong> · '+
+        'Exported: '+new Date(meta.exportedAt).toLocaleDateString();
+    }
+
+    // Scenario grid
+    var grid = document.getElementById('apexScenarioGrid');
+    if(grid){
+      var netPrice = meta.oilPrice - (base.qdiscount||0) - (base.opexPerUnit||0);
+      var baseNPV=0, optNPVv=0;
+      for(var y=0;y<meta.npvYrs;y++){
+        var disc=Math.pow(1+(meta.discRate||0.15),y+0.5);
+        baseNPV += base.plateau*365*netPrice/1000/disc;
+        optNPVv += opt.plateau*365*netPrice/1000/disc;
+      }
+      optNPVv -= (opt.capexTotal||0)*1000;
+
+      grid.innerHTML = [
+        {label:'BASE CASE', color:'#6B7A8D', labelCol:'#A9B6C7', rows:[
+          ['Peak rate', fmtN(base.plateau)+' bopd'],
+          ['Programme NPV', fmtK(baseNPV)],
+          ['Intervention cost','—'],
+        ]},
+        {label:'OPTIMISED', color:'#22d3a4', labelCol:'#22d3a4', rows:[
+          ['Peak rate', fmtN(opt.plateau)+' bopd'],
+          ['Programme NPV', fmtK(optNPVv)],
+          ['Intervention cost', fmtK((opt.capexTotal||0)*1000)],
+        ]},
+        {label:'INCREMENT', color:'#C9A84C', labelCol:'#C9A84C', rows:[
+          ['Rate uplift', '+'+fmtN(opt.plateau-base.plateau)+' bopd'],
+          ['NPV uplift', '+'+fmtK(optNPVv-baseNPV)],
+          ['Uplift multiple', (opt.capexTotal>0?((optNPVv-baseNPV)/((opt.capexTotal||1)*1000)).toFixed(1):'—')+'×'],
+        ]},
+      ].map(col=>`
+        <div class="apex-scenario-col">
+          <div class="apex-scenario-label" style="color:${col.labelCol};">${col.label}</div>
+          ${col.rows.map(r=>'<div class="apex-scenario-row"><span style="color:#A9B6C7;">'+r[0]+'</span><span class="apex-scenario-val">'+r[1]+'</span></div>').join('')}
+        </div>
+      `).join('');
+    }
+
+    // Intervention list
+    var intvList = document.getElementById('apexIntvList');
+    if(intvList && meta.interventions){
+      intvList.innerHTML = [
+        '<div class="apex-intv-row" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6B7A8D;border-bottom:2px solid rgba(255,255,255,0.1);"><span>Well / Intervention</span><span>Incr BOPD</span><span>Cost</span><span>NPV</span></div>'
+      ].concat(meta.interventions.map(i=>`
+        <div class="apex-intv-row">
+          <span>${i.well} — ${i.type}</span>
+          <span class="apex-scenario-val">+${i.incrBOPD}</span>
+          <span>${fmtK(i.costK)}</span>
+          <span style="color:#22c55e;">+${fmtK(i.npvK)}</span>
+        </div>
+      `)).join('');
+    }
+
+    // Inject fields into the financial model FIELDS array
+    // Wait for model to initialise then push our fields
+    setTimeout(function(){
+      if(typeof FIELDS === 'undefined') return;
+      // Replace FIELDS with our two APEX scenarios
+      FIELDS.length = 0;
+      // Map to financial model field structure
+      function apexToField(f, idx){
+        return {
+          id: 'APEX'+idx, type:'oil',
+          color: idx===0 ? '#6B7A8D' : '#22d3a4',
+          active: true,
+          name: f.name,
+          plateau: f.plateau,
+          rampYrs: f.rampYrs||0,
+          platYrs: f.platYrs||3,
+          capexTotal: f.capexTotal||0,
+          opexPerUnit: f.opexPerUnit||12,
+          qdiscount: f.qdiscount||3,
+          capexProfile: f.capexProfile||'front',
+        };
+      }
+      FIELDS.push(apexToField(base, 0));
+      FIELDS.push(apexToField(opt,  1));
+      if(typeof renderFieldCards==='function') renderFieldCards();
+      if(typeof recalc==='function') recalc();
+    }, 400);
+  }
+
+  // Run on page load
+  document.addEventListener('DOMContentLoaded', function(){
+    var payload = readApexPayload();
+    if(payload) applyApexPayload(payload);
+  });
+})();
+</script>
 </body>
 </html>
