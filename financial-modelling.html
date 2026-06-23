@@ -2045,27 +2045,38 @@ function resetAll(){
 /* ════ APEX IMPORT READER ════ */
 (function(){
 
-  /* ── Read payload from URL ?apex= param ── */
+  /* ── Read payload — tries three methods in order ── */
   function readApexPayload(){
+
+    // METHOD 1: window.opener (most reliable — set by APEX before opening this tab)
+    try{
+      if(window.opener && window.opener._apexPayload){
+        var p = window.opener._apexPayload;
+        if(p && p.version === 1){
+          console.log('[APEX] Payload read from window.opener');
+          return p;
+        }
+      }
+    } catch(e){ console.warn('[APEX] opener read error:', e); }
+
+    // METHOD 2: URL base64 param (fallback if opener not available)
     try{
       var href = window.location.href;
-      var idx  = href.indexOf('apex=');
-      if(idx === -1) return null;
-      var raw = href.substring(idx + 5);
-      // Strip anything after the next & or #
-      raw = raw.split('&')[0].split('#')[0];
-      // URL-decode first (in case browser encoded it)
-      raw = decodeURIComponent(raw);
-      // Fix URL-safe base64
-      var b64 = raw.replace(/-/g,'+').replace(/_/g,'/');
-      while(b64.length % 4){ b64 += '='; }
-      var json = decodeURIComponent(escape(atob(b64)));
-      var parsed = JSON.parse(json);
-      return (parsed && parsed.version === 1) ? parsed : null;
-    } catch(e){
-      console.warn('[APEX] parse error:', e);
-      return null;
-    }
+      var match = href.match(/[?&]apex=([^&\s#]{10,})/);
+      if(match){
+        var raw = decodeURIComponent(match[1]);
+        var b64 = raw.replace(/-/g,'+').replace(/_/g,'/');
+        while(b64.length % 4){ b64 += '='; }
+        var json = decodeURIComponent(escape(atob(b64)));
+        var parsed = JSON.parse(json);
+        if(parsed && parsed.version === 1){
+          console.log('[APEX] Payload read from URL param');
+          return parsed;
+        }
+      }
+    } catch(e){ console.warn('[APEX] URL param parse error:', e); }
+
+    return null;
   }
 
   /* ── Format helpers ── */
@@ -2204,11 +2215,13 @@ function resetAll(){
   /* ── Entry point ── */
   function init(){
     var href = window.location.href;
-    var hasApex = href.indexOf('apex=') !== -1;
-    var hasRelay = href.indexOf('apex_relay=1') !== -1;
+    // Check for any apex signal: apex=1 (new), apex=<base64> (old), or opener payload
+    var hasUrlSignal = href.indexOf('apex=') !== -1;
+    var hasOpener    = false;
+    try{ hasOpener = !!(window.opener && window.opener._apexPayload); } catch(e){}
 
-    if(!hasApex && !hasRelay){
-      // No APEX param — normal page load, do nothing
+    if(!hasUrlSignal && !hasOpener){
+      // No APEX signal — normal page load, do nothing
       return;
     }
 
