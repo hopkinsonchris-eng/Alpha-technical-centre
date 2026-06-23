@@ -360,48 +360,58 @@
   }
   .sat-bar { flex-shrink: 0; }
 
-  @media (max-width:1100px) {
-    /* Two-col: text | canvas+hud stacked */
-    .hero-layout { grid-template-columns: 1fr 1fr; }
-    .loop-hud { grid-column: 2; }
-    .hero-text { grid-row: 1; }
-    .hero-3d { grid-row: 1; }
-  }
-  @media (max-width:768px) {
-    .hero-layout { grid-template-columns: 1fr; gap:24px; }
-    .hero-3d .canvas-wrap { height:360px; }
-    .scroll-indicator { display:none; }
-  }
-
-  /* ── MOBILE OVERFLOW FIX ── */
-  /* Hard-stop any horizontal scroll at the root */
+  /* ── HERO RESPONSIVE + OVERFLOW FIX ── */
+  /* Global: never allow horizontal scroll */
   html, body { overflow-x: hidden; }
 
-  @media (max-width:768px) {
-    /* Clip anything inside the hero that bleeds right */
-    .hero { overflow: hidden; }
+  @media (max-width:1100px) {
+    /* Tablet: two columns, loop HUD moves below canvas */
+    .hero-layout { grid-template-columns: 1fr 1fr; }
+    .hero-text { grid-row: 1; grid-column: 1; }
+    .hero-3d { grid-row: 1; grid-column: 2; }
+    .loop-hud { grid-row: 2; grid-column: 2; }
+  }
 
-    /* Canvas and its wrapper must never exceed viewport width */
-    .hero-3d,
-    .hero-3d .canvas-wrap,
+  @media (max-width:900px) {
+    /* Mobile: single column, everything stacks */
+    .hero-layout {
+      grid-template-columns: 1fr !important;
+      gap: 24px;
+    }
+    .hero-text  { grid-row: 1; grid-column: 1; }
+    .hero-3d    { grid-row: 2; grid-column: 1; }
+    .loop-hud   { grid-row: 3; grid-column: 1; }
+    .scroll-indicator { display: none; }
+
+    /* Hard clamp on hero and all children */
+    .hero { overflow: hidden; }
+    .wrap { overflow-x: hidden; max-width: 100%; }
+
+    /* Canvas: full width, never wider than viewport */
+    .hero-3d { width: 100%; }
+    .hero-3d .canvas-wrap {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 320px !important;
+      box-sizing: border-box;
+    }
     .hero-3d #rcanvas {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    /* Loop HUD: full width */
+    .loop-hud {
       width: 100% !important;
       max-width: 100% !important;
       box-sizing: border-box;
     }
-    .hero-3d .canvas-wrap { height: 320px !important; }
-
-    /* Loop HUD: already a grid column, just ensure it fits */
-    .loop-hud { width: 100% !important; box-sizing: border-box; }
-
-    /* Prevent wrap from triggering scroll */
-    .wrap { overflow-x: hidden; }
   }
 
   @media (max-width:480px) {
     .hero-3d .canvas-wrap { height: 260px !important; }
-    .hero-title { font-size: clamp(1.9rem, 8vw, 2.6rem) !important; }
-    .hero-lede { font-size: 0.95rem; }
+    .hero-title { font-size: clamp(1.8rem, 8vw, 2.4rem) !important; }
+    .hero-lede  { font-size: 0.93rem; }
   }
 
   /* lifecycle */
