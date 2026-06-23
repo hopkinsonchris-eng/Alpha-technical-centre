@@ -782,3 +782,124 @@ section { padding: 96px 0; }
   .loop-hud{position:relative;width:100%;top:0;right:0;margin-top:14px;}
   .hero-3d .canvas-wrap{height:320px;}
 }
+
+/* ============================================================
+   MOBILE RESPONSIVE — additive only, desktop unaffected
+   ============================================================ */
+
+/* ---------- NAV: dropdown tap support on mobile ---------- */
+@media (max-width: 900px) {
+  /* Show btn-nav and lang inside open mobile menu */
+  .nav-mobile-open .btn-nav {
+    display: inline-flex;
+    margin: 8px 0 4px;
+    width: 100%;
+    justify-content: center;
+  }
+  /* Capabilities dropdown: tap to open on mobile */
+  .nav-mobile-open .nav-dropdown-menu {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    box-shadow: none;
+    background: rgba(255,255,255,0.05);
+    border: none;
+    border-left: 2px solid rgba(201,168,76,0.3);
+    border-radius: 0;
+    padding: 4px 0 4px 12px;
+    margin: 4px 0;
+    display: none;
+  }
+  .nav-mobile-open .nav-dropdown.open .nav-dropdown-menu {
+    display: block;
+  }
+  .nav-mobile-open .nav-dropdown > button::after {
+    content: ' ▾';
+  }
+  .nav-mobile-open .nav-dropdown.open > button::after {
+    content: ' ▴';
+  }
+  /* Lang buttons in mobile menu */
+  .nav-mobile-open .nav-lang {
+    border-left: none;
+    margin-left: 0;
+    padding-left: 0;
+    justify-content: center;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+}
+
+/* ---------- SECTION SPACING ---------- */
+@media (max-width: 768px) {
+  section { padding: 64px 0; }
+  .section-head { margin-bottom: 36px; }
+}
+@media (max-width: 480px) {
+  section { padding: 48px 0; }
+  .section-head { margin-bottom: 28px; }
+}
+
+/* ---------- PAGE HERO (subpages) ---------- */
+@media (max-width: 768px) {
+  .page-hero { padding: calc(var(--nav-h) + 40px) 0 44px; }
+  .page-hero p { font-size: 1rem; }
+}
+@media (max-width: 480px) {
+  .page-hero { padding: calc(var(--nav-h) + 28px) 0 36px; }
+}
+
+/* ---------- CARDS ---------- */
+@media (max-width: 480px) {
+  .card { padding: 24px 20px; }
+  .tool-card-body { padding: 20px; }
+  .tool-card-header { padding: 20px 20px 18px; }
+  .news-card-body { padding: 20px; }
+  .case-card-body { padding: 18px; }
+  .team-info { padding: 18px 18px 22px; }
+}
+
+/* ---------- STATS BAR ---------- */
+@media (max-width: 600px) {
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+  .stat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .stat:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.08); }
+  .stat:last-child { border-bottom: none; }
+}
+
+/* ---------- CTA BAND ---------- */
+@media (max-width: 768px) {
+  .cta-band-section .wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .cta-band-section h2 { font-size: clamp(1.4rem, 4vw, 2rem); }
+}
+
+/* ---------- TYPOGRAPHY SCALING ---------- */
+@media (max-width: 480px) {
+  h1 { font-size: clamp(1.9rem, 8vw, 2.8rem); }
+  h2 { font-size: clamp(1.5rem, 6vw, 2rem); }
+  h3 { font-size: clamp(1.1rem, 4vw, 1.35rem); }
+  p  { font-size: 0.95rem; }
+}
+
+/* ---------- FOOTER ---------- */
+@media (max-width: 480px) {
+  .footer { padding: 48px 0 24px; }
+  .footer-grad { margin-bottom: 40px; }
+  .footer-bottom { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+
+/* ---------- BUTTONS ---------- */
+@media (max-width: 480px) {
+  .btn { padding: 11px 20px; font-size: 10.5px; }
+}
+
+/* ---------- REVEAL: reduce motion on mobile ---------- */
+@media (max-width: 600px) {
+  .reveal { transform: translateY(14px); }
+}

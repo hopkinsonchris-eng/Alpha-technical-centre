@@ -21,6 +21,21 @@
     });
   }
 
+  /* ---------- MOBILE DROPDOWN (Capabilities tap) ---------- */
+  var dropdown = document.querySelector('.nav-dropdown');
+  if (dropdown) {
+    var dropBtn = dropdown.querySelector('button');
+    if (dropBtn) {
+      dropBtn.addEventListener('click', function (e) {
+        // Only intercept on mobile (nav-mobile-open state)
+        if (nav && nav.classList.contains('nav-mobile-open')) {
+          e.stopPropagation();
+          dropdown.classList.toggle('open');
+        }
+      });
+    }
+  }
+
   /* ---------- SCROLL REVEALS ---------- */
   var reduce = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
