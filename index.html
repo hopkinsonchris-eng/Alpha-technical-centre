@@ -320,7 +320,7 @@
     display: grid;
     grid-template-columns: 1fr 1.4fr 280px;
     gap: 32px;
-    align-items: center;
+    align-items: stretch;
     padding: 48px 0;
   }
   .hero-title { color:#fff; margin:18px 0 24px; }
@@ -332,7 +332,7 @@
   .hero-3d { position:relative; width:100%; }
   .hero-3d .canvas-wrap { height:500px; }
 
-  /* Loop HUD: now its own grid column, not absolute */
+  /* Loop HUD: now its own grid column, stretches full hero height */
   .loop-hud {
     position: relative !important;
     top: auto !important;
@@ -345,7 +345,10 @@
     border-radius: 12px;
     padding: 20px;
     pointer-events: none;
-    align-self: center;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   /* Sat scale: move below canvas inline */
