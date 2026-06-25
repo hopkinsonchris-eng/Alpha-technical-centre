@@ -735,7 +735,7 @@ function switchTab(name,btn){
   if(name==='pvt')drawPVT(); if(name==='rock')drawSCAL();
   if(name==='layers')drawLayerCharts(); if(name==='aquifer')drawAquifer();
   if(name==='model'){ setTimeout(()=>{resize3D(); rebuild3D();},60); }
-  if(name==='results'&&RES.ran){ drawResults(); setTimeout(()=>resize3DResults(),60); }
+  if(name==='results'&&RES.ran){ drawResults(); showResults3D(); }
 }
 
 // ── CHART ENGINE ──
@@ -988,7 +988,7 @@ function initThreeResults(){
   addLights(sceneR); attachOrbit(canvas,'results'); animateResults();
 }
 function buildResults3D(satArr){
-  if(!sceneR)return;
+  if(!sceneR||!satArr)return;
   if(gridGroupR)sceneR.remove(gridGroupR); if(wellGroupR)sceneR.remove(wellGroupR);
   gridGroupR=new THREE.Group();wellGroupR=new THREE.Group();
   const {ni,nj,nk,dx,dy,dz}=P;
@@ -1019,8 +1019,30 @@ function animateResults(){
     camTargetR.z+camRadiusR*Math.sin(camPhiR)*Math.sin(camThetaR));
   cameraR.lookAt(camTargetR);rendererR.render(sceneR,cameraR);
 }
-function resize3DResults(){const c=document.getElementById('three-canvas-results');if(!rendererR)return;
-  rendererR.setSize(c.offsetWidth,420,false);cameraR.aspect=c.offsetWidth/420;cameraR.updateProjectionMatrix();}
+function resize3DResults(){
+  const c=document.getElementById('three-canvas-results'); if(!rendererR||!c)return false;
+  const w=c.offsetWidth;
+  if(w<10){ return false; }   // canvas not laid out yet — caller should retry
+  rendererR.setSize(w,420,false); cameraR.aspect=w/420; cameraR.updateProjectionMatrix();
+  return true;
+}
+// Wait for the results canvas to have real width, then size + (re)build the model.
+function showResults3D(){
+  let tries=0;
+  const attempt=()=>{
+    tries++;
+    if(resize3DResults()){
+      satFrameIdx=RES.satFrames.length-1;
+      buildResults3D(RES.satFrames[satFrameIdx]);
+      set('satTimeLabel',`t = ${P.yr} yr`);
+      // one more resize next frame in case layout settled further
+      requestAnimationFrame(()=>resize3DResults());
+    } else if(tries<60){
+      requestAnimationFrame(attempt);
+    }
+  };
+  requestAnimationFrame(attempt);
+}
 
 // Saturation animation
 function stepSatTime(d){
@@ -1192,7 +1214,7 @@ function finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.apex-tab')[7].classList.add('active');
   document.getElementById('tab-results').classList.add('active');
-  drawResults(); setTimeout(()=>{resize3DResults();satFrameIdx=RES.satFrames.length-1;buildResults3D(RES.satFrames[satFrameIdx]);set('satTimeLabel',`t = ${P.yr} yr`);},80);
+  drawResults(); showResults3D();
   btn.disabled=false; btn.innerHTML='<span class="run-icon">↺</span> Re-run';
   setStatus(`Complete · RF=${rf.toFixed(1)}% · ${cpu}s`,'#2ECC8A');
 }
