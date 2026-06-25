@@ -574,7 +574,7 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
         <div class="panel-badges"><span class="badge" id="r-status">No results — run simulation</span></div>
       </div>
       <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Cum Oil Np</div><div class="kpi-val" id="r-np">—</div><div class="kpi-sub">10³ m³ SC</div></div>
+        <div class="kpi"><div class="kpi-label">Cum Oil Np</div><div class="kpi-val" id="r-cumoil">—</div><div class="kpi-sub">10³ m³ SC</div></div>
         <div class="kpi k-cyan"><div class="kpi-label">Cum Water Wp</div><div class="kpi-val" id="r-wp">—</div><div class="kpi-sub">10³ m³ SC</div></div>
         <div class="kpi k-green"><div class="kpi-label">Avg Res P</div><div class="kpi-val" id="r-pr">—</div><div class="kpi-sub">bar</div></div>
         <div class="kpi k-amber"><div class="kpi-label">Final WOR</div><div class="kpi-val" id="r-wor">—</div><div class="kpi-sub">m³/m³</div></div>
@@ -1053,6 +1053,7 @@ function initThreeResults(){
   camTargetR=new THREE.Vector3(0,0,0);
   addLights(sceneR);
   attachOrbit(canvas,'results');
+  animateResults(); // START the render loop — was missing
 }
 
 function buildSat3DGrid(satArr){
@@ -1134,7 +1135,21 @@ function showResults3D(){
   const sc=document.getElementById('satScrubber');
   if(sc){sc.max=RES.satFrames.length-1; sc.value=0;
     sc.style.background='linear-gradient(90deg,var(--gold) 0%,rgba(107,122,141,0.3) 0%)';}
-  updateSat3DFrame(0);
+  // Wait for the canvas to have real width before sizing + building (layout race)
+  let tries=0;
+  const attempt=()=>{
+    const canvas=document.getElementById('three-canvas-res');
+    if(canvas && canvas.offsetWidth>10){
+      resize3DResults();
+      updateSat3DFrame(0);
+    }else if(tries++<60){
+      requestAnimationFrame(attempt);
+    }else{
+      // give up waiting — build anyway with fallback size
+      updateSat3DFrame(0);
+    }
+  };
+  requestAnimationFrame(attempt);
 }
 function updateSat3DFrame(fi){
   satFrameIdx=Math.max(0,Math.min(RES.satFrames.length-1,fi));
@@ -1430,7 +1445,7 @@ function finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn){
   const {ni,nj,nk,dx,dy,dz,swi,bo}=P;
   let pv=0;LAYERS.forEach(L=>pv+=ni*nj*dx*dy*dz*L.phi*L.ntg);
   const stoiip=pv*(1-swi)/bo; const cumO=nps[nps.length-1]*1e3; const rf=cumO/stoiip*100;
-  set('r-np',(nps[nps.length-1]).toFixed(0)); set('r-wp',(wps[wps.length-1]).toFixed(0));
+  set('r-cumoil',(nps[nps.length-1]).toFixed(0)); set('r-wp',(wps[wps.length-1]).toFixed(0));
   set('r-pr',pres[pres.length-1].toFixed(0)); set('r-wor',wors[wors.length-1].toFixed(2));
   set('r-rf',rf.toFixed(1)+'%'); set('r-status',`Complete · ${times.length} steps · CPU ${cpu}s`);
   set('sv-cpu',`${cpu}s`); set('sv-state','Complete'); set('statusChip','Complete');
@@ -1443,9 +1458,8 @@ function finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn){
   drawResults();
   setTimeout(()=>{
     if(!sceneR)initThreeResults();
-    resize3DResults();
-    showResults3D();
-  },120);
+    showResults3D(); // handles its own canvas-width retry
+  },100);
   btn.disabled=false; btn.classList.remove('running'); btn.innerHTML='<span class="run-icon">↺</span> Re-run';
   // Hide live badge
   const liveBadge=document.getElementById('live-sim-status');
