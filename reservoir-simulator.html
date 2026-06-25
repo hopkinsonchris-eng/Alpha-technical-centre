@@ -1117,10 +1117,11 @@ function resize3DResults(){
 }
 function showResults3D(){
   if(!RES.ran||!RES.satFrames.length)return;
-  satFrameIdx=RES.satFrames.length-1;
+  satFrameIdx=0; // start at t=0 (red/oil state) — press Animate to play forward
   const sc=document.getElementById('satScrubber');
-  if(sc){sc.max=RES.satFrames.length-1; sc.value=satFrameIdx;}
-  updateSat3DFrame(satFrameIdx);
+  if(sc){sc.max=RES.satFrames.length-1; sc.value=0;
+    sc.style.background='linear-gradient(90deg,var(--gold) 0%,rgba(107,122,141,0.3) 0%)';}
+  updateSat3DFrame(0);
 }
 function updateSat3DFrame(fi){
   satFrameIdx=Math.max(0,Math.min(RES.satFrames.length-1,fi));
@@ -1231,8 +1232,13 @@ function runSimulation(){
   const times=[],qos=[],qws=[],pres=[],nps=[],wps=[],gors=[],wors=[];
   let cumO=0,cumW=0,simT=0,step=0;
   const nSteps=Math.ceil(T_end/dt), logEvery=Math.max(1,Math.floor(nSteps/8));
-  const frameEvery=Math.max(1,Math.floor(nSteps/16)); // ~16 sat frames
+  const frameEvery=Math.max(1,Math.floor(nSteps/32)); // ~32 frames for smooth animation
   RES.satFrames=[]; RES.presFrames=[];
+
+  // ── RENDER INITIAL STATE (t=0, all oil = red) ──
+  RES.satFrames.push(Float64Array.from(sw));
+  RES.presFrames.push(Float64Array.from(press));
+  rebuild3D(sw, press, true); // show red initial state immediately
 
   const tick=()=>{
     if(simT>=T_end){finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn);return;}
@@ -1246,12 +1252,9 @@ function runSimulation(){
         const WI=2*Math.PI*(kh*1e-3)/lnT; // mD·m/cP basis
         if(w.type==='prod'){
           const dP=Math.max(0,Pr-P.pwfp);
-          const qo=WI*kro(sw[idx])*dP/(pvt.muo*pvt.Bo)*0.0864; // → m³/d scale
+          const qo=WI*kro(sw[idx])*dP/(pvt.muo*pvt.Bo)*0.0864;
           const qw=WI*krw(sw[idx])*dP/P.muw*0.0864;
           Qo+=qo; Qw+=qw;
-          // local saturation rise from oil removal (water encroaches)
-          const dsw=(qo*0.0+qw*dt)/(cellPV(idx)*1000+1)*0.5;
-          // producing reduces oil → Sw up slightly handled by flux below
         } else {
           const dP=Math.max(0,P.pwfi-Pr); const qwi=WI*dP/P.muw*0.0864; Qinj+=qwi;
         }
@@ -1382,9 +1385,9 @@ function runSimulation(){
     document.getElementById('progressFill').style.width=pct+'%';
     document.getElementById('progressLabel').textContent=pct.toFixed(0)+'%';
     set('sv-done',step); setStatus(`t=${tyr.toFixed(1)}yr · Qo=${Qo.toFixed(0)} m³/d`,'#C9A84C');
-    // Update live header on Model tab
+    // Update live header badge every step
     const liveEl=document.getElementById('live-sim-status');
-    if(liveEl) liveEl.textContent=`⟳ Live · t=${tyr.toFixed(1)} yr · S̄w=${avg(sw).toFixed(3)} · Qo=${Qo.toFixed(0)} m³/d`;
+    if(liveEl) liveEl.textContent=`⟳ t=${tyr.toFixed(1)} yr · S̄w=${avg(sw).toFixed(3)} · Qo=${Qo.toFixed(0)} m³/d`;
     setTimeout(tick,0);
   };
   tick();
