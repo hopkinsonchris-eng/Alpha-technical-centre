@@ -1271,9 +1271,8 @@ function runSimulation(){
     const noise=0.6+0.8*(0.5+0.5*Math.sin(i*0.9+k*1.3)*Math.cos(j*0.8-k*0.7));
     kcell[idx]=L.k*noise; phicell[idx]=L.phi*L.ntg;
   }
-  // Initial Sw gradient — deeper layers wetter (transition zone)
-  for(let k=0;k<nk;k++){const extra=(k/(Math.max(nk-1,1)))*0.10;
-    for(let j=0;j<nj;j++)for(let i=0;i<ni;i++)sw[i+j*ni+k*ni*nj]=P.swi+extra;}
+  // Initial Sw uniform at connate water — pure oil state (renders deep red at t=0)
+  for(let n=0;n<N;n++) sw[n]=P.swi;
 
   const wells=buildWells();
   const r0=0.28*Math.sqrt(dx*dx+dy*dy)/2;
@@ -1307,125 +1306,132 @@ function runSimulation(){
    try{
     if(simT>=T_end){finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn);return;}
     const pAvg=avg(press); const pvt=getPVT(pAvg);
-    // ── WELL RATES (per perforated layer) ──
+
+    // Helper: fractional flow + total mobility of water
+    const fw=sw_=>{ const mo=kro(sw_)/pvt.muo, mw=krw(sw_)/P.muw; return mw/(mo+mw+1e-12); };
+    const mobT=sw_=>(krw(sw_)/P.muw + kro(sw_)/(pvt.muo*pvt.Bo));
+
+    // ── SPATIAL PRESSURE SOLVE (Gauss-Seidel) ──
+    // Build a pressure field where injector cells are pushed up toward Pwf_inj
+    // and producer cells pulled down toward Pwf_prod. Neighbour transmissibility
+    // couples cells so pressure gradients (and therefore flow) develop between
+    // injectors and producers. This is what actually sweeps water across the grid.
+    const wellCell={}; // idx -> {type, pwf, WI}
+    wells.forEach(w=>{
+      for(let k=0;k<nk;k++){
+        const idx=w.i+w.j*ni+k*ni*nj;
+        const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT*86.4; // strong well coupling
+        wellCell[idx]={type:w.type,pwf:w.type==='prod'?P.pwfp:P.pwfi,WI};
+      }
+    });
+    // Transmissibility between neighbours (geometric, per face) — m³/(d·bar)-ish
+    const Tx=(a,b)=>{const km=2*kcell[a]*kcell[b]/(kcell[a]+kcell[b]+1e-9);return km*1e-3*dy*dz/dx*86.4;};
+    const Ty=(a,b)=>{const km=2*kcell[a]*kcell[b]/(kcell[a]+kcell[b]+1e-9);return km*1e-3*dx*dz/dy*86.4;};
+    const Tz=(a,b)=>{const km=2*kcell[a]*kcell[b]*P.kvkh/(kcell[a]+kcell[b]+1e-9);return km*1e-3*dx*dy/dz*86.4;};
+    // Gauss-Seidel sweeps for steady pressure given current wells + aquifer
+    for(let sweep=0;sweep<24;sweep++){
+      for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
+        const idx=i+j*ni+k*ni*nj;
+        let num=0,den=0;
+        // neighbour contributions (mobility-weighted)
+        const add=(nb,T)=>{const lam=mobT(sw[idx]);const t=T*lam;num+=t*press[nb];den+=t;};
+        if(i>0)add(idx-1,Tx(idx,idx-1));
+        if(i<ni-1)add(idx+1,Tx(idx,idx+1));
+        if(j>0)add(idx-ni,Ty(idx,idx-ni));
+        if(j<nj-1)add(idx+ni,Ty(idx,idx+ni));
+        if(k>0)add(idx-ni*nj,Tz(idx,idx-ni*nj));
+        if(k<nk-1)add(idx+ni*nj,Tz(idx,idx+ni*nj));
+        // well source/sink term
+        const wc=wellCell[idx];
+        if(wc){const lam=wc.type==='inj'?(1/P.muw):mobT(sw[idx]);num+=wc.WI*lam*wc.pwf;den+=wc.WI*lam;}
+        // aquifer support on lowest layer edges (mild)
+        if(k===nk-1){const ta=Jaq*0.02;num+=ta*P.pi;den+=ta;}
+        if(den>0)press[idx]=num/den;
+      }
+    }
+    // clamp
+    for(let n=0;n<N;n++)press[n]=Math.max(P.pwfp-20,Math.min(P.pwfi+20,press[n]));
+
+    // ── WELL RATES from the solved pressure field ──
     let Qo=0,Qw=0,Qinj=0;
     wells.forEach(w=>{
       for(let k=0;k<nk;k++){
         const idx=w.i+w.j*ni+k*ni*nj; const Pr=press[idx];
-        const kh=kcell[idx]*dz;
-        const WI=2*Math.PI*(kh*1e-3)/lnT; // mD·m/cP basis
+        const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
         if(w.type==='prod'){
           const dP=Math.max(0,Pr-P.pwfp);
-          const qo=WI*kro(sw[idx])*dP/(pvt.muo*pvt.Bo)*0.0864;
-          const qw=WI*krw(sw[idx])*dP/P.muw*0.0864;
-          Qo+=qo; Qw+=qw;
+          Qo+=WI*kro(sw[idx])*dP/(pvt.muo*pvt.Bo)*0.0864;
+          Qw+=WI*krw(sw[idx])*dP/P.muw*0.0864;
         } else {
-          const dP=Math.max(0,P.pwfi-Pr); const qwi=WI*dP/P.muw*0.0864; Qinj+=qwi;
-        }
-      }
-    });
-    // ── PRESSURE UPDATE (material balance + aquifer) ──
-    const voidage=(Qo*pvt.Bo+Qw)*dt - Qinj*dt;
-    const dWe=Math.max(0,Jaq*(P.pi-pAvg)*dt); We+=dWe;
-    const dP=-(voidage-dWe)/(PVtot*ct);
-    for(let n=0;n<N;n++)press[n]=Math.max(P.pwfp+3,press[n]+dP*(0.85+0.3*Math.random()*0));
-    // ── SATURATION UPDATE — explicit upstream Buckley-Leverett transport ──
-    // Each timestep: compute inter-cell water fluxes using upstream mobility weighting,
-    // then update Sw from divergence of flux. Injectors are source terms; producers are sinks.
-    const dSwCell=new Float64Array(N); // Δsw accumulator this timestep
-
-    // Helper: fractional flow of water
-    const fw=sw_=>{ const mo=kro(sw_)/pvt.muo, mw=krw(sw_)/P.muw; return mw/(mo+mw+1e-12); };
-
-    // Injectors: water source into perforated cells
-    wells.forEach(w=>{
-      if(w.type==='inj'){
-        for(let k=0;k<nk;k++){
-          const idx=w.i+w.j*ni+k*ni*nj;
-          const Pr=press[idx]; const dP=Math.max(0,P.pwfi-Pr);
-          const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
-          // water injection rate m³/d into this cell
-          const qwi=WI*dP/P.muw*0.0864;
-          const pv=cellPV(idx); // m³
-          dSwCell[idx]+=qwi*dt/pv; // dimensionless Sw increment
+          const dP=Math.max(0,P.pwfi-Pr); Qinj+=WI*dP/P.muw*0.0864;
         }
       }
     });
 
-    // Producers: water+oil sink from perforated cells
-    wells.forEach(w=>{
-      if(w.type==='prod'){
-        for(let k=0;k<nk;k++){
-          const idx=w.i+w.j*ni+k*ni*nj;
-          const Pr=press[idx]; const dP=Math.max(0,Pr-P.pwfp);
-          const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
-          const qt=(WI*kro(sw[idx])*dP/(pvt.muo*pvt.Bo)+WI*krw(sw[idx])*dP/P.muw)*0.0864;
-          const ffw=fw(sw[idx]);
-          const pv=cellPV(idx);
-          // remove water (negative source)
-          dSwCell[idx]-=ffw*qt*dt/pv;
-        }
+    // ── SATURATION TRANSPORT — upstream Buckley-Leverett along pressure gradients ──
+    const dSwCell=new Float64Array(N);
+
+    // Injector source: water enters its cells. WELL_GAIN scales injectivity so
+    // the flood delivers roughly 0.5–1 pore volume over the run (a realistic
+    // waterflood throughput) — without it the analytic rate is ~30× too low.
+    const WELL_GAIN=8;
+    wells.forEach(w=>{ if(w.type==='inj'){
+      for(let k=0;k<nk;k++){
+        const idx=w.i+w.j*ni+k*ni*nj;
+        const dP=Math.max(0,P.pwfi-press[idx]);
+        const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
+        const qwi=WI*WELL_GAIN*dP/P.muw*0.0864;
+        dSwCell[idx]+=qwi*dt/cellPV(idx);
       }
-    });
+    }});
+    // Producer sink: removes water fraction
+    wells.forEach(w=>{ if(w.type==='prod'){
+      for(let k=0;k<nk;k++){
+        const idx=w.i+w.j*ni+k*ni*nj;
+        const dP=Math.max(0,press[idx]-P.pwfp);
+        const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
+        const qt=(WI*kro(sw[idx])/(pvt.muo*pvt.Bo)+WI*krw(sw[idx])/P.muw)*dP*0.0864;
+        dSwCell[idx]-=fw(sw[idx])*qt*dt/cellPV(idx);
+      }
+    }});
 
-    // Inter-cell fluxes — x direction (i→i+1)
-    for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni-1;i++){
-      const a=i+j*ni+k*ni*nj, b=(i+1)+j*ni+k*ni*nj;
-      const dP=press[a]-press[b]; // bar
-      // transmissibility: T = 2·ka·kb/(ka+kb) · A / L · unit factors
-      const ka=kcell[a], kb=kcell[b];
-      const khm=2*ka*kb/(ka+kb+1e-9); // harmonic mean mD
-      const T=khm*1e-3*dy*dz/dx; // m³/(d·bar) basis (unit: mD → 1e-15 m² absorbed in 0.0864 factor below)
-      // upstream mobility weighting
-      const upIdx=dP>=0?a:b;
-      const mob=(krw(sw[upIdx])/P.muw + kro(sw[upIdx])/pvt.muo);
-      const fwUp=fw(sw[upIdx]);
-      const flux=T*mob*dP*0.0864*dt; // m³ water-equivalent flux
-      const pvA=cellPV(a), pvB=cellPV(b);
-      dSwCell[a]-=fwUp*flux/pvA;
-      dSwCell[b]+=fwUp*flux/pvB;
-    }
-
-    // Inter-cell fluxes — y direction (j→j+1)
-    for(let k=0;k<nk;k++)for(let j=0;j<nj-1;j++)for(let i=0;i<ni;i++){
-      const a=i+j*ni+k*ni*nj, b=i+(j+1)*ni+k*ni*nj;
+    // Inter-cell water flux: q_face = T·λw_up·(Pa−Pb); upstream weighting.
+    // Pressure-driven advection (directional injector→producer flow).
+    const SWEEP_GAIN=2.0;
+    const faceFlux=(a,b,T)=>{
       const dP=press[a]-press[b];
-      const ka=kcell[a], kb=kcell[b];
-      const khm=2*ka*kb/(ka+kb+1e-9);
-      const T=khm*1e-3*dx*dz/dy;
-      const upIdx=dP>=0?a:b;
-      const fwUp=fw(sw[upIdx]);
-      const mob=(krw(sw[upIdx])/P.muw + kro(sw[upIdx])/pvt.muo);
-      const flux=T*mob*dP*0.0864*dt;
-      const pvA=cellPV(a), pvB=cellPV(b);
-      dSwCell[a]-=fwUp*flux/pvA;
-      dSwCell[b]+=fwUp*flux/pvB;
+      const up=dP>=0?a:b;
+      const lamW=krw(sw[up])/P.muw;
+      const q=T*lamW*dP*0.0864*dt*SWEEP_GAIN;
+      dSwCell[a]-=q/cellPV(a);
+      dSwCell[b]+=q/cellPV(b);
+    };
+    for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni-1;i++){const a=i+j*ni+k*ni*nj;faceFlux(a,a+1,Tx(a,a+1)/86.4);}
+    for(let k=0;k<nk;k++)for(let j=0;j<nj-1;j++)for(let i=0;i<ni;i++){const a=i+j*ni+k*ni*nj;faceFlux(a,a+ni,Ty(a,a+ni)/86.4);}
+    if(nk>1)for(let k=0;k<nk-1;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
+      const a=i+j*ni+k*ni*nj,b=a+ni*nj;
+      const dP=press[a]-press[b]+(P.gravity&&sw[a]>sw[b]?0.0981*dz:0);
+      const up=dP>=0?a:b; const lamW=krw(sw[up])/P.muw;
+      const q=(Tz(a,b)/86.4)*lamW*dP*0.0864*dt*SWEEP_GAIN;
+      dSwCell[a]-=q/cellPV(a); dSwCell[b]+=q/cellPV(b);
     }
 
-    // Inter-layer fluxes — z direction (gravity + pressure cross-flow)
-    if(nk>1){
-      for(let k=0;k<nk-1;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
-        const a=i+j*ni+k*ni*nj, b=i+j*ni+(k+1)*ni*nj;
-        const ka=kcell[a]*P.kvkh, kb=kcell[b]*P.kvkh;
-        const kzm=2*ka*kb/(ka+kb+1e-9);
-        const T=kzm*1e-3*dx*dy/dz;
-        const dP=(press[a]-press[b]);
-        const gravDp=P.gravity?0.0981*dz:0; // density difference drives water down
-        const dPeff=dP+(sw[a]>sw[b]?gravDp:0); // heavier (water-rich) flows down
-        const upIdx=dPeff>=0?a:b;
-        const fwUp=fw(sw[upIdx]);
-        const mob=(krw(sw[upIdx])/P.muw + kro(sw[upIdx])/pvt.muo);
-        const flux=T*mob*dPeff*0.0864*dt;
-        const pvA=cellPV(a), pvB=cellPV(b);
-        dSwCell[a]-=fwUp*flux/pvA;
-        dSwCell[b]+=fwUp*flux/pvB;
-      }
-    }
+    // Capillary / dispersive front propagation — water moves from high-Sw to
+    // low-Sw cells weighted by water mobility. This is what advances the visible
+    // flood front through the reservoir (advection alone pools at the wells).
+    const DISP=0.8;
+    const disp=(a,b)=>{
+      const grad=sw[a]-sw[b];
+      const mob=0.5*(krw(sw[a])+krw(sw[b]))+0.05; // +0.05 keeps front creeping into oil
+      const q=DISP*mob*grad;
+      dSwCell[a]-=q; dSwCell[b]+=q;
+    };
+    for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni-1;i++){const a=i+j*ni+k*ni*nj;disp(a,a+1);}
+    for(let k=0;k<nk;k++)for(let j=0;j<nj-1;j++)for(let i=0;i<ni;i++){const a=i+j*ni+k*ni*nj;disp(a,a+ni);}
 
     // Apply Sw increments with clamp
-    for(let n=0;n<N;n++){
-      sw[n]=Math.max(P.swi,Math.min(1-0.28,sw[n]+dSwCell[n]));
-    }
+    for(let n=0;n<N;n++) sw[n]=Math.max(P.swi,Math.min(1-0.28,sw[n]+dSwCell[n]));
+
     simT+=dt; step++;
     const tyr=simT/365; times.push(tyr);
     qos.push(Qo); qws.push(Qw); pres.push(avg(press));
