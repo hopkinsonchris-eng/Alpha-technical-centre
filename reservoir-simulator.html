@@ -204,6 +204,19 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 .file-drop:hover{border-color:var(--gold-line);color:var(--gold-dim);background:var(--gold-glow);}
 .io-note{font-size:11px;color:var(--steel);line-height:1.5;margin-top:6px;}
 
+/* WORKFLOW STEPS */
+.workflow-steps{padding:12px 16px 4px;display:flex;flex-direction:column;gap:4px;}
+.wf-step{display:flex;align-items:center;gap:9px;font-family:var(--font-cond);font-size:11px;letter-spacing:.06em;color:var(--steel);padding:5px 8px;border-radius:var(--r-sm);transition:all var(--tr);}
+.wf-step.done{color:var(--green-bright);}
+.wf-step.active{color:var(--gold);background:var(--gold-glow);}
+.wf-step-num{width:18px;height:18px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:9px;flex:none;font-weight:700;}
+.wf-step.done .wf-step-num::before{content:'✓';}
+.wf-step:not(.done) .wf-step-num::before{content:attr(data-n);}
+
+/* ANIMATED SATELLITE PULSE on run button */
+@keyframes runPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4);}50%{box-shadow:0 0 0 8px rgba(201,168,76,0);}}
+.run-btn.running{animation:runPulse 1.2s infinite;}
+
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:3px;}
 
@@ -324,6 +337,12 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
       <label class="rail-checkbox-row"><input type="checkbox" id="cb-gas" checked onchange="P.gas=this.checked"> Solution Gas Drive</label>
     </div>
 
+    <div class="workflow-steps" id="workflowSteps">
+      <div class="wf-step done" id="wf1"><span class="wf-step-num" data-n="1"></span>Configure grid &amp; fluid</div>
+      <div class="wf-step active" id="wf2"><span class="wf-step-num" data-n="2"></span>Set wells &amp; solver</div>
+      <div class="wf-step" id="wf3"><span class="wf-step-num" data-n="3"></span>Run simulation</div>
+      <div class="wf-step" id="wf4"><span class="wf-step-num" data-n="4"></span>Analyse &amp; export</div>
+    </div>
     <button class="run-btn" id="runBtn" onclick="runSimulation()"><span class="run-icon">▶</span> Run Simulation</button>
     <div class="sim-status" id="simStatus">Ready · Configure and Run</div>
     <div class="io-btn-row">
@@ -566,24 +585,39 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
         <div class="chart-card"><div class="chart-title">Cumulative Production<span class="ct-right">10³ m³</span></div><canvas class="chart-canvas" id="cumChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Np</span><span><i style="background:var(--cyan)"></i>Wp</span></div></div>
         <div class="chart-card"><div class="chart-title">WOR &amp; GOR vs Time</div><canvas class="chart-canvas" id="gorChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>WOR</span><span><i style="background:var(--amber)"></i>GOR×0.1</span></div></div>
       </div>
-      <div class="viewer-wrap">
+      <!-- 3D Saturation Animation Viewer -->
+      <div class="viewer-wrap" id="satViewer3DWrap">
         <div class="viewer-bar">
-          <span class="viewer-bar-title">Areal Saturation Sw · Layer Map</span>
+          <span class="viewer-bar-title">3D Saturation Evolution — Oil (Red) → Water (Blue)</span>
           <div class="viewer-controls">
-            <select class="vc-btn" id="satLayerSel" style="cursor:pointer;" onchange="satLayerK=+this.value;drawSatHeatmap();"></select>
-            <button class="vc-btn" onclick="stepSatTime(-1)">◀ Prev</button>
-            <button class="vc-btn active" id="satPlayBtn" onclick="playSatAnimation()">▶ Play</button>
-            <button class="vc-btn" onclick="stepSatTime(1)">Next ▶</button>
-            <span class="vc-btn" style="cursor:default" id="satTimeLabel">t = 0 yr</span>
+            <select class="vc-btn" id="satLayerSel" style="cursor:pointer;display:none;" onchange="satLayerK=+this.value;"></select>
+            <button class="vc-btn" onclick="stepSatTime3D(-1)">◀ Prev</button>
+            <button class="vc-btn active" id="satPlayBtn" onclick="playSatAnimation3D()">▶ Animate</button>
+            <button class="vc-btn" onclick="stepSatTime3D(1)">Next ▶</button>
+            <span class="vc-btn" style="cursor:default;min-width:80px;text-align:center;" id="satTimeLabel">t = 0 yr</span>
+            <button class="vc-btn" id="tg-explode-res" onclick="toggleExplodeRes()">Layer Split</button>
           </div>
         </div>
-        <canvas id="sat-heatmap"></canvas>
+        <canvas id="three-canvas-res" style="width:100%;height:460px;display:block;cursor:grab;"></canvas>
+        <div class="viewer-hint">LMB drag · rotate &nbsp;|&nbsp; wheel · zoom</div>
         <div class="viewer-legend">
-          <div>Water Saturation Sw</div>
-          <div class="viewer-legend-bar" style="background:linear-gradient(90deg,#0B294B,#4AADCA);"></div>
-          <div class="viewer-legend-row"><span id="r-swmin">0.20</span><span>0.72</span></div>
+          <div id="sat3d-legend-label">Water Saturation Sw</div>
+          <div style="width:120px;height:8px;border-radius:2px;margin:5px 0 3px;background:linear-gradient(90deg,#B42D1E,#DC8C28,#1E5AC8);"></div>
+          <div style="display:flex;justify-content:space-between;width:120px;font-size:9.5px;color:var(--steel);font-family:var(--font-mono);">
+            <span>Oil</span><span>Transition</span><span>Water</span>
+          </div>
+        </div>
+        <!-- Timeline scrubber -->
+        <div style="padding:8px 16px 10px;background:var(--navy2);border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;">
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--steel);white-space:nowrap;">Timeline</span>
+          <input type="range" id="satScrubber" min="0" max="15" value="0" step="1"
+            style="flex:1;-webkit-appearance:none;appearance:none;height:3px;background:linear-gradient(90deg,var(--gold) 0%,rgba(107,122,141,0.3) 0%);outline:none;cursor:pointer;"
+            oninput="scrubSat3D(+this.value)"/>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--gold);min-width:50px;text-align:right;" id="satScrubLabel">t = 0 yr</span>
         </div>
       </div>
+      <!-- 2D plan-view heatmap (legacy, hidden — kept for export reference) -->
+      <canvas id="sat-heatmap" style="display:none;"></canvas>
       <div class="io-btn-row" style="padding:0;margin-top:4px;">
         <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="exportResultsCSV()">⬇ Export Production CSV</button>
         <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="pushToAPEX()">→ Push to Financial Model</button>
@@ -737,7 +771,13 @@ function switchTab(name,btn){
   if(name==='pvt')drawPVT(); if(name==='rock')drawSCAL();
   if(name==='layers')drawLayerCharts(); if(name==='aquifer')drawAquifer();
   if(name==='model'){ setTimeout(()=>{resize3D(); rebuild3D();},60); }
-  if(name==='results'&&RES.ran){ drawResults(); showResults3D(); }
+  if(name==='results'){
+    setTimeout(()=>{
+      if(!sceneR)initThreeResults();
+      resize3DResults();
+      if(RES.ran){ drawResults(); showResults3D(); }
+    },80);
+  }
 }
 
 // ── CHART ENGINE ──
@@ -839,6 +879,7 @@ function drawAquifer(){
 // ════════════════════════════════════════════════════
 let scene,camera,renderer,gridGroup,wellGroup;
 let camTheta=0.7,camPhi=1.0,camRadius=2200,camTarget;
+let camThetaR=0.7,camPhiR=1.05,camRadiusR=2200,camTargetR;
 let dragging=false,lastX=0,lastY=0;
 let sceneR,cameraR,rendererR,gridGroupR,wellGroupR; // results viewer
 
@@ -865,7 +906,12 @@ function rampPerm(t){ // navy → gold (log perm)
   const c1=[19,41,75],c2=[201,168,76]; return mix(c1,c2,t);}
 function rampPoro(t){const c1=[19,41,75],c2=[46,204,138];return mix(c1,c2,t);}
 function rampPress(t){const c1=[192,57,43],c2=[46,204,138];return mix(c1,c2,t);} // low P red → high P green
-function rampSat(t){const c1=[11,41,75],c2=[74,173,202];return mix(c1,c2,t);}
+// Oil-dominant = RED, Water-dominant = BLUE (geologically correct)
+function rampSat(t){
+  // t=0 → connate water (deep red/orange = oil), t=1 → residual oil (deep blue = water)
+  if(t<0.5){const u=t*2;const c1=[180,45,30],c2=[220,140,40];return mix(c1,c2,u);}
+  else{const u=(t-0.5)*2;const c1=[220,140,40],c2=[30,90,200];return mix(c1,c2,u);}
+}
 function mix(a,b,t){t=Math.max(0,Math.min(1,t));return new THREE.Color(
   (a[0]+(b[0]-a[0])*t)/255,(a[1]+(b[1]-a[1])*t)/255,(a[2]+(b[2]-a[2])*t)/255);}
 
@@ -927,11 +973,11 @@ function updateLegend(){
   const lab={perm:'Permeability kh (mD)',poro:'Porosity φ',press:'Pressure (bar)',sat:'Water Saturation Sw'};
   set('legend-label',lab[colorMode]||'Property');
   const bar=document.getElementById('legend-bar');
-  const ramps={perm:'#13294B,#C9A84C',poro:'#13294B,#2ECC8A',press:'#C0392B,#2ECC8A',sat:'#0B294B,#4AADCA'};
+  const ramps={perm:'#13294B,#C9A84C',poro:'#13294B,#2ECC8A',press:'#C0392B,#2ECC8A',sat:'#B42D1E,#DC8C28,#1E5AC8'};
   if(bar)bar.style.background=`linear-gradient(90deg,${ramps[colorMode]})`;
   const ks=LAYERS.map(l=>l.k);
   const ranges={perm:[Math.min(...ks).toFixed(0),Math.max(...ks).toFixed(0)],
-    poro:['0.05','0.40'],press:[P.pwfp,P.pi],sat:[P.swi.toFixed(2),(1-0.28).toFixed(2)]};
+    poro:['0.05','0.40'],press:[P.pwfp,P.pi],sat:['Oil (Swi)','Water (1−Sor)']};
   set('legend-min',ranges[colorMode][0]); set('legend-max',ranges[colorMode][1]);
 }
 
@@ -978,39 +1024,59 @@ function resize3D(){
   renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
 }
 
-// ── RESULTS 3D VIEWER ──
-let camThetaR=0.7,camPhiR=1.0,camRadiusR=2200,camTargetR;
+// ── RESULTS 3D SATURATION VIEWER ──
+let sat3DPlaying=false,sat3DInterval=null,explodeOnRes=false;
+
 function initThreeResults(){
-  // Saturation viewer is a 2D canvas heatmap (no WebGL). A second WebGL context
-  // is unreliable on iPad Safari, which reclaims contexts aggressively and mis-frames
-  // the second renderer. The 2D path renders deterministically on all targets.
+  const canvas=document.getElementById('three-canvas-res');
+  if(!canvas||sceneR)return; // guard against double-init
+  sceneR=new THREE.Scene(); sceneR.background=new THREE.Color(0x071428);
+  const w=canvas.offsetWidth||800,h=460;
+  cameraR=new THREE.PerspectiveCamera(45,w/h,1,50000);
+  rendererR=new THREE.WebGLRenderer({canvas,antialias:true});
+  rendererR.setPixelRatio(window.devicePixelRatio||1);
+  rendererR.setSize(w,h);
+  camTargetR=new THREE.Vector3(0,0,0);
+  addLights(sceneR);
+  attachOrbit(canvas,'results');
 }
-function buildResults3D(satArr){
-  if(!sceneR||!satArr)return;
-  if(gridGroupR)sceneR.remove(gridGroupR); if(wellGroupR)sceneR.remove(wellGroupR);
-  gridGroupR=new THREE.Group();wellGroupR=new THREE.Group();
+
+function buildSat3DGrid(satArr){
+  if(!sceneR)return;
+  if(gridGroupR)sceneR.remove(gridGroupR);
+  if(wellGroupR)sceneR.remove(wellGroupR);
+  gridGroupR=new THREE.Group(); wellGroupR=new THREE.Group();
   const {ni,nj,nk,dx,dy,dz}=P;
   const totW=ni*dx,totH=nj*dy,totZ=nk*dz;
   const zExag=Math.max(6,(Math.max(totW,totH)/Math.max(totZ,1))*0.10);
-  const geo=new THREE.BoxGeometry(dx*0.94,dz*zExag*0.9,dy*0.94);
+  const explodeGap=explodeOnRes?dz*zExag*1.4:0;
+  const cellGeo=new THREE.BoxGeometry(dx*0.93,dz*zExag*0.88,dy*0.93);
   for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
-    const idx=i+j*ni+k*ni*nj; const t=(satArr[idx]-P.swi)/(1-P.swi-0.28);
+    const idx=i+j*ni+k*ni*nj;
+    const t=satArr?Math.max(0,Math.min(1,(satArr[idx]-P.swi)/(1-P.swi-0.28))):0;
     const mat=new THREE.MeshLambertMaterial({color:rampSat(t)});
-    const m=new THREE.Mesh(geo,mat);
-    m.position.set((i-(ni-1)/2)*dx,-(k-(nk-1)/2)*dz*zExag,(j-(nj-1)/2)*dy);
-    gridGroupR.add(m);}
+    const m=new THREE.Mesh(cellGeo,mat);
+    const x=(i-(ni-1)/2)*dx, z=(j-(nj-1)/2)*dy;
+    const y=-(k-(nk-1)/2)*dz*zExag - k*explodeGap;
+    m.position.set(x,y,z); gridGroupR.add(m);
+  }
   buildWells().forEach(w=>{
-    const x=(w.i-(ni-1)/2)*dx,z=(w.j-(nj-1)/2)*dy;
-    const topY=(nk-1)/2*dz*zExag+dz*zExag*2,botY=-(nk-1)/2*dz*zExag-dz*zExag,h=topY-botY;
+    const x=(w.i-(ni-1)/2)*dx, z=(w.j-(nj-1)/2)*dy;
+    const topY=(nk-1)/2*dz*zExag+dz*zExag*2.2;
+    const botY=-(nk-1)/2*dz*zExag-(nk-1)*explodeGap-dz*zExag;
+    const h=topY-botY;
     const col=w.type==='prod'?0xC9A84C:0x4AADCA;
-    const cyl=new THREE.Mesh(new THREE.CylinderGeometry(dx*0.07,dx*0.07,h,10),new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.3}));
-    cyl.position.set(x,(topY+botY)/2,z);wellGroupR.add(cyl);});
-  sceneR.add(gridGroupR);sceneR.add(wellGroupR);
-  // Frame using the actual built geometry's bounding sphere (canonical Three.js
-  // approach). This measures the real model instead of hand-computed extents,
-  // accounting for aspect ratio so the grid is always centred and fully in view.
+    const cyl=new THREE.Mesh(new THREE.CylinderGeometry(dx*0.07,dx*0.07,h,10),
+      new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.35}));
+    cyl.position.set(x,(topY+botY)/2,z); wellGroupR.add(cyl);
+    const sph=new THREE.Mesh(new THREE.SphereGeometry(dx*0.18,12,12),
+      new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.6}));
+    sph.position.set(x,topY,z); wellGroupR.add(sph);
+  });
+  sceneR.add(gridGroupR); sceneR.add(wellGroupR);
   frameCameraToGroup(gridGroupR,'results');
 }
+
 
 // Reliable camera framing from a group's bounding sphere.
 function frameCameraToGroup(group,which){
@@ -1033,95 +1099,73 @@ function frameCameraToGroup(group,which){
 }
 function animateResults(){
   requestAnimationFrame(animateResults);
-  if(!rendererR||!document.getElementById('tab-results').classList.contains('active'))return;
+  if(!rendererR)return;
+  const tab=document.getElementById('tab-results');
+  if(!tab||!tab.classList.contains('active'))return;
   cameraR.position.set(
     camTargetR.x+camRadiusR*Math.sin(camPhiR)*Math.cos(camThetaR),
     camTargetR.y+camRadiusR*Math.cos(camPhiR),
     camTargetR.z+camRadiusR*Math.sin(camPhiR)*Math.sin(camThetaR));
-  cameraR.lookAt(camTargetR);rendererR.render(sceneR,cameraR);
+  cameraR.lookAt(camTargetR); rendererR.render(sceneR,cameraR);
 }
-function resize3DResults(){ return drawSatHeatmap(); }
-// Populate the layer selector, set to final timestep, and draw the heatmap once
-// the canvas has real width (results tab may still be settling layout).
+function resize3DResults(){
+  if(!rendererR)return;
+  const canvas=document.getElementById('three-canvas-res'); if(!canvas)return;
+  const w=canvas.offsetWidth,h=460;
+  rendererR.setSize(w,h); cameraR.aspect=w/h; cameraR.updateProjectionMatrix();
+}
 function showResults3D(){
   if(!RES.ran||!RES.satFrames.length)return;
-  const sel=document.getElementById('satLayerSel');
-  if(sel){
-    sel.innerHTML='';
-    for(let k=0;k<P.nk;k++){const o=document.createElement('option');o.value=k;o.textContent='Layer '+(k+1);sel.appendChild(o);}
-    satLayerK=Math.min(satLayerK,P.nk-1); sel.value=satLayerK;
-  }
   satFrameIdx=RES.satFrames.length-1;
-  set('satTimeLabel',`t = ${P.yr} yr`);
-  let tries=0;
-  const attempt=()=>{ tries++; if(!drawSatHeatmap()&&tries<60){requestAnimationFrame(attempt);} };
-  requestAnimationFrame(attempt);
+  const sc=document.getElementById('satScrubber');
+  if(sc){sc.max=RES.satFrames.length-1; sc.value=satFrameIdx;}
+  updateSat3DFrame(satFrameIdx);
 }
-
-// ── 2D AREAL SATURATION HEATMAP ──
-// Self-contained: no THREE dependency, no camera, no WebGL context.
-function satRGB(t){t=t<0?0:t>1?1:t; const a=[11,41,75],b=[74,173,202];
-  return 'rgb('+((a[0]+(b[0]-a[0])*t)|0)+','+((a[1]+(b[1]-a[1])*t)|0)+','+((a[2]+(b[2]-a[2])*t)|0)+')';}
-function drawSatHeatmap(){
-  const cv=document.getElementById('sat-heatmap');
-  if(!cv||!RES.ran||!RES.satFrames.length)return false;
-  const cssW=cv.clientWidth; if(cssW<10)return false;   // not laid out yet
-  const cssH=cv.clientHeight||420, dpr=window.devicePixelRatio||1;
-  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
-  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,cssW,cssH);
-  const {ni,nj}=P, k=Math.min(satLayerK,P.nk-1);
-  const frame=RES.satFrames[Math.min(satFrameIdx,RES.satFrames.length-1)];
-  const mL=48,mR=22,mT=18,mB=30;
-  // keep map cells square within the available box, centred
-  let availW=cssW-mL-mR, availH=cssH-mT-mB;
-  const cell=Math.min(availW/ni,availH/nj);
-  const mapW=cell*ni, mapH=cell*nj;
-  const ox=mL+(availW-mapW)/2, oy=mT+(availH-mapH)/2;
-  for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
-    const t=(frame[i+j*ni+k*ni*nj]-P.swi)/(1-P.swi-0.28);
-    ctx.fillStyle=satRGB(t);
-    ctx.fillRect(ox+i*cell,oy+j*cell,cell+0.6,cell+0.6);
-  }
-  ctx.strokeStyle='rgba(11,31,58,0.30)';ctx.lineWidth=0.5;
-  for(let i=0;i<=ni;i++){ctx.beginPath();ctx.moveTo(ox+i*cell,oy);ctx.lineTo(ox+i*cell,oy+mapH);ctx.stroke();}
-  for(let j=0;j<=nj;j++){ctx.beginPath();ctx.moveTo(ox,oy+j*cell);ctx.lineTo(ox+mapW,oy+j*cell);ctx.stroke();}
-  // wells (producers gold, injectors cyan)
-  buildWells().forEach(w=>{
-    const x=ox+(w.i+0.5)*cell, y=oy+(w.j+0.5)*cell, r=Math.max(4,cell*0.30);
-    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
-    ctx.fillStyle=w.type==='prod'?'#C9A84C':'#4AADCA';ctx.fill();
-    ctx.lineWidth=2;ctx.strokeStyle='#071428';ctx.stroke();
-  });
-  ctx.strokeStyle='rgba(201,168,76,0.45)';ctx.lineWidth=1;ctx.strokeRect(ox,oy,mapW,mapH);
-  // labels
-  ctx.fillStyle='#6B7A8D';ctx.font='10px monospace';ctx.textAlign='center';
-  ctx.fillText('I  (Δx blocks)  →',ox+mapW/2,oy+mapH+20);
-  ctx.save();ctx.translate(16,oy+mapH/2);ctx.rotate(-Math.PI/2);ctx.fillText('J  (Δy blocks)  →',0,0);ctx.restore();
-  ctx.textAlign='left';ctx.fillStyle='#C9A84C';ctx.fillText('Layer '+(k+1)+' / '+P.nk,ox,oy-6);
-  return true;
-}
-
-// Saturation animation
-function stepSatTime(d){
-  if(!RES.ran)return;
-  satFrameIdx=Math.max(0,Math.min(RES.satFrames.length-1,satFrameIdx+d));
-  drawSatHeatmap();
-  set('satTimeLabel',`t = ${RES.times[Math.min(satFrameIdx*Math.floor(RES.times.length/RES.satFrames.length),RES.times.length-1)].toFixed(1)} yr`);
-}
-function playSatAnimation(){
-  if(!RES.ran)return; satPlaying=!satPlaying;
-  document.getElementById('satPlayBtn').textContent=satPlaying?'❚❚ Pause':'▶ Play';
-  if(satPlaying)satLoop();
-}
-function satLoop(){
-  if(!satPlaying)return;
-  satFrameIdx++; if(satFrameIdx>=RES.satFrames.length)satFrameIdx=0;
-  drawSatHeatmap();
+function updateSat3DFrame(fi){
+  satFrameIdx=Math.max(0,Math.min(RES.satFrames.length-1,fi));
+  buildSat3DGrid(RES.satFrames[satFrameIdx]);
   const ti=Math.min(Math.floor(satFrameIdx*RES.times.length/RES.satFrames.length),RES.times.length-1);
-  set('satTimeLabel',`t = ${RES.times[ti].toFixed(1)} yr`);
-  setTimeout(()=>{requestAnimationFrame(satLoop);},420);
+  const tLabel=`t = ${RES.times[ti].toFixed(1)} yr`;
+  set('satTimeLabel',tLabel); set('satScrubLabel',tLabel);
+  const sc=document.getElementById('satScrubber');
+  if(sc){
+    sc.value=satFrameIdx;
+    const pct=(RES.satFrames.length>1?(satFrameIdx/(RES.satFrames.length-1)*100):100).toFixed(0);
+    sc.style.background=`linear-gradient(90deg,var(--gold) ${pct}%,rgba(107,122,141,0.3) ${pct}%)`;
+  }
 }
+function scrubSat3D(fi){ if(RES.ran)updateSat3DFrame(fi); }
+function stepSatTime3D(d){ if(RES.ran)updateSat3DFrame(satFrameIdx+d); }
+function stepSatTime(d){ stepSatTime3D(d); }
+function playSatAnimation3D(){
+  if(!RES.ran)return;
+  sat3DPlaying=!sat3DPlaying;
+  const btn=document.getElementById('satPlayBtn');
+  if(sat3DPlaying){
+    btn.textContent='❚❚ Pause'; btn.classList.add('active');
+    if(satFrameIdx>=RES.satFrames.length-1)satFrameIdx=-1;
+    sat3DInterval=setInterval(()=>{
+      if(!sat3DPlaying){clearInterval(sat3DInterval);return;}
+      satFrameIdx=(satFrameIdx+1)%RES.satFrames.length;
+      updateSat3DFrame(satFrameIdx);
+    },550);
+  }else{
+    clearInterval(sat3DInterval);
+    btn.textContent='▶ Animate'; btn.classList.remove('active');
+  }
+}
+function playSatAnimation(){ playSatAnimation3D(); }
+function toggleExplodeRes(){
+  explodeOnRes=!explodeOnRes;
+  document.getElementById('tg-explode-res').classList.toggle('active',explodeOnRes);
+  if(RES.ran&&RES.satFrames.length)buildSat3DGrid(RES.satFrames[satFrameIdx]);
+  else buildSat3DGrid(null);
+}
+// keep legacy stub (heatmap canvas is hidden but code elsewhere may call it)
+function drawSatHeatmap(){return true;}
+function satRGB(){return '#000';}
+
+
 </script>
 <script>
 // ════════════════════════════════════════════════════
@@ -1129,10 +1173,14 @@ function satLoop(){
 // ════════════════════════════════════════════════════
 function runSimulation(){
   const btn=document.getElementById('runBtn'); btn.disabled=true;
+  btn.classList.add('running'); btn.innerHTML='<span class="run-icon">⟳</span> Simulating…';
+  // Workflow step: running
+  document.getElementById('wf3').classList.add('active');
+  document.getElementById('wf2').classList.remove('active'); document.getElementById('wf2').classList.add('done');
   document.getElementById('progressWrap').style.display='flex';
   set('sv-state','Running'); set('statusChip','Running');
   const logEl=document.getElementById('simLog');
-  logEl.innerHTML='<span class="log-ok">■ APEX Reservoir 3D Engine v2.0 — Initialised</span>\n';
+  logEl.innerHTML='<span class="log-ok">■ APEX Reservoir 3D Engine v2.1 — Initialised</span>\n';
   const {ni,nj,nk,dx,dy,dz}=P; const N=ni*nj*nk;
   logEl.innerHTML+=`<span class="log-step">  Grid: ${ni}×${nj}×${nk} = ${N} cells · ${nk} layers</span>\n`;
   const t0=performance.now();
@@ -1201,37 +1249,103 @@ function runSimulation(){
     const dWe=Math.max(0,Jaq*(P.pi-pAvg)*dt); We+=dWe;
     const dP=-(voidage-dWe)/(PVtot*ct);
     for(let n=0;n<N;n++)press[n]=Math.max(P.pwfp+3,press[n]+dP*(0.85+0.3*Math.random()*0));
-    // ── SATURATION UPDATE (IMPES explicit) — injectors push water, vertical gravity ──
+    // ── SATURATION UPDATE — explicit upstream Buckley-Leverett transport ──
+    // Each timestep: compute inter-cell water fluxes using upstream mobility weighting,
+    // then update Sw from divergence of flux. Injectors are source terms; producers are sinks.
+    const {ni,nj}=P;
+    const dSwCell=new Float64Array(N); // Δsw accumulator this timestep
+
+    // Helper: fractional flow of water
+    const fw=sw_=>{ const mo=kro(sw_)/pvt.muo, mw=krw(sw_)/P.muw; return mw/(mo+mw+1e-12); };
+
+    // Injectors: water source into perforated cells
     wells.forEach(w=>{
       if(w.type==='inj'){
-        // water enters perforated cells, spreads laterally + slumps down (gravity)
         for(let k=0;k<nk;k++){
-          const spread=[[0,0,0],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0]];
-          spread.forEach(([di,dj,dk])=>{
-            const ii=w.i+di,jj=w.j+dj,kk=k+dk;
-            if(ii>=0&&ii<ni&&jj>=0&&jj<nj&&kk>=0&&kk<nk){
-              const idx=ii+jj*ni+kk*ni*nj; const dP=Math.max(0,P.pwfi-press[idx]);
-              const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
-              const dsw=WI*dP*dt*0.0864/(cellPV(idx)*1000+1)/spread.length;
-              sw[idx]=Math.min(1-0.28,sw[idx]+dsw);
-            }
-          });
+          const idx=w.i+w.j*ni+k*ni*nj;
+          const Pr=press[idx]; const dP=Math.max(0,P.pwfi-Pr);
+          const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
+          // water injection rate m³/d into this cell
+          const qwi=WI*dP/P.muw*0.0864;
+          const pv=cellPV(idx); // m³
+          dSwCell[idx]+=qwi*dt/pv; // dimensionless Sw increment
         }
       }
     });
-    // Producers: water cut rises as Sw climbs → drives WOR
-    wells.forEach(w=>{ if(w.type==='prod'){
-      for(let k=0;k<nk;k++){const idx=w.i+w.j*ni+k*ni*nj;
-        const fw=krw(sw[idx])/P.muw/(krw(sw[idx])/P.muw+kro(sw[idx])/pvt.muo+1e-9);
-        // small local Sw increase from drainage front arrival
-        sw[idx]=Math.min(1-0.28,sw[idx]+fw*0.0008);}}});
-    // Gravity segregation between layers (water slumps down)
-    if(P.gravity&&nk>1){
-      for(let j=0;j<nj;j++)for(let i=0;i<ni;i++)for(let k=0;k<nk-1;k++){
-        const a=i+j*ni+k*ni*nj, b=i+j*ni+(k+1)*ni*nj;
-        const flux=(sw[a]-P.swi)*0.002*P.kvkh;
-        if(sw[a]>sw[b]){sw[a]-=flux;sw[b]=Math.min(1-0.28,sw[b]+flux);}
+
+    // Producers: water+oil sink from perforated cells
+    wells.forEach(w=>{
+      if(w.type==='prod'){
+        for(let k=0;k<nk;k++){
+          const idx=w.i+w.j*ni+k*ni*nj;
+          const Pr=press[idx]; const dP=Math.max(0,Pr-P.pwfp);
+          const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
+          const qt=(WI*kro(sw[idx])*dP/(pvt.muo*pvt.Bo)+WI*krw(sw[idx])*dP/P.muw)*0.0864;
+          const ffw=fw(sw[idx]);
+          const pv=cellPV(idx);
+          // remove water (negative source)
+          dSwCell[idx]-=ffw*qt*dt/pv;
+        }
       }
+    });
+
+    // Inter-cell fluxes — x direction (i→i+1)
+    for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni-1;i++){
+      const a=i+j*ni+k*ni*nj, b=(i+1)+j*ni+k*ni*nj;
+      const dP=press[a]-press[b]; // bar
+      // transmissibility: T = 2·ka·kb/(ka+kb) · A / L · unit factors
+      const ka=kcell[a], kb=kcell[b];
+      const khm=2*ka*kb/(ka+kb+1e-9); // harmonic mean mD
+      const T=khm*1e-3*dy*dz/dx; // m³/(d·bar) basis (unit: mD → 1e-15 m² absorbed in 0.0864 factor below)
+      // upstream mobility weighting
+      const upIdx=dP>=0?a:b;
+      const mob=(krw(sw[upIdx])/P.muw + kro(sw[upIdx])/pvt.muo);
+      const fwUp=fw(sw[upIdx]);
+      const flux=T*mob*dP*0.0864*dt; // m³ water-equivalent flux
+      const pvA=cellPV(a), pvB=cellPV(b);
+      dSwCell[a]-=fwUp*flux/pvA;
+      dSwCell[b]+=fwUp*flux/pvB;
+    }
+
+    // Inter-cell fluxes — y direction (j→j+1)
+    for(let k=0;k<nk;k++)for(let j=0;j<nj-1;j++)for(let i=0;i<ni;i++){
+      const a=i+j*ni+k*ni*nj, b=i+(j+1)*ni+k*ni*nj;
+      const dP=press[a]-press[b];
+      const ka=kcell[a], kb=kcell[b];
+      const khm=2*ka*kb/(ka+kb+1e-9);
+      const T=khm*1e-3*dx*dz/dy;
+      const upIdx=dP>=0?a:b;
+      const fwUp=fw(sw[upIdx]);
+      const mob=(krw(sw[upIdx])/P.muw + kro(sw[upIdx])/pvt.muo);
+      const flux=T*mob*dP*0.0864*dt;
+      const pvA=cellPV(a), pvB=cellPV(b);
+      dSwCell[a]-=fwUp*flux/pvA;
+      dSwCell[b]+=fwUp*flux/pvB;
+    }
+
+    // Inter-layer fluxes — z direction (gravity + pressure cross-flow)
+    if(nk>1){
+      for(let k=0;k<nk-1;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
+        const a=i+j*ni+k*ni*nj, b=i+j*ni+(k+1)*ni*nj;
+        const ka=kcell[a]*P.kvkh, kb=kcell[b]*P.kvkh;
+        const kzm=2*ka*kb/(ka+kb+1e-9);
+        const T=kzm*1e-3*dx*dy/dz;
+        const dP=(press[a]-press[b]);
+        const gravDp=P.gravity?0.0981*dz:0; // density difference drives water down
+        const dPeff=dP+(sw[a]>sw[b]?gravDp:0); // heavier (water-rich) flows down
+        const upIdx=dPeff>=0?a:b;
+        const fwUp=fw(sw[upIdx]);
+        const mob=(krw(sw[upIdx])/P.muw + kro(sw[upIdx])/pvt.muo);
+        const flux=T*mob*dPeff*0.0864*dt;
+        const pvA=cellPV(a), pvB=cellPV(b);
+        dSwCell[a]-=fwUp*flux/pvA;
+        dSwCell[b]+=fwUp*flux/pvB;
+      }
+    }
+
+    // Apply Sw increments with clamp
+    for(let n=0;n<N;n++){
+      sw[n]=Math.max(P.swi,Math.min(1-0.28,sw[n]+dSwCell[n]));
     }
     simT+=dt; step++;
     const tyr=simT/365; times.push(tyr);
@@ -1272,8 +1386,16 @@ function finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.apex-tab')[7].classList.add('active');
   document.getElementById('tab-results').classList.add('active');
-  drawResults(); showResults3D();
-  btn.disabled=false; btn.innerHTML='<span class="run-icon">↺</span> Re-run';
+  drawResults();
+  setTimeout(()=>{
+    if(!sceneR)initThreeResults();
+    resize3DResults();
+    showResults3D();
+  },120);
+  btn.disabled=false; btn.classList.remove('running'); btn.innerHTML='<span class="run-icon">↺</span> Re-run';
+  // Workflow complete
+  document.getElementById('wf3').classList.remove('active'); document.getElementById('wf3').classList.add('done');
+  document.getElementById('wf4').classList.add('active');
   setStatus(`Complete · RF=${rf.toFixed(1)}% · ${cpu}s`,'#2ECC8A');
 }
 
@@ -1423,9 +1545,11 @@ window.addEventListener('load',()=>{
   document.querySelectorAll('.rail-range').forEach(r=>{const min=+r.min,max=+r.max,v=+r.value;r.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');});
   generateLayers(); updateDerived(); drawPVT(); drawSCAL(); drawAquifer();
   initThree(); initThreeResults();
-  window.addEventListener('resize',()=>{resize3D();resize3DResults();
-    drawPVT();drawSCAL();drawLayerCharts();drawAquifer();if(RES.ran)drawResults();});
-  setTimeout(()=>{resize3D();rebuild3D();},150);
+  window.addEventListener('resize',()=>{
+    resize3D(); resize3DResults();
+    drawPVT();drawSCAL();drawLayerCharts();drawAquifer();if(RES.ran)drawResults();
+  });
+  setTimeout(()=>{resize3D();rebuild3D();resize3DResults();},150);
 });
 </script>
 </body>
