@@ -917,8 +917,11 @@ function rebuild3D(satArr,presArr){
     });
   }
   scene.add(gridGroup); scene.add(wellGroup);
-  // Auto-fit camera radius
-  camRadius=Math.max(totW,totH)*1.6;
+  // Auto-fit camera from the full model bounding box (incl. vertical exaggeration
+  // and any layer-split gap) so the grid stays centred in view.
+  const vExtent=nk*dz*zExag + (nk-1)*explodeGap;
+  const halfDiag=0.5*Math.sqrt(totW*totW + totH*totH + vExtent*vExtent);
+  camRadius=halfDiag/Math.tan((camera.fov*Math.PI/180)/2)*1.25;
   updateLegend();
 }
 
@@ -1008,7 +1011,12 @@ function buildResults3D(satArr){
     const cyl=new THREE.Mesh(new THREE.CylinderGeometry(dx*0.07,dx*0.07,h,10),new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.3}));
     cyl.position.set(x,(topY+botY)/2,z);wellGroupR.add(cyl);});
   sceneR.add(gridGroupR);sceneR.add(wellGroupR);
-  camRadiusR=Math.max(totW,totH)*1.6;
+  // Frame the camera from the FULL model bounding box (incl. exaggerated height),
+  // so a re-run always re-centres the grid in view instead of drifting to a corner.
+  camTargetR.set(0,0,0);
+  const halfDiag=0.5*Math.sqrt(totW*totW + totH*totH + Math.pow(nk*dz*zExag,2));
+  camRadiusR=halfDiag/Math.tan((cameraR.fov*Math.PI/180)/2)*1.25;
+  camThetaR=0.7; camPhiR=1.0;  // reset to a known-good isometric angle each build
 }
 function animateResults(){
   requestAnimationFrame(animateResults);
