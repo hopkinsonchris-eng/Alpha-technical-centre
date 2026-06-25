@@ -148,6 +148,8 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 .vc-btn:hover{border-color:var(--gold-line);color:var(--gold);}
 .vc-btn.active{background:var(--gold-dim);border-color:var(--gold-line);color:var(--gold);}
 #three-canvas{width:100%;height:440px;display:block;cursor:grab;}
+.three-mount{width:100%;height:440px;display:block;position:relative;}
+.three-mount canvas{width:100%!important;height:100%!important;display:block;cursor:grab;}
 #sat-heatmap{width:100%;height:420px;display:block;background:#0F2338;}
 #three-canvas:active{cursor:grabbing;}
 .viewer-legend{position:absolute;bottom:14px;left:14px;background:rgba(7,20,40,0.85);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 11px;font-family:var(--font-mono);font-size:10px;color:var(--cream-dim);backdrop-filter:blur(4px);}
@@ -380,7 +382,7 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
             <button class="vc-btn" id="tg-wells" onclick="toggleWells()">Wells ✓</button>
           </div>
         </div>
-        <canvas id="three-canvas"></canvas>
+        <div id="three-mount-model" class="three-mount"></div>
         <div class="viewer-hint">LMB drag · rotate &nbsp;|&nbsp; wheel · zoom</div>
         <div class="viewer-legend">
           <div id="legend-label">Permeability kh (mD)</div>
@@ -599,7 +601,7 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
             <button class="vc-btn" id="tg-explode-res" onclick="toggleExplodeRes()">Layer Split</button>
           </div>
         </div>
-        <canvas id="three-canvas-res" style="width:100%;height:460px;display:block;cursor:grab;"></canvas>
+        <div id="three-mount-results" class="three-mount" style="height:460px;"></div>
         <div class="viewer-hint">LMB drag · rotate &nbsp;|&nbsp; wheel · zoom</div>
         <div class="viewer-legend">
           <div id="sat3d-legend-label">Water Saturation Sw</div>
@@ -771,11 +773,17 @@ function switchTab(name,btn){
   btn.classList.add('active'); document.getElementById('tab-'+name).classList.add('active');
   if(name==='pvt')drawPVT(); if(name==='rock')drawSCAL();
   if(name==='layers')drawLayerCharts(); if(name==='aquifer')drawAquifer();
-  if(name==='model'){ setTimeout(()=>{resize3D(); rebuild3D();},60); }
+  if(name==='model'){
+    setTimeout(()=>{
+      mountCanvasTo('model');
+      // rebuild main grid (preserve current colour mode)
+      if(RES.ran && colorMode==='sat') rebuild3D(RES.satFrames[RES.satFrames.length-1]);
+      else rebuild3D();
+    },60);
+  }
   if(name==='results'){
     setTimeout(()=>{
-      if(!sceneR)initThreeResults();
-      resize3DResults();
+      mountCanvasTo('results');
       if(RES.ran){ drawResults(); showResults3D(); }
     },80);
   }
@@ -884,17 +892,95 @@ let camThetaR=0.7,camPhiR=1.05,camRadiusR=2200,camTargetR;
 let dragging=false,lastX=0,lastY=0;
 let sceneR,cameraR,rendererR,gridGroupR,wellGroupR; // results viewer
 
+// ONE shared renderer + canvas, moved between tab mounts. This avoids the
+// iPad Safari two-WebGL-context problem (Safari reclaims the first context
+// when a second is created, blanking one viewer).
+let sharedCanvas=null, activeMount='model';
+
 function initThree(){
-  const canvas=document.getElementById('three-canvas');
   scene=new THREE.Scene(); scene.background=new THREE.Color(0x0F2338);
-  camera=new THREE.PerspectiveCamera(45,canvas.offsetWidth/440,1,50000);
-  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-  renderer.setPixelRatio(window.devicePixelRatio||1);
+  camera=new THREE.PerspectiveCamera(45,1,1,50000);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  sharedCanvas=renderer.domElement;
+  sharedCanvas.style.cursor='grab';
   camTarget=new THREE.Vector3(0,0,0);
   addLights(scene);
-  attachOrbit(canvas,'main');
+  // Results scene shares the same renderer/canvas but its own scene+camera
+  sceneR=new THREE.Scene(); sceneR.background=new THREE.Color(0x071428);
+  cameraR=new THREE.PerspectiveCamera(45,1,1,50000);
+  camTargetR=new THREE.Vector3(0,0,0);
+  addLights(sceneR);
+  mountCanvasTo('model');
+  attachOrbitShared();
   rebuild3D();
-  animateMain();
+  animateShared();
+}
+
+// Move the single canvas into a tab's mount div and size it
+function mountCanvasTo(which){
+  activeMount=which;
+  const mount=document.getElementById('three-mount-'+which);
+  if(mount && sharedCanvas.parentElement!==mount){
+    mount.appendChild(sharedCanvas);
+  }
+  resizeShared();
+}
+
+function resizeShared(){
+  if(!renderer||!sharedCanvas)return;
+  const mount=sharedCanvas.parentElement;
+  if(!mount)return;
+  const w=mount.clientWidth||800, h=mount.clientHeight||440;
+  renderer.setSize(w,h,false);
+  const cam=(activeMount==='results')?cameraR:camera;
+  cam.aspect=w/h; cam.updateProjectionMatrix();
+}
+
+function animateShared(){
+  requestAnimationFrame(animateShared);
+  if(!renderer)return;
+  if(activeMount==='results'){
+    if(!cameraR)return;
+    cameraR.position.set(
+      camTargetR.x+camRadiusR*Math.sin(camPhiR)*Math.cos(camThetaR),
+      camTargetR.y+camRadiusR*Math.cos(camPhiR),
+      camTargetR.z+camRadiusR*Math.sin(camPhiR)*Math.sin(camThetaR));
+    cameraR.lookAt(camTargetR);
+    renderer.render(sceneR,cameraR);
+  }else{
+    camera.position.set(
+      camTarget.x+camRadius*Math.sin(camPhi)*Math.cos(camTheta),
+      camTarget.y+camRadius*Math.cos(camPhi),
+      camTarget.z+camRadius*Math.sin(camPhi)*Math.sin(camTheta));
+    camera.lookAt(camTarget);
+    renderer.render(scene,camera);
+  }
+}
+
+// Orbit control on the shared canvas — drives whichever camera is active
+function attachOrbitShared(){
+  let drag=false,lx=0,ly=0;
+  const down=e=>{drag=true;const t=e.touches?e.touches[0]:e;lx=t.clientX;ly=t.clientY;};
+  const move=e=>{if(!drag)return;const t=e.touches?e.touches[0]:e;
+    const dx=t.clientX-lx,dy=t.clientY-ly;lx=t.clientX;ly=t.clientY;
+    if(activeMount==='results'){
+      camThetaR-=dx*0.008;camPhiR=Math.max(0.15,Math.min(Math.PI-0.15,camPhiR-dy*0.008));
+    }else{
+      camTheta-=dx*0.008;camPhi=Math.max(0.15,Math.min(Math.PI-0.15,camPhi-dy*0.008));
+    }
+    if(e.cancelable)e.preventDefault();};
+  const up=()=>{drag=false;};
+  const wheel=e=>{if(e.cancelable)e.preventDefault();
+    if(activeMount==='results')camRadiusR=Math.max(300,Math.min(12000,camRadiusR*(1+e.deltaY*0.0012)));
+    else camRadius=Math.max(300,Math.min(12000,camRadius*(1+e.deltaY*0.0012)));};
+  sharedCanvas.addEventListener('mousedown',down);
+  window.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',up);
+  sharedCanvas.addEventListener('touchstart',down,{passive:false});
+  sharedCanvas.addEventListener('touchmove',move,{passive:false});
+  sharedCanvas.addEventListener('touchend',up);
+  sharedCanvas.addEventListener('wheel',wheel,{passive:false});
 }
 function addLights(s){
   s.add(new THREE.AmbientLight(0xffffff,0.55));
@@ -1006,54 +1092,17 @@ function toggleExplode(){explodeOn=!explodeOn;document.getElementById('tg-explod
 function toggleWells(){wellsOn=!wellsOn;const b=document.getElementById('tg-wells');b.classList.toggle('active',wellsOn);b.textContent=wellsOn?'Wells ✓':'Wells';rebuild3D();}
 
 // ── ORBIT CONTROL ──
-function attachOrbit(canvas,which){
-  const down=e=>{dragging=true;const t=e.touches?e.touches[0]:e;lastX=t.clientX;lastY=t.clientY;};
-  const move=e=>{if(!dragging)return;const t=e.touches?e.touches[0]:e;
-    const dx=t.clientX-lastX,dy=t.clientY-lastY;lastX=t.clientX;lastY=t.clientY;
-    if(which==='main'){camTheta-=dx*0.008;camPhi=Math.max(0.15,Math.min(Math.PI-0.15,camPhi-dy*0.008));}
-    else{camThetaR-=dx*0.008;camPhiR=Math.max(0.15,Math.min(Math.PI-0.15,camPhiR-dy*0.008));}
-    e.preventDefault();};
-  const up=()=>{dragging=false;};
-  const wheel=e=>{e.preventDefault();
-    if(which==='main')camRadius=Math.max(300,Math.min(12000,camRadius*(1+e.deltaY*0.0012)));
-    else camRadiusR=Math.max(300,Math.min(12000,camRadiusR*(1+e.deltaY*0.0012)));};
-  canvas.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
-  canvas.addEventListener('touchstart',down,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',up);
-  canvas.addEventListener('wheel',wheel,{passive:false});
-}
-
-function animateMain(){
-  requestAnimationFrame(animateMain);
-  if(!renderer||!document.getElementById('tab-model').classList.contains('active'))return;
-  camera.position.set(
-    camTarget.x+camRadius*Math.sin(camPhi)*Math.cos(camTheta),
-    camTarget.y+camRadius*Math.cos(camPhi),
-    camTarget.z+camRadius*Math.sin(camPhi)*Math.sin(camTheta));
-  camera.lookAt(camTarget);
-  renderer.render(scene,camera);
-}
-function resize3D(){
-  const c=document.getElementById('three-canvas');if(!renderer)return;
-  const w=c.offsetWidth,h=c.offsetHeight||440;
-  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
-}
+// Legacy shims — now handled by the shared renderer system above
+function attachOrbit(){} // no-op: attachOrbitShared handles input
+function animateMain(){}  // no-op: animateShared handles rendering
+function resize3D(){ if(activeMount==='model')resizeShared(); }
 
 // ── RESULTS 3D SATURATION VIEWER ──
 let sat3DPlaying=false,sat3DInterval=null,explodeOnRes=false;
 
 function initThreeResults(){
-  const canvas=document.getElementById('three-canvas-res');
-  if(!canvas||sceneR)return; // guard against double-init
-  sceneR=new THREE.Scene(); sceneR.background=new THREE.Color(0x071428);
-  const w=canvas.offsetWidth||800,h=460;
-  cameraR=new THREE.PerspectiveCamera(45,w/h,1,50000);
-  rendererR=new THREE.WebGLRenderer({canvas,antialias:true});
-  rendererR.setPixelRatio(window.devicePixelRatio||1);
-  rendererR.setSize(w,h);
-  camTargetR=new THREE.Vector3(0,0,0);
-  addLights(sceneR);
-  attachOrbit(canvas,'results');
-  animateResults(); // START the render loop — was missing
+  // Results scene/camera already created in initThree; nothing to do.
+  // Kept for compatibility with existing call sites.
 }
 
 function buildSat3DGrid(satArr){
@@ -1101,7 +1150,6 @@ function frameCameraToGroup(group,which){
   const cam=(which==='results')?cameraR:camera;
   const fov=cam.fov*Math.PI/180;
   const aspect=cam.aspect||1;
-  // distance must satisfy both vertical and horizontal FOV
   const vDist=sphere.radius/Math.sin(fov/2);
   const hFov=2*Math.atan(Math.tan(fov/2)*aspect);
   const hDist=sphere.radius/Math.sin(hFov/2);
@@ -1112,40 +1160,25 @@ function frameCameraToGroup(group,which){
     camTarget.copy(sphere.center); camRadius=dist; camTheta=0.7; camPhi=1.05;
   }
 }
-function animateResults(){
-  requestAnimationFrame(animateResults);
-  if(!rendererR)return;
-  const tab=document.getElementById('tab-results');
-  if(!tab||!tab.classList.contains('active'))return;
-  cameraR.position.set(
-    camTargetR.x+camRadiusR*Math.sin(camPhiR)*Math.cos(camThetaR),
-    camTargetR.y+camRadiusR*Math.cos(camPhiR),
-    camTargetR.z+camRadiusR*Math.sin(camPhiR)*Math.sin(camThetaR));
-  cameraR.lookAt(camTargetR); rendererR.render(sceneR,cameraR);
-}
-function resize3DResults(){
-  if(!rendererR)return;
-  const canvas=document.getElementById('three-canvas-res'); if(!canvas)return;
-  const w=canvas.offsetWidth,h=460;
-  rendererR.setSize(w,h); cameraR.aspect=w/h; cameraR.updateProjectionMatrix();
-}
+function animateResults(){} // no-op: animateShared handles rendering
+function resize3DResults(){ if(activeMount==='results')resizeShared(); }
 function showResults3D(){
   if(!RES.ran||!RES.satFrames.length)return;
   satFrameIdx=0; // start at t=0 (red/oil state) — press Animate to play forward
   const sc=document.getElementById('satScrubber');
   if(sc){sc.max=RES.satFrames.length-1; sc.value=0;
     sc.style.background='linear-gradient(90deg,var(--gold) 0%,rgba(107,122,141,0.3) 0%)';}
-  // Wait for the canvas to have real width before sizing + building (layout race)
+  // Mount the shared canvas into the results viewer, then build once sized
+  mountCanvasTo('results');
   let tries=0;
   const attempt=()=>{
-    const canvas=document.getElementById('three-canvas-res');
-    if(canvas && canvas.offsetWidth>10){
-      resize3DResults();
+    const mount=document.getElementById('three-mount-results');
+    if(mount && mount.clientWidth>10){
+      resizeShared();
       updateSat3DFrame(0);
     }else if(tries++<60){
       requestAnimationFrame(attempt);
     }else{
-      // give up waiting — build anyway with fallback size
       updateSat3DFrame(0);
     }
   };
@@ -1213,6 +1246,7 @@ function runSimulation(){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelector('[data-tab="model"]').classList.add('active');
   document.getElementById('tab-model').classList.add('active');
+  mountCanvasTo('model'); // ensure shared canvas is on the model tab for live view
   // Pre-switch colour mode to saturation so live rebuild shows red→blue
   colorMode='sat';
   ['perm','poro','press','sat'].forEach(x=>document.getElementById('cm-'+x)?.classList.toggle('active',x==='sat'));
@@ -1457,8 +1491,7 @@ function finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn){
   document.getElementById('tab-results').classList.add('active');
   drawResults();
   setTimeout(()=>{
-    if(!sceneR)initThreeResults();
-    showResults3D(); // handles its own canvas-width retry
+    showResults3D(); // mounts shared canvas to results + builds when sized
   },100);
   btn.disabled=false; btn.classList.remove('running'); btn.innerHTML='<span class="run-icon">↺</span> Re-run';
   // Hide live badge
@@ -1615,12 +1648,12 @@ function pushToAPEX(){
 window.addEventListener('load',()=>{
   document.querySelectorAll('.rail-range').forEach(r=>{const min=+r.min,max=+r.max,v=+r.value;r.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');});
   generateLayers(); updateDerived(); drawPVT(); drawSCAL(); drawAquifer();
-  initThree(); initThreeResults();
+  initThree(); // single shared renderer; results scene created inside
   window.addEventListener('resize',()=>{
-    resize3D(); resize3DResults();
+    resizeShared();
     drawPVT();drawSCAL();drawLayerCharts();drawAquifer();if(RES.ran)drawResults();
   });
-  setTimeout(()=>{resize3D();rebuild3D();resize3DResults();},150);
+  setTimeout(()=>{resizeShared();rebuild3D();},150);
 });
 </script>
 </body>
