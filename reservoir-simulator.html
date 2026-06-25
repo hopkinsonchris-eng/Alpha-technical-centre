@@ -148,6 +148,7 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 .vc-btn:hover{border-color:var(--gold-line);color:var(--gold);}
 .vc-btn.active{background:var(--gold-dim);border-color:var(--gold-line);color:var(--gold);}
 #three-canvas{width:100%;height:440px;display:block;cursor:grab;}
+#sat-heatmap{width:100%;height:420px;display:block;background:#0F2338;}
 #three-canvas:active{cursor:grabbing;}
 .viewer-legend{position:absolute;bottom:14px;left:14px;background:rgba(7,20,40,0.85);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 11px;font-family:var(--font-mono);font-size:10px;color:var(--cream-dim);backdrop-filter:blur(4px);}
 .viewer-legend-bar{width:120px;height:8px;border-radius:2px;margin:5px 0 3px;background:linear-gradient(90deg,#0B294B,#4AADCA);}
@@ -210,7 +211,7 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
   .apex-body{grid-template-columns:1fr;}
   .apex-rail{max-height:none;position:static;border-right:none;border-bottom:1px solid var(--line);}
   .apex-main{max-height:none;}
-  #three-canvas{height:320px;}
+  #three-canvas,#sat-heatmap{height:320px;}
 }
 </style>
 </head>
@@ -567,15 +568,16 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
       </div>
       <div class="viewer-wrap">
         <div class="viewer-bar">
-          <span class="viewer-bar-title">3D Saturation Evolution</span>
+          <span class="viewer-bar-title">Areal Saturation Sw · Layer Map</span>
           <div class="viewer-controls">
+            <select class="vc-btn" id="satLayerSel" style="cursor:pointer;" onchange="satLayerK=+this.value;drawSatHeatmap();"></select>
             <button class="vc-btn" onclick="stepSatTime(-1)">◀ Prev</button>
             <button class="vc-btn active" id="satPlayBtn" onclick="playSatAnimation()">▶ Play</button>
             <button class="vc-btn" onclick="stepSatTime(1)">Next ▶</button>
             <span class="vc-btn" style="cursor:default" id="satTimeLabel">t = 0 yr</span>
           </div>
         </div>
-        <canvas id="three-canvas-results"></canvas>
+        <canvas id="sat-heatmap"></canvas>
         <div class="viewer-legend">
           <div>Water Saturation Sw</div>
           <div class="viewer-legend-bar" style="background:linear-gradient(90deg,#0B294B,#4AADCA);"></div>
@@ -623,7 +625,7 @@ const P = {
 
 let LAYERS=[];      // per-layer {phi,k,ntg,depth}
 const RES={ran:false,times:[],qo:[],qw:[],pres:[],np:[],wp:[],gor:[],wor:[],satFrames:[],presFrames:[]};
-let colorMode='perm', explodeOn=false, wellsOn=true, satFrameIdx=0, satPlaying=false;
+let colorMode='perm', explodeOn=false, wellsOn=true, satFrameIdx=0, satPlaying=false, satLayerK=0;
 
 // ── RANGE SYNC ──
 function syncRange(key,el){
@@ -972,19 +974,16 @@ function animateMain(){
 }
 function resize3D(){
   const c=document.getElementById('three-canvas');if(!renderer)return;
-  renderer.setSize(c.offsetWidth,440,false);camera.aspect=c.offsetWidth/440;camera.updateProjectionMatrix();
+  const w=c.offsetWidth,h=c.offsetHeight||440;
+  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
 }
 
 // ── RESULTS 3D VIEWER ──
 let camThetaR=0.7,camPhiR=1.0,camRadiusR=2200,camTargetR;
 function initThreeResults(){
-  const canvas=document.getElementById('three-canvas-results');
-  sceneR=new THREE.Scene();sceneR.background=new THREE.Color(0x0F2338);
-  cameraR=new THREE.PerspectiveCamera(45,canvas.offsetWidth/420,1,50000);
-  rendererR=new THREE.WebGLRenderer({canvas,antialias:true});
-  rendererR.setPixelRatio(window.devicePixelRatio||1);
-  camTargetR=new THREE.Vector3(0,0,0);
-  addLights(sceneR); attachOrbit(canvas,'results'); animateResults();
+  // Saturation viewer is a 2D canvas heatmap (no WebGL). A second WebGL context
+  // is unreliable on iPad Safari, which reclaims contexts aggressively and mis-frames
+  // the second renderer. The 2D path renders deterministically on all targets.
 }
 function buildResults3D(satArr){
   if(!sceneR||!satArr)return;
@@ -1041,36 +1040,73 @@ function animateResults(){
     camTargetR.z+camRadiusR*Math.sin(camPhiR)*Math.sin(camThetaR));
   cameraR.lookAt(camTargetR);rendererR.render(sceneR,cameraR);
 }
-function resize3DResults(){
-  const c=document.getElementById('three-canvas-results'); if(!rendererR||!c)return false;
-  const w=c.offsetWidth;
-  if(w<10){ return false; }   // canvas not laid out yet — caller should retry
-  rendererR.setSize(w,420,false); cameraR.aspect=w/420; cameraR.updateProjectionMatrix();
-  return true;
-}
-// Wait for the results canvas to have real width, then size + (re)build the model.
+function resize3DResults(){ return drawSatHeatmap(); }
+// Populate the layer selector, set to final timestep, and draw the heatmap once
+// the canvas has real width (results tab may still be settling layout).
 function showResults3D(){
+  if(!RES.ran||!RES.satFrames.length)return;
+  const sel=document.getElementById('satLayerSel');
+  if(sel){
+    sel.innerHTML='';
+    for(let k=0;k<P.nk;k++){const o=document.createElement('option');o.value=k;o.textContent='Layer '+(k+1);sel.appendChild(o);}
+    satLayerK=Math.min(satLayerK,P.nk-1); sel.value=satLayerK;
+  }
+  satFrameIdx=RES.satFrames.length-1;
+  set('satTimeLabel',`t = ${P.yr} yr`);
   let tries=0;
-  const attempt=()=>{
-    tries++;
-    if(resize3DResults()){
-      satFrameIdx=RES.satFrames.length-1;
-      buildResults3D(RES.satFrames[satFrameIdx]);
-      set('satTimeLabel',`t = ${P.yr} yr`);
-      // one more resize + reframe next frame in case layout settled further
-      requestAnimationFrame(()=>{ if(resize3DResults()&&gridGroupR) frameCameraToGroup(gridGroupR,'results'); });
-    } else if(tries<60){
-      requestAnimationFrame(attempt);
-    }
-  };
+  const attempt=()=>{ tries++; if(!drawSatHeatmap()&&tries<60){requestAnimationFrame(attempt);} };
   requestAnimationFrame(attempt);
+}
+
+// ── 2D AREAL SATURATION HEATMAP ──
+// Self-contained: no THREE dependency, no camera, no WebGL context.
+function satRGB(t){t=t<0?0:t>1?1:t; const a=[11,41,75],b=[74,173,202];
+  return 'rgb('+((a[0]+(b[0]-a[0])*t)|0)+','+((a[1]+(b[1]-a[1])*t)|0)+','+((a[2]+(b[2]-a[2])*t)|0)+')';}
+function drawSatHeatmap(){
+  const cv=document.getElementById('sat-heatmap');
+  if(!cv||!RES.ran||!RES.satFrames.length)return false;
+  const cssW=cv.clientWidth; if(cssW<10)return false;   // not laid out yet
+  const cssH=cv.clientHeight||420, dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+  const {ni,nj}=P, k=Math.min(satLayerK,P.nk-1);
+  const frame=RES.satFrames[Math.min(satFrameIdx,RES.satFrames.length-1)];
+  const mL=48,mR=22,mT=18,mB=30;
+  // keep map cells square within the available box, centred
+  let availW=cssW-mL-mR, availH=cssH-mT-mB;
+  const cell=Math.min(availW/ni,availH/nj);
+  const mapW=cell*ni, mapH=cell*nj;
+  const ox=mL+(availW-mapW)/2, oy=mT+(availH-mapH)/2;
+  for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
+    const t=(frame[i+j*ni+k*ni*nj]-P.swi)/(1-P.swi-0.28);
+    ctx.fillStyle=satRGB(t);
+    ctx.fillRect(ox+i*cell,oy+j*cell,cell+0.6,cell+0.6);
+  }
+  ctx.strokeStyle='rgba(11,31,58,0.30)';ctx.lineWidth=0.5;
+  for(let i=0;i<=ni;i++){ctx.beginPath();ctx.moveTo(ox+i*cell,oy);ctx.lineTo(ox+i*cell,oy+mapH);ctx.stroke();}
+  for(let j=0;j<=nj;j++){ctx.beginPath();ctx.moveTo(ox,oy+j*cell);ctx.lineTo(ox+mapW,oy+j*cell);ctx.stroke();}
+  // wells (producers gold, injectors cyan)
+  buildWells().forEach(w=>{
+    const x=ox+(w.i+0.5)*cell, y=oy+(w.j+0.5)*cell, r=Math.max(4,cell*0.30);
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=w.type==='prod'?'#C9A84C':'#4AADCA';ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle='#071428';ctx.stroke();
+  });
+  ctx.strokeStyle='rgba(201,168,76,0.45)';ctx.lineWidth=1;ctx.strokeRect(ox,oy,mapW,mapH);
+  // labels
+  ctx.fillStyle='#6B7A8D';ctx.font='10px monospace';ctx.textAlign='center';
+  ctx.fillText('I  (Δx blocks)  →',ox+mapW/2,oy+mapH+20);
+  ctx.save();ctx.translate(16,oy+mapH/2);ctx.rotate(-Math.PI/2);ctx.fillText('J  (Δy blocks)  →',0,0);ctx.restore();
+  ctx.textAlign='left';ctx.fillStyle='#C9A84C';ctx.fillText('Layer '+(k+1)+' / '+P.nk,ox,oy-6);
+  return true;
 }
 
 // Saturation animation
 function stepSatTime(d){
   if(!RES.ran)return;
   satFrameIdx=Math.max(0,Math.min(RES.satFrames.length-1,satFrameIdx+d));
-  buildResults3D(RES.satFrames[satFrameIdx]);
+  drawSatHeatmap();
   set('satTimeLabel',`t = ${RES.times[Math.min(satFrameIdx*Math.floor(RES.times.length/RES.satFrames.length),RES.times.length-1)].toFixed(1)} yr`);
 }
 function playSatAnimation(){
@@ -1081,7 +1117,7 @@ function playSatAnimation(){
 function satLoop(){
   if(!satPlaying)return;
   satFrameIdx++; if(satFrameIdx>=RES.satFrames.length)satFrameIdx=0;
-  buildResults3D(RES.satFrames[satFrameIdx]);
+  drawSatHeatmap();
   const ti=Math.min(Math.floor(satFrameIdx*RES.times.length/RES.satFrames.length),RES.times.length-1);
   set('satTimeLabel',`t = ${RES.times[ti].toFixed(1)} yr`);
   setTimeout(()=>{requestAnimationFrame(satLoop);},420);
