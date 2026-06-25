@@ -1255,6 +1255,7 @@ function runSimulation(){
   rebuild3D(sw, press, true); // full rebuild at start — creates all mesh objects once
 
   const tick=()=>{
+   try{
     if(simT>=T_end){finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn);return;}
     const pAvg=avg(press); const pvt=getPVT(pAvg);
     // ── WELL RATES (per perforated layer) ──
@@ -1282,7 +1283,6 @@ function runSimulation(){
     // ── SATURATION UPDATE — explicit upstream Buckley-Leverett transport ──
     // Each timestep: compute inter-cell water fluxes using upstream mobility weighting,
     // then update Sw from divergence of flux. Injectors are source terms; producers are sinks.
-    const {ni,nj}=P;
     const dSwCell=new Float64Array(N); // Δsw accumulator this timestep
 
     // Helper: fractional flow of water
@@ -1405,6 +1405,17 @@ function runSimulation(){
     const liveEl=document.getElementById('live-sim-status');
     if(liveEl) liveEl.textContent=`⟳ t=${tyr.toFixed(1)} yr · S̄w=${avg(sw).toFixed(3)} · Qo=${Qo.toFixed(0)} m³/d`;
     setTimeout(tick,0);
+   }catch(err){
+    // Surface the error instead of hanging on "Simulating…"
+    const btn=document.getElementById('runBtn');
+    btn.disabled=false; btn.classList.remove('running'); btn.innerHTML='<span class="run-icon">▶</span> Run Simulation';
+    setStatus('Error: '+err.message,'#E07070');
+    const liveEl=document.getElementById('live-sim-status');
+    if(liveEl){liveEl.style.color='#E07070';liveEl.textContent='✕ '+err.message;}
+    const logEl=document.getElementById('simLog');
+    if(logEl){logEl.innerHTML+=`<span style="color:#E07070">✕ Error at step ${step}: ${err.message}</span>\n`;}
+    alert('Simulation error at step '+step+':\n\n'+err.message);
+   }
   };
   tick();
 }
