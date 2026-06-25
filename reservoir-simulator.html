@@ -930,6 +930,19 @@ function cellColor(i,j,k,satArr,presArr){
   const t=(L.k/Math.max(...LAYERS.map(l=>l.k)));return rampPerm(t*(0.6+0.6*noise));
 }
 
+// Fast in-place colour update — avoids recreating meshes during live sim
+// Just iterates the existing gridGroup children and updates material.color
+function updateGrid3DColors(satArr, presArr){
+  if(!scene||!gridGroup)return;
+  const {ni,nj,nk}=P;
+  const children=gridGroup.children;
+  let idx=0;
+  for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
+    if(children[idx]) children[idx].material.color=cellColor(i,j,k,satArr,presArr);
+    idx++;
+  }
+}
+
 function rebuild3D(satArr,presArr,keepCamera){
   if(!scene)return;
   if(gridGroup)scene.remove(gridGroup);
@@ -1232,13 +1245,14 @@ function runSimulation(){
   const times=[],qos=[],qws=[],pres=[],nps=[],wps=[],gors=[],wors=[];
   let cumO=0,cumW=0,simT=0,step=0;
   const nSteps=Math.ceil(T_end/dt), logEvery=Math.max(1,Math.floor(nSteps/8));
-  const frameEvery=Math.max(1,Math.floor(nSteps/32)); // ~32 frames for smooth animation
+  const frameEvery=Math.max(1,Math.floor(nSteps/16)); // 16 saved frames
+  const renderEvery=Math.max(1,Math.floor(nSteps/8));  // 8 live colour updates (lighter)
   RES.satFrames=[]; RES.presFrames=[];
 
-  // ── RENDER INITIAL STATE (t=0, all oil = red) ──
+  // ── RENDER INITIAL STATE (t=0, all oil = red) — builds mesh geometry once ──
   RES.satFrames.push(Float64Array.from(sw));
   RES.presFrames.push(Float64Array.from(press));
-  rebuild3D(sw, press, true); // show red initial state immediately
+  rebuild3D(sw, press, true); // full rebuild at start — creates all mesh objects once
 
   const tick=()=>{
     if(simT>=T_end){finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn);return;}
@@ -1371,11 +1385,13 @@ function runSimulation(){
     if(step%frameEvery===0||simT>=T_end){
       RES.satFrames.push(Float64Array.from(sw));
       RES.presFrames.push(Float64Array.from(press));
-      // Live update — switch Model tab to saturation view and rebuild 3D
+    }
+    if(step%renderEvery===0||simT>=T_end){
+      // Live colour update — update mesh colours in-place (fast, no GPU object churn)
       colorMode='sat';
       ['perm','poro','press','sat'].forEach(x=>document.getElementById('cm-'+x)?.classList.toggle('active',x==='sat'));
       updateLegend();
-      rebuild3D(sw, press, true); // keepCamera=true — don't re-frame during live update
+      updateGrid3DColors(sw, press);
     }
     if(step%logEvery===0){
       logEl.innerHTML+=`<span class="log-step">  [t=${tyr.toFixed(1)}yr]</span> P̄=<span class="log-val">${avg(press).toFixed(0)}bar</span> Qo=<span class="log-val">${Qo.toFixed(0)}m³/d</span> S̄w=<span class="log-val">${avg(sw).toFixed(3)}</span> We=<span class="log-val">${(We/1e3).toFixed(0)}k</span>\n`;
