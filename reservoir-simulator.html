@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>APEX Reservoir 3D · Multiwell Black Oil Simulator · Alpha Technical Centre</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --navy:#0B1F3A; --navy2:#13294B; --navy3:#0D2444; --navy-dark:#071428;
+  --gold:#C9A84C; --gold-dim:rgba(201,168,76,0.16); --gold-line:rgba(201,168,76,0.32);
+  --gold-glow:rgba(201,168,76,0.07);
+  --cream:#F8F5EE; --cream-dim:rgba(248,245,238,0.62); --cream-faint:rgba(248,245,238,0.35);
+  --steel:#6B7A8D; --steel-dim:rgba(107,122,141,0.18);
+  --red:#C0392B; --red-dim:rgba(192,57,43,0.18);
+  --green:#1A7A4A; --green-bright:#2ECC8A; --green-dim:rgba(46,204,138,0.14);
+  --amber:#E8963A; --amber-dim:rgba(232,150,58,0.18);
+  --cyan:#4AADCA; --cyan-dim:rgba(74,173,202,0.14);
+  --panel:#0F2338; --panel2:#142B45;
+  --line:rgba(107,122,141,0.22);
+  --font-display:'Playfair Display',Georgia,serif;
+  --font-body:'Barlow',system-ui,sans-serif;
+  --font-cond:'Barlow Condensed',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --r:6px; --r-sm:4px;
+  --tr:0.18s cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;}
+
+/* HEADER */
+.apex-stripe{height:4px;background:linear-gradient(90deg,var(--gold) 0%,var(--gold) 36%,var(--red) 36%,var(--red) 60%,var(--navy2) 60%);}
+.apex-head{background:var(--navy);border-bottom:1px solid var(--gold-line);display:flex;align-items:center;gap:0;flex-wrap:wrap;}
+.apex-brand{padding:13px 22px 11px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:1px;min-width:210px;}
+.apex-brand-name{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--cream);letter-spacing:-0.01em;}
+.apex-brand-name b{color:var(--gold);}
+.apex-brand-sub{font-family:var(--font-cond);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--steel);margin-top:1px;}
+.apex-title-wrap{padding:12px 22px;flex:1;min-width:240px;}
+.apex-tool-name{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--cream);line-height:1.1;}
+.apex-tool-name em{color:var(--gold);font-style:italic;}
+.apex-tool-sub{font-family:var(--font-cond);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-top:2px;}
+.apex-chips{display:flex;gap:7px;align-items:center;padding:0 20px;flex-wrap:wrap;}
+.apex-chip{font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;border:1px solid var(--gold-line);border-radius:3px;padding:3px 9px;color:var(--steel);background:var(--gold-dim);}
+.apex-chip b{color:var(--gold);}
+.apex-chip.live{border-color:rgba(46,204,138,0.35);background:var(--green-dim);color:var(--green-bright);}
+.apex-chip.live::before{content:'●';margin-right:5px;font-size:7px;animation:pulse 1.4s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* TABS */
+.apex-tabs{background:var(--navy2);display:flex;border-bottom:2px solid var(--gold);padding:0 18px;gap:1px;overflow-x:auto;}
+.apex-tab{font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--steel);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:11px 15px 9px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:7px;transition:color var(--tr);}
+.apex-tab:hover{color:var(--cream-dim);}
+.apex-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.apex-tab .tab-dot{width:5px;height:5px;border-radius:50%;background:var(--steel);flex:none;}
+.apex-tab.active .tab-dot{background:var(--gold);}
+.apex-tab.ready .tab-dot{background:var(--green-bright);}
+
+/* LAYOUT */
+.apex-body{display:grid;grid-template-columns:272px 1fr;min-height:calc(100vh - 130px);}
+.apex-rail{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;max-height:calc(100vh - 130px);position:sticky;top:0;}
+.apex-main{background:var(--navy-dark);padding:20px 24px;overflow-y:auto;max-height:calc(100vh - 130px);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* RAIL */
+.rail-section{border-bottom:1px solid var(--line);padding:14px 16px;}
+.rail-title{font-family:var(--font-cond);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:11px;display:flex;align-items:center;gap:8px;}
+.rail-title::after{content:'';flex:1;height:1px;background:var(--gold-line);}
+.rail-row{margin-bottom:9px;}
+.rail-label{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:500;color:var(--cream-dim);margin-bottom:3px;}
+.rail-label span{font-family:var(--font-mono);font-size:11px;color:var(--gold);font-weight:400;}
+.rail-range{width:100%;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:linear-gradient(90deg,var(--gold) var(--pct,50%),rgba(107,122,141,0.3) var(--pct,50%));outline:none;cursor:pointer;}
+.rail-range::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--navy);border:2px solid var(--gold);cursor:pointer;}
+.rail-range::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--navy);border:2px solid var(--gold);cursor:pointer;}
+.rail-select{width:100%;background:rgba(0,0,0,0.25);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 9px;color:var(--cream);font-family:var(--font-body);font-size:12px;outline:none;cursor:pointer;}
+.rail-select option{background:var(--navy2);}
+.rail-checkbox-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--cream-dim);cursor:pointer;margin-bottom:6px;}
+.rail-checkbox-row input{accent-color:var(--gold);cursor:pointer;}
+
+.run-btn{width:calc(100% - 32px);margin:14px 16px 4px;background:linear-gradient(135deg,var(--gold) 0%,#a8862e 100%);color:var(--navy);font-family:var(--font-cond);font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;border:none;border-radius:var(--r-sm);padding:12px;cursor:pointer;transition:opacity var(--tr),transform var(--tr);display:flex;align-items:center;justify-content:center;gap:9px;}
+.run-btn:hover{opacity:0.9;transform:translateY(-1px);}
+.run-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;}
+.sim-status{font-family:var(--font-mono);font-size:10px;color:var(--steel);text-align:center;padding:4px 16px 12px;}
+
+.io-btn-row{display:flex;gap:7px;padding:0 16px 14px;flex-wrap:wrap;}
+.io-btn{flex:1;min-width:0;background:rgba(0,0,0,0.25);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--cream-dim);font-family:var(--font-cond);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 6px;cursor:pointer;transition:all var(--tr);white-space:nowrap;}
+.io-btn:hover{border-color:var(--gold-line);color:var(--gold);}
+
+/* MAIN ELEMENTS */
+.panel-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+.panel-title{font-family:var(--font-display);font-size:21px;font-weight:600;color:var(--cream);line-height:1.2;}
+.panel-title em{color:var(--gold);font-style:italic;}
+.panel-sub{font-size:12px;color:var(--steel);margin-top:3px;line-height:1.5;}
+.panel-badges{display:flex;gap:7px;flex-wrap:wrap;align-items:flex-start;padding-top:2px;}
+.badge{font-family:var(--font-mono);font-size:9.5px;padding:3px 8px;border-radius:3px;border:1px solid var(--line);color:var(--steel);}
+.badge.gold{border-color:var(--gold-line);color:var(--gold);background:var(--gold-dim);}
+.badge.green{border-color:rgba(46,204,138,0.3);color:var(--green-bright);background:var(--green-dim);}
+.badge.cyan{border-color:rgba(74,173,202,0.3);color:var(--cyan);background:var(--cyan-dim);}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--gold);border-radius:var(--r-sm);padding:10px 12px 8px;}
+.kpi.k-green{border-top-color:var(--green-bright);}
+.kpi.k-red{border-top-color:var(--red);}
+.kpi.k-cyan{border-top-color:var(--cyan);}
+.kpi.k-amber{border-top-color:var(--amber);}
+.kpi-label{font-family:var(--font-cond);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);}
+.kpi-val{font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--cream);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:1px;}
+.kpi-sub{font-size:10.5px;color:var(--steel);margin-top:2px;font-family:var(--font-mono);}
+
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.chart-grid.full{grid-template-columns:1fr;}
+@media(max-width:900px){.chart-grid{grid-template-columns:1fr;}}
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;}
+.chart-title{font-family:var(--font-cond);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.chart-title .ct-right{font-family:var(--font-mono);font-size:9.5px;color:var(--steel);letter-spacing:.06em;}
+.chart-canvas{width:100%;height:200px;display:block;}
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;}
+.chart-legend span{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--steel);}
+.chart-legend i{width:22px;height:3px;border-radius:2px;flex:none;display:inline-block;}
+
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px;}
+.info-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;}
+.info-card-title{font-family:var(--font-cond);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:9px;}
+.info-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--line);}
+.info-row:last-child{border-bottom:none;}
+.info-key{font-size:11.5px;color:var(--steel);}
+.info-val{font-family:var(--font-mono);font-size:12px;color:var(--cream);}
+.info-val.gold{color:var(--gold);}
+.info-val.green{color:var(--green-bright);}
+.info-val.cyan{color:var(--cyan);}
+
+.eq-card{background:rgba(0,0,0,0.2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:var(--r-sm);padding:11px 14px;margin-bottom:12px;}
+.eq-label{font-family:var(--font-cond);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-bottom:5px;}
+.eq-text{font-family:var(--font-mono);font-size:12px;color:var(--cream);line-height:1.9;}
+
+.callout{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:var(--r-sm);padding:9px 13px;font-size:12px;color:var(--cream-dim);line-height:1.6;margin-bottom:12px;background:var(--gold-glow);}
+.callout.c-green{border-left-color:var(--green-bright);}
+.callout.c-cyan{border-left-color:var(--cyan);}
+
+/* 3D VIEWER */
+.viewer-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:14px;position:relative;}
+.viewer-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--navy2);flex-wrap:wrap;}
+.viewer-bar-title{font-family:var(--font-cond);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);}
+.viewer-controls{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;}
+.vc-btn{background:rgba(0,0,0,0.25);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--cream-dim);font-family:var(--font-cond);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;cursor:pointer;transition:all var(--tr);}
+.vc-btn:hover{border-color:var(--gold-line);color:var(--gold);}
+.vc-btn.active{background:var(--gold-dim);border-color:var(--gold-line);color:var(--gold);}
+#three-canvas{width:100%;height:440px;display:block;cursor:grab;}
+#three-canvas:active{cursor:grabbing;}
+.viewer-legend{position:absolute;bottom:14px;left:14px;background:rgba(7,20,40,0.85);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 11px;font-family:var(--font-mono);font-size:10px;color:var(--cream-dim);backdrop-filter:blur(4px);}
+.viewer-legend-bar{width:120px;height:8px;border-radius:2px;margin:5px 0 3px;background:linear-gradient(90deg,#0B294B,#4AADCA);}
+.viewer-legend-row{display:flex;justify-content:space-between;width:120px;}
+.viewer-hint{position:absolute;top:54px;right:14px;background:rgba(7,20,40,0.8);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 10px;font-family:var(--font-mono);font-size:9.5px;color:var(--steel);}
+
+/* LAYER TABLE */
+.layer-table,.well-table,.pvt-table{width:100%;border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums;}
+.layer-table th,.well-table th,.pvt-table th{font-family:var(--font-cond);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);padding:6px 8px;border-bottom:1px solid var(--gold-line);text-align:right;font-weight:600;}
+.layer-table th:first-child,.well-table th:first-child,.pvt-table th:first-child{text-align:left;}
+.layer-table td,.well-table td,.pvt-table td{padding:5px 8px;text-align:right;border-bottom:1px solid var(--line);font-family:var(--font-mono);color:var(--cream-dim);}
+.layer-table td:first-child,.well-table td:first-child,.pvt-table td:first-child{text-align:left;color:var(--cream);}
+.well-table tr:hover td,.layer-table tr:hover td{background:var(--gold-glow);}
+.pvt-table tr.highlight td{color:var(--gold);}
+.layer-input{width:58px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:3px;color:var(--gold);font-family:var(--font-mono);font-size:11px;padding:2px 5px;text-align:right;outline:none;}
+.layer-input:focus{border-color:var(--gold-line);}
+.well-type{font-family:var(--font-cond);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:3px;font-weight:600;}
+.well-type.prod{background:var(--green-dim);color:var(--green-bright);border:1px solid rgba(46,204,138,0.3);}
+.well-type.inj{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(74,173,202,0.3);}
+.well-status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+.dot-on{background:var(--green-bright);box-shadow:0 0 5px rgba(46,204,138,0.5);}
+
+.sim-log{background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;font-family:var(--font-mono);font-size:11px;color:var(--cream-dim);line-height:1.7;max-height:180px;overflow-y:auto;margin-top:12px;}
+.sim-log .log-ok{color:var(--green-bright);}
+.sim-log .log-warn{color:var(--amber);}
+.sim-log .log-step{color:var(--steel);}
+.sim-log .log-val{color:var(--gold);}
+
+.sim-progress-wrap{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--navy);border-top:1px solid var(--line);}
+.sim-progress-bg{flex:1;height:3px;background:rgba(107,122,141,0.2);border-radius:2px;overflow:hidden;}
+.sim-progress-fill{height:100%;background:var(--gold);border-radius:2px;transition:width 0.3s ease;width:0%;}
+.sim-progress-label{font-family:var(--font-mono);font-size:10px;color:var(--steel);white-space:nowrap;}
+
+/* IO MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(7,20,40,0.78);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--gold-line);border-radius:var(--r);max-width:560px;width:100%;max-height:85vh;overflow-y:auto;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--navy);}
+.modal-title{font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--cream);}
+.modal-title em{color:var(--gold);font-style:italic;}
+.modal-close{background:none;border:none;color:var(--steel);font-size:20px;cursor:pointer;line-height:1;}
+.modal-close:hover{color:var(--gold);}
+.modal-body{padding:18px 20px;}
+.modal-section-title{font-family:var(--font-cond);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 8px;}
+.modal-section-title:first-child{margin-top:0;}
+.io-textarea{width:100%;height:120px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--cream-dim);font-family:var(--font-mono);font-size:11px;padding:10px;resize:vertical;outline:none;}
+.io-textarea:focus{border-color:var(--gold-line);}
+.modal-btn{background:linear-gradient(135deg,var(--gold) 0%,#a8862e 100%);color:var(--navy);font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;border:none;border-radius:var(--r-sm);padding:10px 18px;cursor:pointer;margin-right:8px;margin-top:10px;transition:opacity var(--tr);}
+.modal-btn:hover{opacity:0.9;}
+.modal-btn.ghost{background:none;border:1px solid var(--line);color:var(--cream-dim);}
+.modal-btn.ghost:hover{border-color:var(--gold-line);color:var(--gold);}
+.file-drop{border:1.5px dashed var(--line);border-radius:var(--r-sm);padding:18px;text-align:center;color:var(--steel);font-size:12px;cursor:pointer;transition:all var(--tr);margin-bottom:10px;}
+.file-drop:hover{border-color:var(--gold-line);color:var(--gold-dim);background:var(--gold-glow);}
+.io-note{font-size:11px;color:var(--steel);line-height:1.5;margin-top:6px;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:3px;}
+
+@media(max-width:760px){
+  .apex-body{grid-template-columns:1fr;}
+  .apex-rail{max-height:none;position:static;border-right:none;border-bottom:1px solid var(--line);}
+  .apex-main{max-height:none;}
+  #three-canvas{height:320px;}
+}
+</style>
+</head>
+<body>
+<!-- ═══ STAFF-ONLY ACCESS GATE ═══ -->
+<script>
+(function(){
+  // Restricted to authenticated staff. The staff portal (admin.html) sets
+  // sessionStorage 'atc_auth'='1' only after a valid username + password login.
+  // A visitor without that authenticated session is sent to the portal to sign in.
+  try{
+    if(sessionStorage.getItem('atc_auth') !== '1'){
+      document.documentElement.style.display='none';
+      window.location.replace('admin.html');
+    }
+  }catch(e){
+    window.location.replace('admin.html');
+  }
+})();
+</script>
+
+<!-- ═══ HEADER ═══ -->
+<div class="apex-stripe"></div>
+<header class="apex-head">
+  <div class="apex-brand">
+    <div class="apex-brand-name">Alpha<b>.</b> APEX</div>
+    <div class="apex-brand-sub">Reservoir Simulation Module</div>
+  </div>
+  <div class="apex-title-wrap">
+    <div class="apex-tool-name">Multiwell <em>Black Oil</em> Simulator · 3D</div>
+    <div class="apex-tool-sub">IMPES · Finite Difference · Ni×Nj×Nk Layered · Darcy Flow</div>
+  </div>
+  <div class="apex-chips">
+    <div class="apex-chip live" id="statusChip">Idle</div>
+    <div class="apex-chip" style="border-color:rgba(192,57,43,0.4);background:rgba(192,57,43,0.16);color:#E07070;">STAFF ONLY</div>
+    <div class="apex-chip">3D Layered</div>
+    <div class="apex-chip">IMPES</div>
+    <div class="apex-chip">v2.0</div>
+  </div>
+</header>
+
+<!-- ═══ TABS ═══ -->
+<div class="apex-tabs" id="apexTabs">
+  <button class="apex-tab active" data-tab="model" onclick="switchTab('model',this)"><span class="tab-dot"></span>3D Model</button>
+  <button class="apex-tab" data-tab="layers" onclick="switchTab('layers',this)"><span class="tab-dot"></span>Layers</button>
+  <button class="apex-tab" data-tab="pvt" onclick="switchTab('pvt',this)"><span class="tab-dot"></span>PVT Fluid</button>
+  <button class="apex-tab" data-tab="rock" onclick="switchTab('rock',this)"><span class="tab-dot"></span>Rock &amp; SCAL</button>
+  <button class="apex-tab" data-tab="wells" onclick="switchTab('wells',this)"><span class="tab-dot"></span>Wells</button>
+  <button class="apex-tab" data-tab="aquifer" onclick="switchTab('aquifer',this)"><span class="tab-dot"></span>Aquifer</button>
+  <button class="apex-tab" data-tab="solver" onclick="switchTab('solver',this)"><span class="tab-dot"></span>Solver</button>
+  <button class="apex-tab ready" data-tab="results" onclick="switchTab('results',this)"><span class="tab-dot"></span>Results</button>
+</div>
+
+<!-- ═══ BODY ═══ -->
+<div class="apex-body">
+
+  <!-- ─── RAIL ─── -->
+  <aside class="apex-rail">
+
+    <div class="rail-section">
+      <div class="rail-title">Grid Geometry</div>
+      <div class="rail-row"><div class="rail-label">Ni (x-blocks)<span id="v-ni">12</span></div><input type="range" class="rail-range" id="r-ni" min="5" max="20" value="12" oninput="syncRange('ni',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Nj (y-blocks)<span id="v-nj">12</span></div><input type="range" class="rail-range" id="r-nj" min="5" max="20" value="12" oninput="syncRange('nj',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Nk (layers)<span id="v-nk">4</span></div><input type="range" class="rail-range" id="r-nk" min="1" max="8" value="4" oninput="syncRange('nk',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Δx Block (m)<span id="v-dx">120</span></div><input type="range" class="rail-range" id="r-dx" min="50" max="400" step="10" value="120" oninput="syncRange('dx',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Δy Block (m)<span id="v-dy">120</span></div><input type="range" class="rail-range" id="r-dy" min="50" max="400" step="10" value="120" oninput="syncRange('dy',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Layer Δz (m)<span id="v-dz">8</span></div><input type="range" class="rail-range" id="r-dz" min="2" max="30" value="8" oninput="syncRange('dz',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Top Depth (m SS)<span id="v-topd">2380</span></div><input type="range" class="rail-range" id="r-topd" min="1000" max="4500" step="20" value="2380" oninput="syncRange('topd',this)"/></div>
+    </div>
+
+    <div class="rail-section">
+      <div class="rail-title">Base Rock</div>
+      <div class="rail-row"><div class="rail-label">Porosity φ<span id="v-phi">0.22</span></div><input type="range" class="rail-range" id="r-phi" min="0.05" max="0.40" step="0.01" value="0.22" oninput="syncRange('phi',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Perm kh (mD)<span id="v-k">200</span></div><input type="range" class="rail-range" id="r-k" min="10" max="2000" step="10" value="200" oninput="syncRange('k',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Kv/Kh ratio<span id="v-kvkh">0.10</span></div><input type="range" class="rail-range" id="r-kvkh" min="0.01" max="1.0" step="0.01" value="0.10" oninput="syncRange('kvkh',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Heterogeneity (V_DP)<span id="v-vdp">0.4</span></div><input type="range" class="rail-range" id="r-vdp" min="0" max="0.85" step="0.05" value="0.4" oninput="syncRange('vdp',this)"/></div>
+    </div>
+
+    <div class="rail-section">
+      <div class="rail-title">Fluid (PVT)</div>
+      <div class="rail-row"><div class="rail-label">Pᵢ Init Pres (bar)<span id="v-pi">260</span></div><input type="range" class="rail-range" id="r-pi" min="50" max="600" step="5" value="260" oninput="syncRange('pi',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Pb Bubble Pt (bar)<span id="v-pb">190</span></div><input type="range" class="rail-range" id="r-pb" min="30" max="500" step="5" value="190" oninput="syncRange('pb',this)"/></div>
+      <div class="rail-row"><div class="rail-label">μₒ Oil Visc (cP)<span id="v-muo">2.2</span></div><input type="range" class="rail-range" id="r-muo" min="0.5" max="20" step="0.1" value="2.2" oninput="syncRange('muo',this)"/></div>
+      <div class="rail-row"><div class="rail-label">μw Water Visc (cP)<span id="v-muw">0.5</span></div><input type="range" class="rail-range" id="r-muw" min="0.3" max="2.0" step="0.1" value="0.5" oninput="syncRange('muw',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Bₒ FVF @ Pi<span id="v-bo">1.26</span></div><input type="range" class="rail-range" id="r-bo" min="1.05" max="2.50" step="0.01" value="1.26" oninput="syncRange('bo',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Rₛᵢ Sol GOR<span id="v-rsi">90</span></div><input type="range" class="rail-range" id="r-rsi" min="10" max="300" step="5" value="90" oninput="syncRange('rsi',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Swi Connate<span id="v-swi">0.20</span></div><input type="range" class="rail-range" id="r-swi" min="0.05" max="0.45" step="0.01" value="0.20" oninput="syncRange('swi',this)"/></div>
+    </div>
+
+    <div class="rail-section">
+      <div class="rail-title">Wells</div>
+      <div class="rail-row"><div class="rail-label">Producers<span id="v-np">3</span></div><input type="range" class="rail-range" id="r-np" min="1" max="6" value="3" oninput="syncRange('np',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Injectors<span id="v-ni2">2</span></div><input type="range" class="rail-range" id="r-ni2" min="0" max="4" value="2" oninput="syncRange('ni2',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Pwf Producers (bar)<span id="v-pwfp">90</span></div><input type="range" class="rail-range" id="r-pwfp" min="20" max="200" step="5" value="90" oninput="syncRange('pwfp',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Pwf Injectors (bar)<span id="v-pwfi">360</span></div><input type="range" class="rail-range" id="r-pwfi" min="200" max="600" step="10" value="360" oninput="syncRange('pwfi',this)"/></div>
+      <div class="rail-row"><div class="rail-label">rw Radius (m)<span id="v-rw">0.11</span></div><input type="range" class="rail-range" id="r-rw" min="0.05" max="0.30" step="0.01" value="0.11" oninput="syncRange('rw',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Skin S<span id="v-skin">3</span></div><input type="range" class="rail-range" id="r-skin" min="-3" max="20" step="1" value="3" oninput="syncRange('skin',this)"/></div>
+    </div>
+
+    <div class="rail-section">
+      <div class="rail-title">Aquifer &amp; Solver</div>
+      <div class="rail-row"><div class="rail-label">Aquifer Model</div>
+        <select class="rail-select" id="s-aqtype" onchange="P.aqtype=this.value;updateDerived();"><option value="none">None</option><option value="fetkovich" selected>Fetkovich</option><option value="carter">Carter-Tracy</option></select></div>
+      <div class="rail-row"><div class="rail-label">Aquifer Strength<span id="v-aqstr">1.0</span></div><input type="range" class="rail-range" id="r-aqstr" min="0" max="5" step="0.1" value="1.0" oninput="syncRange('aqstr',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Solver</div>
+        <select class="rail-select" id="s-solver" onchange="P.solver=this.value;updateDerived();"><option value="impes" selected>IMPES</option><option value="fi">Fully Implicit</option></select></div>
+      <div class="rail-row"><div class="rail-label">Δt (days)<span id="v-dt">30</span></div><input type="range" class="rail-range" id="r-dt" min="5" max="90" value="30" oninput="syncRange('dt',this)"/></div>
+      <div class="rail-row"><div class="rail-label">Horizon (yr)<span id="v-yr">12</span></div><input type="range" class="rail-range" id="r-yr" min="1" max="25" value="12" oninput="syncRange('yr',this)"/></div>
+      <label class="rail-checkbox-row"><input type="checkbox" id="cb-grav" checked onchange="P.gravity=this.checked"> Gravity Segregation</label>
+      <label class="rail-checkbox-row"><input type="checkbox" id="cb-gas" checked onchange="P.gas=this.checked"> Solution Gas Drive</label>
+    </div>
+
+    <button class="run-btn" id="runBtn" onclick="runSimulation()"><span class="run-icon">▶</span> Run Simulation</button>
+    <div class="sim-status" id="simStatus">Ready · Configure and Run</div>
+    <div class="io-btn-row">
+      <button class="io-btn" onclick="openModal('import')">⬇ Import</button>
+      <button class="io-btn" onclick="openModal('export')">⬆ Export</button>
+      <button class="io-btn" onclick="pushToAPEX()">→ APEX</button>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN ─── -->
+  <main class="apex-main">
+
+    <!-- ═══ 3D MODEL TAB ═══ -->
+    <div class="tab-panel active" id="tab-model">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Reservoir <em>3D Model</em></div>
+          <div class="panel-sub">Interactive WebGL grid · Drag to rotate · Scroll to zoom · Colour by property</div>
+        </div>
+        <div class="panel-badges">
+          <span class="badge gold" id="b-gridsize">12×12×4 = 576 cells</span>
+          <span class="badge" id="b-stoiip">STOIIP: —</span>
+        </div>
+      </div>
+      <div class="viewer-wrap">
+        <div class="viewer-bar">
+          <span class="viewer-bar-title">Grid Viewer</span>
+          <div class="viewer-controls">
+            <button class="vc-btn active" id="cm-perm" onclick="setColorMode('perm')">Perm</button>
+            <button class="vc-btn" id="cm-poro" onclick="setColorMode('poro')">Porosity</button>
+            <button class="vc-btn" id="cm-press" onclick="setColorMode('press')">Pressure</button>
+            <button class="vc-btn" id="cm-sat" onclick="setColorMode('sat')">Saturation</button>
+            <button class="vc-btn" id="tg-explode" onclick="toggleExplode()">Layer Split</button>
+            <button class="vc-btn" id="tg-wells" onclick="toggleWells()">Wells ✓</button>
+          </div>
+        </div>
+        <canvas id="three-canvas"></canvas>
+        <div class="viewer-hint">LMB drag · rotate &nbsp;|&nbsp; wheel · zoom</div>
+        <div class="viewer-legend">
+          <div id="legend-label">Permeability kh (mD)</div>
+          <div class="viewer-legend-bar" id="legend-bar"></div>
+          <div class="viewer-legend-row"><span id="legend-min">10</span><span id="legend-max">2000</span></div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-title">Grid Dimensions</div>
+          <div class="info-row"><span class="info-key">Ni × Nj × Nk</span><span class="info-val gold" id="i-dims">12×12×4</span></div>
+          <div class="info-row"><span class="info-key">Active cells</span><span class="info-val" id="i-cells">576</span></div>
+          <div class="info-row"><span class="info-key">Cell Δx·Δy·Δz</span><span class="info-val" id="i-cellsize">120·120·8 m</span></div>
+          <div class="info-row"><span class="info-key">Areal extent</span><span class="info-val" id="i-area">1.44 km²</span></div>
+          <div class="info-row"><span class="info-key">Gross thickness</span><span class="info-val" id="i-gross">32 m</span></div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-title">Volumetrics</div>
+          <div class="info-row"><span class="info-key">Bulk volume</span><span class="info-val" id="i-bv">—</span></div>
+          <div class="info-row"><span class="info-key">Pore volume</span><span class="info-val" id="i-pv">—</span></div>
+          <div class="info-row"><span class="info-key">HCPV</span><span class="info-val green" id="i-hcpv">—</span></div>
+          <div class="info-row"><span class="info-key">STOIIP</span><span class="info-val gold" id="i-stoiip">—</span></div>
+          <div class="info-row"><span class="info-key">STOIIP (MMbbl)</span><span class="info-val" id="i-stb">—</span></div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-title">Vertical Heterogeneity</div>
+          <div class="info-row"><span class="info-key">Kv/Kh</span><span class="info-val cyan" id="i-kvkh">0.10</span></div>
+          <div class="info-row"><span class="info-key">Dykstra-Parsons</span><span class="info-val" id="i-vdp">0.40</span></div>
+          <div class="info-row"><span class="info-key">k range (layers)</span><span class="info-val" id="i-krange">—</span></div>
+          <div class="info-row"><span class="info-key">Avg layer kh</span><span class="info-val" id="i-avgk">200 mD</span></div>
+        </div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-label">3D Continuity — Six-Point Stencil (TPFA)</div>
+        <div class="eq-text">∂(φSₚρₚ)/∂t = ∑[face=x±,y±,z±] Tface·λₚ·(Pₙₑᵢ − Pᵢ) + qₚ<br>Tz = 2·Kv·Δx·Δy / Δz &nbsp;·&nbsp; Kv = (Kv/Kh)·kh &nbsp;·&nbsp; vertical cross-flow couples layers</div>
+      </div>
+    </div>
+
+    <!-- ═══ LAYERS TAB ═══ -->
+    <div class="tab-panel" id="tab-layers">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Layer <em>Properties</em></div>
+          <div class="panel-sub">Per-layer porosity, permeability &amp; net-to-gross · editable · drives 3D heterogeneity</div>
+        </div>
+        <div class="panel-badges"><span class="badge gold" id="b-nlayers">4 layers</span></div>
+      </div>
+      <div class="callout c-cyan">Layer properties are auto-generated from base rock and the Dykstra-Parsons heterogeneity coefficient, ordered fining-upward. Edit any cell directly — values feed the 3D model and simulation immediately. A high-perm "thief zone" can be created by setting one layer's kh well above the others.</div>
+      <div class="chart-card">
+        <div class="chart-title">Layer Property Table <span class="ct-right">click values to edit</span></div>
+        <table class="layer-table" id="layerTable"></table>
+      </div>
+      <div class="chart-grid" style="margin-top:14px;">
+        <div class="chart-card">
+          <div class="chart-title">Permeability Profile vs Depth</div>
+          <canvas class="chart-canvas" id="layerKChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Porosity Profile vs Depth</div>
+          <canvas class="chart-canvas" id="layerPhiChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PVT TAB ═══ -->
+    <div class="tab-panel" id="tab-pvt">
+      <div class="panel-header">
+        <div><div class="panel-title">Fluid <em>PVT Properties</em></div>
+        <div class="panel-sub">Black oil formulation · Standing / Beal correlations · pressure-dependent tables</div></div>
+        <div class="panel-badges"><span class="badge gold" id="pvt-type">Undersaturated</span><span class="badge" id="pvt-pb">Pb=190 bar</span></div>
+      </div>
+      <div class="eq-card"><div class="eq-label">Black Oil PVT Relations</div>
+        <div class="eq-text">Bₒ(P)=Bₒb·exp[−cₒ(P−Pb)] for P&gt;Pb · Rₛ(P)=Rₛᵢ(P/Pb)^1.2 for P≤Pb · μₒ(P)=μₒb(Pb/P)^0.6</div></div>
+      <div class="chart-grid">
+        <div class="chart-card"><div class="chart-title">Oil FVF Bₒ vs P</div><canvas class="chart-canvas" id="pvtBoChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Bₒ</span><span><i style="background:var(--red);opacity:.6"></i>Pb</span></div></div>
+        <div class="chart-card"><div class="chart-title">Solution GOR Rₛ vs P</div><canvas class="chart-canvas" id="pvtRsChart"></canvas><div class="chart-legend"><span><i style="background:var(--cyan)"></i>Rₛ</span></div></div>
+        <div class="chart-card"><div class="chart-title">Oil Viscosity μₒ vs P</div><canvas class="chart-canvas" id="pvtMuChart"></canvas><div class="chart-legend"><span><i style="background:var(--amber)"></i>μₒ</span></div></div>
+        <div class="chart-card"><div class="chart-title">Gas FVF Bᵍ vs P</div><canvas class="chart-canvas" id="pvtBgChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>Bᵍ</span></div></div>
+      </div>
+      <div class="chart-title" style="margin-bottom:8px;">PVT Table</div>
+      <div style="overflow-x:auto;"><table class="pvt-table" id="pvtTable"></table></div>
+    </div>
+
+    <!-- ═══ ROCK TAB ═══ -->
+    <div class="tab-panel" id="tab-rock">
+      <div class="panel-header">
+        <div><div class="panel-title">Rock &amp; <em>SCAL</em></div>
+        <div class="panel-sub">Corey relative permeability · capillary pressure · endpoint saturations</div></div>
+        <div class="panel-badges"><span class="badge gold">Water-wet</span><span class="badge">Corey</span></div>
+      </div>
+      <div class="eq-card"><div class="eq-label">Corey Relative Permeability</div>
+        <div class="eq-text">kᵣₒ=kᵣₒ(Swi)[(1−Sw−Sor)/(1−Swi−Sor)]^nₒ · kᵣw=kᵣw(Sor)[(Sw−Swi)/(1−Swi−Sor)]^nw</div></div>
+      <div class="chart-grid">
+        <div class="chart-card"><div class="chart-title">Oil-Water Rel Perm</div><canvas class="chart-canvas" id="krChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>kᵣₒ</span><span><i style="background:var(--cyan)"></i>kᵣw</span></div></div>
+        <div class="chart-card"><div class="chart-title">Gas-Oil Rel Perm</div><canvas class="chart-canvas" id="krgChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>kᵣₒg</span><span><i style="background:var(--green-bright)"></i>kᵣg</span></div></div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-card-title">Oil/Water Endpoints</div>
+          <div class="info-row"><span class="info-key">Swi</span><span class="info-val gold" id="rk-swi">0.20</span></div>
+          <div class="info-row"><span class="info-key">Sor</span><span class="info-val">0.28</span></div>
+          <div class="info-row"><span class="info-key">kᵣₒ(Swi)</span><span class="info-val">0.85</span></div>
+          <div class="info-row"><span class="info-key">kᵣw(Sor)</span><span class="info-val">0.30</span></div>
+          <div class="info-row"><span class="info-key">nₒ / nw</span><span class="info-val">3.0 / 2.5</span></div></div>
+        <div class="info-card"><div class="info-card-title">Gas/Oil Endpoints</div>
+          <div class="info-row"><span class="info-key">Sgc</span><span class="info-val">0.05</span></div>
+          <div class="info-row"><span class="info-key">Slr</span><span class="info-val">0.20</span></div>
+          <div class="info-row"><span class="info-key">kᵣg(Slr)</span><span class="info-val">0.75</span></div>
+          <div class="info-row"><span class="info-key">ng / nog</span><span class="info-val">2.0 / 2.5</span></div></div>
+        <div class="info-card"><div class="info-card-title">Compressibility</div>
+          <div class="info-row"><span class="info-key">cr rock</span><span class="info-val">4.5e-5 bar⁻¹</span></div>
+          <div class="info-row"><span class="info-key">cw water</span><span class="info-val">4.6e-5 bar⁻¹</span></div>
+          <div class="info-row"><span class="info-key">ct total</span><span class="info-val gold">~1.5e-4 bar⁻¹</span></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ WELLS TAB ═══ -->
+    <div class="tab-panel" id="tab-wells">
+      <div class="panel-header">
+        <div><div class="panel-title">Well <em>Configuration</em></div>
+        <div class="panel-sub">Peaceman model · BHP control · multi-layer completions</div></div>
+        <div class="panel-badges"><span class="badge gold" id="w-count">5 wells</span><span class="badge green">BHP</span></div>
+      </div>
+      <div class="eq-card"><div class="eq-label">Peaceman Well Model (per perforated layer)</div>
+        <div class="eq-text">qₚ = WI·(kᵣₚ/μₚBₚ)·(Pblock−Pwf) · WI=2π·kh·Δz/(ln(r₀/rw)+S) · r₀=0.28√(Δx²+Δy²)/2</div></div>
+      <div class="chart-card"><div class="chart-title">Well Register</div><table class="well-table" id="wellTable"></table></div>
+      <div class="info-grid" style="margin-top:14px;">
+        <div class="info-card"><div class="info-card-title">Inflow Parameters</div>
+          <div class="info-row"><span class="info-key">rw</span><span class="info-val gold" id="wi-rw">0.11 m</span></div>
+          <div class="info-row"><span class="info-key">Skin S</span><span class="info-val" id="wi-skin">3.0</span></div>
+          <div class="info-row"><span class="info-key">Peaceman r₀</span><span class="info-val" id="wi-r0">—</span></div>
+          <div class="info-row"><span class="info-key">Completions</span><span class="info-val">All layers</span></div></div>
+        <div class="info-card"><div class="info-card-title">Constraints</div>
+          <div class="info-row"><span class="info-key">Prod BHP min</span><span class="info-val" id="wi-pwfp">90 bar</span></div>
+          <div class="info-row"><span class="info-key">Inj BHP max</span><span class="info-val" id="wi-pwfi">360 bar</span></div>
+          <div class="info-row"><span class="info-key">Control</span><span class="info-val gold">BHP</span></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ AQUIFER TAB ═══ -->
+    <div class="tab-panel" id="tab-aquifer">
+      <div class="panel-header">
+        <div><div class="panel-title">Aquifer <em>Model</em></div>
+        <div class="panel-sub">Analytical influx · Fetkovich / Carter-Tracy · bottom &amp; edge water</div></div>
+        <div class="panel-badges"><span class="badge gold" id="aq-badge">Fetkovich</span></div>
+      </div>
+      <div class="eq-card"><div class="eq-label">Fetkovich Aquifer</div>
+        <div class="eq-text">dWe/dt=Jaq·(Paq−Pr) · Paq=Pᵢ(1−We/Wei) · strength multiplier scales Jaq and Wei</div></div>
+      <div class="chart-grid">
+        <div class="chart-card"><div class="chart-title">Aquifer Influx We vs Time</div><canvas class="chart-canvas" id="aqChart"></canvas><div class="chart-legend"><span><i style="background:var(--cyan)"></i>We cumulative</span></div></div>
+        <div class="info-card" style="align-self:start"><div class="info-card-title">Aquifer Parameters</div>
+          <div class="info-row"><span class="info-key">Model</span><span class="info-val gold" id="aq-m">Fetkovich</span></div>
+          <div class="info-row"><span class="info-key">Strength ×</span><span class="info-val" id="aq-str">1.0</span></div>
+          <div class="info-row"><span class="info-key">Drive</span><span class="info-val">Edge + bottom</span></div>
+          <div class="info-row"><span class="info-key">Connects to</span><span class="info-val cyan">Lowest layer</span></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ SOLVER TAB ═══ -->
+    <div class="tab-panel" id="tab-solver">
+      <div class="panel-header">
+        <div><div class="panel-title">Numerical <em>Solver</em></div>
+        <div class="panel-sub">IMPES · 3D seven-diagonal pressure system · explicit saturation update</div></div>
+        <div class="panel-badges"><span class="badge gold" id="s-badge">IMPES</span><span class="badge" id="s-stepsbadge">—</span></div>
+      </div>
+      <div class="eq-card"><div class="eq-label">IMPES Sequence</div>
+        <div class="eq-text">1. Assemble 3D pressure matrix (7-diag) → solve P implicitly (Gauss-Seidel)<br>2. Update Sw, Sg explicitly per cell from inter-block fluxes<br>3. CFL: Δt ≤ φΔx²cₜμ/(2k) · ΔSmax ≤ 0.05 per step</div></div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-card-title">Configuration</div>
+          <div class="info-row"><span class="info-key">Method</span><span class="info-val gold" id="sv-method">IMPES</span></div>
+          <div class="info-row"><span class="info-key">Pressure solver</span><span class="info-val">Gauss-Seidel</span></div>
+          <div class="info-row"><span class="info-key">Tolerance</span><span class="info-val">1e-5 bar</span></div>
+          <div class="info-row"><span class="info-key">Max sweeps</span><span class="info-val">200</span></div></div>
+        <div class="info-card"><div class="info-card-title">Timestepping</div>
+          <div class="info-row"><span class="info-key">Δt</span><span class="info-val gold" id="sv-dt">30 d</span></div>
+          <div class="info-row"><span class="info-key">Horizon</span><span class="info-val green" id="sv-yr">12 yr</span></div>
+          <div class="info-row"><span class="info-key">Est. steps</span><span class="info-val" id="sv-steps">~146</span></div></div>
+        <div class="info-card"><div class="info-card-title">Status</div>
+          <div class="info-row"><span class="info-key">State</span><span class="info-val gold" id="sv-state">Idle</span></div>
+          <div class="info-row"><span class="info-key">Steps done</span><span class="info-val" id="sv-done">0</span></div>
+          <div class="info-row"><span class="info-key">CPU time</span><span class="info-val" id="sv-cpu">—</span></div></div>
+      </div>
+      <div class="chart-title" style="margin:4px 0 8px;">Simulation Log</div>
+      <div class="sim-log" id="simLog">Awaiting run command…</div>
+    </div>
+
+    <!-- ═══ RESULTS TAB ═══ -->
+    <div class="tab-panel" id="tab-results">
+      <div class="panel-header">
+        <div><div class="panel-title">Simulation <em>Results</em></div>
+        <div class="panel-sub">Production forecast · pressure depletion · 3D saturation evolution · well performance</div></div>
+        <div class="panel-badges"><span class="badge" id="r-status">No results — run simulation</span></div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-label">Cum Oil Np</div><div class="kpi-val" id="r-np">—</div><div class="kpi-sub">10³ m³ SC</div></div>
+        <div class="kpi k-cyan"><div class="kpi-label">Cum Water Wp</div><div class="kpi-val" id="r-wp">—</div><div class="kpi-sub">10³ m³ SC</div></div>
+        <div class="kpi k-green"><div class="kpi-label">Avg Res P</div><div class="kpi-val" id="r-pr">—</div><div class="kpi-sub">bar</div></div>
+        <div class="kpi k-amber"><div class="kpi-label">Final WOR</div><div class="kpi-val" id="r-wor">—</div><div class="kpi-sub">m³/m³</div></div>
+        <div class="kpi k-red"><div class="kpi-label">Recovery</div><div class="kpi-val" id="r-rf">—</div><div class="kpi-sub">% STOIIP</div></div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card"><div class="chart-title">Field Rates vs Time<span class="ct-right">m³/d SC</span></div><canvas class="chart-canvas" id="rateChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Qₒ</span><span><i style="background:var(--cyan)"></i>Qw</span></div></div>
+        <div class="chart-card"><div class="chart-title">Avg Reservoir Pressure<span class="ct-right">bar</span></div><canvas class="chart-canvas" id="presChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>P̄</span><span><i style="background:var(--red);opacity:.6"></i>Pb</span></div></div>
+        <div class="chart-card"><div class="chart-title">Cumulative Production<span class="ct-right">10³ m³</span></div><canvas class="chart-canvas" id="cumChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Np</span><span><i style="background:var(--cyan)"></i>Wp</span></div></div>
+        <div class="chart-card"><div class="chart-title">WOR &amp; GOR vs Time</div><canvas class="chart-canvas" id="gorChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>WOR</span><span><i style="background:var(--amber)"></i>GOR×0.1</span></div></div>
+      </div>
+      <div class="viewer-wrap">
+        <div class="viewer-bar">
+          <span class="viewer-bar-title">3D Saturation Evolution</span>
+          <div class="viewer-controls">
+            <button class="vc-btn" onclick="stepSatTime(-1)">◀ Prev</button>
+            <button class="vc-btn active" id="satPlayBtn" onclick="playSatAnimation()">▶ Play</button>
+            <button class="vc-btn" onclick="stepSatTime(1)">Next ▶</button>
+            <span class="vc-btn" style="cursor:default" id="satTimeLabel">t = 0 yr</span>
+          </div>
+        </div>
+        <canvas id="three-canvas-results"></canvas>
+        <div class="viewer-legend">
+          <div>Water Saturation Sw</div>
+          <div class="viewer-legend-bar" style="background:linear-gradient(90deg,#0B294B,#4AADCA);"></div>
+          <div class="viewer-legend-row"><span id="r-swmin">0.20</span><span>0.72</span></div>
+        </div>
+      </div>
+      <div class="io-btn-row" style="padding:0;margin-top:4px;">
+        <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="exportResultsCSV()">⬇ Export Production CSV</button>
+        <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="pushToAPEX()">→ Push to Financial Model</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="sim-progress-wrap" id="progressWrap" style="display:none;">
+  <div class="sim-progress-bg"><div class="sim-progress-fill" id="progressFill"></div></div>
+  <div class="sim-progress-label" id="progressLabel">0%</div>
+</div>
+
+<!-- IO MODAL -->
+<div class="modal-overlay" id="ioModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Model <em>I/O</em></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+<input type="file" id="fileInput" style="display:none" accept=".json,.csv,.dat,.txt"/>
+<script>
+// ════════════════════════════════════════════════════
+//  ATC APEX RESERVOIR 3D — ENGINE
+// ════════════════════════════════════════════════════
+
+const P = {
+  ni:12,nj:12,nk:4,dx:120,dy:120,dz:8,topd:2380,
+  phi:0.22,k:200,kvkh:0.10,vdp:0.4,
+  pi:260,pb:190,muo:2.2,muw:0.5,bo:1.26,rsi:90,swi:0.20,
+  np:3,ni2:2,pwfp:90,pwfi:360,rw:0.11,skin:3,
+  aqtype:'fetkovich',aqstr:1.0,solver:'impes',dt:30,yr:12,
+  gravity:true,gas:true
+};
+
+let LAYERS=[];      // per-layer {phi,k,ntg,depth}
+const RES={ran:false,times:[],qo:[],qw:[],pres:[],np:[],wp:[],gor:[],wor:[],satFrames:[],presFrames:[]};
+let colorMode='perm', explodeOn=false, wellsOn=true, satFrameIdx=0, satPlaying=false;
+
+// ── RANGE SYNC ──
+function syncRange(key,el){
+  const v=parseFloat(el.value); P[key]=v;
+  const disp={phi:2,muo:1,muw:1,bo:2,swi:2,rw:2,kvkh:2,vdp:2,aqstr:1};
+  const lab=document.getElementById('v-'+key);
+  if(lab) lab.textContent = disp[key]!==undefined ? v.toFixed(disp[key]) : v;
+  const min=parseFloat(el.min),max=parseFloat(el.max);
+  el.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');
+  if(['nk','k','phi','vdp','kvkh','topd','dz'].includes(key)) generateLayers();
+  updateDerived();
+  if(['ni','nj','nk','dx','dy','dz','topd','k','phi','vdp','kvkh','np','ni2'].includes(key)) rebuild3D();
+}
+
+function set(id,v){const e=document.getElementById(id); if(e)e.textContent=v;}
+
+// ── LAYER GENERATION (fining-upward, Dykstra-Parsons) ──
+function generateLayers(){
+  LAYERS=[];
+  const nk=P.nk, baseK=P.k, basePhi=P.phi, vdp=P.vdp;
+  // Dykstra-Parsons: log-normal perm spread. vdp=0 → uniform, vdp→1 → high contrast
+  for(let k=0;k<nk;k++){
+    const frac = nk>1 ? k/(nk-1) : 0.5;       // 0 top → 1 bottom
+    // fining-upward: deeper (higher k index) = coarser = higher perm
+    const sigma = -Math.log(1-Math.min(vdp,0.84));  // DP → ln-normal sigma
+    const z = (frac-0.5)*2;                    // -1..1
+    const permMult = Math.exp(sigma*z);
+    const kL = Math.max(1, baseK*permMult);
+    const phiL = Math.max(0.03, Math.min(0.4, basePhi*(1+0.12*z)));
+    const ntg = Math.max(0.5, Math.min(1.0, 0.95-0.06*Math.abs(z)));
+    const depth = P.topd + (k+0.5)*P.dz;
+    LAYERS.push({phi:phiL,k:kL,ntg:ntg,depth:depth});
+  }
+  buildLayerTable();
+  drawLayerCharts();
+}
+
+function buildLayerTable(){
+  const t=document.getElementById('layerTable'); if(!t)return;
+  t.innerHTML='<thead><tr><th>Layer</th><th>Top (m SS)</th><th>Δz (m)</th><th>φ</th><th>kh (mD)</th><th>Kv (mD)</th><th>NTG</th></tr></thead><tbody>'+
+    LAYERS.map((L,i)=>`<tr>
+      <td>L${i+1}</td>
+      <td>${(P.topd+i*P.dz).toFixed(0)}</td>
+      <td>${P.dz}</td>
+      <td><input class="layer-input" value="${L.phi.toFixed(3)}" onchange="editLayer(${i},'phi',this.value)"></td>
+      <td><input class="layer-input" value="${L.k.toFixed(0)}" onchange="editLayer(${i},'k',this.value)"></td>
+      <td>${(L.k*P.kvkh).toFixed(1)}</td>
+      <td><input class="layer-input" value="${L.ntg.toFixed(2)}" onchange="editLayer(${i},'ntg',this.value)"></td>
+    </tr>`).join('')+'</tbody>';
+}
+function editLayer(i,prop,val){
+  const v=parseFloat(val); if(isFinite(v)){LAYERS[i][prop]=v; buildLayerTable(); drawLayerCharts(); updateDerived(); rebuild3D();}
+}
+
+// ── DERIVED VOLUMETRICS ──
+function updateDerived(){
+  const {ni,nj,nk,dx,dy,dz,swi,bo}=P;
+  let pv=0,hcpv=0,bv=0;
+  LAYERS.forEach(L=>{ const cellBV=ni*nj*dx*dy*dz; bv+=cellBV; pv+=cellBV*L.phi*L.ntg; });
+  hcpv=pv*(1-swi); const stoiip=hcpv/bo; const stb=stoiip*6.2898/1e6;
+  const area=(ni*dx*nj*dy)/1e6, gross=nk*dz;
+  set('b-gridsize',`${ni}×${nj}×${nk} = ${ni*nj*nk} cells`);
+  set('b-stoiip',`STOIIP: ${(stoiip/1e6).toFixed(2)} Mm³`);
+  set('i-dims',`${ni}×${nj}×${nk}`); set('i-cells',ni*nj*nk);
+  set('i-cellsize',`${dx}·${dy}·${dz} m`); set('i-area',`${area.toFixed(2)} km²`);
+  set('i-gross',`${gross} m`);
+  set('i-bv',`${(bv/1e6).toFixed(1)} Mm³`); set('i-pv',`${(pv/1e6).toFixed(2)} Mm³`);
+  set('i-hcpv',`${(hcpv/1e6).toFixed(2)} Mm³`); set('i-stoiip',`${(stoiip/1e3).toFixed(0)}×10³ m³`);
+  set('i-stb',`${stb.toFixed(1)} MMbbl`);
+  set('i-kvkh',P.kvkh.toFixed(2)); set('i-vdp',P.vdp.toFixed(2));
+  const ks=LAYERS.map(L=>L.k); set('i-krange',`${Math.min(...ks).toFixed(0)}–${Math.max(...ks).toFixed(0)} mD`);
+  set('i-avgk',`${(ks.reduce((a,b)=>a+b,0)/ks.length).toFixed(0)} mD`);
+  set('b-nlayers',`${nk} layers`);
+  set('pvt-pb',`Pb=${P.pb} bar`); set('pvt-type',P.pi>P.pb?'Undersaturated':'Saturated');
+  set('w-count',`${P.np+P.ni2} wells`); set('wi-rw',`${P.rw} m`); set('wi-skin',P.skin.toFixed(1));
+  const r0=0.28*Math.sqrt(dx*dx+dy*dy)/2; set('wi-r0',`${r0.toFixed(1)} m`);
+  set('wi-pwfp',`${P.pwfp} bar`); set('wi-pwfi',`${P.pwfi} bar`);
+  set('rk-swi',P.swi.toFixed(2));
+  set('aq-badge',document.getElementById('s-aqtype').value); set('aq-m',document.getElementById('s-aqtype').value);
+  set('aq-str',P.aqstr.toFixed(1));
+  set('s-badge',P.solver.toUpperCase()); set('sv-method',P.solver.toUpperCase());
+  set('sv-dt',`${P.dt} d`); set('sv-yr',`${P.yr} yr`);
+  const steps=Math.round(P.yr*365/P.dt); set('sv-steps',`~${steps}`); set('s-stepsbadge',`${steps} steps`);
+  buildWellTable();
+}
+
+// ── WELL GEOMETRY ──
+function buildWells(){
+  const {ni,nj,nk}=P; const w=[];
+  const pp=[[0.78,0.78],[0.22,0.78],[0.5,0.22],[0.8,0.35],[0.2,0.35],[0.5,0.65]];
+  const ip=[[0.5,0.5],[0.15,0.5],[0.85,0.5],[0.5,0.15]];
+  for(let p=0;p<P.np;p++) w.push({name:`P${p+1}`,type:'prod',i:Math.floor(pp[p][0]*ni),j:Math.floor(pp[p][1]*nj)});
+  for(let q=0;q<P.ni2;q++) w.push({name:`I${q+1}`,type:'inj',i:Math.floor(ip[q][0]*ni),j:Math.floor(ip[q][1]*nj)});
+  return w;
+}
+function buildWellTable(){
+  const t=document.getElementById('wellTable'); if(!t)return;
+  const w=buildWells();
+  const r0=0.28*Math.sqrt(P.dx*P.dx+P.dy*P.dy)/2;
+  t.innerHTML='<thead><tr><th>Well</th><th>Type</th><th>i,j</th><th>Perf Layers</th><th>Pwf (bar)</th><th>Status</th></tr></thead><tbody>'+
+    w.map(x=>`<tr><td>${x.name}</td><td><span class="well-type ${x.type}">${x.type==='prod'?'PROD':'INJ'}</span></td><td>${x.i+1},${x.j+1}</td><td>1–${P.nk}</td><td>${x.type==='prod'?P.pwfp:P.pwfi}</td><td><span class="well-status-dot dot-on"></span></td></tr>`).join('')+'</tbody>';
+}
+
+// ── TAB SWITCH ──
+function switchTab(name,btn){
+  document.querySelectorAll('.apex-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active'); document.getElementById('tab-'+name).classList.add('active');
+  if(name==='pvt')drawPVT(); if(name==='rock')drawSCAL();
+  if(name==='layers')drawLayerCharts(); if(name==='aquifer')drawAquifer();
+  if(name==='model'){ setTimeout(()=>{resize3D(); rebuild3D();},60); }
+  if(name==='results'&&RES.ran){ drawResults(); setTimeout(()=>resize3DResults(),60); }
+}
+
+// ── CHART ENGINE ──
+function lineChart(id,xs,series,vlines){
+  const cv=document.getElementById(id); if(!cv)return;
+  const ctx=cv.getContext('2d'); const W=cv.offsetWidth||400; cv.width=W; cv.height=200;
+  const ml=44,mr=14,mt=12,mb=30,pw=W-ml-mr,ph=cv.height-mt-mb;
+  ctx.clearRect(0,0,W,cv.height);
+  const allY=series.flatMap(s=>s.data.filter(isFinite)); if(!allY.length)return;
+  let ymin=Math.min(...allY),ymax=Math.max(...allY); if(ymin===ymax){ymax=ymin+1;}
+  const yr=ymax-ymin, xs2=xs.map(Number);
+  const xmin=Math.min(...xs2),xmax=Math.max(...xs2),xr=Math.max(xmax-xmin,1e-6);
+  const tx=x=>ml+(x-xmin)/xr*pw, ty=y=>mt+ph-(y-ymin)/yr*ph;
+  ctx.strokeStyle='rgba(107,122,141,0.13)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){const y=mt+ph*i/4;ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+pw,y);ctx.stroke();
+    const val=ymax-yr*i/4; ctx.fillStyle='rgba(107,122,141,0.7)';ctx.font="9px 'DM Mono'";ctx.textAlign='right';
+    ctx.fillText(Math.abs(val)>=1000?(val/1000).toFixed(0)+'k':val.toFixed(val<1&&val!==0?2:0),ml-4,y+3);}
+  for(let i=0;i<=4;i++){const x=ml+pw*i/4;ctx.beginPath();ctx.moveTo(x,mt);ctx.lineTo(x,mt+ph);ctx.stroke();
+    ctx.fillStyle='rgba(107,122,141,0.7)';ctx.textAlign='center';ctx.fillText((xmin+xr*i/4).toFixed(1),x,mt+ph+14);}
+  if(vlines)vlines.forEach(vl=>{const x=tx(vl);ctx.strokeStyle='rgba(192,57,43,0.5)';ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(x,mt);ctx.lineTo(x,mt+ph);ctx.stroke();ctx.setLineDash([]);});
+  series.forEach((s,si)=>{ if(s.data.length<2)return;
+    if(si===0){const g=ctx.createLinearGradient(0,mt,0,mt+ph);g.addColorStop(0,s.color+'40');g.addColorStop(1,s.color+'00');
+      ctx.beginPath();xs2.forEach((x,i)=>{const X=tx(x),Y=ty(s.data[i]);i===0?ctx.moveTo(X,Y):ctx.lineTo(X,Y);});
+      ctx.lineTo(tx(xs2[xs2.length-1]),mt+ph);ctx.lineTo(tx(xs2[0]),mt+ph);ctx.closePath();ctx.fillStyle=g;ctx.fill();}
+    ctx.strokeStyle=s.color;ctx.lineWidth=1.8;ctx.setLineDash([]);ctx.beginPath();
+    xs2.forEach((x,i)=>{const X=tx(x),Y=ty(s.data[i]);i===0?ctx.moveTo(X,Y):ctx.lineTo(X,Y);});ctx.stroke();});
+  ctx.strokeStyle='rgba(107,122,141,0.4)';ctx.lineWidth=1;ctx.beginPath();
+  ctx.moveTo(ml,mt);ctx.lineTo(ml,mt+ph);ctx.lineTo(ml+pw,mt+ph);ctx.stroke();
+}
+
+// ── LAYER CHARTS ──
+function drawLayerCharts(){
+  if(!LAYERS.length)return;
+  const depths=LAYERS.map(L=>L.depth);
+  // perm vs depth (depth increasing downward — invert via index)
+  barChartH('layerKChart',LAYERS.map((L,i)=>`L${i+1}`),LAYERS.map(L=>L.k),'#C9A84C','kh (mD)');
+  barChartH('layerPhiChart',LAYERS.map((L,i)=>`L${i+1}`),LAYERS.map(L=>L.phi),'#4AADCA','φ');
+}
+function barChartH(id,labels,vals,color,unit){
+  const cv=document.getElementById(id); if(!cv)return;
+  const ctx=cv.getContext('2d'); const W=cv.offsetWidth||400; cv.width=W; cv.height=200;
+  const ml=44,mr=40,mt=10,mb=22,pw=W-ml-mr,ph=cv.height-mt-mb;
+  ctx.clearRect(0,0,W,cv.height);
+  const vmax=Math.max(...vals)*1.1; const n=vals.length; const bh=ph/n*0.62; const gap=ph/n;
+  vals.forEach((v,i)=>{ const y=mt+i*gap+(gap-bh)/2; const w=v/vmax*pw;
+    ctx.fillStyle=color+'cc'; ctx.fillRect(ml,y,w,bh);
+    ctx.strokeStyle=color; ctx.lineWidth=1; ctx.strokeRect(ml,y,w,bh);
+    ctx.fillStyle='rgba(248,245,238,0.65)'; ctx.font="9px 'DM Mono'"; ctx.textAlign='right';
+    ctx.fillText(labels[i],ml-5,y+bh/2+3);
+    ctx.textAlign='left'; ctx.fillStyle=color; ctx.fillText(v.toFixed(v<1?3:0),ml+w+5,y+bh/2+3);
+  });
+  ctx.fillStyle='rgba(107,122,141,0.7)';ctx.font="9px 'DM Mono'";ctx.textAlign='center';
+  ctx.fillText(unit+' — fining upward (L1 top)',ml+pw/2,cv.height-6);
+}
+
+// ── PVT ──
+function drawPVT(){
+  const npts=20,pmin=10,pmax=Math.max(P.pi,P.pb)*1.3,ps=[],bos=[],rss=[],mus=[],bgs=[];
+  for(let i=0;i<npts;i++){const p=pmin+(pmax-pmin)*i/(npts-1);ps.push(p);
+    let bo,rs,mu; if(p<=P.pb){const f=Math.max(0,p/P.pb);rs=P.rsi*Math.pow(f,1.2);bo=1+0.00013*rs;mu=P.muo*Math.pow(P.pb/Math.max(p,1),0.5);}
+    else{rs=P.rsi;bo=P.bo*Math.exp(-13e-5*(p-P.pb));mu=P.muo*(1+0.0012*(p-P.pb));}
+    const bg=P.pb/(p*1000)*3.5; bos.push(bo);rss.push(rs);mus.push(mu);bgs.push(bg);}
+  lineChart('pvtBoChart',ps,[{data:bos,color:'#C9A84C'}],[P.pb]);
+  lineChart('pvtRsChart',ps,[{data:rss,color:'#4AADCA'}]);
+  lineChart('pvtMuChart',ps,[{data:mus,color:'#E8963A'}]);
+  lineChart('pvtBgChart',ps,[{data:bgs,color:'#2ECC8A'}]);
+  const t=document.getElementById('pvtTable');
+  const idx=[0,2,4,6,8,10,12,14,16,18,19].filter(i=>i<ps.length);
+  t.innerHTML='<thead><tr><th>P (bar)</th><th>Bₒ</th><th>Rₛ</th><th>μₒ</th><th>Bᵍ</th></tr></thead><tbody>'+
+    idx.map(i=>`<tr class="${Math.abs(ps[i]-P.pb)<18?'highlight':''}"><td>${ps[i].toFixed(0)}</td><td>${bos[i].toFixed(3)}</td><td>${rss[i].toFixed(1)}</td><td>${mus[i].toFixed(3)}</td><td>${bgs[i].toFixed(5)}</td></tr>`).join('')+'</tbody>';
+}
+
+// ── SCAL ──
+function drawSCAL(){
+  const Swi=P.swi,Sor=0.28,n=30,sws=[],kro=[],krw=[];
+  for(let i=0;i<=n;i++){const sw=Swi+(1-Swi)*i/n;sws.push(sw);const t=Math.max(0,(sw-Swi)/(1-Swi-Sor));
+    kro.push(Math.max(0,0.85*Math.pow(1-t,3)));krw.push(Math.max(0,0.3*Math.pow(t,2.5)));}
+  lineChart('krChart',sws,[{data:kro,color:'#C9A84C'},{data:krw,color:'#4AADCA'}]);
+  const sgs=[],krog=[],krg=[];
+  for(let i=0;i<=n;i++){const sg=0.05+0.75*i/n;sgs.push(sg);const t=Math.max(0,(sg-0.05)/0.7);
+    krog.push(Math.max(0,0.85*Math.pow(1-t,2.5)));krg.push(Math.max(0,0.75*Math.pow(t,2)));}
+  lineChart('krgChart',sgs,[{data:krog,color:'#C9A84C'},{data:krg,color:'#2ECC8A'}]);
+}
+
+// ── AQUIFER PREVIEW ──
+function drawAquifer(){
+  const pts=24,ts=[],wes=[];let we=0,paq=P.pi;
+  const Jaq=2*Math.PI*(50*1e-3)*20/(P.muw*Math.log(5))*P.aqstr;
+  const Wei=2e6*Math.max(P.aqstr,0.1);
+  for(let i=0;i<pts;i++){const t=P.yr*i/(pts-1);ts.push(t);
+    const dp=paq-P.pi*0.72;we+=Math.max(0,Jaq*dp*P.dt*0.3);paq=P.pi*(1-we/Wei);wes.push(we/1e3);}
+  lineChart('aqChart',ts,[{data:wes,color:'#4AADCA'}]);
+}
+</script>
+<script>
+// ════════════════════════════════════════════════════
+//  3D VIEWER — Three.js (r128) custom orbit, no OrbitControls
+// ════════════════════════════════════════════════════
+let scene,camera,renderer,gridGroup,wellGroup;
+let camTheta=0.7,camPhi=1.0,camRadius=2200,camTarget;
+let dragging=false,lastX=0,lastY=0;
+let sceneR,cameraR,rendererR,gridGroupR,wellGroupR; // results viewer
+
+function initThree(){
+  const canvas=document.getElementById('three-canvas');
+  scene=new THREE.Scene(); scene.background=new THREE.Color(0x0F2338);
+  camera=new THREE.PerspectiveCamera(45,canvas.offsetWidth/440,1,50000);
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setPixelRatio(window.devicePixelRatio||1);
+  camTarget=new THREE.Vector3(0,0,0);
+  addLights(scene);
+  attachOrbit(canvas,'main');
+  rebuild3D();
+  animateMain();
+}
+function addLights(s){
+  s.add(new THREE.AmbientLight(0xffffff,0.55));
+  const d=new THREE.DirectionalLight(0xfff4e0,0.85); d.position.set(1,2,1.5); s.add(d);
+  const d2=new THREE.DirectionalLight(0x4a6a9a,0.4); d2.position.set(-1,-0.5,-1); s.add(d2);
+}
+
+// Colour ramps
+function rampPerm(t){ // navy → gold (log perm)
+  const c1=[19,41,75],c2=[201,168,76]; return mix(c1,c2,t);}
+function rampPoro(t){const c1=[19,41,75],c2=[46,204,138];return mix(c1,c2,t);}
+function rampPress(t){const c1=[192,57,43],c2=[46,204,138];return mix(c1,c2,t);} // low P red → high P green
+function rampSat(t){const c1=[11,41,75],c2=[74,173,202];return mix(c1,c2,t);}
+function mix(a,b,t){t=Math.max(0,Math.min(1,t));return new THREE.Color(
+  (a[0]+(b[0]-a[0])*t)/255,(a[1]+(b[1]-a[1])*t)/255,(a[2]+(b[2]-a[2])*t)/255);}
+
+function cellColor(i,j,k,satArr,presArr){
+  const {ni,nj}=P; const L=LAYERS[k]||{k:P.k,phi:P.phi};
+  // areal heterogeneity overlay (deterministic noise)
+  const noise=0.5+0.5*Math.sin(i*0.9+k*1.3)*Math.cos(j*0.8-k*0.7);
+  if(colorMode==='perm'){
+    const ks=LAYERS.map(l=>l.k);const kmin=Math.log(Math.min(...ks)),kmax=Math.log(Math.max(...ks)+1);
+    const kc=L.k*(0.6+0.8*noise);const t=(Math.log(kc)-kmin)/Math.max(kmax-kmin,0.1);return rampPerm(t);}
+  if(colorMode==='poro'){const t=(L.phi-0.05)/0.35;return rampPoro(t*(0.7+0.5*noise));}
+  if(colorMode==='press'&&presArr){const idx=i+j*ni+k*ni*nj;const t=(presArr[idx]-P.pwfp)/(P.pi-P.pwfp);return rampPress(t);}
+  if(colorMode==='sat'&&satArr){const idx=i+j*ni+k*ni*nj;const t=(satArr[idx]-P.swi)/(1-P.swi-0.28);return rampSat(t);}
+  // default perm-like
+  const t=(L.k/Math.max(...LAYERS.map(l=>l.k)));return rampPerm(t*(0.6+0.6*noise));
+}
+
+function rebuild3D(satArr,presArr){
+  if(!scene)return;
+  if(gridGroup)scene.remove(gridGroup);
+  if(wellGroup)scene.remove(wellGroup);
+  gridGroup=new THREE.Group(); wellGroup=new THREE.Group();
+  const {ni,nj,nk,dx,dy,dz}=P;
+  const totW=ni*dx,totH=nj*dy,totZ=nk*dz;
+  const zExag=Math.max(6,(Math.max(totW,totH)/Math.max(totZ,1))*0.10); // vertical exaggeration
+  const explodeGap=explodeOn?dz*zExag*1.4:0;
+  const cellGeo=new THREE.BoxGeometry(dx*0.94,dz*zExag*0.9,dy*0.94);
+  for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
+    const mat=new THREE.MeshLambertMaterial({color:cellColor(i,j,k,satArr,presArr)});
+    const m=new THREE.Mesh(cellGeo,mat);
+    const x=(i-(ni-1)/2)*dx, z=(j-(nj-1)/2)*dy;
+    const y=-(k-(nk-1)/2)*dz*zExag - k*explodeGap;
+    m.position.set(x,y,z); gridGroup.add(m);
+  }
+  // Wells
+  if(wellsOn){
+    const wells=buildWells();
+    wells.forEach(w=>{
+      const x=(w.i-(ni-1)/2)*dx, z=(w.j-(nj-1)/2)*dy;
+      const topY=(nk-1)/2*dz*zExag+dz*zExag*2;
+      const botY=-(nk-1)/2*dz*zExag - (nk-1)*explodeGap - dz*zExag;
+      const h=topY-botY;
+      const col=w.type==='prod'?0xC9A84C:0x4AADCA;
+      const cyl=new THREE.Mesh(new THREE.CylinderGeometry(dx*0.07,dx*0.07,h,10),
+        new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.3}));
+      cyl.position.set(x,(topY+botY)/2,z); wellGroup.add(cyl);
+      // marker sphere at top
+      const sph=new THREE.Mesh(new THREE.SphereGeometry(dx*0.16,12,12),
+        new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.5}));
+      sph.position.set(x,topY,z); wellGroup.add(sph);
+    });
+  }
+  scene.add(gridGroup); scene.add(wellGroup);
+  // Auto-fit camera radius
+  camRadius=Math.max(totW,totH)*1.6;
+  updateLegend();
+}
+
+function updateLegend(){
+  const lab={perm:'Permeability kh (mD)',poro:'Porosity φ',press:'Pressure (bar)',sat:'Water Saturation Sw'};
+  set('legend-label',lab[colorMode]||'Property');
+  const bar=document.getElementById('legend-bar');
+  const ramps={perm:'#13294B,#C9A84C',poro:'#13294B,#2ECC8A',press:'#C0392B,#2ECC8A',sat:'#0B294B,#4AADCA'};
+  if(bar)bar.style.background=`linear-gradient(90deg,${ramps[colorMode]})`;
+  const ks=LAYERS.map(l=>l.k);
+  const ranges={perm:[Math.min(...ks).toFixed(0),Math.max(...ks).toFixed(0)],
+    poro:['0.05','0.40'],press:[P.pwfp,P.pi],sat:[P.swi.toFixed(2),(1-0.28).toFixed(2)]};
+  set('legend-min',ranges[colorMode][0]); set('legend-max',ranges[colorMode][1]);
+}
+
+function setColorMode(m){
+  colorMode=m;
+  ['perm','poro','press','sat'].forEach(x=>document.getElementById('cm-'+x).classList.toggle('active',x===m));
+  if(m==='sat'&&RES.ran)rebuild3D(RES.satFrames[RES.satFrames.length-1]);
+  else if(m==='press'&&RES.ran)rebuild3D(null,RES.presFrames[RES.presFrames.length-1]);
+  else rebuild3D();
+}
+function toggleExplode(){explodeOn=!explodeOn;document.getElementById('tg-explode').classList.toggle('active',explodeOn);rebuild3D(colorMode==='sat'&&RES.ran?RES.satFrames[RES.satFrames.length-1]:null);}
+function toggleWells(){wellsOn=!wellsOn;const b=document.getElementById('tg-wells');b.classList.toggle('active',wellsOn);b.textContent=wellsOn?'Wells ✓':'Wells';rebuild3D();}
+
+// ── ORBIT CONTROL ──
+function attachOrbit(canvas,which){
+  const down=e=>{dragging=true;const t=e.touches?e.touches[0]:e;lastX=t.clientX;lastY=t.clientY;};
+  const move=e=>{if(!dragging)return;const t=e.touches?e.touches[0]:e;
+    const dx=t.clientX-lastX,dy=t.clientY-lastY;lastX=t.clientX;lastY=t.clientY;
+    if(which==='main'){camTheta-=dx*0.008;camPhi=Math.max(0.15,Math.min(Math.PI-0.15,camPhi-dy*0.008));}
+    else{camThetaR-=dx*0.008;camPhiR=Math.max(0.15,Math.min(Math.PI-0.15,camPhiR-dy*0.008));}
+    e.preventDefault();};
+  const up=()=>{dragging=false;};
+  const wheel=e=>{e.preventDefault();
+    if(which==='main')camRadius=Math.max(300,Math.min(12000,camRadius*(1+e.deltaY*0.0012)));
+    else camRadiusR=Math.max(300,Math.min(12000,camRadiusR*(1+e.deltaY*0.0012)));};
+  canvas.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+  canvas.addEventListener('touchstart',down,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',up);
+  canvas.addEventListener('wheel',wheel,{passive:false});
+}
+
+function animateMain(){
+  requestAnimationFrame(animateMain);
+  if(!renderer||!document.getElementById('tab-model').classList.contains('active'))return;
+  camera.position.set(
+    camTarget.x+camRadius*Math.sin(camPhi)*Math.cos(camTheta),
+    camTarget.y+camRadius*Math.cos(camPhi),
+    camTarget.z+camRadius*Math.sin(camPhi)*Math.sin(camTheta));
+  camera.lookAt(camTarget);
+  renderer.render(scene,camera);
+}
+function resize3D(){
+  const c=document.getElementById('three-canvas');if(!renderer)return;
+  renderer.setSize(c.offsetWidth,440,false);camera.aspect=c.offsetWidth/440;camera.updateProjectionMatrix();
+}
+
+// ── RESULTS 3D VIEWER ──
+let camThetaR=0.7,camPhiR=1.0,camRadiusR=2200,camTargetR;
+function initThreeResults(){
+  const canvas=document.getElementById('three-canvas-results');
+  sceneR=new THREE.Scene();sceneR.background=new THREE.Color(0x0F2338);
+  cameraR=new THREE.PerspectiveCamera(45,canvas.offsetWidth/420,1,50000);
+  rendererR=new THREE.WebGLRenderer({canvas,antialias:true});
+  rendererR.setPixelRatio(window.devicePixelRatio||1);
+  camTargetR=new THREE.Vector3(0,0,0);
+  addLights(sceneR); attachOrbit(canvas,'results'); animateResults();
+}
+function buildResults3D(satArr){
+  if(!sceneR)return;
+  if(gridGroupR)sceneR.remove(gridGroupR); if(wellGroupR)sceneR.remove(wellGroupR);
+  gridGroupR=new THREE.Group();wellGroupR=new THREE.Group();
+  const {ni,nj,nk,dx,dy,dz}=P;
+  const totW=ni*dx,totH=nj*dy,totZ=nk*dz;
+  const zExag=Math.max(6,(Math.max(totW,totH)/Math.max(totZ,1))*0.10);
+  const geo=new THREE.BoxGeometry(dx*0.94,dz*zExag*0.9,dy*0.94);
+  for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
+    const idx=i+j*ni+k*ni*nj; const t=(satArr[idx]-P.swi)/(1-P.swi-0.28);
+    const mat=new THREE.MeshLambertMaterial({color:rampSat(t)});
+    const m=new THREE.Mesh(geo,mat);
+    m.position.set((i-(ni-1)/2)*dx,-(k-(nk-1)/2)*dz*zExag,(j-(nj-1)/2)*dy);
+    gridGroupR.add(m);}
+  buildWells().forEach(w=>{
+    const x=(w.i-(ni-1)/2)*dx,z=(w.j-(nj-1)/2)*dy;
+    const topY=(nk-1)/2*dz*zExag+dz*zExag*2,botY=-(nk-1)/2*dz*zExag-dz*zExag,h=topY-botY;
+    const col=w.type==='prod'?0xC9A84C:0x4AADCA;
+    const cyl=new THREE.Mesh(new THREE.CylinderGeometry(dx*0.07,dx*0.07,h,10),new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.3}));
+    cyl.position.set(x,(topY+botY)/2,z);wellGroupR.add(cyl);});
+  sceneR.add(gridGroupR);sceneR.add(wellGroupR);
+  camRadiusR=Math.max(totW,totH)*1.6;
+}
+function animateResults(){
+  requestAnimationFrame(animateResults);
+  if(!rendererR||!document.getElementById('tab-results').classList.contains('active'))return;
+  cameraR.position.set(
+    camTargetR.x+camRadiusR*Math.sin(camPhiR)*Math.cos(camThetaR),
+    camTargetR.y+camRadiusR*Math.cos(camPhiR),
+    camTargetR.z+camRadiusR*Math.sin(camPhiR)*Math.sin(camThetaR));
+  cameraR.lookAt(camTargetR);rendererR.render(sceneR,cameraR);
+}
+function resize3DResults(){const c=document.getElementById('three-canvas-results');if(!rendererR)return;
+  rendererR.setSize(c.offsetWidth,420,false);cameraR.aspect=c.offsetWidth/420;cameraR.updateProjectionMatrix();}
+
+// Saturation animation
+function stepSatTime(d){
+  if(!RES.ran)return;
+  satFrameIdx=Math.max(0,Math.min(RES.satFrames.length-1,satFrameIdx+d));
+  buildResults3D(RES.satFrames[satFrameIdx]);
+  set('satTimeLabel',`t = ${RES.times[Math.min(satFrameIdx*Math.floor(RES.times.length/RES.satFrames.length),RES.times.length-1)].toFixed(1)} yr`);
+}
+function playSatAnimation(){
+  if(!RES.ran)return; satPlaying=!satPlaying;
+  document.getElementById('satPlayBtn').textContent=satPlaying?'❚❚ Pause':'▶ Play';
+  if(satPlaying)satLoop();
+}
+function satLoop(){
+  if(!satPlaying)return;
+  satFrameIdx++; if(satFrameIdx>=RES.satFrames.length)satFrameIdx=0;
+  buildResults3D(RES.satFrames[satFrameIdx]);
+  const ti=Math.min(Math.floor(satFrameIdx*RES.times.length/RES.satFrames.length),RES.times.length-1);
+  set('satTimeLabel',`t = ${RES.times[ti].toFixed(1)} yr`);
+  setTimeout(()=>{requestAnimationFrame(satLoop);},420);
+}
+</script>
+<script>
+// ════════════════════════════════════════════════════
+//  3D IMPES SIMULATION ENGINE
+// ════════════════════════════════════════════════════
+function runSimulation(){
+  const btn=document.getElementById('runBtn'); btn.disabled=true;
+  document.getElementById('progressWrap').style.display='flex';
+  set('sv-state','Running'); set('statusChip','Running');
+  const logEl=document.getElementById('simLog');
+  logEl.innerHTML='<span class="log-ok">■ APEX Reservoir 3D Engine v2.0 — Initialised</span>\n';
+  const {ni,nj,nk,dx,dy,dz}=P; const N=ni*nj*nk;
+  logEl.innerHTML+=`<span class="log-step">  Grid: ${ni}×${nj}×${nk} = ${N} cells · ${nk} layers</span>\n`;
+  const t0=performance.now();
+
+  // STATE ARRAYS
+  const press=new Float64Array(N).fill(P.pi);
+  const sw=new Float64Array(N).fill(P.swi);
+  // per-cell perm from layers + areal noise
+  const kcell=new Float64Array(N), phicell=new Float64Array(N);
+  for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
+    const idx=i+j*ni+k*ni*nj; const L=LAYERS[k];
+    const noise=0.6+0.8*(0.5+0.5*Math.sin(i*0.9+k*1.3)*Math.cos(j*0.8-k*0.7));
+    kcell[idx]=L.k*noise; phicell[idx]=L.phi*L.ntg;
+  }
+  // Initial Sw gradient — deeper layers wetter (transition zone)
+  for(let k=0;k<nk;k++){const extra=(k/(Math.max(nk-1,1)))*0.10;
+    for(let j=0;j<nj;j++)for(let i=0;i<ni;i++)sw[i+j*ni+k*ni*nj]=P.swi+extra;}
+
+  const wells=buildWells();
+  const r0=0.28*Math.sqrt(dx*dx+dy*dy)/2;
+  const lnT=Math.log(r0/P.rw)+P.skin;
+  const kro=s=>Math.max(0,0.85*Math.pow(Math.max(0,(1-s-0.28)/(1-P.swi-0.28)),3));
+  const krw=s=>Math.max(0,0.30*Math.pow(Math.max(0,(s-P.swi)/(1-P.swi-0.28)),2.5));
+  const getPVT=p=>{const sat=p<=P.pb;const Rs=sat?P.rsi*Math.pow(Math.max(p/P.pb,0),1.2):P.rsi;
+    const Bo=sat?(1+0.00013*Rs):(P.bo*Math.exp(-13e-5*(p-P.pb)));
+    const muo=sat?P.muo*Math.pow(P.pb/Math.max(p,1),0.5):P.muo;return{Rs,Bo,muo};};
+
+  const dt=P.dt, T_end=P.yr*365, ct=1.5e-4;
+  const PVtot=N*dx*dy*dz*(LAYERS.reduce((a,L)=>a+L.phi*L.ntg,0)/nk);
+  const cellPV=i=>dx*dy*dz*phicell[i];
+  // Aquifer
+  const Jaq=2*Math.PI*(50*1e-3)*dz/(P.muw*Math.log(5))*P.aqstr;
+  const Wei=PVtot*0.6*Math.max(P.aqstr,0.05); let We=0;
+
+  const times=[],qos=[],qws=[],pres=[],nps=[],wps=[],gors=[],wors=[];
+  let cumO=0,cumW=0,simT=0,step=0;
+  const nSteps=Math.ceil(T_end/dt), logEvery=Math.max(1,Math.floor(nSteps/8));
+  const frameEvery=Math.max(1,Math.floor(nSteps/16)); // ~16 sat frames
+  RES.satFrames=[]; RES.presFrames=[];
+
+  const tick=()=>{
+    if(simT>=T_end){finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn);return;}
+    const pAvg=avg(press); const pvt=getPVT(pAvg);
+    // ── WELL RATES (per perforated layer) ──
+    let Qo=0,Qw=0,Qinj=0;
+    wells.forEach(w=>{
+      for(let k=0;k<nk;k++){
+        const idx=w.i+w.j*ni+k*ni*nj; const Pr=press[idx];
+        const kh=kcell[idx]*dz;
+        const WI=2*Math.PI*(kh*1e-3)/lnT; // mD·m/cP basis
+        if(w.type==='prod'){
+          const dP=Math.max(0,Pr-P.pwfp);
+          const qo=WI*kro(sw[idx])*dP/(pvt.muo*pvt.Bo)*0.0864; // → m³/d scale
+          const qw=WI*krw(sw[idx])*dP/P.muw*0.0864;
+          Qo+=qo; Qw+=qw;
+          // local saturation rise from oil removal (water encroaches)
+          const dsw=(qo*0.0+qw*dt)/(cellPV(idx)*1000+1)*0.5;
+          // producing reduces oil → Sw up slightly handled by flux below
+        } else {
+          const dP=Math.max(0,P.pwfi-Pr); const qwi=WI*dP/P.muw*0.0864; Qinj+=qwi;
+        }
+      }
+    });
+    // ── PRESSURE UPDATE (material balance + aquifer) ──
+    const voidage=(Qo*pvt.Bo+Qw)*dt - Qinj*dt;
+    const dWe=Math.max(0,Jaq*(P.pi-pAvg)*dt); We+=dWe;
+    const dP=-(voidage-dWe)/(PVtot*ct);
+    for(let n=0;n<N;n++)press[n]=Math.max(P.pwfp+3,press[n]+dP*(0.85+0.3*Math.random()*0));
+    // ── SATURATION UPDATE (IMPES explicit) — injectors push water, vertical gravity ──
+    wells.forEach(w=>{
+      if(w.type==='inj'){
+        // water enters perforated cells, spreads laterally + slumps down (gravity)
+        for(let k=0;k<nk;k++){
+          const spread=[[0,0,0],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0]];
+          spread.forEach(([di,dj,dk])=>{
+            const ii=w.i+di,jj=w.j+dj,kk=k+dk;
+            if(ii>=0&&ii<ni&&jj>=0&&jj<nj&&kk>=0&&kk<nk){
+              const idx=ii+jj*ni+kk*ni*nj; const dP=Math.max(0,P.pwfi-press[idx]);
+              const kh=kcell[idx]*dz; const WI=2*Math.PI*(kh*1e-3)/lnT;
+              const dsw=WI*dP*dt*0.0864/(cellPV(idx)*1000+1)/spread.length;
+              sw[idx]=Math.min(1-0.28,sw[idx]+dsw);
+            }
+          });
+        }
+      }
+    });
+    // Producers: water cut rises as Sw climbs → drives WOR
+    wells.forEach(w=>{ if(w.type==='prod'){
+      for(let k=0;k<nk;k++){const idx=w.i+w.j*ni+k*ni*nj;
+        const fw=krw(sw[idx])/P.muw/(krw(sw[idx])/P.muw+kro(sw[idx])/pvt.muo+1e-9);
+        // small local Sw increase from drainage front arrival
+        sw[idx]=Math.min(1-0.28,sw[idx]+fw*0.0008);}}});
+    // Gravity segregation between layers (water slumps down)
+    if(P.gravity&&nk>1){
+      for(let j=0;j<nj;j++)for(let i=0;i<ni;i++)for(let k=0;k<nk-1;k++){
+        const a=i+j*ni+k*ni*nj, b=i+j*ni+(k+1)*ni*nj;
+        const flux=(sw[a]-P.swi)*0.002*P.kvkh;
+        if(sw[a]>sw[b]){sw[a]-=flux;sw[b]=Math.min(1-0.28,sw[b]+flux);}
+      }
+    }
+    simT+=dt; step++;
+    const tyr=simT/365; times.push(tyr);
+    qos.push(Qo); qws.push(Qw); pres.push(avg(press));
+    cumO+=Qo*dt; cumW+=Qw*dt; nps.push(cumO/1e3); wps.push(cumW/1e3);
+    gors.push(pvt.Rs); wors.push(Qo>0.01?Qw/Qo:0);
+    if(step%frameEvery===0||simT>=T_end){RES.satFrames.push(Float64Array.from(sw));RES.presFrames.push(Float64Array.from(press));}
+    if(step%logEvery===0){
+      logEl.innerHTML+=`<span class="log-step">  [t=${tyr.toFixed(1)}yr]</span> P̄=<span class="log-val">${avg(press).toFixed(0)}bar</span> Qo=<span class="log-val">${Qo.toFixed(0)}m³/d</span> S̄w=<span class="log-val">${avg(sw).toFixed(3)}</span> We=<span class="log-val">${(We/1e3).toFixed(0)}k</span>\n`;
+      logEl.scrollTop=logEl.scrollHeight;
+    }
+    const pct=simT/T_end*100;
+    document.getElementById('progressFill').style.width=pct+'%';
+    document.getElementById('progressLabel').textContent=pct.toFixed(0)+'%';
+    set('sv-done',step); setStatus(`t=${tyr.toFixed(1)}yr · Qo=${Qo.toFixed(0)} m³/d`,'#C9A84C');
+    setTimeout(tick,0);
+  };
+  tick();
+}
+const avg=a=>{let s=0;for(let i=0;i<a.length;i++)s+=a[i];return s/a.length;};
+
+function finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn){
+  const cpu=((performance.now()-t0)/1000).toFixed(2);
+  const logEl=document.getElementById('simLog');
+  logEl.innerHTML+=`<span class="log-ok">✓ Complete — ${times.length} steps · ${RES.satFrames.length} saved frames · CPU ${cpu}s</span>\n`;
+  logEl.scrollTop=logEl.scrollHeight;
+  Object.assign(RES,{ran:true,times,qo:qos,qw:qws,pres,np:nps,wp:wps,gor:gors,wor:wors,satFinal:Array.from(sw),presFinal:Array.from(press)});
+  const {ni,nj,nk,dx,dy,dz,swi,bo}=P;
+  let pv=0;LAYERS.forEach(L=>pv+=ni*nj*dx*dy*dz*L.phi*L.ntg);
+  const stoiip=pv*(1-swi)/bo; const cumO=nps[nps.length-1]*1e3; const rf=cumO/stoiip*100;
+  set('r-np',(nps[nps.length-1]).toFixed(0)); set('r-wp',(wps[wps.length-1]).toFixed(0));
+  set('r-pr',pres[pres.length-1].toFixed(0)); set('r-wor',wors[wors.length-1].toFixed(2));
+  set('r-rf',rf.toFixed(1)+'%'); set('r-status',`Complete · ${times.length} steps · CPU ${cpu}s`);
+  set('sv-cpu',`${cpu}s`); set('sv-state','Complete'); set('statusChip','Complete');
+  set('r-swmin',P.swi.toFixed(2));
+  document.getElementById('progressFill').style.width='100%'; document.getElementById('progressLabel').textContent='100%';
+  document.querySelectorAll('.apex-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.apex-tab')[7].classList.add('active');
+  document.getElementById('tab-results').classList.add('active');
+  drawResults(); setTimeout(()=>{resize3DResults();satFrameIdx=RES.satFrames.length-1;buildResults3D(RES.satFrames[satFrameIdx]);set('satTimeLabel',`t = ${P.yr} yr`);},80);
+  btn.disabled=false; btn.innerHTML='<span class="run-icon">↺</span> Re-run';
+  setStatus(`Complete · RF=${rf.toFixed(1)}% · ${cpu}s`,'#2ECC8A');
+}
+
+function drawResults(){
+  const {times:T,qo,qw,pres:pr,np,wp,gor,wor}=RES;
+  lineChart('rateChart',T,[{data:qo,color:'#C9A84C'},{data:qw,color:'#4AADCA'}]);
+  lineChart('presChart',T,[{data:pr,color:'#2ECC8A'}],[P.pb]);
+  lineChart('cumChart',T,[{data:np,color:'#C9A84C'},{data:wp,color:'#4AADCA'}]);
+  lineChart('gorChart',T,[{data:wor,color:'#2ECC8A'},{data:gor.map(v=>v*0.1),color:'#E8963A'}]);
+}
+function setStatus(m,c){const e=document.getElementById('simStatus');if(e){e.textContent=m;e.style.color=c||'var(--steel)';}}
+
+// ════════════════════════════════════════════════════
+//  INPUT / OUTPUT
+// ════════════════════════════════════════════════════
+function openModal(mode){
+  const m=document.getElementById('ioModal'); const body=document.getElementById('modalBody');
+  const title=document.getElementById('modalTitle');
+  if(mode==='export'){
+    title.innerHTML='Export <em>Model</em>';
+    body.innerHTML=`
+      <div class="modal-section-title">Model State (JSON)</div>
+      <div class="io-note">Full parameter set + layer properties. Save to reload later or share.</div>
+      <textarea class="io-textarea" id="jsonOut" readonly>${JSON.stringify({P,LAYERS},null,1)}</textarea>
+      <button class="modal-btn" onclick="downloadJSON()">⬇ Download .json</button>
+      <button class="modal-btn ghost" onclick="copyJSON()">Copy</button>
+      <div class="modal-section-title">Production Results (CSV)</div>
+      <div class="io-note">${RES.ran?'Time-series production table — one row per timestep.':'Run a simulation first to export results.'}</div>
+      <button class="modal-btn" onclick="exportResultsCSV()" ${RES.ran?'':'disabled style=opacity:.4'}>⬇ Download production.csv</button>
+      <div class="modal-section-title">ECLIPSE-style Keywords</div>
+      <div class="io-note">DIMENS / PORO / PERMX deck fragment for external simulators.</div>
+      <button class="modal-btn ghost" onclick="exportEclipse()">⬇ Download .DATA fragment</button>`;
+  } else {
+    title.innerHTML='Import <em>Model</em>';
+    body.innerHTML=`
+      <div class="modal-section-title">Load Model File</div>
+      <div class="file-drop" onclick="document.getElementById('fileInput').click()">
+        Click to select a <b>.json</b> model file, <b>.csv</b> well schedule, or ECLIPSE <b>.DATA</b> deck
+      </div>
+      <div class="io-note">JSON restores full state. CSV with columns <span style="font-family:var(--font-mono)">well,type,i,j,pwf</span> sets wells. ECLIPSE DIMENS/PORO/PERMX sets grid.</div>
+      <div class="modal-section-title">Or Paste JSON</div>
+      <textarea class="io-textarea" id="jsonIn" placeholder='{"P":{...},"LAYERS":[...]}'></textarea>
+      <button class="modal-btn" onclick="importJSONText()">Load from Text</button>
+      <div class="modal-section-title">Quick Presets</div>
+      <button class="modal-btn ghost" onclick="loadPreset('maracaibo')">Lake Maracaibo Heavy</button>
+      <button class="modal-btn ghost" onclick="loadPreset('thin')">Thin Layered Sand</button>`;
+  }
+  m.classList.add('open');
+}
+function closeModal(){document.getElementById('ioModal').classList.remove('open');}
+
+function downloadJSON(){ downloadFile('apex-reservoir-model.json',JSON.stringify({P,LAYERS},null,2)); }
+function copyJSON(){const t=document.getElementById('jsonOut');t.select();document.execCommand('copy');}
+function importJSONText(){try{applyImport(JSON.parse(document.getElementById('jsonIn').value));closeModal();}catch(e){alert('Invalid JSON: '+e.message);}}
+function applyImport(obj){
+  if(obj.P)Object.assign(P,obj.P);
+  if(obj.LAYERS)LAYERS=obj.LAYERS;
+  // sync all rail controls
+  Object.keys(P).forEach(k=>{const el=document.getElementById('r-'+k);if(el){el.value=P[k];const min=+el.min,max=+el.max;el.style.setProperty('--pct',((P[k]-min)/(max-min)*100)+'%');const lab=document.getElementById('v-'+k);if(lab)lab.textContent=P[k];}});
+  const aq=document.getElementById('s-aqtype');if(aq)aq.value=P.aqtype;
+  const sv=document.getElementById('s-solver');if(sv)sv.value=P.solver;
+  if(!obj.LAYERS)generateLayers(); else {buildLayerTable();drawLayerCharts();}
+  updateDerived(); rebuild3D();
+  setStatus('Model imported ✓','#2ECC8A');
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('fileInput').addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;const r=new FileReader();
+    r.onload=ev=>{const txt=ev.target.result;
+      try{
+        if(f.name.endsWith('.json')){applyImport(JSON.parse(txt));}
+        else if(f.name.endsWith('.csv')){importWellCSV(txt);}
+        else{importEclipse(txt);}
+        closeModal();
+      }catch(err){alert('Import failed: '+err.message);}
+    };r.readAsText(f);
+  });
+});
+
+function importWellCSV(txt){
+  const lines=txt.trim().split(/\r?\n/); const hdr=lines[0].toLowerCase().split(',');
+  let np=0,ni2=0; lines.slice(1).forEach(l=>{const c=l.split(',');const type=(c[1]||'').toLowerCase();
+    if(type.includes('prod'))np++;else if(type.includes('inj'))ni2++;});
+  if(np)P.np=Math.min(6,np); if(ni2)P.ni2=Math.min(4,ni2);
+  applyImport({P}); setStatus(`Loaded ${np} prod / ${ni2} inj from CSV`,'#2ECC8A');
+}
+function importEclipse(txt){
+  const dim=txt.match(/DIMENS\s+(\d+)\s+(\d+)\s+(\d+)/i);
+  if(dim){P.ni=Math.min(20,+dim[1]);P.nj=Math.min(20,+dim[2]);P.nk=Math.min(8,+dim[3]);}
+  const poro=txt.match(/PORO\s+([\d.]+)/i); if(poro)P.phi=parseFloat(poro[1]);
+  const perm=txt.match(/PERMX\s+([\d.]+)/i); if(perm)P.k=parseFloat(perm[1]);
+  generateLayers(); applyImport({P}); setStatus('ECLIPSE deck imported ✓','#2ECC8A');
+}
+function loadPreset(name){
+  if(name==='maracaibo')Object.assign(P,{ni:14,nj:14,nk:5,dx:150,dy:150,dz:10,topd:1800,phi:0.26,k:800,kvkh:0.15,vdp:0.55,pi:180,pb:140,muo:8.5,bo:1.15,rsi:45,swi:0.24,np:4,ni2:2});
+  if(name==='thin')Object.assign(P,{ni:16,nj:16,nk:8,dx:80,dy:80,dz:3,topd:3100,phi:0.18,k:120,kvkh:0.05,vdp:0.65,pi:340,pb:240,muo:1.2,bo:1.45,rsi:140,swi:0.18,np:3,ni2:2});
+  generateLayers(); applyImport({P}); closeModal();
+}
+
+function exportResultsCSV(){
+  if(!RES.ran){alert('Run a simulation first.');return;}
+  let csv='time_yr,Qo_m3d,Qw_m3d,Pres_bar,Np_10e3m3,Wp_10e3m3,GOR_m3m3,WOR\n';
+  RES.times.forEach((t,i)=>{csv+=`${t.toFixed(3)},${RES.qo[i].toFixed(1)},${RES.qw[i].toFixed(1)},${RES.pres[i].toFixed(1)},${RES.np[i].toFixed(2)},${RES.wp[i].toFixed(2)},${RES.gor[i].toFixed(1)},${RES.wor[i].toFixed(3)}\n`;});
+  downloadFile('apex-production.csv',csv); setStatus('Production CSV exported ✓','#2ECC8A');
+}
+function exportEclipse(){
+  const {ni,nj,nk,dx,dy,dz}=P;
+  let d=`-- APEX Reservoir 3D — exported deck fragment\nRUNSPEC\nDIMENS\n  ${ni} ${nj} ${nk} /\nOIL\nWATER\nGAS\nDISGAS\nGRID\nDX\n  ${ni*nj*nk}*${dx} /\nDY\n  ${ni*nj*nk}*${dy} /\nDZ\n  ${ni*nj*nk}*${dz} /\nPORO\n`;
+  LAYERS.forEach((L,k)=>{d+=`  ${ni*nj}*${L.phi.toFixed(3)} /  -- layer ${k+1}\n`;});
+  d+='PERMX\n'; LAYERS.forEach((L,k)=>{d+=`  ${ni*nj}*${L.k.toFixed(0)} /  -- layer ${k+1}\n`;});
+  d+='PERMZ\n'; LAYERS.forEach((L,k)=>{d+=`  ${ni*nj}*${(L.k*P.kvkh).toFixed(1)} /\n`;});
+  d+='PROPS\n-- PVT: Pb='+P.pb+' bar, Rsi='+P.rsi+', Bo='+P.bo+'\nSOLUTION\nEQUIL\n  '+P.topd+' '+P.pi+' /\nSCHEDULE\n';
+  buildWells().forEach(w=>{d+=`WELSPECS\n  ${w.name} G1 ${w.i+1} ${w.j+1} 1* ${w.type==='prod'?'OIL':'WATER'} /\n/\n`;});
+  downloadFile('apex-reservoir.DATA',d); setStatus('ECLIPSE deck exported ✓','#2ECC8A');
+}
+function downloadFile(name,content){
+  const blob=new Blob([content],{type:'text/plain'}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+}
+
+// ── PUSH TO APEX FINANCIAL MODEL ──
+function pushToAPEX(){
+  if(!RES.ran){alert('Run a simulation first to generate a production profile.');return;}
+  // Build annual profile
+  const annual=[]; const yrs=Math.ceil(P.yr);
+  for(let y=1;y<=yrs;y++){
+    const idxs=RES.times.map((t,i)=>({t,i})).filter(o=>o.t>y-1&&o.t<=y).map(o=>o.i);
+    if(!idxs.length)continue;
+    const avgQo=idxs.reduce((a,i)=>a+RES.qo[i],0)/idxs.length;
+    annual.push({year:y,oil_bopd:Math.round(avgQo*6.2898),water_bwpd:Math.round(idxs.reduce((a,i)=>a+RES.qw[i],0)/idxs.length*6.2898)});
+  }
+  const payload={source:'APEX-Reservoir-3D',generated:new Date().toISOString(),
+    stoiip_m3:Math.round(RES.np[RES.np.length-1]*1e3/(parseFloat(document.getElementById('r-rf').textContent)/100)),
+    recovery_pct:parseFloat(document.getElementById('r-rf').textContent),
+    plateau_bopd:Math.max(...annual.map(a=>a.oil_bopd)),profile:annual};
+  window._apexPayload=payload;
+  try{const b64=btoa(JSON.stringify(payload));sessionStorage.setItem('apexReservoirPayload',b64);}catch(e){}
+  setStatus(`→ Pushed ${annual.length}-yr profile to APEX`,'#2ECC8A');
+  alert(`Production profile pushed to APEX Financial Model.\n\nPlateau: ${payload.plateau_bopd.toLocaleString()} BOPD\nRecovery: ${payload.recovery_pct}% STOIIP\nProfile: ${annual.length} years\n\nThe Financial Modelling tool will detect window._apexPayload on load.`);
+}
+
+// ════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  document.querySelectorAll('.rail-range').forEach(r=>{const min=+r.min,max=+r.max,v=+r.value;r.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');});
+  generateLayers(); updateDerived(); drawPVT(); drawSCAL(); drawAquifer();
+  initThree(); initThreeResults();
+  window.addEventListener('resize',()=>{resize3D();resize3DResults();
+    drawPVT();drawSCAL();drawLayerCharts();drawAquifer();if(RES.ran)drawResults();});
+  setTimeout(()=>{resize3D();rebuild3D();},150);
+});
+</script>
+</body>
+</html>
