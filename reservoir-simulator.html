@@ -1357,6 +1357,9 @@ function runSimulation(){
     // Transmissibility uses UPSTREAM total mobility per face.
     // Aquifer: bottom layer edge, Fetkovich linear influx.
     const acc_coeff=dt>0?1/(ct*dt):0; // used to weight accumulation vs flow
+    // Areal well map for source terms in the pressure equation (wells are static)
+    const wellMap=new Int8Array(ni*nj); // 0=none, 1=injector, 2=producer
+    wells.forEach(w=>{ wellMap[w.i+w.j*ni]=(w.type==='inj')?1:2; });
     for(let sweep=0;sweep<30;sweep++){
       for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
         const idx=i+j*ni+k*ni*nj;
@@ -1377,33 +1380,21 @@ function runSimulation(){
         // Accumulation (compressibility) term keeps diagonal dominant
         const pv=cellPV(idx); const acc=phicell[idx]*pv*ct/dt;
         num+=acc*press[idx]; den+=acc;
-        // Well source/sink — BHP-constrained
-        // Injector: λ = 1/μw (water), Producer: λt (total mobility)
-        if(den>0){ // only add well term if cell has neighbours (avoids isolated cell)
-          // check each well
+        // Well SOURCE term (NOT a hard BHP pin): WI·λ·Pwf enters the cell equation
+        // so the cell pressure settles between reservoir and BHP and the well rate
+        // WI·λ·(Pwf−P) stays physical. The old correction sweep pinned the cell to
+        // Pwf, which collapsed the injector driving force to ~0 (no flood at all).
+        const wt=wellMap[i+j*ni];
+        if(wt){
+          const WI=cellWI(idx);
+          const t=WI*(wt===1?(1/P.muw):lamT(sw[idx]));
+          num+=t*(wt===1?P.pwfi:P.pwfp); den+=t;
         }
         if(den>0)press[idx]=num/den;
       }
     }
-    // Apply well BHP constraints as a correction sweep
-    wells.forEach(w=>{
-      for(let k=0;k<nk;k++){
-        const idx=w.i+w.j*ni+k*ni*nj;
-        const WI=cellWI(idx); // [rm³·cP/(d·bar)]
-        const pv=cellPV(idx); const acc=phicell[idx]*pv*ct/dt;
-        if(w.type==='inj'){
-          // Injector drives cell toward Pwfi; weight by injectivity
-          const lam=1/P.muw; const t=WI*lam;
-          press[idx]=(press[idx]*acc + t*P.pwfi)/(acc+t);
-        } else {
-          // Producer pulls cell toward Pwfp; weight by total mobility
-          const lam=lamT(sw[idx]); const t=WI*lam;
-          press[idx]=(press[idx]*acc + t*P.pwfp)/(acc+t);
-        }
-        // Physical bounds
-        press[idx]=Math.max(P.pwfp,Math.min(P.pwfi,press[idx]));
-      }
-    });
+    // (Well BHP pinning removed — wells now enter as source terms in the sweep above,
+    //  so the injector retains a real driving force and the flood actually advances.)
     // Aquifer pressure support on bottom layer
     for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
       const idx=i+j*ni+(nk-1)*ni*nj;
@@ -1431,114 +1422,75 @@ function runSimulation(){
       }
     });
 
-    // ── SATURATION TRANSPORT — explicit upstream finite difference ───────────
-    // ΔSw[i] = dt/(φ*Vb) * [Σ_faces q_water + q_wi_source - q_wp_sink]
-    // q_water_face = T * (krw_upstream/μw) * (Pa-Pb)  [rm³/d]
-    // NO fudge factors. NO artificial dispersion. Mass-conservative.
-    const dSwCell=new Float64Array(N);
+    // ── SATURATION TRANSPORT — CFL-substepped fractional-flow (sequential IMPES) ──
+    // Water moves across each face as fw(S_up)·Qt, where the total flux
+    // Qt = T·λt(S_up)·ΔP is frozen from the solved pressure field for this step.
+    // Injectors are pure water sources at their BHP rate with NO voidage choke:
+    // the front self-propagates as a Buckley–Leverett shock because every cell
+    // that rises above connate gains mobile krw and passes water downstream.
+    // The macro-step is divided into CFL sub-steps so no cell can overfill in a
+    // single update — that single change is what previously stalled the flood
+    // (water piled up at the injectors and never reached the producers) and let
+    // recovery run past 100% (producers never watered out, so kro stayed maxed).
+    const sw_max=1-Sor;
     let massInjected=0, massProduced=0, Qinj_actual=0;
 
-    // Face fluxes — upstream water mobility weighting
-    const applyFaceFlux=(a,b,T)=>{
-      const dP=press[a]-press[b];
-      const up=(dP>=0)?a:b;
-      const qw=T*(krw(sw[up])/P.muw)*dP; // [rm³/d], positive = a→b
-      const vol=qw*dt;                    // [rm³] over timestep
-      dSwCell[a]-=vol/cellPV(a);
-      dSwCell[b]+=vol/cellPV(b);
-    };
-    // X-faces
+    // Frozen face list (total flux constant over the macro-step)
+    const faces=[];
     for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni-1;i++){
-      const a=i+j*ni+k*ni*nj; applyFaceFlux(a,a+1,TxFace(a,a+1));
+      const a=i+j*ni+k*ni*nj,b=a+1; faces.push({a,b,T:TxFace(a,b),g:0});
     }
-    // Y-faces
     for(let k=0;k<nk;k++)for(let j=0;j<nj-1;j++)for(let i=0;i<ni;i++){
-      const a=i+j*ni+k*ni*nj; applyFaceFlux(a,a+ni,TyFace(a,a+ni));
+      const a=i+j*ni+k*ni*nj,b=a+ni; faces.push({a,b,T:TyFace(a,b),g:0});
     }
-    // Z-faces (vertical, gravity-corrected: ΔP_gravity = ρw*g*dz ≈ 0.0981 bar/m * dz)
     for(let k=0;k<nk-1;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
-      const a=i+j*ni+k*ni*nj, b=a+ni*nj;
-      const grav=0.0981*dz; // water hydrostatic, bar (shallow correction)
-      const dP=(press[a]-press[b])+grav; // positive = downward flow (a is shallower)
-      const up=(dP>=0)?a:b;
-      const qw=TzFace(a,b)*(krw(sw[up])/P.muw)*dP;
-      dSwCell[a]-=qw*dt/cellPV(a); dSwCell[b]+=qw*dt/cellPV(b);
+      const a=i+j*ni+k*ni*nj,b=a+ni*nj; faces.push({a,b,T:TzFace(a,b),g:0.0981*dz});
     }
 
-    // Well sources/sinks — volume-conservative injector overfill handling
-    // Injectors: water source into cell. Cap ΔSw at available pore space.
-    // Excess above cap redistributed to adjacent cells (no water destroyed).
-    wells.forEach(w=>{
-      for(let k=0;k<nk;k++){
-        const idx=w.i+w.j*ni+k*ni*nj;
-        const WI=cellWI(idx); const pv=cellPV(idx);
-        if(w.type==='inj'){
-          // VOIDAGE-LIMITED INJECTION (mass-conservative, physically correct)
-          // The Peaceman model gives the BHP-limited *injectivity* — the rate
-          // the well would deliver if the formation could accept it. But a cell
-          // (and its neighbourhood) cannot hold more water than its available
-          // pore space (voidage). When injectivity exceeds local voidage, a real
-          // well falls off BHP control onto a rate (voidage-replacement) limit.
-          // We therefore inject only what the cell + open neighbours can accept,
-          // and report THAT as the injected volume. Nothing is created or lost.
-          const dP=Math.max(0,P.pwfi-press[idx]);
-          const qwi=WI*(1/P.muw)*dP;     // [rm³/d] BHP-limited injectivity (Peaceman)
-          const vol_attempt=qwi*dt;      // [rm³] water the well would deliver
-          const sw_max=1-Sor;
-          // Available voidage in the injector cell itself
-          const sw_available=Math.max(0,(sw_max-sw[idx])*pv);
-          let vol_accepted=0;
-          if(vol_attempt<=sw_available){
-            // All fits in the injector cell
-            dSwCell[idx]+=vol_attempt/pv;
-            vol_accepted=vol_attempt;
-          } else {
-            // Fill the injector cell, cascade the remainder to open neighbours
-            dSwCell[idx]+=sw_available/pv;
-            vol_accepted+=sw_available;
-            let excess=vol_attempt-sw_available;
-            const nbrs=[];
-            if(w.i>0)   nbrs.push(idx-1);
-            if(w.i<ni-1)nbrs.push(idx+1);
-            if(w.j>0)   nbrs.push(idx-ni);
-            if(w.j<nj-1)nbrs.push(idx+ni);
-            if(k>0)     nbrs.push(idx-ni*nj);
-            if(k<nk-1)  nbrs.push(idx+ni*nj);
-            const caps=nbrs.map(nb=>Math.max(0,(sw_max-sw[nb]-dSwCell[nb])*cellPV(nb)));
-            const totCap=caps.reduce((a,v)=>a+v,0);
-            const placeable=Math.min(excess,totCap); // can't place more than capacity
-            if(totCap>1e-9){
-              nbrs.forEach((nb,ii)=>{
-                const give=placeable*caps[ii]/totCap;
-                dSwCell[nb]+=give/cellPV(nb);
-              });
-            }
-            vol_accepted+=placeable;
-            // Any remainder (excess - placeable) is voidage the formation
-            // physically cannot accept this step → the well is rate-constrained.
-            // It is NOT injected, so it is NOT added to massInjected. Mass closes.
-          }
-          // Report only the actually-accepted volume → exact mass balance
-          massInjected+=vol_accepted;
-          Qinj_actual+=vol_accepted/dt; // surface-reported injection rate
-        } else {
-          // Producer: remove water at in-situ fractional flow
-          const dP=Math.max(0,press[idx]-P.pwfp);
-          const qt_res=WI*lamT(sw[idx])*dP; // total reservoir rate [rm³/d]
-          const qwp=qt_res*fw(sw[idx]);       // water component [rm³/d]
-          const vol_out=qwp*dt;
-          massProduced+=vol_out;
-          dSwCell[idx]-=Math.min(vol_out/pv, sw[idx]-P.swi); // can't drain below Swi
-        }
-      }
-    });
+    // Well cell lists with frozen BHP driving forces
+    const injCells=[], prodCells=[];
+    wells.forEach(w=>{ for(let k=0;k<nk;k++){
+      const idx=w.i+w.j*ni+k*ni*nj, WI=cellWI(idx);
+      if(w.type==='inj'){ const dP=Math.max(0,P.pwfi-press[idx]); injCells.push({idx,q:WI*(1/P.muw)*dP}); }
+      else { const dP=Math.max(0,press[idx]-P.pwfp); prodCells.push({idx,c:WI*dP}); } // water rate = c·λw(S)
+    }});
 
-    // Apply ΔSw — physical bounds only (no artificial clamp destroying mass)
-    let sw_total_before=0, sw_total_after=0;
-    for(let n=0;n<N;n++) sw_total_before+=sw[n]*cellPV(n);
-    for(let n=0;n<N;n++) sw[n]=Math.max(P.swi,Math.min(1-Sor,sw[n]+dSwCell[n]));
-    for(let n=0;n<N;n++) sw_total_after+=sw[n]*cellPV(n);
-    // Mass balance accounting (logged periodically)
+    // CFL: choose sub-steps so peak per-cell throughput moves ≤ dSwMax of pore volume
+    const dSwMax=0.04; let peak=0;
+    faces.forEach(f=>{ const dP=(press[f.a]-press[f.b])+f.g; const up=dP>=0?f.a:f.b;
+      const Qt=Math.abs(f.T*lamT(sw[up])*dP); peak=Math.max(peak,Qt/cellPV(f.a),Qt/cellPV(f.b)); });
+    injCells.forEach(c=>{ peak=Math.max(peak,c.q/cellPV(c.idx)); });
+    const nSub=Math.max(1,Math.min(160,Math.ceil(dt*peak/dSwMax)));
+    const dts=dt/nSub;
+    let sw_total_before=0; for(let n=0;n<N;n++) sw_total_before+=sw[n]*cellPV(n);
+
+    for(let s=0;s<nSub;s++){
+      const dSwCell=new Float64Array(N);
+      // Interblock fractional-flow transport
+      faces.forEach(f=>{
+        const dP=(press[f.a]-press[f.b])+f.g; const up=dP>=0?f.a:f.b;
+        const Qt=f.T*lamT(sw[up])*dP;       // total flux a→b [rm³/d]
+        const vol=Qt*fw(sw[up])*dts;         // water carried this sub-step
+        dSwCell[f.a]-=vol/cellPV(f.a); dSwCell[f.b]+=vol/cellPV(f.b);
+      });
+      // Injector — pure water source, no choke (cell self-regulates via outflux)
+      injCells.forEach(c=>{ const v=c.q*dts; dSwCell[c.idx]+=v/cellPV(c.idx); massInjected+=v; });
+      // Producer — water sink at in-situ fractional flow (q_w = WI·λw·dP)
+      prodCells.forEach(c=>{
+        const qw=c.c*lamW(sw[c.idx]);        // [rm³/d]
+        const v=Math.min(qw*dts, Math.max(0,sw[c.idx]-P.swi)*cellPV(c.idx));
+        dSwCell[c.idx]-=v/cellPV(c.idx); massProduced+=v;
+      });
+      // Apply with physical bounds (CFL keeps overshoot negligible → mass closes)
+      for(let n=0;n<N;n++){
+        const s2=sw[n]+dSwCell[n];
+        sw[n]= s2>sw_max?sw_max : (s2<P.swi?P.swi:s2);
+      }
+    }
+    injCells.forEach(c=>{ Qinj_actual+=c.q; });
+
+    // Mass balance accounting (logged periodically) — honest, not forced to zero
+    let sw_total_after=0; for(let n=0;n<N;n++) sw_total_after+=sw[n]*cellPV(n);
     const massStored=sw_total_after-sw_total_before;
     const massErr=(massInjected>1e-6)?Math.abs(massInjected-massProduced-massStored)/massInjected*100:0;
 
