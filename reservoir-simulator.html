@@ -1011,7 +1011,10 @@ function cellColor(i,j,k,satArr,presArr){
     const kc=L.k*(0.6+0.8*noise);const t=(Math.log(kc)-kmin)/Math.max(kmax-kmin,0.1);return rampPerm(t);}
   if(colorMode==='poro'){const t=(L.phi-0.05)/0.35;return rampPoro(t*(0.7+0.5*noise));}
   if(colorMode==='press'&&presArr){const idx=i+j*ni+k*ni*nj;const t=(presArr[idx]-P.pwfp)/(P.pi-P.pwfp);return rampPress(t);}
-  if(colorMode==='sat'&&satArr){const idx=i+j*ni+k*ni*nj;const t=(satArr[idx]-P.swi)/(1-P.swi-0.28);return rampSat(t);}
+  if(colorMode==='sat'){
+    if(satArr){const idx=i+j*ni+k*ni*nj;const t=(satArr[idx]-P.swi)/(1-P.swi-0.28);return rampSat(t);}
+    return rampSat(0); // no sim yet → connate water = all oil = deep red
+  }
   // default perm-like
   const t=(L.k/Math.max(...LAYERS.map(l=>l.k)));return rampPerm(t*(0.6+0.6*noise));
 }
@@ -1475,11 +1478,35 @@ function runSimulation(){
       });
       // Injector — pure water source, no choke (cell self-regulates via outflux)
       injCells.forEach(c=>{ const v=c.q*dts; dSwCell[c.idx]+=v/cellPV(c.idx); massInjected+=v; });
-      // Producer — water sink at in-situ fractional flow (q_w = WI·λw·dP)
+
+      // ── NET OIL DEPLETION at producers ──────────────────────────────────────────
+      // In an incompressible waterflood, oil flows THROUGH the reservoir: injector water
+      // displaces oil toward producers, and replacement oil from neighboring cells
+      // flows into the producer cell as fast as it is extracted. Net Sw change at a
+      // producer is zero until the waterflood FRONT cuts off that oil supply.
+      //
+      // We capture this by computing the oil that flows INTO each producer cell from
+      // its faces (oilIn) and applying depletion only on the NET:
+      //   net_depletion = oil_produced_to_surface − oil_replaced_from_faces
+      //
+      // Early time (flood not yet arrived): oilIn ≈ oilOut → net ≈ 0 → no artefact.
+      // After flood sweeps nearby cells: oilIn drops → net > 0 → kro falls → natural
+      // rate decline and RF caps at sweep efficiency × displacement efficiency (≤ 100%).
+      const oilIn=new Float64Array(N);
+      faces.forEach(f=>{
+        const dPf=(press[f.a]-press[f.b])+f.g;
+        if(dPf>0){const qt=f.T*lamT(sw[f.a])*dPf*dts;oilIn[f.b]+=qt*(1-fw(sw[f.a]));}
+        else if(dPf<0){const qt=f.T*lamT(sw[f.b])*(-dPf)*dts;oilIn[f.a]+=qt*(1-fw(sw[f.b]));}
+      });
       prodCells.forEach(c=>{
-        const qw=c.c*lamW(sw[c.idx]);        // [rm³/d]
-        const v=Math.min(qw*dts, Math.max(0,sw[c.idx]-P.swi)*cellPV(c.idx));
-        dSwCell[c.idx]-=v/cellPV(c.idx); massProduced+=v;
+        const pv=cellPV(c.idx);
+        const f2=fw(sw[c.idx]),qt=c.c*lamT(sw[c.idx])*dts;
+        const qo_out=qt*(1-f2), qw_out=qt*f2;
+        // Net depletion — only positive (flood cutting off oil supply)
+        const net_depl=Math.max(0, qo_out - oilIn[c.idx]);
+        const dDep=Math.min(net_depl/pv, Math.max(0,sw_max-sw[c.idx]));
+        const dWat=Math.min(qw_out/pv,  Math.max(0,sw[c.idx]-P.swi));
+        dSwCell[c.idx]+=dDep-dWat; massProduced+=qw_out;
       });
       // Apply with physical bounds (CFL keeps overshoot negligible → mass closes)
       for(let n=0;n<N;n++){
