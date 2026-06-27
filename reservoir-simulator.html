@@ -1437,10 +1437,17 @@ function runSimulation(){
       if(j>0)a.push(idx-ni); if(j<nj-1)a.push(idx+ni);
       if(k>0)a.push(idx-ni*nj); if(k<nk-1)a.push(idx+ni*nj); return a; };
 
-    // Frozen face list (total flux constant over the macro-step).
-    // Vertical faces carry the hydrostatic head ρg·Δz, GATED by the gravity toggle
-    // (previously hardcoded on — the P.gravity control did nothing).
-    const gz = (P.gravity!==false) ? 0.0981*dz : 0;
+    // Vertical faces carry the gravity SEGREGATION head, gated by the gravity toggle.
+    // The pressure solve uses datum pressure (no hydrostatic head), so the only
+    // vertical drive between phases is their density DIFFERENCE Δρ — not the full water
+    // gradient. Reservoir oil density is built from stock-tank densities and the live
+    // PVT (ρo = (ρoSC + Rs·ρgSC)/Bo), so the term is a fluid property, not a tuning
+    // constant. Using Δρ·g·Δz (≈5× weaker than the old 0.0981·dz water gradient) stops
+    // injected water slumping to the base and over-draining the top layer.
+    const RHO_W=1000, RHO_O_SC=850, RHO_G_SC=0.97;             // kg/m³ at standard conditions
+    const rhoO_res=(RHO_O_SC + P.rsi*RHO_G_SC)/P.bo;          // live reservoir oil density
+    const dRhoG = (P.gravity!==false) ? Math.max(0, RHO_W-rhoO_res)*9.81e-5 : 0;  // buoyancy [bar/m]
+    const gz = dRhoG*dz;                                      // z-face buoyancy head [bar]
     const faces=[];
     for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni-1;i++){
       const a=i+j*ni+k*ni*nj,b=a+1; faces.push({a,b,T:TxFace(a,b),g:0});
@@ -1513,16 +1520,35 @@ function runSimulation(){
       //     to machine precision — this is what fixes the mass-balance leak.
       for(let fi=0;fi<faces.length;fi++){
         const f=faces[fi];
-        const dP=(press[f.a]-press[f.b])+f.g;
-        if(dP===0) continue;
-        const up=dP>0?f.a:f.b, dn=dP>0?f.b:f.a;
-        const Qt=Math.abs(f.T*lamT(sw[up])*dP);   // total flux magnitude [rm³/d]
-        let vol=Qt*fw(sw[up])*dts;                 // desired water carried up→dn
-        const donorAvail=(sw[up]-P.swi)*cellPV(up);
-        const recvCap=(sw_max-sw[dn])*cellPV(dn);
-        if(vol>donorAvail) vol=donorAvail;
-        if(vol>recvCap) vol=recvCap;
-        if(vol>0){ sw[up]-=vol/cellPV(up); sw[dn]+=vol/cellPV(dn); }
+        // (1a) Viscous (pressure-driven) water flux — gravity is NOT in dP, so the
+        //      lateral well drive is not swamped by the vertical hydrostatic head.
+        const dPv=press[f.a]-press[f.b];
+        if(dPv!==0){
+          const up=dPv>0?f.a:f.b, dn=dPv>0?f.b:f.a;
+          const Qt=Math.abs(f.T*lamT(sw[up])*dPv);  // total flux magnitude [rm³/d]
+          let vol=Qt*fw(sw[up])*dts;                 // water carried up→dn
+          const donorAvail=(sw[up]-P.swi)*cellPV(up);
+          const recvCap=(sw_max-sw[dn])*cellPV(dn);
+          if(vol>donorAvail) vol=donorAvail;
+          if(vol>recvCap) vol=recvCap;
+          if(vol>0){ sw[up]-=vol/cellPV(up); sw[dn]+=vol/cellPV(dn); }
+        }
+        // (1b) Gravity segregation on vertical faces only: water drains DOWN (a→b)
+        //      and oil rises — a counter-current flux ∝ (λw·λo/(λw+λo))·Δρg·Δz. The
+        //      mobility product vanishes when either phase is immobile, so no
+        //      segregation occurs in single-phase cells. Δρ is the water–oil buoyancy,
+        //      so the front is no longer slumped to the base.
+        if(f.g>0){
+          const a=f.a, b=f.b;                        // a = upper cell, b = lower cell
+          const lw=lamW(sw[a]), lo=lamO(sw[b]);      // water leaves a (down), oil leaves b (up)
+          const mob=(lw+lo)>1e-12 ? lw*lo/(lw+lo) : 0;
+          let gvol=f.T*mob*f.g*dts;                   // water volume a→b [rm³]
+          const donorAvail=(sw[a]-P.swi)*cellPV(a);
+          const recvCap=(sw_max-sw[b])*cellPV(b);
+          if(gvol>donorAvail) gvol=donorAvail;
+          if(gvol>recvCap) gvol=recvCap;
+          if(gvol>0){ sw[a]-=gvol/cellPV(a); sw[b]+=gvol/cellPV(b); }
+        }
       }
       // (2) Producer water sink — remove the voidage-scaled produced water fw·qt·scale,
       //     capped by the water actually present above connate (no phantom water).
