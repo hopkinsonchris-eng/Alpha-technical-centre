@@ -1330,6 +1330,8 @@ function runSimulation(){
 
   const times=[],qos=[],qws=[],pres=[],nps=[],wps=[],gors=[],wors=[];
   let cumO=0,cumW=0,simT=0,step=0;
+  let oilDeficit=0;   // carried re-imbibition volume; keeps cumulative oil monotonic & ≤ displaced
+  let prevPbar=P.pi;
   const nSteps=Math.ceil(T_end/dt), logEvery=Math.max(1,Math.floor(nSteps/8));
   const frameEvery=Math.max(1,Math.floor(nSteps/16)); // 16 saved frames
   const renderEvery=Math.max(1,Math.floor(nSteps/8));  // 8 live colour updates (lighter)
@@ -1405,40 +1407,40 @@ function runSimulation(){
       press[idx]=(press[idx]+ta*P.pi)/(1+ta);
     }
 
-    // ── WELL RATES from solved pressure field ────────────────────────────────
-    // q_o [rm³/d] = WI * (kro/μo) * (Pr-Pwfp)   — reservoir barrels/d
-    // q_w [rm³/d] = WI * (krw/μw) * (Pr-Pwfp)   for producers
-    // q_wi[rm³/d] = WI * (1/μw)   * (Pwfi-Pr)   for injectors
-    let Qo=0,Qw=0,Qinj=0;
-    wells.forEach(w=>{
-      for(let k=0;k<nk;k++){
-        const idx=w.i+w.j*ni+k*ni*nj; const Pr=press[idx];
-        const WI=cellWI(idx); // [rm³·cP/(d·bar)]
-        if(w.type==='prod'){
-          const dP=Math.max(0,Pr-P.pwfp);
-          Qo+=WI*(kro(sw[idx])/pvt.muo)*dP/pvt.Bo; // surface m³/d
-          Qw+=WI*(krw(sw[idx])/P.muw)*dP;
-        } else {
-          const dP=Math.max(0,P.pwfi-Pr);
-          Qinj+=WI*(1/P.muw)*dP;
-        }
-      }
+    // ── WELL RATES ───────────────────────────────────────────────────────────
+    // Oil and water production are derived from MATERIAL BALANCE after transport
+    // (see accounting block below) — NOT from an unconstrained productivity index,
+    // which would book oil the reservoir never actually displaced. The injector
+    // reservoir voidage rate is retained only for diagnostics:
+    //   q_wi [rm³/d] = WI * (1/μw) * (Pwfi-Pr)
+    let Qinj=0;
+    wells.forEach(w=>{ if(w.type!=='inj') return;
+      for(let k=0;k<nk;k++){ const idx=w.i+w.j*ni+k*ni*nj;
+        Qinj+=cellWI(idx)*(1/P.muw)*Math.max(0,P.pwfi-press[idx]); }
     });
 
     // ── SATURATION TRANSPORT — CFL-substepped fractional-flow (sequential IMPES) ──
     // Water moves across each face as fw(S_up)·Qt, where the total flux
     // Qt = T·λt(S_up)·ΔP is frozen from the solved pressure field for this step.
-    // Injectors are pure water sources at their BHP rate with NO voidage choke:
-    // the front self-propagates as a Buckley–Leverett shock because every cell
-    // that rises above connate gains mobile krw and passes water downstream.
-    // The macro-step is divided into CFL sub-steps so no cell can overfill in a
-    // single update — that single change is what previously stalled the flood
-    // (water piled up at the injectors and never reached the producers) and let
-    // recovery run past 100% (producers never watered out, so kro stayed maxed).
+    // Injection, the producer water sink and the aquifer influx are all capacity-
+    // aware: water entering a cell is limited to its remaining pore space and water
+    // leaving is limited to the mobile water present, so no cell ever crosses
+    // [swi, sw_max] and nothing is clamped away. The macro-step is split into CFL
+    // sub-steps so the explicit front advances stably.
     const sw_max=1-Sor;
-    let massInjected=0, massProduced=0, Qinj_actual=0;
+    let massInjected=0, massProduced=0, massAquifer=0, Qinj_actual=0;
+    let Qo=0, Qw=0;   // surface production rates, set by the voidage balance / oil booking below
 
-    // Frozen face list (total flux constant over the macro-step)
+    // Face-connected neighbour list (for voidage cascade)
+    const faceNbrs=(idx)=>{ const i=idx%ni, j=Math.floor(idx/ni)%nj, k=Math.floor(idx/(ni*nj)); const a=[];
+      if(i>0)a.push(idx-1); if(i<ni-1)a.push(idx+1);
+      if(j>0)a.push(idx-ni); if(j<nj-1)a.push(idx+ni);
+      if(k>0)a.push(idx-ni*nj); if(k<nk-1)a.push(idx+ni*nj); return a; };
+
+    // Frozen face list (total flux constant over the macro-step).
+    // Vertical faces carry the hydrostatic head ρg·Δz, GATED by the gravity toggle
+    // (previously hardcoded on — the P.gravity control did nothing).
+    const gz = (P.gravity!==false) ? 0.0981*dz : 0;
     const faces=[];
     for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni-1;i++){
       const a=i+j*ni+k*ni*nj,b=a+1; faces.push({a,b,T:TxFace(a,b),g:0});
@@ -1447,84 +1449,144 @@ function runSimulation(){
       const a=i+j*ni+k*ni*nj,b=a+ni; faces.push({a,b,T:TyFace(a,b),g:0});
     }
     for(let k=0;k<nk-1;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
-      const a=i+j*ni+k*ni*nj,b=a+ni*nj; faces.push({a,b,T:TzFace(a,b),g:0.0981*dz});
+      const a=i+j*ni+k*ni*nj,b=a+ni*nj; faces.push({a,b,T:TzFace(a,b),g:gz});
     }
 
-    // Well cell lists with frozen BHP driving forces
-    const injCells=[], prodCells=[];
+    // ── VOIDAGE BALANCE (incompressible constraint) ──────────────────────────────
+    // Total producer voidage withdrawal cannot exceed what the reservoir replaces
+    // this step: injection (limited by injectivity AND remaining pore capacity) +
+    // aquifer influx. The injector then delivers only that produced voidage, so the
+    // accepted water equals the displaced oil and cumulative recovery is bounded by
+    // the mobile pore volume (the displacement×sweep ceiling). Oil is booked from the
+    // net reservoir water increase (see below), so it can never exceed oil in place —
+    // this is what stops recovery running past 100%. Rock/fluid expansion (primary
+    // depletion) and a free gas phase are not modelled; recovery is water-drive only.
+    const curPbar=avg(press);
+    let Qaq=Jaq*Math.max(0,P.pi-curPbar);                        // aquifer water influx [rm³/d]
+    if(We>=Wei) Qaq=0; else if(We+Qaq*dt>Wei) Qaq=Math.max(0,(Wei-We)/dt);
+    const injCells=[], prodCells=[]; let QtDesired=0, QtFw=0, capTot=0;
+    for(let n=0;n<N;n++) capTot+=Math.max(0,(sw_max-sw[n])*cellPV(n));   // remaining pore capacity [rm³]
     wells.forEach(w=>{ for(let k=0;k<nk;k++){
       const idx=w.i+w.j*ni+k*ni*nj, WI=cellWI(idx);
-      if(w.type==='inj'){ const dP=Math.max(0,P.pwfi-press[idx]); injCells.push({idx,q:WI*(1/P.muw)*dP}); }
-      else { const dP=Math.max(0,press[idx]-P.pwfp); prodCells.push({idx,c:WI*dP}); } // water rate = c·λw(S)
+      if(w.type==='inj'){ const dP=Math.max(0,P.pwfi-press[idx]); injCells.push({idx,q:WI*(1/P.muw)*dP,nbrs:faceNbrs(idx)}); }
+      else { const dP=Math.max(0,press[idx]-P.pwfp); const qt=WI*lamT(sw[idx])*dP;
+             prodCells.push({idx,qt,fw:fw(sw[idx])}); QtDesired+=qt; QtFw+=qt*fw(sw[idx]); }
     }});
+    const Qinj_ipr=injCells.reduce((a,c)=>a+c.q,0);              // injector deliverability [rm³/d]
+    const QinjAcc=Math.min(Qinj_ipr, capTot/dt);                 // injection: injectivity ∧ pore capacity
+    const fwAvg=QtDesired>1e-12 ? QtFw/QtDesired : 0;           // rate-weighted producer water cut
+    const supply=QinjAcc+Qaq;                                   // water available to replace voidage [rm³/d]
+    const Qprod=Math.min(QtDesired, supply);                    // incompressible throughput out = in
+    Qw=Qprod*fwAvg;                                             // surface water rate [m³/d SC], Bw≈1
+    // Injector delivers only the produced voidage beyond aquifer support — a BHP
+    // injector falling onto a rate constraint. Scaling injected water to (Qprod−Qaq)
+    // makes the accepted volume the produced voidage, so booked oil = displaced oil.
+    const injWaterTot=Math.max(0, Qprod-Qaq);
+    injCells.forEach(c=> c.qIn = Qinj_ipr>1e-12 ? injWaterTot*(c.q/Qinj_ipr) : 0);
+    prodCells.forEach(c=> c.qwRate = QtFw>1e-12 ? Qw*(c.qt*c.fw/QtFw) : 0);
+    const aqCells=[]; if(Qaq>0){ for(let j=0;j<nj;j++)for(let i=0;i<ni;i++) aqCells.push(i+j*ni+(nk-1)*ni*nj); }
+    const aqPerCell=aqCells.length? Qaq/aqCells.length : 0;
 
     // CFL: choose sub-steps so peak per-cell throughput moves ≤ dSwMax of pore volume
     const dSwMax=0.04; let peak=0;
     faces.forEach(f=>{ const dP=(press[f.a]-press[f.b])+f.g; const up=dP>=0?f.a:f.b;
       const Qt=Math.abs(f.T*lamT(sw[up])*dP); peak=Math.max(peak,Qt/cellPV(f.a),Qt/cellPV(f.b)); });
-    injCells.forEach(c=>{ peak=Math.max(peak,c.q/cellPV(c.idx)); });
+    injCells.forEach(c=>{ peak=Math.max(peak,c.qIn/cellPV(c.idx)); });
     const nSub=Math.max(1,Math.min(160,Math.ceil(dt*peak/dSwMax)));
     const dts=dt/nSub;
     let sw_total_before=0; for(let n=0;n<N;n++) sw_total_before+=sw[n]*cellPV(n);
 
+    // ── MASS-CONSERVATIVE FRACTIONAL-FLOW TRANSPORT ──────────────────────────────
+    // Water is the tracked phase; oil is its complement (So=1−Sw). Field production
+    // (Qo, Qw above) is the fractional-flow split of the voidage-balanced withdrawal
+    // Qprod; here the saturation field is advanced consistently — the producer sink
+    // removes exactly that produced water, injection and aquifer add exactly the
+    // accepted water, and interblock faces carry fw·Qt. The producer cell waters out
+    // as the flood front arrives (Sw↑ ⇒ fw↑ ⇒ oil fraction self-limits), and because
+    // injection is capacity-bounded, cumulative recovery cannot exceed the
+    // displacement×sweep ceiling. Nothing is created; nothing is clamped away.
     for(let s=0;s<nSub;s++){
-      const dSwCell=new Float64Array(N);
-      // Interblock fractional-flow transport
-      faces.forEach(f=>{
-        const dP=(press[f.a]-press[f.b])+f.g; const up=dP>=0?f.a:f.b;
-        const Qt=f.T*lamT(sw[up])*dP;       // total flux a→b [rm³/d]
-        const vol=Qt*fw(sw[up])*dts;         // water carried this sub-step
-        dSwCell[f.a]-=vol/cellPV(f.a); dSwCell[f.b]+=vol/cellPV(f.b);
-      });
-      // Injector — pure water source, no choke (cell self-regulates via outflux)
-      injCells.forEach(c=>{ const v=c.q*dts; dSwCell[c.idx]+=v/cellPV(c.idx); massInjected+=v; });
-
-      // ── NET OIL DEPLETION at producers ──────────────────────────────────────────
-      // In an incompressible waterflood, oil flows THROUGH the reservoir: injector water
-      // displaces oil toward producers, and replacement oil from neighboring cells
-      // flows into the producer cell as fast as it is extracted. Net Sw change at a
-      // producer is zero until the waterflood FRONT cuts off that oil supply.
-      //
-      // We capture this by computing the oil that flows INTO each producer cell from
-      // its faces (oilIn) and applying depletion only on the NET:
-      //   net_depletion = oil_produced_to_surface − oil_replaced_from_faces
-      //
-      // Early time (flood not yet arrived): oilIn ≈ oilOut → net ≈ 0 → no artefact.
-      // After flood sweeps nearby cells: oilIn drops → net > 0 → kro falls → natural
-      // rate decline and RF caps at sweep efficiency × displacement efficiency (≤ 100%).
-      const oilIn=new Float64Array(N);
-      faces.forEach(f=>{
-        const dPf=(press[f.a]-press[f.b])+f.g;
-        if(dPf>0){const qt=f.T*lamT(sw[f.a])*dPf*dts;oilIn[f.b]+=qt*(1-fw(sw[f.a]));}
-        else if(dPf<0){const qt=f.T*lamT(sw[f.b])*(-dPf)*dts;oilIn[f.a]+=qt*(1-fw(sw[f.b]));}
-      });
+      // (1) Capacity-aware interblock water transport, applied SEQUENTIALLY. Each
+      //     face moves at most the donor's available water (sw−swi)·PV and the
+      //     receiver's remaining capacity (sw_max−sw)·PV, so no cell can ever cross
+      //     [swi, sw_max]. Because nothing is ever clamped away, water is conserved
+      //     to machine precision — this is what fixes the mass-balance leak.
+      for(let fi=0;fi<faces.length;fi++){
+        const f=faces[fi];
+        const dP=(press[f.a]-press[f.b])+f.g;
+        if(dP===0) continue;
+        const up=dP>0?f.a:f.b, dn=dP>0?f.b:f.a;
+        const Qt=Math.abs(f.T*lamT(sw[up])*dP);   // total flux magnitude [rm³/d]
+        let vol=Qt*fw(sw[up])*dts;                 // desired water carried up→dn
+        const donorAvail=(sw[up]-P.swi)*cellPV(up);
+        const recvCap=(sw_max-sw[dn])*cellPV(dn);
+        if(vol>donorAvail) vol=donorAvail;
+        if(vol>recvCap) vol=recvCap;
+        if(vol>0){ sw[up]-=vol/cellPV(up); sw[dn]+=vol/cellPV(dn); }
+      }
+      // (2) Producer water sink — remove the voidage-scaled produced water fw·qt·scale,
+      //     capped by the water actually present above connate (no phantom water).
       prodCells.forEach(c=>{
         const pv=cellPV(c.idx);
-        const f2=fw(sw[c.idx]),qt=c.c*lamT(sw[c.idx])*dts;
-        const qo_out=qt*(1-f2), qw_out=qt*f2;
-        // Net depletion — only positive (flood cutting off oil supply)
-        const net_depl=Math.max(0, qo_out - oilIn[c.idx]);
-        const dDep=Math.min(net_depl/pv, Math.max(0,sw_max-sw[c.idx]));
-        const dWat=Math.min(qw_out/pv,  Math.max(0,sw[c.idx]-P.swi));
-        dSwCell[c.idx]+=dDep-dWat; massProduced+=qw_out;
+        let qw=c.qwRate*dts;
+        const avail=(sw[c.idx]-P.swi)*pv;
+        if(qw>avail) qw=avail; if(qw<0) qw=0;
+        sw[c.idx]-=qw/pv; massProduced+=qw;
       });
-      // Apply with physical bounds (CFL keeps overshoot negligible → mass closes)
-      for(let n=0;n<N;n++){
-        const s2=sw[n]+dSwCell[n];
-        sw[n]= s2>sw_max?sw_max : (s2<P.swi?P.swi:s2);
-      }
+      // (3) Injector — VOIDAGE-LIMITED cascade. Inject only what the cell + its open
+      //     neighbours can physically store; count ONLY accepted water. A BHP injector
+      //     that cannot place its full rate is rate-constrained — the unplaceable
+      //     remainder is simply not injected (it is never destroyed).
+      injCells.forEach(c=>{
+        let vol=c.qIn*dts, accepted=0;
+        const cap0=Math.max(0,(sw_max-sw[c.idx])*cellPV(c.idx));
+        const place0=Math.min(vol,cap0);
+        sw[c.idx]+=place0/cellPV(c.idx); vol-=place0; accepted+=place0;
+        if(vol>1e-12){
+          const caps=c.nbrs.map(nb=>Math.max(0,(sw_max-sw[nb])*cellPV(nb)));
+          const tot=caps.reduce((a,v)=>a+v,0);
+          if(tot>1e-12){ const placeable=Math.min(vol,tot);
+            c.nbrs.forEach((nb,ii)=>{ if(caps[ii]>0) sw[nb]+=placeable*caps[ii]/tot/cellPV(nb); });
+            accepted+=placeable; vol-=placeable;
+          }
+        }
+        massInjected+=accepted;
+      });
+      // (4) Aquifer influx — water entering the bottom layer (capacity-aware, counted)
+      if(aqPerCell>0){ for(let ai=0;ai<aqCells.length;ai++){ const idx=aqCells[ai];
+        const cap=Math.max(0,(sw_max-sw[idx])*cellPV(idx));
+        const place=Math.min(aqPerCell*dts, cap);
+        sw[idx]+=place/cellPV(idx); massAquifer+=place;
+      }}
     }
-    injCells.forEach(c=>{ Qinj_actual+=c.q; });
+    injCells.forEach(c=>{ Qinj_actual+=c.qIn; });
+    We+=massAquifer; // accumulate aquifer water actually placed (Fetkovich depletion)
 
-    // Mass balance accounting (logged periodically) — honest, not forced to zero
+    // ── WATER MASS-BALANCE CLOSURE ───────────────────────────────────────────────
+    // (injection + aquifer) − produced water − stored ≈ 0, to machine precision.
     let sw_total_after=0; for(let n=0;n<N;n++) sw_total_after+=sw[n]*cellPV(n);
-    const massStored=sw_total_after-sw_total_before;
-    const massErr=(massInjected>1e-6)?Math.abs(massInjected-massProduced-massStored)/massInjected*100:0;
+    const massStored=sw_total_after-sw_total_before;   // net reservoir water increase [rm³]
+    const win=massInjected+massAquifer;
+    const massErr=(win>1e-6)?Math.abs(win-massProduced-massStored)/win*100:0;
+    prevPbar=curPbar;
+
+    // ── OIL BOOKING WITH RE-PRODUCTION DEFICIT ───────────────────────────────────
+    // Oil produced = net reservoir water increase / Bo (incompressible voidage
+    // displacement). A step where reservoir water DECREASES (front re-imbibition as a
+    // watered-out producer throttles injection) cannot mean a producer "un-produced"
+    // oil, so that volume is carried as a deficit and paid down from later positive
+    // steps. Cumulative oil is therefore MONOTONIC and never exceeds the net water
+    // displaced — no oil is created from nothing, and recovery stays on the ceiling.
+    let netOil;
+    if(massStored<0){ oilDeficit+=-massStored; netOil=0; }
+    else { const pay=Math.min(massStored,oilDeficit); oilDeficit-=pay; netOil=massStored-pay; }
+    Qo=netOil/pvt.Bo/dt;                                // surface oil rate [m³/d SC] (≥0)
+    Qw=massProduced/dt;                                // surface water rate [m³/d SC], Bw≈1
 
     simT+=dt; step++;
     const tyr=simT/365; times.push(tyr);
-    qos.push(Qo); qws.push(Qw); pres.push(avg(press));
-    cumO+=Qo*dt; cumW+=Qw*dt; nps.push(cumO/1e3); wps.push(cumW/1e3);
+    qos.push(Qo); qws.push(Qw); pres.push(curPbar);
+    cumO+=netOil/pvt.Bo; cumW+=massProduced; nps.push(cumO/1e3); wps.push(cumW/1e3);
     gors.push(pvt.Rs); wors.push(Qo>0.01?Qw/Qo:0);
     if(step%frameEvery===0||simT>=T_end){
       RES.satFrames.push(Float64Array.from(sw));
