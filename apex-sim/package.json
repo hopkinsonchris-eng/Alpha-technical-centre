@@ -1,0 +1,15 @@
+{
+  "name": "apex-sim",
+  "version": "0.0.0",
+  "description": "Black-oil (→ compositional) reservoir simulator, ECLIPSE-deck compatible.",
+  "type": "module",
+  "private": true,
+  "bin": { "apex": "apps/apex/cli.js" },
+  "scripts": {
+    "apex": "node apps/apex/cli.js",
+    "test": "node test/run.js",
+    "benchmark": "node benchmark/compare/compare.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "UNLICENSED"
+}
