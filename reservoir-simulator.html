@@ -1372,6 +1372,24 @@ function runSimulation(){
     // Areal well map for source terms in the pressure equation (wells are static)
     const wellMap=new Int8Array(ni*nj); // 0=none, 1=injector, 2=producer
     wells.forEach(w=>{ wellMap[w.i+w.j*ni]=(w.type==='inj')?1:2; });
+    // ── Multi-layer aquifer pressure coupling (Fetkovich) ────────────────────
+    // The aquifer is a finite water body beneath the reservoir at pressure Paq that
+    // declines as it gives up water: Paq = pi·(1 − We/Wei) (Fetkovich material
+    // balance). It engages only when the reservoir–aquifer interface (the bottom-
+    // layer average pressure, Pbot) falls below Paq — i.e. under net withdrawal.
+    // When injection over-maintains the field above Paq, the aquifer is dormant: a
+    // real aquifer does not push water into an over-pressured reservoir, and gating
+    // on the interface (not a single cell) keeps it from spuriously charging the
+    // bottom layer at the operating point and accelerating water breakthrough.
+    // When engaged it enters the PRESSURE equation as a per-cell Peaceman source
+    // toward Paq with productivity Jc, so it supports pressure AND that support
+    // propagates UP the column through the vertical transmissibility — genuine
+    // multi-layer coupling, not a saturation-only bottom influx.
+    let Pbot=0; for(let j=0;j<nj;j++)for(let i=0;i<ni;i++) Pbot+=press[i+j*ni+(nk-1)*ni*nj];
+    Pbot/= (ni*nj);                                       // reservoir–aquifer interface pressure [bar]
+    const Paq=(Wei>1e-9)?P.pi*Math.max(0,1-We/Wei):0;     // current aquifer pressure [bar]
+    const aqOn=(We<Wei)&&(Jaq>0)&&(Pbot<Paq);             // engage only under net withdrawal
+    const Jc=aqOn?Jaq/(ni*nj):0;                          // per-cell aquifer productivity index
     for(let sweep=0;sweep<30;sweep++){
       for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
         const idx=i+j*ni+k*ni*nj;
@@ -1402,18 +1420,17 @@ function runSimulation(){
           const t=WI*(wt===1?(1/P.muw):lamT(sw[idx]));
           num+=t*(wt===1?P.pwfi:P.pwfp); den+=t;
         }
+        if(k===nk-1 && Jc>0 && press[idx]<Paq){ num+=Jc*Paq; den+=Jc; }  // bottom-aquifer pressure support (influx side)
         if(den>0)press[idx]=num/den;
       }
     }
     // (Well BHP pinning removed — wells now enter as source terms in the sweep above,
     //  so the injector retains a real driving force and the flood actually advances.)
-    // (Aquifer support is applied as a volumetric water influx into the bottom layer
-    // during transport — see Qaq below. An earlier hard pressure-pin that forced the
-    // bottom-layer cell pressure toward pi was REMOVED: it double-counted the aquifer
-    // (pin + influx) and pinned only the bottom layer, creating a non-physical vertical
-    // pressure gradient at injectors that starved their upper perforations of injection.
-    // With the pin gone, injection distributes evenly and injector cells sweep to
-    // residual oil symmetrically; pressure now responds to the true voidage balance.)
+    // (Aquifer now enters the pressure solve as a Fetkovich source on the bottom layer
+    // — see the setup block above the sweep and the per-cell influx below. The earlier
+    // hard pressure-pin that forced bottom cells toward pi was REMOVED: it double-counted
+    // the drive and manufactured a non-physical vertical gradient that starved injectors'
+    // upper perforations. The gated Peaceman source supports pressure physically instead.)
 
     // ── WELL RATES ───────────────────────────────────────────────────────────
     // Oil and water production are derived from MATERIAL BALANCE after transport
@@ -1477,8 +1494,17 @@ function runSimulation(){
     // this is what stops recovery running past 100%. Rock/fluid expansion (primary
     // depletion) and a free gas phase are not modelled; recovery is water-drive only.
     const curPbar=avg(press);
-    let Qaq=Jaq*Math.max(0,P.pi-curPbar);                        // aquifer water influx [rm³/d]
-    if(We>=Wei) Qaq=0; else if(We+Qaq*dt>Wei) Qaq=Math.max(0,(Wei-We)/dt);
+    // Per-cell aquifer influx, computed from the pressure field the aquifer source
+    // just helped set (so influx and pressure support are mutually consistent). The
+    // earlier hard pressure-pin — which pinned only the bottom layer toward pi and
+    // manufactured a non-physical vertical gradient that starved injectors' upper
+    // perforations — is gone; the Fetkovich source above replaces it physically.
+    let QaqCells=[], Qaq=0;
+    if(aqOn){
+      for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){ const idx=i+j*ni+(nk-1)*ni*nj;
+        const qc=Jc*Math.max(0, Paq-press[idx]); if(qc>0){ QaqCells.push({idx,q:qc}); Qaq+=qc; } }
+      if(We+Qaq*dt>Wei){ const sc=Math.max(0,(Wei-We)/dt)/Math.max(Qaq,1e-12); Qaq*=sc; QaqCells.forEach(c=>c.q*=sc); }
+    }
     const injCells=[], prodCells=[]; let QtDesired=0, QtFw=0, capTot=0;
     for(let n=0;n<N;n++) capTot+=Math.max(0,(sw_max-sw[n])*cellPV(n));   // remaining pore capacity [rm³]
     wells.forEach(w=>{ for(let k=0;k<nk;k++){
@@ -1500,8 +1526,8 @@ function runSimulation(){
     injCells.forEach(c=> c.qIn = Qinj_ipr>1e-12 ? injWaterTot*(c.q/Qinj_ipr) : 0);
     const throttle = QtDesired>1e-12 ? Qprod/QtDesired : 0;
     prodCells.forEach(c=> c.qtRes = c.qt*throttle);   // throttled reservoir voidage rate per producer
-    const aqCells=[]; if(Qaq>0){ for(let j=0;j<nj;j++)for(let i=0;i<ni;i++) aqCells.push(i+j*ni+(nk-1)*ni*nj); }
-    const aqPerCell=aqCells.length? Qaq/aqCells.length : 0;
+    // Aquifer influx is placed per-cell (each bottom cell gets Jc·(Paq−P_cell)),
+    // so the encroachment pattern follows the actual pressure field, not a flat rate.
 
     // CFL: choose sub-steps so peak per-cell throughput moves ≤ dSwMax of pore volume
     const dSwMax=0.04; let peak=0;
@@ -1590,12 +1616,12 @@ function runSimulation(){
         }
         massInjected+=accepted;
       });
-      // (4) Aquifer influx — water entering the bottom layer (capacity-aware, counted)
-      if(aqPerCell>0){ for(let ai=0;ai<aqCells.length;ai++){ const idx=aqCells[ai];
+      // (4) Aquifer influx — per-cell encroachment into bottom layer (capacity-aware, counted)
+      for(let ai=0;ai<QaqCells.length;ai++){ const idx=QaqCells[ai].idx;
         const cap=Math.max(0,(sw_max-sw[idx])*cellPV(idx));
-        const place=Math.min(aqPerCell*dts, cap);
+        const place=Math.min(QaqCells[ai].q*dts, cap);
         sw[idx]+=place/cellPV(idx); massAquifer+=place;
-      }}
+      }
     }
     injCells.forEach(c=>{ Qinj_actual+=c.qIn; });
     We+=massAquifer; // accumulate aquifer water actually placed (Fetkovich depletion)
