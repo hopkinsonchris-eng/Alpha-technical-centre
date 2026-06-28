@@ -1344,7 +1344,14 @@ function runSimulation(){
 
   const tick=()=>{
    try{
-    if(simT>=T_end){finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn);return;}
+    if(simT>=T_end){
+      // Settle any residual re-imbibition deficit so final cumulative oil equals net
+      // displacement exactly (booked ≡ displaced; never oil from nothing).
+      if(oilDeficit>1e-9 && nps.length){
+        cumO=Math.max(0,cumO-oilDeficit/P.bo); nps[nps.length-1]=cumO/1e3; oilDeficit=0;
+      }
+      finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn);return;
+    }
     const pAvg=avg(press); const pvt=getPVT(pAvg);
 
     // ── MOBILITY HELPERS ────────────────────────────────────────────────────────
@@ -1400,12 +1407,13 @@ function runSimulation(){
     }
     // (Well BHP pinning removed — wells now enter as source terms in the sweep above,
     //  so the injector retains a real driving force and the flood actually advances.)
-    // Aquifer pressure support on bottom layer
-    for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
-      const idx=i+j*ni+(nk-1)*ni*nj;
-      const ta=Jaq*0.02/(cellPV(idx)*phicell[idx]*ct/dt+1e-12);
-      press[idx]=(press[idx]+ta*P.pi)/(1+ta);
-    }
+    // (Aquifer support is applied as a volumetric water influx into the bottom layer
+    // during transport — see Qaq below. An earlier hard pressure-pin that forced the
+    // bottom-layer cell pressure toward pi was REMOVED: it double-counted the aquifer
+    // (pin + influx) and pinned only the bottom layer, creating a non-physical vertical
+    // pressure gradient at injectors that starved their upper perforations of injection.
+    // With the pin gone, injection distributes evenly and injector cells sweep to
+    // residual oil symmetrically; pressure now responds to the true voidage balance.)
 
     // ── WELL RATES ───────────────────────────────────────────────────────────
     // Oil and water production are derived from MATERIAL BALANCE after transport
@@ -1490,7 +1498,8 @@ function runSimulation(){
     // makes the accepted volume the produced voidage, so booked oil = displaced oil.
     const injWaterTot=Math.max(0, Qprod-Qaq);
     injCells.forEach(c=> c.qIn = Qinj_ipr>1e-12 ? injWaterTot*(c.q/Qinj_ipr) : 0);
-    prodCells.forEach(c=> c.qwRate = QtFw>1e-12 ? Qw*(c.qt*c.fw/QtFw) : 0);
+    const throttle = QtDesired>1e-12 ? Qprod/QtDesired : 0;
+    prodCells.forEach(c=> c.qtRes = c.qt*throttle);   // throttled reservoir voidage rate per producer
     const aqCells=[]; if(Qaq>0){ for(let j=0;j<nj;j++)for(let i=0;i<ni;i++) aqCells.push(i+j*ni+(nk-1)*ni*nj); }
     const aqPerCell=aqCells.length? Qaq/aqCells.length : 0;
 
@@ -1550,11 +1559,14 @@ function runSimulation(){
           if(gvol>0){ sw[a]-=gvol/cellPV(a); sw[b]+=gvol/cellPV(b); }
         }
       }
-      // (2) Producer water sink — remove the voidage-scaled produced water fw·qt·scale,
-      //     capped by the water actually present above connate (no phantom water).
+      // (2) Producer water sink — fractional flow recomputed from the CURRENT
+      //     saturation each sub-step, so the producer water cut tracks the front as it
+      //     advances. Evaluating fw once per macro-step let the explicit update
+      //     overshoot at breakthrough and limit-cycle (oil rate flipping 0↔max each
+      //     step, spurious WOR spikes); per-sub-step fw removes that instability.
       prodCells.forEach(c=>{
         const pv=cellPV(c.idx);
-        let qw=c.qwRate*dts;
+        let qw=c.qtRes*dts*fw(sw[c.idx]);
         const avail=(sw[c.idx]-P.swi)*pv;
         if(qw>avail) qw=avail; if(qw<0) qw=0;
         sw[c.idx]-=qw/pv; massProduced+=qw;
