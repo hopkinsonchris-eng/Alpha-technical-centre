@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Internal tools — not for search indexing
+Disallow: /admin.html
+Disallow: /app.html
+
+Sitemap: https://www.alpha-technical-centre.com/sitemap.xml
