@@ -136,6 +136,7 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
 .esp-title{font-size:0.86rem; color:var(--on-dark); font-weight:600;}
 .esp-sub{font-size:0.74rem; color:var(--on-dark-faint); margin-top:8px; line-height:1.5;}
 .esp-sub b{color:var(--esp);}
+.esp-atm{font-size:0.72rem; color:var(--esp); margin-top:6px; font-family:var(--font-mono);}
 .insight.esp-note{border-color:rgba(245,166,91,0.45);}
 .op-marker{fill:var(--gold-bright); stroke:var(--navy-deep); stroke-width:2.5; filter:drop-shadow(0 0 8px rgba(201,168,76,0.9));}
 .op-ring{fill:none; stroke:var(--gold); stroke-width:1.5; opacity:0.5;}
@@ -314,7 +315,8 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
           <input type="checkbox" id="espChk">
           <span class="esp-title">Add ESP (electric submersible pump)</span>
         </label>
-        <div class="esp-sub">Holds flowing bottomhole pressure at <b>50&nbsp;atm</b> (≈&nbsp;735&nbsp;psi&nbsp;/&nbsp;50.7&nbsp;bar). The pump supplies the head; the operating point drops down the IPR to a deeper drawdown. Oil mode.</div>
+        <div class="esp-sub">Holds flowing bottomhole pressure at the target below (default <b>50&nbsp;atm</b>). The pump supplies the head; the operating point drops down the IPR to a deeper drawdown. Oil mode.</div>
+        <div id="espTargetCtrl" style="display:none;"></div>
       </div>
 
       <button class="reset" id="resetBtn">Reset to base case</button>
@@ -459,7 +461,7 @@ let unitSys = 'field';   // 'field' | 'metric'
 // ---- ESP (electric submersible pump) ----
 const ATM_PSI = 14.6959;                        // 1 atm in psi
 const ESP_TARGET_ATM = 50;                      // target flowing BHP with ESP on
-const espTargetPwf = ESP_TARGET_ATM * ATM_PSI;  // field units (psi) ≈ 734.8
+let espTargetPwf = ESP_TARGET_ATM * ATM_PSI;    // field units (psi) ≈ 734.8 — adjustable
 let espOn = false;
 
 // conversion factors (field -> metric multiply)
@@ -814,7 +816,7 @@ function render(){
     const box=document.getElementById('insight'), txt=document.getElementById('insightText');
     box.className='insight esp-note';
     const upPct = esp.qNat>0 ? '+'+Math.round((esp.q-esp.qNat)/esp.qNat*100)+'%' : 'up from a dead well';
-    txt.innerHTML = `<b>ESP engaged — flowing bottomhole pressure held at ${ESP_TARGET_ATM} atm (${fmt(pressureToDisplay(espTargetPwf))} ${pressureUnit()}).</b> The pump provides the lift the tubing alone cannot, deepening drawdown to ${fmt(pressureToDisplay(Pr-espTargetPwf))} ${pressureUnit()} and raising the operating rate to <b>${fmt(rateToDisplay(esp.q))} ${rateUnitLabel()}</b> (${upPct} vs natural flow) — now inflow-limited at ${(esp.q/qMax*100).toFixed(0)}% of AOF. <span style="color:var(--on-dark-faint)">Un-tick the ESP to compare against natural lift.</span>`;
+    txt.innerHTML = `<b>ESP engaged — flowing bottomhole pressure held at ${(espTargetPwf/ATM_PSI).toFixed(0)} atm (${fmt(pressureToDisplay(espTargetPwf))} ${pressureUnit()}).</b> The pump provides the lift the tubing alone cannot, deepening drawdown to ${fmt(pressureToDisplay(Pr-espTargetPwf))} ${pressureUnit()} and raising the operating rate to <b>${fmt(rateToDisplay(esp.q))} ${rateUnitLabel()}</b> (${upPct} vs natural flow) — now inflow-limited at ${(esp.q/qMax*100).toFixed(0)}% of AOF. <span style="color:var(--on-dark-faint)">Un-tick the ESP to compare against natural lift.</span>`;
   } else {
     updateInsight(s, sol, rate, qMax);
   }
@@ -1019,6 +1021,37 @@ function makeCtrl(p){
   return wrap;
 }
 
+// ESP target-BHP slider (persists across control rebuilds; stored in field units)
+function buildEspSlider(){
+  const host=document.getElementById('espTargetCtrl'); if(!host) return;
+  const EMIN=100, EMAX=3000, ESTEP=25;            // field psi range
+  const dim='pressure';
+  const dMin=toDisplay(dim,EMIN), dMax=toDisplay(dim,EMAX);
+  const dStepRaw=toDisplay(dim,EMIN+ESTEP)-dMin, dStep=dStepRaw>0?dStepRaw:ESTEP;
+  const dVal=toDisplay(dim, espTargetPwf);
+  const dec=unitSys==='metric'?1:0;
+  const atm=espTargetPwf/ATM_PSI;
+  host.innerHTML=`
+    <div class="ctrl" style="margin-top:12px;">
+      <div class="ctrl-top">
+        <span class="ctrl-name">ESP target BHP</span>
+        <span class="ctrl-val"><span id="v-esptgt">${dVal.toFixed(dec)}</span><small>${unitLabel(dim)}</small></span>
+      </div>
+      <input type="range" id="r-esptgt" min="${dMin}" max="${dMax}" step="${dStep}" value="${dVal}">
+      <div class="esp-atm" id="esptgt-atm">≈ ${atm.toFixed(0)} atm</div>
+    </div>`;
+  const input=host.querySelector('input');
+  const setFill=()=>{ const f=((input.value-dMin)/(dMax-dMin))*100; input.style.setProperty('--fill', f+'%'); };
+  setFill();
+  input.addEventListener('input', ()=>{
+    const disp=parseFloat(input.value);
+    espTargetPwf=toField(dim, disp);
+    document.getElementById('v-esptgt').textContent=disp.toFixed(dec);
+    document.getElementById('esptgt-atm').textContent='≈ '+(espTargetPwf/ATM_PSI).toFixed(0)+' atm';
+    setFill(); render();
+  });
+}
+
 // keep readout unit captions in sync with mode + unit system
 function syncReadoutUnits(){
   document.getElementById('rateUnit').textContent = rateUnitLabel();
@@ -1035,7 +1068,7 @@ document.getElementById('modeToggle').addEventListener('click', e=>{
   mode=btn.dataset.mode;
   // ESP is an oil-well lift method — hide it in gas mode
   const espGrp=document.getElementById('espGrp');
-  if(mode!=='oil'){ espOn=false; const c=document.getElementById('espChk'); if(c) c.checked=false; if(espGrp) espGrp.style.display='none'; }
+  if(mode!=='oil'){ espOn=false; const c=document.getElementById('espChk'); if(c) c.checked=false; const tc=document.getElementById('espTargetCtrl'); if(tc) tc.style.display='none'; if(espGrp) espGrp.style.display='none'; }
   else if(espGrp){ espGrp.style.display=''; }
   document.querySelectorAll('#modeToggle button').forEach(b=>b.classList.toggle('active', b===btn));
   document.getElementById('modeHint').textContent = mode==='oil'
@@ -1053,6 +1086,7 @@ document.getElementById('unitToggle').addEventListener('click', e=>{
   document.querySelectorAll('#unitToggle button').forEach(b=>b.classList.toggle('active', b===btn));
   syncReadoutUnits();
   rebuildControlsKeepState();
+  buildEspSlider();
   render();
 });
 
@@ -1067,7 +1101,7 @@ function rebuildControlsKeepState(){
 }
 
 // ESP toggle
-document.getElementById('espChk').addEventListener('change', e=>{ espOn = e.target.checked; render(); });
+document.getElementById('espChk').addEventListener('change', e=>{ espOn = e.target.checked; document.getElementById('espTargetCtrl').style.display = espOn ? '' : 'none'; render(); });
 
 // reset
 document.getElementById('resetBtn').addEventListener('click', ()=>{ buildControls(); render(); });
@@ -1100,6 +1134,7 @@ document.getElementById('scenarios').addEventListener('click', e=>{
 
 // init
 buildControls();
+buildEspSlider();
 render();
 
 })();
