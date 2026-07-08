@@ -129,6 +129,8 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
 .curve-ipr{stroke:var(--ipr); filter:drop-shadow(0 0 4px rgba(52,199,149,0.4));}
 .curve-vlp{stroke:var(--vlp); filter:drop-shadow(0 0 4px rgba(91,155,213,0.4));}
 .curve-esp{stroke:var(--esp); stroke-width:2.5; stroke-dasharray:7 5; fill:none; filter:drop-shadow(0 0 4px rgba(245,166,91,0.45));}
+.esp-line{stroke:var(--esp); stroke-width:2; stroke-dasharray:7 5; opacity:0.85;}
+.esp-line-lbl{fill:var(--esp); font-size:11px; font-family:var(--font-mono); opacity:0.9;}
 .op-marker-nat{fill:var(--gold); opacity:0.32; stroke:var(--navy-deep); stroke-width:2;}
 .esp-grp{margin-top:4px; margin-bottom:18px; background:rgba(245,166,91,0.06); border:1px solid rgba(245,166,91,0.28); border-radius:10px; padding:12px 14px;}
 .esp-row{display:flex; align-items:center; gap:10px; cursor:pointer;}
@@ -331,7 +333,7 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
             <span><i class="curve-ipr" style="background:var(--ipr)"></i> IPR (inflow)</span>
             <span><i class="curve-vlp" style="background:var(--vlp)"></i> VLP (outflow)</span>
             <span><i class="dot" style="background:var(--gold-bright)"></i> Operating point</span>
-            <span id="espLegend" style="display:none"><i style="width:16px;height:0;border-top:2.5px dashed var(--esp);border-radius:0"></i> VLP + ESP</span>
+            <span id="espLegend" style="display:none"><i style="width:16px;height:0;border-top:2.5px dashed var(--esp);border-radius:0"></i> ESP target BHP</span>
           </div>
         </div>
         <div class="chart-wrap">
@@ -630,6 +632,34 @@ function vlpGas(q, s){
 function vlp(q, s){ return mode==='oil' ? vlpOil(q,s) : vlpGas(q,s); }
 
 /* ============================================================
+   ESP DESIGN ESTIMATE — realistic pump head & indicative stages.
+   Independent of the illustrative VLP friction term: a single-phase
+   liquid pressure traverse (hydrostatic + Darcy–Weisbach friction)
+   keeps the head number physically sane. Clearly labelled indicative.
+   ============================================================ */
+const ESP_HEAD_PER_STAGE_FT = 25;                 // nominal ft/stage near BEP (indicative)
+function espDesign(q, s, targetPwf){
+  const oilGrad=0.34, watGrad=0.433, wc=s.wc/100;
+  const liqGrad = oilGrad*(1-wc) + watGrad*wc;    // psi/ft
+  const SG  = liqGrad/0.433;
+  const rho = SG*62.4;                            // lbm/ft³
+  const D   = s.tbg/12;                           // ft
+  const A   = Math.PI/4*D*D;                       // ft²
+  const Qcfs= Math.max(q,1)*6.4984e-5;            // bbl/d -> ft³/s
+  const v   = Qcfs/A;                             // ft/s
+  const mu  = 2*6.7197e-4;                        // ~2 cP -> lbm/(ft·s)
+  const Re  = Math.max(rho*v*D/mu, 2100);
+  const fD  = 0.316/Math.pow(Re,0.25);            // Blasius turbulent Darcy factor
+  const dpFric = fD*(s.depth/D)*rho*v*v/(2*32.174)/144;   // psi
+  const hydro  = liqGrad*s.depth;                 // psi (liquid-filled column)
+  const pDisch = s.thp + hydro + dpFric;          // psi at pump discharge
+  const pumpDP = Math.max(0, pDisch - targetPwf); // psi the pump must add
+  const headFt = pumpDP/liqGrad;                  // ft of head
+  const stages = Math.max(1, Math.round(headFt/ESP_HEAD_PER_STAGE_FT));
+  return {pumpDP, headFt, stages};
+}
+
+/* ============================================================
    OPERATING POINT — intersection of IPR & VLP
    IPR gives q(Pwf) decreasing; VLP gives Pwf(q) increasing.
    Solve f(q) = vlp(q) - ipr_pwf(q) = 0 by scanning + bisection.
@@ -708,7 +738,7 @@ function render(){
   if(espOn && mode==='oil' && (sol.dead || sol.pwf > espTargetPwf)){
     const qEsp = ipr(espTargetPwf, s);
     if(qEsp > 1){
-      esp = { q:qEsp, pwf:espTargetPwf, pumpHead:Math.max(0, vlp(qEsp,s)-espTargetPwf), qNat: sol.dead?0:sol.q };
+      esp = Object.assign({ q:qEsp, pwf:espTargetPwf, qNat: sol.dead?0:sol.q }, espDesign(qEsp, s, espTargetPwf));
     }
   }
   document.getElementById('espLegend').style.display = esp ? '' : 'none';
@@ -764,16 +794,12 @@ function render(){
   }
   svg+=`<path class="curve curve-vlp" d="${vlpPath}"/>`;
 
-  // ESP-assisted VLP — the natural VLP shifted down by the pump head
+  // ESP holds flowing BHP at the target — draw that level as a datum line;
+  // the operating point is simply where it meets the IPR.
   if(esp){
-    let espPath='';
-    for(let i=0;i<=N;i++){
-      const q = xMax*i/N;
-      const p = vlp(Math.max(q,0.5), s) - esp.pumpHead;
-      const x=px(q), y=py(Math.min(Math.max(p,0),yMax));
-      espPath += (i===0?'M':'L')+x.toFixed(1)+' '+y.toFixed(1)+' ';
-    }
-    svg+=`<path class="curve curve-esp" d="${espPath}"/>`;
+    const ty=py(esp.pwf);
+    svg+=`<line class="esp-line" x1="${M.l}" y1="${ty}" x2="${PLOT_W-M.r}" y2="${ty}"/>`;
+    svg+=`<text class="esp-line-lbl" x="${PLOT_W-M.r-6}" y="${ty-6}" text-anchor="end">ESP target · ${(espTargetPwf/ATM_PSI).toFixed(0)} atm</text>`;
   }
 
   // operating point(s)
@@ -816,7 +842,8 @@ function render(){
     const box=document.getElementById('insight'), txt=document.getElementById('insightText');
     box.className='insight esp-note';
     const upPct = esp.qNat>0 ? '+'+Math.round((esp.q-esp.qNat)/esp.qNat*100)+'%' : 'up from a dead well';
-    txt.innerHTML = `<b>ESP engaged — flowing bottomhole pressure held at ${(espTargetPwf/ATM_PSI).toFixed(0)} atm (${fmt(pressureToDisplay(espTargetPwf))} ${pressureUnit()}).</b> The pump provides the lift the tubing alone cannot, deepening drawdown to ${fmt(pressureToDisplay(Pr-espTargetPwf))} ${pressureUnit()} and raising the operating rate to <b>${fmt(rateToDisplay(esp.q))} ${rateUnitLabel()}</b> (${upPct} vs natural flow) — now inflow-limited at ${(esp.q/qMax*100).toFixed(0)}% of AOF. <span style="color:var(--on-dark-faint)">Un-tick the ESP to compare against natural lift.</span>`;
+    const headTxt = unitSys==='metric' ? Math.round(esp.headFt*0.3048).toLocaleString()+' m' : Math.round(esp.headFt).toLocaleString()+' ft';
+    txt.innerHTML = `<b>ESP engaged — flowing bottomhole pressure held at ${(espTargetPwf/ATM_PSI).toFixed(0)} atm (${fmt(pressureToDisplay(espTargetPwf))} ${pressureUnit()}).</b> Drawdown deepens to ${fmt(pressureToDisplay(Pr-espTargetPwf))} ${pressureUnit()} and the operating rate rises to <b>${fmt(rateToDisplay(esp.q))} ${rateUnitLabel()}</b> (${upPct} vs natural flow). Estimated pump duty ≈ <b>${fmt(pressureToDisplay(esp.pumpDP))} ${pressureUnit()}</b> (${headTxt} of head) — indicatively <b>~${esp.stages} stages</b> at ${ESP_HEAD_PER_STAGE_FT} ft/stage. <span style="color:var(--on-dark-faint)">Head &amp; stages are indicative — a real selection needs vendor pump curves.</span>`;
   } else {
     updateInsight(s, sol, rate, qMax);
   }
