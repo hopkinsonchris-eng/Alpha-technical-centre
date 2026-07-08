@@ -10,7 +10,7 @@
   --navy:#0B1F3A; --navy-deep:#071529; --navy-mid:#13263f; --navy-panel:#0f2742;
   --gold:#C9A84C; --gold-bright:#e8c96a; --gold-deep:#9c7f33;
   --paper:#F4F1E8; --line:rgba(201,168,76,0.22);
-  --ipr:#34C795; --vlp:#5b9bd5; --op:#C9A84C;
+  --ipr:#34C795; --vlp:#5b9bd5; --op:#C9A84C; --esp:#F5A65B;
   --on-dark:#EAF0F7; --on-dark-mute:rgba(234,240,247,0.62); --on-dark-faint:rgba(234,240,247,0.34);
   --radius:12px; --radius-lg:16px;
   --font-display:'Georgia','Times New Roman',serif;
@@ -128,6 +128,15 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
 .curve{fill:none; stroke-width:2.6; stroke-linejoin:round; stroke-linecap:round;}
 .curve-ipr{stroke:var(--ipr); filter:drop-shadow(0 0 4px rgba(52,199,149,0.4));}
 .curve-vlp{stroke:var(--vlp); filter:drop-shadow(0 0 4px rgba(91,155,213,0.4));}
+.curve-esp{stroke:var(--esp); stroke-width:2.5; stroke-dasharray:7 5; fill:none; filter:drop-shadow(0 0 4px rgba(245,166,91,0.45));}
+.op-marker-nat{fill:var(--gold); opacity:0.32; stroke:var(--navy-deep); stroke-width:2;}
+.esp-grp{margin-top:4px; margin-bottom:18px; background:rgba(245,166,91,0.06); border:1px solid rgba(245,166,91,0.28); border-radius:10px; padding:12px 14px;}
+.esp-row{display:flex; align-items:center; gap:10px; cursor:pointer;}
+.esp-row input{width:16px; height:16px; accent-color:var(--esp); cursor:pointer; flex:none;}
+.esp-title{font-size:0.86rem; color:var(--on-dark); font-weight:600;}
+.esp-sub{font-size:0.74rem; color:var(--on-dark-faint); margin-top:8px; line-height:1.5;}
+.esp-sub b{color:var(--esp);}
+.insight.esp-note{border-color:rgba(245,166,91,0.45);}
 .op-marker{fill:var(--gold-bright); stroke:var(--navy-deep); stroke-width:2.5; filter:drop-shadow(0 0 8px rgba(201,168,76,0.9));}
 .op-ring{fill:none; stroke:var(--gold); stroke-width:1.5; opacity:0.5;}
 .op-drop{stroke:var(--gold); stroke-width:1; stroke-dasharray:4 4; opacity:0.5;}
@@ -300,6 +309,14 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
         <div id="outflowControls"></div>
       </div>
 
+      <div class="esp-grp" id="espGrp">
+        <label class="esp-row">
+          <input type="checkbox" id="espChk">
+          <span class="esp-title">Add ESP (electric submersible pump)</span>
+        </label>
+        <div class="esp-sub">Holds flowing bottomhole pressure at <b>50&nbsp;atm</b> (≈&nbsp;735&nbsp;psi&nbsp;/&nbsp;50.7&nbsp;bar). The pump supplies the head; the operating point drops down the IPR to a deeper drawdown. Oil mode.</div>
+      </div>
+
       <button class="reset" id="resetBtn">Reset to base case</button>
     </aside>
 
@@ -312,6 +329,7 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
             <span><i class="curve-ipr" style="background:var(--ipr)"></i> IPR (inflow)</span>
             <span><i class="curve-vlp" style="background:var(--vlp)"></i> VLP (outflow)</span>
             <span><i class="dot" style="background:var(--gold-bright)"></i> Operating point</span>
+            <span id="espLegend" style="display:none"><i style="width:16px;height:0;border-top:2.5px dashed var(--esp);border-radius:0"></i> VLP + ESP</span>
           </div>
         </div>
         <div class="chart-wrap">
@@ -437,6 +455,12 @@ const PARAMS = {
    Physics state is always held in field units.
    ============================================================ */
 let unitSys = 'field';   // 'field' | 'metric'
+
+// ---- ESP (electric submersible pump) ----
+const ATM_PSI = 14.6959;                        // 1 atm in psi
+const ESP_TARGET_ATM = 50;                      // target flowing BHP with ESP on
+const espTargetPwf = ESP_TARGET_ATM * ATM_PSI;  // field units (psi) ≈ 734.8
+let espOn = false;
 
 // conversion factors (field -> metric multiply)
 const K = {
@@ -676,6 +700,17 @@ function render(){
   const Pr = s.Pr;
   const qMax = Math.max(sol.qMax, 1);
 
+  // ESP: an electric submersible pump holds flowing BHP at the target (50 atm).
+  // The pump supplies whatever head is needed; the operating point drops down the IPR.
+  let esp = null;
+  if(espOn && mode==='oil' && (sol.dead || sol.pwf > espTargetPwf)){
+    const qEsp = ipr(espTargetPwf, s);
+    if(qEsp > 1){
+      esp = { q:qEsp, pwf:espTargetPwf, pumpHead:Math.max(0, vlp(qEsp,s)-espTargetPwf), qNat: sol.dead?0:sol.q };
+    }
+  }
+  document.getElementById('espLegend').style.display = esp ? '' : 'none';
+
   // axis scales
   const xMax = qMax*1.12;
   const yMax = Pr*1.06;
@@ -727,9 +762,26 @@ function render(){
   }
   svg+=`<path class="curve curve-vlp" d="${vlpPath}"/>`;
 
-  // operating point
-  if(!sol.dead && sol.q>1){
-    const ox=px(sol.q), oy=py(sol.pwf);
+  // ESP-assisted VLP — the natural VLP shifted down by the pump head
+  if(esp){
+    let espPath='';
+    for(let i=0;i<=N;i++){
+      const q = xMax*i/N;
+      const p = vlp(Math.max(q,0.5), s) - esp.pumpHead;
+      const x=px(q), y=py(Math.min(Math.max(p,0),yMax));
+      espPath += (i===0?'M':'L')+x.toFixed(1)+' '+y.toFixed(1)+' ';
+    }
+    svg+=`<path class="curve curve-esp" d="${espPath}"/>`;
+  }
+
+  // operating point(s)
+  const opPt = esp ? {q:esp.q, pwf:esp.pwf} : (!sol.dead && sol.q>1 ? {q:sol.q, pwf:sol.pwf} : null);
+  // faded natural operating point when the ESP is shifting it
+  if(esp && !sol.dead && sol.q>1){
+    svg+=`<circle class="op-marker-nat" cx="${px(sol.q)}" cy="${py(sol.pwf)}" r="5"/>`;
+  }
+  if(opPt){
+    const ox=px(opPt.q), oy=py(opPt.pwf);
     svg+=`<line class="op-drop" x1="${ox}" y1="${oy}" x2="${ox}" y2="${PLOT_H-M.b}"/>`;
     svg+=`<line class="op-drop" x1="${M.l}" y1="${oy}" x2="${ox}" y2="${oy}"/>`;
     svg+=`<circle class="op-ring" cx="${ox}" cy="${oy}" r="13"><animate attributeName="r" values="9;15;9" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.6;0.1;0.6" dur="2.4s" repeatCount="indefinite"/></circle>`;
@@ -744,19 +796,28 @@ function render(){
     </defs>` + svg;
 
   // ---- readouts (converted to display units) ----
-  const rate = sol.dead?0:sol.q;
+  const effDead = sol.dead && !esp;
+  const rate = esp ? esp.q : (sol.dead?0:sol.q);
+  const effPwf = esp ? esp.pwf : sol.pwf;
   const opRateEl = document.getElementById('opRate');
-  opRateEl.textContent = sol.dead ? 'DEAD' : fmt(rateToDisplay(rate));
+  opRateEl.textContent = effDead ? 'DEAD' : fmt(rateToDisplay(rate));
   if(prevRate!==null && Math.abs(rate-prevRate)>0.5){
     opRateEl.parentElement.classList.remove('tick'); void opRateEl.offsetWidth;
     opRateEl.parentElement.classList.add('tick');
   }
   prevRate=rate;
-  document.getElementById('opPwf').textContent = sol.dead?'—':fmt(pressureToDisplay(sol.pwf));
+  document.getElementById('opPwf').textContent = effDead?'—':fmt(pressureToDisplay(effPwf));
   document.getElementById('aof').textContent = fmt(rateToDisplay(qMax));
-  document.getElementById('drawdown').textContent = sol.dead?'—':fmt(pressureToDisplay(Pr - sol.pwf));
+  document.getElementById('drawdown').textContent = effDead?'—':fmt(pressureToDisplay(Pr - effPwf));
 
-  updateInsight(s, sol, rate, qMax);
+  if(esp){
+    const box=document.getElementById('insight'), txt=document.getElementById('insightText');
+    box.className='insight esp-note';
+    const upPct = esp.qNat>0 ? '+'+Math.round((esp.q-esp.qNat)/esp.qNat*100)+'%' : 'up from a dead well';
+    txt.innerHTML = `<b>ESP engaged — flowing bottomhole pressure held at ${ESP_TARGET_ATM} atm (${fmt(pressureToDisplay(espTargetPwf))} ${pressureUnit()}).</b> The pump provides the lift the tubing alone cannot, deepening drawdown to ${fmt(pressureToDisplay(Pr-espTargetPwf))} ${pressureUnit()} and raising the operating rate to <b>${fmt(rateToDisplay(esp.q))} ${rateUnitLabel()}</b> (${upPct} vs natural flow) — now inflow-limited at ${(esp.q/qMax*100).toFixed(0)}% of AOF. <span style="color:var(--on-dark-faint)">Un-tick the ESP to compare against natural lift.</span>`;
+  } else {
+    updateInsight(s, sol, rate, qMax);
+  }
   renderSensitivity(s, sol);
 }
 
@@ -972,6 +1033,10 @@ function syncReadoutUnits(){
 document.getElementById('modeToggle').addEventListener('click', e=>{
   const btn=e.target.closest('button'); if(!btn) return;
   mode=btn.dataset.mode;
+  // ESP is an oil-well lift method — hide it in gas mode
+  const espGrp=document.getElementById('espGrp');
+  if(mode!=='oil'){ espOn=false; const c=document.getElementById('espChk'); if(c) c.checked=false; if(espGrp) espGrp.style.display='none'; }
+  else if(espGrp){ espGrp.style.display=''; }
   document.querySelectorAll('#modeToggle button').forEach(b=>b.classList.toggle('active', b===btn));
   document.getElementById('modeHint').textContent = mode==='oil'
     ? 'Composite Darcy + Vogel inflow, two-phase tubing lift'
@@ -1000,6 +1065,9 @@ function rebuildControlsKeepState(){
   PARAMS[mode].inflow.forEach(p=>{ state[p.id]=saved[p.id]; inDiv.appendChild(makeCtrl(p)); });
   PARAMS[mode].outflow.forEach(p=>{ state[p.id]=saved[p.id]; outDiv.appendChild(makeCtrl(p)); });
 }
+
+// ESP toggle
+document.getElementById('espChk').addEventListener('change', e=>{ espOn = e.target.checked; render(); });
 
 // reset
 document.getElementById('resetBtn').addEventListener('click', ()=>{ buildControls(); render(); });
