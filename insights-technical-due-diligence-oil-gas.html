@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oil &amp; Gas Technical Due Diligence: What the Data Room Won't Tell You — Alpha Technical Centre Insights</title>
+<meta name="description" content="For hedge funds and institutional investors: what independent oil &amp; gas technical due diligence checks that a seller's data room won't — reserves, decline curves, costs, upside and the operating team — before you invest.">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+.ins-hero{
+  background:linear-gradient(155deg,#060F1E 0%,#0B1F3A 55%,#101a2e 100%);
+  padding:72px 0 64px;position:relative;overflow:hidden;
+}
+.ins-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 80% 30%,rgba(201,168,76,0.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.ins-meta{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+.ins-tag{
+  font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#C9A84C;
+  display:flex;align-items:center;gap:8px;
+}
+.ins-tag::before{content:'';width:20px;height:1px;background:#C9A84C;opacity:.6;}
+.ins-date{font-family:'Barlow',sans-serif;font-size:11.5px;color:rgba(240,237,230,0.38);letter-spacing:.04em;}
+.ins-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(30px,4.5vw,52px);font-weight:700;
+  line-height:1.1;letter-spacing:-.02em;color:#F0EDE6;margin-bottom:20px;
+}
+.ins-title em{color:#C9A84C;font-style:italic;}
+.ins-standfirst{
+  font-family:'Barlow',sans-serif;font-size:17px;line-height:1.72;
+  color:rgba(240,237,230,0.62);max-width:62ch;font-weight:300;
+  border-left:2px solid rgba(201,168,76,0.4);padding-left:20px;
+}
+.ins-byline{
+  display:flex;align-items:center;gap:12px;margin-top:36px;
+  padding-top:24px;border-top:1px solid rgba(201,168,76,0.15);
+}
+.ins-byline-mark{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.ins-byline-author{font-family:'Barlow',sans-serif;font-size:12px;color:rgba(240,237,230,0.8);font-weight:500;}
+.ins-byline-org{font-family:'Barlow',sans-serif;font-size:11px;color:rgba(240,237,230,0.38);margin-top:1px;}
+.ins-body{max-width:720px;margin:0 auto;padding:64px 32px 80px;}
+.ins-body h2{
+  font-family:'Playfair Display',serif;font-size:clamp(20px,2.5vw,26px);
+  font-weight:600;color:#0B1F3A;line-height:1.2;
+  margin:52px 0 18px;padding-top:8px;
+  border-top:2px solid rgba(201,168,76,0.25);
+}
+.ins-body h2:first-of-type{margin-top:0;border-top:none;padding-top:0;}
+.ins-body p{
+  font-family:'Barlow',sans-serif;font-size:15.5px;line-height:1.8;
+  color:#2D3748;margin-bottom:22px;font-weight:400;
+}
+.ins-body strong{color:#0B1F3A;font-weight:600;}
+.ins-pull{
+  margin:40px 0;padding:24px 28px;
+  border-left:3px solid #C9A84C;
+  background:rgba(201,168,76,0.05);border-radius:0 4px 4px 0;
+}
+.ins-pull p{
+  font-family:'Playfair Display',serif;font-size:19px;font-weight:400;
+  line-height:1.55;color:#0B1F3A;margin:0;font-style:italic;
+}
+.ins-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0;}
+@media(max-width:600px){.ins-stat-row{grid-template-columns:1fr;}}
+.ins-stat{
+  background:#fff;border:1px solid rgba(11,31,58,0.09);
+  border-radius:4px;padding:20px 18px;text-align:center;
+}
+.ins-stat-val{
+  font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;
+  color:#C9A84C;letter-spacing:-.01em;line-height:1;
+}
+.ins-stat-lbl{font-family:'Barlow',sans-serif;font-size:11px;color:#5A6A7E;margin-top:6px;line-height:1.4;}
+.ins-divider{height:1px;background:linear-gradient(90deg,rgba(201,168,76,0.3),transparent);margin:48px 0;}
+.ins-callout{
+  background:#0B1F3A;border-radius:4px;padding:28px 32px;margin:40px 0;
+  border-left:3px solid #C9A84C;
+}
+.ins-callout p{
+  font-family:'Barlow',sans-serif;font-size:14px;line-height:1.72;
+  color:rgba(240,237,230,0.65);margin:0;font-weight:300;
+}
+.ins-callout strong{color:#F0EDE6;}
+.ins-cta{
+  background:#0B1F3A;border-radius:4px;padding:36px 36px;margin-top:56px;
+  border:1px solid rgba(201,168,76,0.15);
+}
+.ins-cta h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:#F0EDE6;margin-bottom:10px;}
+.ins-cta p{font-family:'Barlow',sans-serif;font-size:13.5px;color:rgba(240,237,230,0.55);margin-bottom:20px;font-weight:300;line-height:1.65;}
+.ins-cta-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#C9A84C;color:#0B1F3A;border:none;border-radius:2px;
+  padding:12px 24px;font-family:'Barlow Condensed',sans-serif;font-size:13px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:.18s;
+}
+.ins-cta-btn:hover{filter:brightness(1.08);}
+.ins-footer-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:28px 0;margin-top:48px;border-top:1px solid rgba(11,31,58,0.1);flex-wrap:wrap;gap:12px;
+}
+.ins-footer-nav a{
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:#5A6A7E;text-decoration:none;transition:.15s;
+}
+.ins-footer-nav a:hover{color:#C9A84C;}
+@media(max-width:600px){.ins-body{padding:40px 20px 60px;}.ins-hero{padding:52px 0 46px;}}
+</style>
+<!-- ===== SEO / social / structured data ===== -->
+<link rel="canonical" href="https://www.alpha-technical-centre.com/insights-technical-due-diligence-oil-gas.html">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Alpha Technical Centre">
+<meta property="og:title" content="Oil &amp; Gas Technical Due Diligence: What the Data Room Won't Tell You">
+<meta property="og:description" content="For hedge funds and institutional investors: what independent technical due diligence checks that a seller's data room won't — reserves, decline curves, costs, upside and the operating team — before you invest.">
+<meta property="og:url" content="https://www.alpha-technical-centre.com/insights-technical-due-diligence-oil-gas.html">
+<meta property="og:image" content="https://www.alpha-technical-centre.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-07-09">
+<meta property="article:section" content="Insights">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Oil &amp; Gas Technical Due Diligence: What the Data Room Won't Tell You">
+<meta name="twitter:description" content="For hedge funds and institutional investors: what independent technical due diligence checks that a seller's data room won't — before you invest.">
+<meta name="twitter:image" content="https://www.alpha-technical-centre.com/og-image.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"Oil & Gas Technical Due Diligence: What the Data Room Won't Tell You","description":"For hedge funds and institutional investors: what independent oil and gas technical due diligence checks that a seller's data room won't — reserves, decline curves, costs, upside and the operating team — before you invest.","image":"https://www.alpha-technical-centre.com/og-image.png","datePublished":"2026-07-09","dateModified":"2026-07-09","author":{"@type":"Organization","name":"Alpha Technical Centre","url":"https://www.alpha-technical-centre.com/"},"publisher":{"@type":"Organization","name":"Alpha Technical Centre","logo":{"@type":"ImageObject","url":"https://www.alpha-technical-centre.com/favicon.svg"}},"mainEntityOfPage":"https://www.alpha-technical-centre.com/insights-technical-due-diligence-oil-gas.html","about":"Oil and gas technical due diligence for hedge funds and institutional investors"}
+</script>
+<!-- ===== /SEO ===== -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NKCRSSV2RQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NKCRSSV2RQ');
+</script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre</span>
+        <span class="nav-wordmark-parent">An Alpha Energy company</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
+      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
+      <div class="nav-dropdown">
+        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
+        <div class="nav-dropdown-menu">
+          <a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
+          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
+        </div>
+      </div>
+      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
+      <a href="technical-due-diligence.html" data-en="Due Diligence" data-es="Diligencia Debida">Due Diligence</a>
+      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
+      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
+      <a href="insights.html" class="active" data-en="Insights" data-es="Análisis">Insights</a>
+      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
+      <div class="nav-lang">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="ins-hero">
+  <div class="wrap" style="position:relative;z-index:2;">
+    <div class="ins-meta">
+      <span class="ins-tag">Insights · Technical Due Diligence</span>
+      <span class="ins-date">July 2026 · Alpha Technical Centre</span>
+    </div>
+    <h1 class="ins-title">What the Data Room <em>Won't</em> Tell You</h1>
+    <p class="ins-standfirst">Every upstream data room is built to sell. For a hedge fund or institutional investor, the value of technical due diligence lies in the questions the seller's package is designed not to answer — about the rock, the decline curve, the costs, the upside and the team. This is where oil and gas deals are really won and lost, before a dollar is committed.</p>
+    <div class="ins-byline">
+      <div class="ins-byline-mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ins-byline-author">Alpha Technical Centre Editorial</div>
+        <div class="ins-byline-org">Houston, Texas · alpha-technical-centre.com</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="ins-body">
+
+  <h2>The data room is a sales document</h2>
+  <p>When a hedge fund or private-equity desk is granted access to an upstream data room, it is easy to mistake volume for truth. Reserves reports, type curves, production histories, a polished cash-flow model — hundreds of files, all apparently objective. They are not. A data room is assembled by the seller, or by an adviser paid on completion, to support a price. Every optimistic assumption that survives into the model is there because no one on the sell side had an incentive to remove it. <strong>Independent technical due diligence exists to supply that incentive</strong> — to ask, on the buyer's behalf, the questions the package was built not to raise.</p>
+  <p>This is a different exercise from financial due diligence. The numbers can all reconcile, the accounts can be clean, and the asset can still be worth far less than the model says — because the errors that matter live upstream of the spreadsheet, in the rock, the wells and the people. Here is where they hide.</p>
+
+  <div class="ins-divider"></div>
+
+  <h2>Reserves are an opinion, not a fact</h2>
+  <p>The most expensive misunderstanding in upstream investing is treating a reserves number as a measured quantity. It isn't. Reserves are an estimate, made under a set of assumptions, by someone with a point of view. The categories matter enormously. <strong>Proved developed producing (PDP)</strong> barrels are already flowing from existing wells. <strong>Proved undeveloped (PUD)</strong> barrels assume future capital, arriving on schedule and performing as modelled. A 2P — proved plus probable — number that looks robust can rest on a thin base of actually-producing wells and a tall stack of “we'll drill it, and it'll work.”</p>
+
+  <div class="ins-stat-row">
+    <div class="ins-stat"><div class="ins-stat-val">PDP</div><div class="ins-stat-lbl">Producing today — the barrels you can most trust</div></div>
+    <div class="ins-stat"><div class="ins-stat-val">PUD</div><div class="ins-stat-lbl">Undeveloped — capital, timing and execution risk attached</div></div>
+    <div class="ins-stat"><div class="ins-stat-val">2P</div><div class="ins-stat-lbl">Proved + probable — where the optimism accumulates</div></div>
+  </div>
+
+  <p>Technical diligence pulls that apart. It asks how much of the value sits in producing wells versus undeveloped locations; whether the recovery factors are consistent with analogue fields; whether the well spacing assumed for the undeveloped inventory is genuinely drainable or is quietly counting the same oil twice. A competent-person-grade review will often confirm the producing base and heavily discount the rest — and the gap between the two is frequently the difference between a good deal and a bad one.</p>
+
+  <h2>The decline curve hides the story</h2>
+  <p>Production forecasts are where optimism compounds. A type curve with a shallow terminal decline, a hyperbolic exponent nudged a little high, and a water-cut trend that flattens conveniently can inflate net present value by a wide margin — and none of it looks obviously wrong on the page. The barrels are all in the future, discounted, and small changes to the shape of the curve move the answer more than most investment memos admit.</p>
+  <p>The technical read tests the curve against the well-level history. Is the decline the operator shows consistent with what the wells have actually done? How dependent is the forecast on artificial lift that hasn't been installed, or on injection support that isn't yet funded? What happens to the economics when the terminal decline is set to a defensible number rather than a flattering one? Rerun the base case on honest curves and the return you are underwriting can change character entirely.</p>
+
+  <div class="ins-pull">
+    <p>A data room can reconcile to the penny and still be wrong by half. The errors that matter live in the rock, the wells and the people — not in the spreadsheet.</p>
+  </div>
+
+  <h2>Cost and abandonment: the liabilities that don't shout</h2>
+  <p>Upside gets the pitch; liabilities get a footnote. Operating cost per barrel tends to be shown at today's rate on today's production — not at the higher unit cost that arrives as the field ages and volumes fall. Workover cadence, well-integrity spend and the slow escalation of lifting costs are easy to under-model. And at the end sits the decommissioning and abandonment liability: a real, growing obligation routinely pushed far enough into the outer years that discounting hides it. For a buyer, an honest abandonment estimate and an integrity assessment can move the valuation as much as the reserves do.</p>
+
+  <div class="ins-callout">
+    <p><strong>What technical diligence is not:</strong> it is not a second financial model. It is an engineering opinion on whether the assumptions the financial model runs on are true — the reserves, the decline, the costs, the timing and the team. Get those right and the finance takes care of itself; get them wrong, and no amount of spreadsheet rigour will save the return.</p>
+  </div>
+
+  <h2>The upside nobody's pricing</h2>
+  <p>Diligence is not only about finding the downside. The same review that discounts an inflated forecast will also surface value the current owner isn't pricing — and for a buyer, that is where outsized returns are made. Bypassed pay behind existing casing; infill locations at tighter spacing than the incumbent has drilled; recompletions into shallower or deeper zones; artificial-lift changes and injection that lift recovery; behind-pipe potential that never made the seller's base case because they lacked the capital or the will to chase it.</p>
+  <p>A seller has no reason to hand a buyer a map of the upside — and often hasn't done the work to find it. An operator-grade technical team, evaluating the asset as if it had to develop it, frequently identifies a redevelopment case worth materially more than the one on offer. That asymmetry — you seeing value the market hasn't — is precisely what a technical partner is for.</p>
+
+  <h2>The team is part of the asset</h2>
+  <p>A capital plan is only as good as the people who execute it. Two funds can buy the same field and get very different results, because one operator can drill the infill wells on time and on cost, and the other cannot. Technical due diligence should therefore extend to the incumbent management and operating team: their technical track record, their credibility on the specific work the plan requires, and whether the delivery risk you are being asked to underwrite is a rock problem or a people problem. It is the one question a data room, by its nature, will never answer about itself.</p>
+
+  <h2>The buy-side technical read</h2>
+  <p>None of this is exotic. It is the ordinary discipline of people who have developed and produced assets, applied on the investor's side of the table before capital is committed — independent, conflict-free, and fast enough to matter inside a live process. The output is not another model; it is a clear technical opinion on what the asset is really worth, where the upside hides, and whether the team can deliver it, written for an investment committee.</p>
+  <p>For a hedge fund or institutional investor, that read is the cheapest insurance in the deal. The cost of the diligence is a rounding error against the cost of being wrong about the barrels.</p>
+
+  <div class="ins-cta">
+    <h3>Evaluating an upstream asset or operator?</h3>
+    <p>Alpha Technical Centre provides independent, buy-side technical due diligence for hedge funds and institutional investors — reserves and risk evaluation, upside identification, and management-team review before you invest.</p>
+    <a href="technical-due-diligence.html" class="ins-cta-btn">
+      Technical Due Diligence
+      <svg viewBox="0 0 16 16" fill="none" style="width:13px;height:13px;"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+
+  <div class="ins-footer-nav">
+    <a href="insights.html">← All Insights</a>
+    <a href="technical-due-diligence.html">Technical Due Diligence →</a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-grad"></div>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-wordmark">
+          <span class="nav-wordmark-main">Alpha</span>
+          <span class="nav-wordmark-sub">Technical Centre</span>
+        </span>
+        <p class="footer-tagline">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
+      </div>
+      <div class="footer-col"><h4>Capabilities</h4>
+        <ul>
+          <li><a href="technical-due-diligence.html">Technical Due Diligence</a></li>
+          <li><a href="oil-gas-modelling.html">Oil &amp; Gas Modelling</a></li>
+          <li><a href="financial-modelling.html">Financial Modelling</a></li>
+          <li><a href="plan-your-job.html">Plan Your Job</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About</a></li>
+          <li><a href="team.html">Team</a></li>
+          <li><a href="case-studies.html">Case Studies</a></li>
+          <li><a href="insights.html">Insights</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Connect</h4>
+        <ul>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="mailto:info@alpha-technical-centre.com">info@alpha-technical-centre.com</a></li>
+          <li><a href="https://alphaenergylatinamerica.com">Alpha Energy ↗</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Alpha Technical Centre · Houston, Texas · A wholly-owned Alpha Energy company</p>
+      <span class="footer-conf">Strictly Confidential</span>
+    </div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
