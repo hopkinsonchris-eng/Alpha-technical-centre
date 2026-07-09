@@ -63,7 +63,8 @@
     document.documentElement.setAttribute('lang', lang);
     document.querySelectorAll('[data-en]').forEach(function (el) {
       var val = el.getAttribute('data-' + lang);
-      if (val !== null) el.textContent = val;
+      // values may contain markup (e.g. <em> for the gold-italic word) — render as HTML in that case
+      if (val !== null) { if (val.indexOf('<') !== -1) el.innerHTML = val; else el.textContent = val; }
     });
     // Placeholders
     document.querySelectorAll('[data-en-ph]').forEach(function (el) {
