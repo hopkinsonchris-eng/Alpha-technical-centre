@@ -173,6 +173,9 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 .well-type.inj{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(74,173,202,0.3);}
 .well-status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
 .dot-on{background:var(--green-bright);box-shadow:0 0 5px rgba(46,204,138,0.5);}
+.dot-off{background:var(--steel);opacity:0.5;}
+.well-table tr.selected td{background:var(--gold-glow);border-bottom-color:var(--gold-line);}
+.well-table tr{cursor:pointer;}
 
 .sim-log{background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;font-family:var(--font-mono);font-size:11px;color:var(--cream-dim);line-height:1.7;max-height:180px;overflow-y:auto;margin-top:12px;}
 .sim-log .log-ok{color:var(--green-bright);}
@@ -256,6 +259,9 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 .screen-back:hover{color:var(--gold);}
 .ctl-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;}
 .ctl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px 24px;}
+.well-editor-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;margin-bottom:14px;}
+@media(max-width:900px){.well-editor-grid{grid-template-columns:1fr;}}
+.insp-field{display:flex;flex-direction:column;gap:3px;font-family:var(--font-cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);}
 @media(max-width:1100px){
   #screen-home.active{grid-template-columns:250px minmax(0,1fr);}
   .home-col.right{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;}
@@ -618,7 +624,21 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
   </div>
   <div class="eq-card"><div class="eq-label">Peaceman Well Model (per perforated layer)</div>
     <div class="eq-text">qₚ = WI·(kᵣₚ/μₚBₚ)·(Pblock−Pwf) · WI=2π·kh·Δz/(ln(r₀/rw)+S) · r₀=0.28√(Δx²+Δy²)/2</div></div>
-  <div class="chart-card"><div class="chart-title">Well Register</div><table class="well-table" id="wellTable"></table></div>
+  <div class="well-editor-grid">
+    <div class="chart-card">
+      <div class="chart-title">Field Map <span class="ct-right">click select · drag move · snaps to cell</span></div>
+      <canvas id="wellMap" style="width:100%;display:block;cursor:pointer;touch-action:none;"></canvas>
+      <div class="io-btn-row" style="padding:10px 0 0;">
+        <button class="io-btn" onclick="addWell('prod')">＋ Add Producer</button>
+        <button class="io-btn" onclick="addWell('inj')">＋ Add Injector</button>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Well Inspector <span class="ct-right" id="insp-well-name"></span></div>
+      <div id="wellInspector"></div>
+    </div>
+  </div>
+  <div class="chart-card"><div class="chart-title">Well Register <span class="ct-right">click a row to edit · ◆ = customised</span></div><table class="well-table" id="wellTable"></table></div>
   <div class="info-grid" style="margin-top:14px;">
     <div class="info-card"><div class="info-card-title">Inflow Parameters</div>
       <div class="info-row"><span class="info-key">rw</span><span class="info-val gold" id="wi-rw">0.11 m</span></div>
@@ -818,7 +838,8 @@ function syncRange(key,el){
   const min=parseFloat(el.min),max=parseFloat(el.max);
   el.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');
   if(['nk','k','phi','vdp','kvkh','topd','dz'].includes(key)) generateLayers();
-  if(['np','ni2','ni','nj'].includes(key)) generateWells();
+  if(['np','ni2'].includes(key)) syncWellCounts();
+  if(['ni','nj'].includes(key)) fitWellsToGrid();
   if(key==='nk') WELLS.forEach(w=>{const old=w.perf||[]; w.perf=Array.from({length:P.nk},(_,k)=>old[k]!==undefined?old[k]:true);});
   if(['pwfp','pwfi','rw','skin'].includes(key)) WELLS.forEach(w=>{ if(w.custom) return;
     w.pwf=(w.type==='prod')?P.pwfp:P.pwfi; w.rw=P.rw; w.skin=P.skin; });
@@ -900,12 +921,15 @@ function updateDerived(){
   if(typeof renderBuildNav==='function')renderBuildNav();
 }
 
-// ── WELL GEOMETRY ──
+// ── WELL GEOMETRY & EDITOR ──
 // WELLS is the explicit, editable well list. generateWells() lays out default
-// wells from the rail sliders (counts, BHP, rw, skin); individual wells can be
-// customised (position, BHP, skin, per-layer completions) — the custom flag
-// stops the global sliders from overwriting those edits. Regenerating (well
-// count or areal grid change) resets the list to slider defaults.
+// wells from the field-default sliders; individual wells can be customised
+// (position, BHP, rw, skin, per-layer completions) — the custom flag stops the
+// global sliders from overwriting those edits, and count/grid changes preserve
+// customised wells instead of regenerating the whole pattern.
+const WELL_PP=[[0.78,0.78],[0.22,0.78],[0.5,0.22],[0.8,0.35],[0.2,0.35],[0.5,0.65]];
+const WELL_IP=[[0.5,0.5],[0.15,0.5],[0.85,0.5],[0.5,0.15]];
+let selWell=-1;
 function mkWell(name,type,i,j){
   return {name,type,i,j,active:true,custom:false,
     pwf:type==='prod'?P.pwfp:P.pwfi,rw:P.rw,skin:P.skin,
@@ -913,11 +937,37 @@ function mkWell(name,type,i,j){
 }
 function generateWells(){
   const {ni,nj}=P; const w=[];
-  const pp=[[0.78,0.78],[0.22,0.78],[0.5,0.22],[0.8,0.35],[0.2,0.35],[0.5,0.65]];
-  const ip=[[0.5,0.5],[0.15,0.5],[0.85,0.5],[0.5,0.15]];
-  for(let p=0;p<P.np;p++) w.push(mkWell(`P${p+1}`,'prod',Math.floor(pp[p][0]*ni),Math.floor(pp[p][1]*nj)));
-  for(let q=0;q<P.ni2;q++) w.push(mkWell(`I${q+1}`,'inj',Math.floor(ip[q][0]*ni),Math.floor(ip[q][1]*nj)));
-  WELLS=w;
+  for(let p=0;p<P.np;p++) w.push(mkWell(`P${p+1}`,'prod',Math.floor(WELL_PP[p][0]*ni),Math.floor(WELL_PP[p][1]*nj)));
+  for(let q=0;q<P.ni2;q++) w.push(mkWell(`I${q+1}`,'inj',Math.floor(WELL_IP[q][0]*ni),Math.floor(WELL_IP[q][1]*nj)));
+  WELLS=w; selWell=-1;
+}
+// Count sliders add/remove default wells at the end of the pattern — existing
+// (possibly customised) wells are never touched.
+function syncWellCounts(){
+  const prods=()=>WELLS.filter(w=>w.type==='prod'), injs=()=>WELLS.filter(w=>w.type==='inj');
+  while(prods().length<P.np){ const n=prods().length;
+    WELLS.push(mkWell(nextWellName('prod'),'prod',Math.floor(WELL_PP[Math.min(n,WELL_PP.length-1)][0]*P.ni),Math.floor(WELL_PP[Math.min(n,WELL_PP.length-1)][1]*P.nj))); }
+  while(prods().length>P.np){ const w=prods().pop(); WELLS.splice(WELLS.indexOf(w),1); }
+  while(injs().length<P.ni2){ const n=injs().length;
+    WELLS.push(mkWell(nextWellName('inj'),'inj',Math.floor(WELL_IP[Math.min(n,WELL_IP.length-1)][0]*P.ni),Math.floor(WELL_IP[Math.min(n,WELL_IP.length-1)][1]*P.nj))); }
+  while(injs().length>P.ni2){ const w=injs().pop(); WELLS.splice(WELLS.indexOf(w),1); }
+  selWell=-1;
+}
+// Areal grid changes re-seat pattern wells and clamp customised ones in bounds.
+function fitWellsToGrid(){
+  let pi_=0,ii_=0;
+  WELLS.forEach(w=>{
+    if(!w.custom){
+      if(w.type==='prod'&&pi_<WELL_PP.length){ w.i=Math.floor(WELL_PP[pi_][0]*P.ni); w.j=Math.floor(WELL_PP[pi_][1]*P.nj); pi_++; }
+      else if(w.type==='inj'&&ii_<WELL_IP.length){ w.i=Math.floor(WELL_IP[ii_][0]*P.ni); w.j=Math.floor(WELL_IP[ii_][1]*P.nj); ii_++; }
+    }
+    w.i=Math.min(P.ni-1,Math.max(0,w.i)); w.j=Math.min(P.nj-1,Math.max(0,w.j));
+  });
+}
+function nextWellName(type){
+  const pfx=type==='prod'?'P':'I';
+  let n=1; WELLS.forEach(w=>{ const m=w.name.match(new RegExp('^'+pfx+'(\\d+)$')); if(m)n=Math.max(n,+m[1]+1); });
+  return pfx+n;
 }
 function buildWells(){ if(!WELLS.length) generateWells(); return WELLS.filter(w=>w.active); }
 function perfLabel(w){
@@ -925,12 +975,155 @@ function perfLabel(w){
   if(on.length===P.nk) return `1–${P.nk}`;
   return on.length?on.join(','):'—';
 }
+
+// ── WELL EDITOR (Build 5 detail screen) ──
+function refreshWellUI(){
+  buildWellTable(); drawWellMap(); renderWellInspector();
+  renderBuildNav(); rebuild3D(); TOUCHED.wells=true;
+}
+function selectWell(ix){ selWell=ix; buildWellTable(); drawWellMap(); renderWellInspector(); }
+function addWell(type){
+  const w=mkWell(nextWellName(type),type,Math.floor(P.ni/2),Math.floor(P.nj/2));
+  w.custom=true; WELLS.push(w);
+  P[type==='prod'?'np':'ni2']=WELLS.filter(x=>x.type===type).length; syncCountSlider(type);
+  selWell=WELLS.length-1; refreshWellUI();
+}
+function deleteWell(ix){
+  const w=WELLS[ix]; if(!w)return;
+  WELLS.splice(ix,1);
+  P[w.type==='prod'?'np':'ni2']=WELLS.filter(x=>x.type===w.type).length; syncCountSlider(w.type);
+  selWell=-1; refreshWellUI();
+}
+function syncCountSlider(type){
+  const key=type==='prod'?'np':'ni2';
+  const el=document.getElementById('r-'+key);
+  if(el){ el.value=P[key]; const min=+el.min,max=+el.max;
+    el.style.setProperty('--pct',((P[key]-min)/(max-min)*100)+'%');
+    const lab=document.getElementById('v-'+key); if(lab)lab.textContent=P[key]; }
+}
+function editWellProp(ix,prop,val){
+  const w=WELLS[ix]; if(!w)return;
+  if(prop==='name'){ w.name=(''+val).trim().slice(0,8)||w.name; }
+  else if(prop==='type'){ w.type=val==='inj'?'inj':'prod'; w.pwf=w.type==='prod'?P.pwfp:P.pwfi; w.custom=true;
+    P.np=WELLS.filter(x=>x.type==='prod').length; P.ni2=WELLS.filter(x=>x.type==='inj').length;
+    syncCountSlider('prod'); syncCountSlider('inj'); }
+  else if(prop==='i'||prop==='j'){ const v=Math.round(+val)-1;
+    if(isFinite(v)) w[prop]=Math.min((prop==='i'?P.ni:P.nj)-1,Math.max(0,v)); w.custom=true; }
+  else if(prop==='pwf'||prop==='rw'||prop==='skin'){ const v=+val;
+    if(isFinite(v)){ if(prop==='pwf')w.pwf=Math.max(1,v); if(prop==='rw')w.rw=Math.min(0.5,Math.max(0.03,v)); if(prop==='skin')w.skin=Math.min(20,Math.max(-3,v)); w.custom=true; } }
+  else if(prop==='active'){ w.active=!!val; }
+  refreshWellUI();
+}
+function togglePerf(ix,k,on){ const w=WELLS[ix]; if(!w)return; w.perf[k]=!!on; w.custom=true; refreshWellUI(); }
+function resetWellDefaults(ix){ const w=WELLS[ix]; if(!w)return;
+  w.pwf=w.type==='prod'?P.pwfp:P.pwfi; w.rw=P.rw; w.skin=P.skin;
+  w.perf=Array.from({length:P.nk},()=>true); w.custom=false; refreshWellUI();
+}
+function renderWellInspector(){
+  const el=document.getElementById('wellInspector'); if(!el)return;
+  const w=WELLS[selWell];
+  if(!w){ el.innerHTML='<span class="io-note">Select a well on the map or in the register — edit its BHP, radius, skin, position and per-layer completions here.</span>'; return; }
+  const perfRows=LAYERS.map((L,k)=>`
+    <label class="rail-checkbox-row" style="justify-content:space-between;margin-bottom:4px;">
+      <span style="display:flex;align-items:center;gap:8px;"><input type="checkbox" ${w.perf[k]?'checked':''} onchange="togglePerf(${selWell},${k},this.checked)"> L${k+1}</span>
+      <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--steel);">${L.k.toFixed(0)} mD · φ ${L.phi.toFixed(2)}</span>
+    </label>`).join('');
+  const noPerf=!w.perf.some(v=>v);
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:10px;">
+      <label class="insp-field">Name<input class="layer-input" style="width:100%;" value="${w.name}" onchange="editWellProp(${selWell},'name',this.value)"></label>
+      <label class="insp-field">Type<select class="rail-select" onchange="editWellProp(${selWell},'type',this.value)">
+        <option value="prod" ${w.type==='prod'?'selected':''}>Producer</option><option value="inj" ${w.type==='inj'?'selected':''}>Injector</option></select></label>
+      <label class="insp-field">i (1–${P.ni})<input class="layer-input" style="width:100%;" type="number" min="1" max="${P.ni}" value="${w.i+1}" onchange="editWellProp(${selWell},'i',this.value)"></label>
+      <label class="insp-field">j (1–${P.nj})<input class="layer-input" style="width:100%;" type="number" min="1" max="${P.nj}" value="${w.j+1}" onchange="editWellProp(${selWell},'j',this.value)"></label>
+      <label class="insp-field">Pwf (bar)<input class="layer-input" style="width:100%;" type="number" step="5" value="${w.pwf}" onchange="editWellProp(${selWell},'pwf',this.value)"></label>
+      <label class="insp-field">rw (m)<input class="layer-input" style="width:100%;" type="number" step="0.01" value="${w.rw}" onchange="editWellProp(${selWell},'rw',this.value)"></label>
+      <label class="insp-field">Skin S<input class="layer-input" style="width:100%;" type="number" step="0.5" value="${w.skin}" onchange="editWellProp(${selWell},'skin',this.value)"></label>
+      <label class="insp-field" style="justify-content:flex-end;"><span>&nbsp;</span>
+        <label class="rail-checkbox-row" style="margin:0;"><input type="checkbox" ${w.active?'checked':''} onchange="editWellProp(${selWell},'active',this.checked)"> Active</label></label>
+    </div>
+    <div class="chart-title" style="margin-bottom:6px;">Completions <span class="ct-right">${noPerf?'<span style="color:#E07070;">no perforated layer — well is shut</span>':'perforated layers'}</span></div>
+    ${perfRows}
+    <div class="io-btn-row" style="padding:10px 0 0;">
+      <button class="io-btn" onclick="resetWellDefaults(${selWell})">↺ Field Defaults</button>
+      <button class="io-btn" style="border-color:rgba(192,57,43,0.5);color:#E07070;" onclick="deleteWell(${selWell})">✕ Delete Well</button>
+    </div>
+    ${w.custom?'<div class="io-note" style="margin-top:8px;">Customised — field-default sliders no longer overwrite this well.</div>':''}`;
+}
+
+// Plan-view field map: click to select, drag to move (snap to cell)
+let mapGeom=null, mapDragging=false;
+function drawWellMap(){
+  const cv=document.getElementById('wellMap'); if(!cv)return;
+  const W=cv.offsetWidth||600; const {ni,nj}=P;
+  const cell=Math.min(W/ni,420/nj); const mw=cell*ni, mh=cell*nj;
+  cv.width=W; cv.height=mh+24;
+  const ox=(W-mw)/2, oy=10;
+  mapGeom={ox,oy,cell};
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(ox,oy,mw,mh);
+  ctx.strokeStyle='rgba(107,122,141,0.15)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=ni;i++){ctx.beginPath();ctx.moveTo(ox+i*cell,oy);ctx.lineTo(ox+i*cell,oy+mh);ctx.stroke();}
+  for(let j=0;j<=nj;j++){ctx.beginPath();ctx.moveTo(ox,oy+j*cell);ctx.lineTo(ox+mw,oy+j*cell);ctx.stroke();}
+  ctx.strokeStyle='rgba(107,122,141,0.4)'; ctx.lineWidth=1; ctx.strokeRect(ox,oy,mw,mh);
+  WELLS.forEach((w,ix)=>{
+    const x=ox+(w.i+0.5)*cell, y=oy+(w.j+0.5)*cell;
+    const col=w.type==='prod'?'#C9A84C':'#4AADCA';
+    ctx.globalAlpha=w.active?1:0.35;
+    if(ix===selWell){ ctx.strokeStyle='#F8F5EE'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(x,y,Math.max(8,cell*0.42),0,Math.PI*2); ctx.stroke(); }
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,Math.max(5,cell*0.28),0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#0A1628'; ctx.font=`600 ${Math.max(7,cell*0.22)}px 'DM Mono'`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(w.type==='prod'?'P':'I',x,y+0.5);
+    ctx.fillStyle=col; ctx.font=`9.5px 'DM Mono'`; ctx.textBaseline='alphabetic';
+    ctx.fillText(w.name,x,y-Math.max(8,cell*0.42)-3);
+    ctx.globalAlpha=1;
+  });
+}
+function mapHit(e){
+  const cv=document.getElementById('wellMap'); if(!cv||!mapGeom)return null;
+  const r=cv.getBoundingClientRect();
+  const px=(e.clientX-r.left)*(cv.width/r.width), py=(e.clientY-r.top)*(cv.height/r.height);
+  return {px,py,i:Math.floor((px-mapGeom.ox)/mapGeom.cell),j:Math.floor((py-mapGeom.oy)/mapGeom.cell)};
+}
+function attachWellMapEvents(){
+  const cv=document.getElementById('wellMap'); if(!cv)return;
+  cv.addEventListener('pointerdown',e=>{
+    const h=mapHit(e); if(!h)return;
+    let hit=-1;
+    WELLS.forEach((w,ix)=>{
+      const x=mapGeom.ox+(w.i+0.5)*mapGeom.cell, y=mapGeom.oy+(w.j+0.5)*mapGeom.cell;
+      if(Math.hypot(h.px-x,h.py-y)<=Math.max(9,mapGeom.cell*0.45)) hit=ix;
+    });
+    if(hit>=0){ selWell=hit; mapDragging=true; cv.setPointerCapture(e.pointerId);
+      buildWellTable(); drawWellMap(); renderWellInspector(); }
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!mapDragging||selWell<0)return;
+    const h=mapHit(e); if(!h)return;
+    const w=WELLS[selWell];
+    const ni_=Math.min(P.ni-1,Math.max(0,h.i)), nj_=Math.min(P.nj-1,Math.max(0,h.j));
+    if(w.i!==ni_||w.j!==nj_){ w.i=ni_; w.j=nj_; w.custom=true; drawWellMap(); }
+  });
+  cv.addEventListener('pointerup',()=>{ if(mapDragging){ mapDragging=false; refreshWellUI(); } });
+}
 function buildWellTable(){
   const t=document.getElementById('wellTable'); if(!t)return;
-  const w=buildWells();
-  const r0=0.28*Math.sqrt(P.dx*P.dx+P.dy*P.dy)/2;
-  t.innerHTML='<thead><tr><th>Well</th><th>Type</th><th>i,j</th><th>Perf Layers</th><th>Pwf (bar)</th><th>Status</th></tr></thead><tbody>'+
-    w.map(x=>`<tr><td>${x.name}</td><td><span class="well-type ${x.type}">${x.type==='prod'?'PROD':'INJ'}</span></td><td>${x.i+1},${x.j+1}</td><td>${perfLabel(x)}</td><td>${x.pwf}</td><td><span class="well-status-dot dot-on"></span></td></tr>`).join('')+'</tbody>';
+  // Per-well cumulative volumes appear once a run has produced them.
+  // Stats are recorded for ACTIVE wells in list order, so map by name.
+  const stats={};
+  if(RES.ran&&RES.wellStats) RES.wellStats.forEach(s=>{stats[s.name]=s;});
+  const hasStats=RES.ran&&RES.wellStats;
+  t.innerHTML=`<thead><tr><th>Well</th><th>Type</th><th>i,j</th><th>Perf Layers</th><th>Pwf (bar)</th><th>Skin</th>${hasStats?'<th>Cum Oil / Inj (10³m³)</th><th>Cum Wat (10³m³)</th>':''}<th>Status</th></tr></thead><tbody>`+
+    WELLS.map((x,ix)=>{
+      const s=stats[x.name];
+      const volCol=hasStats?`<td>${s?( x.type==='prod'?(s.oil/1e3).toFixed(0):(s.inj/1e3).toFixed(0) ):'—'}</td><td>${s&&x.type==='prod'?(s.water/1e3).toFixed(0):'—'}</td>`:'';
+      return `<tr class="${ix===selWell?'selected':''}" onclick="selectWell(${ix})">
+      <td>${x.name}${x.custom?' <span style="color:var(--gold);font-size:9px;">◆</span>':''}</td>
+      <td><span class="well-type ${x.type}">${x.type==='prod'?'PROD':'INJ'}</span></td>
+      <td>${x.i+1},${x.j+1}</td><td>${perfLabel(x)}</td><td>${x.pwf}</td><td>${x.skin.toFixed(1)}</td>${volCol}
+      <td><span class="well-status-dot ${x.active?'dot-on':'dot-off'}"></span></td></tr>`;}).join('')+'</tbody>';
 }
 
 // ── SCREEN ROUTER ──
@@ -949,7 +1142,7 @@ function showScreen(){
   if(s==='pvt') setTimeout(drawPVT,40);
   if(s==='rock') setTimeout(drawSCAL,40);
   if(s==='aquifer') setTimeout(drawAquifer,40);
-  if(s==='wells') buildWellTable();
+  if(s==='wells') setTimeout(()=>{ buildWellTable(); drawWellMap(); renderWellInspector(); },40);
   if(s==='results'&&RES.ran) setTimeout(drawResults,40);
   if(s==='ensemble'&&ENS.ran) setTimeout(drawEnsemble,60);
   renderBuildNav();
@@ -1476,10 +1669,14 @@ function createSimEngine(Q,LAY,wellsIn){
   const times=[],qos=[],qws=[],pres=[],nps=[],wps=[],gors=[],wors=[];
   let cumO=0,cumW=0,simT=0,step=0;
   let oilDeficit=0;   // carried re-imbibition volume; keeps cumulative oil monotonic & ≤ displaced
+  // Per-well diagnostics (pure accumulators — no effect on the physics):
+  // produced water, injected water and the field oil allocated by voidage share.
+  const perOil=new Float64Array(wells.length), perWat=new Float64Array(wells.length), perInj=new Float64Array(wells.length);
 
   const E={press,sw,times,qos,qws,pres,nps,wps,gors,wors,
     done:false,step:0,simT:0,T_end,last:null,
-    stoiip:PVtot*(1-Q.swi)/Q.bo};
+    stoiip:PVtot*(1-Q.swi)/Q.bo,
+    wellStats:()=>wells.map((w,ix)=>({name:w.name,type:w.type,oil:perOil[ix],water:perWat[ix],inj:perInj[ix]}))};
 
   E.advance=function(){
     if(E.done) return null;
@@ -1621,12 +1818,12 @@ function createSimEngine(Q,LAY,wellsIn){
     }
     const injCells=[], prodCells=[]; let QtDesired=0, QtFw=0, capTot=0;
     for(let n=0;n<N;n++) capTot+=Math.max(0,(sw_max-sw[n])*cellPV(n));   // remaining pore capacity [rm³]
-    wells.forEach(w=>{ const lnT=wellLnT(w);
+    wells.forEach((w,wi)=>{ const lnT=wellLnT(w);
       for(let k=0;k<nk;k++){ if(w.perf&&w.perf[k]===false) continue;
       const idx=w.i+w.j*ni+k*ni*nj, WI=2*Math.PI*C_D*kcell[idx]*dz/lnT;
-      if(w.type==='inj'){ const dP=Math.max(0,w.pwf-press[idx]); injCells.push({idx,q:WI*(1/Q.muw)*dP,nbrs:faceNbrs(idx)}); }
+      if(w.type==='inj'){ const dP=Math.max(0,w.pwf-press[idx]); injCells.push({idx,wi,q:WI*(1/Q.muw)*dP,nbrs:faceNbrs(idx)}); }
       else { const dP=Math.max(0,press[idx]-w.pwf); const qt=WI*lamT(sw[idx])*dP;
-             prodCells.push({idx,qt,fw:fw(sw[idx])}); QtDesired+=qt; QtFw+=qt*fw(sw[idx]); }
+             prodCells.push({idx,wi,qt,fw:fw(sw[idx])}); QtDesired+=qt; QtFw+=qt*fw(sw[idx]); }
     }});
     const Qinj_ipr=injCells.reduce((a,c)=>a+c.q,0);              // injector deliverability [rm³/d]
     const QinjAcc=Math.min(Qinj_ipr, capTot/dt);                 // injection: injectivity ∧ pore capacity
@@ -1710,7 +1907,7 @@ function createSimEngine(Q,LAY,wellsIn){
         let qw=c.qtRes*dts*fw(sw[c.idx]);
         const avail=(sw[c.idx]-Q.swi)*pv;
         if(qw>avail) qw=avail; if(qw<0) qw=0;
-        sw[c.idx]-=qw/pv; massProduced+=qw;
+        sw[c.idx]-=qw/pv; massProduced+=qw; perWat[c.wi]+=qw;
       });
       // (3) Injector — VOIDAGE-LIMITED cascade. Inject only what the cell + its open
       //     neighbours can physically store; count ONLY accepted water. A BHP injector
@@ -1729,7 +1926,7 @@ function createSimEngine(Q,LAY,wellsIn){
             accepted+=placeable; vol-=placeable;
           }
         }
-        massInjected+=accepted;
+        massInjected+=accepted; perInj[c.wi]+=accepted;
       });
       // (4) Aquifer influx — per-cell encroachment into bottom layer (capacity-aware, counted)
       for(let ai=0;ai<QaqCells.length;ai++){ const idx=QaqCells[ai].idx;
@@ -1759,6 +1956,9 @@ function createSimEngine(Q,LAY,wellsIn){
     else { const pay=Math.min(massStored,oilDeficit); oilDeficit-=pay; netOil=massStored-pay; }
     Qo=netOil/pvt.Bo/dt;                                // surface oil rate [m³/d SC] (≥0)
     Qw=massProduced/dt;                                // surface water rate [m³/d SC], Bw≈1
+    // Allocate the field oil to producers by voidage share (diagnostic only)
+    if(netOil>0){ const qtTot=prodCells.reduce((a,c)=>a+c.qtRes,0);
+      if(qtTot>1e-12){ const so=netOil/pvt.Bo; prodCells.forEach(c=>{ perOil[c.wi]+=so*(c.qtRes/qtTot); }); } }
 
     simT+=dt; step++; E.step=step; E.simT=simT;
     const tyr=simT/365; times.push(tyr);
@@ -1818,6 +2018,7 @@ function runSimulation(){
    try{
     const r=eng.advance();
     if(!r){
+      RES.wellStats=eng.wellStats();
       finalise(t0,eng.times,eng.qos,eng.qws,eng.pres,eng.nps,eng.wps,eng.gors,eng.wors,eng.sw,eng.press,btn);
       return;
     }
@@ -1957,6 +2158,7 @@ function applyImport(obj){
   if(obj.P)Object.assign(P,obj.P);
   if(obj.LAYERS)LAYERS=obj.LAYERS;
   if(obj.WELLS)WELLS=sanitizeWells(obj.WELLS); else generateWells();
+  selWell=-1;
   // sync all rail controls
   Object.keys(P).forEach(k=>{const el=document.getElementById('r-'+k);if(el){el.value=P[k];const min=+el.min,max=+el.max;el.style.setProperty('--pct',((P[k]-min)/(max-min)*100)+'%');const lab=document.getElementById('v-'+k);if(lab)lab.textContent=P[k];}});
   const aq=document.getElementById('s-aqtype');if(aq)aq.value=P.aqtype;
@@ -2259,6 +2461,7 @@ function exportEnsembleCSV(){
 window.addEventListener('load',()=>{
   document.querySelectorAll('.rail-range').forEach(r=>{const min=+r.min,max=+r.max,v=+r.value;r.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');});
   generateLayers(); generateWells(); updateDerived();
+  attachWellMapEvents();
   showScreen();               // activate the routed screen (default #home)
   drawPVT(); drawSCAL(); drawAquifer();
   initThree(); // single shared renderer; results scene created inside
