@@ -731,6 +731,7 @@ const P = {
 };
 
 let LAYERS=[];      // per-layer {phi,k,ntg,depth}
+let WELLS=[];       // explicit well list {name,type,i,j,pwf,rw,skin,perf[],active,custom}
 const RES={ran:false,times:[],qo:[],qw:[],pres:[],np:[],wp:[],gor:[],wor:[],satFrames:[],presFrames:[]};
 let colorMode='perm', explodeOn=false, wellsOn=true, satFrameIdx=0, satPlaying=false, satLayerK=0;
 
@@ -743,6 +744,10 @@ function syncRange(key,el){
   const min=parseFloat(el.min),max=parseFloat(el.max);
   el.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');
   if(['nk','k','phi','vdp','kvkh','topd','dz'].includes(key)) generateLayers();
+  if(['np','ni2','ni','nj'].includes(key)) generateWells();
+  if(key==='nk') WELLS.forEach(w=>{const old=w.perf||[]; w.perf=Array.from({length:P.nk},(_,k)=>old[k]!==undefined?old[k]:true);});
+  if(['pwfp','pwfi','rw','skin'].includes(key)) WELLS.forEach(w=>{ if(w.custom) return;
+    w.pwf=(w.type==='prod')?P.pwfp:P.pwfi; w.rw=P.rw; w.skin=P.skin; });
   updateDerived();
   if(['ni','nj','nk','dx','dy','dz','topd','k','phi','vdp','kvkh','np','ni2'].includes(key)) rebuild3D();
 }
@@ -820,21 +825,36 @@ function updateDerived(){
 }
 
 // ── WELL GEOMETRY ──
-function buildWells(){ return buildWellsFor(P); }
-function buildWellsFor(Q){
-  const {ni,nj}=Q; const w=[];
+// WELLS is the explicit, editable well list. generateWells() lays out default
+// wells from the rail sliders (counts, BHP, rw, skin); individual wells can be
+// customised (position, BHP, skin, per-layer completions) — the custom flag
+// stops the global sliders from overwriting those edits. Regenerating (well
+// count or areal grid change) resets the list to slider defaults.
+function mkWell(name,type,i,j){
+  return {name,type,i,j,active:true,custom:false,
+    pwf:type==='prod'?P.pwfp:P.pwfi,rw:P.rw,skin:P.skin,
+    perf:Array.from({length:P.nk},()=>true)};
+}
+function generateWells(){
+  const {ni,nj}=P; const w=[];
   const pp=[[0.78,0.78],[0.22,0.78],[0.5,0.22],[0.8,0.35],[0.2,0.35],[0.5,0.65]];
   const ip=[[0.5,0.5],[0.15,0.5],[0.85,0.5],[0.5,0.15]];
-  for(let p=0;p<Q.np;p++) w.push({name:`P${p+1}`,type:'prod',i:Math.floor(pp[p][0]*ni),j:Math.floor(pp[p][1]*nj)});
-  for(let q=0;q<Q.ni2;q++) w.push({name:`I${q+1}`,type:'inj',i:Math.floor(ip[q][0]*ni),j:Math.floor(ip[q][1]*nj)});
-  return w;
+  for(let p=0;p<P.np;p++) w.push(mkWell(`P${p+1}`,'prod',Math.floor(pp[p][0]*ni),Math.floor(pp[p][1]*nj)));
+  for(let q=0;q<P.ni2;q++) w.push(mkWell(`I${q+1}`,'inj',Math.floor(ip[q][0]*ni),Math.floor(ip[q][1]*nj)));
+  WELLS=w;
+}
+function buildWells(){ if(!WELLS.length) generateWells(); return WELLS.filter(w=>w.active); }
+function perfLabel(w){
+  const on=(w.perf||[]).map((v,k)=>v?k+1:null).filter(v=>v);
+  if(on.length===P.nk) return `1–${P.nk}`;
+  return on.length?on.join(','):'—';
 }
 function buildWellTable(){
   const t=document.getElementById('wellTable'); if(!t)return;
   const w=buildWells();
   const r0=0.28*Math.sqrt(P.dx*P.dx+P.dy*P.dy)/2;
   t.innerHTML='<thead><tr><th>Well</th><th>Type</th><th>i,j</th><th>Perf Layers</th><th>Pwf (bar)</th><th>Status</th></tr></thead><tbody>'+
-    w.map(x=>`<tr><td>${x.name}</td><td><span class="well-type ${x.type}">${x.type==='prod'?'PROD':'INJ'}</span></td><td>${x.i+1},${x.j+1}</td><td>1–${P.nk}</td><td>${x.type==='prod'?P.pwfp:P.pwfi}</td><td><span class="well-status-dot dot-on"></span></td></tr>`).join('')+'</tbody>';
+    w.map(x=>`<tr><td>${x.name}</td><td><span class="well-type ${x.type}">${x.type==='prod'?'PROD':'INJ'}</span></td><td>${x.i+1},${x.j+1}</td><td>${perfLabel(x)}</td><td>${x.pwf}</td><td><span class="well-status-dot dot-on"></span></td></tr>`).join('')+'</tbody>';
 }
 
 // ── TAB SWITCH ──
@@ -1314,7 +1334,7 @@ function satRGB(){return '#000';}
 // performs one macro timestep and returns step info, or null once the horizon
 // is reached. The interactive run and the Monte Carlo ensemble both drive this
 // same core, so their physics cannot diverge.
-function createSimEngine(Q,LAY){
+function createSimEngine(Q,LAY,wellsIn){
   const {ni,nj,nk,dx,dy,dz}=Q; const N=ni*nj*nk;
 
   // STATE ARRAYS
@@ -1328,7 +1348,9 @@ function createSimEngine(Q,LAY){
     kcell[idx]=L.k*noise; phicell[idx]=L.phi*L.ntg;
   }
 
-  const wells=buildWellsFor(Q);
+  // Wells: explicit per-well list — per-well BHP, rw, skin and per-layer
+  // completions (perf mask). Falls back to the global list for compatibility.
+  const wells=(wellsIn||buildWells()).filter(w=>w.active!==false);
 
   // ── DARCY CONSTANT — ECLIPSE METRIC ────────────────────────────────────────
   // C = 0.008527 rm³·cP / (d·mD·m·bar)
@@ -1353,14 +1375,22 @@ function createSimEngine(Q,LAY){
     return{Rs,Bo,muo};
   };
 
-  // ── PEACEMAN WELL INDEX ─────────────────────────────────────────────────────
+  // ── PEACEMAN WELL INDEX (per-well rw & skin, per-layer completions) ────────
   // r0 = 0.28*sqrt(dx²+dy²)  [Peaceman 1978, square grid equivalent radius]
-  // WI = 2π * C_D * k[mD] * dz[m] / (ln(r0/rw) + S)   [rm³·cP/(d·bar)]
-  // Rate: q [rm³/d] = WI * (kr/mu) * (Pr-Pwf)
+  // WI = 2π * C_D * k[mD] * dz[m] / (ln(r0/rw_well) + S_well)   [rm³·cP/(d·bar)]
+  // Rate: q [rm³/d] = WI * (kr/mu) * (Pr-Pwf_well)
   const r0_peac=0.28*Math.sqrt(dx*dx+dy*dy);
-  const lnT_base=Math.log(r0_peac/Q.rw)+Q.skin;
-  // Per-cell WI: WI[idx] = 2π * C_D * kcell[idx] * dz / lnT_base
-  const cellWI=idx=>2*Math.PI*C_D*kcell[idx]*dz/lnT_base;  // [rm³·cP/(d·bar)]
+  const wellLnT=w=>Math.log(r0_peac/w.rw)+w.skin;
+  // Per-cell completion maps — a cell is a well source ONLY where its well is
+  // perforated in that layer. This is what makes per-layer completions real:
+  // both the pressure equation and the rate accounting read these masks.
+  const wSrcType=new Int8Array(N);      // 0 none, 1 injector, 2 producer
+  const wSrcPwf=new Float64Array(N), wSrcLnT=new Float64Array(N);
+  wells.forEach(w=>{ const lnT=wellLnT(w);
+    for(let k=0;k<nk;k++){ if(w.perf&&w.perf[k]===false) continue;
+      const idx=w.i+w.j*ni+k*ni*nj;
+      wSrcType[idx]=(w.type==='inj')?1:2; wSrcPwf[idx]=w.pwf; wSrcLnT[idx]=lnT;
+    }});
 
   // ── INTERBLOCK TRANSMISSIBILITY ─────────────────────────────────────────────
   // Tx = C_D * k_harm[mD] * (dy*dz)[m²] / dx[m]   [rm³·cP/(d·bar)]
@@ -1413,9 +1443,6 @@ function createSimEngine(Q,LAY){
     // Well term: Q_well = WI * λt * (Pwf - P)  [injector: λt = 1/μw]
     // Transmissibility uses UPSTREAM total mobility per face.
     // Aquifer: bottom layer edge, Fetkovich linear influx.
-    // Areal well map for source terms in the pressure equation (wells are static)
-    const wellMap=new Int8Array(ni*nj); // 0=none, 1=injector, 2=producer
-    wells.forEach(w=>{ wellMap[w.i+w.j*ni]=(w.type==='inj')?1:2; });
     // ── Multi-layer aquifer pressure coupling (Fetkovich) ────────────────────
     // The aquifer is a finite water body beneath the reservoir at pressure Paq that
     // declines as it gives up water: Paq = pi·(1 − We/Wei) (Fetkovich material
@@ -1458,11 +1485,12 @@ function createSimEngine(Q,LAY){
         // so the cell pressure settles between reservoir and BHP and the well rate
         // WI·λ·(Pwf−P) stays physical. The old correction sweep pinned the cell to
         // Pwf, which collapsed the injector driving force to ~0 (no flood at all).
-        const wt=wellMap[i+j*ni];
+        // Sources exist only at perforated cells (per-layer completion masks).
+        const wt=wSrcType[idx];
         if(wt){
-          const WI=cellWI(idx);
+          const WI=2*Math.PI*C_D*kcell[idx]*dz/wSrcLnT[idx];
           const t=WI*(wt===1?(1/Q.muw):lamT(sw[idx]));
-          num+=t*(wt===1?Q.pwfi:Q.pwfp); den+=t;
+          num+=t*wSrcPwf[idx]; den+=t;
         }
         if(k===nk-1 && Jc>0 && press[idx]<Paq){ num+=Jc*Paq; den+=Jc; }  // bottom-aquifer pressure support (influx side)
         if(den>0)press[idx]=num/den;
@@ -1529,10 +1557,11 @@ function createSimEngine(Q,LAY){
     }
     const injCells=[], prodCells=[]; let QtDesired=0, QtFw=0, capTot=0;
     for(let n=0;n<N;n++) capTot+=Math.max(0,(sw_max-sw[n])*cellPV(n));   // remaining pore capacity [rm³]
-    wells.forEach(w=>{ for(let k=0;k<nk;k++){
-      const idx=w.i+w.j*ni+k*ni*nj, WI=cellWI(idx);
-      if(w.type==='inj'){ const dP=Math.max(0,Q.pwfi-press[idx]); injCells.push({idx,q:WI*(1/Q.muw)*dP,nbrs:faceNbrs(idx)}); }
-      else { const dP=Math.max(0,press[idx]-Q.pwfp); const qt=WI*lamT(sw[idx])*dP;
+    wells.forEach(w=>{ const lnT=wellLnT(w);
+      for(let k=0;k<nk;k++){ if(w.perf&&w.perf[k]===false) continue;
+      const idx=w.i+w.j*ni+k*ni*nj, WI=2*Math.PI*C_D*kcell[idx]*dz/lnT;
+      if(w.type==='inj'){ const dP=Math.max(0,w.pwf-press[idx]); injCells.push({idx,q:WI*(1/Q.muw)*dP,nbrs:faceNbrs(idx)}); }
+      else { const dP=Math.max(0,press[idx]-w.pwf); const qt=WI*lamT(sw[idx])*dP;
              prodCells.push({idx,qt,fw:fw(sw[idx])}); QtDesired+=qt; QtFw+=qt*fw(sw[idx]); }
     }});
     const Qinj_ipr=injCells.reduce((a,c)=>a+c.q,0);              // injector deliverability [rm³/d]
@@ -1709,7 +1738,7 @@ function runSimulation(){
   logEl.innerHTML+=`<span class="log-step">  Grid: ${ni}×${nj}×${nk} = ${N} cells · ${nk} layers</span>\n`;
   const t0=performance.now();
 
-  const eng=createSimEngine(P,LAYERS);
+  const eng=createSimEngine(P,LAYERS,WELLS);
   const T_end=eng.T_end;
   const nSteps=Math.ceil(T_end/P.dt), logEvery=Math.max(1,Math.floor(nSteps/8));
   const frameEvery=Math.max(1,Math.floor(nSteps/16)); // 16 saved frames
@@ -1820,7 +1849,7 @@ function openModal(mode){
     body.innerHTML=`
       <div class="modal-section-title">Model State (JSON)</div>
       <div class="io-note">Full parameter set + layer properties. Save to reload later or share.</div>
-      <textarea class="io-textarea" id="jsonOut" readonly>${JSON.stringify({P,LAYERS},null,1)}</textarea>
+      <textarea class="io-textarea" id="jsonOut" readonly>${JSON.stringify({P,LAYERS,WELLS},null,1)}</textarea>
       <button class="modal-btn" onclick="downloadJSON()">⬇ Download .json</button>
       <button class="modal-btn ghost" onclick="copyJSON()">Copy</button>
       <div class="modal-section-title">Production Results (CSV)</div>
@@ -1848,12 +1877,25 @@ function openModal(mode){
 }
 function closeModal(){document.getElementById('ioModal').classList.remove('open');}
 
-function downloadJSON(){ downloadFile('apex-reservoir-model.json',JSON.stringify({P,LAYERS},null,2)); }
+function downloadJSON(){ downloadFile('apex-reservoir-model.json',JSON.stringify({P,LAYERS,WELLS},null,2)); }
 function copyJSON(){const t=document.getElementById('jsonOut');t.select();document.execCommand('copy');}
 function importJSONText(){try{applyImport(JSON.parse(document.getElementById('jsonIn').value));closeModal();}catch(e){alert('Invalid JSON: '+e.message);}}
+function sanitizeWells(list){
+  return (Array.isArray(list)?list:[]).map((w,ix)=>({
+    name:w.name||`W${ix+1}`, type:w.type==='inj'?'inj':'prod',
+    i:Math.min(P.ni-1,Math.max(0,Math.round(w.i||0))),
+    j:Math.min(P.nj-1,Math.max(0,Math.round(w.j||0))),
+    active:w.active!==false, custom:!!w.custom,
+    pwf:isFinite(w.pwf)?+w.pwf:(w.type==='inj'?P.pwfi:P.pwfp),
+    rw:isFinite(w.rw)&&w.rw>0?+w.rw:P.rw,
+    skin:isFinite(w.skin)?+w.skin:P.skin,
+    perf:Array.from({length:P.nk},(_,k)=>w.perf?w.perf[k]!==false:true)
+  }));
+}
 function applyImport(obj){
   if(obj.P)Object.assign(P,obj.P);
   if(obj.LAYERS)LAYERS=obj.LAYERS;
+  if(obj.WELLS)WELLS=sanitizeWells(obj.WELLS); else generateWells();
   // sync all rail controls
   Object.keys(P).forEach(k=>{const el=document.getElementById('r-'+k);if(el){el.value=P[k];const min=+el.min,max=+el.max;el.style.setProperty('--pct',((P[k]-min)/(max-min)*100)+'%');const lab=document.getElementById('v-'+k);if(lab)lab.textContent=P[k];}});
   const aq=document.getElementById('s-aqtype');if(aq)aq.value=P.aqtype;
@@ -1965,12 +2007,14 @@ function sampleRealization(rng){
   };
   Q.kvkh=Math.min(1.0,Math.max(0.01,P.kvkh*mult.kvkh));
   Q.aqstr=P.aqstr*mult.aq;
-  Q.skin=Math.min(20,Math.max(-3,P.skin+mult.skin));
   const LAY=LAYERS.map(L=>({
     phi:Math.min(0.40,Math.max(0.03,L.phi*mult.phi)),
     k:Math.max(1,L.k*mult.k),
     ntg:L.ntg, depth:L.depth}));
-  return {Q,LAY,mult};
+  // Skin delta applies to every well on top of its own (possibly customised) skin
+  const wells=WELLS.filter(w=>w.active).map(w=>Object.assign({},w,{
+    skin:Math.min(20,Math.max(-3,w.skin+mult.skin)), perf:(w.perf||[]).slice()}));
+  return {Q,LAY,wells,mult};
 }
 
 function runEnsemble(){
@@ -2001,7 +2045,7 @@ function runEnsemble(){
   };
   const slice=()=>{
     try{
-      if(!eng){ spec=sampleRealization(rng); eng=createSimEngine(spec.Q,spec.LAY); }
+      if(!eng){ spec=sampleRealization(rng); eng=createSimEngine(spec.Q,spec.LAY,spec.wells); }
       let s=0; while(s<CHUNK && eng.advance()) s++;
       if(eng.done){
         runs.push({times:eng.times,qo:eng.qos,np:eng.nps,pres:eng.pres,
@@ -2152,7 +2196,7 @@ function exportEnsembleCSV(){
 // ════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
   document.querySelectorAll('.rail-range').forEach(r=>{const min=+r.min,max=+r.max,v=+r.value;r.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');});
-  generateLayers(); updateDerived(); drawPVT(); drawSCAL(); drawAquifer();
+  generateLayers(); generateWells(); updateDerived(); drawPVT(); drawSCAL(); drawAquifer();
   initThree(); // single shared renderer; results scene created inside
   window.addEventListener('resize',()=>{
     resizeShared();
