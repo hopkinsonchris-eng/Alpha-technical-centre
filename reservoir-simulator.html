@@ -254,6 +254,12 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 .rr-link{display:block;text-align:center;font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);cursor:pointer;padding:7px;border:1px solid var(--gold-line);border-radius:var(--r-sm);background:none;width:100%;transition:background var(--tr);}
 .rr-link:hover{background:var(--gold-glow);}
 .ai-body{font-size:11.5px;line-height:1.55;color:var(--cream-dim);}
+.ai-item{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:11px;line-height:1.5;}
+.ai-item:last-child{border-bottom:none;}
+.ai-chip{flex:none;font-family:var(--font-cond);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:3px;margin-top:1px;font-weight:600;}
+.ai-chip.warn{background:rgba(192,57,43,0.16);color:#E07070;border:1px solid rgba(192,57,43,0.4);}
+.ai-chip.note{background:rgba(232,150,58,0.12);color:var(--amber);border:1px solid rgba(232,150,58,0.35);}
+.ai-chip.info{background:rgba(74,173,202,0.1);color:var(--cyan);border:1px solid rgba(74,173,202,0.3);}
 .screen-detail{padding:16px 22px 28px;max-width:1240px;margin:0 auto;background:var(--navy-dark);min-height:calc(100vh - 130px);}
 .screen-back{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);background:none;border:none;cursor:pointer;padding:4px 0;margin-bottom:10px;transition:color var(--tr);}
 .screen-back:hover{color:var(--gold);}
@@ -696,8 +702,8 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
       <div class="rail-row"><div class="rail-label">Δt (days)<span id="v-dt">30</span></div><input type="range" class="rail-range" id="r-dt" min="5" max="90" value="30" oninput="syncRange('dt',this)"/></div>
       <div class="rail-row"><div class="rail-label">Horizon (yr)<span id="v-yr">12</span></div><input type="range" class="rail-range" id="r-yr" min="1" max="25" value="12" oninput="syncRange('yr',this)"/></div>
       <div class="rail-row" style="align-self:end;">
-        <label class="rail-checkbox-row"><input type="checkbox" id="cb-grav" checked onchange="P.gravity=this.checked;TOUCHED.solver=true;renderBuildNav();"> Gravity Segregation</label>
-        <label class="rail-checkbox-row"><input type="checkbox" id="cb-gas" checked onchange="P.gas=this.checked;TOUCHED.solver=true;renderBuildNav();"> Solution Gas Drive</label>
+        <label class="rail-checkbox-row"><input type="checkbox" id="cb-grav" checked onchange="P.gravity=this.checked;TOUCHED.solver=true;renderBuildNav();saveState();"> Gravity Segregation</label>
+        <label class="rail-checkbox-row"><input type="checkbox" id="cb-gas" checked onchange="P.gas=this.checked;TOUCHED.solver=true;renderBuildNav();saveState();"> Solution Gas Drive</label>
       </div>
     </div>
   </div>
@@ -919,6 +925,7 @@ function updateDerived(){
   set('g-gridsize',`${ni}×${nj}×${nk}`);
   buildWellTable();
   if(typeof renderBuildNav==='function')renderBuildNav();
+  if(typeof saveState==='function')saveState();
 }
 
 // ── WELL GEOMETRY & EDITOR ──
@@ -979,7 +986,7 @@ function perfLabel(w){
 // ── WELL EDITOR (Build 5 detail screen) ──
 function refreshWellUI(){
   buildWellTable(); drawWellMap(); renderWellInspector();
-  renderBuildNav(); rebuild3D(); TOUCHED.wells=true;
+  renderBuildNav(); rebuild3D(); TOUCHED.wells=true; saveState();
 }
 function selectWell(ix){ selWell=ix; buildWellTable(); drawWellMap(); renderWellInspector(); }
 function addWell(type){
@@ -1175,6 +1182,75 @@ function renderBuildNav(){
     <span class="bi-num">${b.n}</span>
     <span class="bi-body"><span class="bi-title">${b.t}</span><span class="bi-sum">${b.sum()}</span></span>
     <span class="bi-chev">›</span></div>`).join('');
+}
+
+// ── AI RUN ADVISOR ──
+// Deterministic diagnostics computed from the finished run (and ensemble):
+// breakthrough timing, water handling, recovery vs displacement ceiling,
+// pressure maintenance, drive balance, per-well flags, uncertainty spread.
+function runAdvisor(){
+  const el=document.getElementById('aiAdvisorBody'); if(!el)return;
+  if(!RES.ran){ el.innerHTML='<span style="color:var(--steel);font-size:11.5px;">Run a simulation — the advisor reads the results and flags breakthrough timing, drive balance and completion issues.</span>'; return; }
+  const F=[]; // {sev: 0 attention · 1 note · 2 info, text}
+  const T=RES.times, n=T.length, horizon=T[n-1];
+  // Water breakthrough timing
+  let bt=-1; for(let i=0;i<n;i++){ if(RES.wor[i]>0.02){ bt=T[i]; break; } }
+  if(bt<0) F.push({sev:2,text:`No significant water breakthrough within the ${horizon.toFixed(0)}-yr horizon.`});
+  else if(bt<horizon*0.25) F.push({sev:0,text:`Early water breakthrough at ${bt.toFixed(1)} yr (${(bt/horizon*100).toFixed(0)}% of horizon). Consider squeezing the highest-kh bottom layers on producers nearest injectors, or lowering injector BHP.`});
+  else F.push({sev:2,text:`Water breakthrough at ${bt.toFixed(1)} yr.`});
+  // Late-life water handling
+  const worEnd=RES.wor[n-1];
+  if(worEnd>5) F.push({sev:0,text:`Final WOR ${worEnd.toFixed(1)} — late life is mostly water handling; economics will be dominated by disposal capacity.`});
+  else if(worEnd>1.5) F.push({sev:1,text:`Final WOR ${worEnd.toFixed(1)} — field watering out as expected for a mature flood.`});
+  // Recovery vs displacement ceiling
+  const rf=parseFloat(document.getElementById('r-rf')?.textContent||'');
+  const ceil=(1-P.swi-0.28)/(1-P.swi)*100;
+  if(isFinite(rf)){
+    if(rf>ceil*0.85) F.push({sev:1,text:`Recovery ${rf.toFixed(1)}% is near the displacement ceiling (~${ceil.toFixed(0)}% for this Swi/Sor). Additional wells mostly accelerate rather than add reserves.`});
+    else if(rf<ceil*0.45) F.push({sev:1,text:`Recovery ${rf.toFixed(1)}% vs a ~${ceil.toFixed(0)}% displacement ceiling — sweep is leaving oil behind. Review injector placement, Kv/Kh layering, or extend the horizon.`});
+  }
+  // Pressure maintenance vs bubble point
+  const pEnd=RES.pres[n-1];
+  if(pEnd<=P.pb) F.push({sev:0,text:`Average pressure ${pEnd.toFixed(0)} bar is BELOW bubble point (${P.pb} bar) — solution gas is liberating. Strengthen injection or aquifer support.`});
+  else if(pEnd<P.pb*1.1) F.push({sev:1,text:`Average pressure ${pEnd.toFixed(0)} bar is within 10% of bubble point (${P.pb} bar) — watch late-life pressure maintenance.`});
+  else F.push({sev:2,text:`Pressure maintained at ${pEnd.toFixed(0)} bar, comfortably above Pb (${P.pb} bar).`});
+  // Drive balance & per-well flags
+  if(RES.wellStats){
+    const prods=RES.wellStats.filter(s=>s.type==='prod'), injs=RES.wellStats.filter(s=>s.type==='inj');
+    const injTot=injs.reduce((a,s)=>a+s.inj,0);
+    const withdrawal=prods.reduce((a,s)=>a+s.water+s.oil*P.bo,0);
+    if(withdrawal>1e-6){
+      const share=Math.min(100,injTot/withdrawal*100);
+      if(P.aqstr>0&&share<70) F.push({sev:2,text:`Injection replaced ${share.toFixed(0)}% of voidage — the aquifer supplied the rest.`});
+      else if(P.aqstr===0&&share<40) F.push({sev:0,text:`Injection replaced only ${share.toFixed(0)}% of voidage with no aquifer — pressure depletion is limiting recovery.`});
+    }
+    if(prods.length>1){
+      const cuts=prods.map(s=>({name:s.name,cut:(s.water+s.oil)>1e-9?s.water/(s.water+s.oil):0,oil:s.oil}));
+      const worst=cuts.reduce((a,b)=>b.cut>a.cut?b:a);
+      if(worst.cut>0.8) F.push({sev:0,text:`${worst.name} produced ${(worst.cut*100).toFixed(0)}% water — the flood front has reached it. Squeeze its bottom completions or shut it in late-life.`});
+      const best=cuts.reduce((a,b)=>b.oil>a.oil?b:a), lag=cuts.reduce((a,b)=>b.oil<a.oil?b:a);
+      if(best.oil>1e-9&&lag.oil<best.oil*0.25) F.push({sev:1,text:`${lag.name} contributed only ${(lag.oil/best.oil*100).toFixed(0)}% of ${best.name}'s oil — review its skin, BHP or location.`});
+    }
+    if(injs.length>1&&injTot>1e-9){
+      const big=injs.reduce((a,b)=>b.inj>a.inj?b:a);
+      if(big.inj/injTot>0.7) F.push({sev:1,text:`${big.name} delivered ${(big.inj/injTot*100).toFixed(0)}% of all injection — the pattern is unbalanced.`});
+    }
+  }
+  // Completion state
+  const squeezed=WELLS.filter(w=>w.active&&w.perf.some(v=>!v));
+  if(squeezed.length) F.push({sev:2,text:`Partial completions active on ${squeezed.map(w=>w.name).join(', ')}.`});
+  const inactive=WELLS.filter(w=>!w.active);
+  if(inactive.length) F.push({sev:2,text:`${inactive.map(w=>w.name).join(', ')} inactive this run.`});
+  // Ensemble spread
+  if(ENS.ran&&ENS.finals.length){
+    const nps=ENS.finals.map(f=>f.npEnd).sort((a,b)=>a-b);
+    const ratio=pctile(nps,0.9)/Math.max(pctile(nps,0.1),1e-9);
+    if(ratio>1.8) F.push({sev:1,text:`Ensemble P10/P90 spread is ${ratio.toFixed(2)} — wide subsurface uncertainty; appraisal data moves the needle more than optimisation.`});
+    else F.push({sev:2,text:`Ensemble P10/P90 spread ${ratio.toFixed(2)} — forecast well constrained around P50.`});
+  }
+  F.sort((a,b)=>a.sev-b.sev);
+  const chip=s=>s===0?'<span class="ai-chip warn">Attention</span>':s===1?'<span class="ai-chip note">Note</span>':'<span class="ai-chip info">Info</span>';
+  el.innerHTML=F.slice(0,7).map(f=>`<div class="ai-item">${chip(f.sev)}<span>${f.text}</span></div>`).join('');
 }
 
 // ── HOME RIGHT RAIL SUMMARY ──
@@ -2079,6 +2155,7 @@ function finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn){
   // Stay on Mission Control: refresh the right-rail summary and enable the
   // saturation timeline on the central 3D view. Full charts live on #results.
   updateRightRail();
+  runAdvisor();
   if(currentScreen==='results')drawResults();
   setTimeout(showResults3D,100);
   btn.disabled=false; btn.classList.remove('running'); btn.innerHTML='<span class="run-icon">↺</span> Re-run';
@@ -2154,7 +2231,11 @@ function sanitizeWells(list){
     perf:Array.from({length:P.nk},(_,k)=>w.perf?w.perf[k]!==false:true)
   }));
 }
-function applyImport(obj){
+// Session persistence — the model survives screen reloads within the
+// authenticated session (same storage the staff gate uses).
+function saveState(){ try{ sessionStorage.setItem('apexSimState',JSON.stringify({P,LAYERS,WELLS})); }catch(e){} }
+function loadSavedState(){ try{ return JSON.parse(sessionStorage.getItem('apexSimState')||'null'); }catch(e){ return null; } }
+function applyImport(obj,quiet){
   if(obj.P)Object.assign(P,obj.P);
   if(obj.LAYERS)LAYERS=obj.LAYERS;
   if(obj.WELLS)WELLS=sanitizeWells(obj.WELLS); else generateWells();
@@ -2165,7 +2246,7 @@ function applyImport(obj){
   const sv=document.getElementById('s-solver');if(sv)sv.value=P.solver;
   if(!obj.LAYERS)generateLayers(); else {buildLayerTable();drawLayerCharts();}
   updateDerived(); rebuild3D();
-  setStatus('Model imported ✓','#2ECC8A');
+  if(!quiet)setStatus('Model imported ✓','#2ECC8A');
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -2354,6 +2435,7 @@ function finishEnsemble(runs,t0,btn,statusEl){
   set('statusChip','Complete'); set('ens-status-badge',`${ENS.n} realizations · seed ${ENS.seed} · ${cpu}s`);
   if(statusEl)statusEl.textContent=`Complete — ${ENS.n} realizations in ${cpu}s`;
   updateRightRail();
+  runAdvisor();
   drawEnsemble();
   setStatus(`Ensemble complete · ${ENS.n} runs · ${cpu}s`,'#2ECC8A');
 }
@@ -2460,7 +2542,9 @@ function exportEnsembleCSV(){
 // ════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
   document.querySelectorAll('.rail-range').forEach(r=>{const min=+r.min,max=+r.max,v=+r.value;r.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');});
-  generateLayers(); generateWells(); updateDerived();
+  generateLayers(); generateWells();
+  const saved=loadSavedState();
+  if(saved) applyImport(saved,true); else updateDerived();
   attachWellMapEvents();
   showScreen();               // activate the routed screen (default #home)
   drawPVT(); drawSCAL(); drawAquifer();
