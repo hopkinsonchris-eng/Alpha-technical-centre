@@ -100,6 +100,16 @@
     }
     const phaseMeta = global.ELAEcon ? global.ELAEcon.PHASE_META : null;
     const phaseTargetBopd = (phaseMeta && phaseMeta.targetBopd[phaseCap]) || null;
+    // Active-phase production plateau = sum of the in-program (active four) fields'
+    // block-⑦ plateau for the selected phase. This is the authoritative Phase plateau,
+    // exactly as in the Excel model: 1a → 83,500 · 1b → 120,000 (inclusive of 1a) ·
+    // 2 → 228,500 · 3 → 362,500. The bottom-up workover riskedPlateau still drives the
+    // best-first ramp shape, ramp speed (rampScale) and the risk haircut.
+    const PP = global.ELAEcon ? global.ELAEcon.PHASE_PLATEAU : null;
+    const phasePlateau = PP
+      ? state.fields.filter(f => f.inProgram)
+          .reduce((s, f) => s + ((PP[f.name] && PP[f.name][phaseCap]) || 0), 0)
+      : riskedPlateau;
     const npv  = econOut ? econOut.npv * 1000 : null;   // $000s (UI divides by 1000)
     const irr  = econOut ? econOut.irr : null;
     const peak = econOut ? econOut.peak : (totalBaseline + riskedPlateau);
@@ -109,7 +119,7 @@
 
     return { rows, ranked, unrisked, riskedPlateau, haircut, totalCapex, F,
              proj, npv, irr, peak, econOut, rampScale,
-             phaseCap, phaseTargetBopd, phaseMeta,
+             phaseCap, phaseTargetBopd, phaseMeta, phasePlateau,
              months: rampMonths(ranked, riskedPlateau, state.crews) };
   }
 
