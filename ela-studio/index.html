@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alpha ELA — Phase 1 Scenario Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+:root{
+  --navy:#0B1F3A; --navy2:#13294A; --gold:#C9A84C; --red:#C0392B; --cream:#F8F5EE;
+  --steel:#6B7A8D; --ink:#1A2332; --panel:#F4F6F8; --line:#DCE1E7; --white:#fff;
+  --ok:#1f7a4d; --shadow:0 6px 22px rgba(11,31,58,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow','Segoe UI',system-ui,sans-serif;background:var(--cream);color:var(--ink);font-size:14px;line-height:1.45}
+h1,h2,h3,.display{font-family:'Playfair Display',Georgia,serif}
+.label{font-family:'Barlow Condensed','Barlow',sans-serif;text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+
+/* ---- top bar ---- */
+header{background:var(--navy);color:#fff;display:flex;align-items:center;gap:18px;padding:0 22px;height:60px;position:sticky;top:0;z-index:40;box-shadow:var(--shadow)}
+header .logo{font-family:'Playfair Display',serif;font-weight:800;font-size:20px;letter-spacing:.5px}
+header .logo .a{color:var(--gold)}
+header .stripe{height:3px;background:linear-gradient(90deg,var(--gold),var(--red),var(--navy));position:absolute;left:0;right:0;bottom:0}
+header .spacer{flex:1}
+header .scen-name{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:#cdd6e0}
+header .scen-name b{color:var(--gold)}
+.btn{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.07em;font-weight:600;font-size:13px;border:0;border-radius:5px;padding:9px 15px;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn.gold{background:var(--gold);color:var(--navy)} .btn.gold:hover{background:#dcbb5f}
+.btn.ghost{background:transparent;color:#cdd6e0;border:1px solid #2c425f} .btn.ghost:hover{border-color:var(--gold);color:#fff}
+.btn.solid{background:var(--navy2);color:#fff;border:1px solid #2c425f} .btn.solid:hover{background:#1c365c}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ---- layout ---- */
+.shell{display:grid;grid-template-columns:340px 1fr;min-height:calc(100vh - 60px)}
+.side{background:#fff;border-right:1px solid var(--line);padding:18px 18px 60px;overflow-y:auto;height:calc(100vh - 60px);position:sticky;top:60px}
+.main{padding:22px 26px 80px;overflow-x:hidden}
+.side h3{font-size:13px;color:var(--navy);margin:18px 0 9px;padding-bottom:5px;border-bottom:2px solid var(--gold)}
+.side h3:first-child{margin-top:0}
+
+/* ---- controls ---- */
+.ctl{margin-bottom:13px}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+.ctl label{font-size:12px;font-weight:600;color:var(--ink)}
+.ctl .val{font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--navy);font-size:15px}
+input[type=range]{width:100%;-webkit-appearance:none;height:5px;border-radius:3px;background:var(--line);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--gold);border:2px solid var(--navy);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--gold);border:2px solid var(--navy);cursor:pointer}
+select,input[type=number]{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:5px;font-family:inherit;font-size:13px;background:#fff;color:var(--ink)}
+select:focus,input:focus{outline:none;border-color:var(--gold)}
+
+/* ---- phase segmented control ---- */
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:4px}
+.seg button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;color:var(--steel);background:transparent;border:0;border-radius:5px;padding:8px 4px;cursor:pointer;transition:.13s}
+.seg button:hover{color:var(--navy);background:#e9edf2}
+.seg button.on{background:var(--navy);color:var(--gold);box-shadow:var(--shadow)}
+.seg-cap{font-size:11.5px;color:var(--steel);text-align:center;margin-top:6px;font-weight:600}
+.phase-pill{display:inline-block;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.05em;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--navy);color:var(--gold);margin-left:8px;vertical-align:middle}
+
+/* ---- KPI cards ---- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--navy);color:#fff;border-radius:9px;padding:15px 16px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--gold)}
+.kpi .label{font-size:11px;color:#9fb0c4}
+.kpi .num{font-family:'Playfair Display',serif;font-weight:800;font-size:27px;color:var(--gold);margin-top:5px;line-height:1}
+.kpi .sub{font-size:11px;color:#8fa2b8;margin-top:4px}
+.kpi.alt .num{color:#fff}
+
+/* ---- panels ---- */
+.panel{background:#fff;border:1px solid var(--line);border-radius:9px;padding:18px 20px;margin-bottom:20px;box-shadow:var(--shadow)}
+.panel h2{font-size:17px;color:var(--navy);margin-bottom:3px}
+.panel .cap{font-size:12px;color:var(--steel);margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1100px){.grid2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+
+/* ---- table ---- */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{background:var(--navy);color:#fff;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;font-weight:600;padding:8px 9px;text-align:right;font-size:11.5px}
+th:first-child{text-align:left}
+td{padding:7px 9px;text-align:right;border-bottom:1px solid var(--line)}
+td:first-child{text-align:left;font-weight:600;color:var(--navy)}
+tbody tr:nth-child(even){background:var(--panel)}
+tr.tot td{background:var(--navy);color:#fff;font-weight:700}
+.tag{display:inline-block;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.05em;padding:2px 7px;border-radius:3px;font-weight:600}
+.tag.fit{background:#e7f0e9;color:var(--ok)} .tag.ass{background:#eef1f4;color:var(--steel)}
+
+svg text{font-family:'Barlow',sans-serif}
+.muted{color:var(--steel)}
+.flagbar{background:#fbf6e7;border:1px solid #e9d9a3;border-left:4px solid var(--gold);border-radius:6px;padding:10px 14px;font-size:12.5px;color:#6b5a2a;margin-bottom:18px}
+
+/* ---- scenario drawer ---- */
+.scen-list{display:flex;flex-direction:column;gap:7px}
+.scen-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:13px}
+.scen-item:hover{border-color:var(--gold);background:#fffdf6}
+.scen-item.active{border-color:var(--gold);background:#fffaf0}
+.scen-item .nm{flex:1;font-weight:600;color:var(--navy)}
+.scen-item .meta{font-size:11px;color:var(--steel)}
+.scen-item .x{color:var(--steel);font-weight:700;padding:0 4px}
+.scen-item .x:hover{color:var(--red)}
+.modal-bg{position:fixed;inset:0;background:rgba(11,31,58,.5);display:none;align-items:center;justify-content:center;z-index:60}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:11px;padding:24px;width:440px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h3{color:var(--navy);font-size:19px;margin-bottom:6px}
+.modal p{font-size:13px;color:var(--steel);margin-bottom:16px}
+.modal input{margin-bottom:16px}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end}
+.cmp-grid{display:grid;grid-template-columns:1fr;gap:0}
+.foot{font-size:11px;color:var(--steel);text-align:center;padding:18px;border-top:1px solid var(--line);margin-top:20px}
+.tabbar{display:flex;gap:4px;margin-bottom:18px;border-bottom:2px solid var(--line)}
+.tabbar button{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-size:14px;background:none;border:0;padding:10px 16px;cursor:pointer;color:var(--steel);border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabbar button.active{color:var(--navy);border-bottom-color:var(--gold)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">C<span class="a">í</span> ALPHA <span style="font-weight:400;opacity:.7">×</span> SUMMA</div>
+  <div class="scen-name">SCENARIO: <b id="curScen">Base · $70 · 95% PUD</b></div>
+  <div class="spacer"></div>
+  <button class="btn ghost" id="btnScenarios">⊞ Scenarios</button>
+  <button class="btn ghost" id="btnSave">💾 Save</button>
+  <button class="btn ghost" id="btnImport">↥ Import data</button>
+  <button class="btn solid" id="btnReport">📄 Report</button>
+  <button class="btn gold" id="btnExcel">↧ Export Excel</button>
+  <div class="stripe"></div>
+</header>
+
+<div class="shell">
+  <aside class="side" id="side"></aside>
+  <main class="main">
+    <div class="tabbar">
+      <button class="active" data-tab="dash">Dashboard</button>
+      <button data-tab="curves">Type Curves</button>
+      <button data-tab="ranking">Best-First Ranking</button>
+      <button data-tab="compare">Compare Scenarios</button>
+    </div>
+    <div id="view"></div>
+    <div class="foot">Alpha Energy Latin America · Phase 1 Scenario Studio · Private &amp; Confidential ·
+      Production / ranking / risking engine validated against the source model; economics layer indicative.</div>
+  </main>
+</div>
+
+<div class="modal-bg" id="loginModal">
+  <div class="modal">
+    <h3>Sign in</h3>
+    <p>This deployment syncs scenarios across your team and partners. Sign in to continue.</p>
+    <input type="email" id="loginEmail" placeholder="Email" style="margin-bottom:10px">
+    <input type="password" id="loginPw" placeholder="Password">
+    <div id="loginErr" style="color:#C0392B;font-size:12px;margin-bottom:10px;min-height:14px"></div>
+    <div class="actions"><button class="btn gold" id="loginConfirm">Sign in</button></div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".xlsx,.csv" style="display:none">
+
+<div class="modal-bg" id="saveModal">
+  <div class="modal">
+    <h3>Save scenario</h3>
+    <p>Stores the full input set (price deck, Pₛ, well counts, type curves, crews) under a name you can reopen and compare.</p>
+    <input type="text" id="saveName" placeholder="e.g. Stress · $50 · 6 crews">
+    <div class="actions">
+      <button class="btn solid" onclick="closeModal('saveModal')" style="background:#e8ebef;color:#555;border:0">Cancel</button>
+      <button class="btn gold" id="saveConfirm">Save scenario</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="scenModal">
+  <div class="modal">
+    <h3>Saved scenarios</h3>
+    <p>Open, compare, or remove. Scenarios are stored in this browser; export to share.</p>
+    <div class="scen-list" id="scenList"></div>
+    <div class="actions" style="margin-top:16px">
+      <button class="btn solid" onclick="closeModal('scenModal')" style="background:#e8ebef;color:#555;border:0">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="field_econ.js"></script>
+<script src="econ.js"></script>
+<script src="api.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
