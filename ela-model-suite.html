@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alpha ELA · New Law (Jan 2026) Model Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   ALPHA ELA MODEL SUITE v2 — fully scoped under #alpha-ela (embeddable)
+   Sections: tokens · masthead · tabs · rail · panels · chart kit · ledger · print
+   ════════════════════════════════════════════════════════════════════════ */
+#alpha-ela{
+  --navy:#0B1F3A; --navy2:#13294B; --gold:#C9A84C; --red:#C0392B; --cream:#F8F5EE;
+  --steel:#6B7A8D; --bronze:#8C6E2F; --slate:#3E5C76; --ink:#1A2433; --line:#DDD6C6;
+  --panel:#FFFFFF; --grid:#E8E2D2; --tint:#FBF6E9;
+  font-family:'Barlow',system-ui,sans-serif; color:var(--ink); background:var(--cream);
+  line-height:1.45; font-size:15px; max-width:1320px; margin:0 auto; padding:0 0 30px;
+  box-sizing:border-box;
+}
+#alpha-ela *,#alpha-ela *::before,#alpha-ela *::after{box-sizing:border-box;}
+#alpha-ela svg{display:block;width:100%;height:auto;}
+#alpha-ela svg text{font-family:'Barlow Condensed',sans-serif;}
+
+/* ─── masthead ─── */
+#alpha-ela .ae-stripe{height:5px;background:linear-gradient(90deg,var(--gold) 0%,var(--gold) 38%,var(--red) 38%,var(--red) 62%,var(--navy) 62%);}
+#alpha-ela .ae-head{background:var(--navy);color:var(--cream);padding:18px 26px 14px;display:flex;flex-wrap:wrap;gap:12px 26px;align-items:flex-end;justify-content:space-between;}
+#alpha-ela .ae-title{font-family:'Playfair Display',serif;font-size:25px;font-weight:600;margin:0;letter-spacing:.2px;}
+#alpha-ela .ae-title em{color:var(--gold);font-style:normal;}
+#alpha-ela .ae-sub{font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.13em;text-transform:uppercase;color:#A9B6C7;margin-top:2px;}
+#alpha-ela .ae-chips{display:flex;gap:8px;flex-wrap:wrap;}
+#alpha-ela .ae-chip{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.07em;text-transform:uppercase;border:1px solid rgba(201,168,76,.4);border-radius:3px;padding:4px 11px;color:#A9B6C7;white-space:nowrap;}
+#alpha-ela .ae-chip b{color:var(--gold);font-variant-numeric:tabular-nums;font-size:13.5px;letter-spacing:.02em;}
+
+/* ─── tab bar: CSS-only (radio :checked) — no JS dependency ─── */
+#alpha-ela .ae-radio{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+#alpha-ela .ae-tabs{background:var(--navy2);display:flex;overflow-x:auto;padding:0 18px;gap:2px;border-bottom:3px solid var(--gold);}
+#alpha-ela .ae-tab{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:#A9B6C7;background:none;border:none;padding:12px 16px 10px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-3px;display:inline-flex;align-items:center;}
+#alpha-ela .ae-tab:hover{color:var(--cream);}
+#alpha-ela .ae-radio:focus-visible + .ae-tabs label,#alpha-ela .ae-tab:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
+/* panel visibility driven purely by which radio is checked */
+#alpha-ela .ae-tabpanel{display:none;}
+#alpha-ela #rt-overview:checked  ~ .ae-body #tab-overview,
+#alpha-ela #rt-financing:checked ~ .ae-body #tab-financing,
+#alpha-ela #rt-sens:checked      ~ .ae-body #tab-sens,
+#alpha-ela #rt-fields:checked    ~ .ae-body #tab-fields,
+#alpha-ela #rt-method:checked    ~ .ae-body #tab-method{display:block;}
+/* active-tab label styling */
+#alpha-ela #rt-overview:checked  ~ .ae-tabs label[for="rt-overview"],
+#alpha-ela #rt-financing:checked ~ .ae-tabs label[for="rt-financing"],
+#alpha-ela #rt-sens:checked      ~ .ae-tabs label[for="rt-sens"],
+#alpha-ela #rt-fields:checked    ~ .ae-tabs label[for="rt-fields"],
+#alpha-ela #rt-method:checked    ~ .ae-tabs label[for="rt-method"]{color:var(--gold);border-bottom-color:var(--gold);}
+#alpha-ela #ae-errbanner{display:none;background:var(--red);color:#fff;padding:9px 26px;font-size:13px;line-height:1.5;}
+
+/* ─── layout ─── */
+#alpha-ela .ae-body{display:grid;grid-template-columns:294px 1fr;gap:20px;padding:20px 26px 0;}
+@media(max-width:940px){#alpha-ela .ae-body{grid-template-columns:1fr;}}
+#alpha-ela .ae-panelwrap{min-width:0;}
+#alpha-ela .ae-tabpanel{display:none;}
+
+/* ─── controls rail ─── */
+#alpha-ela .ae-rail{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 18px 14px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;}
+@media(max-width:940px){#alpha-ela .ae-rail{position:static;max-height:none;}}
+#alpha-ela .ae-eyebrow{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin:0 0 10px;border-bottom:1px solid var(--line);padding-bottom:7px;}
+#alpha-ela .ae-eyebrow:not(:first-child){margin-top:18px;}
+#alpha-ela .ae-slider{margin-bottom:12px;}
+#alpha-ela .ae-slider label{display:flex;justify-content:space-between;font-size:13.5px;font-weight:500;margin-bottom:2px;gap:8px;}
+#alpha-ela .ae-slider output{font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;}
+#alpha-ela input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--gold) var(--pct,50%),var(--line) var(--pct,50%));outline:none;margin:6px 0 2px;}
+#alpha-ela input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--navy);border:2.5px solid var(--gold);cursor:pointer;}
+#alpha-ela input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--navy);border:2.5px solid var(--gold);cursor:pointer;}
+#alpha-ela input[type=range]:focus-visible{outline:2px solid var(--red);outline-offset:3px;}
+#alpha-ela .ae-note{font-size:11.5px;color:var(--steel);line-height:1.45;}
+#alpha-ela .ae-togs{display:flex;flex-direction:column;gap:7px;}
+#alpha-ela .ae-tog{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none;}
+#alpha-ela .ae-tog input{accent-color:var(--gold);width:15px;height:15px;cursor:pointer;flex:none;}
+#alpha-ela .ae-tog .ae-dot{width:10px;height:10px;border-radius:2px;flex:none;}
+#alpha-ela .ae-tog small{color:var(--steel);margin-left:auto;font-variant-numeric:tabular-nums;}
+#alpha-ela .ae-tog.ae-locked{opacity:.55;cursor:default;}
+#alpha-ela .ae-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+#alpha-ela .ae-preset{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.06em;border:1px solid var(--steel);background:none;color:var(--ink);border-radius:14px;padding:4px 11px;cursor:pointer;}
+#alpha-ela .ae-preset:hover{border-color:var(--navy);}
+#alpha-ela .ae-preset.ae-on{background:var(--navy);color:var(--gold);border-color:var(--navy);}
+#alpha-ela .ae-fixedlaw{font-size:12.5px;color:var(--steel);line-height:1.5;}
+#alpha-ela .ae-fixedlaw b{color:var(--navy);}
+#alpha-ela .ae-reset{margin-top:14px;width:100%;font-family:'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;font-size:13px;background:none;border:1px solid var(--steel);color:var(--steel);border-radius:4px;padding:7px;cursor:pointer;}
+#alpha-ela .ae-reset:hover{border-color:var(--navy);color:var(--navy);}
+
+/* ─── cards & panels ─── */
+#alpha-ela .ae-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(152px,1fr));gap:12px;margin-bottom:18px;}
+#alpha-ela .ae-kpi{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:5px;padding:11px 14px 9px;}
+#alpha-ela .ae-kpi.k-navy{border-top-color:var(--navy);}
+#alpha-ela .ae-kpi.k-red{border-top-color:var(--red);}
+#alpha-ela .ae-klabel{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--steel);}
+#alpha-ela .ae-kval{font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:2px;}
+#alpha-ela .ae-kval sub{font-size:13px;}
+#alpha-ela .ae-kval .u{font-size:14px;}
+#alpha-ela .ae-ksub{font-size:11.5px;color:var(--steel);margin-top:1px;}
+#alpha-ela .ae-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 18px;margin-bottom:18px;}
+#alpha-ela .ae-ct{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin:0 0 3px;font-weight:600;}
+#alpha-ela .ae-cn{font-size:12px;color:var(--steel);margin:0 0 10px;}
+#alpha-ela .ae-2col{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:1080px){#alpha-ela .ae-2col{grid-template-columns:1fr;}}
+#alpha-ela .ae-legend{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:12.5px;margin-top:8px;}
+#alpha-ela .ae-legend span{display:inline-flex;align-items:center;gap:6px;}
+#alpha-ela .ae-legend i{width:11px;height:11px;border-radius:2px;display:inline-block;}
+#alpha-ela .ae-callout{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:4px;padding:10px 14px;font-size:13.5px;margin:10px 0;line-height:1.55;}
+#alpha-ela .ae-callout.c-red{border-left-color:var(--red);}
+
+/* ─── entitlement split (signature) ─── */
+#alpha-ela .ae-splitbar{display:flex;height:46px;border-radius:4px;overflow:hidden;border:1px solid var(--line);}
+#alpha-ela .ae-seg{display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.05em;white-space:nowrap;overflow:hidden;transition:width .35s ease;min-width:0;}
+@media(prefers-reduced-motion:reduce){#alpha-ela .ae-seg{transition:none;}}
+#alpha-ela .ae-splitcaps{display:flex;justify-content:space-between;font-size:12px;color:var(--steel);margin-top:5px;gap:10px;flex-wrap:wrap;}
+
+/* ─── tables ─── */
+#alpha-ela table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;}
+#alpha-ela th{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);text-align:right;padding:6px 8px;border-bottom:2px solid var(--navy);font-weight:600;}
+#alpha-ela th:first-child,#alpha-ela td:first-child{text-align:left;}
+#alpha-ela td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line);}
+#alpha-ela tr.r-off td{color:#B5AE9E;}
+#alpha-ela tr.r-tot td{font-weight:700;color:var(--navy);border-bottom:none;border-top:2px solid var(--navy);}
+#alpha-ela .ae-scroll{overflow-x:auto;}
+#alpha-ela .ae-fname{display:flex;align-items:center;gap:8px;font-weight:600;}
+#alpha-ela .ae-covgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px 22px;font-size:13.5px;}
+#alpha-ela .ae-cov{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:4px 0;gap:10px;}
+#alpha-ela .ae-cov b{font-variant-numeric:tabular-nums;color:var(--navy);white-space:nowrap;}
+#alpha-ela .ae-cov b.warn{color:var(--red);}
+
+/* ─── field cards ─── */
+#alpha-ela .ae-fieldgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px;}
+#alpha-ela .ae-fcard{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:6px;padding:13px 14px 11px;}
+#alpha-ela .ae-fcard.f-off{opacity:.55;}
+#alpha-ela .ae-fcard h4{font-family:'Playfair Display',serif;font-size:16.5px;margin:0;color:var(--navy);}
+#alpha-ela .ae-fcard .fnote{font-size:11.5px;color:var(--steel);margin:1px 0 8px;}
+#alpha-ela .ae-fstats{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:12.5px;margin-bottom:8px;}
+#alpha-ela .ae-fstats div{display:flex;justify-content:space-between;gap:6px;}
+#alpha-ela .ae-fstats b{font-variant-numeric:tabular-nums;color:var(--navy);}
+#alpha-ela .ae-sparklbl{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);margin-top:5px;}
+
+/* ─── heatmap ─── */
+#alpha-ela .ae-heat{border-collapse:separate;border-spacing:3px;}
+#alpha-ela .ae-heat td,#alpha-ela .ae-heat th{border:none;padding:9px 6px;text-align:center;border-radius:3px;font-size:13px;}
+#alpha-ela .ae-heat td{font-weight:600;font-variant-numeric:tabular-nums;}
+#alpha-ela .ae-heat th{padding:4px 6px;}
+#alpha-ela .ae-heat td.h-base{outline:2.5px solid var(--navy);}
+
+/* ─── data room: ledger / entry ─── */
+#alpha-ela .ae-ovin{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-size:12.5px;font-family:'Barlow',sans-serif;font-variant-numeric:tabular-nums;text-align:right;background:#FFF;color:var(--ink);}
+#alpha-ela .ae-ovin:focus{outline:2px solid var(--gold);outline-offset:0;}
+#alpha-ela .ae-ovin.bad{background:#F6DCD7;border-color:var(--red);}
+#alpha-ela #ae-ledger .lv{width:96px;}
+#alpha-ela #ae-ledger .ls{width:100%;min-width:170px;text-align:left;font-size:12px;color:var(--steel);}
+#alpha-ela #ae-ledger .ld{background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;line-height:1;padding:2px 6px;}
+#alpha-ela #ae-ledger .ld:hover{font-weight:700;}
+#alpha-ela #ae-ledger tr.aico td{background:var(--tint);}
+#alpha-ela .ae-addrow{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:10px 12px;}
+#alpha-ela .ae-addrow select,#alpha-ela .ae-paste select{font-family:'Barlow',sans-serif;font-size:12.5px;border:1px solid var(--line);border-radius:3px;padding:4px 6px;background:#FFF;color:var(--ink);}
+#alpha-ela .ae-btn{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--steel);background:none;color:var(--ink);border-radius:4px;padding:6px 12px;cursor:pointer;}
+#alpha-ela .ae-btn:hover{border-color:var(--navy);color:var(--navy);}
+#alpha-ela .ae-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;}
+#alpha-ela .ae-paste{margin-top:12px;border:1px solid var(--line);border-radius:5px;background:var(--panel);padding:8px 12px;}
+#alpha-ela .ae-paste summary{font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--navy);cursor:pointer;font-weight:600;}
+#alpha-ela .ae-ta{width:100%;height:84px;margin-top:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:8px;background:#FFF;color:var(--ink);}
+#alpha-ela .ae-ta.hide{display:none;}
+#alpha-ela .ae-badge{display:inline-block;background:var(--gold);color:var(--navy);border-radius:9px;font-size:11px;font-weight:700;padding:0 7px;margin-left:5px;}
+#alpha-ela .ae-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;margin:8px 0 4px;}
+#alpha-ela .ae-stcard{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-size:12.5px;}
+#alpha-ela .ae-stcard b{display:block;font-size:13px;}
+#alpha-ela .ae-stb{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border-radius:3px;padding:1px 7px;margin-top:4px;}
+#alpha-ela .st-on{background:var(--gold);color:var(--navy);}
+#alpha-ela .st-wait{background:var(--grid);color:var(--steel);}
+#alpha-ela .st-na{background:var(--slate);color:#fff;}
+
+/* ─── tooltip ─── */
+#alpha-ela .ae-tip{position:fixed;pointer-events:none;background:var(--navy);color:var(--cream);font-size:12px;line-height:1.5;padding:7px 11px;border-radius:4px;border-left:3px solid var(--gold);z-index:10000;display:none;font-variant-numeric:tabular-nums;box-shadow:0 6px 18px rgba(0,0,0,.3);max-width:250px;}
+#alpha-ela .ae-hov{cursor:crosshair;}
+
+#alpha-ela footer{font-size:11.5px;color:var(--steel);padding:8px 26px 0;line-height:1.55;}
+#alpha-ela footer b{color:var(--navy);}
+
+/* ─── print: full suite, sequential ─── */
+@media print{
+  #alpha-ela{max-width:none;font-size:12px;}
+  #alpha-ela .ae-rail,#alpha-ela .ae-tabs,#alpha-ela .ae-acts,#alpha-ela .ae-addrow,#alpha-ela .ae-paste,#alpha-ela .ae-reset{display:none!important;}
+  #alpha-ela .ae-body{grid-template-columns:1fr;padding:10px 0 0;}
+  #alpha-ela .ae-tabpanel{display:block!important;page-break-before:always;}
+  #alpha-ela .ae-tabpanel:first-of-type{page-break-before:auto;}
+  #alpha-ela .ae-card,#alpha-ela .ae-kpi,#alpha-ela .ae-fcard{break-inside:avoid;}
+}
+</style>
+</head>
+<body style="margin:0;background:#F8F5EE;">
+
+<div id="alpha-ela">
+  <div class="ae-stripe"></div>
+  <header class="ae-head">
+    <div>
+      <h1 class="ae-title">ALPHA ENERGY <em>LATIN AMERICA</em></h1>
+      <div class="ae-sub">New Hydrocarbon Law (Jan 2026) · Phase-1 Best-First Integrated Model Suite · AICO-Linked</div>
+    </div>
+    <div class="ae-chips" id="ae-chips"></div>
+  </header>
+
+  <div id="ae-errbanner"></div>
+
+  <input class="ae-radio" type="radio" name="ae-tabnav" id="rt-overview" checked aria-label="Overview">
+  <input class="ae-radio" type="radio" name="ae-tabnav" id="rt-financing" aria-label="Financing">
+  <input class="ae-radio" type="radio" name="ae-tabnav" id="rt-sens" aria-label="Sensitivity">
+  <input class="ae-radio" type="radio" name="ae-tabnav" id="rt-fields" aria-label="Fields">
+  <input class="ae-radio" type="radio" name="ae-tabnav" id="rt-method" aria-label="Methodology">
+  <nav class="ae-tabs" aria-label="Model sections" id="ae-tabs">
+    <label class="ae-tab" for="rt-overview">Overview</label>
+    <label class="ae-tab" for="rt-financing">Financing</label>
+    <label class="ae-tab" for="rt-sens">Sensitivity</label>
+    <label class="ae-tab" for="rt-fields">Fields</label>
+    <label class="ae-tab" for="rt-method">Methodology</label>
+  </nav>
+
+  <div class="ae-body">
+    <!-- ════ CONTROLS RAIL ════ -->
+    <aside class="ae-rail" aria-label="Model assumptions">
+      <p class="ae-eyebrow">Scenario Presets</p>
+      <div class="ae-presets" id="ae-presets">
+        <button class="ae-preset ae-on" data-ps="base">Base $70</button>
+        <button class="ae-preset" data-ps="cons">Conservative $55</button>
+        <button class="ae-preset" data-ps="stress">Stress $40</button>
+        <button class="ae-preset" data-ps="up">Upside $90</button>
+      </div>
+      <div class="ae-note" id="ae-presnote">Brent $70 · all multipliers 1.0× · 15% discount · 10% pre-fin</div>
+
+      <p class="ae-eyebrow">Economic Assumptions</p>
+      <div class="ae-slider"><label for="s-brent">Brent ($/bbl) <output id="o-brent">$70</output></label>
+        <input type="range" id="s-brent" min="30" max="120" step="1" value="70">
+        <div class="ae-note">Realised price = Brent − field quality discount.</div></div>
+      <div class="ae-slider"><label for="s-capex">CAPEX multiplier <output id="o-capex">1.00×</output></label>
+        <input type="range" id="s-capex" min="0.7" max="1.5" step="0.05" value="1"></div>
+      <div class="ae-slider"><label for="s-opex">OPEX multiplier <output id="o-opex">1.00×</output></label>
+        <input type="range" id="s-opex" min="0.8" max="1.3" step="0.05" value="1">
+        <div class="ae-note">Applies to steady-state rates and loaded actuals alike.</div></div>
+      <div class="ae-slider"><label for="s-disc">Discount rate <output id="o-disc">15.0%</output></label>
+        <input type="range" id="s-disc" min="8" max="15" step="0.5" value="15"></div>
+      <div class="ae-slider"><label for="s-gas">Gas — Trevi ($/MSCF) <output id="o-gas">$3.00</output></label>
+        <input type="range" id="s-gas" min="2" max="8" step="0.25" value="3"></div>
+
+      <p class="ae-eyebrow">Pre-Financing</p>
+      <div class="ae-slider"><label for="s-prefin">Effective cost (p.a.) <output id="o-prefin">10.0%</output></label>
+        <input type="range" id="s-prefin" min="5" max="25" step="0.5" value="10">
+        <div class="ae-note">Offtake-linked senior advance; cash-sweep repayment; interest capitalises until swept.</div></div>
+
+      <p class="ae-eyebrow">Phase Toggles</p>
+      <div class="ae-togs">
+        <label class="ae-tog ae-locked"><input type="checkbox" checked disabled> Phase 1a — reactivation <small>locked · 83.5k</small></label>
+        <label class="ae-tog"><input type="checkbox" id="t-ph1b" checked> Phase 1b — development <small>to 120k</small></label>
+        <label class="ae-tog"><input type="checkbox" id="t-ph2" checked> Phase 2 — full development</label>
+        <label class="ae-tog"><input type="checkbox" id="t-ph3" checked> Phase 3 — EOR / SAGD <small>needs Ph2</small></label>
+      </div>
+
+      <p class="ae-eyebrow">Field Toggles</p>
+      <div class="ae-togs" id="ae-ftogs"></div>
+
+      <p class="ae-eyebrow">New Law Fiscal Terms — Statute</p>
+      <div class="ae-fixedlaw">Royalty <b>30%</b> on investor gross · Income tax <b>0%</b> · Govt baseline declining <b>5%/yr</b> · Direct licence — no JV, no cost recovery; investor retains 100% above baseline. <i>Fixed by statute — not editable.</i></div>
+
+      <button class="ae-reset" id="ae-reset">Reset to base case</button>
+    </aside>
+
+    <!-- ════ PANELS ════ -->
+    <main class="ae-panelwrap">
+
+      <!-- ── OVERVIEW ── -->
+      <section class="ae-tabpanel" id="tab-overview" role="tabpanel">
+        <div class="ae-kpis" id="ae-kpis"></div>
+        <div class="ae-card">
+          <p class="ae-ct">New-Law Entitlement Split · 20-yr Gross Wellhead Value, Active Fields</p>
+          <p class="ae-cn">Govt declining baseline + 30% royalty vs investor retention — the core fiscal mechanic of the Jan-2026 regime.</p>
+          <div class="ae-splitbar" id="ae-split"></div>
+          <div class="ae-splitcaps"><span id="ae-splitL"></span><span id="ae-splitR"></span></div>
+        </div>
+        <div class="ae-2col">
+          <div class="ae-card">
+            <p class="ae-ct">Investor Net Production · Stacked by Field (BOPD)</p>
+            <p class="ae-cn">Production above the PDVSA declining baseline, capped at active-phase plateau. Dashed = govt baseline.</p>
+            <div id="ch-prod"></div><div class="ae-legend" id="lg-prod"></div>
+          </div>
+          <div class="ae-card">
+            <p class="ae-ct">Portfolio Net Equity Cash Flow · Post-Finance ($MM)</p>
+            <p class="ae-cn">Bars: annual net equity CF after drawdown, interest and cash-sweep. Line: cumulative.</p>
+            <div id="ch-cf"></div>
+            <div class="ae-legend"><span><i style="background:#C9A84C"></i>Annual net equity CF</span><span><i style="background:#C0392B"></i>Deficit year</span><span><i style="background:#0B1F3A;height:3px;border-radius:0"></i>Cumulative</span></div>
+          </div>
+        </div>
+        <div class="ae-card">
+          <p class="ae-ct">20-Year Value Bridge · Active Portfolio ($MM, undiscounted)</p>
+          <p class="ae-cn">Where each dollar of wellhead value goes under the New Law, ending at lifetime net equity cash flow.</p>
+          <div id="ch-bridge"></div>
+        </div>
+      </section>
+
+      <!-- ── FINANCING ── -->
+      <section class="ae-tabpanel" id="tab-financing" role="tabpanel">
+        <div class="ae-2col">
+          <div class="ae-card">
+            <p class="ae-ct">Pre-Financing Facility · Combined Outstanding ($MM)</p>
+            <p class="ae-cn">Senior secured offtake-linked prepayment, per-field caps, interest capitalised, swept from operating CF.</p>
+            <div id="ch-debt"></div>
+            <div class="ae-legend"><span><i style="background:#3E5C76"></i>Outstanding balance (EoY)</span><span><i style="background:#C9A84C;height:3px;border-radius:0"></i>Committed facility</span></div>
+          </div>
+          <div class="ae-card">
+            <p class="ae-ct">Capital Stack &amp; Coverage — Live</p>
+            <p class="ae-cn">Anchored on the workbook's waterfall mechanics; every ratio recalculates with the model.</p>
+            <div class="ae-covgrid" id="ae-cov"></div>
+          </div>
+        </div>
+        <div class="ae-card">
+          <p class="ae-ct">Self-Funding Validation · Op CF (pre-CAPEX) vs Annual CAPEX ($MM)</p>
+          <p class="ae-cn">Phases 2–3 fund from operating cash, not the facility: bars = annual programme CAPEX; line = operating cash flow before CAPEX. Red markers flag shortfall years.</p>
+          <div id="ch-selffund"></div>
+          <div class="ae-legend"><span><i style="background:#C9A84C"></i>Annual CAPEX</span><span><i style="background:#0B1F3A;height:3px;border-radius:0"></i>Op CF pre-CAPEX</span><span><i style="background:#C0392B;border-radius:50%"></i>Shortfall year</span></div>
+        </div>
+        <div class="ae-card">
+          <p class="ae-ct">Per-Field Financing Waterfall — Live</p>
+          <p class="ae-cn">Each field draws against its own committed cap; sweeps are field-standalone with no cross-field netting (workbook convention).</p>
+          <div class="ae-scroll"><table id="tb-fin"></table></div>
+        </div>
+        <div class="ae-callout" id="ae-stacknote"></div>
+      </section>
+
+      <!-- ── SENSITIVITY ── -->
+      <section class="ae-tabpanel" id="tab-sens" role="tabpanel">
+        <div class="ae-card">
+          <p class="ae-ct">NPV Tornado · One-Way Driver Ranges ($MM, active portfolio)</p>
+          <p class="ae-cn">Each bar holds every other input at current settings and moves one driver across its stated range.</p>
+          <div id="ch-tornado"></div>
+        </div>
+        <div class="ae-2col">
+          <div class="ae-card">
+            <p class="ae-ct">Brent Sensitivity · Portfolio NPV ($MM)</p>
+            <p class="ae-cn">Recomputed live at current multipliers, toggles and overrides.</p>
+            <div id="ch-brent"></div>
+          </div>
+          <div class="ae-card">
+            <p class="ae-ct">Two-Way Table · NPV ($MM) — Brent × CAPEX Multiplier</p>
+            <p class="ae-cn">Outlined cell = nearest to current settings. Red = value-negative combinations.</p>
+            <div class="ae-scroll" id="ch-heat"></div>
+          </div>
+        </div>
+        <div class="ae-callout">Royalty (30%), income tax (0%) and the 5%/yr baseline decline are statutory under the Jan-2026 regime and are therefore held fixed in all sensitivities. The binding commercial variables are price, cost execution and the facility's effective cost.</div>
+      </section>
+
+      <!-- ── FIELDS ── -->
+      <section class="ae-tabpanel" id="tab-fields" role="tabpanel">
+        <div class="ae-fieldgrid" id="ae-fcards"></div>
+        <div class="ae-card" style="margin-top:18px">
+          <p class="ae-ct">Per-Field Economics — Standalone</p>
+          <p class="ae-cn">Field rows always show standalone economics; toggles affect portfolio rollups only (workbook convention). Lagunillas restart OPEX/CAPEX = loaded AICO actuals; other fields steady-state pending budgets.</p>
+          <div class="ae-scroll"><table id="tb-fields"></table></div>
+        </div>
+      </section>
+
+      <!-- ── METHODOLOGY ── -->
+      <section class="ae-tabpanel" id="tab-method" role="tabpanel">
+        <div class="ae-card">
+          <p class="ae-ct">Fiscal Regime · Old PSC / Empresa Mixta vs New Law (Jan 2026)</p>
+          <p class="ae-cn">The structural changes that drive the economics in this model — as carried on the ASSUMPTIONS sheet.</p>
+          <div class="ae-scroll"><table>
+            <thead><tr><th>Term</th><th style="text-align:left">Old PSC / Empresa Mixta</th><th style="text-align:left">New Law (Jan 2026)</th><th style="text-align:left">Investor impact</th></tr></thead>
+            <tbody id="tb-regime"></tbody>
+          </table></div>
+          <div class="ae-callout"><b>Mechanics in this model:</b> ① Govt baseline = 2025 field production × (1−5%)<sup>t</sup> — PDVSA's perpetual entitlement from existing wells, no cost contribution. ② Investor gross revenue = (total production − baseline) × realised price, plus Trevi gas. ③ Royalty = 30% of investor gross. ④ Net investor CF = net revenue − OPEX − CAPEX; zero income tax. ⑤ OPEX is charged on <i>total</i> field production — the investor operates the whole field. ⑥ Government take = royalty + baseline entitlement value.</div>
+        </div>
+        <div class="ae-card">
+          <p class="ae-ct">Ramp Construction · Best-First Sequencing on a Lognormal Well Stock</p>
+          <p class="ae-cn">How the frozen production ramps were built; Lagunillas 2026–27 superseded by AICO actuals.</p>
+          <p style="font-size:13.5px;line-height:1.55">Reactivation rates across a mature brownfield well stock are strongly right-skewed: a minority of wells with preserved completions and higher remaining reservoir energy carry a disproportionate share of restorable rate. The engine represents each field's shut-in inventory as a lognormal distribution of expected restored rates, calibrated per field, then sequences reactivations in descending expected-rate order — <b>best-first</b>. The consequence is front-loading: the cheapest, highest-rate barrels land in Phase&nbsp;1a, which is precisely the production that services and extinguishes the pre-financing facility, leaving Ph2/Ph3 funded from operating cash.</p>
+          <p class="ae-ct" style="margin-top:14px">① Well-Rate Distribution — Illustrative</p>
+          <div id="ch-pdf"></div>
+          <p class="ae-cn" style="margin-top:4px">Illustrative lognormal (median 45 BOPD/well, σₗₙ = 0.9); per-field engine calibrations are archived separately from this model.</p>
+          <p class="ae-ct" style="margin-top:14px">② Best-First Concentration Curve — Illustrative</p>
+          <div id="ch-conc"></div>
+          <p class="ae-ct" style="margin-top:14px">③ Frozen Field Ramps — Actual Model Data (total field BOPD, full development)</p>
+          <div id="ch-ramps"></div><div class="ae-legend" id="lg-ramps"></div>
+          <p class="ae-cn" style="margin-top:6px">Ramps frozen from the best-first/lognormal + AICO engine into the model's single-source production block; field sheets cap each ramp at the active-phase plateau. Trevi is a greenfield — a conventional development build-up, outside the best-first narrative.</p>
+        </div>
+        <div class="ae-card">
+          <p class="ae-ct">AICO Cost Basis · Lagunillas Lago</p>
+          <p class="ae-cn">Implied OPEX rate by year (live — reflects current overrides at model basis 1.0×) and the AICO budget split.</p>
+          <div id="ch-hump"></div>
+          <p class="ae-ct" style="margin-top:14px">AICO LL Budget Split — steady-state basis (first 24 months, $168.7M @ $7.70/bbl)</p>
+          <div id="ch-aicosplit"></div>
+          <p class="ae-cn" style="margin-top:4px">Source: AICO LL budget, re-split. Staff &amp; overheads dominate — characteristic of a labour-intensive lake-operations restart with ESP-lifted heavy crude.</p>
+        </div>
+        <div class="ae-callout c-red"><b>Provenance discipline:</b> every production and cost figure in this application traces either to the frozen engine output, the workbook's assumption set, or a loaded actual in the Data Room ledger. The distribution and concentration charts above are methodological illustrations, not field data, and are labelled as such.</div>
+      </section>
+
+
+    </main>
+  </div>
+
+  <div class="ae-tip" id="ae-tip"></div>
+
+  <footer>
+    <b>Disclaimer:</b> "New Hydrocarbon Law January 2026" refers to the regime as described by Alpha Energy Latin America management. Terms should be verified against the official MINHIDROCARBUROS gazette and legal counsel opinion prior to any investment commitment. OFAC General Licence applicability requires separate legal review. Production forecasts are internal estimates; not independently audited. Lagunillas 2026–27 production, restart OPEX ($217.0M / $207.4M) and 2026 CAPEX ($47.1M) are AICO actuals (AICO_Occidente_mod2.xlsx); remaining fields use steady-state model estimates pending AICO budgets. Trevi gas treated as Phase-2-dependent.
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+try{
+/* ════════════════════════════════════════════════════════════════════════
+   1. DATA — frozen from Alpha_ELA_Phase1_BestFirst_Integrated_AICO_linked.xlsx
+   ════════════════════════════════════════════════════════════════════════ */
+const YEARS=[];for(let y=2025;y<=2044;y++)YEARS.push(y);
+const FIELDS=[
+ {id:'LL',name:'Lagunillas Lago',color:'#C9A84C',base:8000,qd:15,opex:7.70,fac:110,plat:[26000,75000,130000],p1b:37365,
+  ramp:[8000,17356,42567,40500,58950,65794,71656,76540,86309,107800,125384,121574,117862,114248,110829,107410,104088,100864,97836,94808],
+  prodOv:{2026:17412.87,2027:42620.39},opexOv:{2026:217.02,2027:207.41},capexOv:{2026:47.1,2027:0},
+  ph1:[0,204.4,148.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph2:[0,0,0,64.9,108.1,108.1,86.5,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph3:[0,0,0,0,0,0,0,180,210,80,0,0,0,0,0,0,0,0,0,0],
+  gas:null,on:true,note:'Heavy 11–26° · lake ESP · AICO-loaded'},
+ {id:'TJ',name:'Tía Juana Lago-Tierra',color:'#8C6E2F',base:20000,qd:14,opex:11.0,fac:145,plat:[37000,90000,140000],p1b:53174,
+  ramp:[20000,19000,26042,50710,70437,80443,88443,98443,110443,123443,138443,134543,130743,126943,123243,119743,116243,112843,109543,106243],
+  prodOv:{},opexOv:{},capexOv:{},
+  ph1:[0,80,160,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph2:[0,0,0,130,150,180,130,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph3:[0,0,0,0,0,0,0,150,140,60,0,0,0,0,0,0,0,0,0,0],
+  gas:null,on:true,note:'Combined Lago+Tierra · SAGD Ph3'},
+ {id:'RM',name:'Rosa Mediano',color:'#C0392B',base:3500,qd:5,opex:9.0,fac:180,plat:[7500,20500,30500],p1b:10778,
+  ramp:[3500,3325,4922,11491,15132,20134,25134,27134,28134,30134,30134,28934,27734,26534,25434,24434,23434,22434,21534,20634],
+  prodOv:{},opexOv:{},capexOv:{},
+  ph1:[0,50,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph2:[0,0,0,75,120,130,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph3:[0,0,0,0,0,0,70,75,50,30,0,0,0,0,0,0,0,0,0,0],
+  gas:null,on:true,note:'Eocene 22–32° · lighter crude'},
+ {id:'CB',name:'Cabimas Field',color:'#6B7A8D',base:5000,qd:10,opex:10.0,fac:150,plat:[13000,43000,62000],p1b:18683,
+  ramp:[5000,4750,7843,21981,29265,36267,42267,44267,51267,57267,61267,59367,57567,55867,54167,52567,50967,49367,47867,46367],
+  prodOv:{},opexOv:{},capexOv:{},
+  ph1:[0,50,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph2:[0,0,0,90,120,150,90,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph3:[0,0,0,0,0,0,0,120,100,30,0,0,0,0,0,0,0,0,0,0],
+  gas:null,on:true,note:'Icotea blend · lowest BCC OPEX'},
+ {id:'TV',name:'Trevi Field',color:'#3E5C76',base:0,qd:3,opex:6.0,fac:400,plat:[8000,18000,20000],p1b:11497,
+  ramp:[0,0,3000,8000,12000,15000,18000,20000,20000,20000,19000,18100,17200,16300,15500,14700,14000,13300,12600,12000],
+  prodOv:{},opexOv:{},capexOv:{},
+  ph1:[0,60,150,200,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph2:[0,0,0,0,130,90,80,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  ph3:[0,0,0,0,0,0,0,50,0,0,0,0,0,0,0,0,0,0,0,0],
+  gas:[0,0,0,0,25,60,80,100,100,100,95,90,86,81,77,73,70,66,63,60],
+  on:false,note:'Greenfield gas · Monagas — no baseline'}
+];
+const ROYALTY=0.30, DECLINE=0.05;
+const REGIME=[
+ ['Structure','Empresa Mixta JV (PDVSA ≥60%)','Direct licence / concession','No PDVSA veto; full operational autonomy'],
+ ['Govt production','Royalty % of all production','Declining 2025 baseline + 30% royalty','Investor retains 100% of incremental'],
+ ['Cost recovery','70% ceiling until CAPEX repaid','Not applicable','No cap on revenue entitlement'],
+ ['Profit split','55–60% to investor post-recovery','Not applicable','Investor keeps full net revenue'],
+ ['Income tax','50% on net profit','0% — eliminated','Largest single uplift; ~2× after-tax CF'],
+ ['Approval path','National Assembly + MINHIDRO','MINHIDROCARBUROS only','Faster; no political consent required'],
+ ['OFAC exposure','JV with PDVSA = SDN-adjacent','Licence holder; no PDVSA entity','Cleaner GL compliance structure']
+];
+const BASE={brent:70,capex:1,opex:1,disc:0.15,gas:3,prefin:0.10,ph1b:true,ph2:true,ph3:true,on:{LL:true,TJ:true,RM:true,CB:true,TV:false}};
+const AICO_SRC='AICO_Occidente_mod2.xlsx · LL Budget';
+
+/* ════════════════════════════════════════════════════════════════════════
+   2. OVERRIDE STORE & PERSISTENCE
+   ════════════════════════════════════════════════════════════════════════ */
+function aicoDefaults(){const o={};for(const f of FIELDS)o[f.id]={prod:Object.assign({},f.prodOv),capex:Object.assign({},f.capexOv),opex:Object.assign({},f.opexOv)};return o;}
+function aicoSrc(){const s={};for(const f of FIELDS){s[f.id]={prod:{},capex:{},opex:{}};
+  for(const c of ['prod','capex','opex']){const src=c==='prod'?f.prodOv:(c==='capex'?f.capexOv:f.opexOv);for(const y in src)s[f.id][c][y]=AICO_SRC;}}return s;}
+function emptyOv(){const o={};for(const f of FIELDS)o[f.id]={prod:{},capex:{},opex:{}};return o;}
+let OV=aicoDefaults(),SRC=aicoSrc();
+function ovCount(){let n=0;for(const id in OV)for(const c of ['prod','capex','opex'])n+=Object.keys(OV[id][c]).length;return n;}
+
+const STORE_KEY='alphaEla.overrides.v2';
+const storageOK=(()=>{try{const t='__ae_probe';window.localStorage.setItem(t,'1');window.localStorage.removeItem(t);return true;}catch(e){return false;}})();
+let lastSaved=null,restoredFrom=null;
+function sanitizeOvJson(raw){
+  const o=raw.ov||raw,s=raw.src||{};
+  const cO=emptyOv(),cS=emptyOv();
+  for(const id in cO) if(o[id]) for(const c of ['prod','capex','opex']) if(o[id][c])
+    for(const y in o[id][c]){const v=Number(o[id][c][y]),yy=Number(y);
+      if(isFinite(v)&&v>=0&&yy>=2025&&yy<=2044){cO[id][c][yy]=v;cS[id][c][yy]=(s[id]&&s[id][c]&&s[id][c][y])?String(s[id][c][y]):'';}}
+  return {ov:cO,src:cS};
+}
+function saveOv(){if(!storageOK)return;try{window.localStorage.setItem(STORE_KEY,JSON.stringify({ov:OV,src:SRC,ts:Date.now()}));lastSaved=new Date();}catch(e){}}
+
+/* ════════════════════════════════════════════════════════════════════════
+   3. ENGINE — validated cell-for-cell vs workbook (do not alter mechanics)
+   ════════════════════════════════════════════════════════════════════════ */
+function fieldCF(f,p){
+  const ov=OV[f.id];
+  const ph3e=p.ph2&&p.ph3;
+  // Phase cap: Ph3→plat[2] · Ph2→plat[1] · else Phase-1 sub-toggle: 1b→p1b (120k), 1a→plat[0] (83.5k)
+  const plat=ph3e?f.plat[2]:(p.ph2?f.plat[1]:(p.ph1b?f.p1b:f.plat[0]));
+  const rows=[];
+  for(let i=0;i<YEARS.length;i++){
+    const y=YEARS[i];
+    let prod=(ov.prod[y]!==undefined)?ov.prod[y]:f.ramp[i];
+    prod=Math.min(prod,plat);
+    const basel=f.base*Math.pow(1-DECLINE,y-2025);
+    const net=Math.max(0,prod-basel);
+    const price=p.brent-f.qd;
+    const oilRev=net*365/1e6*price;
+    const gasV=(f.gas&&p.ph2)?f.gas[i]:0;
+    const gasRev=gasV*0.365*p.gas;
+    const gross=oilRev+gasRev;
+    const roy=gross*ROYALTY;
+    const opex=(ov.opex[y]!==undefined)?ov.opex[y]*p.opex:f.opex*prod*365/1e6*p.opex;
+    const capex=(ov.capex[y]!==undefined)?ov.capex[y]*p.capex:(f.ph1[i]+(p.ph2?f.ph2[i]:0)+(ph3e?f.ph3[i]:0))*p.capex;
+    const baselVal=basel*365/1e6*price;
+    const cf=gross-roy-opex-capex;
+    rows.push({y,prod,basel,net,gross,roy,opex,capex,cf,baselVal});
+  }
+  return rows;
+}
+function npv(cfs,r){let s=0;for(let i=0;i<cfs.length;i++)s+=cfs[i]/Math.pow(1+r,i);return s;}
+function irr(cfs){const f=r=>npv(cfs,r);let lo=-0.99,hi=20;if(f(lo)*f(hi)>0)return null;
+  for(let k=0;k<120;k++){const m=(lo+hi)/2;(f(lo)*f(m)<=0)?hi=m:lo=m;}return (lo+hi)/2;}
+/* Per-field cash-sweep waterfall — replicates PRE-FINANCING WATERFALL sheet:
+   interest capitalises; deficit years draw op-CF deficit + interest, capped at facility. */
+function waterfall(cfs,fac,rate){
+  let bal=0,drawn=0;const rows=[];
+  for(const cf of cfs){
+    const intr=bal*rate;let draw=0,prin=0,netEq;
+    if(cf<0){const need=-cf+intr;draw=Math.min(need,fac-drawn);drawn+=draw;netEq=cf+draw-intr;bal=bal+draw+intr;}
+    else if(bal>0){prin=Math.min(Math.max(cf-intr,0),bal+intr);netEq=cf-intr-prin;bal=bal+intr-prin;if(bal<1e-9)bal=0;}
+    else{netEq=cf;}
+    rows.push({draw,intr,prin,bal,netEq});
+  }
+  return {rows,drawn};
+}
+function runModel(p){
+  const per=[];
+  for(const f of FIELDS){
+    const rows=fieldCF(f,p);
+    const cfs=rows.map(r=>r.cf);
+    const wf=waterfall(cfs,f.fac,p.prefin);
+    let cum=0,payback=null;
+    for(let i=0;i<cfs.length;i++){cum+=cfs[i];if(payback===null&&cum>0)payback=YEARS[i];}
+    const deficits=cfs.reduce((s,c)=>s+(c<0?-c:0),0);
+    per.push({f,rows,cfs,wf,npv:npv(cfs,p.disc),irr:irr(cfs),payback,
+      capex:rows.reduce((s,r)=>s+r.capex,0),
+      opexT:rows.reduce((s,r)=>s+r.opex,0),
+      deficits,
+      interest:wf.rows.reduce((s,r)=>s+r.intr,0),
+      peakBal:Math.max(...wf.rows.map(r=>r.bal),0),
+      residual:Math.max(0,deficits-wf.drawn)});
+  }
+  const act=per.filter(x=>p.on[x.f.id]);
+  const z=()=>new Array(20).fill(0);
+  const port={netProd:z(),totProd:z(),basel:z(),opCF:z(),opCFpre:z(),capexY:z(),netEq:z(),bal:z(),
+    gross:0,roy:0,baselVal:0,opexT:0,capex:0,fac:0,drawn:0,interest:0,deficits:0};
+  for(const x of act){
+    port.fac+=x.f.fac;port.drawn+=x.wf.drawn;port.interest+=x.interest;port.deficits+=x.deficits;
+    port.capex+=x.capex;port.opexT+=x.opexT;
+    for(let i=0;i<20;i++){
+      port.netProd[i]+=x.rows[i].net;port.totProd[i]+=x.rows[i].prod;port.basel[i]+=x.rows[i].basel;
+      port.opCF[i]+=x.cfs[i];port.opCFpre[i]+=x.cfs[i]+x.rows[i].capex;port.capexY[i]+=x.rows[i].capex;
+      port.netEq[i]+=x.wf.rows[i].netEq;port.bal[i]+=x.wf.rows[i].bal;
+      port.gross+=x.rows[i].gross;port.roy+=x.rows[i].roy;port.baselVal+=x.rows[i].baselVal;
+    }
+  }
+  port.peakNet=Math.max(...port.netProd,0);port.peakTot=Math.max(...port.totProd,0);
+  port.npv=npv(port.opCF,p.disc);port.irr=irr(port.opCF);
+  port.netCF20=port.opCF.reduce((a,b)=>a+b,0);
+  port.netEq20=port.netEq.reduce((a,b)=>a+b,0);
+  port.peakDebt=Math.max(...port.bal,0);
+  port.residual=Math.max(0,port.deficits-port.drawn);
+  let lastBal=-1;for(let i=0;i<20;i++)if(port.bal[i]>1e-6)lastBal=i;
+  port.repaidYr=port.drawn>0?(lastBal<19?YEARS[lastBal+1]:'>2044'):'—';
+  if(port.peakDebt>0){let pv=0;for(let i=1;i<=10;i++)pv+=port.opCF[i]/Math.pow(1+p.disc,i);port.llcr=pv/port.peakDebt;}
+  else port.llcr=null;
+  return {per,act,port};
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   4. CHART KIT — shared SVG builders (string-based, no dependencies)
+   ════════════════════════════════════════════════════════════════════════ */
+const fmt$=(v,d=0)=>'$'+v.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d});
+const fmtN=v=>Math.round(v).toLocaleString('en-US');
+const fmtPct=v=>v===null?'n/a':(v*100).toFixed(0)+'%';
+function frame(w,h,padL=52,padR=14,padT=12,padB=26){
+  const fr={w,h,padL,padR,padT,padB};
+  fr.X=i=>padL+(w-padL-padR)*i/19;                          // 20-year x position
+  fr.lin=(v,lo,hi)=>h-padB-(h-padT-padB)*((v-lo)/(hi-lo));  // generic y scale
+  return fr;
+}
+function gridY(fr,lo,hi,fmt,ticks=4){
+  let s='';
+  for(let t=0;t<=ticks;t++){const v=lo+(hi-lo)*t/ticks,y=fr.lin(v,lo,hi);
+    s+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${y}" y2="${y}" stroke="#E8E2D2"/>`+
+       `<text x="${fr.padL-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#6B7A8D">${fmt(v)}</text>`;}
+  return s;
+}
+function axisYears(fr,every=3){
+  let s='';YEARS.forEach((y,i)=>{if(i%every!==0&&i!==19)return;
+    s+=`<text x="${fr.X(i)}" y="${fr.h-8}" text-anchor="middle" font-size="11" fill="#6B7A8D">${y}</text>`;});
+  return s;
+}
+function pathOf(fr,vals,lo,hi){let d='M';vals.forEach((v,i)=>{d+=`${fr.X(i).toFixed(1)},${fr.lin(v,lo,hi).toFixed(1)} `;});return d;}
+function hoverCols(fr,ch){
+  let s='';
+  for(let i=0;i<20;i++){
+    const x0=i===0?fr.padL:(fr.X(i-1)+fr.X(i))/2, x1=i===19?fr.w-fr.padR:(fr.X(i)+fr.X(i+1))/2;
+    s+=`<rect class="ae-hov" data-ch="${ch}" data-i="${i}" x="${x0.toFixed(1)}" y="${fr.padT}" width="${(x1-x0).toFixed(1)}" height="${fr.h-fr.padT-fr.padB}" fill="transparent"/>`;
+  }
+  return s;
+}
+const SVG=(fr,inner,label)=>`<svg viewBox="0 0 ${fr.w} ${fr.h}" role="img" aria-label="${label}">${inner}</svg>`;
+
+/* ════════════════════════════════════════════════════════════════════════
+   5. VIEWS
+   ════════════════════════════════════════════════════════════════════════ */
+const $=id=>document.getElementById(id);
+let LASTM=null;
+const subDisc=p=>{const d=p.disc*100;return Number.isInteger(d)?d:d.toFixed(1);};
+
+/* ── masthead chips ── */
+function vChips(M,p){
+  const ph=p.ph2?(p.ph3?'Ph1+2+3':'Ph1+2'):(p.ph1b?'Ph1a+1b':'Ph1a only');
+  $('ae-chips').innerHTML=
+    `<span class="ae-chip">NPV<sub>${subDisc(p)}</sub> <b>${fmt$(M.port.npv)}MM</b></span>`+
+    `<span class="ae-chip">IRR <b>${fmtPct(M.port.irr)}</b></span>`+
+    `<span class="ae-chip">Facility <b>${fmt$(M.port.drawn,0)}M / ${fmt$(M.port.fac,0)}M</b></span>`+
+    `<span class="ae-chip">${M.act.length}/5 fields · ${ph}</span>`;
+}
+
+/* ── overview ── */
+function vKpis(M,p){
+  const d=subDisc(p);
+  const k=[
+    {l:`Portfolio NPV<sub>${d}</sub>`,v:fmt$(M.port.npv)+'<span class="u">MM</span>',s:'Unlevered, active fields',c:''},
+    {l:'Portfolio IRR',v:fmtPct(M.port.irr),s:'Unlevered net CF',c:''},
+    {l:'Peak Investor Net',v:fmtN(M.port.peakNet),s:'BOPD above baseline · total '+fmtN(M.port.peakTot),c:'k-navy'},
+    {l:'Programme CAPEX',v:fmt$(M.port.capex)+'<span class="u">MM</span>',s:`at ${p.capex.toFixed(2)}× multiplier`,c:'k-navy'},
+    {l:'20-yr Net Investor CF',v:fmt$(M.port.netCF20)+'<span class="u">MM</span>',s:'Pre-financing, post-royalty/OPEX/CAPEX',c:''},
+    {l:'20-yr Govt Take',v:fmt$(M.port.roy+M.port.baselVal)+'<span class="u">MM</span>',s:'Royalty + declining baseline value',c:'k-red'}
+  ];
+  $('ae-kpis').innerHTML=k.map(x=>`<div class="ae-kpi ${x.c}"><div class="ae-klabel">${x.l}</div><div class="ae-kval">${x.v}</div><div class="ae-ksub">${x.s}</div></div>`).join('');
+}
+function vSplit(M){
+  const wellhead=M.port.gross+M.port.baselVal, inv=M.port.gross-M.port.roy;
+  const segs=[{v:M.port.baselVal,c:'#0B1F3A',t:'Govt baseline'},{v:M.port.roy,c:'#C0392B',t:'Royalty 30%'},{v:inv,c:'#C9A84C',t:'Investor net revenue'}];
+  $('ae-split').innerHTML=segs.map(s=>{
+    const pct=wellhead>0?s.v/wellhead*100:0;
+    return `<div class="ae-seg" style="width:${pct.toFixed(2)}%;background:${s.c}" title="${s.t}: ${fmt$(s.v)}MM">${pct>9?`${s.t} · ${fmt$(s.v)}MM (${pct.toFixed(0)}%)`:''}</div>`;}).join('');
+  $('ae-splitL').textContent=`Total 20-yr wellhead value ${fmt$(wellhead)}MM`;
+  $('ae-splitR').textContent=`Investor share ${(wellhead>0?inv/wellhead*100:0).toFixed(0)}% of wellhead · 70% of entitlement`;
+}
+function vProd(M){
+  const fr=frame(560,260);
+  const act=M.act;
+  const stacks=YEARS.map((_,i)=>{let s=0;return act.map(x=>{const lo=s;s+=x.rows[i].net;return [lo,s];});});
+  const top=Math.max(1,...YEARS.map((_,i)=>{const l=stacks[i][act.length-1];return l?l[1]:0;}),...M.port.basel)*1.08;
+  let b=gridY(fr,0,top,v=>fmtN(v/1000)+'k');
+  act.forEach((x,k)=>{
+    let up='',dn='';
+    for(let i=0;i<20;i++)up+=`${i?'L':'M'}${fr.X(i).toFixed(1)},${fr.lin(stacks[i][k][1],0,top).toFixed(1)} `;
+    for(let i=19;i>=0;i--)dn+=`L${fr.X(i).toFixed(1)},${fr.lin(stacks[i][k][0],0,top).toFixed(1)} `;
+    b+=`<path d="${up}${dn}Z" fill="${x.f.color}" fill-opacity="0.82"/>`;});
+  b+=`<path d="${pathOf(fr,M.port.basel,0,top)}" fill="none" stroke="#0B1F3A" stroke-width="2" stroke-dasharray="5 4"/>`;
+  b+=axisYears(fr)+hoverCols(fr,'prod');
+  $('ch-prod').innerHTML=SVG(fr,b,'Investor net production stacked by field');
+  $('lg-prod').innerHTML=act.map(x=>`<span><i style="background:${x.f.color}"></i>${x.f.name}</span>`).join('')+`<span><i style="background:none;border-top:2px dashed #0B1F3A;height:0;width:14px;border-radius:0"></i>Govt baseline</span>`;
+}
+function vCF(M){
+  const fr=frame(560,260);
+  const cf=M.port.netEq;
+  const cum=[];let c=0;cf.forEach(v=>{c+=v;cum.push(c);});
+  const lo=Math.min(0,...cf)*1.15, hi=Math.max(...cf,1)*1.1;
+  let b=gridY(fr,lo,hi,v=>fmtN(v));
+  const bw=(fr.w-fr.padL-fr.padR)/20*0.62;
+  cf.forEach((v,i)=>{const y0=fr.lin(0,lo,hi),y1=fr.lin(v,lo,hi);
+    b+=`<rect x="${(fr.X(i)-bw/2).toFixed(1)}" y="${Math.min(y0,y1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0-y1).toFixed(1)}" fill="${v<0?'#C0392B':'#C9A84C'}"/>`;});
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${fr.lin(0,lo,hi)}" y2="${fr.lin(0,lo,hi)}" stroke="#0B1F3A" stroke-width="1"/>`;
+  const cLo=Math.min(0,...cum),cHi=Math.max(...cum,1);
+  let line='M';cum.forEach((v,i)=>{line+=`${fr.X(i).toFixed(1)},${fr.lin(v,cLo,cHi).toFixed(1)} `;});
+  b+=`<path d="${line}" fill="none" stroke="#0B1F3A" stroke-width="2.2"/>`;
+  b+=`<text x="${fr.w-fr.padR}" y="${fr.padT+10}" text-anchor="end" font-size="11" fill="#0B1F3A">cum. ${fmt$(cum[19])}MM</text>`;
+  b+=axisYears(fr)+hoverCols(fr,'cf');
+  $('ch-cf').innerHTML=SVG(fr,b,'Portfolio net equity cash flow');
+}
+function vBridge(M){
+  const items=[
+    {l:'Investor gross revenue',v:M.port.gross,t:'start'},
+    {l:'Royalty 30%',v:-M.port.roy,t:'neg'},
+    {l:'OPEX',v:-M.port.opexT,t:'neg'},
+    {l:'CAPEX',v:-M.port.capex,t:'neg'},
+    {l:'Unlevered net CF',v:M.port.netCF20,t:'total'},
+    {l:'Facility service, net of draws',v:M.port.netEq20-M.port.netCF20,t:'neg'},
+    {l:'Net equity CF (20yr)',v:M.port.netEq20,t:'total'}
+  ];
+  const fr=frame(1140,300,62,16,16,58);
+  const n=items.length, bw=(fr.w-fr.padL-fr.padR)/n*0.6;
+  const cx=i=>fr.padL+(fr.w-fr.padL-fr.padR)*(i+0.5)/n;
+  // cumulative positions
+  let run=0;const pos=[];
+  items.forEach(it=>{
+    if(it.t==='start'){pos.push([0,it.v]);run=it.v;}
+    else if(it.t==='total'){pos.push([0,it.v]);run=it.v;}
+    else{pos.push([run+it.v,run]);run=run+it.v;}
+  });
+  const hiV=Math.max(...pos.map(p=>p[1]),1)*1.06, loV=Math.min(0,...pos.map(p=>p[0]))*1.06;
+  let b=gridY(fr,loV,hiV,v=>fmtN(v));
+  items.forEach((it,i)=>{
+    const [a,bb]=pos[i];
+    const y0=fr.lin(Math.max(a,bb),loV,hiV), y1=fr.lin(Math.min(a,bb),loV,hiV);
+    const col=it.t==='start'?'#C9A84C':(it.t==='total'?'#0B1F3A':'#C0392B');
+    b+=`<rect x="${(cx(i)-bw/2).toFixed(1)}" y="${y0.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(2,(y1-y0)).toFixed(1)}" fill="${col}" rx="2"/>`;
+    if(i<n-1){const yC=fr.lin(it.t==='neg'?a:bb,loV,hiV);
+      b+=`<line x1="${(cx(i)+bw/2).toFixed(1)}" x2="${(cx(i+1)-bw/2).toFixed(1)}" y1="${yC.toFixed(1)}" y2="${yC.toFixed(1)}" stroke="#6B7A8D" stroke-dasharray="3 3"/>`;}
+    const sign=it.t==='neg'?(it.v<0?'−':'+'):'';
+    b+=`<text x="${cx(i)}" y="${y0-6}" text-anchor="middle" font-size="12.5" font-weight="600" fill="#0B1F3A">${sign}${fmtN(Math.abs(it.v))}</text>`;
+    const words=it.l.split(' ');
+    words.forEach((w,k)=>{b+=`<text x="${cx(i)}" y="${fr.h-44+k*12}" text-anchor="middle" font-size="10.5" fill="#6B7A8D">${w}</text>`;});
+  });
+  $('ch-bridge').innerHTML=SVG(fr,b,'Twenty year value bridge');
+}
+
+/* ── financing ── */
+function vDebt(M){
+  const fr=frame(560,210);
+  const top=Math.max(M.port.fac,...M.port.bal,1)*1.15;
+  let b=gridY(fr,0,top,v=>fmtN(v));
+  let up='M';for(let i=0;i<20;i++)up+=`${fr.X(i).toFixed(1)},${fr.lin(M.port.bal[i],0,top).toFixed(1)} `;
+  b+=`<path d="${up}L${fr.X(19)},${fr.lin(0,0,top)} L${fr.X(0)},${fr.lin(0,0,top)} Z" fill="#3E5C76" fill-opacity="0.75"/>`;
+  const fy=fr.lin(M.port.fac,0,top);
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${fy}" y2="${fy}" stroke="#C9A84C" stroke-width="2.2"/>`;
+  b+=`<text x="${fr.w-fr.padR}" y="${fy-5}" text-anchor="end" font-size="11" fill="#8C6E2F">facility ${fmt$(M.port.fac)}M</text>`;
+  b+=axisYears(fr);
+  $('ch-debt').innerHTML=SVG(fr,b,'Combined facility outstanding balance');
+}
+function vCoverage(M,p){
+  const d=subDisc(p);
+  const rows=[
+    ['Facility committed (active fields)',fmt$(M.port.fac)+'M'],
+    ['Facility drawn (base mechanics)',fmt$(M.port.drawn,1)+'M'],
+    ['Undrawn headroom',fmt$(Math.max(0,M.port.fac-M.port.drawn),1)+'M'],
+    ['Peak combined debt (incl. cap. interest)',fmt$(M.port.peakDebt,1)+'M'],
+    ['Lifetime interest cost',fmt$(M.port.interest,1)+'M'],
+    ['Facility repaid by',String(M.port.repaidYr)],
+    ['Residual equity required',fmt$(M.port.residual,1)+'M',M.port.residual>0],
+    [`NPV<sub>${d}</sub> / facility drawn`,M.port.drawn>0?(M.port.npv/M.port.drawn).toFixed(1)+'×':'—'],
+    [`NPV<sub>${d}</sub> / peak debt`,M.port.peakDebt>0?(M.port.npv/M.port.peakDebt).toFixed(1)+'×':'—'],
+    ['Loan Life Coverage Ratio (LLCR)',M.port.llcr?M.port.llcr.toFixed(1)+'×':'—'],
+    ['20-yr net equity CF / facility',M.port.drawn>0?(M.port.netEq20/M.port.drawn).toFixed(0)+'×':'—'],
+    ['Facility drawn as % of NPV',M.port.npv>0?(M.port.drawn/M.port.npv*100).toFixed(1)+'%':'—']
+  ];
+  $('ae-cov').innerHTML=rows.map(x=>`<div class="ae-cov"><span>${x[0]}</span><b class="${x[2]?'warn':''}">${x[1]}</b></div>`).join('');
+  $('ae-stacknote').innerHTML=`<b>Capital-structure narrative:</b> the prepayment is an offtake-linked senior advance repaid through physical crude deliveries — collateralised by reserves, not by a cash-equity buffer. Discounted asset value covers the drawn facility ${M.port.drawn>0?(M.port.npv/M.port.drawn).toFixed(1):'—'}× at current settings; the sponsor contributes operational turnaround capability ranking junior to the advance. Peak exposure ${fmt$(M.port.peakDebt,0)}M is swept from near-term plateau cash flow; the EOR upside is unencumbered.`;
+}
+function vSelfFund(M){
+  const fr=frame(1140,230,62);
+  const top=Math.max(...M.port.opCFpre,...M.port.capexY,1)*1.1;
+  const lo=Math.min(0,...M.port.opCFpre)*1.1;
+  let b=gridY(fr,lo,top,v=>fmtN(v));
+  const bw=(fr.w-fr.padL-fr.padR)/20*0.55;
+  M.port.capexY.forEach((v,i)=>{const y0=fr.lin(0,lo,top),y1=fr.lin(v,lo,top);
+    b+=`<rect x="${(fr.X(i)-bw/2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,y0-y1).toFixed(1)}" fill="#C9A84C"/>`;});
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${fr.lin(0,lo,top)}" y2="${fr.lin(0,lo,top)}" stroke="#6B7A8D"/>`;
+  b+=`<path d="${pathOf(fr,M.port.opCFpre,lo,top)}" fill="none" stroke="#0B1F3A" stroke-width="2.4"/>`;
+  M.port.opCFpre.forEach((v,i)=>{if(v<M.port.capexY[i])
+    b+=`<circle cx="${fr.X(i)}" cy="${fr.lin(v,lo,top)}" r="5" fill="#C0392B" stroke="#0B1F3A" stroke-width="1.2"/>`;});
+  b+=axisYears(fr);
+  $('ch-selffund').innerHTML=SVG(fr,b,'Self funding validation');
+}
+function vFinTable(M){
+  let h=`<thead><tr><th>Field</th><th>Facility ($M)</th><th>Drawn ($M)</th><th>Lifetime Interest ($M)</th><th>Peak Balance ($M)</th><th>Field Deficits ($M)</th><th>Residual Equity ($M)</th></tr></thead><tbody>`;
+  for(const x of M.per){
+    const on=LASTM.p.on[x.f.id];
+    h+=`<tr class="${on?'':'r-off'}"><td><span class="ae-fname"><span class="ae-dot" style="width:10px;height:10px;border-radius:2px;background:${x.f.color};display:inline-block"></span>${x.f.name}${on?'':' (off)'}</span></td>
+      <td>${x.f.fac}</td><td>${x.wf.drawn.toFixed(1)}</td><td>${x.interest.toFixed(1)}</td><td>${x.peakBal.toFixed(1)}</td><td>${x.deficits.toFixed(1)}</td><td>${x.residual>0?x.residual.toFixed(1):'—'}</td></tr>`;
+  }
+  h+=`<tr class="r-tot"><td>ACTIVE PORTFOLIO</td><td>${LASTM.M.port.fac}</td><td>${LASTM.M.port.drawn.toFixed(1)}</td><td>${LASTM.M.port.interest.toFixed(1)}</td><td>${LASTM.M.port.peakDebt.toFixed(1)}</td><td>${LASTM.M.port.deficits.toFixed(1)}</td><td>${LASTM.M.port.residual>0?LASTM.M.port.residual.toFixed(1):'—'}</td></tr></tbody>`;
+  $('tb-fin').innerHTML=h;
+}
+
+/* ── sensitivity ── */
+function vTornado(M,p){
+  const base=M.port.npv;
+  const drivers=[
+    {l:'Brent $55 ↔ $85',lo:{brent:55},hi:{brent:85}},
+    {l:'CAPEX 1.2× ↔ 0.8×',lo:{capex:1.2},hi:{capex:0.8}},
+    {l:'OPEX 1.15× ↔ 0.85×',lo:{opex:1.15},hi:{opex:0.85}},
+    {l:'Discount 15% ↔ 8%',lo:{disc:0.15},hi:{disc:0.08}}
+  ];
+  if(p.on.TV)drivers.push({l:'Gas $2 ↔ $8 (Trevi)',lo:{gas:2},hi:{gas:8}});
+  const bars=drivers.map(d=>{
+    const nLo=runModel(Object.assign({},p,d.lo)).port.npv, nHi=runModel(Object.assign({},p,d.hi)).port.npv;
+    return {l:d.l,lo:Math.min(nLo,nHi),hi:Math.max(nLo,nHi)};
+  }).sort((a,b)=>(b.hi-b.lo)-(a.hi-a.lo));
+  const span=Math.max(...bars.map(b=>Math.max(Math.abs(b.lo-base),Math.abs(b.hi-base))),1)*1.12;
+  const fw=1140,rowH=42,fh=bars.length*rowH+38,mid=fw*0.56,half=fw*0.36;
+  const sx=v=>mid+half*(v-base)/span;
+  let b=`<line x1="${mid}" x2="${mid}" y1="8" y2="${fh-26}" stroke="#0B1F3A" stroke-width="1.6"/>`;
+  b+=`<text x="${mid}" y="${fh-10}" text-anchor="middle" font-size="11.5" fill="#0B1F3A" font-weight="600">base ${fmtN(base)}</text>`;
+  bars.forEach((bar,i)=>{
+    const y=14+i*rowH;
+    b+=`<text x="6" y="${y+15}" font-size="13" fill="#1A2433">${bar.l}</text>`;
+    b+=`<rect x="${Math.min(sx(bar.lo),sx(base)).toFixed(1)}" y="${y+2}" width="${Math.abs(sx(bar.lo)-sx(base)).toFixed(1)}" height="19" fill="#C0392B" rx="2"/>`;
+    b+=`<rect x="${Math.min(sx(bar.hi),sx(base)).toFixed(1)}" y="${y+2}" width="${Math.abs(sx(bar.hi)-sx(base)).toFixed(1)}" height="19" fill="#C9A84C" rx="2"/>`;
+    b+=`<text x="${(Math.min(sx(bar.lo),sx(base))-6).toFixed(1)}" y="${y+16}" text-anchor="end" font-size="11.5" fill="#C0392B" font-weight="600">${fmtN(bar.lo)}</text>`;
+    b+=`<text x="${(Math.max(sx(bar.hi),sx(base))+6).toFixed(1)}" y="${y+16}" font-size="11.5" fill="#8C6E2F" font-weight="600">${fmtN(bar.hi)}</text>`;
+  });
+  $('ch-tornado').innerHTML=`<svg viewBox="0 0 ${fw} ${fh}" role="img" aria-label="NPV tornado">${b}</svg>`;
+}
+function vBrent(M,p){
+  const fr=frame(560,210,58);
+  const pts=[40,50,60,70,80,90,100,110];
+  const vals=pts.map(b=>runModel(Object.assign({},p,{brent:b})).port.npv);
+  const lo=Math.min(0,...vals),hi=Math.max(...vals,1)*1.1;
+  const sx=i=>fr.padL+(fr.w-fr.padL-fr.padR)*i/(pts.length-1);
+  let b=gridY(fr,lo,hi,v=>fmtN(v),3);
+  let line='M';vals.forEach((v,i)=>{line+=`${sx(i).toFixed(1)},${fr.lin(v,lo,hi).toFixed(1)} `;});
+  b+=`<path d="${line}" fill="none" stroke="#0B1F3A" stroke-width="2.4"/>`;
+  if(lo<0)b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${fr.lin(0,lo,hi)}" y2="${fr.lin(0,lo,hi)}" stroke="#C0392B" stroke-dasharray="4 3"/>`;
+  vals.forEach((v,i)=>{
+    const cur=Math.abs(pts[i]-p.brent)<5;
+    b+=`<circle cx="${sx(i)}" cy="${fr.lin(v,lo,hi)}" r="${cur?6:4}" fill="${cur?'#C0392B':'#C9A84C'}" stroke="#0B1F3A" stroke-width="1.2"/>`;
+    b+=`<text x="${sx(i)}" y="${fr.lin(v,lo,hi)-11}" text-anchor="middle" font-size="11" fill="#0B1F3A" font-weight="600">${fmtN(v)}</text>`;
+    b+=`<text x="${sx(i)}" y="${fr.h-8}" text-anchor="middle" font-size="11" fill="#6B7A8D">$${pts[i]}</text>`;});
+  $('ch-brent').innerHTML=SVG(fr,b,'Brent sensitivity of portfolio NPV');
+}
+function vHeat(M,p){
+  const brents=[100,85,70,55,40], caps=[0.8,1.0,1.2,1.4];
+  let vmax=1,vmin=0,vals=[];
+  for(const br of brents){const row=[];
+    for(const cm of caps){const v=runModel(Object.assign({},p,{brent:br,capex:cm})).port.npv;row.push(v);vmax=Math.max(vmax,v);vmin=Math.min(vmin,v);}
+    vals.push(row);}
+  const col=v=>{
+    if(v<0)return ['#C0392B','#FFF'];
+    const t=Math.min(1,v/vmax);
+    const mix=(a,b,t)=>Math.round(a+(b-a)*t);
+    const r=mix(248,201,t),g=mix(245,168,t),b2=mix(238,76,t);   // cream → gold
+    return [`rgb(${r},${g},${b2})`, t>0.55?'#0B1F3A':'#1A2433'];
+  };
+  let h='<table class="ae-heat"><thead><tr><th>Brent \\ CAPEX</th>'+caps.map(c=>`<th>${c.toFixed(1)}×</th>`).join('')+'</tr></thead><tbody>';
+  brents.forEach((br,i)=>{
+    h+=`<tr><th style="text-align:right">$${br}</th>`;
+    caps.forEach((cm,j)=>{
+      const v=vals[i][j];const [bg,fg]=col(v);
+      const isBase=Math.abs(br-p.brent)<=7&&Math.abs(cm-p.capex)<=0.1;
+      h+=`<td class="${isBase?'h-base':''}" style="background:${bg};color:${fg}" title="Brent $${br} · CAPEX ${cm.toFixed(1)}×">${fmtN(v)}</td>`;});
+    h+='</tr>';});
+  $('ch-heat').innerHTML=h+'</tbody></table>';
+}
+
+/* ── fields ── */
+function spark(vals,color,w=204,h=42){
+  const lo=Math.min(0,...vals),hi=Math.max(...vals,1);
+  const sx=i=>2+(w-4)*i/(vals.length-1), sy=v=>h-3-(h-7)*((v-lo)/(hi-lo));
+  let d='M';vals.forEach((v,i)=>{d+=`${sx(i).toFixed(1)},${sy(v).toFixed(1)} `;});
+  let area=d+`L${sx(vals.length-1)},${sy(Math.max(lo,0))} L${sx(0)},${sy(Math.max(lo,0))} Z`;
+  return `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${area}" fill="${color}" fill-opacity="0.18"/><path d="${d}" fill="none" stroke="${color}" stroke-width="1.8"/></svg>`;
+}
+function vFieldCards(M,p){
+  $('ae-fcards').innerHTML=M.per.map(x=>{
+    const on=p.on[x.f.id];
+    const cum=[];let c=0;x.cfs.forEach(v=>{c+=v;cum.push(c);});
+    return `<div class="ae-fcard ${on?'':'f-off'}" style="border-top-color:${x.f.color}">
+      <h4>${x.f.name}${on?'':' · off'}</h4><div class="fnote">${x.f.note}</div>
+      <div class="ae-fstats">
+        <div><span>NPV<sub>${subDisc(p)}</sub></span><b>${fmtN(x.npv)}</b></div>
+        <div><span>IRR</span><b>${fmtPct(x.irr)}</b></div>
+        <div><span>CAPEX</span><b>${fmtN(x.capex)}</b></div>
+        <div><span>Payback</span><b>${x.payback||'—'}</b></div>
+        <div><span>Facility</span><b>$${x.f.fac}M</b></div>
+        <div><span>Drawn</span><b>${x.wf.drawn.toFixed(0)}</b></div>
+      </div>
+      <div class="ae-sparklbl">Investor net BOPD</div>${spark(x.rows.map(r=>r.net),x.f.color)}
+      <div class="ae-sparklbl">Cumulative net CF ($MM)</div>${spark(cum,'#0B1F3A')}
+    </div>`;}).join('');
+}
+function vFieldTable(M,p){
+  const d=subDisc(p);
+  let h=`<thead><tr><th>Field</th><th>NPV<sub>${d}</sub> ($MM)</th><th>IRR</th><th>Total CAPEX ($MM)</th><th>Facility / Drawn ($M)</th><th>Interest ($M)</th><th>Payback</th><th>Peak Net BOPD</th></tr></thead><tbody>`;
+  for(const x of M.per){
+    const on=p.on[x.f.id], peak=Math.max(...x.rows.map(r=>r.net));
+    h+=`<tr class="${on?'':'r-off'}"><td><span class="ae-fname"><span style="width:10px;height:10px;border-radius:2px;background:${x.f.color};display:inline-block"></span>${x.f.name}${on?'':' (off)'}</span><span style="font-size:11px;color:#6B7A8D">${x.f.note}</span></td>
+      <td>${fmtN(x.npv)}</td><td>${fmtPct(x.irr)}</td><td>${fmtN(x.capex)}</td><td>${x.f.fac} / ${x.wf.drawn.toFixed(0)}</td><td>${x.interest.toFixed(1)}</td><td>${x.payback||'—'}</td><td>${fmtN(peak)}</td></tr>`;
+  }
+  const actNPV=M.act.reduce((s,x)=>s+x.npv,0);
+  h+=`<tr class="r-tot"><td>ACTIVE PORTFOLIO (${M.act.length} fields)</td><td>${fmtN(actNPV)}</td><td>${fmtPct(M.port.irr)}</td><td>${fmtN(M.port.capex)}</td><td>${M.port.fac} / ${M.port.drawn.toFixed(0)}</td><td>${M.port.interest.toFixed(1)}</td><td>—</td><td>${fmtN(M.port.peakNet)}</td></tr></tbody>`;
+  $('tb-fields').innerHTML=h;
+}
+
+/* ── methodology (static + live AICO basis) ── */
+function vRegime(){
+  $('tb-regime').innerHTML=REGIME.map(r=>`<tr><td style="font-weight:600">${r[0]}</td><td style="text-align:left;color:#6B7A8D">${r[1]}</td><td style="text-align:left">${r[2]}</td><td style="text-align:left;color:#8C6E2F">${r[3]}</td></tr>`).join('');
+}
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);
+  return s*(1-((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x));}
+const ncdf=z=>0.5*(1+erf(z/Math.SQRT2));
+function nquant(p){
+  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239];
+  const b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572];
+  const c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783];
+  const d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
+  const pl=0.02425;let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p>1-pl){q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  q=p-0.5;r=q*q;
+  return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function vLognormal(){
+  const SIG=0.9,MED=45,MU=Math.log(MED);
+  /* PDF */
+  const fr=frame(1140,220,42,16,14,30);
+  const xMax=220;
+  const pdf=x=>x<=0?0:Math.exp(-Math.pow(Math.log(x)-MU,2)/(2*SIG*SIG))/(x*SIG*Math.sqrt(2*Math.PI));
+  let pMax=0;for(let x=1;x<=xMax;x++)pMax=Math.max(pMax,pdf(x));
+  const sx=x=>fr.padL+(fr.w-fr.padL-fr.padR)*x/xMax, sy=v=>fr.h-fr.padB-(fr.h-fr.padT-fr.padB)*v/(pMax*1.08);
+  const p90=Math.exp(MU-1.2816*SIG),p10=Math.exp(MU+1.2816*SIG),mean=Math.exp(MU+SIG*SIG/2);
+  let band=`M${sx(p90).toFixed(1)},${sy(0).toFixed(1)} `;
+  for(let x=p90;x<=p10;x+=2)band+=`L${sx(x).toFixed(1)},${sy(pdf(x)).toFixed(1)} `;
+  band+=`L${sx(p10).toFixed(1)},${sy(0).toFixed(1)} Z`;
+  let b=`<path d="${band}" fill="#C9A84C" fill-opacity="0.28"/>`;
+  let line='M';for(let x=1;x<=xMax;x+=1.5)line+=`${sx(x).toFixed(1)},${sy(pdf(x)).toFixed(1)} `;
+  b+=`<path d="${line}" fill="none" stroke="#0B1F3A" stroke-width="2.4"/>`;
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${sy(0)}" y2="${sy(0)}" stroke="#6B7A8D"/>`;
+  const mark=(x,lbl,col)=>{b+=`<line x1="${sx(x)}" x2="${sx(x)}" y1="${sy(pdf(x))}" y2="${sy(0)}" stroke="${col}" stroke-width="1.6" stroke-dasharray="4 3"/><text x="${sx(x)+4}" y="${fr.padT+12}" font-size="11.5" fill="${col}" font-weight="600">${lbl}</text>`;};
+  mark(p90,'P90 ≈ '+p90.toFixed(0),'#6B7A8D');mark(MED,'Median 45','#0B1F3A');mark(mean,'Mean ≈ '+mean.toFixed(0),'#C0392B');mark(p10,'P10 ≈ '+p10.toFixed(0),'#8C6E2F');
+  b+=`<text x="${(fr.padL+fr.w-fr.padR)/2}" y="${fr.h-8}" text-anchor="middle" font-size="11" fill="#6B7A8D">Expected restored rate per reactivated well (BOPD) — illustrative, σₗₙ = 0.9</text>`;
+  $('ch-pdf').innerHTML=SVG(fr,b,'Illustrative lognormal well-rate distribution');
+
+  /* concentration */
+  const fc=frame(1140,240,48,16,14,32);
+  const cx=q=>fc.padL+(fc.w-fc.padL-fc.padR)*q, cy=v=>fc.h-fc.padB-(fc.h-fc.padT-fc.padB)*v;
+  let cb='';
+  for(let t=0;t<=4;t++){const v=t/4;
+    cb+=`<line x1="${fc.padL}" x2="${fc.w-fc.padR}" y1="${cy(v)}" y2="${cy(v)}" stroke="#E8E2D2"/><text x="${fc.padL-6}" y="${cy(v)+4}" text-anchor="end" font-size="11" fill="#6B7A8D">${v*100}%</text><text x="${cx(v)}" y="${fc.h-10}" text-anchor="middle" font-size="11" fill="#6B7A8D">${v*100}%</text>`;}
+  cb+=`<line x1="${cx(0)}" y1="${cy(0)}" x2="${cx(1)}" y2="${cy(1)}" stroke="#6B7A8D" stroke-dasharray="4 4"/>`;
+  cb+=`<text x="${cx(0.62)}" y="${cy(0.55)}" font-size="11" fill="#6B7A8D" transform="rotate(-13 ${cx(0.62)} ${cy(0.55)})">uniform well stock (no sequencing value)</text>`;
+  let cl='M'+cx(0).toFixed(1)+','+cy(0).toFixed(1)+' ';
+  for(let q=0.005;q<=0.999;q+=0.005)cl+=`L${cx(q).toFixed(1)},${cy(ncdf(SIG+nquant(q))).toFixed(1)} `;
+  cl+=`L${cx(1).toFixed(1)},${cy(1).toFixed(1)}`;
+  cb+=`<path d="${cl}" fill="none" stroke="#C9A84C" stroke-width="3"/>`;
+  const q20=ncdf(SIG+nquant(0.2));
+  cb+=`<circle cx="${cx(0.2)}" cy="${cy(q20)}" r="5.5" fill="#C0392B" stroke="#0B1F3A" stroke-width="1.4"/>`;
+  cb+=`<text x="${cx(0.2)+10}" y="${cy(q20)-8}" font-size="12.5" fill="#0B1F3A" font-weight="600">top 20% of wells → ~${(q20*100).toFixed(0)}% of restorable rate</text>`;
+  $('ch-conc').innerHTML=SVG(fc,cb,'Best-first concentration curve');
+
+  /* frozen ramps */
+  const fy=frame(1140,260,56,16,14,28);
+  const maxR=Math.max(...FIELDS.flatMap(f=>f.ramp))*1.08;
+  let rb=gridY(fy,0,maxR,v=>Math.round(v/1000)+'k');
+  rb+=axisYears(fy);
+  for(const f of FIELDS){
+    let l='M';f.ramp.forEach((v,i)=>{l+=`${fy.X(i).toFixed(1)},${fy.lin(Math.min(v,f.plat[2]),0,maxR).toFixed(1)} `;});
+    rb+=`<path d="${l}" fill="none" stroke="${f.color}" stroke-width="${f.id==='LL'?3:2.2}"/>`;}
+  [[1,17356],[2,42567]].forEach(([i,v])=>{rb+=`<circle cx="${fy.X(i)}" cy="${fy.lin(v,0,maxR)}" r="5" fill="#C0392B" stroke="#0B1F3A" stroke-width="1.3"/>`;});
+  rb+=`<text x="${fy.X(2)+9}" y="${fy.lin(42567,0,maxR)+4}" font-size="11.5" fill="#C0392B" font-weight="600">AICO actuals 2026–27</text>`;
+  $('ch-ramps').innerHTML=SVG(fy,rb,'Frozen field production ramps');
+  $('lg-ramps').innerHTML=FIELDS.map(f=>`<span><i style="background:${f.color}"></i>${f.name}</span>`).join('');
+}
+function vHump(){
+  const ll=FIELDS[0],ov=OV.LL;
+  const yrs=[],rate=[],isOv=[];
+  for(let i=0;i<8;i++){const y=2025+i;
+    const prod=(ov.prod[y]!==undefined)?ov.prod[y]:ll.ramp[i];
+    if(ov.opex[y]!==undefined){rate.push(prod>0?ov.opex[y]/(prod*365/1e6):0);isOv.push(true);}
+    else{rate.push(ll.opex);isOv.push(false);}
+    yrs.push(y);}
+  const fr=frame(1140,200,46,14,16,26);
+  const top=Math.max(38,...rate)*1.05;
+  let b=gridY(fr,0,top,v=>'$'+v.toFixed(0),3);
+  const bw=(fr.w-fr.padL-fr.padR)/yrs.length*0.5;
+  yrs.forEach((y,i)=>{
+    const x=fr.padL+(fr.w-fr.padL-fr.padR)*(i+0.5)/yrs.length;
+    const y1=fr.lin(rate[i],0,top),y0=fr.lin(0,0,top);
+    b+=`<rect x="${(x-bw/2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${(y0-y1).toFixed(1)}" fill="${isOv[i]?'#C0392B':'#C9A84C'}"/>`;
+    b+=`<text x="${x}" y="${(y1-6).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="600" fill="#0B1F3A">$${rate[i].toFixed(rate[i]<10?2:1)}</text>`;
+    b+=`<text x="${x}" y="${fr.h-8}" text-anchor="middle" font-size="11" fill="#6B7A8D">${y}</text>`;});
+  const ssY=fr.lin(7.70,0,top);
+  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${ssY}" y2="${ssY}" stroke="#0B1F3A" stroke-dasharray="5 4" stroke-width="1.5"/>`;
+  b+=`<text x="${fr.w-fr.padR}" y="${ssY-5}" text-anchor="end" font-size="11" fill="#0B1F3A">AICO steady state $7.70/bbl</text>`;
+  b+=`<text x="${fr.padL+4}" y="${fr.padT+2}" font-size="11" fill="#C0392B">red = OPEX override loaded · gold = steady-state estimate</text>`;
+  $('ch-hump').innerHTML=SVG(fr,b,'Lagunillas implied OPEX rate by year');
+}
+function vAicoSplit(){
+  const cats=[['Staff & Overheads',94.6,56.1],['Well Services (non-capital)',49.5,29.3],['Operational Logistics',22.2,13.2],['Facilities (non-capital)',2.4,1.4]];
+  const fw=1140,rowH=34,lh=cats.length*rowH+8;
+  let sb='';
+  cats.forEach((c,i)=>{const y=8+i*rowH,w=(fw-380)*c[1]/94.6;
+    sb+=`<text x="0" y="${y+15}" font-size="13" fill="#1A2433">${c[0]}</text>`;
+    sb+=`<rect x="230" y="${y+3}" width="${w.toFixed(1)}" height="17" fill="${i===0?'#0B1F3A':i===1?'#C9A84C':i===2?'#8C6E2F':'#6B7A8D'}" rx="2"/>`;
+    sb+=`<text x="${236+w}" y="${y+16}" font-size="12.5" font-weight="600" fill="#0B1F3A">$${c[1].toFixed(1)}M · ${c[2].toFixed(1)}%</text>`;});
+  $('ch-aicosplit').innerHTML=`<svg viewBox="0 0 ${fw} ${lh}" role="img" aria-label="AICO budget split">${sb}</svg>`;
+}
+
+/* ── data room ── */
+const CAT_LBL={prod:'Production · BOPD',capex:'CAPEX · $MM',opex:'OPEX · $MM'};
+function ledgerEntries(){
+  const out=[];
+  for(const f of FIELDS)for(const c of ['prod','capex','opex'])
+    for(const y of Object.keys(OV[f.id][c]).sort())
+      out.push({f,c,y:+y,v:OV[f.id][c][y],src:(SRC[f.id][c]&&SRC[f.id][c][y])||''});
+  out.sort((a,b)=>FIELDS.indexOf(a.f)-FIELDS.indexOf(b.f)||a.y-b.y||a.c.localeCompare(b.c));
+  return out;
+}
+function renderLedger(){
+  const es=ledgerEntries();
+  let h='<thead><tr><th>Field</th><th>Type</th><th>Year</th><th>Value</th><th style="text-align:left">Source</th><th></th></tr></thead><tbody>';
+  if(!es.length)h+='<tr><td colspan="6" style="text-align:left;color:#6B7A8D">No overrides active — every field-year is running on model estimates. Add actuals below as they arrive.</td></tr>';
+  for(const e of es){
+    h+=`<tr class="${e.src===AICO_SRC?'aico':''}">
+      <td style="text-align:left"><span class="ae-fname"><span style="width:10px;height:10px;border-radius:2px;background:${e.f.color};display:inline-block"></span>${e.f.name}</span></td>
+      <td>${CAT_LBL[e.c]}</td><td>${e.y}</td>
+      <td><input class="ae-ovin lv" inputmode="decimal" data-f="${e.f.id}" data-c="${e.c}" data-y="${e.y}" data-k="v" value="${e.v}" aria-label="${e.f.name} ${e.c} ${e.y} value"></td>
+      <td><input class="ae-ovin ls" data-f="${e.f.id}" data-c="${e.c}" data-y="${e.y}" data-k="s" value="${e.src.replace(/"/g,'&quot;')}" placeholder="source…" aria-label="source"></td>
+      <td><button class="ld" data-f="${e.f.id}" data-c="${e.c}" data-y="${e.y}" title="Remove override" aria-label="Remove override">✕</button></td></tr>`;
+  }
+  $('ae-ledger').innerHTML=h+'</tbody>';
+}
+function vStatus(){
+  $('ae-fstatus').innerHTML=FIELDS.map(f=>{
+    const n=Object.keys(OV[f.id].prod).length+Object.keys(OV[f.id].capex).length+Object.keys(OV[f.id].opex).length;
+    let badge,cls,txt;
+    if(f.id==='TV'&&n===0){badge='N/A — GREENFIELD';cls='st-na';txt='Greenfield — no shut-in stock, no restart hump';}
+    else if(n>0){badge=n+' OVERRIDE'+(n>1?'S':'')+' ACTIVE';cls='st-on';txt=f.id==='LL'?'AICO actuals loaded; editable live':'Live overrides entered';}
+    else{badge='AWAITING ACTUALS';cls='st-wait';txt='Steady-state estimates only';}
+    return `<div class="ae-stcard"><b>${f.name}</b>${txt}<br><span class="ae-stb ${cls}">${badge}</span></div>`;}).join('');
+}
+function vPersist(){
+  const el=$('ae-persist');if(!el)return;
+  if(storageOK){
+    let t='Auto-save active in this browser';
+    if(lastSaved)t+=' · saved '+lastSaved.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    else if(restoredFrom)t+=' · restored set from '+restoredFrom.toLocaleString([],{dateStyle:'medium',timeStyle:'short'});
+    el.textContent=t+'. Download the .json to archive a set, move it between devices, or share it.';
+  }else el.textContent='Browser storage is unavailable in this environment (e.g. sandboxed preview) — the set lives in this session only. Use Download set (.json) to keep it, and Load set from file… to bring it back.';
+}
+function setOverride(fid,cat,year,val,src){OV[fid][cat][year]=val;SRC[fid][cat][year]=src||SRC[fid][cat][year]||'';}
+function fuzzyField(name){
+  const n=(name||'').toLowerCase();
+  if(/lagunillas|^ll$/.test(n))return 'LL';
+  if(/t[ií]a|juana|^tj$/.test(n))return 'TJ';
+  if(/rosa|mediano|^rm$/.test(n))return 'RM';
+  if(/cabimas|^cb$/.test(n))return 'CB';
+  if(/trevi|^tv$/.test(n))return 'TV';
+  return null;
+}
+function parseBlock(text,cat,src){
+  const lines=text.split(/\r?\n/).map(l=>l.replace(/\u00a0/g,' ').trim()).filter(Boolean);
+  if(!lines.length)return {n:0,err:'Nothing to parse.'};
+  const delim=text.includes('\t')?/\t/:(text.includes(';')?/;/:(/\S {2,}\S/.test(text)?/ {2,}/:/,/));
+  const usingComma=delim.source===',';
+  const split=l=>l.split(delim).map(s=>s.trim());
+  let yearCols=split(lines[0]).map(h=>{const y=parseInt(h,10);return (y>=2025&&y<=2044&&/^\d{4}$/.test(h))?y:null;});
+  if(yearCols.filter(Boolean).length===0)return {n:0,err:'First row must contain year headers (2025–2044).'};
+  if(yearCols[0]!==null)yearCols.unshift(null);
+  let n=0,skipped=0;
+  for(let r=1;r<lines.length;r++){
+    const cells=split(lines[r]);
+    const fid=fuzzyField(cells[0]);
+    if(!fid){skipped++;continue;}
+    for(let k=1;k<cells.length&&k<yearCols.length;k++){
+      const y=yearCols[k];if(y===null)continue;
+      let raw=cells[k].replace(/[–—]/g,'').trim();
+      if(!usingComma)raw=raw.replace(/,/g,'');
+      if(raw===''||raw==='-')continue;
+      const v=Number(raw);
+      if(!isFinite(v)||v<0)continue;
+      setOverride(fid,cat,y,v,src);n++;
+    }
+  }
+  return {n,skipped};
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   6. STATE, CONTROLS & RENDER PIPELINE
+   ════════════════════════════════════════════════════════════════════════ */
+const P=JSON.parse(JSON.stringify(BASE));
+function safe(fn){try{fn();}catch(err){/* isolate view failures — one chart must not kill the app */ if(typeof console!=='undefined')console.error('AlphaELA view error:',err);}}
+function renderAll(){
+  safe(()=>{$('t-ph3').disabled=!P.ph2;});
+  safe(()=>{$('t-ph1b').disabled=P.ph2;});  /* 1a/1b choice only bites when Phase 2 is off */
+  const M=runModel(P);
+  LASTM={M,p:P};
+  safe(()=>vChips(M,P));
+  safe(()=>vKpis(M,P));safe(()=>vSplit(M));safe(()=>vProd(M));safe(()=>vCF(M));safe(()=>vBridge(M));
+  safe(()=>vDebt(M));safe(()=>vCoverage(M,P));safe(()=>vSelfFund(M));safe(()=>vFinTable(M));
+  safe(()=>vTornado(M,P));safe(()=>vBrent(M,P));safe(()=>vHeat(M,P));
+  safe(()=>vFieldCards(M,P));safe(()=>vFieldTable(M,P));
+  safe(()=>vHump());
+}
+function syncAll(rebuildLedger){
+  if(rebuildLedger)renderLedger();
+  renderAll();saveOv();vPersist();
+}
+
+/* tabs are CSS-only (radio :checked) — no JS wiring required, so navigation
+   works even if any later script step fails or scripts are restricted */
+
+/* field toggles */
+const ft=$('ae-ftogs');
+FIELDS.forEach(f=>{
+  const l=document.createElement('label');l.className='ae-tog';
+  l.innerHTML=`<input type="checkbox" data-fid="${f.id}" ${P.on[f.id]?'checked':''}><span class="ae-dot" style="background:${f.color}"></span>${f.name}<small>$${f.fac}M fac</small>`;
+  ft.appendChild(l);
+});
+ft.addEventListener('change',e=>{if(e.target.dataset.fid){P.on[e.target.dataset.fid]=e.target.checked;renderAll();}});
+$('t-ph1b').addEventListener('change',e=>{P.ph1b=e.target.checked;renderAll();});
+$('t-ph2').addEventListener('change',e=>{P.ph2=e.target.checked;renderAll();});
+$('t-ph3').addEventListener('change',e=>{P.ph3=e.target.checked;renderAll();});
+
+/* sliders */
+function paintRange(el){el.style.setProperty('--pct',((el.value-el.min)/(el.max-el.min)*100)+'%');}
+const SLIDERS=[
+ ['s-brent','o-brent',v=>{P.brent=+v;return '$'+v;}],
+ ['s-capex','o-capex',v=>{P.capex=+v;return (+v).toFixed(2)+'×';}],
+ ['s-opex','o-opex',v=>{P.opex=+v;return (+v).toFixed(2)+'×';}],
+ ['s-disc','o-disc',v=>{P.disc=+v/100;return (+v).toFixed(1)+'%';}],
+ ['s-gas','o-gas',v=>{P.gas=+v;return '$'+(+v).toFixed(2);}],
+ ['s-prefin','o-prefin',v=>{P.prefin=+v/100;return (+v).toFixed(1)+'%';}]
+];
+SLIDERS.forEach(([sid,oid,fn])=>{
+  const el=$(sid);
+  el.addEventListener('input',()=>{$(oid).textContent=fn(el.value);paintRange(el);clearPreset();renderAll();});
+  paintRange(el);
+});
+
+/* presets */
+const PRESETS={
+  base:{brent:70,capex:1,opex:1,disc:15,prefin:10,note:'Brent $70 · all multipliers 1.0× · 15% discount · 10% pre-fin'},
+  cons:{brent:55,capex:1,opex:1,disc:15,prefin:10,note:'Brent $55 flat · multipliers held at 1.0× — price-only downside'},
+  stress:{brent:40,capex:1.15,opex:1.15,disc:15,prefin:12,note:'Brent $40 + CAPEX/OPEX 1.15× + pre-fin 12% — combined downside'},
+  up:{brent:90,capex:1,opex:1,disc:15,prefin:10,note:'Brent $90 flat · multipliers held at 1.0× — price-only upside'}
+};
+$('ae-presets').addEventListener('click',e=>{
+  const b=e.target.closest('.ae-preset');if(!b)return;
+  const ps=PRESETS[b.dataset.ps];
+  P.brent=ps.brent;P.capex=ps.capex;P.opex=ps.opex;P.disc=ps.disc/100;P.prefin=ps.prefin/100;
+  $('s-brent').value=ps.brent;$('o-brent').textContent='$'+ps.brent;
+  $('s-capex').value=ps.capex;$('o-capex').textContent=ps.capex.toFixed(2)+'×';
+  $('s-opex').value=ps.opex;$('o-opex').textContent=ps.opex.toFixed(2)+'×';
+  $('s-disc').value=ps.disc;$('o-disc').textContent=ps.disc.toFixed(1)+'%';
+  $('s-prefin').value=ps.prefin;$('o-prefin').textContent=ps.prefin.toFixed(1)+'%';
+  SLIDERS.forEach(([sid])=>paintRange($(sid)));
+  $('ae-presnote').textContent=ps.note;
+  document.querySelectorAll('#alpha-ela .ae-preset').forEach(x=>x.classList.toggle('ae-on',x===b));
+  renderAll();
+});
+function clearPreset(){document.querySelectorAll('#alpha-ela .ae-preset').forEach(x=>x.classList.remove('ae-on'));$('ae-presnote').textContent='Custom settings';}
+$('ae-reset').addEventListener('click',()=>{
+  Object.assign(P,JSON.parse(JSON.stringify(BASE)));
+  $('s-brent').value=70;$('s-capex').value=1;$('s-opex').value=1;$('s-disc').value=15;$('s-gas').value=3;$('s-prefin').value=10;
+  $('o-brent').textContent='$70';$('o-capex').textContent='1.00×';$('o-opex').textContent='1.00×';$('o-disc').textContent='15.0%';$('o-gas').textContent='$3.00';$('o-prefin').textContent='10.0%';
+  $('t-ph1b').checked=true;$('t-ph2').checked=true;$('t-ph3').checked=true;
+  ft.querySelectorAll('input').forEach(i=>i.checked=BASE.on[i.dataset.fid]);
+  SLIDERS.forEach(([sid])=>paintRange($(sid)));
+  $('ae-presnote').textContent=PRESETS.base.note;
+  document.querySelectorAll('#alpha-ela .ae-preset').forEach(x=>x.classList.toggle('ae-on',x.dataset.ps==='base'));
+  renderAll();
+});
+
+
+const tip=$('ae-tip');
+document.getElementById('alpha-ela').addEventListener('mousemove',e=>{
+  const h=e.target.closest&&e.target.closest('.ae-hov');
+  if(!h||!LASTM){tip.style.display='none';return;}
+  const i=+h.dataset.i,y=YEARS[i],M=LASTM.M;
+  let html='';
+  if(h.dataset.ch==='prod')html=`<b>${y}</b><br>Total field: ${fmtN(M.port.totProd[i])} BOPD<br>Govt baseline: ${fmtN(M.port.basel[i])} BOPD<br>Investor net: <b>${fmtN(M.port.netProd[i])} BOPD</b>`;
+  else{let cum=0;for(let k=0;k<=i;k++)cum+=M.port.netEq[k];
+    html=`<b>${y}</b><br>Net equity CF: ${fmt$(M.port.netEq[i],1)}MM<br>Op CF: ${fmt$(M.port.opCF[i],1)}MM<br>Debt o/s (EoY): ${fmt$(M.port.bal[i],1)}MM<br>Cumulative: <b>${fmt$(cum)}MM</b>`;}
+  tip.innerHTML=html;tip.style.display='block';
+  tip.style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';
+  tip.style.top=(e.clientY+16)+'px';
+});
+document.getElementById('alpha-ela').addEventListener('mouseleave',()=>{tip.style.display='none';});
+
+/* ════════════════════════════════════════════════════════════════════════
+   7. BOOT
+   ════════════════════════════════════════════════════════════════════════ */
+vRegime();
+vLognormal();
+vAicoSplit();
+renderAll();
+}catch(__e){
+  var __b=document.getElementById('ae-errbanner');
+  if(__b){__b.style.display='block';__b.textContent='Alpha ELA — a script error occurred during load: '+((__e&&__e.message)||__e)+'. Charts may be incomplete; please report this message. (Tab navigation still works.)';}
+  if(typeof console!=='undefined')console.error('Alpha ELA load error',__e);
+}
+})();
+</script>
+</body>
+</html>
