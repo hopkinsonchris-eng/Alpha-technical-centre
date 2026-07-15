@@ -146,8 +146,9 @@ function cfChart(proj){
 }
 function kpiRow(){
   const r=RESULT;
+  const pk=r.phaseCap||"3";
   return `<div class="kpis">
-    <div class="kpi"><div class="label">Risked Phase-1 Plateau</div><div class="num">${fmt(r.riskedPlateau)}</div><div class="sub">BOPD · ${fmt(STATE.classes.reduce((s,c)=>s+c.N,0))} wells</div></div>
+    <div class="kpi"><div class="label">Phase ${pk} Plateau</div><div class="num">${fmt(r.phasePlateau)}</div><div class="sub">BOPD · active-four fields${pk==="1a"?" · restart":pk==="1b"?" · incl. 1a":""}</div></div>
     <div class="kpi alt"><div class="label">Portfolio NPV</div><div class="num" style="color:#fff">$${fmt(r.npv/1000)}</div><div class="sub">$MM · ${fmt(STATE.econ.discount*100)}% disc · 20-yr</div></div>
     <div class="kpi alt"><div class="label">Portfolio IRR</div><div class="num" style="color:#fff">${r.irr==null?"n/m":fmt(r.irr*100,1)+"%"}</div><div class="sub">full-field economics</div></div>
     <div class="kpi"><div class="label">Risk Haircut</div><div class="num">${fmt(r.haircut*100,1)}%</div><div class="sub">unrisked → risked</div></div>
@@ -166,18 +167,20 @@ function phaseBanner(r){
 }
 function viewDash(){
   const r=RESULT;
-  const ramp=r.months.map(m=>({x:m.month,y:m.bopd}));
+  const pk=r.phaseCap||"3";
+  // scale the best-first ramp shape so it plateaus at the active-phase target (Excel-consistent)
+  const pscale=r.riskedPlateau>0 ? r.phasePlateau/r.riskedPlateau : 1;
+  const ramp=r.months.map(m=>({x:m.month,y:m.bopd*pscale}));
   const xt=[0,6,12,18,24,30,36].map(m=>({x:m,label:"M"+m}));
-  const phTgt=r.phaseTargetBopd;
   const trajItems=[
     {label:"Current baseline",v:STATE.fields.reduce((s,f)=>s+f.baseline,0),color:C.steel},
-    {label:(phTgt?phaseName(r.phaseCap).split(" · ")[0]+" target":"Phase 1 plateau"),v:Math.round(phTgt||r.riskedPlateau),color:C.gold},
+    {label:"Phase "+pk+" plateau",v:Math.round(r.phasePlateau),color:C.gold},
     {label:"Peak (incl base)",v:Math.round(r.peak),color:C.navy},
   ];
   return kpiRow()+phaseBanner(r)+`
   <div class="grid2">
-    <div class="panel"><h2>Phase-1 production ramp</h2><div class="cap">Cumulative risked BOPD · best-first execution · ${STATE.crews} crews</div>
-      ${lineChart([{pts:ramp,color:C.gold,fill:true}],{ymax:r.riskedPlateau*1.15,xticks:xt})}</div>
+    <div class="panel"><h2>Phase ${pk} production ramp</h2><div class="cap">Cumulative risked BOPD · best-first execution · ${STATE.crews} crews · plateau ${fmt(r.phasePlateau)}</div>
+      ${lineChart([{pts:ramp,color:C.gold,fill:true}],{ymax:r.phasePlateau*1.15,xticks:xt})}</div>
     <div class="panel"><h2>Portfolio trajectory</h2><div class="cap">'000 BOPD milestones</div>
       ${barChart(trajItems.map(i=>({...i,v:Math.round(i.v/1000)})),{})}</div>
   </div>
