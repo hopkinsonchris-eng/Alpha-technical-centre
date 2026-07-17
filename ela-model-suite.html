@@ -457,7 +457,7 @@ const FIELDS=[
   gas:[0,0,0,0,25,60,80,100,100,100,95,90,86,81,77,73,70,66,63,60],
   on:false,note:'Greenfield gas · Monagas — no baseline'}
 ];
-const ROYALTY=0.30, DECLINE=0.05;
+const ROYALTY=0.30, DECLINE=0.05, GOVT_OPEX=4.0;
 const REGIME=[
  ['Structure','Empresa Mixta JV (PDVSA ≥60%)','Direct licence / concession','No PDVSA veto; full operational autonomy'],
  ['Govt production','Royalty % of all production','Declining 2025 baseline + 30% royalty','Investor retains 100% of incremental'],
@@ -528,7 +528,11 @@ function fieldCF(f,p){
     const gasRev=gasV*0.365*p.gas;
     const gross=oilRev+gasRev;
     const roy=gross*ROYALTY;
-    const opex=(ov.opex[y]!==undefined)?ov.opex[y]*p.opex:f.opex*prod*365/1e6*p.opex;
+    // OPEX policy: investor operates the govt's declining-baseline barrels at a
+    // $GOVT_OPEX/bbl maintenance rate (just enough to hold the agreed decline) and
+    // pays the full field rate only on its own incremental barrels above baseline.
+    const govtBbl=Math.min(prod,basel);
+    const opex=(GOVT_OPEX*govtBbl+f.opex*net)*365/1e6*p.opex;
     const baseCap=p1aOnly?f.ph1a[i]:(f.ph1[i]+(p.ph2?f.ph2[i]:0)+(ph3e?f.ph3[i]:0));
     const capex=(ov.capex[y]!==undefined)?ov.capex[y]*p.capex:baseCap*p.capex;
     const baselVal=basel*365/1e6*price;
