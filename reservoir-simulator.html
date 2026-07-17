@@ -153,7 +153,7 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 .three-mount canvas{width:100%!important;height:100%!important;display:block;cursor:grab;}
 #sat-heatmap{width:100%;height:420px;display:block;background:#0F2338;}
 #three-canvas:active{cursor:grabbing;}
-.viewer-legend{position:absolute;bottom:14px;left:14px;background:rgba(7,20,40,0.85);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 11px;font-family:var(--font-mono);font-size:10px;color:var(--cream-dim);backdrop-filter:blur(4px);}
+.viewer-legend{position:absolute;bottom:52px;left:14px;background:rgba(7,20,40,0.85);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 11px;font-family:var(--font-mono);font-size:10px;color:var(--cream-dim);backdrop-filter:blur(4px);}
 .viewer-legend-bar{width:120px;height:8px;border-radius:2px;margin:5px 0 3px;background:linear-gradient(90deg,#0B294B,#4AADCA);}
 .viewer-legend-row{display:flex;justify-content:space-between;width:120px;}
 .viewer-hint{position:absolute;top:54px;right:14px;background:rgba(7,20,40,0.8);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 10px;font-family:var(--font-mono);font-size:9.5px;color:var(--steel);}
@@ -173,6 +173,9 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 .well-type.inj{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(74,173,202,0.3);}
 .well-status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
 .dot-on{background:var(--green-bright);box-shadow:0 0 5px rgba(46,204,138,0.5);}
+.dot-off{background:var(--steel);opacity:0.5;}
+.well-table tr.selected td{background:var(--gold-glow);border-bottom-color:var(--gold-line);}
+.well-table tr{cursor:pointer;}
 
 .sim-log{background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;font-family:var(--font-mono);font-size:11px;color:var(--cream-dim);line-height:1.7;max-height:180px;overflow-y:auto;margin-top:12px;}
 .sim-log .log-ok{color:var(--green-bright);}
@@ -223,7 +226,56 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:3px;}
 
+/* ── SCREEN SHELL — Mission Control layout ── */
+.screen{display:none;}
+.screen.active{display:block;animation:fade .25s ease;}
+#screen-home{padding:16px 18px;background:var(--navy-dark);min-height:calc(100vh - 130px);}
+#screen-home.active{display:grid;grid-template-columns:288px minmax(0,1fr) 330px;gap:14px;align-items:start;}
+.home-col{display:flex;flex-direction:column;gap:14px;min-width:0;}
+.home-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;}
+.home-card-title{font-family:var(--font-cond);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-bottom:10px;}
+.home-card .workflow-steps{padding:0;}
+.home-card .io-btn-row{padding:0;margin-top:12px;}
+.home-card .run-btn{width:100%;margin:0 0 8px;}
+.home-card .sim-status{padding:0 0 4px;}
+.build-item{display:flex;align-items:center;gap:10px;padding:8px 9px;border:1px solid transparent;border-radius:var(--r-sm);cursor:pointer;transition:all var(--tr);}
+.build-item:hover{border-color:var(--gold-line);background:var(--gold-glow);}
+.bi-num{width:22px;height:22px;border-radius:50%;border:1px solid var(--steel);color:var(--steel);font-family:var(--font-mono);font-size:10px;display:flex;align-items:center;justify-content:center;flex:none;}
+.build-item.edited .bi-num{border-color:var(--gold);color:var(--gold);}
+.bi-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px;}
+.bi-title{font-size:12.5px;font-weight:600;color:var(--cream);line-height:1.25;}
+.bi-sum{font-family:var(--font-mono);font-size:9.5px;color:var(--steel);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bi-chev{color:var(--steel);font-size:15px;flex:none;}
+.home-centre{min-width:0;}
+.rr-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 10px;}
+.rr-kpi{background:rgba(0,0,0,0.22);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 8px;text-align:center;}
+.rr-kpi b{display:block;font-family:var(--font-mono);font-size:14px;color:var(--gold);font-weight:500;}
+.rr-kpi span{font-family:var(--font-cond);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);}
+.rr-link{display:block;text-align:center;font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);cursor:pointer;padding:7px;border:1px solid var(--gold-line);border-radius:var(--r-sm);background:none;width:100%;transition:background var(--tr);}
+.rr-link:hover{background:var(--gold-glow);}
+.ai-body{font-size:11.5px;line-height:1.55;color:var(--cream-dim);}
+.ai-item{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:11px;line-height:1.5;}
+.ai-item:last-child{border-bottom:none;}
+.ai-chip{flex:none;font-family:var(--font-cond);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:3px;margin-top:1px;font-weight:600;}
+.ai-chip.warn{background:rgba(192,57,43,0.16);color:#E07070;border:1px solid rgba(192,57,43,0.4);}
+.ai-chip.note{background:rgba(232,150,58,0.12);color:var(--amber);border:1px solid rgba(232,150,58,0.35);}
+.ai-chip.info{background:rgba(74,173,202,0.1);color:var(--cyan);border:1px solid rgba(74,173,202,0.3);}
+.screen-detail{padding:16px 22px 28px;max-width:1240px;margin:0 auto;background:var(--navy-dark);min-height:calc(100vh - 130px);}
+.screen-back{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);background:none;border:none;cursor:pointer;padding:4px 0;margin-bottom:10px;transition:color var(--tr);}
+.screen-back:hover{color:var(--gold);}
+.ctl-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;}
+.ctl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px 24px;}
+.well-editor-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;margin-bottom:14px;}
+@media(max-width:900px){.well-editor-grid{grid-template-columns:1fr;}}
+.insp-field{display:flex;flex-direction:column;gap:3px;font-family:var(--font-cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);}
+@media(max-width:1100px){
+  #screen-home.active{grid-template-columns:250px minmax(0,1fr);}
+  .home-col.right{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;}
+  .home-col.right>.home-card{flex:1 1 240px;}
+}
 @media(max-width:760px){
+  #screen-home.active{grid-template-columns:1fr;}
+  .home-col.right{flex-direction:column;}
   .apex-body{grid-template-columns:1fr;}
   .apex-rail{max-height:none;position:static;border-right:none;border-bottom:1px solid var(--line);}
   .apex-main{max-height:none;}
@@ -292,30 +344,133 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
     <div class="apex-chip" style="border-color:rgba(192,57,43,0.4);background:rgba(192,57,43,0.16);color:#E07070;">STAFF ONLY</div>
     <div class="apex-chip">3D Layered</div>
     <div class="apex-chip">IMPES</div>
-    <div class="apex-chip">v2.0</div>
+    <div class="apex-chip">v2.2</div>
   </div>
 </header>
 
-<!-- ═══ TABS ═══ -->
-<div class="apex-tabs" id="apexTabs">
-  <button class="apex-tab active" data-tab="model" onclick="switchTab('model',this)"><span class="tab-dot"></span>3D Model</button>
-  <button class="apex-tab" data-tab="layers" onclick="switchTab('layers',this)"><span class="tab-dot"></span>Layers</button>
-  <button class="apex-tab" data-tab="pvt" onclick="switchTab('pvt',this)"><span class="tab-dot"></span>PVT Fluid</button>
-  <button class="apex-tab" data-tab="rock" onclick="switchTab('rock',this)"><span class="tab-dot"></span>Rock &amp; SCAL</button>
-  <button class="apex-tab" data-tab="wells" onclick="switchTab('wells',this)"><span class="tab-dot"></span>Wells</button>
-  <button class="apex-tab" data-tab="aquifer" onclick="switchTab('aquifer',this)"><span class="tab-dot"></span>Aquifer</button>
-  <button class="apex-tab" data-tab="solver" onclick="switchTab('solver',this)"><span class="tab-dot"></span>Solver</button>
-  <button class="apex-tab ready" data-tab="results" onclick="switchTab('results',this)"><span class="tab-dot"></span>Results</button>
+<!-- ═══ SCREENS ═══ -->
+
+<!-- ─── HOME · MISSION CONTROL ─── -->
+<div class="screen" id="screen-home">
+
+  <!-- LEFT · MODEL BUILD NAV -->
+  <aside class="home-col">
+    <div class="home-card">
+      <div class="home-card-title">Model Build</div>
+      <div id="buildNav"></div>
+    </div>
+    <div class="home-card">
+      <div class="home-card-title">Workflow</div>
+      <div class="workflow-steps" id="workflowSteps">
+        <div class="wf-step done" id="wf1"><span class="wf-step-num" data-n="1"></span>Configure grid &amp; fluid</div>
+        <div class="wf-step active" id="wf2"><span class="wf-step-num" data-n="2"></span>Set wells &amp; solver</div>
+        <div class="wf-step" id="wf3"><span class="wf-step-num" data-n="3"></span>Run simulation</div>
+        <div class="wf-step" id="wf4"><span class="wf-step-num" data-n="4"></span>Analyse &amp; export</div>
+      </div>
+      <div class="io-btn-row">
+        <button class="io-btn" onclick="openModal('import')">⬇ Import</button>
+        <button class="io-btn" onclick="openModal('export')">⬆ Export</button>
+        <button class="io-btn" onclick="pushToAPEX()">→ APEX</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTRE · 3D RESERVOIR -->
+  <main class="home-centre">
+    <div class="viewer-wrap" style="margin-bottom:0;">
+      <div class="viewer-bar">
+        <span class="viewer-bar-title">Reservoir 3D</span>
+        <div class="viewer-controls">
+          <button class="vc-btn active" id="cm-perm" onclick="setColorMode('perm')">Perm</button>
+          <button class="vc-btn" id="cm-poro" onclick="setColorMode('poro')">Porosity</button>
+          <button class="vc-btn" id="cm-press" onclick="setColorMode('press')">Pressure</button>
+          <button class="vc-btn" id="cm-sat" onclick="setColorMode('sat')">Saturation</button>
+          <button class="vc-btn" id="tg-explode" onclick="toggleExplode()">Layer Split</button>
+          <button class="vc-btn" id="tg-wells" onclick="toggleWells()">Wells ✓</button>
+          <span id="satAnimGroup" style="display:none;gap:4px;">
+            <button class="vc-btn" onclick="stepSatTime3D(-1)">◀</button>
+            <button class="vc-btn" id="satPlayBtn" onclick="playSatAnimation3D()">▶ Animate</button>
+            <button class="vc-btn" onclick="stepSatTime3D(1)">▶</button>
+            <span class="vc-btn" style="cursor:default;min-width:76px;text-align:center;" id="satTimeLabel">t = 0 yr</span>
+          </span>
+        </div>
+      </div>
+      <div id="three-mount-model" class="three-mount" style="height:calc(100vh - 340px);min-height:420px;"></div>
+      <div class="viewer-hint">LMB drag · rotate &nbsp;|&nbsp; wheel · zoom</div>
+      <div class="viewer-legend">
+        <div id="legend-label">Permeability kh (mD)</div>
+        <div class="viewer-legend-bar" id="legend-bar"></div>
+        <div class="viewer-legend-row"><span id="legend-min">10</span><span id="legend-max">2000</span></div>
+      </div>
+      <!-- Saturation timeline scrubber — appears after a run -->
+      <div id="satTimelineRow" style="display:none;padding:8px 16px 10px;background:var(--navy2);border-top:1px solid var(--line);align-items:center;gap:12px;">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--steel);white-space:nowrap;">Timeline</span>
+        <input type="range" id="satScrubber" min="0" max="15" value="0" step="1"
+          style="flex:1;-webkit-appearance:none;appearance:none;height:3px;background:linear-gradient(90deg,var(--gold) 0%,rgba(107,122,141,0.3) 0%);outline:none;cursor:pointer;"
+          oninput="scrubSat3D(+this.value)"/>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--gold);min-width:50px;text-align:right;" id="satScrubLabel">t = 0 yr</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <span class="badge gold" id="b-gridsize">12×12×4 = 576 cells</span>
+      <span class="badge" id="b-stoiip">STOIIP: —</span>
+    </div>
+  </main>
+
+  <!-- RIGHT · SIMULATION & AI -->
+  <aside class="home-col right">
+    <div class="home-card">
+      <div class="home-card-title">Simulation</div>
+      <button class="run-btn" id="runBtn" onclick="runSimulation()"><span class="run-icon">▶</span> Run Simulation</button>
+      <div class="sim-status" id="simStatus">Ready · Configure and Run</div>
+      <div style="display:none;font-family:var(--font-mono);font-size:9.5px;color:var(--gold);text-align:center;padding-bottom:4px;" id="live-sim-status"></div>
+    </div>
+    <div class="home-card">
+      <div class="home-card-title">Base Case Results</div>
+      <div class="rr-kpis">
+        <div class="rr-kpi"><b id="rr-np">—</b><span>Np 10³m³</span></div>
+        <div class="rr-kpi"><b id="rr-rf">—</b><span>Recovery</span></div>
+        <div class="rr-kpi"><b id="rr-pr">—</b><span>P̄ bar</span></div>
+      </div>
+      <button class="rr-link" onclick="nav('results')">Open Results ›</button>
+    </div>
+    <div class="home-card">
+      <div class="home-card-title">Ensemble P10 / P50 / P90</div>
+      <div class="rr-kpis">
+        <div class="rr-kpi"><b id="rr-e90" style="color:#E07070;">—</b><span>Np P90</span></div>
+        <div class="rr-kpi"><b id="rr-e50">—</b><span>Np P50</span></div>
+        <div class="rr-kpi"><b id="rr-e10" style="color:var(--green-bright);">—</b><span>Np P10</span></div>
+      </div>
+      <button class="rr-link" onclick="nav('ensemble')">Open Ensemble ›</button>
+    </div>
+    <div class="home-card">
+      <div class="home-card-title" style="display:flex;justify-content:space-between;align-items:baseline;">AI Run Advisor <span id="aiKeyStatus" style="font-size:9px;letter-spacing:.08em;"></span></div>
+      <div id="aiAdvisorBody" class="ai-body"><span style="color:var(--steel);font-size:11.5px;">Run a simulation — the advisor reads the results and flags breakthrough timing, drive balance and completion issues.</span></div>
+      <div id="aiClaudeSection" style="display:none;">
+        <div style="font-family:var(--font-cond);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:10px 0 5px;border-top:1px solid var(--line);padding-top:9px;">✦ Claude Analysis</div>
+        <div id="aiClaudeBody" class="ai-body"></div>
+      </div>
+      <div class="io-btn-row" style="padding:0;margin-top:10px;">
+        <button class="io-btn" id="aiAnalyseBtn" style="display:none;" onclick="runClaudeAdvisor(true)">✦ Analyse with Claude</button>
+        <button class="io-btn" onclick="configureClaudeKey()">⚙ API Key</button>
+      </div>
+    </div>
+  </aside>
 </div>
 
-<!-- ═══ BODY ═══ -->
-<div class="apex-body">
-
-  <!-- ─── RAIL ─── -->
-  <aside class="apex-rail">
-
-    <div class="rail-section">
-      <div class="rail-title">Grid Geometry</div>
+<!-- ─── BUILD 1 · GRID & STRUCTURE ─── -->
+<div class="screen screen-detail" id="screen-grid">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Build 1 · Grid &amp; <em>Structure</em></div>
+      <div class="panel-sub">Areal grid, layering and datum · drives cell geometry and volumetrics</div>
+    </div>
+    <div class="panel-badges"><span class="badge gold" id="g-gridsize">12×12×4</span></div>
+  </div>
+  <div class="ctl-card">
+    <div class="chart-title">Parameters</div>
+    <div class="ctl-grid">
       <div class="rail-row"><div class="rail-label">Ni (x-blocks)<span id="v-ni">12</span></div><input type="range" class="rail-range" id="r-ni" min="5" max="20" value="12" oninput="syncRange('ni',this)"/></div>
       <div class="rail-row"><div class="rail-label">Nj (y-blocks)<span id="v-nj">12</span></div><input type="range" class="rail-range" id="r-nj" min="5" max="20" value="12" oninput="syncRange('nj',this)"/></div>
       <div class="rail-row"><div class="rail-label">Nk (layers)<span id="v-nk">4</span></div><input type="range" class="rail-range" id="r-nk" min="1" max="8" value="4" oninput="syncRange('nk',this)"/></div>
@@ -324,28 +479,155 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
       <div class="rail-row"><div class="rail-label">Layer Δz (m)<span id="v-dz">8</span></div><input type="range" class="rail-range" id="r-dz" min="2" max="30" value="8" oninput="syncRange('dz',this)"/></div>
       <div class="rail-row"><div class="rail-label">Top Depth (m SS)<span id="v-topd">2380</span></div><input type="range" class="rail-range" id="r-topd" min="1000" max="4500" step="20" value="2380" oninput="syncRange('topd',this)"/></div>
     </div>
+  </div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-card-title">Grid Dimensions</div>
+      <div class="info-row"><span class="info-key">Ni × Nj × Nk</span><span class="info-val gold" id="i-dims">12×12×4</span></div>
+      <div class="info-row"><span class="info-key">Active cells</span><span class="info-val" id="i-cells">576</span></div>
+      <div class="info-row"><span class="info-key">Cell Δx·Δy·Δz</span><span class="info-val" id="i-cellsize">120·120·8 m</span></div>
+      <div class="info-row"><span class="info-key">Areal extent</span><span class="info-val" id="i-area">1.44 km²</span></div>
+      <div class="info-row"><span class="info-key">Gross thickness</span><span class="info-val" id="i-gross">32 m</span></div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">Volumetrics</div>
+      <div class="info-row"><span class="info-key">Bulk volume</span><span class="info-val" id="i-bv">—</span></div>
+      <div class="info-row"><span class="info-key">Pore volume</span><span class="info-val" id="i-pv">—</span></div>
+      <div class="info-row"><span class="info-key">HCPV</span><span class="info-val green" id="i-hcpv">—</span></div>
+      <div class="info-row"><span class="info-key">STOIIP</span><span class="info-val gold" id="i-stoiip">—</span></div>
+      <div class="info-row"><span class="info-key">STOIIP (MMbbl)</span><span class="info-val" id="i-stb">—</span></div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-title">Vertical Heterogeneity</div>
+      <div class="info-row"><span class="info-key">Kv/Kh</span><span class="info-val cyan" id="i-kvkh">0.10</span></div>
+      <div class="info-row"><span class="info-key">Dykstra-Parsons</span><span class="info-val" id="i-vdp">0.40</span></div>
+      <div class="info-row"><span class="info-key">k range (layers)</span><span class="info-val" id="i-krange">—</span></div>
+      <div class="info-row"><span class="info-key">Avg layer kh</span><span class="info-val" id="i-avgk">200 mD</span></div>
+    </div>
+  </div>
+  <div class="eq-card">
+    <div class="eq-label">3D Continuity — Six-Point Stencil (TPFA)</div>
+    <div class="eq-text">∂(φSₚρₚ)/∂t = ∑[face=x±,y±,z±] Tface·λₚ·(Pₙₑᵢ − Pᵢ) + qₚ<br>Tz = 2·Kv·Δx·Δy / Δz &nbsp;·&nbsp; Kv = (Kv/Kh)·kh &nbsp;·&nbsp; vertical cross-flow couples layers</div>
+  </div>
+</div>
 
-    <div class="rail-section">
-      <div class="rail-title">Base Rock</div>
+<!-- ─── BUILD 2 · LAYERS & ROCK ─── -->
+<div class="screen screen-detail" id="screen-layers">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Build 2 · Layer <em>Properties</em></div>
+      <div class="panel-sub">Base rock, per-layer porosity, permeability &amp; net-to-gross · drives 3D heterogeneity</div>
+    </div>
+    <div class="panel-badges"><span class="badge gold" id="b-nlayers">4 layers</span></div>
+  </div>
+  <div class="ctl-card">
+    <div class="chart-title">Base Rock Parameters</div>
+    <div class="ctl-grid">
       <div class="rail-row"><div class="rail-label">Porosity φ<span id="v-phi">0.22</span></div><input type="range" class="rail-range" id="r-phi" min="0.05" max="0.40" step="0.01" value="0.22" oninput="syncRange('phi',this)"/></div>
       <div class="rail-row"><div class="rail-label">Perm kh (mD)<span id="v-k">200</span></div><input type="range" class="rail-range" id="r-k" min="10" max="2000" step="10" value="200" oninput="syncRange('k',this)"/></div>
       <div class="rail-row"><div class="rail-label">Kv/Kh ratio<span id="v-kvkh">0.10</span></div><input type="range" class="rail-range" id="r-kvkh" min="0.01" max="1.0" step="0.01" value="0.10" oninput="syncRange('kvkh',this)"/></div>
       <div class="rail-row"><div class="rail-label">Heterogeneity (V_DP)<span id="v-vdp">0.4</span></div><input type="range" class="rail-range" id="r-vdp" min="0" max="0.85" step="0.05" value="0.4" oninput="syncRange('vdp',this)"/></div>
     </div>
+  </div>
+  <div class="callout c-cyan">Layer properties are auto-generated from base rock and the Dykstra-Parsons heterogeneity coefficient, ordered fining-upward. Edit any cell directly — values feed the 3D model and simulation immediately. A high-perm "thief zone" can be created by setting one layer's kh well above the others.</div>
+  <div class="chart-card">
+    <div class="chart-title">Layer Property Table <span class="ct-right">click values to edit</span></div>
+    <table class="layer-table" id="layerTable"></table>
+  </div>
+  <div class="chart-grid" style="margin-top:14px;">
+    <div class="chart-card">
+      <div class="chart-title">Permeability Profile vs Depth</div>
+      <canvas class="chart-canvas" id="layerKChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Porosity Profile vs Depth</div>
+      <canvas class="chart-canvas" id="layerPhiChart"></canvas>
+    </div>
+  </div>
+</div>
 
-    <div class="rail-section">
-      <div class="rail-title">Fluid (PVT)</div>
+<!-- ─── BUILD 3 · FLUID PVT ─── -->
+<div class="screen screen-detail" id="screen-pvt">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div><div class="panel-title">Build 3 · Fluid <em>PVT Properties</em></div>
+    <div class="panel-sub">Black oil formulation · Standing / Beal correlations · pressure-dependent tables</div></div>
+    <div class="panel-badges"><span class="badge gold" id="pvt-type">Undersaturated</span><span class="badge" id="pvt-pb">Pb=190 bar</span></div>
+  </div>
+  <div class="ctl-card">
+    <div class="chart-title">Fluid Parameters</div>
+    <div class="ctl-grid">
       <div class="rail-row"><div class="rail-label">Pᵢ Init Pres (bar)<span id="v-pi">260</span></div><input type="range" class="rail-range" id="r-pi" min="50" max="600" step="5" value="260" oninput="syncRange('pi',this)"/></div>
       <div class="rail-row"><div class="rail-label">Pb Bubble Pt (bar)<span id="v-pb">190</span></div><input type="range" class="rail-range" id="r-pb" min="30" max="500" step="5" value="190" oninput="syncRange('pb',this)"/></div>
       <div class="rail-row"><div class="rail-label">μₒ Oil Visc (cP)<span id="v-muo">2.2</span></div><input type="range" class="rail-range" id="r-muo" min="0.5" max="20" step="0.1" value="2.2" oninput="syncRange('muo',this)"/></div>
       <div class="rail-row"><div class="rail-label">μw Water Visc (cP)<span id="v-muw">0.5</span></div><input type="range" class="rail-range" id="r-muw" min="0.3" max="2.0" step="0.1" value="0.5" oninput="syncRange('muw',this)"/></div>
       <div class="rail-row"><div class="rail-label">Bₒ FVF @ Pi<span id="v-bo">1.26</span></div><input type="range" class="rail-range" id="r-bo" min="1.05" max="2.50" step="0.01" value="1.26" oninput="syncRange('bo',this)"/></div>
       <div class="rail-row"><div class="rail-label">Rₛᵢ Sol GOR<span id="v-rsi">90</span></div><input type="range" class="rail-range" id="r-rsi" min="10" max="300" step="5" value="90" oninput="syncRange('rsi',this)"/></div>
+    </div>
+  </div>
+  <div class="eq-card"><div class="eq-label">Black Oil PVT Relations</div>
+    <div class="eq-text">Bₒ(P)=Bₒb·exp[−cₒ(P−Pb)] for P&gt;Pb · Rₛ(P)=Rₛᵢ(P/Pb)^1.2 for P≤Pb · μₒ(P)=μₒb(Pb/P)^0.6</div></div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Oil FVF Bₒ vs P</div><canvas class="chart-canvas" id="pvtBoChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Bₒ</span><span><i style="background:var(--red);opacity:.6"></i>Pb</span></div></div>
+    <div class="chart-card"><div class="chart-title">Solution GOR Rₛ vs P</div><canvas class="chart-canvas" id="pvtRsChart"></canvas><div class="chart-legend"><span><i style="background:var(--cyan)"></i>Rₛ</span></div></div>
+    <div class="chart-card"><div class="chart-title">Oil Viscosity μₒ vs P</div><canvas class="chart-canvas" id="pvtMuChart"></canvas><div class="chart-legend"><span><i style="background:var(--amber)"></i>μₒ</span></div></div>
+    <div class="chart-card"><div class="chart-title">Gas FVF Bᵍ vs P</div><canvas class="chart-canvas" id="pvtBgChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>Bᵍ</span></div></div>
+  </div>
+  <div class="chart-title" style="margin-bottom:8px;">PVT Table</div>
+  <div style="overflow-x:auto;"><table class="pvt-table" id="pvtTable"></table></div>
+</div>
+
+<!-- ─── BUILD 4 · ROCK & SCAL ─── -->
+<div class="screen screen-detail" id="screen-rock">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div><div class="panel-title">Build 4 · Rock &amp; <em>SCAL</em></div>
+    <div class="panel-sub">Corey relative permeability · capillary pressure · endpoint saturations</div></div>
+    <div class="panel-badges"><span class="badge gold">Water-wet</span><span class="badge">Corey</span></div>
+  </div>
+  <div class="ctl-card">
+    <div class="chart-title">Endpoint Parameters</div>
+    <div class="ctl-grid">
       <div class="rail-row"><div class="rail-label">Swi Connate<span id="v-swi">0.20</span></div><input type="range" class="rail-range" id="r-swi" min="0.05" max="0.45" step="0.01" value="0.20" oninput="syncRange('swi',this)"/></div>
     </div>
+  </div>
+  <div class="eq-card"><div class="eq-label">Corey Relative Permeability</div>
+    <div class="eq-text">kᵣₒ=kᵣₒ(Swi)[(1−Sw−Sor)/(1−Swi−Sor)]^nₒ · kᵣw=kᵣw(Sor)[(Sw−Swi)/(1−Swi−Sor)]^nw</div></div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Oil-Water Rel Perm</div><canvas class="chart-canvas" id="krChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>kᵣₒ</span><span><i style="background:var(--cyan)"></i>kᵣw</span></div></div>
+    <div class="chart-card"><div class="chart-title">Gas-Oil Rel Perm</div><canvas class="chart-canvas" id="krgChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>kᵣₒg</span><span><i style="background:var(--green-bright)"></i>kᵣg</span></div></div>
+  </div>
+  <div class="info-grid">
+    <div class="info-card"><div class="info-card-title">Oil/Water Endpoints</div>
+      <div class="info-row"><span class="info-key">Swi</span><span class="info-val gold" id="rk-swi">0.20</span></div>
+      <div class="info-row"><span class="info-key">Sor</span><span class="info-val">0.28</span></div>
+      <div class="info-row"><span class="info-key">kᵣₒ(Swi)</span><span class="info-val">0.85</span></div>
+      <div class="info-row"><span class="info-key">kᵣw(Sor)</span><span class="info-val">0.30</span></div>
+      <div class="info-row"><span class="info-key">nₒ / nw</span><span class="info-val">3.0 / 2.5</span></div></div>
+    <div class="info-card"><div class="info-card-title">Gas/Oil Endpoints</div>
+      <div class="info-row"><span class="info-key">Sgc</span><span class="info-val">0.05</span></div>
+      <div class="info-row"><span class="info-key">Slr</span><span class="info-val">0.20</span></div>
+      <div class="info-row"><span class="info-key">kᵣg(Slr)</span><span class="info-val">0.75</span></div>
+      <div class="info-row"><span class="info-key">ng / nog</span><span class="info-val">2.0 / 2.5</span></div></div>
+    <div class="info-card"><div class="info-card-title">Compressibility</div>
+      <div class="info-row"><span class="info-key">cr rock</span><span class="info-val">4.5e-5 bar⁻¹</span></div>
+      <div class="info-row"><span class="info-key">cw water</span><span class="info-val">4.6e-5 bar⁻¹</span></div>
+      <div class="info-row"><span class="info-key">ct total</span><span class="info-val gold">~1.5e-4 bar⁻¹</span></div></div>
+  </div>
+</div>
 
-    <div class="rail-section">
-      <div class="rail-title">Wells</div>
+<!-- ─── BUILD 5 · WELLS & COMPLETIONS ─── -->
+<div class="screen screen-detail" id="screen-wells">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div><div class="panel-title">Build 5 · Wells &amp; <em>Completions</em></div>
+    <div class="panel-sub">Peaceman model · BHP control · per-well parameters · per-layer completions</div></div>
+    <div class="panel-badges"><span class="badge gold" id="w-count">5 wells</span><span class="badge green">BHP</span></div>
+  </div>
+  <div class="ctl-card">
+    <div class="chart-title">Field Defaults <span class="ct-right">apply to all non-customised wells · well count regenerates the pattern</span></div>
+    <div class="ctl-grid">
       <div class="rail-row"><div class="rail-label">Producers<span id="v-np">3</span></div><input type="range" class="rail-range" id="r-np" min="1" max="6" value="3" oninput="syncRange('np',this)"/></div>
       <div class="rail-row"><div class="rail-label">Injectors<span id="v-ni2">2</span></div><input type="range" class="rail-range" id="r-ni2" min="0" max="4" value="2" oninput="syncRange('ni2',this)"/></div>
       <div class="rail-row"><div class="rail-label">Pwf Producers (bar)<span id="v-pwfp">90</span></div><input type="range" class="rail-range" id="r-pwfp" min="20" max="200" step="5" value="90" oninput="syncRange('pwfp',this)"/></div>
@@ -353,309 +635,176 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
       <div class="rail-row"><div class="rail-label">rw Radius (m)<span id="v-rw">0.11</span></div><input type="range" class="rail-range" id="r-rw" min="0.05" max="0.30" step="0.01" value="0.11" oninput="syncRange('rw',this)"/></div>
       <div class="rail-row"><div class="rail-label">Skin S<span id="v-skin">3</span></div><input type="range" class="rail-range" id="r-skin" min="-3" max="20" step="1" value="3" oninput="syncRange('skin',this)"/></div>
     </div>
+  </div>
+  <div class="eq-card"><div class="eq-label">Peaceman Well Model (per perforated layer)</div>
+    <div class="eq-text">qₚ = WI·(kᵣₚ/μₚBₚ)·(Pblock−Pwf) · WI=2π·kh·Δz/(ln(r₀/rw)+S) · r₀=0.28√(Δx²+Δy²)/2</div></div>
+  <div class="well-editor-grid">
+    <div class="chart-card">
+      <div class="chart-title">Field Map <span class="ct-right">click select · drag move · snaps to cell</span></div>
+      <canvas id="wellMap" style="width:100%;display:block;cursor:pointer;touch-action:none;"></canvas>
+      <div class="io-btn-row" style="padding:10px 0 0;">
+        <button class="io-btn" onclick="addWell('prod')">＋ Add Producer</button>
+        <button class="io-btn" onclick="addWell('inj')">＋ Add Injector</button>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Well Inspector <span class="ct-right" id="insp-well-name"></span></div>
+      <div id="wellInspector"></div>
+    </div>
+  </div>
+  <div class="chart-card"><div class="chart-title">Well Register <span class="ct-right">click a row to edit · ◆ = customised</span></div><table class="well-table" id="wellTable"></table></div>
+  <div class="info-grid" style="margin-top:14px;">
+    <div class="info-card"><div class="info-card-title">Inflow Parameters</div>
+      <div class="info-row"><span class="info-key">rw</span><span class="info-val gold" id="wi-rw">0.11 m</span></div>
+      <div class="info-row"><span class="info-key">Skin S</span><span class="info-val" id="wi-skin">3.0</span></div>
+      <div class="info-row"><span class="info-key">Peaceman r₀</span><span class="info-val" id="wi-r0">—</span></div>
+      <div class="info-row"><span class="info-key">Completions</span><span class="info-val">Per-layer</span></div></div>
+    <div class="info-card"><div class="info-card-title">Constraints</div>
+      <div class="info-row"><span class="info-key">Prod BHP min</span><span class="info-val" id="wi-pwfp">90 bar</span></div>
+      <div class="info-row"><span class="info-key">Inj BHP max</span><span class="info-val" id="wi-pwfi">360 bar</span></div>
+      <div class="info-row"><span class="info-key">Control</span><span class="info-val gold">BHP</span></div></div>
+  </div>
+</div>
 
-    <div class="rail-section">
-      <div class="rail-title">Aquifer &amp; Solver</div>
+<!-- ─── BUILD 6 · AQUIFER & DRIVE ─── -->
+<div class="screen screen-detail" id="screen-aquifer">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div><div class="panel-title">Build 6 · Aquifer <em>Model</em></div>
+    <div class="panel-sub">Analytical influx · Fetkovich / Carter-Tracy · bottom &amp; edge water</div></div>
+    <div class="panel-badges"><span class="badge gold" id="aq-badge">Fetkovich</span></div>
+  </div>
+  <div class="ctl-card">
+    <div class="chart-title">Aquifer Parameters</div>
+    <div class="ctl-grid">
       <div class="rail-row"><div class="rail-label">Aquifer Model</div>
-        <select class="rail-select" id="s-aqtype" onchange="P.aqtype=this.value;updateDerived();"><option value="none">None</option><option value="fetkovich" selected>Fetkovich</option><option value="carter">Carter-Tracy</option></select></div>
+        <select class="rail-select" id="s-aqtype" onchange="P.aqtype=this.value;TOUCHED.aquifer=true;updateDerived();"><option value="none">None</option><option value="fetkovich" selected>Fetkovich</option><option value="carter">Carter-Tracy</option></select></div>
       <div class="rail-row"><div class="rail-label">Aquifer Strength<span id="v-aqstr">1.0</span></div><input type="range" class="rail-range" id="r-aqstr" min="0" max="5" step="0.1" value="1.0" oninput="syncRange('aqstr',this)"/></div>
+    </div>
+  </div>
+  <div class="eq-card"><div class="eq-label">Fetkovich Aquifer</div>
+    <div class="eq-text">dWe/dt=Jaq·(Paq−Pr) · Paq=Pᵢ(1−We/Wei) · strength multiplier scales Jaq and Wei</div></div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Aquifer Influx We vs Time</div><canvas class="chart-canvas" id="aqChart"></canvas><div class="chart-legend"><span><i style="background:var(--cyan)"></i>We cumulative</span></div></div>
+    <div class="info-card" style="align-self:start"><div class="info-card-title">Aquifer Parameters</div>
+      <div class="info-row"><span class="info-key">Model</span><span class="info-val gold" id="aq-m">Fetkovich</span></div>
+      <div class="info-row"><span class="info-key">Strength ×</span><span class="info-val" id="aq-str">1.0</span></div>
+      <div class="info-row"><span class="info-key">Drive</span><span class="info-val">Edge + bottom</span></div>
+      <div class="info-row"><span class="info-key">Connects to</span><span class="info-val cyan">Lowest layer</span></div></div>
+  </div>
+</div>
+
+<!-- ─── BUILD 7 · SOLVER & SCHEDULE ─── -->
+<div class="screen screen-detail" id="screen-solver">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div><div class="panel-title">Build 7 · Numerical <em>Solver</em></div>
+    <div class="panel-sub">IMPES · 3D seven-diagonal pressure system · explicit saturation update</div></div>
+    <div class="panel-badges"><span class="badge gold" id="s-badge">IMPES</span><span class="badge" id="s-stepsbadge">—</span></div>
+  </div>
+  <div class="ctl-card">
+    <div class="chart-title">Solver &amp; Schedule Parameters</div>
+    <div class="ctl-grid">
       <div class="rail-row"><div class="rail-label">Solver</div>
-        <select class="rail-select" id="s-solver" onchange="P.solver=this.value;updateDerived();"><option value="impes" selected>IMPES</option><option value="fi">Fully Implicit</option></select></div>
+        <select class="rail-select" id="s-solver" onchange="P.solver=this.value;TOUCHED.solver=true;updateDerived();"><option value="impes" selected>IMPES</option><option value="fi">Fully Implicit</option></select></div>
       <div class="rail-row"><div class="rail-label">Δt (days)<span id="v-dt">30</span></div><input type="range" class="rail-range" id="r-dt" min="5" max="90" value="30" oninput="syncRange('dt',this)"/></div>
       <div class="rail-row"><div class="rail-label">Horizon (yr)<span id="v-yr">12</span></div><input type="range" class="rail-range" id="r-yr" min="1" max="25" value="12" oninput="syncRange('yr',this)"/></div>
-      <label class="rail-checkbox-row"><input type="checkbox" id="cb-grav" checked onchange="P.gravity=this.checked"> Gravity Segregation</label>
-      <label class="rail-checkbox-row"><input type="checkbox" id="cb-gas" checked onchange="P.gas=this.checked"> Solution Gas Drive</label>
-    </div>
-
-    <div class="workflow-steps" id="workflowSteps">
-      <div class="wf-step done" id="wf1"><span class="wf-step-num" data-n="1"></span>Configure grid &amp; fluid</div>
-      <div class="wf-step active" id="wf2"><span class="wf-step-num" data-n="2"></span>Set wells &amp; solver</div>
-      <div class="wf-step" id="wf3"><span class="wf-step-num" data-n="3"></span>Run simulation</div>
-      <div class="wf-step" id="wf4"><span class="wf-step-num" data-n="4"></span>Analyse &amp; export</div>
-    </div>
-    <button class="run-btn" id="runBtn" onclick="runSimulation()"><span class="run-icon">▶</span> Run Simulation</button>
-    <div class="sim-status" id="simStatus">Ready · Configure and Run</div>
-    <div class="io-btn-row">
-      <button class="io-btn" onclick="openModal('import')">⬇ Import</button>
-      <button class="io-btn" onclick="openModal('export')">⬆ Export</button>
-      <button class="io-btn" onclick="pushToAPEX()">→ APEX</button>
-    </div>
-  </aside>
-
-  <!-- ─── MAIN ─── -->
-  <main class="apex-main">
-
-    <!-- ═══ 3D MODEL TAB ═══ -->
-    <div class="tab-panel active" id="tab-model">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">Reservoir <em>3D Model</em></div>
-          <div class="panel-sub">Interactive WebGL grid · Drag to rotate · Scroll to zoom · Colour by property</div>
-        </div>
-        <div class="panel-badges">
-          <span class="badge gold" id="b-gridsize">12×12×4 = 576 cells</span>
-          <span class="badge" id="b-stoiip">STOIIP: —</span>
-          <span class="badge" id="live-sim-status" style="display:none;border-color:rgba(46,204,138,0.4);color:var(--green-bright);background:var(--green-dim);font-family:var(--font-mono);font-size:9px;"></span>
-        </div>
-      </div>
-      <div class="viewer-wrap">
-        <div class="viewer-bar">
-          <span class="viewer-bar-title">Grid Viewer</span>
-          <div class="viewer-controls">
-            <button class="vc-btn active" id="cm-perm" onclick="setColorMode('perm')">Perm</button>
-            <button class="vc-btn" id="cm-poro" onclick="setColorMode('poro')">Porosity</button>
-            <button class="vc-btn" id="cm-press" onclick="setColorMode('press')">Pressure</button>
-            <button class="vc-btn" id="cm-sat" onclick="setColorMode('sat')">Saturation</button>
-            <button class="vc-btn" id="tg-explode" onclick="toggleExplode()">Layer Split</button>
-            <button class="vc-btn" id="tg-wells" onclick="toggleWells()">Wells ✓</button>
-          </div>
-        </div>
-        <div id="three-mount-model" class="three-mount"></div>
-        <div class="viewer-hint">LMB drag · rotate &nbsp;|&nbsp; wheel · zoom</div>
-        <div class="viewer-legend">
-          <div id="legend-label">Permeability kh (mD)</div>
-          <div class="viewer-legend-bar" id="legend-bar"></div>
-          <div class="viewer-legend-row"><span id="legend-min">10</span><span id="legend-max">2000</span></div>
-        </div>
-      </div>
-      <div class="info-grid">
-        <div class="info-card">
-          <div class="info-card-title">Grid Dimensions</div>
-          <div class="info-row"><span class="info-key">Ni × Nj × Nk</span><span class="info-val gold" id="i-dims">12×12×4</span></div>
-          <div class="info-row"><span class="info-key">Active cells</span><span class="info-val" id="i-cells">576</span></div>
-          <div class="info-row"><span class="info-key">Cell Δx·Δy·Δz</span><span class="info-val" id="i-cellsize">120·120·8 m</span></div>
-          <div class="info-row"><span class="info-key">Areal extent</span><span class="info-val" id="i-area">1.44 km²</span></div>
-          <div class="info-row"><span class="info-key">Gross thickness</span><span class="info-val" id="i-gross">32 m</span></div>
-        </div>
-        <div class="info-card">
-          <div class="info-card-title">Volumetrics</div>
-          <div class="info-row"><span class="info-key">Bulk volume</span><span class="info-val" id="i-bv">—</span></div>
-          <div class="info-row"><span class="info-key">Pore volume</span><span class="info-val" id="i-pv">—</span></div>
-          <div class="info-row"><span class="info-key">HCPV</span><span class="info-val green" id="i-hcpv">—</span></div>
-          <div class="info-row"><span class="info-key">STOIIP</span><span class="info-val gold" id="i-stoiip">—</span></div>
-          <div class="info-row"><span class="info-key">STOIIP (MMbbl)</span><span class="info-val" id="i-stb">—</span></div>
-        </div>
-        <div class="info-card">
-          <div class="info-card-title">Vertical Heterogeneity</div>
-          <div class="info-row"><span class="info-key">Kv/Kh</span><span class="info-val cyan" id="i-kvkh">0.10</span></div>
-          <div class="info-row"><span class="info-key">Dykstra-Parsons</span><span class="info-val" id="i-vdp">0.40</span></div>
-          <div class="info-row"><span class="info-key">k range (layers)</span><span class="info-val" id="i-krange">—</span></div>
-          <div class="info-row"><span class="info-key">Avg layer kh</span><span class="info-val" id="i-avgk">200 mD</span></div>
-        </div>
-      </div>
-      <div class="eq-card">
-        <div class="eq-label">3D Continuity — Six-Point Stencil (TPFA)</div>
-        <div class="eq-text">∂(φSₚρₚ)/∂t = ∑[face=x±,y±,z±] Tface·λₚ·(Pₙₑᵢ − Pᵢ) + qₚ<br>Tz = 2·Kv·Δx·Δy / Δz &nbsp;·&nbsp; Kv = (Kv/Kh)·kh &nbsp;·&nbsp; vertical cross-flow couples layers</div>
+      <div class="rail-row" style="align-self:end;">
+        <label class="rail-checkbox-row"><input type="checkbox" id="cb-grav" checked onchange="P.gravity=this.checked;TOUCHED.solver=true;renderBuildNav();saveState();"> Gravity Segregation</label>
+        <label class="rail-checkbox-row"><input type="checkbox" id="cb-gas" checked onchange="P.gas=this.checked;TOUCHED.solver=true;renderBuildNav();saveState();"> Solution Gas Drive</label>
       </div>
     </div>
+  </div>
+  <div class="eq-card"><div class="eq-label">IMPES Sequence</div>
+    <div class="eq-text">1. Assemble 3D pressure matrix (7-diag) → solve P implicitly (Gauss-Seidel)<br>2. Update Sw, Sg explicitly per cell from inter-block fluxes<br>3. CFL: Δt ≤ φΔx²cₜμ/(2k) · ΔSmax ≤ 0.05 per step</div></div>
+  <div class="info-grid">
+    <div class="info-card"><div class="info-card-title">Configuration</div>
+      <div class="info-row"><span class="info-key">Method</span><span class="info-val gold" id="sv-method">IMPES</span></div>
+      <div class="info-row"><span class="info-key">Pressure solver</span><span class="info-val">Gauss-Seidel</span></div>
+      <div class="info-row"><span class="info-key">Tolerance</span><span class="info-val">1e-5 bar</span></div>
+      <div class="info-row"><span class="info-key">Max sweeps</span><span class="info-val">200</span></div></div>
+    <div class="info-card"><div class="info-card-title">Timestepping</div>
+      <div class="info-row"><span class="info-key">Δt</span><span class="info-val gold" id="sv-dt">30 d</span></div>
+      <div class="info-row"><span class="info-key">Horizon</span><span class="info-val green" id="sv-yr">12 yr</span></div>
+      <div class="info-row"><span class="info-key">Est. steps</span><span class="info-val" id="sv-steps">~146</span></div></div>
+    <div class="info-card"><div class="info-card-title">Status</div>
+      <div class="info-row"><span class="info-key">State</span><span class="info-val gold" id="sv-state">Idle</span></div>
+      <div class="info-row"><span class="info-key">Steps done</span><span class="info-val" id="sv-done">0</span></div>
+      <div class="info-row"><span class="info-key">CPU time</span><span class="info-val" id="sv-cpu">—</span></div></div>
+  </div>
+  <div class="chart-title" style="margin:4px 0 8px;">Simulation Log</div>
+  <div class="sim-log" id="simLog">Awaiting run command…</div>
+</div>
 
-    <!-- ═══ LAYERS TAB ═══ -->
-    <div class="tab-panel" id="tab-layers">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">Layer <em>Properties</em></div>
-          <div class="panel-sub">Per-layer porosity, permeability &amp; net-to-gross · editable · drives 3D heterogeneity</div>
-        </div>
-        <div class="panel-badges"><span class="badge gold" id="b-nlayers">4 layers</span></div>
+<!-- ─── RESULTS ─── -->
+<div class="screen screen-detail" id="screen-results">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div><div class="panel-title">Simulation <em>Results</em></div>
+    <div class="panel-sub">Production forecast · pressure depletion · well performance · 3D saturation evolution is on Mission Control</div></div>
+    <div class="panel-badges"><span class="badge" id="r-status">No results — run simulation</span></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Cum Oil Np</div><div class="kpi-val" id="r-cumoil">—</div><div class="kpi-sub">10³ m³ SC</div></div>
+    <div class="kpi k-cyan"><div class="kpi-label">Cum Water Wp</div><div class="kpi-val" id="r-wp">—</div><div class="kpi-sub">10³ m³ SC</div></div>
+    <div class="kpi k-green"><div class="kpi-label">Avg Res P</div><div class="kpi-val" id="r-pr">—</div><div class="kpi-sub">bar</div></div>
+    <div class="kpi k-amber"><div class="kpi-label">Final WOR</div><div class="kpi-val" id="r-wor">—</div><div class="kpi-sub">m³/m³</div></div>
+    <div class="kpi k-red"><div class="kpi-label">Recovery</div><div class="kpi-val" id="r-rf">—</div><div class="kpi-sub">% STOIIP</div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Field Rates vs Time<span class="ct-right">m³/d SC</span></div><canvas class="chart-canvas" id="rateChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Qₒ</span><span><i style="background:var(--cyan)"></i>Qw</span></div></div>
+    <div class="chart-card"><div class="chart-title">Avg Reservoir Pressure<span class="ct-right">bar</span></div><canvas class="chart-canvas" id="presChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>P̄</span><span><i style="background:var(--red);opacity:.6"></i>Pb</span></div></div>
+    <div class="chart-card"><div class="chart-title">Cumulative Production<span class="ct-right">10³ m³</span></div><canvas class="chart-canvas" id="cumChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Np</span><span><i style="background:var(--cyan)"></i>Wp</span></div></div>
+    <div class="chart-card"><div class="chart-title">WOR &amp; GOR vs Time</div><canvas class="chart-canvas" id="gorChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>WOR</span><span><i style="background:var(--amber)"></i>GOR×0.1</span></div></div>
+  </div>
+  <!-- 2D plan-view heatmap (legacy, hidden — kept for export reference) -->
+  <canvas id="sat-heatmap" style="display:none;"></canvas>
+  <div class="io-btn-row" style="padding:0;margin-top:4px;">
+    <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="exportResultsCSV()">⬇ Export Production CSV</button>
+    <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="pushToAPEX()">→ Push to Financial Model</button>
+  </div>
+</div>
+
+<!-- ─── ENSEMBLE ─── -->
+<div class="screen screen-detail" id="screen-ensemble">
+  <button class="screen-back" onclick="nav('home')">‹ Mission Control</button>
+  <div class="panel-header">
+    <div><div class="panel-title">Ensemble <em>P10 / P50 / P90</em></div>
+    <div class="panel-sub">Monte Carlo uncertainty · stochastic realizations around the current model · SPE exceedance convention: P10 high · P90 low</div></div>
+    <div class="panel-badges"><span class="badge" id="ens-status-badge">No ensemble — run one</span></div>
+  </div>
+  <div class="callout c-cyan">Each realization re-runs the full 3D IMPES engine with parameters sampled around the current base case: layer kh × lognormal(σ=0.35), porosity ± 8%, Kv/Kh × lognormal(σ=0.40), aquifer strength × lognormal(σ=0.50), skin ± 2. The seed makes an ensemble reproducible — same seed and base case give the same percentiles. P10 is the optimistic high case (exceeded with 10% probability), P90 the conservative low case.</div>
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">Ensemble Control</div>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;padding:8px 2px 2px;">
+      <div style="min-width:220px;flex:1;max-width:340px;">
+        <div class="rail-label">Realizations<span id="v-ensn">25</span></div>
+        <input type="range" class="rail-range" id="ens-n" min="10" max="100" step="5" value="25"
+          oninput="document.getElementById('v-ensn').textContent=this.value;this.style.setProperty('--pct',((this.value-this.min)/(this.max-this.min)*100)+'%');"/>
       </div>
-      <div class="callout c-cyan">Layer properties are auto-generated from base rock and the Dykstra-Parsons heterogeneity coefficient, ordered fining-upward. Edit any cell directly — values feed the 3D model and simulation immediately. A high-perm "thief zone" can be created by setting one layer's kh well above the others.</div>
-      <div class="chart-card">
-        <div class="chart-title">Layer Property Table <span class="ct-right">click values to edit</span></div>
-        <table class="layer-table" id="layerTable"></table>
-      </div>
-      <div class="chart-grid" style="margin-top:14px;">
-        <div class="chart-card">
-          <div class="chart-title">Permeability Profile vs Depth</div>
-          <canvas class="chart-canvas" id="layerKChart"></canvas>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">Porosity Profile vs Depth</div>
-          <canvas class="chart-canvas" id="layerPhiChart"></canvas>
-        </div>
-      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--cream-dim);">Seed
+        <input type="number" id="ens-seed" value="42" min="1" step="1" class="layer-input" style="width:70px;"/>
+      </label>
+      <button class="run-btn" id="ensRunBtn" style="width:auto;margin:0;padding:10px 22px;flex:0 0 auto;" onclick="runEnsemble()"><span class="run-icon">▶</span> Run Ensemble</button>
+      <span class="io-note" id="ensStatus" style="margin:0;">Idle — uses the current base case</span>
     </div>
-
-    <!-- ═══ PVT TAB ═══ -->
-    <div class="tab-panel" id="tab-pvt">
-      <div class="panel-header">
-        <div><div class="panel-title">Fluid <em>PVT Properties</em></div>
-        <div class="panel-sub">Black oil formulation · Standing / Beal correlations · pressure-dependent tables</div></div>
-        <div class="panel-badges"><span class="badge gold" id="pvt-type">Undersaturated</span><span class="badge" id="pvt-pb">Pb=190 bar</span></div>
-      </div>
-      <div class="eq-card"><div class="eq-label">Black Oil PVT Relations</div>
-        <div class="eq-text">Bₒ(P)=Bₒb·exp[−cₒ(P−Pb)] for P&gt;Pb · Rₛ(P)=Rₛᵢ(P/Pb)^1.2 for P≤Pb · μₒ(P)=μₒb(Pb/P)^0.6</div></div>
-      <div class="chart-grid">
-        <div class="chart-card"><div class="chart-title">Oil FVF Bₒ vs P</div><canvas class="chart-canvas" id="pvtBoChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Bₒ</span><span><i style="background:var(--red);opacity:.6"></i>Pb</span></div></div>
-        <div class="chart-card"><div class="chart-title">Solution GOR Rₛ vs P</div><canvas class="chart-canvas" id="pvtRsChart"></canvas><div class="chart-legend"><span><i style="background:var(--cyan)"></i>Rₛ</span></div></div>
-        <div class="chart-card"><div class="chart-title">Oil Viscosity μₒ vs P</div><canvas class="chart-canvas" id="pvtMuChart"></canvas><div class="chart-legend"><span><i style="background:var(--amber)"></i>μₒ</span></div></div>
-        <div class="chart-card"><div class="chart-title">Gas FVF Bᵍ vs P</div><canvas class="chart-canvas" id="pvtBgChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>Bᵍ</span></div></div>
-      </div>
-      <div class="chart-title" style="margin-bottom:8px;">PVT Table</div>
-      <div style="overflow-x:auto;"><table class="pvt-table" id="pvtTable"></table></div>
-    </div>
-
-    <!-- ═══ ROCK TAB ═══ -->
-    <div class="tab-panel" id="tab-rock">
-      <div class="panel-header">
-        <div><div class="panel-title">Rock &amp; <em>SCAL</em></div>
-        <div class="panel-sub">Corey relative permeability · capillary pressure · endpoint saturations</div></div>
-        <div class="panel-badges"><span class="badge gold">Water-wet</span><span class="badge">Corey</span></div>
-      </div>
-      <div class="eq-card"><div class="eq-label">Corey Relative Permeability</div>
-        <div class="eq-text">kᵣₒ=kᵣₒ(Swi)[(1−Sw−Sor)/(1−Swi−Sor)]^nₒ · kᵣw=kᵣw(Sor)[(Sw−Swi)/(1−Swi−Sor)]^nw</div></div>
-      <div class="chart-grid">
-        <div class="chart-card"><div class="chart-title">Oil-Water Rel Perm</div><canvas class="chart-canvas" id="krChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>kᵣₒ</span><span><i style="background:var(--cyan)"></i>kᵣw</span></div></div>
-        <div class="chart-card"><div class="chart-title">Gas-Oil Rel Perm</div><canvas class="chart-canvas" id="krgChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>kᵣₒg</span><span><i style="background:var(--green-bright)"></i>kᵣg</span></div></div>
-      </div>
-      <div class="info-grid">
-        <div class="info-card"><div class="info-card-title">Oil/Water Endpoints</div>
-          <div class="info-row"><span class="info-key">Swi</span><span class="info-val gold" id="rk-swi">0.20</span></div>
-          <div class="info-row"><span class="info-key">Sor</span><span class="info-val">0.28</span></div>
-          <div class="info-row"><span class="info-key">kᵣₒ(Swi)</span><span class="info-val">0.85</span></div>
-          <div class="info-row"><span class="info-key">kᵣw(Sor)</span><span class="info-val">0.30</span></div>
-          <div class="info-row"><span class="info-key">nₒ / nw</span><span class="info-val">3.0 / 2.5</span></div></div>
-        <div class="info-card"><div class="info-card-title">Gas/Oil Endpoints</div>
-          <div class="info-row"><span class="info-key">Sgc</span><span class="info-val">0.05</span></div>
-          <div class="info-row"><span class="info-key">Slr</span><span class="info-val">0.20</span></div>
-          <div class="info-row"><span class="info-key">kᵣg(Slr)</span><span class="info-val">0.75</span></div>
-          <div class="info-row"><span class="info-key">ng / nog</span><span class="info-val">2.0 / 2.5</span></div></div>
-        <div class="info-card"><div class="info-card-title">Compressibility</div>
-          <div class="info-row"><span class="info-key">cr rock</span><span class="info-val">4.5e-5 bar⁻¹</span></div>
-          <div class="info-row"><span class="info-key">cw water</span><span class="info-val">4.6e-5 bar⁻¹</span></div>
-          <div class="info-row"><span class="info-key">ct total</span><span class="info-val gold">~1.5e-4 bar⁻¹</span></div></div>
-      </div>
-    </div>
-
-    <!-- ═══ WELLS TAB ═══ -->
-    <div class="tab-panel" id="tab-wells">
-      <div class="panel-header">
-        <div><div class="panel-title">Well <em>Configuration</em></div>
-        <div class="panel-sub">Peaceman model · BHP control · multi-layer completions</div></div>
-        <div class="panel-badges"><span class="badge gold" id="w-count">5 wells</span><span class="badge green">BHP</span></div>
-      </div>
-      <div class="eq-card"><div class="eq-label">Peaceman Well Model (per perforated layer)</div>
-        <div class="eq-text">qₚ = WI·(kᵣₚ/μₚBₚ)·(Pblock−Pwf) · WI=2π·kh·Δz/(ln(r₀/rw)+S) · r₀=0.28√(Δx²+Δy²)/2</div></div>
-      <div class="chart-card"><div class="chart-title">Well Register</div><table class="well-table" id="wellTable"></table></div>
-      <div class="info-grid" style="margin-top:14px;">
-        <div class="info-card"><div class="info-card-title">Inflow Parameters</div>
-          <div class="info-row"><span class="info-key">rw</span><span class="info-val gold" id="wi-rw">0.11 m</span></div>
-          <div class="info-row"><span class="info-key">Skin S</span><span class="info-val" id="wi-skin">3.0</span></div>
-          <div class="info-row"><span class="info-key">Peaceman r₀</span><span class="info-val" id="wi-r0">—</span></div>
-          <div class="info-row"><span class="info-key">Completions</span><span class="info-val">All layers</span></div></div>
-        <div class="info-card"><div class="info-card-title">Constraints</div>
-          <div class="info-row"><span class="info-key">Prod BHP min</span><span class="info-val" id="wi-pwfp">90 bar</span></div>
-          <div class="info-row"><span class="info-key">Inj BHP max</span><span class="info-val" id="wi-pwfi">360 bar</span></div>
-          <div class="info-row"><span class="info-key">Control</span><span class="info-val gold">BHP</span></div></div>
-      </div>
-    </div>
-
-    <!-- ═══ AQUIFER TAB ═══ -->
-    <div class="tab-panel" id="tab-aquifer">
-      <div class="panel-header">
-        <div><div class="panel-title">Aquifer <em>Model</em></div>
-        <div class="panel-sub">Analytical influx · Fetkovich / Carter-Tracy · bottom &amp; edge water</div></div>
-        <div class="panel-badges"><span class="badge gold" id="aq-badge">Fetkovich</span></div>
-      </div>
-      <div class="eq-card"><div class="eq-label">Fetkovich Aquifer</div>
-        <div class="eq-text">dWe/dt=Jaq·(Paq−Pr) · Paq=Pᵢ(1−We/Wei) · strength multiplier scales Jaq and Wei</div></div>
-      <div class="chart-grid">
-        <div class="chart-card"><div class="chart-title">Aquifer Influx We vs Time</div><canvas class="chart-canvas" id="aqChart"></canvas><div class="chart-legend"><span><i style="background:var(--cyan)"></i>We cumulative</span></div></div>
-        <div class="info-card" style="align-self:start"><div class="info-card-title">Aquifer Parameters</div>
-          <div class="info-row"><span class="info-key">Model</span><span class="info-val gold" id="aq-m">Fetkovich</span></div>
-          <div class="info-row"><span class="info-key">Strength ×</span><span class="info-val" id="aq-str">1.0</span></div>
-          <div class="info-row"><span class="info-key">Drive</span><span class="info-val">Edge + bottom</span></div>
-          <div class="info-row"><span class="info-key">Connects to</span><span class="info-val cyan">Lowest layer</span></div></div>
-      </div>
-    </div>
-
-    <!-- ═══ SOLVER TAB ═══ -->
-    <div class="tab-panel" id="tab-solver">
-      <div class="panel-header">
-        <div><div class="panel-title">Numerical <em>Solver</em></div>
-        <div class="panel-sub">IMPES · 3D seven-diagonal pressure system · explicit saturation update</div></div>
-        <div class="panel-badges"><span class="badge gold" id="s-badge">IMPES</span><span class="badge" id="s-stepsbadge">—</span></div>
-      </div>
-      <div class="eq-card"><div class="eq-label">IMPES Sequence</div>
-        <div class="eq-text">1. Assemble 3D pressure matrix (7-diag) → solve P implicitly (Gauss-Seidel)<br>2. Update Sw, Sg explicitly per cell from inter-block fluxes<br>3. CFL: Δt ≤ φΔx²cₜμ/(2k) · ΔSmax ≤ 0.05 per step</div></div>
-      <div class="info-grid">
-        <div class="info-card"><div class="info-card-title">Configuration</div>
-          <div class="info-row"><span class="info-key">Method</span><span class="info-val gold" id="sv-method">IMPES</span></div>
-          <div class="info-row"><span class="info-key">Pressure solver</span><span class="info-val">Gauss-Seidel</span></div>
-          <div class="info-row"><span class="info-key">Tolerance</span><span class="info-val">1e-5 bar</span></div>
-          <div class="info-row"><span class="info-key">Max sweeps</span><span class="info-val">200</span></div></div>
-        <div class="info-card"><div class="info-card-title">Timestepping</div>
-          <div class="info-row"><span class="info-key">Δt</span><span class="info-val gold" id="sv-dt">30 d</span></div>
-          <div class="info-row"><span class="info-key">Horizon</span><span class="info-val green" id="sv-yr">12 yr</span></div>
-          <div class="info-row"><span class="info-key">Est. steps</span><span class="info-val" id="sv-steps">~146</span></div></div>
-        <div class="info-card"><div class="info-card-title">Status</div>
-          <div class="info-row"><span class="info-key">State</span><span class="info-val gold" id="sv-state">Idle</span></div>
-          <div class="info-row"><span class="info-key">Steps done</span><span class="info-val" id="sv-done">0</span></div>
-          <div class="info-row"><span class="info-key">CPU time</span><span class="info-val" id="sv-cpu">—</span></div></div>
-      </div>
-      <div class="chart-title" style="margin:4px 0 8px;">Simulation Log</div>
-      <div class="sim-log" id="simLog">Awaiting run command…</div>
-    </div>
-
-    <!-- ═══ RESULTS TAB ═══ -->
-    <div class="tab-panel" id="tab-results">
-      <div class="panel-header">
-        <div><div class="panel-title">Simulation <em>Results</em></div>
-        <div class="panel-sub">Production forecast · pressure depletion · 3D saturation evolution · well performance</div></div>
-        <div class="panel-badges"><span class="badge" id="r-status">No results — run simulation</span></div>
-      </div>
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-label">Cum Oil Np</div><div class="kpi-val" id="r-cumoil">—</div><div class="kpi-sub">10³ m³ SC</div></div>
-        <div class="kpi k-cyan"><div class="kpi-label">Cum Water Wp</div><div class="kpi-val" id="r-wp">—</div><div class="kpi-sub">10³ m³ SC</div></div>
-        <div class="kpi k-green"><div class="kpi-label">Avg Res P</div><div class="kpi-val" id="r-pr">—</div><div class="kpi-sub">bar</div></div>
-        <div class="kpi k-amber"><div class="kpi-label">Final WOR</div><div class="kpi-val" id="r-wor">—</div><div class="kpi-sub">m³/m³</div></div>
-        <div class="kpi k-red"><div class="kpi-label">Recovery</div><div class="kpi-val" id="r-rf">—</div><div class="kpi-sub">% STOIIP</div></div>
-      </div>
-      <div class="chart-grid">
-        <div class="chart-card"><div class="chart-title">Field Rates vs Time<span class="ct-right">m³/d SC</span></div><canvas class="chart-canvas" id="rateChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Qₒ</span><span><i style="background:var(--cyan)"></i>Qw</span></div></div>
-        <div class="chart-card"><div class="chart-title">Avg Reservoir Pressure<span class="ct-right">bar</span></div><canvas class="chart-canvas" id="presChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>P̄</span><span><i style="background:var(--red);opacity:.6"></i>Pb</span></div></div>
-        <div class="chart-card"><div class="chart-title">Cumulative Production<span class="ct-right">10³ m³</span></div><canvas class="chart-canvas" id="cumChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>Np</span><span><i style="background:var(--cyan)"></i>Wp</span></div></div>
-        <div class="chart-card"><div class="chart-title">WOR &amp; GOR vs Time</div><canvas class="chart-canvas" id="gorChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>WOR</span><span><i style="background:var(--amber)"></i>GOR×0.1</span></div></div>
-      </div>
-      <!-- 3D Saturation Animation Viewer -->
-      <div class="viewer-wrap" id="satViewer3DWrap">
-        <div class="viewer-bar">
-          <span class="viewer-bar-title">3D Saturation Evolution — Oil (Red) → Water (Blue)</span>
-          <div class="viewer-controls">
-            <select class="vc-btn" id="satLayerSel" style="cursor:pointer;display:none;" onchange="satLayerK=+this.value;"></select>
-            <button class="vc-btn" onclick="stepSatTime3D(-1)">◀ Prev</button>
-            <button class="vc-btn active" id="satPlayBtn" onclick="playSatAnimation3D()">▶ Animate</button>
-            <button class="vc-btn" onclick="stepSatTime3D(1)">Next ▶</button>
-            <span class="vc-btn" style="cursor:default;min-width:80px;text-align:center;" id="satTimeLabel">t = 0 yr</span>
-            <button class="vc-btn" id="tg-explode-res" onclick="toggleExplodeRes()">Layer Split</button>
-          </div>
-        </div>
-        <div id="three-mount-results" class="three-mount" style="height:460px;"></div>
-        <div class="viewer-hint">LMB drag · rotate &nbsp;|&nbsp; wheel · zoom</div>
-        <div class="viewer-legend">
-          <div id="sat3d-legend-label">Water Saturation Sw</div>
-          <div style="width:120px;height:8px;border-radius:2px;margin:5px 0 3px;background:linear-gradient(90deg,#B42D1E,#DC8C28,#1E5AC8);"></div>
-          <div style="display:flex;justify-content:space-between;width:120px;font-size:9.5px;color:var(--steel);font-family:var(--font-mono);">
-            <span>Oil</span><span>Transition</span><span>Water</span>
-          </div>
-        </div>
-        <!-- Timeline scrubber -->
-        <div style="padding:8px 16px 10px;background:var(--navy2);border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;">
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--steel);white-space:nowrap;">Timeline</span>
-          <input type="range" id="satScrubber" min="0" max="15" value="0" step="1"
-            style="flex:1;-webkit-appearance:none;appearance:none;height:3px;background:linear-gradient(90deg,var(--gold) 0%,rgba(107,122,141,0.3) 0%);outline:none;cursor:pointer;"
-            oninput="scrubSat3D(+this.value)"/>
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--gold);min-width:50px;text-align:right;" id="satScrubLabel">t = 0 yr</span>
-        </div>
-      </div>
-      <!-- 2D plan-view heatmap (legacy, hidden — kept for export reference) -->
-      <canvas id="sat-heatmap" style="display:none;"></canvas>
-      <div class="io-btn-row" style="padding:0;margin-top:4px;">
-        <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="exportResultsCSV()">⬇ Export Production CSV</button>
-        <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="pushToAPEX()">→ Push to Financial Model</button>
-      </div>
-    </div>
-
-  </main>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi k-red"><div class="kpi-label">Np P90 · Low</div><div class="kpi-val" id="e-np90">—</div><div class="kpi-sub">10³ m³ SC</div></div>
+    <div class="kpi"><div class="kpi-label">Np P50 · Mid</div><div class="kpi-val" id="e-np50">—</div><div class="kpi-sub">10³ m³ SC</div></div>
+    <div class="kpi k-green"><div class="kpi-label">Np P10 · High</div><div class="kpi-val" id="e-np10">—</div><div class="kpi-sub">10³ m³ SC</div></div>
+    <div class="kpi k-amber"><div class="kpi-label">RF P90/P50/P10</div><div class="kpi-val" id="e-rf">—</div><div class="kpi-sub">% STOIIP</div></div>
+    <div class="kpi k-cyan"><div class="kpi-label">P10 / P90 Ratio</div><div class="kpi-val" id="e-ratio">—</div><div class="kpi-sub">uncertainty spread</div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title">Oil Rate Fan<span class="ct-right">m³/d SC</span></div><canvas class="chart-canvas" id="ensRateChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>P50</span><span><i style="background:rgba(201,168,76,0.28)"></i>P90–P10 band</span><span><i style="background:var(--steel)"></i>Base case</span></div></div>
+    <div class="chart-card"><div class="chart-title">Cumulative Oil Np Fan<span class="ct-right">10³ m³</span></div><canvas class="chart-canvas" id="ensCumChart"></canvas><div class="chart-legend"><span><i style="background:var(--gold)"></i>P50</span><span><i style="background:rgba(201,168,76,0.28)"></i>P90–P10 band</span><span><i style="background:var(--steel)"></i>Base case</span></div></div>
+    <div class="chart-card"><div class="chart-title">Avg Reservoir Pressure Fan<span class="ct-right">bar</span></div><canvas class="chart-canvas" id="ensPresChart"></canvas><div class="chart-legend"><span><i style="background:var(--green-bright)"></i>P50</span><span><i style="background:rgba(46,204,138,0.28)"></i>P90–P10 band</span><span><i style="background:var(--steel)"></i>Base case</span></div></div>
+    <div class="chart-card"><div class="chart-title">Final Np Distribution<span class="ct-right">10³ m³</span></div><canvas class="chart-canvas" id="ensHist"></canvas><div class="chart-legend"><span><i style="background:#E07070"></i>P90</span><span><i style="background:var(--gold)"></i>P50</span><span><i style="background:var(--green-bright)"></i>P10</span></div></div>
+  </div>
+  <div class="io-btn-row" style="padding:0;margin-top:14px;">
+    <button class="io-btn" style="flex:0 0 auto;padding:8px 16px;" onclick="exportEnsembleCSV()">⬇ Export Ensemble CSV</button>
+  </div>
 </div>
 
 <div class="sim-progress-wrap" id="progressWrap" style="display:none;">
@@ -689,18 +838,25 @@ const P = {
 };
 
 let LAYERS=[];      // per-layer {phi,k,ntg,depth}
+let WELLS=[];       // explicit well list {name,type,i,j,pwf,rw,skin,perf[],active,custom}
 const RES={ran:false,times:[],qo:[],qw:[],pres:[],np:[],wp:[],gor:[],wor:[],satFrames:[],presFrames:[]};
 let colorMode='perm', explodeOn=false, wellsOn=true, satFrameIdx=0, satPlaying=false, satLayerK=0;
 
 // ── RANGE SYNC ──
 function syncRange(key,el){
   const v=parseFloat(el.value); P[key]=v;
+  if(KEY2BUILD[key]) TOUCHED[KEY2BUILD[key]]=true;
   const disp={phi:2,muo:1,muw:1,bo:2,swi:2,rw:2,kvkh:2,vdp:2,aqstr:1};
   const lab=document.getElementById('v-'+key);
   if(lab) lab.textContent = disp[key]!==undefined ? v.toFixed(disp[key]) : v;
   const min=parseFloat(el.min),max=parseFloat(el.max);
   el.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');
   if(['nk','k','phi','vdp','kvkh','topd','dz'].includes(key)) generateLayers();
+  if(['np','ni2'].includes(key)) syncWellCounts();
+  if(['ni','nj'].includes(key)) fitWellsToGrid();
+  if(key==='nk') WELLS.forEach(w=>{const old=w.perf||[]; w.perf=Array.from({length:P.nk},(_,k)=>old[k]!==undefined?old[k]:true);});
+  if(['pwfp','pwfi','rw','skin'].includes(key)) WELLS.forEach(w=>{ if(w.custom) return;
+    w.pwf=(w.type==='prod')?P.pwfp:P.pwfi; w.rw=P.rw; w.skin=P.skin; });
   updateDerived();
   if(['ni','nj','nk','dx','dy','dz','topd','k','phi','vdp','kvkh','np','ni2'].includes(key)) rebuild3D();
 }
@@ -774,46 +930,353 @@ function updateDerived(){
   set('s-badge',P.solver.toUpperCase()); set('sv-method',P.solver.toUpperCase());
   set('sv-dt',`${P.dt} d`); set('sv-yr',`${P.yr} yr`);
   const steps=Math.round(P.yr*365/P.dt); set('sv-steps',`~${steps}`); set('s-stepsbadge',`${steps} steps`);
+  set('g-gridsize',`${ni}×${nj}×${nk}`);
   buildWellTable();
+  if(typeof renderBuildNav==='function')renderBuildNav();
+  if(typeof saveState==='function')saveState();
 }
 
-// ── WELL GEOMETRY ──
-function buildWells(){
-  const {ni,nj,nk}=P; const w=[];
-  const pp=[[0.78,0.78],[0.22,0.78],[0.5,0.22],[0.8,0.35],[0.2,0.35],[0.5,0.65]];
-  const ip=[[0.5,0.5],[0.15,0.5],[0.85,0.5],[0.5,0.15]];
-  for(let p=0;p<P.np;p++) w.push({name:`P${p+1}`,type:'prod',i:Math.floor(pp[p][0]*ni),j:Math.floor(pp[p][1]*nj)});
-  for(let q=0;q<P.ni2;q++) w.push({name:`I${q+1}`,type:'inj',i:Math.floor(ip[q][0]*ni),j:Math.floor(ip[q][1]*nj)});
-  return w;
+// ── WELL GEOMETRY & EDITOR ──
+// WELLS is the explicit, editable well list. generateWells() lays out default
+// wells from the field-default sliders; individual wells can be customised
+// (position, BHP, rw, skin, per-layer completions) — the custom flag stops the
+// global sliders from overwriting those edits, and count/grid changes preserve
+// customised wells instead of regenerating the whole pattern.
+const WELL_PP=[[0.78,0.78],[0.22,0.78],[0.5,0.22],[0.8,0.35],[0.2,0.35],[0.5,0.65]];
+const WELL_IP=[[0.5,0.5],[0.15,0.5],[0.85,0.5],[0.5,0.15]];
+let selWell=-1;
+function mkWell(name,type,i,j){
+  return {name,type,i,j,active:true,custom:false,
+    pwf:type==='prod'?P.pwfp:P.pwfi,rw:P.rw,skin:P.skin,
+    perf:Array.from({length:P.nk},()=>true)};
+}
+function generateWells(){
+  const {ni,nj}=P; const w=[];
+  for(let p=0;p<P.np;p++) w.push(mkWell(`P${p+1}`,'prod',Math.floor(WELL_PP[p][0]*ni),Math.floor(WELL_PP[p][1]*nj)));
+  for(let q=0;q<P.ni2;q++) w.push(mkWell(`I${q+1}`,'inj',Math.floor(WELL_IP[q][0]*ni),Math.floor(WELL_IP[q][1]*nj)));
+  WELLS=w; selWell=-1;
+}
+// Count sliders add/remove default wells at the end of the pattern — existing
+// (possibly customised) wells are never touched.
+function syncWellCounts(){
+  const prods=()=>WELLS.filter(w=>w.type==='prod'), injs=()=>WELLS.filter(w=>w.type==='inj');
+  while(prods().length<P.np){ const n=prods().length;
+    WELLS.push(mkWell(nextWellName('prod'),'prod',Math.floor(WELL_PP[Math.min(n,WELL_PP.length-1)][0]*P.ni),Math.floor(WELL_PP[Math.min(n,WELL_PP.length-1)][1]*P.nj))); }
+  while(prods().length>P.np){ const w=prods().pop(); WELLS.splice(WELLS.indexOf(w),1); }
+  while(injs().length<P.ni2){ const n=injs().length;
+    WELLS.push(mkWell(nextWellName('inj'),'inj',Math.floor(WELL_IP[Math.min(n,WELL_IP.length-1)][0]*P.ni),Math.floor(WELL_IP[Math.min(n,WELL_IP.length-1)][1]*P.nj))); }
+  while(injs().length>P.ni2){ const w=injs().pop(); WELLS.splice(WELLS.indexOf(w),1); }
+  selWell=-1;
+}
+// Areal grid changes re-seat pattern wells and clamp customised ones in bounds.
+function fitWellsToGrid(){
+  let pi_=0,ii_=0;
+  WELLS.forEach(w=>{
+    if(!w.custom){
+      if(w.type==='prod'&&pi_<WELL_PP.length){ w.i=Math.floor(WELL_PP[pi_][0]*P.ni); w.j=Math.floor(WELL_PP[pi_][1]*P.nj); pi_++; }
+      else if(w.type==='inj'&&ii_<WELL_IP.length){ w.i=Math.floor(WELL_IP[ii_][0]*P.ni); w.j=Math.floor(WELL_IP[ii_][1]*P.nj); ii_++; }
+    }
+    w.i=Math.min(P.ni-1,Math.max(0,w.i)); w.j=Math.min(P.nj-1,Math.max(0,w.j));
+  });
+}
+function nextWellName(type){
+  const pfx=type==='prod'?'P':'I';
+  let n=1; WELLS.forEach(w=>{ const m=w.name.match(new RegExp('^'+pfx+'(\\d+)$')); if(m)n=Math.max(n,+m[1]+1); });
+  return pfx+n;
+}
+function buildWells(){ if(!WELLS.length) generateWells(); return WELLS.filter(w=>w.active); }
+function perfLabel(w){
+  const on=(w.perf||[]).map((v,k)=>v?k+1:null).filter(v=>v);
+  if(on.length===P.nk) return `1–${P.nk}`;
+  return on.length?on.join(','):'—';
+}
+
+// ── WELL EDITOR (Build 5 detail screen) ──
+function refreshWellUI(){
+  buildWellTable(); drawWellMap(); renderWellInspector();
+  renderBuildNav(); rebuild3D(); TOUCHED.wells=true; saveState();
+}
+function selectWell(ix){ selWell=ix; buildWellTable(); drawWellMap(); renderWellInspector(); }
+function addWell(type){
+  const w=mkWell(nextWellName(type),type,Math.floor(P.ni/2),Math.floor(P.nj/2));
+  w.custom=true; WELLS.push(w);
+  P[type==='prod'?'np':'ni2']=WELLS.filter(x=>x.type===type).length; syncCountSlider(type);
+  selWell=WELLS.length-1; refreshWellUI();
+}
+function deleteWell(ix){
+  const w=WELLS[ix]; if(!w)return;
+  WELLS.splice(ix,1);
+  P[w.type==='prod'?'np':'ni2']=WELLS.filter(x=>x.type===w.type).length; syncCountSlider(w.type);
+  selWell=-1; refreshWellUI();
+}
+function syncCountSlider(type){
+  const key=type==='prod'?'np':'ni2';
+  const el=document.getElementById('r-'+key);
+  if(el){ el.value=P[key]; const min=+el.min,max=+el.max;
+    el.style.setProperty('--pct',((P[key]-min)/(max-min)*100)+'%');
+    const lab=document.getElementById('v-'+key); if(lab)lab.textContent=P[key]; }
+}
+function editWellProp(ix,prop,val){
+  const w=WELLS[ix]; if(!w)return;
+  if(prop==='name'){ w.name=(''+val).trim().slice(0,8)||w.name; }
+  else if(prop==='type'){ w.type=val==='inj'?'inj':'prod'; w.pwf=w.type==='prod'?P.pwfp:P.pwfi; w.custom=true;
+    P.np=WELLS.filter(x=>x.type==='prod').length; P.ni2=WELLS.filter(x=>x.type==='inj').length;
+    syncCountSlider('prod'); syncCountSlider('inj'); }
+  else if(prop==='i'||prop==='j'){ const v=Math.round(+val)-1;
+    if(isFinite(v)) w[prop]=Math.min((prop==='i'?P.ni:P.nj)-1,Math.max(0,v)); w.custom=true; }
+  else if(prop==='pwf'||prop==='rw'||prop==='skin'){ const v=+val;
+    if(isFinite(v)){ if(prop==='pwf')w.pwf=Math.max(1,v); if(prop==='rw')w.rw=Math.min(0.5,Math.max(0.03,v)); if(prop==='skin')w.skin=Math.min(20,Math.max(-3,v)); w.custom=true; } }
+  else if(prop==='active'){ w.active=!!val; }
+  refreshWellUI();
+}
+function togglePerf(ix,k,on){ const w=WELLS[ix]; if(!w)return; w.perf[k]=!!on; w.custom=true; refreshWellUI(); }
+function resetWellDefaults(ix){ const w=WELLS[ix]; if(!w)return;
+  w.pwf=w.type==='prod'?P.pwfp:P.pwfi; w.rw=P.rw; w.skin=P.skin;
+  w.perf=Array.from({length:P.nk},()=>true); w.custom=false; refreshWellUI();
+}
+function renderWellInspector(){
+  const el=document.getElementById('wellInspector'); if(!el)return;
+  const w=WELLS[selWell];
+  if(!w){ el.innerHTML='<span class="io-note">Select a well on the map or in the register — edit its BHP, radius, skin, position and per-layer completions here.</span>'; return; }
+  const perfRows=LAYERS.map((L,k)=>`
+    <label class="rail-checkbox-row" style="justify-content:space-between;margin-bottom:4px;">
+      <span style="display:flex;align-items:center;gap:8px;"><input type="checkbox" ${w.perf[k]?'checked':''} onchange="togglePerf(${selWell},${k},this.checked)"> L${k+1}</span>
+      <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--steel);">${L.k.toFixed(0)} mD · φ ${L.phi.toFixed(2)}</span>
+    </label>`).join('');
+  const noPerf=!w.perf.some(v=>v);
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:10px;">
+      <label class="insp-field">Name<input class="layer-input" style="width:100%;" value="${w.name}" onchange="editWellProp(${selWell},'name',this.value)"></label>
+      <label class="insp-field">Type<select class="rail-select" onchange="editWellProp(${selWell},'type',this.value)">
+        <option value="prod" ${w.type==='prod'?'selected':''}>Producer</option><option value="inj" ${w.type==='inj'?'selected':''}>Injector</option></select></label>
+      <label class="insp-field">i (1–${P.ni})<input class="layer-input" style="width:100%;" type="number" min="1" max="${P.ni}" value="${w.i+1}" onchange="editWellProp(${selWell},'i',this.value)"></label>
+      <label class="insp-field">j (1–${P.nj})<input class="layer-input" style="width:100%;" type="number" min="1" max="${P.nj}" value="${w.j+1}" onchange="editWellProp(${selWell},'j',this.value)"></label>
+      <label class="insp-field">Pwf (bar)<input class="layer-input" style="width:100%;" type="number" step="5" value="${w.pwf}" onchange="editWellProp(${selWell},'pwf',this.value)"></label>
+      <label class="insp-field">rw (m)<input class="layer-input" style="width:100%;" type="number" step="0.01" value="${w.rw}" onchange="editWellProp(${selWell},'rw',this.value)"></label>
+      <label class="insp-field">Skin S<input class="layer-input" style="width:100%;" type="number" step="0.5" value="${w.skin}" onchange="editWellProp(${selWell},'skin',this.value)"></label>
+      <label class="insp-field" style="justify-content:flex-end;"><span>&nbsp;</span>
+        <label class="rail-checkbox-row" style="margin:0;"><input type="checkbox" ${w.active?'checked':''} onchange="editWellProp(${selWell},'active',this.checked)"> Active</label></label>
+    </div>
+    <div class="chart-title" style="margin-bottom:6px;">Completions <span class="ct-right">${noPerf?'<span style="color:#E07070;">no perforated layer — well is shut</span>':'perforated layers'}</span></div>
+    ${perfRows}
+    <div class="io-btn-row" style="padding:10px 0 0;">
+      <button class="io-btn" onclick="resetWellDefaults(${selWell})">↺ Field Defaults</button>
+      <button class="io-btn" style="border-color:rgba(192,57,43,0.5);color:#E07070;" onclick="deleteWell(${selWell})">✕ Delete Well</button>
+    </div>
+    ${w.custom?'<div class="io-note" style="margin-top:8px;">Customised — field-default sliders no longer overwrite this well.</div>':''}`;
+}
+
+// Plan-view field map: click to select, drag to move (snap to cell)
+let mapGeom=null, mapDragging=false;
+function drawWellMap(){
+  const cv=document.getElementById('wellMap'); if(!cv)return;
+  const W=cv.offsetWidth||600; const {ni,nj}=P;
+  const cell=Math.min(W/ni,420/nj); const mw=cell*ni, mh=cell*nj;
+  cv.width=W; cv.height=mh+24;
+  const ox=(W-mw)/2, oy=10;
+  mapGeom={ox,oy,cell};
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(ox,oy,mw,mh);
+  ctx.strokeStyle='rgba(107,122,141,0.15)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=ni;i++){ctx.beginPath();ctx.moveTo(ox+i*cell,oy);ctx.lineTo(ox+i*cell,oy+mh);ctx.stroke();}
+  for(let j=0;j<=nj;j++){ctx.beginPath();ctx.moveTo(ox,oy+j*cell);ctx.lineTo(ox+mw,oy+j*cell);ctx.stroke();}
+  ctx.strokeStyle='rgba(107,122,141,0.4)'; ctx.lineWidth=1; ctx.strokeRect(ox,oy,mw,mh);
+  WELLS.forEach((w,ix)=>{
+    const x=ox+(w.i+0.5)*cell, y=oy+(w.j+0.5)*cell;
+    const col=w.type==='prod'?'#C9A84C':'#4AADCA';
+    ctx.globalAlpha=w.active?1:0.35;
+    if(ix===selWell){ ctx.strokeStyle='#F8F5EE'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(x,y,Math.max(8,cell*0.42),0,Math.PI*2); ctx.stroke(); }
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,Math.max(5,cell*0.28),0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#0A1628'; ctx.font=`600 ${Math.max(7,cell*0.22)}px 'DM Mono'`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(w.type==='prod'?'P':'I',x,y+0.5);
+    ctx.fillStyle=col; ctx.font=`9.5px 'DM Mono'`; ctx.textBaseline='alphabetic';
+    ctx.fillText(w.name,x,y-Math.max(8,cell*0.42)-3);
+    ctx.globalAlpha=1;
+  });
+}
+function mapHit(e){
+  const cv=document.getElementById('wellMap'); if(!cv||!mapGeom)return null;
+  const r=cv.getBoundingClientRect();
+  const px=(e.clientX-r.left)*(cv.width/r.width), py=(e.clientY-r.top)*(cv.height/r.height);
+  return {px,py,i:Math.floor((px-mapGeom.ox)/mapGeom.cell),j:Math.floor((py-mapGeom.oy)/mapGeom.cell)};
+}
+function attachWellMapEvents(){
+  const cv=document.getElementById('wellMap'); if(!cv)return;
+  cv.addEventListener('pointerdown',e=>{
+    const h=mapHit(e); if(!h)return;
+    let hit=-1;
+    WELLS.forEach((w,ix)=>{
+      const x=mapGeom.ox+(w.i+0.5)*mapGeom.cell, y=mapGeom.oy+(w.j+0.5)*mapGeom.cell;
+      if(Math.hypot(h.px-x,h.py-y)<=Math.max(9,mapGeom.cell*0.45)) hit=ix;
+    });
+    if(hit>=0){ selWell=hit; mapDragging=true; cv.setPointerCapture(e.pointerId);
+      buildWellTable(); drawWellMap(); renderWellInspector(); }
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!mapDragging||selWell<0)return;
+    const h=mapHit(e); if(!h)return;
+    const w=WELLS[selWell];
+    const ni_=Math.min(P.ni-1,Math.max(0,h.i)), nj_=Math.min(P.nj-1,Math.max(0,h.j));
+    if(w.i!==ni_||w.j!==nj_){ w.i=ni_; w.j=nj_; w.custom=true; drawWellMap(); }
+  });
+  cv.addEventListener('pointerup',()=>{ if(mapDragging){ mapDragging=false; refreshWellUI(); } });
 }
 function buildWellTable(){
   const t=document.getElementById('wellTable'); if(!t)return;
-  const w=buildWells();
-  const r0=0.28*Math.sqrt(P.dx*P.dx+P.dy*P.dy)/2;
-  t.innerHTML='<thead><tr><th>Well</th><th>Type</th><th>i,j</th><th>Perf Layers</th><th>Pwf (bar)</th><th>Status</th></tr></thead><tbody>'+
-    w.map(x=>`<tr><td>${x.name}</td><td><span class="well-type ${x.type}">${x.type==='prod'?'PROD':'INJ'}</span></td><td>${x.i+1},${x.j+1}</td><td>1–${P.nk}</td><td>${x.type==='prod'?P.pwfp:P.pwfi}</td><td><span class="well-status-dot dot-on"></span></td></tr>`).join('')+'</tbody>';
+  // Per-well cumulative volumes appear once a run has produced them.
+  // Stats are recorded for ACTIVE wells in list order, so map by name.
+  const stats={};
+  if(RES.ran&&RES.wellStats) RES.wellStats.forEach(s=>{stats[s.name]=s;});
+  const hasStats=RES.ran&&RES.wellStats;
+  t.innerHTML=`<thead><tr><th>Well</th><th>Type</th><th>i,j</th><th>Perf Layers</th><th>Pwf (bar)</th><th>Skin</th>${hasStats?'<th>Cum Oil / Inj (10³m³)</th><th>Cum Wat (10³m³)</th>':''}<th>Status</th></tr></thead><tbody>`+
+    WELLS.map((x,ix)=>{
+      const s=stats[x.name];
+      const volCol=hasStats?`<td>${s?( x.type==='prod'?(s.oil/1e3).toFixed(0):(s.inj/1e3).toFixed(0) ):'—'}</td><td>${s&&x.type==='prod'?(s.water/1e3).toFixed(0):'—'}</td>`:'';
+      return `<tr class="${ix===selWell?'selected':''}" onclick="selectWell(${ix})">
+      <td>${x.name}${x.custom?' <span style="color:var(--gold);font-size:9px;">◆</span>':''}</td>
+      <td><span class="well-type ${x.type}">${x.type==='prod'?'PROD':'INJ'}</span></td>
+      <td>${x.i+1},${x.j+1}</td><td>${perfLabel(x)}</td><td>${x.pwf}</td><td>${x.skin.toFixed(1)}</td>${volCol}
+      <td><span class="well-status-dot ${x.active?'dot-on':'dot-off'}"></span></td></tr>`;}).join('')+'</tbody>';
 }
 
-// ── TAB SWITCH ──
-function switchTab(name,btn){
-  document.querySelectorAll('.apex-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active'); document.getElementById('tab-'+name).classList.add('active');
-  if(name==='pvt')drawPVT(); if(name==='rock')drawSCAL();
-  if(name==='layers')drawLayerCharts(); if(name==='aquifer')drawAquifer();
-  if(name==='model'){
-    setTimeout(()=>{
-      mountCanvasTo('model');
-      // rebuild main grid (preserve current colour mode)
-      if(RES.ran && colorMode==='sat') rebuild3D(RES.satFrames[RES.satFrames.length-1]);
-      else rebuild3D();
-    },60);
+// ── SCREEN ROUTER ──
+// Hash-routed screens: #home is Mission Control (build nav · 3D · run/AI rail);
+// each build item, Results and Ensemble are full detail screens.
+const SCREEN_IDS=['home','grid','layers','pvt','rock','wells','aquifer','solver','results','ensemble'];
+let currentScreen='home';
+function nav(s){ if(location.hash!=='#'+s){ location.hash=s; } showScreen(); }
+function showScreen(){
+  let s=(location.hash||'#home').replace(/^#/,'');
+  if(!SCREEN_IDS.includes(s)) s='home';
+  currentScreen=s;
+  document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+s));
+  if(s==='home') setTimeout(()=>{ mountCanvasTo('model'); resizeShared(); },60);
+  if(s==='layers') setTimeout(drawLayerCharts,40);
+  if(s==='pvt') setTimeout(drawPVT,40);
+  if(s==='rock') setTimeout(drawSCAL,40);
+  if(s==='aquifer') setTimeout(drawAquifer,40);
+  if(s==='wells') setTimeout(()=>{ buildWellTable(); drawWellMap(); renderWellInspector(); },40);
+  if(s==='results'&&RES.ran) setTimeout(drawResults,40);
+  if(s==='ensemble'&&ENS.ran) setTimeout(drawEnsemble,60);
+  renderBuildNav();
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',showScreen);
+
+// ── MODEL BUILD NAV (home left panel) ──
+// TOUCHED tracks which build items the user has edited (status dot).
+const TOUCHED={};
+const KEY2BUILD={ni:'grid',nj:'grid',nk:'grid',dx:'grid',dy:'grid',dz:'grid',topd:'grid',
+  phi:'layers',k:'layers',kvkh:'layers',vdp:'layers',
+  pi:'pvt',pb:'pvt',muo:'pvt',muw:'pvt',bo:'pvt',rsi:'pvt',
+  swi:'rock',
+  np:'wells',ni2:'wells',pwfp:'wells',pwfi:'wells',rw:'wells',skin:'wells',
+  aqstr:'aquifer',dt:'solver',yr:'solver'};
+const BUILD_ITEMS=[
+  {id:'grid',n:1,t:'Grid & Structure',sum:()=>`${P.ni}×${P.nj}×${P.nk} · ${(P.ni*P.dx*P.nj*P.dy/1e6).toFixed(2)} km² · ${P.nk*P.dz} m gross`},
+  {id:'layers',n:2,t:'Layers & Rock',sum:()=>`${P.nk} layers · k̄ ${LAYERS.length?(LAYERS.reduce((a,L)=>a+L.k,0)/LAYERS.length).toFixed(0):P.k} mD · VDP ${P.vdp.toFixed(2)}`},
+  {id:'pvt',n:3,t:'Fluid PVT',sum:()=>`Pi ${P.pi} · Pb ${P.pb} bar · μo ${P.muo.toFixed(1)} cP`},
+  {id:'rock',n:4,t:'Rock & SCAL',sum:()=>`Swi ${P.swi.toFixed(2)} · Sor 0.28 · Corey water-wet`},
+  {id:'wells',n:5,t:'Wells & Completions',sum:()=>{const a=WELLS.filter(w=>w.active);
+    return `${a.filter(w=>w.type==='prod').length}P / ${a.filter(w=>w.type==='inj').length}I active · BHP control`;}},
+  {id:'aquifer',n:6,t:'Aquifer & Drive',sum:()=>P.aqtype==='none'?'No aquifer':`${P.aqtype==='carter'?'Carter-Tracy':'Fetkovich'} · strength ${P.aqstr.toFixed(1)}×`},
+  {id:'solver',n:7,t:'Solver & Schedule',sum:()=>`${P.solver.toUpperCase()} · Δt ${P.dt} d · ${P.yr} yr horizon`}
+];
+function renderBuildNav(){
+  const el=document.getElementById('buildNav'); if(!el)return;
+  el.innerHTML=BUILD_ITEMS.map(b=>`<div class="build-item ${TOUCHED[b.id]?'edited':''}" onclick="nav('${b.id}')">
+    <span class="bi-num">${b.n}</span>
+    <span class="bi-body"><span class="bi-title">${b.t}</span><span class="bi-sum">${b.sum()}</span></span>
+    <span class="bi-chev">›</span></div>`).join('');
+}
+
+// ── AI RUN ADVISOR ──
+// Deterministic diagnostics computed from the finished run (and ensemble):
+// breakthrough timing, water handling, recovery vs displacement ceiling,
+// pressure maintenance, drive balance, per-well flags, uncertainty spread.
+function runAdvisor(){
+  const el=document.getElementById('aiAdvisorBody'); if(!el)return;
+  if(!RES.ran){ el.innerHTML='<span style="color:var(--steel);font-size:11.5px;">Run a simulation — the advisor reads the results and flags breakthrough timing, drive balance and completion issues.</span>'; return; }
+  const F=[]; // {sev: 0 attention · 1 note · 2 info, text}
+  const T=RES.times, n=T.length, horizon=T[n-1];
+  // Water breakthrough timing
+  let bt=-1; for(let i=0;i<n;i++){ if(RES.wor[i]>0.02){ bt=T[i]; break; } }
+  if(bt<0) F.push({sev:2,text:`No significant water breakthrough within the ${horizon.toFixed(0)}-yr horizon.`});
+  else if(bt<horizon*0.25) F.push({sev:0,text:`Early water breakthrough at ${bt.toFixed(1)} yr (${(bt/horizon*100).toFixed(0)}% of horizon). Consider squeezing the highest-kh bottom layers on producers nearest injectors, or lowering injector BHP.`});
+  else F.push({sev:2,text:`Water breakthrough at ${bt.toFixed(1)} yr.`});
+  // Late-life water handling
+  const worEnd=RES.wor[n-1];
+  if(worEnd>5) F.push({sev:0,text:`Final WOR ${worEnd.toFixed(1)} — late life is mostly water handling; economics will be dominated by disposal capacity.`});
+  else if(worEnd>1.5) F.push({sev:1,text:`Final WOR ${worEnd.toFixed(1)} — field watering out as expected for a mature flood.`});
+  // Recovery vs displacement ceiling
+  const rf=parseFloat(document.getElementById('r-rf')?.textContent||'');
+  const ceil=(1-P.swi-0.28)/(1-P.swi)*100;
+  if(isFinite(rf)){
+    if(rf>ceil*0.85) F.push({sev:1,text:`Recovery ${rf.toFixed(1)}% is near the displacement ceiling (~${ceil.toFixed(0)}% for this Swi/Sor). Additional wells mostly accelerate rather than add reserves.`});
+    else if(rf<ceil*0.45) F.push({sev:1,text:`Recovery ${rf.toFixed(1)}% vs a ~${ceil.toFixed(0)}% displacement ceiling — sweep is leaving oil behind. Review injector placement, Kv/Kh layering, or extend the horizon.`});
   }
-  if(name==='results'){
-    setTimeout(()=>{
-      mountCanvasTo('results');
-      if(RES.ran){ drawResults(); showResults3D(); }
-    },80);
+  // Pressure maintenance vs bubble point
+  const pEnd=RES.pres[n-1];
+  if(pEnd<=P.pb) F.push({sev:0,text:`Average pressure ${pEnd.toFixed(0)} bar is BELOW bubble point (${P.pb} bar) — solution gas is liberating. Strengthen injection or aquifer support.`});
+  else if(pEnd<P.pb*1.1) F.push({sev:1,text:`Average pressure ${pEnd.toFixed(0)} bar is within 10% of bubble point (${P.pb} bar) — watch late-life pressure maintenance.`});
+  else F.push({sev:2,text:`Pressure maintained at ${pEnd.toFixed(0)} bar, comfortably above Pb (${P.pb} bar).`});
+  // Drive balance & per-well flags
+  if(RES.wellStats){
+    const prods=RES.wellStats.filter(s=>s.type==='prod'), injs=RES.wellStats.filter(s=>s.type==='inj');
+    const injTot=injs.reduce((a,s)=>a+s.inj,0);
+    const withdrawal=prods.reduce((a,s)=>a+s.water+s.oil*P.bo,0);
+    if(withdrawal>1e-6){
+      const share=Math.min(100,injTot/withdrawal*100);
+      if(P.aqstr>0&&share<70) F.push({sev:2,text:`Injection replaced ${share.toFixed(0)}% of voidage — the aquifer supplied the rest.`});
+      else if(P.aqstr===0&&share<40) F.push({sev:0,text:`Injection replaced only ${share.toFixed(0)}% of voidage with no aquifer — pressure depletion is limiting recovery.`});
+    }
+    if(prods.length>1){
+      const cuts=prods.map(s=>({name:s.name,cut:(s.water+s.oil)>1e-9?s.water/(s.water+s.oil):0,oil:s.oil}));
+      const worst=cuts.reduce((a,b)=>b.cut>a.cut?b:a);
+      if(worst.cut>0.8) F.push({sev:0,text:`${worst.name} produced ${(worst.cut*100).toFixed(0)}% water — the flood front has reached it. Squeeze its bottom completions or shut it in late-life.`});
+      const best=cuts.reduce((a,b)=>b.oil>a.oil?b:a), lag=cuts.reduce((a,b)=>b.oil<a.oil?b:a);
+      if(best.oil>1e-9&&lag.oil<best.oil*0.25) F.push({sev:1,text:`${lag.name} contributed only ${(lag.oil/best.oil*100).toFixed(0)}% of ${best.name}'s oil — review its skin, BHP or location.`});
+    }
+    if(injs.length>1&&injTot>1e-9){
+      const big=injs.reduce((a,b)=>b.inj>a.inj?b:a);
+      if(big.inj/injTot>0.7) F.push({sev:1,text:`${big.name} delivered ${(big.inj/injTot*100).toFixed(0)}% of all injection — the pattern is unbalanced.`});
+    }
+  }
+  // Completion state
+  const squeezed=WELLS.filter(w=>w.active&&w.perf.some(v=>!v));
+  if(squeezed.length) F.push({sev:2,text:`Partial completions active on ${squeezed.map(w=>w.name).join(', ')}.`});
+  const inactive=WELLS.filter(w=>!w.active);
+  if(inactive.length) F.push({sev:2,text:`${inactive.map(w=>w.name).join(', ')} inactive this run.`});
+  // Ensemble spread
+  if(ENS.ran&&ENS.finals.length){
+    const nps=ENS.finals.map(f=>f.npEnd).sort((a,b)=>a-b);
+    const ratio=pctile(nps,0.9)/Math.max(pctile(nps,0.1),1e-9);
+    if(ratio>1.8) F.push({sev:1,text:`Ensemble P10/P90 spread is ${ratio.toFixed(2)} — wide subsurface uncertainty; appraisal data moves the needle more than optimisation.`});
+    else F.push({sev:2,text:`Ensemble P10/P90 spread ${ratio.toFixed(2)} — forecast well constrained around P50.`});
+  }
+  F.sort((a,b)=>a.sev-b.sev);
+  const chip=s=>s===0?'<span class="ai-chip warn">Attention</span>':s===1?'<span class="ai-chip note">Note</span>':'<span class="ai-chip info">Info</span>';
+  el.innerHTML=F.slice(0,7).map(f=>`<div class="ai-item">${chip(f.sev)}<span>${f.text}</span></div>`).join('');
+  // If a Claude API key is linked, follow up with the full narrative analysis
+  if(typeof runClaudeAdvisor==='function'&&typeof getClaudeKey==='function'&&getClaudeKey())
+    setTimeout(()=>runClaudeAdvisor(false),80);
+}
+
+// ── HOME RIGHT RAIL SUMMARY ──
+function updateRightRail(){
+  if(RES.ran&&RES.np.length){
+    set('rr-np',RES.np[RES.np.length-1].toFixed(0));
+    const rfEl=document.getElementById('r-rf');
+    set('rr-rf',rfEl&&rfEl.textContent!=='—'?rfEl.textContent:'—');
+    set('rr-pr',RES.pres[RES.pres.length-1].toFixed(0));
+  }
+  if(ENS.ran&&ENS.finals.length){
+    const nps=ENS.finals.map(f=>f.npEnd).sort((a,b)=>a-b);
+    set('rr-e90',pctile(nps,0.10).toFixed(0));
+    set('rr-e50',pctile(nps,0.50).toFixed(0));
+    set('rr-e10',pctile(nps,0.90).toFixed(0));
   }
 }
 
@@ -1129,48 +1592,10 @@ function animateMain(){}  // no-op: animateShared handles rendering
 function resize3D(){ if(activeMount==='model')resizeShared(); }
 
 // ── RESULTS 3D SATURATION VIEWER ──
-let sat3DPlaying=false,sat3DInterval=null,explodeOnRes=false;
-
-function initThreeResults(){
-  // Results scene/camera already created in initThree; nothing to do.
-  // Kept for compatibility with existing call sites.
-}
-
-function buildSat3DGrid(satArr){
-  if(!sceneR)return;
-  if(gridGroupR)sceneR.remove(gridGroupR);
-  if(wellGroupR)sceneR.remove(wellGroupR);
-  gridGroupR=new THREE.Group(); wellGroupR=new THREE.Group();
-  const {ni,nj,nk,dx,dy,dz}=P;
-  const totW=ni*dx,totH=nj*dy,totZ=nk*dz;
-  const zExag=Math.max(6,(Math.max(totW,totH)/Math.max(totZ,1))*0.10);
-  const explodeGap=explodeOnRes?dz*zExag*1.4:0;
-  const cellGeo=new THREE.BoxGeometry(dx*0.93,dz*zExag*0.88,dy*0.93);
-  for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
-    const idx=i+j*ni+k*ni*nj;
-    const t=satArr?Math.max(0,Math.min(1,(satArr[idx]-P.swi)/(1-P.swi-0.28))):0;
-    const mat=new THREE.MeshLambertMaterial({color:rampSat(t)});
-    const m=new THREE.Mesh(cellGeo,mat);
-    const x=(i-(ni-1)/2)*dx, z=(j-(nj-1)/2)*dy;
-    const y=-(k-(nk-1)/2)*dz*zExag - k*explodeGap;
-    m.position.set(x,y,z); gridGroupR.add(m);
-  }
-  buildWells().forEach(w=>{
-    const x=(w.i-(ni-1)/2)*dx, z=(w.j-(nj-1)/2)*dy;
-    const topY=(nk-1)/2*dz*zExag+dz*zExag*2.2;
-    const botY=-(nk-1)/2*dz*zExag-(nk-1)*explodeGap-dz*zExag;
-    const h=topY-botY;
-    const col=w.type==='prod'?0xC9A84C:0x4AADCA;
-    const cyl=new THREE.Mesh(new THREE.CylinderGeometry(dx*0.07,dx*0.07,h,10),
-      new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.35}));
-    cyl.position.set(x,(topY+botY)/2,z); wellGroupR.add(cyl);
-    const sph=new THREE.Mesh(new THREE.SphereGeometry(dx*0.18,12,12),
-      new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:0.6}));
-    sph.position.set(x,topY,z); wellGroupR.add(sph);
-  });
-  sceneR.add(gridGroupR); sceneR.add(wellGroupR);
-  frameCameraToGroup(gridGroupR,'results');
-}
+// The saturation evolution plays directly on the Mission Control grid: after a
+// run, the timeline scrubber recolours the existing meshes in place
+// (updateGrid3DColors) — no second scene or canvas mount is needed.
+let sat3DPlaying=false,sat3DInterval=null;
 
 
 // Reliable camera framing from a group's bounding sphere.
@@ -1195,29 +1620,18 @@ function animateResults(){} // no-op: animateShared handles rendering
 function resize3DResults(){ if(activeMount==='results')resizeShared(); }
 function showResults3D(){
   if(!RES.ran||!RES.satFrames.length)return;
-  satFrameIdx=0; // start at t=0 (red/oil state) — press Animate to play forward
-  const sc=document.getElementById('satScrubber');
-  if(sc){sc.max=RES.satFrames.length-1; sc.value=0;
-    sc.style.background='linear-gradient(90deg,var(--gold) 0%,rgba(107,122,141,0.3) 0%)';}
-  // Mount the shared canvas into the results viewer, then build once sized
-  mountCanvasTo('results');
-  let tries=0;
-  const attempt=()=>{
-    const mount=document.getElementById('three-mount-results');
-    if(mount && mount.clientWidth>10){
-      resizeShared();
-      updateSat3DFrame(0);
-    }else if(tries++<60){
-      requestAnimationFrame(attempt);
-    }else{
-      updateSat3DFrame(0);
-    }
-  };
-  requestAnimationFrame(attempt);
+  const row=document.getElementById('satTimelineRow'); if(row)row.style.display='flex';
+  const grp=document.getElementById('satAnimGroup'); if(grp)grp.style.display='inline-flex';
+  const sc=document.getElementById('satScrubber'); if(sc)sc.max=RES.satFrames.length-1;
+  colorMode='sat';
+  ['perm','poro','press','sat'].forEach(x=>document.getElementById('cm-'+x)?.classList.toggle('active',x==='sat'));
+  updateLegend();
+  updateSat3DFrame(RES.satFrames.length-1); // land on end state; scrub/animate to replay
 }
 function updateSat3DFrame(fi){
   satFrameIdx=Math.max(0,Math.min(RES.satFrames.length-1,fi));
-  buildSat3DGrid(RES.satFrames[satFrameIdx]);
+  colorMode='sat';
+  updateGrid3DColors(RES.satFrames[satFrameIdx],RES.presFrames[satFrameIdx]);
   const ti=Math.min(Math.floor(satFrameIdx*RES.times.length/RES.satFrames.length),RES.times.length-1);
   const tLabel=`t = ${RES.times[ti].toFixed(1)} yr`;
   set('satTimeLabel',tLabel); set('satScrubLabel',tLabel);
@@ -1249,12 +1663,6 @@ function playSatAnimation3D(){
   }
 }
 function playSatAnimation(){ playSatAnimation3D(); }
-function toggleExplodeRes(){
-  explodeOnRes=!explodeOnRes;
-  document.getElementById('tg-explode-res').classList.toggle('active',explodeOnRes);
-  if(RES.ran&&RES.satFrames.length)buildSat3DGrid(RES.satFrames[satFrameIdx]);
-  else buildSat3DGrid(null);
-}
 // keep legacy stub (heatmap canvas is hidden but code elsewhere may call it)
 function drawSatHeatmap(){return true;}
 function satRGB(){return '#000';}
@@ -1263,49 +1671,30 @@ function satRGB(){return '#000';}
 </script>
 <script>
 // ════════════════════════════════════════════════════
-//  3D IMPES SIMULATION ENGINE
+//  3D IMPES SIMULATION ENGINE — HEADLESS CORE
 // ════════════════════════════════════════════════════
-function runSimulation(){
-  const btn=document.getElementById('runBtn'); btn.disabled=true;
-  btn.classList.add('running'); btn.innerHTML='<span class="run-icon">⟳</span> Simulating…';
-  // Workflow step: running
-  document.getElementById('wf3').classList.add('active');
-  document.getElementById('wf2').classList.remove('active'); document.getElementById('wf2').classList.add('done');
-  document.getElementById('progressWrap').style.display='flex';
-  // Switch to Model tab so user sees live 3D saturation update
-  document.querySelectorAll('.apex-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelector('[data-tab="model"]').classList.add('active');
-  document.getElementById('tab-model').classList.add('active');
-  mountCanvasTo('model'); // ensure shared canvas is on the model tab for live view
-  // Pre-switch colour mode to saturation so live rebuild shows red→blue
-  colorMode='sat';
-  ['perm','poro','press','sat'].forEach(x=>document.getElementById('cm-'+x)?.classList.toggle('active',x==='sat'));
-  updateLegend();
-  // Show live status badge
-  const liveBadge=document.getElementById('live-sim-status');
-  if(liveBadge){liveBadge.style.display='';liveBadge.textContent='⟳ Starting…';}
-  set('sv-state','Running'); set('statusChip','Running');
-  const logEl=document.getElementById('simLog');
-  logEl.innerHTML='<span class="log-ok">■ APEX Reservoir 3D Engine v2.1 — Initialised</span>\n';
-  const {ni,nj,nk,dx,dy,dz}=P; const N=ni*nj*nk;
-  logEl.innerHTML+=`<span class="log-step">  Grid: ${ni}×${nj}×${nk} = ${N} cells · ${nk} layers</span>\n`;
-  const t0=performance.now();
+// createSimEngine(Q,LAY) owns all physics state for one run. Q is a parameter
+// object shaped like P; LAY is a per-layer {phi,k,ntg,depth} array. advance()
+// performs one macro timestep and returns step info, or null once the horizon
+// is reached. The interactive run and the Monte Carlo ensemble both drive this
+// same core, so their physics cannot diverge.
+function createSimEngine(Q,LAY,wellsIn){
+  const {ni,nj,nk,dx,dy,dz}=Q; const N=ni*nj*nk;
 
   // STATE ARRAYS
-  const press=new Float64Array(N).fill(P.pi);
-  const sw=new Float64Array(N).fill(P.swi);
+  const press=new Float64Array(N).fill(Q.pi);
+  const sw=new Float64Array(N).fill(Q.swi);
   // per-cell perm from layers + areal noise
   const kcell=new Float64Array(N), phicell=new Float64Array(N);
   for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){
-    const idx=i+j*ni+k*ni*nj; const L=LAYERS[k];
+    const idx=i+j*ni+k*ni*nj; const L=LAY[k];
     const noise=0.6+0.8*(0.5+0.5*Math.sin(i*0.9+k*1.3)*Math.cos(j*0.8-k*0.7));
     kcell[idx]=L.k*noise; phicell[idx]=L.phi*L.ntg;
   }
-  // Initial Sw uniform at connate water — pure oil state (renders deep red at t=0)
-  for(let n=0;n<N;n++) sw[n]=P.swi;
 
-  const wells=buildWells();
+  // Wells: explicit per-well list — per-well BHP, rw, skin and per-layer
+  // completions (perf mask). Falls back to the global list for compatibility.
+  const wells=(wellsIn||buildWells()).filter(w=>w.active!==false);
 
   // ── DARCY CONSTANT — ECLIPSE METRIC ────────────────────────────────────────
   // C = 0.008527 rm³·cP / (d·mD·m·bar)
@@ -1316,28 +1705,36 @@ function runSimulation(){
   // kro = kroMax * ((1-Sw-Sor)/(1-Swi-Sor))^no
   // krw = krwMax * ((Sw-Swi)/(1-Swi-Sor))^nw
   const Sor=0.28, kroMax=0.85, krwMax=0.30, nO=3.0, nW=2.5;
-  const kro=s=>{const t=Math.max(0,(1-s-Sor)/(1-P.swi-Sor));return kroMax*Math.pow(t,nO);};
-  const krw=s=>{const t=Math.max(0,(s-P.swi)/(1-P.swi-Sor));return krwMax*Math.pow(t,nW);};
+  const kro=s=>{const t=Math.max(0,(1-s-Sor)/(1-Q.swi-Sor));return kroMax*Math.pow(t,nO);};
+  const krw=s=>{const t=Math.max(0,(s-Q.swi)/(1-Q.swi-Sor));return krwMax*Math.pow(t,nW);};
 
   // ── PVT — BLACK OIL (pressure-dependent) ───────────────────────────────────
   // Undersaturated: Bo = Boi * exp(-co*(P-Pb)), muo constant
   // Saturated: Bo from Standing, muo Dead-oil Beal correction
   const getPVT=p=>{
-    const sat=p<=P.pb;
-    const Rs=sat?P.rsi*Math.pow(Math.max(p/P.pb,0),1.2):P.rsi;
-    const Bo=sat?(1+0.00013*Rs):(P.bo*Math.exp(-13e-5*(p-P.pb)));
-    const muo=sat?P.muo*Math.pow(P.pb/Math.max(p,1),0.5):P.muo;
+    const sat=p<=Q.pb;
+    const Rs=sat?Q.rsi*Math.pow(Math.max(p/Q.pb,0),1.2):Q.rsi;
+    const Bo=sat?(1+0.00013*Rs):(Q.bo*Math.exp(-13e-5*(p-Q.pb)));
+    const muo=sat?Q.muo*Math.pow(Q.pb/Math.max(p,1),0.5):Q.muo;
     return{Rs,Bo,muo};
   };
 
-  // ── PEACEMAN WELL INDEX ─────────────────────────────────────────────────────
+  // ── PEACEMAN WELL INDEX (per-well rw & skin, per-layer completions) ────────
   // r0 = 0.28*sqrt(dx²+dy²)  [Peaceman 1978, square grid equivalent radius]
-  // WI = 2π * C_D * k[mD] * dz[m] / (ln(r0/rw) + S)   [rm³·cP/(d·bar)]
-  // Rate: q [rm³/d] = WI * (kr/mu) * (Pr-Pwf)
+  // WI = 2π * C_D * k[mD] * dz[m] / (ln(r0/rw_well) + S_well)   [rm³·cP/(d·bar)]
+  // Rate: q [rm³/d] = WI * (kr/mu) * (Pr-Pwf_well)
   const r0_peac=0.28*Math.sqrt(dx*dx+dy*dy);
-  const lnT_base=Math.log(r0_peac/P.rw)+P.skin;
-  // Per-cell WI: WI[idx] = 2π * C_D * kcell[idx] * dz / lnT_base
-  const cellWI=idx=>2*Math.PI*C_D*kcell[idx]*dz/lnT_base;  // [rm³·cP/(d·bar)]
+  const wellLnT=w=>Math.log(r0_peac/w.rw)+w.skin;
+  // Per-cell completion maps — a cell is a well source ONLY where its well is
+  // perforated in that layer. This is what makes per-layer completions real:
+  // both the pressure equation and the rate accounting read these masks.
+  const wSrcType=new Int8Array(N);      // 0 none, 1 injector, 2 producer
+  const wSrcPwf=new Float64Array(N), wSrcLnT=new Float64Array(N);
+  wells.forEach(w=>{ const lnT=wellLnT(w);
+    for(let k=0;k<nk;k++){ if(w.perf&&w.perf[k]===false) continue;
+      const idx=w.i+w.j*ni+k*ni*nj;
+      wSrcType[idx]=(w.type==='inj')?1:2; wSrcPwf[idx]=w.pwf; wSrcLnT[idx]=lnT;
+    }});
 
   // ── INTERBLOCK TRANSMISSIBILITY ─────────────────────────────────────────────
   // Tx = C_D * k_harm[mD] * (dy*dz)[m²] / dx[m]   [rm³·cP/(d·bar)]
@@ -1345,47 +1742,45 @@ function runSimulation(){
   const harmK=(a,b)=>2*kcell[a]*kcell[b]/(kcell[a]+kcell[b]+1e-9);
   const TxFace=(a,b)=>C_D*harmK(a,b)*dy*dz/dx;
   const TyFace=(a,b)=>C_D*harmK(a,b)*dx*dz/dy;
-  const TzFace=(a,b)=>C_D*harmK(a,b)*P.kvkh*dx*dy/dz;
+  const TzFace=(a,b)=>C_D*harmK(a,b)*Q.kvkh*dx*dy/dz;
 
-  const dt=P.dt, T_end=P.yr*365, ct=1.5e-4;
+  const dt=Q.dt, T_end=Q.yr*365, ct=1.5e-4;
   const cellPV=i=>dx*dy*dz*phicell[i];
-  const PVtot=LAYERS.reduce((a,L)=>a+ni*nj*dx*dy*dz*L.phi*L.ntg,0);
+  const PVtot=LAY.reduce((a,L)=>a+ni*nj*dx*dy*dz*L.phi*L.ntg,0);
 
   // ── AQUIFER — Fetkovich material balance ─────────────────────────────────
   // Jaq [rm³/(d·bar)] fitted to aqstr × analytic constant
-  const Jaq=C_D*2*Math.PI*(50)*dz/(P.muw*Math.log(5))*P.aqstr;
-  const Wei=PVtot*0.6*Math.max(P.aqstr,0.05); let We=0;
+  const Jaq=C_D*2*Math.PI*(50)*dz/(Q.muw*Math.log(5))*Q.aqstr;
+  const Wei=PVtot*0.6*Math.max(Q.aqstr,0.05); let We=0;
 
   const times=[],qos=[],qws=[],pres=[],nps=[],wps=[],gors=[],wors=[];
   let cumO=0,cumW=0,simT=0,step=0;
   let oilDeficit=0;   // carried re-imbibition volume; keeps cumulative oil monotonic & ≤ displaced
-  let prevPbar=P.pi;
-  const nSteps=Math.ceil(T_end/dt), logEvery=Math.max(1,Math.floor(nSteps/8));
-  const frameEvery=Math.max(1,Math.floor(nSteps/16)); // 16 saved frames
-  const renderEvery=Math.max(1,Math.floor(nSteps/8));  // 8 live colour updates (lighter)
-  RES.satFrames=[]; RES.presFrames=[];
+  // Per-well diagnostics (pure accumulators — no effect on the physics):
+  // produced water, injected water and the field oil allocated by voidage share.
+  const perOil=new Float64Array(wells.length), perWat=new Float64Array(wells.length), perInj=new Float64Array(wells.length);
 
-  // ── RENDER INITIAL STATE (t=0, all oil = red) — builds mesh geometry once ──
-  RES.satFrames.push(Float64Array.from(sw));
-  RES.presFrames.push(Float64Array.from(press));
-  rebuild3D(sw, press, true); // full rebuild at start — creates all mesh objects once
+  const E={press,sw,times,qos,qws,pres,nps,wps,gors,wors,
+    done:false,step:0,simT:0,T_end,last:null,
+    stoiip:PVtot*(1-Q.swi)/Q.bo,
+    wellStats:()=>wells.map((w,ix)=>({name:w.name,type:w.type,oil:perOil[ix],water:perWat[ix],inj:perInj[ix]}))};
 
-  const tick=()=>{
-   try{
+  E.advance=function(){
+    if(E.done) return null;
     if(simT>=T_end){
       // Settle any residual re-imbibition deficit so final cumulative oil equals net
       // displacement exactly (booked ≡ displaced; never oil from nothing).
       if(oilDeficit>1e-9 && nps.length){
-        cumO=Math.max(0,cumO-oilDeficit/P.bo); nps[nps.length-1]=cumO/1e3; oilDeficit=0;
+        cumO=Math.max(0,cumO-oilDeficit/Q.bo); nps[nps.length-1]=cumO/1e3; oilDeficit=0;
       }
-      finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn);return;
+      E.done=true; return null;
     }
     const pAvg=avg(press); const pvt=getPVT(pAvg);
 
     // ── MOBILITY HELPERS ────────────────────────────────────────────────────────
     // Total reservoir mobility λt = λo + λw  [1/(cP)]
     // Fractional flow fw = λw/λt
-    const lamW=s=>krw(s)/P.muw;
+    const lamW=s=>krw(s)/Q.muw;
     const lamO=s=>kro(s)/(pvt.muo);
     const lamT=s=>lamW(s)+lamO(s);
     const fw=s=>{const lw=lamW(s),lt=lamT(s);return lt>1e-12?lw/lt:0;};
@@ -1396,10 +1791,6 @@ function runSimulation(){
     // Well term: Q_well = WI * λt * (Pwf - P)  [injector: λt = 1/μw]
     // Transmissibility uses UPSTREAM total mobility per face.
     // Aquifer: bottom layer edge, Fetkovich linear influx.
-    const acc_coeff=dt>0?1/(ct*dt):0; // used to weight accumulation vs flow
-    // Areal well map for source terms in the pressure equation (wells are static)
-    const wellMap=new Int8Array(ni*nj); // 0=none, 1=injector, 2=producer
-    wells.forEach(w=>{ wellMap[w.i+w.j*ni]=(w.type==='inj')?1:2; });
     // ── Multi-layer aquifer pressure coupling (Fetkovich) ────────────────────
     // The aquifer is a finite water body beneath the reservoir at pressure Paq that
     // declines as it gives up water: Paq = pi·(1 − We/Wei) (Fetkovich material
@@ -1415,7 +1806,7 @@ function runSimulation(){
     // multi-layer coupling, not a saturation-only bottom influx.
     let Pbot=0; for(let j=0;j<nj;j++)for(let i=0;i<ni;i++) Pbot+=press[i+j*ni+(nk-1)*ni*nj];
     Pbot/= (ni*nj);                                       // reservoir–aquifer interface pressure [bar]
-    const Paq=(Wei>1e-9)?P.pi*Math.max(0,1-We/Wei):0;     // current aquifer pressure [bar]
+    const Paq=(Wei>1e-9)?Q.pi*Math.max(0,1-We/Wei):0;     // current aquifer pressure [bar]
     const aqOn=(We<Wei)&&(Jaq>0)&&(Pbot<Paq);             // engage only under net withdrawal
     const Jc=aqOn?Jaq/(ni*nj):0;                          // per-cell aquifer productivity index
     for(let sweep=0;sweep<30;sweep++){
@@ -1442,35 +1833,17 @@ function runSimulation(){
         // so the cell pressure settles between reservoir and BHP and the well rate
         // WI·λ·(Pwf−P) stays physical. The old correction sweep pinned the cell to
         // Pwf, which collapsed the injector driving force to ~0 (no flood at all).
-        const wt=wellMap[i+j*ni];
+        // Sources exist only at perforated cells (per-layer completion masks).
+        const wt=wSrcType[idx];
         if(wt){
-          const WI=cellWI(idx);
-          const t=WI*(wt===1?(1/P.muw):lamT(sw[idx]));
-          num+=t*(wt===1?P.pwfi:P.pwfp); den+=t;
+          const WI=2*Math.PI*C_D*kcell[idx]*dz/wSrcLnT[idx];
+          const t=WI*(wt===1?(1/Q.muw):lamT(sw[idx]));
+          num+=t*wSrcPwf[idx]; den+=t;
         }
         if(k===nk-1 && Jc>0 && press[idx]<Paq){ num+=Jc*Paq; den+=Jc; }  // bottom-aquifer pressure support (influx side)
         if(den>0)press[idx]=num/den;
       }
     }
-    // (Well BHP pinning removed — wells now enter as source terms in the sweep above,
-    //  so the injector retains a real driving force and the flood actually advances.)
-    // (Aquifer now enters the pressure solve as a Fetkovich source on the bottom layer
-    // — see the setup block above the sweep and the per-cell influx below. The earlier
-    // hard pressure-pin that forced bottom cells toward pi was REMOVED: it double-counted
-    // the drive and manufactured a non-physical vertical gradient that starved injectors'
-    // upper perforations. The gated Peaceman source supports pressure physically instead.)
-
-    // ── WELL RATES ───────────────────────────────────────────────────────────
-    // Oil and water production are derived from MATERIAL BALANCE after transport
-    // (see accounting block below) — NOT from an unconstrained productivity index,
-    // which would book oil the reservoir never actually displaced. The injector
-    // reservoir voidage rate is retained only for diagnostics:
-    //   q_wi [rm³/d] = WI * (1/μw) * (Pwfi-Pr)
-    let Qinj=0;
-    wells.forEach(w=>{ if(w.type!=='inj') return;
-      for(let k=0;k<nk;k++){ const idx=w.i+w.j*ni+k*ni*nj;
-        Qinj+=cellWI(idx)*(1/P.muw)*Math.max(0,P.pwfi-press[idx]); }
-    });
 
     // ── SATURATION TRANSPORT — CFL-substepped fractional-flow (sequential IMPES) ──
     // Water moves across each face as fw(S_up)·Qt, where the total flux
@@ -1481,7 +1854,7 @@ function runSimulation(){
     // [swi, sw_max] and nothing is clamped away. The macro-step is split into CFL
     // sub-steps so the explicit front advances stably.
     const sw_max=1-Sor;
-    let massInjected=0, massProduced=0, massAquifer=0, Qinj_actual=0;
+    let massInjected=0, massProduced=0, massAquifer=0;
     let Qo=0, Qw=0;   // surface production rates, set by the voidage balance / oil booking below
 
     // Face-connected neighbour list (for voidage cascade)
@@ -1498,8 +1871,8 @@ function runSimulation(){
     // constant. Using Δρ·g·Δz (≈5× weaker than the old 0.0981·dz water gradient) stops
     // injected water slumping to the base and over-draining the top layer.
     const RHO_W=1000, RHO_O_SC=850, RHO_G_SC=0.97;             // kg/m³ at standard conditions
-    const rhoO_res=(RHO_O_SC + P.rsi*RHO_G_SC)/P.bo;          // live reservoir oil density
-    const dRhoG = (P.gravity!==false) ? Math.max(0, RHO_W-rhoO_res)*9.81e-5 : 0;  // buoyancy [bar/m]
+    const rhoO_res=(RHO_O_SC + Q.rsi*RHO_G_SC)/Q.bo;          // live reservoir oil density
+    const dRhoG = (Q.gravity!==false) ? Math.max(0, RHO_W-rhoO_res)*9.81e-5 : 0;  // buoyancy [bar/m]
     const gz = dRhoG*dz;                                      // z-face buoyancy head [bar]
     const faces=[];
     for(let k=0;k<nk;k++)for(let j=0;j<nj;j++)for(let i=0;i<ni-1;i++){
@@ -1523,10 +1896,7 @@ function runSimulation(){
     // depletion) and a free gas phase are not modelled; recovery is water-drive only.
     const curPbar=avg(press);
     // Per-cell aquifer influx, computed from the pressure field the aquifer source
-    // just helped set (so influx and pressure support are mutually consistent). The
-    // earlier hard pressure-pin — which pinned only the bottom layer toward pi and
-    // manufactured a non-physical vertical gradient that starved injectors' upper
-    // perforations — is gone; the Fetkovich source above replaces it physically.
+    // just helped set (so influx and pressure support are mutually consistent).
     let QaqCells=[], Qaq=0;
     if(aqOn){
       for(let j=0;j<nj;j++)for(let i=0;i<ni;i++){ const idx=i+j*ni+(nk-1)*ni*nj;
@@ -1535,11 +1905,12 @@ function runSimulation(){
     }
     const injCells=[], prodCells=[]; let QtDesired=0, QtFw=0, capTot=0;
     for(let n=0;n<N;n++) capTot+=Math.max(0,(sw_max-sw[n])*cellPV(n));   // remaining pore capacity [rm³]
-    wells.forEach(w=>{ for(let k=0;k<nk;k++){
-      const idx=w.i+w.j*ni+k*ni*nj, WI=cellWI(idx);
-      if(w.type==='inj'){ const dP=Math.max(0,P.pwfi-press[idx]); injCells.push({idx,q:WI*(1/P.muw)*dP,nbrs:faceNbrs(idx)}); }
-      else { const dP=Math.max(0,press[idx]-P.pwfp); const qt=WI*lamT(sw[idx])*dP;
-             prodCells.push({idx,qt,fw:fw(sw[idx])}); QtDesired+=qt; QtFw+=qt*fw(sw[idx]); }
+    wells.forEach((w,wi)=>{ const lnT=wellLnT(w);
+      for(let k=0;k<nk;k++){ if(w.perf&&w.perf[k]===false) continue;
+      const idx=w.i+w.j*ni+k*ni*nj, WI=2*Math.PI*C_D*kcell[idx]*dz/lnT;
+      if(w.type==='inj'){ const dP=Math.max(0,w.pwf-press[idx]); injCells.push({idx,wi,q:WI*(1/Q.muw)*dP,nbrs:faceNbrs(idx)}); }
+      else { const dP=Math.max(0,press[idx]-w.pwf); const qt=WI*lamT(sw[idx])*dP;
+             prodCells.push({idx,wi,qt,fw:fw(sw[idx])}); QtDesired+=qt; QtFw+=qt*fw(sw[idx]); }
     }});
     const Qinj_ipr=injCells.reduce((a,c)=>a+c.q,0);              // injector deliverability [rm³/d]
     const QinjAcc=Math.min(Qinj_ipr, capTot/dt);                 // injection: injectivity ∧ pore capacity
@@ -1590,7 +1961,7 @@ function runSimulation(){
           const up=dPv>0?f.a:f.b, dn=dPv>0?f.b:f.a;
           const Qt=Math.abs(f.T*lamT(sw[up])*dPv);  // total flux magnitude [rm³/d]
           let vol=Qt*fw(sw[up])*dts;                 // water carried up→dn
-          const donorAvail=(sw[up]-P.swi)*cellPV(up);
+          const donorAvail=(sw[up]-Q.swi)*cellPV(up);
           const recvCap=(sw_max-sw[dn])*cellPV(dn);
           if(vol>donorAvail) vol=donorAvail;
           if(vol>recvCap) vol=recvCap;
@@ -1606,7 +1977,7 @@ function runSimulation(){
           const lw=lamW(sw[a]), lo=lamO(sw[b]);      // water leaves a (down), oil leaves b (up)
           const mob=(lw+lo)>1e-12 ? lw*lo/(lw+lo) : 0;
           let gvol=f.T*mob*f.g*dts;                   // water volume a→b [rm³]
-          const donorAvail=(sw[a]-P.swi)*cellPV(a);
+          const donorAvail=(sw[a]-Q.swi)*cellPV(a);
           const recvCap=(sw_max-sw[b])*cellPV(b);
           if(gvol>donorAvail) gvol=donorAvail;
           if(gvol>recvCap) gvol=recvCap;
@@ -1621,9 +1992,9 @@ function runSimulation(){
       prodCells.forEach(c=>{
         const pv=cellPV(c.idx);
         let qw=c.qtRes*dts*fw(sw[c.idx]);
-        const avail=(sw[c.idx]-P.swi)*pv;
+        const avail=(sw[c.idx]-Q.swi)*pv;
         if(qw>avail) qw=avail; if(qw<0) qw=0;
-        sw[c.idx]-=qw/pv; massProduced+=qw;
+        sw[c.idx]-=qw/pv; massProduced+=qw; perWat[c.wi]+=qw;
       });
       // (3) Injector — VOIDAGE-LIMITED cascade. Inject only what the cell + its open
       //     neighbours can physically store; count ONLY accepted water. A BHP injector
@@ -1642,7 +2013,7 @@ function runSimulation(){
             accepted+=placeable; vol-=placeable;
           }
         }
-        massInjected+=accepted;
+        massInjected+=accepted; perInj[c.wi]+=accepted;
       });
       // (4) Aquifer influx — per-cell encroachment into bottom layer (capacity-aware, counted)
       for(let ai=0;ai<QaqCells.length;ai++){ const idx=QaqCells[ai].idx;
@@ -1651,7 +2022,6 @@ function runSimulation(){
         sw[idx]+=place/cellPV(idx); massAquifer+=place;
       }
     }
-    injCells.forEach(c=>{ Qinj_actual+=c.qIn; });
     We+=massAquifer; // accumulate aquifer water actually placed (Fetkovich depletion)
 
     // ── WATER MASS-BALANCE CLOSURE ───────────────────────────────────────────────
@@ -1660,7 +2030,6 @@ function runSimulation(){
     const massStored=sw_total_after-sw_total_before;   // net reservoir water increase [rm³]
     const win=massInjected+massAquifer;
     const massErr=(win>1e-6)?Math.abs(win-massProduced-massStored)/win*100:0;
-    prevPbar=curPbar;
 
     // ── OIL BOOKING WITH RE-PRODUCTION DEFICIT ───────────────────────────────────
     // Oil produced = net reservoir water increase / Bo (incompressible voidage
@@ -1674,34 +2043,94 @@ function runSimulation(){
     else { const pay=Math.min(massStored,oilDeficit); oilDeficit-=pay; netOil=massStored-pay; }
     Qo=netOil/pvt.Bo/dt;                                // surface oil rate [m³/d SC] (≥0)
     Qw=massProduced/dt;                                // surface water rate [m³/d SC], Bw≈1
+    // Allocate the field oil to producers by voidage share (diagnostic only)
+    if(netOil>0){ const qtTot=prodCells.reduce((a,c)=>a+c.qtRes,0);
+      if(qtTot>1e-12){ const so=netOil/pvt.Bo; prodCells.forEach(c=>{ perOil[c.wi]+=so*(c.qtRes/qtTot); }); } }
 
-    simT+=dt; step++;
+    simT+=dt; step++; E.step=step; E.simT=simT;
     const tyr=simT/365; times.push(tyr);
     qos.push(Qo); qws.push(Qw); pres.push(curPbar);
     cumO+=netOil/pvt.Bo; cumW+=massProduced; nps.push(cumO/1e3); wps.push(cumW/1e3);
     gors.push(pvt.Rs); wors.push(Qo>0.01?Qw/Qo:0);
-    if(step%frameEvery===0||simT>=T_end){
-      RES.satFrames.push(Float64Array.from(sw));
-      RES.presFrames.push(Float64Array.from(press));
+    E.last={tyr,Qo,Qw,massErr,pAvg:curPbar,swAvg:avg(sw)};
+    return E.last;
+  };
+
+  return E;
+}
+
+// ════════════════════════════════════════════════════
+//  INTERACTIVE RUN — drives the engine + live 3D view
+// ════════════════════════════════════════════════════
+function runSimulation(){
+  const btn=document.getElementById('runBtn'); btn.disabled=true;
+  btn.classList.add('running'); btn.innerHTML='<span class="run-icon">⟳</span> Simulating…';
+  // Workflow step: running
+  document.getElementById('wf3').classList.add('active');
+  document.getElementById('wf2').classList.remove('active'); document.getElementById('wf2').classList.add('done');
+  document.getElementById('progressWrap').style.display='flex';
+  // Bring the user to Mission Control so the live 3D saturation update is visible
+  if(location.hash!=='#home')location.hash='home';
+  showScreen();
+  const tlRow=document.getElementById('satTimelineRow'); if(tlRow)tlRow.style.display='none';
+  const animGrp=document.getElementById('satAnimGroup'); if(animGrp)animGrp.style.display='none';
+  mountCanvasTo('model'); // ensure shared canvas is mounted for the live view
+  // Pre-switch colour mode to saturation so live rebuild shows red→blue
+  colorMode='sat';
+  ['perm','poro','press','sat'].forEach(x=>document.getElementById('cm-'+x)?.classList.toggle('active',x==='sat'));
+  updateLegend();
+  // Show live status badge
+  const liveBadge=document.getElementById('live-sim-status');
+  if(liveBadge){liveBadge.style.display='';liveBadge.textContent='⟳ Starting…';}
+  set('sv-state','Running'); set('statusChip','Running');
+  const logEl=document.getElementById('simLog');
+  logEl.innerHTML='<span class="log-ok">■ APEX Reservoir 3D Engine v2.2 — Initialised</span>\n';
+  const {ni,nj,nk}=P; const N=ni*nj*nk;
+  logEl.innerHTML+=`<span class="log-step">  Grid: ${ni}×${nj}×${nk} = ${N} cells · ${nk} layers</span>\n`;
+  const t0=performance.now();
+
+  const eng=createSimEngine(P,LAYERS,WELLS);
+  const T_end=eng.T_end;
+  const nSteps=Math.ceil(T_end/P.dt), logEvery=Math.max(1,Math.floor(nSteps/8));
+  const frameEvery=Math.max(1,Math.floor(nSteps/16)); // 16 saved frames
+  const renderEvery=Math.max(1,Math.floor(nSteps/8));  // 8 live colour updates (lighter)
+  RES.satFrames=[]; RES.presFrames=[];
+
+  // ── RENDER INITIAL STATE (t=0, all oil = red) — builds mesh geometry once ──
+  RES.satFrames.push(Float64Array.from(eng.sw));
+  RES.presFrames.push(Float64Array.from(eng.press));
+  rebuild3D(eng.sw, eng.press, true); // full rebuild at start — creates all mesh objects once
+
+  const tick=()=>{
+   try{
+    const r=eng.advance();
+    if(!r){
+      RES.wellStats=eng.wellStats();
+      finalise(t0,eng.times,eng.qos,eng.qws,eng.pres,eng.nps,eng.wps,eng.gors,eng.wors,eng.sw,eng.press,btn);
+      return;
     }
-    if(step%renderEvery===0||simT>=T_end){
+    if(eng.step%frameEvery===0||eng.simT>=T_end){
+      RES.satFrames.push(Float64Array.from(eng.sw));
+      RES.presFrames.push(Float64Array.from(eng.press));
+    }
+    if(eng.step%renderEvery===0||eng.simT>=T_end){
       // Live colour update — update mesh colours in-place (fast, no GPU object churn)
       colorMode='sat';
       ['perm','poro','press','sat'].forEach(x=>document.getElementById('cm-'+x)?.classList.toggle('active',x==='sat'));
       updateLegend();
-      updateGrid3DColors(sw, press);
+      updateGrid3DColors(eng.sw, eng.press);
     }
-    if(step%logEvery===0){
-      logEl.innerHTML+=`<span class="log-step">  [t=${tyr.toFixed(1)}yr]</span> P̄=<span class="log-val">${avg(press).toFixed(0)}bar</span> Qo=<span class="log-val">${Qo.toFixed(0)}m³/d</span> S̄w=<span class="log-val">${avg(sw).toFixed(3)}</span> MBerr=<span class="${massErr<0.1?'log-ok':'log-val'}">${massErr.toFixed(3)}%</span>\n`;
+    if(eng.step%logEvery===0){
+      logEl.innerHTML+=`<span class="log-step">  [t=${r.tyr.toFixed(1)}yr]</span> P̄=<span class="log-val">${r.pAvg.toFixed(0)}bar</span> Qo=<span class="log-val">${r.Qo.toFixed(0)}m³/d</span> S̄w=<span class="log-val">${r.swAvg.toFixed(3)}</span> MBerr=<span class="${r.massErr<0.1?'log-ok':'log-val'}">${r.massErr.toFixed(3)}%</span>\n`;
       logEl.scrollTop=logEl.scrollHeight;
     }
-    const pct=simT/T_end*100;
+    const pct=eng.simT/T_end*100;
     document.getElementById('progressFill').style.width=pct+'%';
     document.getElementById('progressLabel').textContent=pct.toFixed(0)+'%';
-    set('sv-done',step); setStatus(`t=${tyr.toFixed(1)}yr · Qo=${Qo.toFixed(0)} m³/d`,'#C9A84C');
+    set('sv-done',eng.step); setStatus(`t=${r.tyr.toFixed(1)}yr · Qo=${r.Qo.toFixed(0)} m³/d`,'#C9A84C');
     // Update live header badge every step
     const liveEl=document.getElementById('live-sim-status');
-    if(liveEl) liveEl.textContent=`⟳ t=${tyr.toFixed(1)} yr · S̄w=${avg(sw).toFixed(3)} · Qo=${Qo.toFixed(0)} m³/d`;
+    if(liveEl) liveEl.textContent=`⟳ t=${r.tyr.toFixed(1)} yr · S̄w=${r.swAvg.toFixed(3)} · Qo=${r.Qo.toFixed(0)} m³/d`;
     setTimeout(tick,0);
    }catch(err){
     // Surface the error instead of hanging on "Simulating…"
@@ -1711,8 +2140,8 @@ function runSimulation(){
     const liveEl=document.getElementById('live-sim-status');
     if(liveEl){liveEl.style.color='#E07070';liveEl.textContent='✕ '+err.message;}
     const logEl=document.getElementById('simLog');
-    if(logEl){logEl.innerHTML+=`<span style="color:#E07070">✕ Error at step ${step}: ${err.message}</span>\n`;}
-    alert('Simulation error at step '+step+':\n\n'+err.message);
+    if(logEl){logEl.innerHTML+=`<span style="color:#E07070">✕ Error at step ${eng.step}: ${err.message}</span>\n`;}
+    alert('Simulation error at step '+eng.step+':\n\n'+err.message);
    }
   };
   tick();
@@ -1734,14 +2163,12 @@ function finalise(t0,times,qos,qws,pres,nps,wps,gors,wors,sw,press,btn){
   set('sv-cpu',`${cpu}s`); set('sv-state','Complete'); set('statusChip','Complete');
   set('r-swmin',P.swi.toFixed(2));
   document.getElementById('progressFill').style.width='100%'; document.getElementById('progressLabel').textContent='100%';
-  document.querySelectorAll('.apex-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.apex-tab')[7].classList.add('active');
-  document.getElementById('tab-results').classList.add('active');
-  drawResults();
-  setTimeout(()=>{
-    showResults3D(); // mounts shared canvas to results + builds when sized
-  },100);
+  // Stay on Mission Control: refresh the right-rail summary and enable the
+  // saturation timeline on the central 3D view. Full charts live on #results.
+  updateRightRail();
+  runAdvisor();
+  if(currentScreen==='results')drawResults();
+  setTimeout(showResults3D,100);
   btn.disabled=false; btn.classList.remove('running'); btn.innerHTML='<span class="run-icon">↺</span> Re-run';
   // Hide live badge
   const liveBadge=document.getElementById('live-sim-status');
@@ -1772,7 +2199,7 @@ function openModal(mode){
     body.innerHTML=`
       <div class="modal-section-title">Model State (JSON)</div>
       <div class="io-note">Full parameter set + layer properties. Save to reload later or share.</div>
-      <textarea class="io-textarea" id="jsonOut" readonly>${JSON.stringify({P,LAYERS},null,1)}</textarea>
+      <textarea class="io-textarea" id="jsonOut" readonly>${JSON.stringify({P,LAYERS,WELLS},null,1)}</textarea>
       <button class="modal-btn" onclick="downloadJSON()">⬇ Download .json</button>
       <button class="modal-btn ghost" onclick="copyJSON()">Copy</button>
       <div class="modal-section-title">Production Results (CSV)</div>
@@ -1800,19 +2227,37 @@ function openModal(mode){
 }
 function closeModal(){document.getElementById('ioModal').classList.remove('open');}
 
-function downloadJSON(){ downloadFile('apex-reservoir-model.json',JSON.stringify({P,LAYERS},null,2)); }
+function downloadJSON(){ downloadFile('apex-reservoir-model.json',JSON.stringify({P,LAYERS,WELLS},null,2)); }
 function copyJSON(){const t=document.getElementById('jsonOut');t.select();document.execCommand('copy');}
 function importJSONText(){try{applyImport(JSON.parse(document.getElementById('jsonIn').value));closeModal();}catch(e){alert('Invalid JSON: '+e.message);}}
-function applyImport(obj){
+function sanitizeWells(list){
+  return (Array.isArray(list)?list:[]).map((w,ix)=>({
+    name:w.name||`W${ix+1}`, type:w.type==='inj'?'inj':'prod',
+    i:Math.min(P.ni-1,Math.max(0,Math.round(w.i||0))),
+    j:Math.min(P.nj-1,Math.max(0,Math.round(w.j||0))),
+    active:w.active!==false, custom:!!w.custom,
+    pwf:isFinite(w.pwf)?+w.pwf:(w.type==='inj'?P.pwfi:P.pwfp),
+    rw:isFinite(w.rw)&&w.rw>0?+w.rw:P.rw,
+    skin:isFinite(w.skin)?+w.skin:P.skin,
+    perf:Array.from({length:P.nk},(_,k)=>w.perf?w.perf[k]!==false:true)
+  }));
+}
+// Session persistence — the model survives screen reloads within the
+// authenticated session (same storage the staff gate uses).
+function saveState(){ try{ sessionStorage.setItem('apexSimState',JSON.stringify({P,LAYERS,WELLS})); }catch(e){} }
+function loadSavedState(){ try{ return JSON.parse(sessionStorage.getItem('apexSimState')||'null'); }catch(e){ return null; } }
+function applyImport(obj,quiet){
   if(obj.P)Object.assign(P,obj.P);
   if(obj.LAYERS)LAYERS=obj.LAYERS;
+  if(obj.WELLS)WELLS=sanitizeWells(obj.WELLS); else generateWells();
+  selWell=-1;
   // sync all rail controls
   Object.keys(P).forEach(k=>{const el=document.getElementById('r-'+k);if(el){el.value=P[k];const min=+el.min,max=+el.max;el.style.setProperty('--pct',((P[k]-min)/(max-min)*100)+'%');const lab=document.getElementById('v-'+k);if(lab)lab.textContent=P[k];}});
   const aq=document.getElementById('s-aqtype');if(aq)aq.value=P.aqtype;
   const sv=document.getElementById('s-solver');if(sv)sv.value=P.solver;
   if(!obj.LAYERS)generateLayers(); else {buildLayerTable();drawLayerCharts();}
   updateDerived(); rebuild3D();
-  setStatus('Model imported ✓','#2ECC8A');
+  if(!quiet)setStatus('Model imported ✓','#2ECC8A');
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -1892,15 +2337,372 @@ function pushToAPEX(){
 }
 
 // ════════════════════════════════════════════════════
+//  CLAUDE-POWERED RUN ADVISOR (Anthropic Messages API)
+// ════════════════════════════════════════════════════
+// The deterministic rule-based findings render instantly; when an API key is
+// configured, the full run snapshot is also sent to Claude for a narrative
+// engineering analysis. The key is entered once and stored ONLY in this
+// browser's localStorage — it is never written to the model JSON, the repo,
+// or any server other than api.anthropic.com.
+const CLAUDE_KEY_STORE='atc_claude_key';
+const CLAUDE_MODEL='claude-opus-4-8';
+const CLAUDE_SYSTEM=`You are the AI Run Advisor inside APEX Reservoir 3D, Alpha Technical Centre's black-oil waterflood simulator (IMPES, BHP-controlled wells with per-layer completions, Fetkovich aquifer, Corey rel-perm; water-drive displacement only — no primary depletion or free gas phase). You receive a JSON snapshot of the model, per-layer rock, per-well completions, base-case results, per-well cumulative volumes, ensemble P10/P50/P90 (SPE exceedance convention) and the tool's own deterministic findings.
+Reply for a reservoir engineer:
+1. A 2-3 sentence overall assessment of the development scheme.
+2. **Key observations** — bullets grounded in the numbers (breakthrough timing, sweep efficiency, drive balance, pressure maintenance, per-well imbalances, uncertainty spread).
+3. **Recommended next steps** — at most 4, each actionable inside the simulator (per-layer completions, well BHPs, well placement, aquifer strength, horizon, ensemble settings).
+Be quantitative and cite values from the payload. Do not restate the deterministic findings verbatim — add engineering judgement beyond them. Keep it under 250 words. Plain text with markdown bullets and **bold** only.`;
+
+function getClaudeKey(){ try{ return localStorage.getItem(CLAUDE_KEY_STORE)||''; }catch(e){ return ''; } }
+function setClaudeKey(k){
+  try{ if(k) localStorage.setItem(CLAUDE_KEY_STORE,k); else localStorage.removeItem(CLAUDE_KEY_STORE); }catch(e){}
+  updateClaudeKeyUI();
+}
+function configureClaudeKey(){
+  const cur=getClaudeKey();
+  const k=prompt(cur
+    ?`A key is linked (…${cur.slice(-4)}). Paste a new Anthropic API key to replace it, or clear the box and press OK to remove it.`
+    :'Paste your Anthropic API key (sk-ant-…).\n\nIt is stored only in this browser and sent only to api.anthropic.com.', '');
+  if(k===null) return;
+  setClaudeKey(k.trim());
+  if(k.trim()&&RES.ran) runClaudeAdvisor(false);
+}
+function updateClaudeKeyUI(){
+  const k=getClaudeKey();
+  const st=document.getElementById('aiKeyStatus');
+  if(st) st.innerHTML=k
+    ?`<span style="color:var(--green-bright);">● claude linked ·…${k.slice(-4)}</span>`
+    :'<span style="color:var(--steel);">○ no key</span>';
+  const btn=document.getElementById('aiAnalyseBtn');
+  if(btn) btn.style.display=k?'':'none';
+}
+
+// Compact, token-conscious snapshot of the whole run for the model
+function buildAdvisorPayload(){
+  const ds=(a,n=24)=>{ if(!a||!a.length)return[]; const s=Math.max(1,Math.floor(a.length/n));
+    const out=a.filter((_,i)=>i%s===0); if(out[out.length-1]!==a[a.length-1])out.push(a[a.length-1]);
+    return out.map(v=>+(+v).toFixed(2)); };
+  const rf=parseFloat(document.getElementById('r-rf')?.textContent||'');
+  let ensemble=null;
+  if(ENS.ran&&ENS.finals.length){
+    const nps=ENS.finals.map(f=>f.npEnd).sort((a,b)=>a-b);
+    const rfs=ENS.finals.map(f=>f.rf).sort((a,b)=>a-b);
+    ensemble={n:ENS.n,seed:ENS.seed,
+      np_1e3m3:{p90:+pctile(nps,0.10).toFixed(0),p50:+pctile(nps,0.50).toFixed(0),p10:+pctile(nps,0.90).toFixed(0)},
+      rf_pct:{p90:+pctile(rfs,0.10).toFixed(1),p50:+pctile(rfs,0.50).toFixed(1),p10:+pctile(rfs,0.90).toFixed(1)}};
+  }
+  return {
+    model:{grid:`${P.ni}x${P.nj}x${P.nk}`,cell_m:[P.dx,P.dy,P.dz],pi_bar:P.pi,pb_bar:P.pb,
+      muo_cp:P.muo,muw_cp:P.muw,bo:P.bo,rsi:P.rsi,swi:P.swi,sor:0.28,kvkh:P.kvkh,vdp:P.vdp,
+      aquifer:P.aqtype,aquifer_strength:P.aqstr,dt_days:P.dt,horizon_yr:P.yr,gravity:P.gravity},
+    layers:LAYERS.map((L,i)=>({layer:i+1,kh_md:+L.k.toFixed(0),phi:+L.phi.toFixed(3),ntg:+L.ntg.toFixed(2)})),
+    wells:WELLS.map(w=>({name:w.name,type:w.type,i:w.i+1,j:w.j+1,pwf_bar:w.pwf,skin:w.skin,
+      active:w.active,perf_layers:(w.perf||[]).map((v,k)=>v?k+1:null).filter(v=>v)})),
+    base_case:RES.ran?{
+      recovery_pct:isFinite(rf)?rf:null,
+      np_1e3m3:+RES.np[RES.np.length-1].toFixed(0), wp_1e3m3:+RES.wp[RES.wp.length-1].toFixed(0),
+      final_pres_bar:+RES.pres[RES.pres.length-1].toFixed(0), final_wor:+RES.wor[RES.wor.length-1].toFixed(2),
+      series:{t_yr:ds(RES.times),qo_m3d:ds(RES.qo),qw_m3d:ds(RES.qw),pres_bar:ds(RES.pres)},
+      per_well:RES.wellStats?RES.wellStats.map(s=>({name:s.name,type:s.type,
+        oil_1e3m3:+(s.oil/1e3).toFixed(1),water_1e3m3:+(s.water/1e3).toFixed(1),inj_1e3m3:+(s.inj/1e3).toFixed(1)})):null
+    }:null,
+    ensemble,
+    deterministic_findings:[...document.querySelectorAll('#aiAdvisorBody .ai-item')].map(el=>el.textContent.trim())
+  };
+}
+
+let claudeBusy=false;
+async function runClaudeAdvisor(manual){
+  let key=getClaudeKey();
+  if(!key){ if(manual){ configureClaudeKey(); key=getClaudeKey(); } if(!key) return; }
+  if(!RES.ran){ if(manual) alert('Run a simulation first — Claude analyses the results.'); return; }
+  if(claudeBusy) return;
+  claudeBusy=true;
+  const sec=document.getElementById('aiClaudeSection'), body=document.getElementById('aiClaudeBody');
+  if(sec) sec.style.display='';
+  if(body) body.innerHTML='<span style="color:var(--steel);">✦ Claude is analysing the run…</span>';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:CLAUDE_MODEL,
+        max_tokens:4000,
+        thinking:{type:'adaptive'},
+        system:CLAUDE_SYSTEM,
+        messages:[{role:'user',content:JSON.stringify(buildAdvisorPayload())}]
+      })
+    });
+    if(!res.ok){
+      const err=await res.json().catch(()=>null);
+      if(res.status===401) throw new Error('API key rejected (401) — check it via ⚙ API Key.');
+      if(res.status===429) throw new Error('Rate limited (429) — try again in a moment.');
+      throw new Error((err&&err.error&&err.error.message)||`API error (HTTP ${res.status}).`);
+    }
+    const data=await res.json();
+    if(data.stop_reason==='refusal') throw new Error('Claude declined to analyse this request.');
+    const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    if(body) body.innerHTML=text?mdLite(text):'<span class="io-note">No analysis returned.</span>';
+  }catch(err){
+    const msg=(err&&err.message)||'request failed';
+    if(body) body.innerHTML=`<span style="color:#E07070;">✕ ${escapeHtml(/fetch|network/i.test(msg)?'Could not reach api.anthropic.com — check the connection.':msg)}</span>`;
+  }finally{
+    claudeBusy=false;
+  }
+}
+
+// Minimal markdown renderer for the analysis (escape first, then bold/bullets/headers)
+function escapeHtml(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function mdLite(t){
+  return escapeHtml(t)
+    .replace(/\*\*(.+?)\*\*/g,'<b style="color:var(--cream);">$1</b>')
+    .split(/\n/).map(l=>{
+      const b=l.match(/^\s*[-•*]\s+(.*)/);
+      if(b) return `<div style="display:flex;gap:7px;padding:2px 0;"><span style="color:var(--gold);flex:none;">•</span><span>${b[1]}</span></div>`;
+      if(/^#+\s/.test(l)) return `<div style="font-family:var(--font-cond);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:8px 0 3px;">${l.replace(/^#+\s*/,'')}</div>`;
+      if(!l.trim()) return '';
+      return `<div style="padding:2px 0;">${l}</div>`;
+    }).join('');
+}
+
+// ════════════════════════════════════════════════════
+//  ENSEMBLE — MONTE CARLO P10 / P50 / P90
+// ════════════════════════════════════════════════════
+// N realizations of the same headless engine, each with rock/fluid parameters
+// sampled around the current base case from a seeded RNG. Percentiles use the
+// SPE exceedance convention: P10 = value exceeded with 10% probability (high
+// case) = 90th percentile of the sample; P90 = low case = 10th percentile.
+const ENS={ran:false,running:false,times:[],qo:null,np:null,pres:null,finals:[],n:0,seed:0};
+
+// Deterministic RNG (mulberry32) + Box-Muller standard normal
+function mulberry32(seed){let a=seed>>>0;return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function gauss(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+// One stochastic realization: a copy of P + LAYERS with sampled multipliers.
+// Ranges are typical appraisal-stage uncertainty; the base case is the mode.
+function sampleRealization(rng){
+  const Q=Object.assign({},P);
+  const mult={
+    k:    Math.exp(gauss(rng)*0.35),   // layer kh — lognormal, ±40% at 1σ
+    phi:  1+gauss(rng)*0.08,           // porosity — normal, ±8% at 1σ
+    kvkh: Math.exp(gauss(rng)*0.40),   // vertical anisotropy — lognormal
+    aq:   Math.exp(gauss(rng)*0.50),   // aquifer strength — lognormal
+    skin: gauss(rng)*2                 // completion skin — additive, ±2 at 1σ
+  };
+  Q.kvkh=Math.min(1.0,Math.max(0.01,P.kvkh*mult.kvkh));
+  Q.aqstr=P.aqstr*mult.aq;
+  const LAY=LAYERS.map(L=>({
+    phi:Math.min(0.40,Math.max(0.03,L.phi*mult.phi)),
+    k:Math.max(1,L.k*mult.k),
+    ntg:L.ntg, depth:L.depth}));
+  // Skin delta applies to every well on top of its own (possibly customised) skin
+  const wells=WELLS.filter(w=>w.active).map(w=>Object.assign({},w,{
+    skin:Math.min(20,Math.max(-3,w.skin+mult.skin)), perf:(w.perf||[]).slice()}));
+  return {Q,LAY,wells,mult};
+}
+
+function runEnsemble(){
+  if(ENS.running)return;
+  if(document.getElementById('runBtn').disabled){alert('Wait for the running simulation to finish first.');return;}
+  const nReal=Math.max(2,parseInt(document.getElementById('ens-n').value)||25);
+  const seed=parseInt(document.getElementById('ens-seed').value)||42;
+  const rng=mulberry32((Math.imul(seed,2654435761)>>>0)||1);
+  ENS.running=true; ENS.ran=false; ENS.n=nReal; ENS.seed=seed;
+  const btn=document.getElementById('ensRunBtn');
+  btn.disabled=true; btn.classList.add('running'); btn.innerHTML='<span class="run-icon">⟳</span> Running…';
+  document.getElementById('runBtn').disabled=true;
+  document.getElementById('progressWrap').style.display='flex';
+  set('statusChip','Ensemble'); set('ens-status-badge',`Running 0/${nReal}…`);
+  const statusEl=document.getElementById('ensStatus');
+  const nSteps=Math.ceil(P.yr*365/P.dt);
+  const runs=[]; let r=0, eng=null, spec=null;
+  const CHUNK=25;                       // macro-steps per slice — keeps the UI responsive
+  const t0=performance.now();
+  const finishError=err=>{
+    ENS.running=false; btn.disabled=false; btn.classList.remove('running');
+    btn.innerHTML='<span class="run-icon">▶</span> Run Ensemble';
+    document.getElementById('runBtn').disabled=false;
+    document.getElementById('progressWrap').style.display='none';
+    set('statusChip','Idle'); set('ens-status-badge','Ensemble failed');
+    if(statusEl)statusEl.textContent='Error: '+err.message;
+    alert('Ensemble error in realization '+(r+1)+':\n\n'+err.message);
+  };
+  const slice=()=>{
+    try{
+      if(!eng){ spec=sampleRealization(rng); eng=createSimEngine(spec.Q,spec.LAY,spec.wells); }
+      let s=0; while(s<CHUNK && eng.advance()) s++;
+      if(eng.done){
+        runs.push({times:eng.times,qo:eng.qos,np:eng.nps,pres:eng.pres,
+          npEnd:eng.nps[eng.nps.length-1],stoiip:eng.stoiip,mult:spec.mult});
+        r++; eng=null; set('ens-status-badge',`Running ${r}/${nReal}…`);
+      }
+      const pct=Math.min(100,((r+(eng?eng.step/nSteps:0))/nReal)*100);
+      document.getElementById('progressFill').style.width=pct+'%';
+      document.getElementById('progressLabel').textContent=pct.toFixed(0)+'%';
+      if(statusEl)statusEl.textContent=`Realization ${Math.min(r+1,nReal)}/${nReal} · ${pct.toFixed(0)}%`;
+      if(r<nReal){ setTimeout(slice,0); } else { finishEnsemble(runs,t0,btn,statusEl); }
+    }catch(err){ finishError(err); }
+  };
+  slice();
+}
+
+// Linear-interpolated percentile of an ascending-sorted array, f in [0,1]
+function pctile(sortedAsc,f){
+  const n=sortedAsc.length; if(!n)return NaN;
+  const x=(n-1)*f, lo=Math.floor(x), hi=Math.ceil(x);
+  return sortedAsc[lo]+(sortedAsc[hi]-sortedAsc[lo])*(x-lo);
+}
+
+function finishEnsemble(runs,t0,btn,statusEl){
+  const T=runs[0].times, nT=T.length;
+  const bandOf=key=>{
+    const p10=[],p50=[],p90=[];
+    for(let i=0;i<nT;i++){
+      const v=runs.map(rn=>rn[key][i]).sort((a,b)=>a-b);
+      p90.push(pctile(v,0.10)); p50.push(pctile(v,0.50)); p10.push(pctile(v,0.90));
+    }
+    return {p10,p50,p90};
+  };
+  ENS.times=T;
+  ENS.qo=bandOf('qo'); ENS.np=bandOf('np'); ENS.pres=bandOf('pres');
+  // npEnd is in 10³ m³ (engine nps units); stoiip in m³
+  ENS.finals=runs.map(rn=>({npEnd:rn.npEnd, rf:rn.npEnd*1e3/rn.stoiip*100, mult:rn.mult}));
+  ENS.ran=true; ENS.running=false;
+  const cpu=((performance.now()-t0)/1000).toFixed(1);
+  btn.disabled=false; btn.classList.remove('running'); btn.innerHTML='<span class="run-icon">↺</span> Re-run Ensemble';
+  document.getElementById('runBtn').disabled=false;
+  document.getElementById('progressWrap').style.display='none';
+  set('statusChip','Complete'); set('ens-status-badge',`${ENS.n} realizations · seed ${ENS.seed} · ${cpu}s`);
+  if(statusEl)statusEl.textContent=`Complete — ${ENS.n} realizations in ${cpu}s`;
+  updateRightRail();
+  runAdvisor();
+  drawEnsemble();
+  setStatus(`Ensemble complete · ${ENS.n} runs · ${cpu}s`,'#2ECC8A');
+}
+
+function drawEnsemble(){
+  if(!ENS.ran)return;
+  const T=ENS.times;
+  // Overlay the deterministic base case only when it matches the ensemble timebase
+  const baseOk=RES.ran&&RES.times.length===T.length;
+  fanChart('ensRateChart',T,ENS.qo,'#C9A84C',baseOk?RES.qo:null);
+  fanChart('ensCumChart',T,ENS.np,'#C9A84C',baseOk?RES.np:null);
+  fanChart('ensPresChart',T,ENS.pres,'#2ECC8A',baseOk?RES.pres:null);
+  const nps=ENS.finals.map(f=>f.npEnd).sort((a,b)=>a-b);
+  const rfs=ENS.finals.map(f=>f.rf).sort((a,b)=>a-b);
+  const np90=pctile(nps,0.10), np50=pctile(nps,0.50), np10=pctile(nps,0.90);
+  histChart('ensHist',nps,'#4AADCA',{p90:np90,p50:np50,p10:np10});
+  set('e-np90',np90.toFixed(0)); set('e-np50',np50.toFixed(0)); set('e-np10',np10.toFixed(0));
+  set('e-rf',`${pctile(rfs,0.10).toFixed(1)}/${pctile(rfs,0.50).toFixed(1)}/${pctile(rfs,0.90).toFixed(1)}`);
+  set('e-ratio',np90>1e-9?(np10/np90).toFixed(2):'—');
+}
+
+// Fan chart — shaded P90–P10 band, P50 line, optional dashed base case
+function fanChart(id,xs,band,color,base){
+  const cv=document.getElementById(id); if(!cv)return;
+  const ctx=cv.getContext('2d'); const W=cv.offsetWidth||400; cv.width=W; cv.height=200;
+  const ml=44,mr=14,mt=12,mb=30,pw=W-ml-mr,ph=cv.height-mt-mb;
+  ctx.clearRect(0,0,W,cv.height);
+  const allY=band.p10.concat(band.p50,band.p90,base||[]).filter(isFinite);
+  if(!allY.length)return;
+  let ymin=Math.min(...allY),ymax=Math.max(...allY); if(ymin===ymax)ymax=ymin+1;
+  const yr=ymax-ymin, xs2=xs.map(Number);
+  const xmin=Math.min(...xs2),xmax=Math.max(...xs2),xr=Math.max(xmax-xmin,1e-6);
+  const tx=x=>ml+(x-xmin)/xr*pw, ty=y=>mt+ph-(y-ymin)/yr*ph;
+  ctx.strokeStyle='rgba(107,122,141,0.13)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){const y=mt+ph*i/4;ctx.beginPath();ctx.moveTo(ml,y);ctx.lineTo(ml+pw,y);ctx.stroke();
+    const val=ymax-yr*i/4; ctx.fillStyle='rgba(107,122,141,0.7)';ctx.font="9px 'DM Mono'";ctx.textAlign='right';
+    ctx.fillText(Math.abs(val)>=1000?(val/1000).toFixed(0)+'k':val.toFixed(val<1&&val!==0?2:0),ml-4,y+3);}
+  for(let i=0;i<=4;i++){const x=ml+pw*i/4;ctx.beginPath();ctx.moveTo(x,mt);ctx.lineTo(x,mt+ph);ctx.stroke();
+    ctx.fillStyle='rgba(107,122,141,0.7)';ctx.textAlign='center';ctx.fillText((xmin+xr*i/4).toFixed(1),x,mt+ph+14);}
+  const tracePath=d=>{ctx.beginPath();xs2.forEach((x,i)=>{const X=tx(x),Y=ty(d[i]);i===0?ctx.moveTo(X,Y):ctx.lineTo(X,Y);});};
+  // P90–P10 band
+  ctx.beginPath();
+  xs2.forEach((x,i)=>{const X=tx(x),Y=ty(band.p10[i]);i===0?ctx.moveTo(X,Y):ctx.lineTo(X,Y);});
+  for(let i=xs2.length-1;i>=0;i--)ctx.lineTo(tx(xs2[i]),ty(band.p90[i]));
+  ctx.closePath(); ctx.fillStyle=color+'2c'; ctx.fill();
+  // band envelope edges
+  ctx.strokeStyle=color+'59'; ctx.lineWidth=1;
+  tracePath(band.p10); ctx.stroke(); tracePath(band.p90); ctx.stroke();
+  // base case (dashed)
+  if(base){ctx.strokeStyle='rgba(107,122,141,0.9)';ctx.lineWidth=1.2;ctx.setLineDash([4,3]);
+    tracePath(base);ctx.stroke();ctx.setLineDash([]);}
+  // P50 median
+  ctx.strokeStyle=color; ctx.lineWidth=1.8; tracePath(band.p50); ctx.stroke();
+  ctx.strokeStyle='rgba(107,122,141,0.4)';ctx.lineWidth=1;ctx.beginPath();
+  ctx.moveTo(ml,mt);ctx.lineTo(ml,mt+ph);ctx.lineTo(ml+pw,mt+ph);ctx.stroke();
+}
+
+// Histogram with P90/P50/P10 marker lines (vals ascending)
+function histChart(id,valsAsc,color,mk){
+  const cv=document.getElementById(id); if(!cv)return;
+  const ctx=cv.getContext('2d'); const W=cv.offsetWidth||400; cv.width=W; cv.height=200;
+  const ml=30,mr=14,mt=16,mb=30,pw=W-ml-mr,ph=cv.height-mt-mb;
+  ctx.clearRect(0,0,W,cv.height);
+  if(!valsAsc.length)return;
+  const vmin=valsAsc[0], vmax=valsAsc[valsAsc.length-1];
+  const span=Math.max(vmax-vmin,1e-9);
+  const nb=Math.max(6,Math.min(14,Math.round(Math.sqrt(valsAsc.length)*1.6)));
+  const bins=new Array(nb).fill(0);
+  valsAsc.forEach(v=>{let b=Math.floor((v-vmin)/span*nb); if(b>=nb)b=nb-1; bins[b]++;});
+  const bmax=Math.max(...bins), bw=pw/nb;
+  bins.forEach((c,i)=>{const h=c/bmax*ph;
+    ctx.fillStyle=color+'aa'; ctx.fillRect(ml+i*bw+1,mt+ph-h,bw-2,h);
+    ctx.strokeStyle=color; ctx.lineWidth=1; ctx.strokeRect(ml+i*bw+1,mt+ph-h,bw-2,h);});
+  const tx=v=>ml+(v-vmin)/span*pw;
+  [['P90',mk.p90,'#E07070'],['P50',mk.p50,'#C9A84C'],['P10',mk.p10,'#2ECC8A']].forEach(([lab,v,c])=>{
+    const x=Math.max(ml,Math.min(ml+pw,tx(v)));
+    ctx.strokeStyle=c;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,mt);ctx.lineTo(x,mt+ph);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=c;ctx.font="9px 'DM Mono'";ctx.textAlign='center';ctx.fillText(lab,x,mt-5);
+  });
+  ctx.fillStyle='rgba(107,122,141,0.7)';ctx.font="9px 'DM Mono'";
+  ctx.textAlign='left';ctx.fillText(vmin.toFixed(0),ml,mt+ph+14);
+  ctx.textAlign='right';ctx.fillText(vmax.toFixed(0),ml+pw,mt+ph+14);
+  ctx.strokeStyle='rgba(107,122,141,0.4)';ctx.lineWidth=1;ctx.beginPath();
+  ctx.moveTo(ml,mt);ctx.lineTo(ml,mt+ph);ctx.lineTo(ml+pw,mt+ph);ctx.stroke();
+}
+
+function exportEnsembleCSV(){
+  if(!ENS.ran){alert('Run an ensemble first.');return;}
+  let csv=`# APEX Reservoir 3D ensemble · n=${ENS.n} · seed=${ENS.seed} · SPE exceedance convention (P10 high / P90 low)\n`;
+  csv+='time_yr,Qo_P90_m3d,Qo_P50_m3d,Qo_P10_m3d,Np_P90_1e3m3,Np_P50_1e3m3,Np_P10_1e3m3,Pres_P90_bar,Pres_P50_bar,Pres_P10_bar\n';
+  ENS.times.forEach((t,i)=>{
+    csv+=`${t.toFixed(3)},${ENS.qo.p90[i].toFixed(1)},${ENS.qo.p50[i].toFixed(1)},${ENS.qo.p10[i].toFixed(1)},`+
+         `${ENS.np.p90[i].toFixed(2)},${ENS.np.p50[i].toFixed(2)},${ENS.np.p10[i].toFixed(2)},`+
+         `${ENS.pres.p90[i].toFixed(1)},${ENS.pres.p50[i].toFixed(1)},${ENS.pres.p10[i].toFixed(1)}\n`;});
+  csv+='\n# realizations\nrealization,Np_end_1e3m3,RF_pct,kh_mult,phi_mult,kvkh_mult,aq_mult,skin_delta\n';
+  ENS.finals.forEach((f,i)=>{
+    csv+=`${i+1},${f.npEnd.toFixed(2)},${f.rf.toFixed(2)},${f.mult.k.toFixed(3)},${f.mult.phi.toFixed(3)},${f.mult.kvkh.toFixed(3)},${f.mult.aq.toFixed(3)},${f.mult.skin.toFixed(2)}\n`;});
+  downloadFile('apex-ensemble-p10-p50-p90.csv',csv);
+  setStatus('Ensemble CSV exported ✓','#2ECC8A');
+}
+
+// ════════════════════════════════════════════════════
 //  BOOT
 // ════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
   document.querySelectorAll('.rail-range').forEach(r=>{const min=+r.min,max=+r.max,v=+r.value;r.style.setProperty('--pct',((v-min)/(max-min)*100)+'%');});
-  generateLayers(); updateDerived(); drawPVT(); drawSCAL(); drawAquifer();
+  generateLayers(); generateWells();
+  const saved=loadSavedState();
+  if(saved) applyImport(saved,true); else updateDerived();
+  attachWellMapEvents();
+  updateClaudeKeyUI();
+  showScreen();               // activate the routed screen (default #home)
+  drawPVT(); drawSCAL(); drawAquifer();
   initThree(); // single shared renderer; results scene created inside
   window.addEventListener('resize',()=>{
     resizeShared();
-    drawPVT();drawSCAL();drawLayerCharts();drawAquifer();if(RES.ran)drawResults();
+    if(currentScreen==='pvt')drawPVT();
+    if(currentScreen==='rock')drawSCAL();
+    if(currentScreen==='layers')drawLayerCharts();
+    if(currentScreen==='aquifer')drawAquifer();
+    if(currentScreen==='results'&&RES.ran)drawResults();
+    if(currentScreen==='ensemble'&&ENS.ran)drawEnsemble();
   });
   setTimeout(()=>{resizeShared();rebuild3D();},150);
 });
