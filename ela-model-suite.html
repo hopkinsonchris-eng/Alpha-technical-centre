@@ -418,6 +418,7 @@ const FIELDS=[
  {id:'LL',name:'Lagunillas Lago',color:'#C9A84C',base:8000,qd:15,opex:7.70,fac:110,plat:[26000,75000,130000],p1b:37365,
   ramp:[8000,17356,42567,40500,58950,65794,71656,76540,86309,107800,125384,121574,117862,114248,110829,107410,104088,100864,97836,94808],
   prodOv:{2026:17412.87,2027:42620.39},opexOv:{2026:217.02,2027:207.41},capexOv:{2026:47.1,2027:0},
+  ph1a:[0,47.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph1:[0,204.4,148.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph2:[0,0,0,64.9,108.1,108.1,86.5,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph3:[0,0,0,0,0,0,0,180,210,80,0,0,0,0,0,0,0,0,0,0],
@@ -425,6 +426,7 @@ const FIELDS=[
  {id:'TJ',name:'Tía Juana Lago-Tierra',color:'#8C6E2F',base:20000,qd:14,opex:11.0,fac:145,plat:[37000,90000,140000],p1b:53174,
   ramp:[20000,19000,26042,50710,70437,80443,88443,98443,110443,123443,138443,134543,130743,126943,123243,119743,116243,112843,109543,106243],
   prodOv:{},opexOv:{},capexOv:{},
+  ph1a:[0,16.3,32.5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph1:[0,80,160,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph2:[0,0,0,130,150,180,130,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph3:[0,0,0,0,0,0,0,150,140,60,0,0,0,0,0,0,0,0,0,0],
@@ -432,6 +434,7 @@ const FIELDS=[
  {id:'RM',name:'Rosa Mediano',color:'#C0392B',base:3500,qd:5,opex:9.0,fac:180,plat:[7500,20500,30500],p1b:10778,
   ramp:[3500,3325,4922,11491,15132,20134,25134,27134,28134,30134,30134,28934,27734,26534,25434,24434,23434,22434,21534,20634],
   prodOv:{},opexOv:{},capexOv:{},
+  ph1a:[0,3.5,6.4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph1:[0,50,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph2:[0,0,0,75,120,130,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph3:[0,0,0,0,0,0,70,75,50,30,0,0,0,0,0,0,0,0,0,0],
@@ -439,6 +442,7 @@ const FIELDS=[
  {id:'CB',name:'Cabimas Field',color:'#6B7A8D',base:5000,qd:10,opex:10.0,fac:150,plat:[13000,43000,62000],p1b:18683,
   ramp:[5000,4750,7843,21981,29265,36267,42267,44267,51267,57267,61267,59367,57567,55867,54167,52567,50967,49367,47867,46367],
   prodOv:{},opexOv:{},capexOv:{},
+  ph1a:[0,6.1,11.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph1:[0,50,90,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph2:[0,0,0,90,120,150,90,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph3:[0,0,0,0,0,0,0,120,100,30,0,0,0,0,0,0,0,0,0,0],
@@ -446,6 +450,7 @@ const FIELDS=[
  {id:'TV',name:'Trevi Field',color:'#3E5C76',base:0,qd:3,opex:6.0,fac:400,plat:[8000,18000,20000],p1b:11497,
   ramp:[0,0,3000,8000,12000,15000,18000,20000,20000,20000,19000,18100,17200,16300,15500,14700,14000,13300,12600,12000],
   prodOv:{},opexOv:{},capexOv:{},
+  ph1a:[0,60,150,200,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph1:[0,60,150,200,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph2:[0,0,0,0,130,90,80,0,0,0,0,0,0,0,0,0,0,0,0,0],
   ph3:[0,0,0,0,0,0,0,50,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -491,16 +496,30 @@ function saveOv(){if(!storageOK)return;try{window.localStorage.setItem(STORE_KEY
 /* ════════════════════════════════════════════════════════════════════════
    3. ENGINE — validated cell-for-cell vs workbook (do not alter mechanics)
    ════════════════════════════════════════════════════════════════════════ */
+/* Phase-1a standalone: 1b/2/3 all off. Truly self-contained restart —
+   production restores to the 83.5k plateau over the 2026-28 window then declines
+   at the natural DECLINE rate (no further intervention), and CAPEX uses the light
+   ph1a restart budget (~$123MM total) rather than the fuller ph1 development budget.
+   Later phases are untouched: any of 1b/2/3 on reverts to the validated mechanics. */
+const P1A_DECLINE_FROM=4;   // index 4 = 2029; 2026-28 restart holds plateau, decline after
 function fieldCF(f,p){
   const ov=OV[f.id];
   const ph3e=p.ph2&&p.ph3;
+  const p1aOnly=!p.ph2&&!p.ph1b;                 // Phase-1a standalone
   // Phase cap: Ph3→plat[2] · Ph2→plat[1] · else Phase-1 sub-toggle: 1b→p1b (120k), 1a→plat[0] (83.5k)
   const plat=ph3e?f.plat[2]:(p.ph2?f.plat[1]:(p.ph1b?f.p1b:f.plat[0]));
   const rows=[];
   for(let i=0;i<YEARS.length;i++){
     const y=YEARS[i];
-    let prod=(ov.prod[y]!==undefined)?ov.prod[y]:f.ramp[i];
-    prod=Math.min(prod,plat);
+    let prod;
+    if(p1aOnly){
+      // ramp (capped) through the restart window, then natural decline off the plateau
+      if(i<P1A_DECLINE_FROM)prod=Math.min((ov.prod[y]!==undefined)?ov.prod[y]:f.ramp[i],plat);
+      else prod=plat*Math.pow(1-DECLINE,i-(P1A_DECLINE_FROM-1));
+    }else{
+      prod=(ov.prod[y]!==undefined)?ov.prod[y]:f.ramp[i];
+      prod=Math.min(prod,plat);
+    }
     const basel=f.base*Math.pow(1-DECLINE,y-2025);
     const net=Math.max(0,prod-basel);
     const price=p.brent-f.qd;
@@ -510,7 +529,8 @@ function fieldCF(f,p){
     const gross=oilRev+gasRev;
     const roy=gross*ROYALTY;
     const opex=(ov.opex[y]!==undefined)?ov.opex[y]*p.opex:f.opex*prod*365/1e6*p.opex;
-    const capex=(ov.capex[y]!==undefined)?ov.capex[y]*p.capex:(f.ph1[i]+(p.ph2?f.ph2[i]:0)+(ph3e?f.ph3[i]:0))*p.capex;
+    const baseCap=p1aOnly?f.ph1a[i]:(f.ph1[i]+(p.ph2?f.ph2[i]:0)+(ph3e?f.ph3[i]:0));
+    const capex=(ov.capex[y]!==undefined)?ov.capex[y]*p.capex:baseCap*p.capex;
     const baselVal=basel*365/1e6*price;
     const cf=gross-roy-opex-capex;
     rows.push({y,prod,basel,net,gross,roy,opex,capex,cf,baselVal});
