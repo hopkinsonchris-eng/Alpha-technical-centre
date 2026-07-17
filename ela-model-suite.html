@@ -355,7 +355,7 @@
         <div class="ae-fieldgrid" id="ae-fcards"></div>
         <div class="ae-card" style="margin-top:18px">
           <p class="ae-ct">Per-Field Economics — Standalone</p>
-          <p class="ae-cn">Field rows always show standalone economics; toggles affect portfolio rollups only (workbook convention). Lagunillas restart OPEX/CAPEX = loaded AICO actuals; other fields steady-state pending budgets.</p>
+          <p class="ae-cn">Field rows always show standalone economics; toggles affect portfolio rollups only (workbook convention). Lagunillas restart CAPEX = loaded AICO actual; OPEX follows the two-tier licence basis. Other fields steady-state pending budgets.</p>
           <div class="ae-scroll"><table id="tb-fields"></table></div>
         </div>
       </section>
@@ -369,7 +369,7 @@
             <thead><tr><th>Term</th><th style="text-align:left">Old PSC / Empresa Mixta</th><th style="text-align:left">New Law (Jan 2026)</th><th style="text-align:left">Investor impact</th></tr></thead>
             <tbody id="tb-regime"></tbody>
           </table></div>
-          <div class="ae-callout"><b>Mechanics in this model:</b> ① Govt baseline = 2025 field production × (1−5%)<sup>t</sup> — PDVSA's perpetual entitlement from existing wells, no cost contribution. ② Investor gross revenue = (total production − baseline) × realised price, plus Trevi gas. ③ Royalty = 30% of investor gross. ④ Net investor CF = net revenue − OPEX − CAPEX; zero income tax. ⑤ OPEX is charged on <i>total</i> field production — the investor operates the whole field. ⑥ Government take = royalty + baseline entitlement value.</div>
+          <div class="ae-callout"><b>Mechanics in this model:</b> ① Govt baseline = 2025 field production × (1−5%)<sup>t</sup> — PDVSA's perpetual entitlement from existing wells, no cost contribution. ② Investor gross revenue = (total production − baseline) × realised price, plus Trevi gas. ③ Royalty = 30% of investor gross. ④ Net investor CF = net revenue − OPEX − CAPEX; zero income tax. ⑤ OPEX is two-tier: a $4.00/bbl maintenance rate on the government's declining-baseline barrels — which the investor operates to hold the agreed decline — plus the full field rate on the investor's incremental barrels above baseline. ⑥ Government take = royalty + baseline entitlement value.</div>
         </div>
         <div class="ae-card">
           <p class="ae-ct">Ramp Construction · Best-First Sequencing on a Lognormal Well Stock</p>
@@ -385,8 +385,8 @@
           <p class="ae-cn" style="margin-top:6px">Ramps frozen from the best-first/lognormal + AICO engine into the model's single-source production block; field sheets cap each ramp at the active-phase plateau. Trevi is a greenfield — a conventional development build-up, outside the best-first narrative.</p>
         </div>
         <div class="ae-card">
-          <p class="ae-ct">AICO Cost Basis · Lagunillas Lago</p>
-          <p class="ae-cn">Implied OPEX rate by year (live — reflects current overrides at model basis 1.0×) and the AICO budget split.</p>
+          <p class="ae-ct">OPEX Basis · Lagunillas Lago</p>
+          <p class="ae-cn">Effective OPEX $/bbl by year under the two-tier licence policy — $4.00/bbl maintenance on the government's baseline barrels, full field rate on incremental — with the AICO budget split below.</p>
           <div id="ch-hump"></div>
           <p class="ae-ct" style="margin-top:14px">AICO LL Budget Split — steady-state basis (first 24 months, $168.7M @ $7.70/bbl)</p>
           <div id="ch-aicosplit"></div>
@@ -402,7 +402,7 @@
   <div class="ae-tip" id="ae-tip"></div>
 
   <footer>
-    <b>Disclaimer:</b> "New Hydrocarbon Law January 2026" refers to the regime as described by Alpha Energy Latin America management. Terms should be verified against the official MINHIDROCARBUROS gazette and legal counsel opinion prior to any investment commitment. OFAC General Licence applicability requires separate legal review. Production forecasts are internal estimates; not independently audited. Lagunillas 2026–27 production, restart OPEX ($217.0M / $207.4M) and 2026 CAPEX ($47.1M) are AICO actuals (AICO_Occidente_mod2.xlsx); remaining fields use steady-state model estimates pending AICO budgets. Trevi gas treated as Phase-2-dependent.
+    <b>Disclaimer:</b> "New Hydrocarbon Law January 2026" refers to the regime as described by Alpha Energy Latin America management. Terms should be verified against the official MINHIDROCARBUROS gazette and legal counsel opinion prior to any investment commitment. OFAC General Licence applicability requires separate legal review. Production forecasts are internal estimates; not independently audited. Lagunillas 2026–27 production and 2026 CAPEX ($47.1M) are AICO actuals (AICO_Occidente_mod2.xlsx). OPEX follows the licence two-tier basis — $4.00/bbl on the government's declining baseline, full field rate on incremental barrels — so the AICO restart-OPEX figures ($217.0M / $207.4M) are superseded by this basis and no longer drive the cash flow. Remaining fields use steady-state model estimates pending AICO budgets. Trevi gas treated as Phase-2-dependent.
   </footer>
 </div>
 
@@ -982,28 +982,36 @@ function vLognormal(){
   $('lg-ramps').innerHTML=FIELDS.map(f=>`<span><i style="background:${f.color}"></i>${f.name}</span>`).join('');
 }
 function vHump(){
+  // Effective blended OPEX $/bbl for Lagunillas under the two-tier licence policy:
+  // GOVT_OPEX/bbl maintenance on the govt's declining-baseline barrels + full field
+  // rate on the investor's incremental barrels. Early years sit near the maintenance
+  // floor (production ~= baseline); as incremental grows the blend rises toward full.
   const ll=FIELDS[0],ov=OV.LL;
-  const yrs=[],rate=[],isOv=[];
+  const yrs=[],rate=[];
   for(let i=0;i<8;i++){const y=2025+i;
-    const prod=(ov.prod[y]!==undefined)?ov.prod[y]:ll.ramp[i];
-    if(ov.opex[y]!==undefined){rate.push(prod>0?ov.opex[y]/(prod*365/1e6):0);isOv.push(true);}
-    else{rate.push(ll.opex);isOv.push(false);}
+    const prod=(ov.prod[y]!==undefined)?ov.prod[y]:Math.min(ll.ramp[i],ll.plat[2]);
+    const basel=ll.base*Math.pow(1-DECLINE,y-2025);
+    const govtBbl=Math.min(prod,basel), net=Math.max(0,prod-basel);
+    const opexMM=(GOVT_OPEX*govtBbl+ll.opex*net)*365/1e6;
+    rate.push(prod>0?opexMM/(prod*365/1e6):GOVT_OPEX);
     yrs.push(y);}
   const fr=frame(1140,200,46,14,16,26);
-  const top=Math.max(38,...rate)*1.05;
+  const top=Math.max(ll.opex*1.15,...rate)*1.05;
   let b=gridY(fr,0,top,v=>'$'+v.toFixed(0),3);
   const bw=(fr.w-fr.padL-fr.padR)/yrs.length*0.5;
   yrs.forEach((y,i)=>{
     const x=fr.padL+(fr.w-fr.padL-fr.padR)*(i+0.5)/yrs.length;
     const y1=fr.lin(rate[i],0,top),y0=fr.lin(0,0,top);
-    b+=`<rect x="${(x-bw/2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${(y0-y1).toFixed(1)}" fill="${isOv[i]?'#C0392B':'#C9A84C'}"/>`;
-    b+=`<text x="${x}" y="${(y1-6).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="600" fill="#0B1F3A">$${rate[i].toFixed(rate[i]<10?2:1)}</text>`;
+    b+=`<rect x="${(x-bw/2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${(y0-y1).toFixed(1)}" fill="#C9A84C"/>`;
+    b+=`<text x="${x}" y="${(y1-6).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="600" fill="#0B1F3A">$${rate[i].toFixed(2)}</text>`;
     b+=`<text x="${x}" y="${fr.h-8}" text-anchor="middle" font-size="11" fill="#6B7A8D">${y}</text>`;});
-  const ssY=fr.lin(7.70,0,top);
-  b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${ssY}" y2="${ssY}" stroke="#0B1F3A" stroke-dasharray="5 4" stroke-width="1.5"/>`;
-  b+=`<text x="${fr.w-fr.padR}" y="${ssY-5}" text-anchor="end" font-size="11" fill="#0B1F3A">AICO steady state $7.70/bbl</text>`;
-  b+=`<text x="${fr.padL+4}" y="${fr.padT+2}" font-size="11" fill="#C0392B">red = OPEX override loaded · gold = steady-state estimate</text>`;
-  $('ch-hump').innerHTML=SVG(fr,b,'Lagunillas implied OPEX rate by year');
+  const refLine=(v,lbl,col)=>{const yy=fr.lin(v,0,top);
+    b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-dasharray="5 4" stroke-width="1.5"/>`+
+       `<text x="${fr.w-fr.padR}" y="${yy-5}" text-anchor="end" font-size="11" fill="${col}">${lbl}</text>`;};
+  refLine(ll.opex,'Full field rate $'+ll.opex.toFixed(2)+'/bbl','#0B1F3A');
+  refLine(GOVT_OPEX,'Govt-baseline maintenance $'+GOVT_OPEX.toFixed(2)+'/bbl','#8C6E2F');
+  b+=`<text x="${fr.padL+4}" y="${fr.padT+2}" font-size="11" fill="#6B7A8D">effective blended OPEX — govt barrels at the maintenance rate, incremental at the full field rate</text>`;
+  $('ch-hump').innerHTML=SVG(fr,b,'Lagunillas effective OPEX rate by year under the two-tier policy');
 }
 function vAicoSplit(){
   const cats=[['Staff & Overheads',94.6,56.1],['Well Services (non-capital)',49.5,29.3],['Operational Logistics',22.2,13.2],['Facilities (non-capital)',2.4,1.4]];
