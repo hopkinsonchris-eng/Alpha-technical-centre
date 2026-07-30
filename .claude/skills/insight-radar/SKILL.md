@@ -102,19 +102,55 @@ For every candidate that might make the edition, fetch the URL. Confirm it
 resolves and that it is the work you think it is. Then get the substance, in
 this order:
 
+**Use the societies as the index, not as the only source.** SPE, SEG and AAPG
+tell you what is worth knowing about. What the work actually found is very often
+readable somewhere else, because the people who did it want it known. A paper
+number and title from a paywalled table of contents is a *search key*, and
+running it properly is the difference between a four-item edition and an
+eight-item one.
+
+Work down this list for each candidate:
+
 1. **Check the papers folder.** `insights-data/papers/<YYYY-MM>/` holds PDFs the
-   client has downloaded with their own society access. Read them. These are
-   the best sources available to the run and take priority over everything else.
-2. **Check for a legitimate open-access copy.** Many SPE, EAGE and Elsevier
-   papers are open access, and most authors post accepted manuscripts. Resolve
-   the DOI, then try Crossref, Unpaywall and OpenAlex, then the authors'
-   institutional repository. A Stanford, NORCE or TU Delft co-author usually
-   means a readable copy exists somewhere legal.
-3. **Read the society summary.** JPT technology-focus synopses, The Leading Edge
-   and First Break summarise papers in readable form and are themselves citable.
-4. **If none of that yields enough to state what was measured, the item does not
-   go in the article.** Put it on the reading list and move on. Do not write it
-   up thinly, and do not explain the gap to the reader.
+   client has downloaded with their own society access. Read them. These take
+   priority over everything else.
+2. **Search the paper number and the exact title.** This is the highest-yield
+   single step and it usually resolves the authorship the paywall hid. Searching
+   "SPE 230613" plus its title returns the authors, their companies, the
+   operator, the basin and the mechanism, none of which appear on the restricted
+   page. Do this before concluding anything is unreadable.
+3. **Go to the authors' employers.** A field trial has a service company and an
+   operator, and both publicise it. Press releases, technical pages and product
+   announcements carry the mechanism and the commercial framing, though rarely
+   the numbers. Attribute to the company in the sentence, always.
+4. **Look for third-party technical commentary.** Specialist consultancies and
+   modelling firms publish readable conference reviews naming paper numbers and
+   findings, and they are frequently *critical*, which a vendor source never is.
+   ResFrac's HFTC reviews are the model. This class of source is often the best
+   available: readable, technically literate, and willing to state limitations.
+   See the commentary section of `references/sources.md`.
+5. **Check for a legitimate open-access copy.** Resolve the DOI, then Crossref,
+   Unpaywall and OpenAlex, then the authors' institutional repository. A
+   Stanford, NORCE or TU Delft co-author usually means a readable copy exists
+   somewhere legal.
+6. **Read the society summary.** JPT technology-focus synopses, The Leading Edge
+   and First Break summarise papers readably and are citable in their own right.
+7. **Conference programme and presentation pages.** Abstracts and slide decks
+   are often free on the conference site even when the paper is not.
+
+Cite what you read. If the substance came from a vendor release and a
+third-party review, cite those and cite the paper for the record, and make the
+prose reflect which claim rests on which source.
+
+**If none of that yields enough to state what was measured, the item does not go
+in the article.** Put it on the reading list and move on. Do not write it up
+thinly, and do not explain the gap to the reader.
+
+**Date the primary source, not the summary.** Papers surface months after they
+are presented: a February conference paper often reaches the JPT technology
+focus in June. Reporting an in-window *surfacing* is legitimate, because that is
+when practitioners meet the work, but the prose must give the paper's real venue
+and date. Never let a February paper read as a July result.
 
 Never attempt to bypass a paywall, and never use the client's society
 credentials to fetch content automatically. Both risk their membership and

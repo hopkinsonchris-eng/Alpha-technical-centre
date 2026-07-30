@@ -229,6 +229,42 @@ nouvelles, TNO, SINTEF, NORCE, JIP consortia (DeepStar, MPD JIP).
 
 ---
 
+## Third-party technical commentary (E3, sometimes the best source you can get)
+
+Specialist consultancies, modelling houses and independent engineers publish
+readable reviews of conference programmes, naming paper numbers and summarising
+findings. Two reasons this class matters more than its tier suggests: it is
+open, and it is willing to say a result is weak. A vendor never does that and a
+society synopsis rarely does.
+
+Use it to unlock papers you cannot read, and to sanity-check ones you can.
+
+- **ResFrac** (`resfrac.com/blog`) — reviews of SPE HFTC, URTeC and ATCE
+  programmes, paper by paper, with critical assessment of fracture and
+  completion claims. The reference standard for this class.
+- **Digital Wildcatters, Novi Labs, Enverus** technical blogs — completions and
+  production analytics commentary, US-weighted.
+- **Kappa Engineering, Whitson, Petroleum Experts** technical notes — well test,
+  PVT and nodal analysis.
+- **JPT's own Technology Focus editors** write signed introductions to each
+  section that are more candid than the synopses they introduce.
+- **SPE technical section newsletters and webinar recordings**, often open even
+  when the papers are not.
+- **Independent blogs by named practitioners** — reservoir engineering,
+  petrophysics (for example the log analysis community around SPWLA), fracture
+  diagnostics. Judge by whether the author shows their working.
+- **University research group pages and PhD theses.** A thesis chapter is
+  frequently the full, open version of a paywalled conference paper by the same
+  author, with more method detail than the paper.
+- **LinkedIn technical posts by paper authors.** Authors routinely post the
+  headline result of their own paper. Low formality, high accuracy on what the
+  paper claims, and it establishes authorship. Cite the paper, not the post,
+  unless the post is itself the only source of a number.
+
+Treat a critical third-party read as raising confidence, not lowering it. A
+review that states a method's limitations is better evidence than one that does
+not, and those limitations belong in the article.
+
 ## Trade press (E4 — corroboration and commercial news)
 
 - Upstream Online, Hart Energy (*Oil and Gas Investor*, *E&P*), World Oil,

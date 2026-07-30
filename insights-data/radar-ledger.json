@@ -5,7 +5,7 @@
       "slug": "2026-07-technology-radar",
       "filename": "insights-2026-07-technology-radar.html",
       "published": "2026-07-30",
-      "title": "Technology Radar, July 2026: Temperature as a Saturation Log, and a Standard for Autonomous Drilling",
+      "title": "Technology Radar, July 2026: Temperature as a Saturation Log, Closed-Loop Fracturing and a Standard for Autonomous Drilling",
       "developments": [
         {
           "name": "Downhole temperature as a saturation measurement",
@@ -23,6 +23,17 @@
           "readiness": 1,
           "urls": [
             "https://jpt.spe.org/taxonomy-describing-levels-of-autonomous-drilling-systems-incorporates-complexity-uncertainty-and-sparse-data-with-human-interaction"
+          ]
+        },
+        {
+          "name": "Closed-loop fracturing reallocates volume between stages",
+          "discipline": "Completions",
+          "tier": "E1",
+          "readiness": 2,
+          "urls": [
+            "https://jpt.spe.org/closed-loop-completions-program-holds-potential-to-transform-hydraulic-fracturing-restricted",
+            "https://www.halliburton.com/en/about-us/press-release/chevron-and-halliburton-enable-intelligent-hydraulic-fracturing",
+            "https://www.resfrac.com/blog/interesting-papers-from-the-2026-spe-hydraulic-fracturing-technology-conference-hftc"
           ]
         },
         {
@@ -54,6 +65,21 @@
           "title": "Taxonomy Describing Levels of Autonomous Drilling Systems Incorporates Complexity, Uncertainty, and Sparse Data With Human Interaction",
           "url": "https://jpt.spe.org/taxonomy-describing-levels-of-autonomous-drilling-systems-incorporates-complexity-uncertainty-and-sparse-data-with-human-interaction",
           "tier": "E1"
+        },
+        {
+          "title": "Transforming Hydraulic Fracturing: The First-Ever Closed-Loop Completions Program",
+          "url": "https://jpt.spe.org/closed-loop-completions-program-holds-potential-to-transform-hydraulic-fracturing-restricted",
+          "tier": "E1"
+        },
+        {
+          "title": "Chevron and Halliburton enable intelligent hydraulic fracturing",
+          "url": "https://www.halliburton.com/en/about-us/press-release/chevron-and-halliburton-enable-intelligent-hydraulic-fracturing",
+          "tier": "E3"
+        },
+        {
+          "title": "Interesting Papers from the 2026 SPE Hydraulic Fracturing Technology Conference (HFTC)",
+          "url": "https://www.resfrac.com/blog/interesting-papers-from-the-2026-spe-hydraulic-fracturing-technology-conference-hftc",
+          "tier": "E3"
         },
         {
           "title": "Alberta Awards $37 Million for Next-Generation Drilling Technologies",
