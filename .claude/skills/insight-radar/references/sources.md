@@ -13,19 +13,39 @@ a paywalled paper from a press release about it and cite the paper.
 
 ## Learned societies and their publications
 
-**SPE — Society of Petroleum Engineers.** The spine of this series.
-- `onepetro.org` — the aggregate archive for SPE, OTC, SPWLA, ARMA, ISRM,
-  URTeC. Search here first for anything reservoir, production, drilling or
-  completions. Mostly paywalled; abstracts are open.
-- `jpt.spe.org` — Journal of Petroleum Technology. Technical-magazine tier
-  (E2), open, and the fastest read on what the society thinks matters. Good
-  for finding the papers worth chasing.
+**SPE — Society of Petroleum Engineers.** The single most important source in
+this registry. Start every edition here. If an edition contains no SPE material,
+treat that as a search failure and go back.
+
+- `spe.org` — society site: technical sections, technical committees, webinars
+  and the events calendar. The technical sections are the fastest way to see
+  what practitioners are actually arguing about.
+- `onepetro.org` — **SPE's paper archive**, and the aggregate archive for OTC,
+  SPWLA, ARMA, ISRM, URTeC, IPTC and others. Search here first for anything
+  reservoir, production, drilling or completions. Mostly paywalled; abstracts
+  are open and citable as `abstract`.
+- `jpt.spe.org` — *Journal of Petroleum Technology*, SPE's technical magazine
+  (E2, open). The fastest read on what the society thinks matters, and the best
+  route to finding the papers worth chasing.
 - SPE peer-reviewed journals (E1): *SPE Journal*, *SPE Reservoir Evaluation &
   Engineering*, *SPE Production & Operations*, *SPE Drilling & Completion*,
-  *SPE Reservoir Engineering*.
-- Conference proceedings (E1 where refereed): ATCE, SPE Reservoir Simulation
-  Conference, Hydraulic Fracturing Technology Conference, Digital Energy,
-  Artificial Lift, IOR, ADIPEC, EAGE/SPE Europec, LACPEC (Latin America).
+  *SPE Reservoir Engineering*, *SPE Economics & Management*.
+- `petrowiki.spe.org` — for establishing what the prior state of practice was,
+  so you can judge whether something is genuinely new.
+- SPE conference proceedings (E1 where refereed). Sweep these **globally**, not
+  just the North American ones:
+  - Global: ATCE, OTC Houston, Reservoir Simulation Conference, Hydraulic
+    Fracturing Technology Conference, Artificial Lift, IOR/EOR, Digital Energy
+    and Data Science, Health Safety Environment and Sustainability.
+  - Middle East: ADIPEC, IPTC, SPE Middle East Oil & Gas (MEOS), SPE Kuwait,
+    Saudi Arabia Technical Symposium.
+  - Asia-Pacific: SPE Asia Pacific Oil & Gas (APOGCE), OTC Asia, IPTC Asia,
+    SPE/IATMI Indonesia, Offshore Technology Conference Brasil.
+  - Europe and Russia/Caspian: SPE Europec with EAGE, Offshore Europe Aberdeen,
+    SPE Russian Petroleum Technology Conference, Caspian Technical Conference.
+  - Africa: SPE Nigeria Annual International Conference, North Africa
+    Technical Conference.
+  - Latin America: LACPEC, SPE Argentina, Rio Oil & Gas.
 
 **SEG — Society of Exploration Geophysicists.** Seismic acquisition,
 processing, imaging, interpretation, machine learning on seismic.
@@ -56,10 +76,20 @@ source for petrophysical evaluation.
 - GSA — `geosociety.org`, *GSA Bulletin*, *Geology* (E1).
 - SEPM — `sepm.org`, *Journal of Sedimentary Research* (E1) for
   facies and depositional models feeding geological modelling.
-- Regional societies worth a sweep when the topic fits: HGS (Houston
-  Geological Society), GCAGS / Gulf Coast Association of Geological Societies,
-  ALAGO and SVG (Latin America geophysics/geology), Petroleum Exploration
-  Society of Great Britain.
+- Regional societies, worth a sweep when the topic fits. Spread these the same
+  way you spread everything else:
+  - Europe: PESGB (Petroleum Exploration Society of Great Britain), NPF
+    (Norwegian Petroleum Society), Geological Society of Norway, DGMK (Germany).
+  - Asia-Pacific: SEAPEX (South East Asia Petroleum Exploration Society),
+    Indonesian Petroleum Association, Geological Society of Malaysia, ASEG
+    (Australian Society of Exploration Geophysicists), PESA (Petroleum
+    Exploration Society of Australia), SPG India, Chinese Petroleum Society.
+  - Middle East and Africa: Geological Society of Africa, Nigerian Association
+    of Petroleum Explorationists, EAGE Middle East chapters, Saudi Society for
+    Geosciences.
+  - Americas: HGS (Houston Geological Society), GCAGS, CSPG (Canadian Society
+    of Petroleum Geologists), ALAGO and SVG (Latin America geophysics/geology),
+    SBGf (Brazilian Geophysical Society), AMGP (Mexico).
 
 **Adjacent engineering bodies.**
 - ASME (`asme.org`) — rotating equipment, pressure systems, surface facilities.
@@ -92,35 +122,110 @@ source for petrophysical evaluation.
 Filings and agency reports are underrated: they are open, quantitative, and
 carry real operational detail.
 
-- **US** — BSEE and BOEM (Gulf of Mexico approvals, production data),
-  EIA (`eia.gov`), NETL and DOE (`netl.doe.gov` — field demonstration
-  results, open, often E2), Texas RRC, New Mexico OCD, North Dakota DMR.
-- **UK/Norway** — North Sea Transition Authority (`nstauthority.co.uk`),
-  Norwegian Offshore Directorate (`sodir.no`) and its factpages.
-- **Latin America** (high relevance to this firm) — ANP Brazil (`gov.br/anp`),
-  Argentina Secretaría de Energía and IAPG, ANH Colombia, MEM Peru,
-  PDVSA/Venezuela ministry disclosures where available.
-- **Multilateral** — IEA, OPEC MOMR, IRENA for adjacent energy transition.
+Cover every region each month. The list below is deliberately ordered by how
+much open technical detail each regulator publishes, not by where the firm works.
+
+- **Norway** — Norwegian Offshore Directorate (`sodir.no`) and its factpages.
+  The most open and most quantitative petroleum data in the world; per-field
+  production, reserves revisions and development plans. Start here.
+- **UK** — North Sea Transition Authority (`nstauthority.co.uk`): field data,
+  well data, decommissioning cost benchmarking, technology stewardship reports.
+- **US** — BSEE and BOEM (Gulf of Mexico approvals, production data), EIA
+  (`eia.gov`), NETL and DOE (`netl.doe.gov` — field demonstration results,
+  open, frequently E2 and often overlooked), Texas RRC, New Mexico OCD,
+  North Dakota DMR, Alaska AOGCC.
+- **Australia** — NOPSEMA, Geoscience Australia, state regulators (WA DMIRS).
+  Strong on integrity, decommissioning and CCS.
+- **Canada** — Alberta Energy Regulator, BC Energy Regulator, C-NLOPB.
+  AER's technical reports on thermal recovery are excellent and open.
+- **Middle East** — ADNOC and Aramco technical disclosure, Oman Ministry of
+  Energy and Minerals, Kuwait KOC. Less open, so the conference papers
+  (ADIPEC, MEOS, IPTC) carry the load here.
+- **Asia-Pacific** — Malaysia Petronas technical output, Indonesia SKK Migas
+  and Pertamina, India DGH and ONGC, Vietnam PetroVietnam, China CNPC/CNOOC
+  research institutes, Japan JOGMEC (open reports, often in English).
+- **Africa** — Nigeria NUPRC, Angola ANPG, Egypt EGPC, Ghana Petroleum
+  Commission, Mozambique INP.
+- **Latin America** — ANP Brazil (`gov.br/anp`), Argentina Secretaría de
+  Energía and IAPG, ANH Colombia, MEM Peru, Mexico CNH, PDVSA and Venezuela
+  ministry disclosures where available.
+- **CIS and Caspian** — Kazakhstan Ministry of Energy, Azerbaijan SOCAR,
+  Russian society literature where accessible.
+- **Multilateral** — IEA, OPEC MOMR, IOGP, IRENA, Global CCS Institute.
 
 ---
 
-## Operator and vendor technical disclosure (E3)
+## Commercial sources: operators, service companies and vendors (E3)
 
-Useful for field-trial numbers you cannot get anywhere else. Read them as
-interested parties: cite the number, attribute it to the vendor, never repeat a
-marketing claim as an independent finding.
+Sweep these every month. They are where field-trial numbers, new product
+capability and real deployment counts appear first, often a year or more before
+a journal paper. Go to the **technical resources, technical papers, case
+studies and newsroom** pages, not the product brochures.
 
-- Service companies: SLB, Halliburton, Baker Hughes, Weatherford, TechnipFMC,
-  Expro, Core Laboratories, NOV.
-- Software and modelling: SLB (Petrel, Eclipse, Intersect), Aspen Tech
-  (Petroleum Suite, HYSYS), Emerson/Paradigm, CMG, Halliburton Landmark
-  (DecisionSpace), Ikon Science, S&P Global (Kingdom), dGB (OpendTect),
-  Resoptima, Earth Science Analytics, Bluware, Katalyst.
-- Operators' technical papers and conference presentations — Petrobras, Equinor,
-  ADNOC, Aramco, Shell, ExxonMobil, Occidental, YPF, Ecopetrol.
-- Open-source and consortium: OSDU (`osduforum.org`) — data platform standards
-  are a genuine development; MRST, OPM Flow, Delft, SINTEF; Stanford SUPRI-B;
-  university consortia (UT Austin CPGE, Texas A&M, Heriot-Watt, IFP).
+Read them as interested parties. Cite the number, attribute it to the company in
+the sentence, and never repeat a marketing claim as an independent finding. If
+an edition's E3 sources outnumber its E1 and E2 sources combined, it has become
+a brochure — go back to the journals.
+
+**Integrated service companies.** SLB, Halliburton, Baker Hughes, Weatherford,
+NOV, TechnipFMC, Expro, Schoeller-Bleckmann, Tenaris (tubulars and connections),
+Vallourec, Core Laboratories (core and fluid analysis), SGS and Intertek
+(testing and inspection).
+
+**Drilling and well services.** Valaris, Transocean, Noble, Seadrill, Helmerich
+& Payne, Nabors (automation and drilling software), Patterson-UTI, KCA Deutag,
+Archer, Calfrac, ProPetro, Liberty Energy (frac electrification and diagnostics).
+
+**Subsea, offshore and EPC.** Subsea7, Saipem, Aker Solutions, OneSubsea, McDermott,
+Wood, Petrofac, Worley, Fluor, KBR, Sapura, Modec and SBM Offshore (FPSOs),
+Oceaneering (ROV and inspection), DeepOcean.
+
+**Seismic and geophysical.** TGS, Viridien (formerly CGG), PGS, Shearwater
+GeoServices, Magseis, SAExploration, Geospace, Sercel, BGP (CNPC), ION.
+Their technical papers and multi-client survey announcements carry real
+acquisition and imaging detail.
+
+**Software, modelling and data.** SLB (Petrel, Eclipse, Intersect, Delfi),
+Halliburton Landmark (DecisionSpace), Aspen Tech (Petroleum Suite, HYSYS,
+OptiPlant), CMG (thermal and compositional), Emerson/Paradigm, KAPPA (well test
+and PTA), IHS Markit and S&P Global (Kingdom, Harmony), Ikon Science, Geolog,
+Lloyd's Register/Senergy, Petex (IPM, GAP, PROSPER), Whitson, Rock Flow Dynamics
+(tNavigator), Resoptima, Earth Science Analytics, Bluware, Katalyst, Geoteric,
+Eliis (PaleoScan), dGB (OpendTect), Enverus, TGS Well Data, Novi Labs.
+
+**Artificial lift, flow and measurement.** ChampionX, Apergy, Flowserve,
+Baker Hughes Centrilift, Borets, Novomet, Emerson (Roxar, Micro Motion),
+Krohne, Endress+Hauser, Pietro Fiorentini, Silvertech, Turbulent Flux.
+
+**Facilities, rotating equipment and processing.** Baker Hughes Turbomachinery,
+Siemens Energy, GE Vernova, Atlas Copco, Honeywell UOP, Schlumberger ProdTech,
+Sulzer, Alfa Laval, Veolia and SUEZ (produced water), Cameron, Chart Industries
+(LNG and cryogenic).
+
+**Integrity, corrosion and inspection.** ROSEN, T.D. Williamson, NDT Global,
+Baker Hughes PII, Applus, DNV (recommended practices — a new DNV-RP is a real
+development), Bureau Veritas, ClampOn.
+
+**Emissions and measurement technology.** GHGSat, Kayrros, SeekOps, Bridger
+Photonics, Project Canary, Qube Technologies, LongPath, Insight M, Carbon
+Mapper, MiQ and EO100 certification schemes.
+
+**Digital, AI and instrumentation entrants.** Silixa and Halliburton (DAS/DTS
+fibre), Sensia, Ambyint, Tachyus, Quantico Energy, DataGration, Corva,
+Intelligent Wellhead Systems, Petrolern, Well Data Labs, Arundo, SparkCognition.
+
+**Operators' own technical output.** Conference presentations, technology
+reports and sustainability/technical annexes from Equinor, Petrobras, ADNOC,
+Aramco, Shell, ExxonMobil, Chevron, TotalEnergies, bp, Eni, ConocoPhillips,
+Occidental (CO2 EOR), Woodside, Santos, Petronas, PTTEP, ONGC, CNOOC, Sinopec,
+YPF, Ecopetrol, Sonatrach, KOC, PDO. Equinor and Petrobras publish the most
+technical detail of the group.
+
+**Open source, standards bodies and consortia.** OSDU (`osduforum.org`) — data
+platform standards are a genuine development and often under-reported; Open
+Porous Media (OPM Flow), MRST (SINTEF), DuMux, DARTS (TU Delft), Stanford SUPRI
+and SCRF, UT Austin CPGE and CGSC, Texas A&M, Heriot-Watt, IFP Energies
+nouvelles, TNO, SINTEF, NORCE, JIP consortia (DeepStar, MPD JIP).
 
 ---
 
@@ -167,9 +272,19 @@ information, and silence must not look like an oversight.
 - Search the discipline vocabulary, not just "oil and gas technology". Use the
   terms in the table above; a query like `full waveform inversion ocean bottom
   node 2026 SEG` returns something useful, `latest seismic technology` does not.
-- Search in Spanish and Portuguese for Latin America items
-  (`recuperación mejorada`, `modelagem de reservatório`). The regional societies
-  publish in-language and the trade press translates late.
+- **Sweep globally, every edition.** Run the discipline searches without a
+  region term first, then check the regional spread of what came back. If a
+  region is missing, search it explicitly: `Norway`, `North Sea`, `Middle East`,
+  `Abu Dhabi`, `Oman`, `Malaysia`, `Indonesia`, `Vietnam`, `India`, `China`,
+  `Australia`, `Nigeria`, `Angola`, `Kazakhstan`, `Brazil`, `Argentina`,
+  `Colombia`, `Permian`, `Gulf of Mexico`. A method proven offshore Vietnam is
+  worth exactly as much as one proven in Colombia.
+- Search in other languages where the literature is in-language, and translate
+  what you find: Spanish and Portuguese (`recuperación mejorada`,
+  `modelagem de reservatório`), Norwegian, Mandarin (`油藏模拟`), Russian,
+  Arabic, Bahasa. Regional societies publish in-language and the English trade
+  press picks it up late or not at all. Chinese and Russian petroleum
+  literature is large, technically serious and routinely missed.
 - Chase the citation. When trade press reports a result, find the underlying
   paper and cite that instead. If you cannot find it, the finding is E4.
 - Check the ledger at `insights-data/radar-ledger.json` before writing. If a

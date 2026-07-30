@@ -1,6 +1,6 @@
 ---
 name: insight-radar
-description: Research, rank and publish the monthly Oil & Gas Technology Radar insight article for the Alpha Technical Centre site. Use when asked to run the technology radar, produce the monthly insight article, find the latest oil and gas technical developments, or when the user says "run the radar" or invokes /insight-radar. Sweeps society journals (SPE, SEG, AAPG, SPWLA, EAGE), agency and regulator publications and trade press across seismic, geological modelling, petrophysics, reservoir engineering, production, completions, facilities, transport and trading; ranks findings by evidence tier and potential impact; writes a humanised, fully cited article and publishes it to the Insights page with an archive.
+description: Research, rank and publish the monthly Oil & Gas Technology Radar insight article for the Alpha Technical Centre site. Use when asked to run the technology radar, produce the monthly insight article, find the latest oil and gas technical developments, or when the user says "run the radar" or invokes /insight-radar. Sweeps SPE and OnePetro first, then SEG, AAPG, SPWLA, EAGE and the geological societies, global regulators and agencies, operator, service-company and vendor technical disclosure, and trade press, across seismic, geological modelling, petrophysics, reservoir engineering, production, completions, well integrity, facilities, transport, trading and digital. Global in scope with no regional weighting. Ranks findings by evidence tier and potential impact, writes a humanised, fully cited article and publishes it to the Insights page with an archive.
 ---
 
 # Insight Radar
@@ -52,9 +52,25 @@ engineering and simulation, production and artificial lift, drilling and
 completions, well integrity and abandonment, surface facilities, transport and
 midstream, trading and commercial, digital and data, emissions and measurement.
 
+Start with SPE every edition: OnePetro, JPT and the SPE journals are the spine
+of the series, and an edition with no SPE material has a search problem. Then
+SEG, AAPG, SPWLA, EAGE and the geological societies, then the regulators and
+agencies, then the commercial sources, then trade press to corroborate.
+
+Sweep the commercial sources properly. Operator, service company and vendor
+technical pages carry field-trial numbers and deployment counts a year or more
+before the journals do. Go to their technical papers, case studies and
+newsrooms, not their product pages.
+
+**The series is global.** Technology does not care which country it was proven
+in. Run each discipline search without a region term first, then check what came
+back and go looking explicitly for whatever is missing: Norway and the UK, the
+Middle East, Asia-Pacific, Africa, Australia, Canada, the CIS and Caspian,
+Latin America, North America. Search in other languages where the literature is
+in-language. No single region should hold more than about half an edition.
+
 Search with the discipline's own vocabulary and always constrain by date.
-Search in Spanish and Portuguese for Latin America. Chase every trade-press
-report back to its primary source.
+Chase every trade-press report back to its primary source.
 
 Aim to screen 40 or more candidate items. Keep a running list with source, tier,
 date and URL as you go — you will need it for the dossier, and reconstructing it
@@ -88,10 +104,14 @@ incremental improvement and almost nobody reports them.
 Before the article, write the working file to
 `insights-data/dossiers/<YYYY-MM>.md`:
 
-- Every candidate screened, with source, tier, date, URL and verdict.
+- Every candidate screened, with source, tier, date, region and URL, and the
+  verdict on each.
 - The impact scoring for each selected item, factor by factor, so the ranking
   can be argued with.
-- Disciplines that turned up nothing, and what you searched.
+- **The discipline spread and the regional spread**, counted. Both are the
+  check against the two biases this series is most prone to.
+- Disciplines and regions that turned up nothing, and what you searched to
+  establish that.
 - Anything you dropped for being unverifiable, and why.
 
 This is the audit trail. It is what lets you or the user defend a claim in six
@@ -173,6 +193,15 @@ was thin — that is useful information, not a failure to hide.
 - **Subsurface bias.** Facilities, transport, trading and commercial are easy to
   skip because the journals are thinner. Skipping them breaks the promise that
   this covers the technical stack.
+- **Regional skew.** The firm works in Latin America and the US Gulf Coast, and
+  that makes it easy to over-select papers from those basins and to score them
+  up. Do neither. Count the regional spread before publishing and record it in
+  the dossier. Middle East and Asia-Pacific work is the most commonly missed,
+  because much of it appears in ADIPEC, IPTC and APOGCE proceedings rather than
+  in the journals, and some of it is not in English. If an edition is more than
+  half one region, go back and search the others.
+- **Missing SPE.** SPE is the largest body of relevant literature that exists.
+  An edition without it is not a radar.
 - **Citation drift.** The number in the prose must match the source that
   actually supports that sentence. Re-read each superscript against its
   reference before publishing.

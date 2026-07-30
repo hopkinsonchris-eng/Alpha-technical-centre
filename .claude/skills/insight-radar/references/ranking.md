@@ -66,12 +66,24 @@ working in the dossier so the ranking can be argued with.
    1 = new facilities, a rig programme, or a multi-year data acquisition.
 4. **Time to value.** How soon does it pay?
    5 = this year. 3 = next budget cycle. 1 = long-cycle, beyond five years.
-5. **Relevance to this firm's work.** Alpha Technical Centre does integrated
-   field development planning, mature-field redevelopment, technical due
-   diligence, nodal analysis and reservoir simulation, with a Latin America and
-   US Gulf Coast weighting.
+5. **Workflow relevance.** Alpha Technical Centre does integrated field
+   development planning, mature-field redevelopment, technical due diligence,
+   nodal analysis and reservoir simulation.
    5 = directly usable in that work tomorrow. 3 = adjacent and worth knowing.
    1 = interesting but outside what clients ask for.
+
+   Score this on the **workflow and asset class**, never the region. A
+   brownfield waterflood method is a 5 whether the field is in Oman, Vietnam,
+   Colombia or Oklahoma. An ultra-deepwater subsea technique is a 2 or 3
+   wherever it was proven, because it is further from the work, not because of
+   where it happened.
+
+**Geography is not a ranking factor.** Do not score an item up because it came
+out of Latin America or the US Gulf Coast, and do not score it down because it
+came out of Norway, Kazakhstan, China or Australia. Physics and engineering
+transfer between basins; the interesting question is whether the *reservoir or
+facility* is analogous, not whether the flag is familiar. Where an analogue is
+genuinely relevant, that belongs in the prose as context, not in the score.
 
 **Composite rank** = impact mean, then break ties by evidence tier (E1 first),
 then by readiness (higher first). Report the composite in the dossier, not in
@@ -102,11 +114,26 @@ Exclude:
 
 ## Balance
 
-Across an edition, spread the disciplines: do not run six subsurface items and
-nothing on facilities or commercial. Across a *year*, every discipline in the
-checklist should have appeared at least once. If a discipline has been silent
-for three editions, say so in that edition's dossier and go looking harder —
-it is more likely a search failure than a genuinely quiet field.
+**Disciplines.** Across an edition, spread them: do not run six subsurface items
+and nothing on facilities or commercial. Across a *year*, every discipline in the
+checklist should have appeared at least once. If a discipline has been silent for
+three editions, say so in that edition's dossier and go looking harder — it is
+more likely a search failure than a genuinely quiet field.
+
+**Regions.** The series is global. Check the regional spread of every edition
+before publishing and record it in the dossier:
+
+- North America, Latin America, North Sea and Europe, Middle East, Africa,
+  Asia-Pacific, CIS and Caspian.
+- No single region should hold more than about half an edition's items. If one
+  does, that is a search failure, not a real distribution — the Middle East and
+  Asia-Pacific in particular publish heavily through ADIPEC, IPTC, SPE Kuwait
+  and Asia-Pacific conferences, CNPC and Petronas technical output, and the
+  Chinese and Japanese society literature.
+- If a region has not appeared in three editions, go looking specifically.
+
+A field trial in Vietnam and one in Colombia carry equal weight. The only
+question is the quality of the evidence and the size of the effect.
 
 State the honest bottom line for each item. "Promising, single pilot, no
 independent replication" is a more useful sentence than any amount of
