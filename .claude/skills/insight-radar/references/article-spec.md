@@ -6,8 +6,20 @@ House format for a radar edition, and the JSON the publish script consumes.
 
 ## Shape of the article
 
-Target **1,100–1,600 words** of body copy, plus the radar table and sources.
-Long enough to say something, short enough to be read on a Monday morning.
+Budget **250 to 350 words per development**, plus about 120 for the opening and
+the closing read. So roughly 1,200 words for a four-item edition and 2,400 for
+eight. Do not hold a total word count fixed across editions: each development
+has to carry what it is, what was measured, who did it and where, what it is
+good for, and the honest limit. That is five things, and under about 250 words
+one of them gets dropped, which is always the limit.
+
+The lead development may run to about 500 words, because it carries the most
+quantitative content and the reader who stops after it should still be served.
+Every other section holds to 350.
+
+If a section runs past its budget, the usual cause is explaining the method at
+greater length than the reader needs. Cut the method, keep the numbers and the
+benefit. Never cut the limit.
 
 1. **Standfirst** (2–3 sentences). What this month's edition covers and the one
    thing a reader should take from it. Name the single most consequential

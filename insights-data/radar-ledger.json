@@ -5,8 +5,17 @@
       "slug": "2026-07-technology-radar",
       "filename": "insights-2026-07-technology-radar.html",
       "published": "2026-07-30",
-      "title": "Technology Radar, July 2026: Temperature as a Saturation Log, Closed-Loop Fracturing and a Standard for Autonomous Drilling",
+      "title": "Technology Radar, July 2026: Satellite Methane Intensity, Temperature as a Saturation Log and Closed-Loop Fracturing",
       "developments": [
+        {
+          "name": "Satellite methane intensity, basin by basin",
+          "discipline": "Emissions measurement",
+          "tier": "E1",
+          "readiness": 3,
+          "urls": [
+            "https://acp.copernicus.org/articles/26/5961/2026/"
+          ]
+        },
         {
           "name": "Downhole temperature as a saturation measurement",
           "discipline": "Petrophysics / reservoir",
@@ -56,6 +65,11 @@
         }
       ],
       "sources": [
+        {
+          "title": "Methane intensity and emissions across major oil and gas basins and individual jurisdictions using MethaneSAT observations",
+          "url": "https://acp.copernicus.org/articles/26/5961/2026/",
+          "tier": "E1"
+        },
         {
           "title": "In-Place Volume Estimation: The Role of Downhole Temperature Data",
           "url": "https://jpt.spe.org/in-place-volume-estimation-the-role-of-downhole-temperature-data",

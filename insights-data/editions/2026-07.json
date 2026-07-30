@@ -3,18 +3,18 @@
   "edition": "2026-07",
   "iso_date": "2026-07-30",
   "date_label": "July 2026",
-  "title": "Technology Radar, July 2026: Temperature as a Saturation Log, Closed-Loop Fracturing and a Standard for Autonomous Drilling",
+  "title": "Technology Radar, July 2026: Satellite Methane Intensity, Temperature as a Saturation Log and Closed-Loop Fracturing",
   "hero_title": "Technology Radar: <em>July</em> 2026",
-  "standfirst": "Five developments from June and July, ranked by evidence and by what they are worth to an asset owner. The one to act on is the cheapest: a Stanford and Petrobras team has shown that downhole temperature data you already hold can measure fluid saturation directly, which changes how an in-place volume is argued.",
-  "desc": "Monthly review of oil and gas technical developments, ranked by evidence quality and potential impact, with what each one is good for. July 2026: downhole temperature for in-place volumes, closed-loop fracturing, autonomous drilling standards and CO2 storage in depleted gas.",
+  "standfirst": "Six developments, ranked by evidence and by what they are worth to an asset owner. Two of them hand a buyer a way to test a number a seller has supplied: satellite methane intensity measured basin by basin, and downhole temperature used to check the saturation behind an in-place volume.",
+  "desc": "Monthly review of oil and gas technical developments, ranked by evidence quality and potential impact. July 2026: MethaneSAT basin intensities, downhole temperature for in-place volumes, closed-loop fracturing, autonomous drilling standards and CO2 storage in depleted gas.",
   "tag": "Insights &middot; Technology Radar",
   "card": {
     "eyebrow_en": "TECHNOLOGY RADAR",
     "eyebrow_es": "RADAR TECNOLÓGICO",
     "title_en": "Technology Radar, July 2026",
     "title_es": "Radar Tecnológico, julio de 2026",
-    "blurb_en": "Five developments from June and July, ranked by evidence and impact. Downhole temperature as a saturation measurement, closed-loop fracturing on Chevron acreage, and a standard for judging autonomous drilling claims.",
-    "blurb_es": "Cinco avances de junio y julio, clasificados por evidencia e impacto. La temperatura de fondo como medida de saturación, el fracturamiento en lazo cerrado y un estándar para evaluar la perforación autónoma.",
+    "blurb_en": "Six developments ranked by evidence and impact. Satellite methane intensity measured across six basins, downhole temperature as a saturation measurement, and closed-loop fracturing on Chevron acreage.",
+    "blurb_es": "Seis avances clasificados por evidencia e impacto. Intensidad de metano medida por satélite en seis cuencas, la temperatura de fondo como medida de saturación y el fracturamiento en lazo cerrado.",
     "gradient": "linear-gradient(135deg,#0B1F3A 0%,#1B3A4B 60%,#132845 100%)"
   },
   "cta": {
@@ -29,12 +29,20 @@
   },
   "radar": [
     {
+      "name": "Satellite methane intensity, basin by basin",
+      "discipline": "Emissions measurement",
+      "readiness": 3,
+      "tier": "E1",
+      "impact": "Public data showing reported inventories understated 2 to 4 times in US basins. A seller's methane figure is now checkable.",
+      "ref": 1
+    },
+    {
       "name": "Downhole temperature as a saturation measurement",
       "discipline": "Petrophysics / reservoir",
       "readiness": 2,
       "tier": "E1",
       "impact": "Estimates fluid saturation and in-place volume from temperature data most wells already have. Nothing to acquire.",
-      "ref": 1
+      "ref": 2
     },
     {
       "name": "Autonomous drilling taxonomy",
@@ -42,7 +50,7 @@
       "readiness": 1,
       "tier": "E1",
       "impact": "Ten scored traits give a buyer a way to test what a contractor means by autonomous. Procurement and diligence language.",
-      "ref": 2
+      "ref": 3
     },
     {
       "name": "Closed-loop fracturing reallocates volume between stages",
@@ -51,9 +59,9 @@
       "tier": "E1",
       "impact": "Offset-well fibre drives real-time volume reallocation. Needs an observation well, which most pads do not have.",
       "ref": [
-        3,
         4,
-        5
+        5,
+        6
       ]
     },
     {
@@ -62,7 +70,7 @@
       "readiness": 1,
       "tier": "E2",
       "impact": "Reaching new drainage from existing wellbores is the arithmetic that decides whether a mature field gets a second phase.",
-      "ref": 6
+      "ref": 7
     },
     {
       "name": "Depleted gas reservoirs as CO2 storage",
@@ -70,16 +78,57 @@
       "readiness": 2,
       "tier": "E4",
       "impact": "400 Mt of capacity in eight depleted gas reservoirs. Late-life gas reservoir work becomes a storage business.",
-      "ref": 7
+      "ref": 8
     }
   ],
   "body": [
     {
       "type": "p",
-      "html": "Five developments from June and July, in the order we would act on them. Each is here because the primary source has been read, or because its authorship, mechanism and limitations could be established from sources that are open. Nothing is included on the strength of a headline."
+      "html": "Six developments, in the order we would act on them. Each is here because the primary source has been read, or because its authorship, mechanism and limitations could be established from sources that are open. Nothing is included on the strength of a headline."
     },
     {
       "type": "radar"
+    },
+    {
+      "type": "h2",
+      "text": "Satellite data now checks what an operator reports"
+    },
+    {
+      "type": "p",
+      "html": "Williams and Gautam, with colleagues at the Environmental Defense Fund, MethaneSAT LLC, Harvard and the Universitat Polit&egrave;cnica de Val&egrave;ncia, published basin-level methane emissions and intensities from 33 MethaneSAT scenes gathered between May 2024 and May 2025<sup><a href=\"#ref-1\">1</a></sup>. The paper is peer-reviewed and open access in <cite>Atmospheric Chemistry and Physics</cite>, and it covers six producing regions across six countries and 207 counties and districts: the Permian, San Joaquin and Eagle Ford in the United States and Mexico, the Amu Darya in Turkmenistan and Uzbekistan, and the Zagros Foldbelt in Iran and Iraq."
+    },
+    {
+      "type": "p",
+      "html": "The instrument resolves area emissions at about 4 km by 4 km. Measured emissions span an order of magnitude, from 454 tonnes an hour in the Permian to 114 in the Eagle Ford. Loss rates span nearly two orders: 2.4 per cent in the Eagle Ford, 2.6 in the Permian, 2.9 and 3.7 in the Turkmen and Uzbek Amu Darya, 12.1 in the San Joaquin and 18.6 in the Zagros Foldbelt. Every region exceeds the Oil and Gas Climate Initiative target of 0.2 per cent by between 10 and 90 times<sup><a href=\"#ref-1\">1</a></sup>."
+    },
+    {
+      "type": "stats",
+      "items": [
+        {
+          "val": "4x",
+          "lbl": "Permian and Eagle Ford emissions against the EPA inventory"
+        },
+        {
+          "val": "18.6%",
+          "lbl": "loss rate, Zagros Foldbelt, the highest of six basins"
+        },
+        {
+          "val": "~60x",
+          "lbl": "Sarahs District, Turkmenistan, against EDGAR"
+        }
+      ]
+    },
+    {
+      "type": "p",
+      "html": "The comparison against bottom-up inventories is the part worth reading twice. Permian and Eagle Ford oil and gas emissions came in about four times the gridded EPA greenhouse gas inventory and the San Joaquin about twice. Outside the United States the gaps are wider: the Turkmen Amu Darya ran 5 to 8 times existing inventories across the full domain, and individual jurisdictions reached 15 to 62 times<sup><a href=\"#ref-1\">1</a></sup>."
+    },
+    {
+      "type": "p",
+      "html": "What it is good for: a reported emissions number is now something you can check rather than something you have to accept. The concentration and emissions datasets are public on Google Earth Engine, so a buyer can compare an operator's declared methane intensity against an independent measurement over the same acreage for the cost of an analyst's time. That matters commercially, because EU import rules and the certification schemes used to price differentiated gas rest on intensity figures that were previously self-reported."
+    },
+    {
+      "type": "p",
+      "html": "The limits: satellite inversion and bottom-up inventory are different methods over different periods, so a discrepancy is not automatically an error in the inventory. Sectoral attribution carries wide confidence intervals and the paper is candid about it, putting the oil and gas share at 90 per cent in the Permian with a range of 64 to 100, and at 24 per cent in the San Joaquin where other sources dominate. This is one year of scenes, not a time series<sup><a href=\"#ref-1\">1</a></sup>."
     },
     {
       "type": "h2",
@@ -87,11 +136,11 @@
     },
     {
       "type": "p",
-      "html": "Guimaraes, Galvao, Horne and Tartakovsky, working across Stanford and Petrobras, show that routinely acquired downhole temperature data allows direct estimation of fluid saturations, and that this improves in-place volume estimates in reservoirs with aquifer support<sup><a href=\"#ref-1\">1</a></sup>. The work is open access in <cite>SPE Journal</cite>."
+      "html": "Guimaraes, Galvao, Horne and Tartakovsky, working across Stanford and Petrobras, show that routinely acquired downhole temperature data allows direct estimation of fluid saturations, and that this improves in-place volume estimates in reservoirs with aquifer support<sup><a href=\"#ref-2\">2</a></sup>. The work is open access in <cite>SPE Journal</cite>."
     },
     {
       "type": "p",
-      "html": "The method treats a nonisothermal closed reservoir with impermeable boundaries at high P&eacute;clet number, builds a dimensionless formulation for an axisymmetric cylindrical domain, and derives analytical temperature expressions by the method of characteristics under pseudosteady pressure. The authors validate against commercial thermal simulators and wellbore data, then apply it to a field case with aquifer support<sup><a href=\"#ref-1\">1</a></sup>."
+      "html": "The method treats a nonisothermal closed reservoir with impermeable boundaries at high P&eacute;clet number, builds a dimensionless formulation for an axisymmetric cylindrical domain, and derives analytical temperature expressions by the method of characteristics under pseudosteady pressure. The authors validate against commercial thermal simulators and wellbore data, then apply it to a field case with aquifer support<sup><a href=\"#ref-2\">2</a></sup>."
     },
     {
       "type": "p",
@@ -99,7 +148,7 @@
     },
     {
       "type": "callout",
-      "html": "For technical due diligence this is the most useful item in the edition. It attacks the assumption behind an in-place volume using data that already exists, which means it can be applied to a data room retrospectively rather than requiring a programme the seller has no reason to fund."
+      "html": "Two items in this edition give a buyer a way to test a number a seller has supplied. The MethaneSAT data tests a declared methane intensity against independent measurement. This work tests an in-place volume against the water saturation assumed to produce it. Both use data that is already public or already in the file."
     },
     {
       "type": "p",
@@ -111,11 +160,11 @@
     },
     {
       "type": "p",
-      "html": "de Wardt, with Cayeux and Mihai of NORCE, Macpherson of Baker Hughes, Pirovolou of Weatherford and Annaiyappa, propose a taxonomy separating automated drilling systems from autonomous ones, drawing definitions from aerospace, control theory and other high-risk industries<sup><a href=\"#ref-2\">2</a></sup>. The paper is open access in <cite>SPE Journal</cite>."
+      "html": "de Wardt, with Cayeux and Mihai of NORCE, Macpherson of Baker Hughes, Pirovolou of Weatherford and Annaiyappa, propose a taxonomy separating automated drilling systems from autonomous ones, drawing definitions from aerospace, control theory and other high-risk industries<sup><a href=\"#ref-3\">3</a></sup>. The paper is open access in <cite>SPE Journal</cite>."
     },
     {
       "type": "p",
-      "html": "The framework scores ten traits: environment complexity, problem complexity, mission, risk management, dynamic planning, situational awareness, decision-making, execution, learning from experience and human-agent interaction. Each trait carries a quantification, so a claim of autonomy can be assessed rather than accepted. The authors also argue that an autonomous system can collaborate with human operators while holding independent decision authority, which cuts against the assumption that autonomy means removing the human<sup><a href=\"#ref-2\">2</a></sup>."
+      "html": "The framework scores ten traits: environment complexity, problem complexity, mission, risk management, dynamic planning, situational awareness, decision-making, execution, learning from experience and human-agent interaction. Each trait carries a quantification, so a claim of autonomy can be assessed rather than accepted. The authors also argue that an autonomous system can collaborate with human operators while holding independent decision authority, which cuts against the assumption that autonomy means removing the human<sup><a href=\"#ref-3\">3</a></sup>."
     },
     {
       "type": "p",
@@ -131,11 +180,11 @@
     },
     {
       "type": "p",
-      "html": "Navaiz and Stark of Halliburton and Paradeis of Chevron reported what they describe as the first closed-loop completions programme at the SPE Hydraulic Fracturing Technology Conference in The Woodlands in February 2026, and <cite>JPT</cite> carried it in its June technology focus<sup><a href=\"#ref-3\">3</a></sup>. The work was done on Chevron acreage in Colorado<sup><a href=\"#ref-4\">4</a></sup>."
+      "html": "Navaiz and Stark of Halliburton and Paradeis of Chevron reported what they describe as the first closed-loop completions programme at the SPE Hydraulic Fracturing Technology Conference in The Woodlands in February 2026, and <cite>JPT</cite> carried it in its June technology focus<sup><a href=\"#ref-4\">4</a></sup>. The work was done on Chevron acreage in Colorado<sup><a href=\"#ref-5\">5</a></sup>."
     },
     {
       "type": "p",
-      "html": "The mechanism is more specific than the phrase suggests. Offset-well fibre measurements, principally volume to first response, characterise how fracture growth rates vary between stages. Treatment volume is then reallocated away from underperforming stages toward better ones, holding total volume constant<sup><a href=\"#ref-5\">5</a></sup>. Halliburton attributes the execution to its ZEUS IQ platform with OCTIV auto frac for automated stage execution and Sensori for subsurface feedback, and describes the result as reacting to a localised environment rather than to a performance forecast<sup><a href=\"#ref-4\">4</a></sup>."
+      "html": "The mechanism is more specific than the phrase suggests. Offset-well fibre measurements, principally volume to first response, characterise how fracture growth rates vary between stages. Treatment volume is then reallocated away from underperforming stages toward better ones, holding total volume constant<sup><a href=\"#ref-6\">6</a></sup>. Halliburton attributes the execution to its ZEUS IQ platform with OCTIV auto frac for automated stage execution and Sensori for subsurface feedback, and describes the result as reacting to a localised environment rather than to a performance forecast<sup><a href=\"#ref-5\">5</a></sup>."
     },
     {
       "type": "p",
@@ -143,7 +192,7 @@
     },
     {
       "type": "p",
-      "html": "The limits are real and worth knowing before anyone gets excited. ResFrac's review of the conference notes that the relationship between stage-level fluid uniformity and volume to first response is not well understood, and may be confounded by asymmetrical fracture growth, stress shadowing, stage and well sequencing, and where the observation well happens to sit. It also makes the practical objection: offset observation wells are not routinely available, and never available for every well on a pad<sup><a href=\"#ref-5\">5</a></sup>. No production or cost result has been published in any source we can read. Treat this as a method proven to run, not yet a method proven to pay."
+      "html": "The limits are real and worth knowing before anyone gets excited. ResFrac's review of the conference notes that the relationship between stage-level fluid uniformity and volume to first response is not well understood, and may be confounded by asymmetrical fracture growth, stress shadowing, stage and well sequencing, and where the observation well happens to sit. It also makes the practical objection: offset observation wells are not routinely available, and never available for every well on a pad<sup><a href=\"#ref-6\">6</a></sup>. No production or cost result has been published in any source we can read. Treat this as a method proven to run, not yet a method proven to pay."
     },
     {
       "type": "h2",
@@ -151,11 +200,11 @@
     },
     {
       "type": "p",
-      "html": "Emissions Reduction Alberta awarded 37 million dollars across ten drilling technology projects worth about 179 million dollars combined. Most went to geothermal: 8 million dollars each to Eavor Technologies for superhot resource access and Rodatherm Energy for closed-loop geothermal power, and 4.4 million to Borobotics for an autonomous electric drilling robot<sup><a href=\"#ref-6\">6</a></sup>."
+      "html": "Emissions Reduction Alberta awarded 37 million dollars across ten drilling technology projects worth about 179 million dollars combined. Most went to geothermal: 8 million dollars each to Eavor Technologies for superhot resource access and Rodatherm Energy for closed-loop geothermal power, and 4.4 million to Borobotics for an autonomous electric drilling robot<sup><a href=\"#ref-7\">7</a></sup>."
     },
     {
       "type": "p",
-      "html": "Two smaller awards matter more for mature oil and gas. Global Dynamics received 2.25 million dollars for multilateral well re-entry, and Weatherford Canada 1.42 million for real-time sensing and ranging in SAGD drilling. Phase Advanced Sensor Systems received 420,000 dollars for high-temperature downhole pressure sensors and Precision Drilling 3.1 million for robotic pipe handling<sup><a href=\"#ref-6\">6</a></sup>."
+      "html": "Two smaller awards matter more for mature oil and gas. Global Dynamics received 2.25 million dollars for multilateral well re-entry, and Weatherford Canada 1.42 million for real-time sensing and ranging in SAGD drilling. Phase Advanced Sensor Systems received 420,000 dollars for high-temperature downhole pressure sensors and Precision Drilling 3.1 million for robotic pipe handling<sup><a href=\"#ref-7\">7</a></sup>."
     },
     {
       "type": "p",
@@ -171,7 +220,7 @@
     },
     {
       "type": "p",
-      "html": "Harbour Energy's Viking CCS project has cleared front-end engineering and design and had its development funding approved. The numbers are specific enough to be useful: eight suitable depleted gas reservoirs in the Viking fields, injection at roughly 9,000 ft beneath a salt layer 600 to 1,000 ft thick, 400 million tonnes of storage capacity, an initial target of up to 4 million tonnes a year in the early 2030s, and a subsea pipeline sized for up to 30 million tonnes a year against an expansion case of 10. Investment required is put at more than 13 billion pounds<sup><a href=\"#ref-7\">7</a></sup>."
+      "html": "Harbour Energy's Viking CCS project has cleared front-end engineering and design and had its development funding approved. The numbers are specific enough to be useful: eight suitable depleted gas reservoirs in the Viking fields, injection at roughly 9,000 ft beneath a salt layer 600 to 1,000 ft thick, 400 million tonnes of storage capacity, an initial target of up to 4 million tonnes a year in the early 2030s, and a subsea pipeline sized for up to 30 million tonnes a year against an expansion case of 10. Investment required is put at more than 13 billion pounds<sup><a href=\"#ref-8\">8</a></sup>."
     },
     {
       "type": "p",
@@ -190,6 +239,10 @@
     },
     {
       "type": "p",
+      "html": "The MethaneSAT data goes into diligence immediately, as a check on any declared methane intensity. It is free, it is peer-reviewed, and on the evidence of six basins a self-reported figure is as likely as not to be understated by a factor of two or more. We would run it on any asset where gas pricing, an import rule or a certification scheme depends on the number."
+    },
+    {
+      "type": "p",
       "html": "The temperature work goes into use immediately, on due diligence and redevelopment screening. It costs nothing to try, the data is already in the well files, and it bears on the number that decides the valuation. We would run it alongside a conventional volumetric and treat any disagreement between the two as the thing worth investigating."
     },
     {
@@ -202,6 +255,17 @@
     }
   ],
   "references": [
+    {
+      "authors": "Williams, J. P., Benmergui, J., Knapp, M., Omara, M., Himmelberger, A., Kyzivat, E., Weatherby, K., Lyke, B., Warren, J., MacKay, K., Ayvazov, S., Russi, M., LoFaso, N., Melendez, T., Miller, C. C., Roche, S., Sargent, M., Franklin, J., Nasr, M., Zhang, Z., Miller, D. J., Luo, B., Guanter, L., Hamburg, S. P., Wofsy, S. C., Gautam, R.",
+      "year": "2026",
+      "title": "Methane intensity and emissions across major oil and gas basins and individual jurisdictions using MethaneSAT observations",
+      "publication": "Atmospheric Chemistry and Physics, 26, 5961-5981, 5 May 2026. Environmental Defense Fund, MethaneSAT LLC, Harvard and Universitat Polit&egrave;cnica de Val&egrave;ncia",
+      "url": "https://acp.copernicus.org/articles/26/5961/2026/",
+      "tier": "E1",
+      "access": "open",
+      "verified": true,
+      "note": "Peer-reviewed and open access under CC-BY. Underlying L3 and L4 datasets are public on Google Earth Engine."
+    },
     {
       "authors": "Guimaraes, C. S., Galvao, M. S., Horne, R. N., Tartakovsky, D. M.",
       "year": "2026",
@@ -275,5 +339,5 @@
       "verified": true
     }
   ],
-  "method": "<strong>Method.</strong> Window: June and July 2026, widened from one month for this first edition. Around 50 candidate items were screened across the SPE and <cite>JPT</cite> June issue and July news, OnePetro, third-party conference reviews, operator and service-company disclosure, and targeted searches of SEG, EAGE, agency and regulator publications. Five are reported. Where a paper's own text was not available, its authorship, mechanism and stated limitations were established from independent readable sources and the prose reflects which claim rests on which. Papers are dated to their original venue rather than to the month they were summarised. Company and market news, project funding decisions and conference announcements are excluded as a matter of course. Evidence tiers run E1 for peer-reviewed work, E2 for society and agency publication, E3 for operator, vendor and independent technical commentary and E4 for trade reporting."
+  "method": "<strong>Method.</strong> This first edition is a baseline and takes a wider window than the monthly ones that follow it: developments published or first surfaced between February and July 2026, weighted to June and July. Every item is dated to its original venue rather than to the month it was summarised, so a February conference paper is reported as February. Around 60 candidate items were screened across the SPE and <cite>JPT</cite> June issue and July news, OnePetro, Copernicus and Elsevier journals, third-party conference reviews, operator and service-company disclosure, and targeted searches of SEG, EAGE, ADIPEC, agency and regulator publications. Six are reported. Where a paper's own text was not available, its authorship, mechanism and stated limitations were established from independent readable sources, and the prose reflects which claim rests on which. Company and market news, project funding decisions and conference announcements are excluded as a matter of course. Evidence tiers run E1 for peer-reviewed work, E2 for society and agency publication, E3 for operator, vendor and independent technical commentary, and E4 for trade reporting. Seismic acquisition and interpretation were searched twice and returned nothing in window."
 }
