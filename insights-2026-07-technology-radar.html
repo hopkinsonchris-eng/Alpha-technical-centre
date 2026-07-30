@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technology Radar, July 2026: Satellite Methane Intensity, Temperature as a Saturation Log and Closed-Loop Fracturing — Alpha Technical Centre Insights</title>
+<meta name="description" content="Monthly review of oil and gas technical developments, ranked by evidence quality and potential impact. July 2026: MethaneSAT basin intensities, downhole temperature for in-place volumes, closed-loop fracturing, autonomous drilling standards and CO2 storage in depleted gas.">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+.ins-hero{
+  background:linear-gradient(155deg,#060F1E 0%,#0B1F3A 55%,#101a2e 100%);
+  padding:72px 0 64px;position:relative;overflow:hidden;
+}
+.ins-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 80% 30%,rgba(201,168,76,0.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.ins-meta{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+.ins-tag{
+  font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#C9A84C;
+  display:flex;align-items:center;gap:8px;
+}
+.ins-tag::before{content:'';width:20px;height:1px;background:#C9A84C;opacity:.6;}
+.ins-date{font-family:'Barlow',sans-serif;font-size:11.5px;color:rgba(240,237,230,0.38);letter-spacing:.04em;}
+.ins-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(30px,4.5vw,52px);font-weight:700;
+  line-height:1.1;letter-spacing:-.02em;color:#F0EDE6;margin-bottom:20px;
+}
+.ins-title em{color:#C9A84C;font-style:italic;}
+.ins-standfirst{
+  font-family:'Barlow',sans-serif;font-size:17px;line-height:1.72;
+  color:rgba(240,237,230,0.62);max-width:62ch;font-weight:300;
+  border-left:2px solid rgba(201,168,76,0.4);padding-left:20px;
+}
+.ins-byline{
+  display:flex;align-items:center;gap:12px;margin-top:36px;
+  padding-top:24px;border-top:1px solid rgba(201,168,76,0.15);
+}
+.ins-byline-mark{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.ins-byline-author{font-family:'Barlow',sans-serif;font-size:12px;color:rgba(240,237,230,0.8);font-weight:500;}
+.ins-byline-org{font-family:'Barlow',sans-serif;font-size:11px;color:rgba(240,237,230,0.38);margin-top:1px;}
+.ins-body{max-width:720px;margin:0 auto;padding:64px 32px 80px;}
+.ins-body h2{
+  font-family:'Playfair Display',serif;font-size:clamp(20px,2.5vw,26px);
+  font-weight:600;color:#0B1F3A;line-height:1.2;
+  margin:52px 0 18px;padding-top:8px;
+  border-top:2px solid rgba(201,168,76,0.25);
+}
+.ins-body h2:first-of-type{margin-top:0;border-top:none;padding-top:0;}
+.ins-body p{
+  font-family:'Barlow',sans-serif;font-size:15.5px;line-height:1.8;
+  color:#2D3748;margin-bottom:22px;font-weight:400;
+}
+.ins-body strong{color:#0B1F3A;font-weight:600;}
+.ins-pull{
+  margin:40px 0;padding:24px 28px;
+  border-left:3px solid #C9A84C;
+  background:rgba(201,168,76,0.05);border-radius:0 4px 4px 0;
+}
+.ins-pull p{
+  font-family:'Playfair Display',serif;font-size:19px;font-weight:400;
+  line-height:1.55;color:#0B1F3A;margin:0;font-style:italic;
+}
+.ins-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0;}
+@media(max-width:600px){.ins-stat-row{grid-template-columns:1fr;}}
+.ins-stat{
+  background:#fff;border:1px solid rgba(11,31,58,0.09);
+  border-radius:4px;padding:20px 18px;text-align:center;
+}
+.ins-stat-val{
+  font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;
+  color:#C9A84C;letter-spacing:-.01em;line-height:1;
+}
+.ins-stat-lbl{font-family:'Barlow',sans-serif;font-size:11px;color:#5A6A7E;margin-top:6px;line-height:1.4;}
+.ins-divider{height:1px;background:linear-gradient(90deg,rgba(201,168,76,0.3),transparent);margin:48px 0;}
+.ins-callout{
+  background:#0B1F3A;border-radius:4px;padding:28px 32px;margin:40px 0;
+  border-left:3px solid #C9A84C;
+}
+.ins-callout p{
+  font-family:'Barlow',sans-serif;font-size:14px;line-height:1.72;
+  color:rgba(240,237,230,0.65);margin:0;font-weight:300;
+}
+.ins-callout strong{color:#F0EDE6;}
+.ins-cta{
+  background:#0B1F3A;border-radius:4px;padding:36px 36px;margin-top:56px;
+  border:1px solid rgba(201,168,76,0.15);
+}
+.ins-cta h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:#F0EDE6;margin-bottom:10px;}
+.ins-cta p{font-family:'Barlow',sans-serif;font-size:13.5px;color:rgba(240,237,230,0.55);margin-bottom:20px;font-weight:300;line-height:1.65;}
+.ins-cta-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#C9A84C;color:#0B1F3A;border:none;border-radius:2px;
+  padding:12px 24px;font-family:'Barlow Condensed',sans-serif;font-size:13px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:.18s;
+}
+.ins-cta-btn:hover{filter:brightness(1.08);}
+.ins-footer-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:28px 0;margin-top:48px;border-top:1px solid rgba(11,31,58,0.1);flex-wrap:wrap;gap:12px;
+}
+.ins-footer-nav a{
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:#5A6A7E;text-decoration:none;transition:.15s;
+}
+.ins-footer-nav a:hover{color:#C9A84C;}
+@media(max-width:600px){.ins-body{padding:40px 20px 60px;}.ins-hero{padding:52px 0 46px;}}
+
+/* ===== insight-radar components ===== */
+.ins-list{margin:0 0 22px;padding-left:22px;list-style:disc;}
+.ins-list li{
+  font-family:'Barlow',sans-serif;font-size:15.5px;line-height:1.8;
+  color:#2D3748;margin-bottom:9px;padding-left:4px;
+}
+.ins-list li::marker{color:#C9A84C;}
+.ins-list li:last-child{margin-bottom:0;}
+
+.ins-radar-wrap{margin:34px 0 40px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.ins-radar{border-collapse:collapse;width:100%;min-width:560px;font-family:'Barlow',sans-serif;}
+.ins-radar caption{
+  caption-side:top;text-align:left;font-family:'Barlow Condensed',sans-serif;
+  font-size:10.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  color:#C9A84C;padding-bottom:12px;
+}
+.ins-radar th{
+  font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:#6B7A8D;
+  text-align:left;padding:0 14px 9px 0;border-bottom:1px solid #0B1F3A;white-space:nowrap;
+}
+.ins-radar td{
+  font-size:13.5px;line-height:1.55;color:#2D3748;
+  padding:13px 14px 13px 0;border-bottom:1px solid #E4E7EC;vertical-align:top;
+}
+.ins-radar tr:last-child td{border-bottom:none;}
+.ins-radar td:first-child{font-weight:600;color:#0B1F3A;min-width:170px;}
+.ins-radar .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+.ins-disc{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:#6B7A8D;white-space:nowrap;
+}
+.ins-badge{
+  display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:9.5px;
+  font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  padding:3px 7px;border-radius:3px;white-space:nowrap;border:1px solid transparent;
+}
+.ins-badge-e1{background:rgba(11,31,58,0.09);color:#0B1F3A;border-color:rgba(11,31,58,0.25);}
+.ins-badge-e2{background:rgba(201,168,76,0.14);color:#8A6F1F;border-color:rgba(201,168,76,0.4);}
+.ins-badge-e3{background:rgba(107,122,141,0.13);color:#4A5768;border-color:rgba(107,122,141,0.32);}
+.ins-badge-e4{background:rgba(192,57,43,0.09);color:#9E2E22;border-color:rgba(192,57,43,0.28);}
+.ins-ready{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:#0B1F3A;white-space:nowrap;
+}
+.ins-ready span{display:inline-block;width:34px;height:4px;border-radius:2px;background:#E4E7EC;margin-right:7px;vertical-align:middle;position:relative;}
+.ins-ready span::after{content:'';position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:#C9A84C;}
+.ins-ready[data-r="1"] span::after{width:25%;}
+.ins-ready[data-r="2"] span::after{width:50%;}
+.ins-ready[data-r="3"] span::after{width:75%;}
+.ins-ready[data-r="4"] span::after{width:100%;}
+.ins-body sup a{
+  color:#C9A84C;text-decoration:none;font-weight:600;font-size:10.5px;
+  padding:0 1px;font-variant-numeric:tabular-nums;
+}
+.ins-body sup a:hover{text-decoration:underline;}
+.ins-refs{margin:56px 0 0;padding-top:26px;border-top:2px solid rgba(201,168,76,0.25);}
+.ins-refs h2{
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#C9A84C;
+  margin:0 0 20px;border-top:none;padding-top:0;
+}
+.ins-refs ol{list-style:none;counter-reset:ref;margin:0;padding:0;}
+.ins-refs li{
+  counter-increment:ref;position:relative;padding:0 0 16px 34px;
+  font-family:'Barlow',sans-serif;font-size:13px;line-height:1.62;color:#4A5768;
+}
+.ins-refs li::before{
+  content:counter(ref);position:absolute;left:0;top:1px;
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  color:#C9A84C;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.ins-refs li:target{background:rgba(201,168,76,0.07);border-radius:4px;}
+.ins-refs cite{font-style:italic;color:#2D3748;}
+.ins-refs a{color:#0B1F3A;text-decoration:underline;text-decoration-color:rgba(201,168,76,0.6);word-break:break-word;}
+.ins-refs .ins-access{
+  font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:#6B7A8D;margin-left:6px;
+}
+.ins-method{
+  margin:40px 0 0;padding:18px 20px;background:#F8F5EE;
+  border:1px solid #E4E7EC;border-left:2px solid #6B7A8D;border-radius:4px;
+  font-family:'Barlow',sans-serif;font-size:12.5px;line-height:1.65;color:#4A5768;
+}
+.ins-method strong{color:#0B1F3A;font-weight:600;}
+@media(max-width:600px){
+  .ins-radar td:first-child{min-width:130px;}
+  .ins-radar{min-width:480px;}
+}
+</style>
+<!-- ===== SEO / social / structured data ===== -->
+<link rel="canonical" href="https://www.alpha-technical-centre.com/insights-2026-07-technology-radar.html">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Alpha Technical Centre">
+<meta property="og:title" content="Technology Radar, July 2026: Satellite Methane Intensity, Temperature as a Saturation Log and Closed-Loop Fracturing — Alpha Technical Centre Insights">
+<meta property="og:description" content="Monthly review of oil and gas technical developments, ranked by evidence quality and potential impact. July 2026: MethaneSAT basin intensities, downhole temperature for in-place volumes, closed-loop fracturing, autonomous drilling standards and CO2 storage in depleted gas.">
+<meta property="og:url" content="https://www.alpha-technical-centre.com/insights-2026-07-technology-radar.html">
+<meta property="og:image" content="https://www.alpha-technical-centre.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-07-30">
+<meta property="article:section" content="Insights">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Technology Radar, July 2026: Satellite Methane Intensity, Temperature as a Saturation Log and Closed-Loop Fracturing — Alpha Technical Centre Insights">
+<meta name="twitter:description" content="Monthly review of oil and gas technical developments, ranked by evidence quality and potential impact. July 2026: MethaneSAT basin intensities, downhole temperature for in-place volumes, closed-loop fracturing, autonomous drilling standards and CO2 storage in depleted gas.">
+<meta name="twitter:image" content="https://www.alpha-technical-centre.com/og-image.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"Technology Radar, July 2026: Satellite Methane Intensity, Temperature as a Saturation Log and Closed-Loop Fracturing","description":"Monthly review of oil and gas technical developments, ranked by evidence quality and potential impact. July 2026: MethaneSAT basin intensities, downhole temperature for in-place volumes, closed-loop fracturing, autonomous drilling standards and CO2 storage in depleted gas.","image":"https://www.alpha-technical-centre.com/og-image.png","datePublished":"2026-07-30","dateModified":"2026-07-30","author":{"@type":"Organization","name":"Alpha Technical Centre","url":"https://www.alpha-technical-centre.com/"},"publisher":{"@type":"Organization","name":"Alpha Technical Centre","logo":{"@type":"ImageObject","url":"https://www.alpha-technical-centre.com/favicon.svg"}},"mainEntityOfPage":"https://www.alpha-technical-centre.com/insights-2026-07-technology-radar.html"}
+</script>
+<!-- ===== /SEO ===== -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NKCRSSV2RQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NKCRSSV2RQ');
+</script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre</span>
+        <span class="nav-wordmark-parent">An Alpha Energy company</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
+      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
+      <div class="nav-dropdown">
+        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
+        <div class="nav-dropdown-menu">
+          <a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
+          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
+        </div>
+      </div>
+      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
+      <a href="technical-due-diligence.html" data-en="Due Diligence" data-es="Diligencia Debida">Due Diligence</a>
+      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
+      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
+      <a href="insights.html" class="active" data-en="Insights" data-es="Análisis">Insights</a>
+      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
+      <div class="nav-lang">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="ins-hero">
+  <div class="wrap" style="position:relative;z-index:2;">
+    <div class="ins-meta">
+      <span class="ins-tag">Insights &middot; Technology Radar</span>
+      <span class="ins-date">July 2026 · Alpha Technical Centre</span>
+    </div>
+    <h1 class="ins-title">Technology Radar: <em>July</em> 2026</h1>
+    <p class="ins-standfirst">Six developments, ranked by evidence and by what they are worth to an asset owner. Two of them hand a buyer a way to test a number a seller has supplied: satellite methane intensity measured basin by basin, and downhole temperature used to check the saturation behind an in-place volume.</p>
+    <div class="ins-byline">
+      <div class="ins-byline-mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ins-byline-author">Alpha Technical Centre Editorial</div>
+        <div class="ins-byline-org">Houston, Texas · alpha-technical-centre.com</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="ins-body">
+
+  <p>Six developments, in the order we would act on them. Each is here because the primary source has been read, or because its authorship, mechanism and limitations could be established from sources that are open. Nothing is included on the strength of a headline.</p>
+
+<div class="ins-radar-wrap">
+  <table class="ins-radar">
+    <caption>Ranked by evidence and potential impact</caption>
+    <thead><tr><th>Development</th><th>Discipline</th><th>Readiness</th><th>Evidence</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>Satellite methane intensity, basin by basin<sup><a href="#ref-1">1</a></sup></td><td><span class="ins-disc">Emissions measurement</span></td><td><span class="ins-ready" data-r="3"><span></span>Field-proven</span></td><td><span class="ins-badge ins-badge-e1">E1</span></td><td>Public data showing reported inventories understated 2 to 4 times in US basins. A seller's methane figure is now checkable.</td></tr>
+      <tr><td>Downhole temperature as a saturation measurement<sup><a href="#ref-2">2</a></sup></td><td><span class="ins-disc">Petrophysics / reservoir</span></td><td><span class="ins-ready" data-r="2"><span></span>Pilot</span></td><td><span class="ins-badge ins-badge-e1">E1</span></td><td>Estimates fluid saturation and in-place volume from temperature data most wells already have. Nothing to acquire.</td></tr>
+      <tr><td>Autonomous drilling taxonomy<sup><a href="#ref-3">3</a></sup></td><td><span class="ins-disc">Drilling / digital</span></td><td><span class="ins-ready" data-r="1"><span></span>Lab / concept</span></td><td><span class="ins-badge ins-badge-e1">E1</span></td><td>Ten scored traits give a buyer a way to test what a contractor means by autonomous. Procurement and diligence language.</td></tr>
+      <tr><td>Closed-loop fracturing reallocates volume between stages<sup><a href="#ref-4">4</a></sup><sup><a href="#ref-5">5</a></sup><sup><a href="#ref-6">6</a></sup></td><td><span class="ins-disc">Completions</span></td><td><span class="ins-ready" data-r="2"><span></span>Pilot</span></td><td><span class="ins-badge ins-badge-e1">E1</span></td><td>Offset-well fibre drives real-time volume reallocation. Needs an observation well, which most pads do not have.</td></tr>
+      <tr><td>Multilateral re-entry and SAGD ranging funded<sup><a href="#ref-7">7</a></sup></td><td><span class="ins-disc">Drilling / brownfield</span></td><td><span class="ins-ready" data-r="1"><span></span>Lab / concept</span></td><td><span class="ins-badge ins-badge-e2">E2</span></td><td>Reaching new drainage from existing wellbores is the arithmetic that decides whether a mature field gets a second phase.</td></tr>
+      <tr><td>Depleted gas reservoirs as CO2 storage<sup><a href="#ref-8">8</a></sup></td><td><span class="ins-disc">CCS / facilities</span></td><td><span class="ins-ready" data-r="2"><span></span>Pilot</span></td><td><span class="ins-badge ins-badge-e4">E4</span></td><td>400 Mt of capacity in eight depleted gas reservoirs. Late-life gas reservoir work becomes a storage business.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+  <h2>Satellite data now checks what an operator reports</h2>
+
+  <p>Williams and Gautam, with colleagues at the Environmental Defense Fund, MethaneSAT LLC, Harvard and the Universitat Polit&egrave;cnica de Val&egrave;ncia, published basin-level methane emissions and intensities from 33 MethaneSAT scenes gathered between May 2024 and May 2025<sup><a href="#ref-1">1</a></sup>. The paper is peer-reviewed and open access in <cite>Atmospheric Chemistry and Physics</cite>, and it covers six producing regions across six countries and 207 counties and districts: the Permian, San Joaquin and Eagle Ford in the United States and Mexico, the Amu Darya in Turkmenistan and Uzbekistan, and the Zagros Foldbelt in Iran and Iraq.</p>
+
+  <p>The instrument resolves area emissions at about 4 km by 4 km. Measured emissions span an order of magnitude, from 454 tonnes an hour in the Permian to 114 in the Eagle Ford. Loss rates span nearly two orders: 2.4 per cent in the Eagle Ford, 2.6 in the Permian, 2.9 and 3.7 in the Turkmen and Uzbek Amu Darya, 12.1 in the San Joaquin and 18.6 in the Zagros Foldbelt. Every region exceeds the Oil and Gas Climate Initiative target of 0.2 per cent by between 10 and 90 times<sup><a href="#ref-1">1</a></sup>.</p>
+
+  <div class="ins-stat-row"><div class="ins-stat"><div class="ins-stat-val">4x</div><div class="ins-stat-lbl">Permian and Eagle Ford emissions against the EPA inventory</div></div><div class="ins-stat"><div class="ins-stat-val">18.6%</div><div class="ins-stat-lbl">loss rate, Zagros Foldbelt, the highest of six basins</div></div><div class="ins-stat"><div class="ins-stat-val">~60x</div><div class="ins-stat-lbl">Sarahs District, Turkmenistan, against EDGAR</div></div></div>
+
+  <p>The comparison against bottom-up inventories is the part worth reading twice. Permian and Eagle Ford oil and gas emissions came in about four times the gridded EPA greenhouse gas inventory and the San Joaquin about twice. Outside the United States the gaps are wider: the Turkmen Amu Darya ran 5 to 8 times existing inventories across the full domain, and individual jurisdictions reached 15 to 62 times<sup><a href="#ref-1">1</a></sup>.</p>
+
+  <p>What it is good for: a reported emissions number is now something you can check rather than something you have to accept. The concentration and emissions datasets are public on Google Earth Engine, so a buyer can compare an operator's declared methane intensity against an independent measurement over the same acreage for the cost of an analyst's time. That matters commercially, because EU import rules and the certification schemes used to price differentiated gas rest on intensity figures that were previously self-reported.</p>
+
+  <p>The limits: satellite inversion and bottom-up inventory are different methods over different periods, so a discrepancy is not automatically an error in the inventory. Sectoral attribution carries wide confidence intervals and the paper is candid about it, putting the oil and gas share at 90 per cent in the Permian with a range of 64 to 100, and at 24 per cent in the San Joaquin where other sources dominate. This is one year of scenes, not a time series<sup><a href="#ref-1">1</a></sup>.</p>
+
+  <h2>Temperature data you already hold can measure saturation</h2>
+
+  <p>Guimaraes, Galvao, Horne and Tartakovsky, working across Stanford and Petrobras, show that routinely acquired downhole temperature data allows direct estimation of fluid saturations, and that this improves in-place volume estimates in reservoirs with aquifer support<sup><a href="#ref-2">2</a></sup>. The work is open access in <cite>SPE Journal</cite>.</p>
+
+  <p>The method treats a nonisothermal closed reservoir with impermeable boundaries at high P&eacute;clet number, builds a dimensionless formulation for an axisymmetric cylindrical domain, and derives analytical temperature expressions by the method of characteristics under pseudosteady pressure. The authors validate against commercial thermal simulators and wellbore data, then apply it to a field case with aquifer support<sup><a href="#ref-2">2</a></sup>.</p>
+
+  <p>What it is good for: estimating stock-tank original oil in place without assuming a water saturation value. Pressure analysis on its own cannot separate saturation from volume, so the assumed water saturation carries the answer, and that assumption is one of the most common places an in-place number quietly goes wrong. Here the input is temperature already logged and sitting in the well file. There is nothing to acquire and nothing to buy.</p>
+
+  <div class="ins-callout">
+    <p>Two items in this edition give a buyer a way to test a number a seller has supplied. The MethaneSAT data tests a declared methane intensity against independent measurement. This work tests an in-place volume against the water saturation assumed to produce it. Both use data that is already public or already in the file.</p>
+  </div>
+
+  <p>The limit is in the assumptions, and they are real: closed boundaries, high P&eacute;clet number, pseudosteady pressure, and one published field case. This is a strong second opinion on a volumetric estimate rather than a replacement for one, and the disagreement between the two is where the interesting work sits.</p>
+
+  <h2>A way to test what a vendor means by autonomous</h2>
+
+  <p>de Wardt, with Cayeux and Mihai of NORCE, Macpherson of Baker Hughes, Pirovolou of Weatherford and Annaiyappa, propose a taxonomy separating automated drilling systems from autonomous ones, drawing definitions from aerospace, control theory and other high-risk industries<sup><a href="#ref-3">3</a></sup>. The paper is open access in <cite>SPE Journal</cite>.</p>
+
+  <p>The framework scores ten traits: environment complexity, problem complexity, mission, risk management, dynamic planning, situational awareness, decision-making, execution, learning from experience and human-agent interaction. Each trait carries a quantification, so a claim of autonomy can be assessed rather than accepted. The authors also argue that an autonomous system can collaborate with human operators while holding independent decision authority, which cuts against the assumption that autonomy means removing the human<sup><a href="#ref-3">3</a></sup>.</p>
+
+  <p>What it is good for: procurement and diligence language. Autonomous is currently a marketing word in drilling, and a buyer evaluating a contractor or a technology has had no agreed way to test it. Ten scored traits give you a checklist to put in front of a vendor and a basis for comparing two bids that claim the same thing. It costs nothing to adopt and it is usable this quarter.</p>
+
+  <p>The limit: this is a framework, not a field result. It changes how you assess a claim. It does not drill anything.</p>
+
+  <h2>Closed-loop fracturing reaches the field, with one hard constraint</h2>
+
+  <p>Navaiz and Stark of Halliburton and Paradeis of Chevron reported what they describe as the first closed-loop completions programme at the SPE Hydraulic Fracturing Technology Conference in The Woodlands in February 2026, and <cite>JPT</cite> carried it in its June technology focus<sup><a href="#ref-4">4</a></sup>. The work was done on Chevron acreage in Colorado<sup><a href="#ref-5">5</a></sup>.</p>
+
+  <p>The mechanism is more specific than the phrase suggests. Offset-well fibre measurements, principally volume to first response, characterise how fracture growth rates vary between stages. Treatment volume is then reallocated away from underperforming stages toward better ones, holding total volume constant<sup><a href="#ref-6">6</a></sup>. Halliburton attributes the execution to its ZEUS IQ platform with OCTIV auto frac for automated stage execution and Sensori for subsurface feedback, and describes the result as reacting to a localised environment rather than to a performance forecast<sup><a href="#ref-5">5</a></sup>.</p>
+
+  <p>What it is good for: it moves completion decisions inside the job. Surface automation on a fracturing spread already controls the pumps, but it does not change the design, so the learning lands on the next well. Reallocating volume between stages while pumping puts the diagnostic to work immediately, and because total volume is held constant it is a reallocation rather than an extra spend.</p>
+
+  <p>The limits are real and worth knowing before anyone gets excited. ResFrac's review of the conference notes that the relationship between stage-level fluid uniformity and volume to first response is not well understood, and may be confounded by asymmetrical fracture growth, stress shadowing, stage and well sequencing, and where the observation well happens to sit. It also makes the practical objection: offset observation wells are not routinely available, and never available for every well on a pad<sup><a href="#ref-6">6</a></sup>. No production or cost result has been published in any source we can read. Treat this as a method proven to run, not yet a method proven to pay.</p>
+
+  <h2>Money goes to multilateral re-entry and SAGD ranging</h2>
+
+  <p>Emissions Reduction Alberta awarded 37 million dollars across ten drilling technology projects worth about 179 million dollars combined. Most went to geothermal: 8 million dollars each to Eavor Technologies for superhot resource access and Rodatherm Energy for closed-loop geothermal power, and 4.4 million to Borobotics for an autonomous electric drilling robot<sup><a href="#ref-7">7</a></sup>.</p>
+
+  <p>Two smaller awards matter more for mature oil and gas. Global Dynamics received 2.25 million dollars for multilateral well re-entry, and Weatherford Canada 1.42 million for real-time sensing and ranging in SAGD drilling. Phase Advanced Sensor Systems received 420,000 dollars for high-temperature downhole pressure sensors and Precision Drilling 3.1 million for robotic pipe handling<sup><a href="#ref-7">7</a></sup>.</p>
+
+  <p>What it is good for: multilateral re-entry is a redevelopment tool. It reaches new drainage from a wellbore that already exists, avoiding a new surface slot and a new well cost, and that arithmetic decides whether a mature field gets a second phase or gets abandoned. High-temperature pressure sensors matter for the same reason, since thermal and deep completions are where instrumentation fails first.</p>
+
+  <p>The limit: this is funding, not results. Ten projects have money, none has a published field outcome, and public innovation programmes convert poorly. Treat it as a two to three year watch list.</p>
+
+  <h2>Depleted gas reservoirs get a second life as storage</h2>
+
+  <p>Harbour Energy's Viking CCS project has cleared front-end engineering and design and had its development funding approved. The numbers are specific enough to be useful: eight suitable depleted gas reservoirs in the Viking fields, injection at roughly 9,000 ft beneath a salt layer 600 to 1,000 ft thick, 400 million tonnes of storage capacity, an initial target of up to 4 million tonnes a year in the early 2030s, and a subsea pipeline sized for up to 30 million tonnes a year against an expansion case of 10. Investment required is put at more than 13 billion pounds<sup><a href="#ref-8">8</a></sup>.</p>
+
+  <p>What it is good for: the reservoir engineering that makes a depleted gas field a storage site is the same work as managing it in late life. Pressure history, seal integrity, well stock and abandonment status are the inputs either way. For anyone holding a mature gas asset near industrial CO2, that is a second exit route to price alongside abandonment, and these figures give a reference point for scale.</p>
+
+  <p>The limit: this is a company announcement rather than a technical paper, so the capacity and containment case has not been through peer review. First operations are early 2030s, and 13 billion pounds is a plan rather than a spend.</p>
+
+  <div class="ins-divider"></div>
+
+  <h2>What we would use, and where</h2>
+
+  <p>The MethaneSAT data goes into diligence immediately, as a check on any declared methane intensity. It is free, it is peer-reviewed, and on the evidence of six basins a self-reported figure is as likely as not to be understated by a factor of two or more. We would run it on any asset where gas pricing, an import rule or a certification scheme depends on the number.</p>
+
+  <p>The temperature work goes into use immediately, on due diligence and redevelopment screening. It costs nothing to try, the data is already in the well files, and it bears on the number that decides the valuation. We would run it alongside a conventional volumetric and treat any disagreement between the two as the thing worth investigating.</p>
+
+  <p>The autonomous drilling taxonomy goes into procurement language this quarter. Ten scored traits are a better question to put to a drilling contractor than asking whether the system is autonomous, and it gives a diligence review something testable where it previously had a brochure.</p>
+
+  <p>Multilateral re-entry goes on the redevelopment watch list, to be revisited when the Alberta projects publish field results rather than on the strength of a grant. Viking is worth tracking as a reference case for anyone pricing a late-life gas asset, because it puts a number on what a large depleted-reservoir storage scheme looks like.</p>
+
+  <div class="ins-refs">
+    <h2>Sources</h2>
+    <ol>
+      <li id="ref-1">Williams, J. P., Benmergui, J., Knapp, M., Omara, M., Himmelberger, A., Kyzivat, E., Weatherby, K., Lyke, B., Warren, J., MacKay, K., Ayvazov, S., Russi, M., LoFaso, N., Melendez, T., Miller, C. C., Roche, S., Sargent, M., Franklin, J., Nasr, M., Zhang, Z., Miller, D. J., Luo, B., Guanter, L., Hamburg, S. P., Wofsy, S. C., Gautam, R. (2026) <cite>Methane intensity and emissions across major oil and gas basins and individual jurisdictions using MethaneSAT observations</cite> Atmospheric Chemistry and Physics, 26, 5961-5981, 5 May 2026. Environmental Defense Fund, MethaneSAT LLC, Harvard and Universitat Polit&egrave;cnica de Val&egrave;ncia. <a href="https://acp.copernicus.org/articles/26/5961/2026/" target="_blank" rel="noopener noreferrer">https://acp.copernicus.org/articles/26/5961/2026/</a><span class="ins-access">E1 &middot; Open access</span> Peer-reviewed and open access under CC-BY. Underlying L3 and L4 datasets are public on Google Earth Engine.</li>
+      <li id="ref-2">Guimaraes, C. S., Galvao, M. S., Horne, R. N., Tartakovsky, D. M. (2026) <cite>In-Place Volume Estimation: The Role of Downhole Temperature Data</cite> SPE Journal. Summarised in Journal of Petroleum Technology, 27 July 2026. SPE 228263. <a href="https://jpt.spe.org/in-place-volume-estimation-the-role-of-downhole-temperature-data" target="_blank" rel="noopener noreferrer">https://jpt.spe.org/in-place-volume-estimation-the-role-of-downhole-temperature-data</a><span class="ins-access">E1 &middot; Open access</span></li>
+      <li id="ref-3">de Wardt, J. P., Cayeux, E., Mihai, R., Macpherson, J., Annaiyappa, P., Pirovolou, D. (2026) <cite>Taxonomy Describing Levels of Autonomous Drilling Systems Incorporates Complexity, Uncertainty, and Sparse Data With Human Interaction</cite> SPE Journal. Summarised in Journal of Petroleum Technology, 29 July 2026. SPE 217754. <a href="https://jpt.spe.org/taxonomy-describing-levels-of-autonomous-drilling-systems-incorporates-complexity-uncertainty-and-sparse-data-with-human-interaction" target="_blank" rel="noopener noreferrer">https://jpt.spe.org/taxonomy-describing-levels-of-autonomous-drilling-systems-incorporates-complexity-uncertainty-and-sparse-data-with-human-interaction</a><span class="ins-access">E1 &middot; Open access</span></li>
+      <li id="ref-4">Navaiz, A., Paradeis, M., Stark, P. (2026) <cite>Transforming Hydraulic Fracturing: The First-Ever Closed-Loop Completions Program</cite> SPE Hydraulic Fracturing Technology Conference and Exhibition, The Woodlands, Texas, February 2026. Carried in Journal of Petroleum Technology, June 2026. SPE 230613. <a href="https://jpt.spe.org/closed-loop-completions-program-holds-potential-to-transform-hydraulic-fracturing-restricted" target="_blank" rel="noopener noreferrer">https://jpt.spe.org/closed-loop-completions-program-holds-potential-to-transform-hydraulic-fracturing-restricted</a><span class="ins-access">E1 &middot; Paywalled</span></li>
+      <li id="ref-5">Halliburton (2025) <cite>Chevron and Halliburton enable intelligent hydraulic fracturing</cite> Halliburton press release, 12 June 2025. <a href="https://www.halliburton.com/en/about-us/press-release/chevron-and-halliburton-enable-intelligent-hydraulic-fracturing" target="_blank" rel="noopener noreferrer">https://www.halliburton.com/en/about-us/press-release/chevron-and-halliburton-enable-intelligent-hydraulic-fracturing</a><span class="ins-access">E3 &middot; Open access</span> Vendor announcement of the platform. Describes capability and components; states no performance figures.</li>
+      <li id="ref-6">ResFrac Corporation (2026) <cite>Interesting Papers from the 2026 SPE Hydraulic Fracturing Technology Conference (HFTC)</cite> ResFrac technical blog. <a href="https://www.resfrac.com/blog/interesting-papers-from-the-2026-spe-hydraulic-fracturing-technology-conference-hftc" target="_blank" rel="noopener noreferrer">https://www.resfrac.com/blog/interesting-papers-from-the-2026-spe-hydraulic-fracturing-technology-conference-hftc</a><span class="ins-access">E3 &middot; Open access</span> Independent technical review naming the paper and its limitations.</li>
+      <li id="ref-7">(2026) <cite>Alberta Awards $37 Million for Next-Generation Drilling Technologies</cite> Journal of Petroleum Technology, 26 July 2026, reporting an Emissions Reduction Alberta award. <a href="https://jpt.spe.org/alberta-awards-37-million-for-next-generation-drilling-technologies" target="_blank" rel="noopener noreferrer">https://jpt.spe.org/alberta-awards-37-million-for-next-generation-drilling-technologies</a><span class="ins-access">E2 &middot; Open access</span></li>
+      <li id="ref-8">(2026) <cite>Harbour Energy Takes a Step Closer to Making Major UK CCS Project a Reality</cite> Journal of Petroleum Technology, 23 July 2026. <a href="https://jpt.spe.org/harbour-energy-takes-a-step-closer-to-making-major-uk-ccs-project-a-reality" target="_blank" rel="noopener noreferrer">https://jpt.spe.org/harbour-energy-takes-a-step-closer-to-making-major-uk-ccs-project-a-reality</a><span class="ins-access">E4 &middot; Open access</span></li>
+    </ol>
+  </div>
+
+  <div class="ins-method"><strong>Method.</strong> This first edition is a baseline and takes a wider window than the monthly ones that follow it: developments published or first surfaced between February and July 2026, weighted to June and July. Every item is dated to its original venue rather than to the month it was summarised, so a February conference paper is reported as February. Around 60 candidate items were screened across the SPE and <cite>JPT</cite> June issue and July news, OnePetro, Copernicus and Elsevier journals, third-party conference reviews, operator and service-company disclosure, and targeted searches of SEG, EAGE, ADIPEC, agency and regulator publications. Six are reported. Where a paper's own text was not available, its authorship, mechanism and stated limitations were established from independent readable sources, and the prose reflects which claim rests on which. Company and market news, project funding decisions and conference announcements are excluded as a matter of course. Evidence tiers run E1 for peer-reviewed work, E2 for society and agency publication, E3 for operator, vendor and independent technical commentary, and E4 for trade reporting. Seismic acquisition and interpretation were searched twice and returned nothing in window.</div>
+
+  <div class="ins-cta">
+    <h3>Want these methods applied to your asset?</h3>
+    <p>Alpha Technical Centre builds integrated field development plans and runs independent buy-side technical due diligence, using the methods that hold up.</p>
+    <a href="oil-gas-modelling.html" class="ins-cta-btn">Oil &amp; Gas Modelling</a>
+  </div>
+
+  <div class="ins-footer-nav">
+    <a href="insights.html">← All Insights</a>
+    <a href="insights-technical-due-diligence-oil-gas.html">Technical Due Diligence →</a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-grad"></div>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-wordmark">
+          <span class="nav-wordmark-main">Alpha</span>
+          <span class="nav-wordmark-sub">Technical Centre</span>
+        </span>
+        <p class="footer-tagline">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
+      </div>
+      <div class="footer-col"><h4>Capabilities</h4>
+        <ul>
+          <li><a href="technical-due-diligence.html">Technical Due Diligence</a></li>
+          <li><a href="oil-gas-modelling.html">Oil &amp; Gas Modelling</a></li>
+          <li><a href="financial-modelling.html">Financial Modelling</a></li>
+          <li><a href="plan-your-job.html">Plan Your Job</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About</a></li>
+          <li><a href="team.html">Team</a></li>
+          <li><a href="case-studies.html">Case Studies</a></li>
+          <li><a href="insights.html">Insights</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Connect</h4>
+        <ul>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="mailto:info@alpha-technical-centre.com">info@alpha-technical-centre.com</a></li>
+          <li><a href="https://alphaenergylatinamerica.com">Alpha Energy ↗</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Alpha Technical Centre · Houston, Texas · A wholly-owned Alpha Energy company</p>
+      <span class="footer-conf">Strictly Confidential</span>
+    </div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
