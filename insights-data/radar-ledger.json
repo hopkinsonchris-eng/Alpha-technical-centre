@@ -5,7 +5,7 @@
       "slug": "2026-07-technology-radar",
       "filename": "insights-2026-07-technology-radar.html",
       "published": "2026-07-30",
-      "title": "Technology Radar, July 2026: Temperature as a Saturation Log, Closed-Loop Fracturing and the Depleted-Gas Second Life",
+      "title": "Technology Radar, July 2026: Temperature as a Saturation Log, and a Standard for Autonomous Drilling",
       "developments": [
         {
           "name": "Downhole temperature as a saturation measurement",
@@ -14,15 +14,6 @@
           "readiness": 2,
           "urls": [
             "https://jpt.spe.org/in-place-volume-estimation-the-role-of-downhole-temperature-data"
-          ]
-        },
-        {
-          "name": "First closed-loop fracturing programme",
-          "discipline": "Completions",
-          "tier": "E1",
-          "readiness": 2,
-          "urls": [
-            "https://jpt.spe.org/closed-loop-completions-program-holds-potential-to-transform-hydraulic-fracturing-restricted"
           ]
         },
         {
@@ -35,17 +26,7 @@
           ]
         },
         {
-          "name": "EOR papers flagged by SPE",
-          "discipline": "EOR",
-          "tier": "E1",
-          "readiness": 2,
-          "urls": [
-            "https://jpt.spe.org/june-2026-issue",
-            "https://jpt.spe.org/harbour-energy-takes-a-step-closer-to-making-major-uk-ccs-project-a-reality"
-          ]
-        },
-        {
-          "name": "Alberta funds ten drilling technologies",
+          "name": "Multilateral re-entry and SAGD ranging funded",
           "discipline": "Drilling / brownfield",
           "tier": "E2",
           "readiness": 1,
@@ -54,7 +35,7 @@
           ]
         },
         {
-          "name": "Viking CCS clears FEED",
+          "name": "Depleted gas reservoirs as CO2 storage",
           "discipline": "CCS / facilities",
           "tier": "E4",
           "readiness": 2,
@@ -70,19 +51,9 @@
           "tier": "E1"
         },
         {
-          "title": "Closed-Loop Completions Program Holds Potential to Transform Hydraulic Fracturing",
-          "url": "https://jpt.spe.org/closed-loop-completions-program-holds-potential-to-transform-hydraulic-fracturing-restricted",
-          "tier": "E1"
-        },
-        {
           "title": "Taxonomy Describing Levels of Autonomous Drilling Systems Incorporates Complexity, Uncertainty, and Sparse Data With Human Interaction",
           "url": "https://jpt.spe.org/taxonomy-describing-levels-of-autonomous-drilling-systems-incorporates-complexity-uncertainty-and-sparse-data-with-human-interaction",
           "tier": "E1"
-        },
-        {
-          "title": "Harbour Energy Takes a Step Closer to Making Major UK CCS Project a Reality",
-          "url": "https://jpt.spe.org/harbour-energy-takes-a-step-closer-to-making-major-uk-ccs-project-a-reality",
-          "tier": "E4"
         },
         {
           "title": "Alberta Awards $37 Million for Next-Generation Drilling Technologies",
@@ -90,9 +61,9 @@
           "tier": "E2"
         },
         {
-          "title": "June 2026 Issue (technology focus synopses and features)",
-          "url": "https://jpt.spe.org/june-2026-issue",
-          "tier": "E2"
+          "title": "Harbour Energy Takes a Step Closer to Making Major UK CCS Project a Reality",
+          "url": "https://jpt.spe.org/harbour-energy-takes-a-step-closer-to-making-major-uk-ccs-project-a-reality",
+          "tier": "E4"
         }
       ]
     }

@@ -21,10 +21,27 @@ honest edition beats a padded one.**
    citations are the one failure that destroys the series, and they are the
    characteristic failure mode here. The publish script refuses to run without
    `verified: true` on every reference; do not set that flag on trust.
-2. **Never describe results you could not read.** Paywalled paper, abstract
-   only? Cite the abstract, say what the abstract says, mark it `abstract`, and
-   stop there. Do not reconstruct findings from a press release and attribute
-   them to the paper.
+2. **Never describe results you could not read**, and **never publish an item
+   you could not read.** These are two different rules and both bind.
+
+   An item earns a place in the article only if you have read enough of the
+   primary source to state what was measured. A title from a table of contents
+   is not a development, it is a lead. Leads go on the reading list (step 5a),
+   never into the article.
+
+   This is a commercial publication. Prose that admits the author could not
+   reach a source reads as weakness, not rigour, and undermines every other
+   claim on the page. **The article never discusses its own access
+   limitations.** No "behind the paywall", no "we could not assess", no note
+   explaining what could not be read. If the evidence is not in hand, the item
+   is simply absent, and the reader never learns there was a gap.
+
+   Access constraints are recorded in the dossier, which is internal, and in
+   the reading list, which is for the client. Never in the published article.
+
+   The cost of this rule is shorter editions. Pay it. Four developments stated
+   with authority is a stronger publication than eight where three carry an
+   apology.
 3. **Attribute vendor claims to the vendor**, in the sentence, every time.
 4. **Do not invent numbers, dates, well counts, basins or author names.** If a
    detail is not in the source, it does not go in the article.
@@ -79,14 +96,33 @@ later wastes the work.
 If a discipline turns up nothing, record that. Silence in the dossier must be
 deliberate and visible, not an oversight.
 
-### 3. Verify
+### 3. Verify and obtain the full text
 
 For every candidate that might make the edition, fetch the URL. Confirm it
-resolves, that it is the work you think it is, and how much of it you can
-actually read. Record the access level honestly. Drop anything that fails.
+resolves and that it is the work you think it is. Then get the substance, in
+this order:
 
-Do this before ranking, not after — an unverifiable item cannot be ranked, and
-verification often changes what a finding actually says.
+1. **Check the papers folder.** `insights-data/papers/<YYYY-MM>/` holds PDFs the
+   client has downloaded with their own society access. Read them. These are
+   the best sources available to the run and take priority over everything else.
+2. **Check for a legitimate open-access copy.** Many SPE, EAGE and Elsevier
+   papers are open access, and most authors post accepted manuscripts. Resolve
+   the DOI, then try Crossref, Unpaywall and OpenAlex, then the authors'
+   institutional repository. A Stanford, NORCE or TU Delft co-author usually
+   means a readable copy exists somewhere legal.
+3. **Read the society summary.** JPT technology-focus synopses, The Leading Edge
+   and First Break summarise papers in readable form and are themselves citable.
+4. **If none of that yields enough to state what was measured, the item does not
+   go in the article.** Put it on the reading list and move on. Do not write it
+   up thinly, and do not explain the gap to the reader.
+
+Never attempt to bypass a paywall, and never use the client's society
+credentials to fetch content automatically. Both risk their membership and
+breach the publishers' terms. The papers folder exists so a human makes that
+download deliberately, under their own licence.
+
+Do this before ranking, not after. An item you cannot read cannot be ranked,
+and getting the full text often changes what a finding actually says.
 
 ### 4. Rank
 
@@ -116,6 +152,26 @@ Before the article, write the working file to
 
 This is the audit trail. It is what lets you or the user defend a claim in six
 months, and it is what makes the next edition's dedupe possible.
+
+### 5a. Write the reading list
+
+Write `insights-data/reading-list/<YYYY-MM>.md`: the papers that looked
+significant but could not be read, so the client can pull them with their own
+society access.
+
+For each one give the paper number, the exact title, where it appeared, the
+direct link, and one line on why it is worth their time. Rank the list, because
+their time is limited and they will start at the top. Keep it short. Ten items
+they will actually fetch beats forty they will not.
+
+Tell them where to put the PDFs:
+`insights-data/papers/<YYYY-MM>/` (git-ignored, so nothing licensed is
+committed). Anything dropped there is read in full on the next run and becomes
+citable with its results.
+
+This is the loop that makes the series compound. A month with a login is
+substantially deeper than a month without one, and the reading list is how the
+run asks for what it needs.
 
 ### 6. Write the article
 
