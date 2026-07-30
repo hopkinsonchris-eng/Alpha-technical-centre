@@ -1,0 +1,26 @@
+{
+  "_comment": "Single source of truth for Plan Your Job pricing. Edit in the Staff Portal (admin.html), download the file, commit it, and it is live for everyone on the next deploy. Values here are what the public planner uses.",
+  "version": 1,
+  "updated": "2026-07-30",
+  "currency": "USD",
+  "basis": "per resource, per 5-day week",
+
+  "rates": {
+    "Principal": 13500,
+    "Senior": 11000,
+    "Mid-level": 8000,
+    "Junior": 5500
+  },
+
+  "swMult": 100,
+  "miscMult": 100,
+  "dataMult": 100,
+  "margin": 0,
+
+  "partners": [
+    { "code": "RE",    "name": "Chris Hopkinson",   "role": "Reservoir Engineer / Lead" },
+    { "code": "GEO",   "name": "Pavel Markman",     "role": "Geoscience Lead" },
+    { "code": "INFRA", "name": "Dmitry Sazonenko",  "role": "Infrastructure / Facilities" },
+    { "code": "COM",   "name": "Anton Agafonov",    "role": "Commercial / Finance" }
+  ]
+}

@@ -702,13 +702,71 @@ body{padding-top:0;}
 <script>
 const PARTNERS={RE:{name:'Reservoir Engineering & Production',short:'RE&P Manager'},GEO:{name:'Geology',short:'Geology Manager'},INFRA:{name:'Infrastructure',short:'Infrastructure Manager'},SES:{name:'Seismic',short:'Seismic Manager'}};
 // Load rates from Staff Portal admin config (admin.html) — falls back to defaults
+// Pricing comes from rates.json, the committed single source of truth, so every
+// device sees the same numbers. Order of precedence, lowest first:
+//   1. the hardcoded fallback below (only used if rates.json cannot be fetched)
+//   2. rates.json
+//   3. a local override in localStorage, written by the Staff Portal for preview
+// A local override is deliberately flagged on screen so nobody quotes from
+// unpublished numbers by accident.
 const _ATC_DEFAULTS={Principal:13500,Senior:11000,'Mid-level':8000,Junior:5500};
 let _atcCfg={};try{_atcCfg=JSON.parse(localStorage.getItem('atc_admin_config'))||{};}catch(e){}
+
+// WEEKLY_RATE stays the same object throughout and is mutated in place, so any
+// code holding a reference to it keeps working when rates.json arrives.
 const WEEKLY_RATE=Object.assign({},_ATC_DEFAULTS,_atcCfg.rates||{});
-const _SW_MULT=(_atcCfg.swMult||100)/100;
-const _MISC_MULT=(_atcCfg.miscMult||100)/100;
-const _DATA_MULT=(_atcCfg.dataMult||100)/100;
-const _MARGIN=(1+(_atcCfg.margin||0)/100);
+let _SW_MULT=(_atcCfg.swMult||100)/100;
+let _MISC_MULT=(_atcCfg.miscMult||100)/100;
+let _DATA_MULT=(_atcCfg.dataMult||100)/100;
+let _MARGIN=(1+(_atcCfg.margin||0)/100);
+let _RATES_SOURCE='fallback';
+
+function _applyRateConfig(base,override){
+  const cfg=Object.assign({},base||{},override||{});
+  Object.assign(WEEKLY_RATE,base&&base.rates||{},override&&override.rates||{});
+  _SW_MULT=(cfg.swMult||100)/100;
+  _MISC_MULT=(cfg.miscMult||100)/100;
+  _DATA_MULT=(cfg.dataMult||100)/100;
+  _MARGIN=(1+(cfg.margin||0)/100);
+}
+
+function _rateOverrideNotice(){
+  if(!_atcCfg||!Object.keys(_atcCfg).length)return;
+  if(!document.body)return;
+  if(document.getElementById('rate-override-note'))return;
+  const d=document.createElement('div');
+  d.id='rate-override-note';
+  d.style.cssText='position:fixed;bottom:16px;left:16px;z-index:9999;max-width:330px;'+
+    'background:#0B1F3A;color:#F0EDE6;border-left:3px solid #C9A84C;border-radius:5px;'+
+    'padding:11px 14px;font-family:Barlow,system-ui,sans-serif;font-size:12px;line-height:1.5;'+
+    'box-shadow:0 6px 22px rgba(0,0,0,.28);';
+  d.innerHTML='<strong style="color:#C9A84C;">Local rate preview</strong><br>'+
+    'This browser is using unpublished rates saved in the Staff Portal, not the '+
+    'published <code>rates.json</code>. Download and commit the file to publish them.'+
+    '<br><a href="#" style="color:#C9A84C;">Use published rates</a>';
+  const link=d.querySelector('a');
+  if(link)link.onclick=function(e){
+    e.preventDefault();
+    try{localStorage.removeItem('atc_admin_config');}catch(err){}
+    location.reload();
+  };
+  document.body.appendChild(d);
+}
+
+fetch('rates.json',{cache:'no-cache'})
+  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+  .then(function(json){
+    _RATES_SOURCE='rates.json';
+    _applyRateConfig(json,_atcCfg);
+    if(typeof render==='function'&&typeof state!=='undefined'&&state.scope)render();
+    _rateOverrideNotice();
+  })
+  .catch(function(){
+    // rates.json unreachable (offline, or opened over file://). Keep the
+    // fallback plus any local override rather than failing the page.
+    _RATES_SOURCE='fallback';
+    _rateOverrideNotice();
+  });
 const ICON={
 scope:'<svg viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M7 3H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V8l-5-5z"/><path d="M14 3v5h5"/></svg>',
 deliver:'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',

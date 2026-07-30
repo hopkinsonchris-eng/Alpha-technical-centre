@@ -296,8 +296,9 @@ body{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--white);backgrou
     <div class="divider"></div>
 
     <div class="actions">
-      <button class="btn-save" onclick="saveAll()">Save &amp; Apply Changes</button>
-      <button class="btn-reset" onclick="resetDefaults()">Reset to Defaults</button>
+      <button class="btn-save" onclick="saveAll()">Save Local Preview</button>
+      <button class="btn-save" onclick="downloadRatesJson()" style="background:#0B1F3A;">Download rates.json</button>
+      <button class="btn-reset" onclick="resetDefaults()">Discard Preview</button>
       <span class="save-status" id="save-status"></span>
     </div>
 
@@ -380,7 +381,11 @@ function doLogin() {
     sessionStorage.setItem('atc_auth', '1');
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    loadValues();
+    fetch('rates.json', { cache: 'no-cache' })
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(j => { PUBLISHED = j; })
+  .catch(() => { PUBLISHED = null; })
+  .finally(() => loadValues());
   } else {
     err.textContent = 'Incorrect username or password.';
     document.getElementById('pwd').value = '';
@@ -396,12 +401,20 @@ if (sessionStorage.getItem('atc_auth') === '1') {
 }
 
 // ══ LOAD / SAVE ══
+// rates.json is the published source of truth. localStorage holds an unpublished
+// local preview only. Saving here does NOT publish: use "Download rates.json" and
+// commit the file so every device picks the change up.
+let PUBLISHED = null;   // contents of rates.json once fetched
+
 function getConfig() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
 }
+function baseline() {
+  return PUBLISHED || DEFAULTS;
+}
 function loadValues() {
-  const cfg = getConfig();
-  const r = cfg.rates || DEFAULTS.rates;
+  const cfg = Object.assign({}, baseline(), getConfig());
+  const r = Object.assign({}, baseline().rates, (getConfig().rates || {}));
   document.getElementById('r-principal').value = r['Principal'];
   document.getElementById('r-senior').value    = r['Senior'];
   document.getElementById('r-mid').value       = r['Mid-level'];
@@ -413,7 +426,7 @@ function loadValues() {
   renderPartners(cfg.partners || DEFAULTS.partners);
   updatePreview();
 }
-function saveAll() {
+function collectConfig() {
   const partners = [];
   document.querySelectorAll('.partner-row').forEach(row => {
     partners.push({
@@ -422,12 +435,13 @@ function saveAll() {
       role: row.querySelector('.p-role').textContent
     });
   });
-  const cfg = {
+  const b = baseline();
+  return {
     rates: {
-      Principal:   parseFloat(document.getElementById('r-principal').value) || DEFAULTS.rates.Principal,
-      Senior:      parseFloat(document.getElementById('r-senior').value)    || DEFAULTS.rates.Senior,
-      'Mid-level': parseFloat(document.getElementById('r-mid').value)       || DEFAULTS.rates['Mid-level'],
-      Junior:      parseFloat(document.getElementById('r-junior').value)    || DEFAULTS.rates.Junior,
+      Principal:   parseFloat(document.getElementById('r-principal').value) || b.rates.Principal,
+      Senior:      parseFloat(document.getElementById('r-senior').value)    || b.rates.Senior,
+      'Mid-level': parseFloat(document.getElementById('r-mid').value)       || b.rates['Mid-level'],
+      Junior:      parseFloat(document.getElementById('r-junior').value)    || b.rates.Junior,
     },
     swMult:   parseFloat(document.getElementById('sw-mult').value)   || 100,
     miscMult: parseFloat(document.getElementById('misc-mult').value) || 100,
@@ -436,19 +450,54 @@ function saveAll() {
     partners,
     savedAt: new Date().toISOString()
   };
+}
+function saveAll() {
+  const cfg = collectConfig();
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-    showStatus('Changes saved — Plan Your Job will use these rates on next load.', true);
+    showStatus('Saved as a local preview on this browser only. To publish for '
+      + 'everyone, use Download rates.json and commit the file.', true);
   } catch(e) {
     showStatus('Save failed: ' + e.message, false);
   }
   updatePreview();
 }
+
+// Build the publishable file from whatever is currently in the form.
+function buildRatesJson() {
+  const cfg = collectConfig();
+  return {
+    _comment: 'Single source of truth for Plan Your Job pricing. Edit in the Staff '
+      + 'Portal (admin.html), download this file, commit it, and it is live for '
+      + 'everyone on the next deploy.',
+    version: 1,
+    updated: new Date().toISOString().slice(0, 10),
+    currency: 'USD',
+    basis: 'per resource, per 5-day week',
+    rates: cfg.rates,
+    swMult: cfg.swMult,
+    miscMult: cfg.miscMult,
+    dataMult: cfg.dataMult,
+    margin: cfg.margin,
+    partners: cfg.partners
+  };
+}
+function downloadRatesJson() {
+  const blob = new Blob([JSON.stringify(buildRatesJson(), null, 2) + '\n'],
+                        { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'rates.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  showStatus('rates.json downloaded. Replace the file in the site repository and '
+    + 'commit it to publish these rates.', true);
+}
 function resetDefaults() {
-  if (!confirm('Reset all rates to factory defaults?')) return;
+  if (!confirm('Discard the local preview and go back to the published rates.json?')) return;
   localStorage.removeItem(STORAGE_KEY);
   loadValues();
-  showStatus('Reset to defaults.', true);
+  showStatus('Local preview cleared. Showing published rates.', true);
 }
 function showStatus(msg, ok) {
   const el = document.getElementById('save-status');
