@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}} — Alpha Technical Centre Insights</title>
+<meta name="description" content="{{DESC}}">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+.ins-hero{
+  background:linear-gradient(155deg,#060F1E 0%,#0B1F3A 55%,#101a2e 100%);
+  padding:72px 0 64px;position:relative;overflow:hidden;
+}
+.ins-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 80% 30%,rgba(201,168,76,0.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.ins-meta{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+.ins-tag{
+  font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#C9A84C;
+  display:flex;align-items:center;gap:8px;
+}
+.ins-tag::before{content:'';width:20px;height:1px;background:#C9A84C;opacity:.6;}
+.ins-date{font-family:'Barlow',sans-serif;font-size:11.5px;color:rgba(240,237,230,0.38);letter-spacing:.04em;}
+.ins-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(30px,4.5vw,52px);font-weight:700;
+  line-height:1.1;letter-spacing:-.02em;color:#F0EDE6;margin-bottom:20px;
+}
+.ins-title em{color:#C9A84C;font-style:italic;}
+.ins-standfirst{
+  font-family:'Barlow',sans-serif;font-size:17px;line-height:1.72;
+  color:rgba(240,237,230,0.62);max-width:62ch;font-weight:300;
+  border-left:2px solid rgba(201,168,76,0.4);padding-left:20px;
+}
+.ins-byline{
+  display:flex;align-items:center;gap:12px;margin-top:36px;
+  padding-top:24px;border-top:1px solid rgba(201,168,76,0.15);
+}
+.ins-byline-mark{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.ins-byline-author{font-family:'Barlow',sans-serif;font-size:12px;color:rgba(240,237,230,0.8);font-weight:500;}
+.ins-byline-org{font-family:'Barlow',sans-serif;font-size:11px;color:rgba(240,237,230,0.38);margin-top:1px;}
+.ins-body{max-width:720px;margin:0 auto;padding:64px 32px 80px;}
+.ins-body h2{
+  font-family:'Playfair Display',serif;font-size:clamp(20px,2.5vw,26px);
+  font-weight:600;color:#0B1F3A;line-height:1.2;
+  margin:52px 0 18px;padding-top:8px;
+  border-top:2px solid rgba(201,168,76,0.25);
+}
+.ins-body h2:first-of-type{margin-top:0;border-top:none;padding-top:0;}
+.ins-body p{
+  font-family:'Barlow',sans-serif;font-size:15.5px;line-height:1.8;
+  color:#2D3748;margin-bottom:22px;font-weight:400;
+}
+.ins-body strong{color:#0B1F3A;font-weight:600;}
+.ins-pull{
+  margin:40px 0;padding:24px 28px;
+  border-left:3px solid #C9A84C;
+  background:rgba(201,168,76,0.05);border-radius:0 4px 4px 0;
+}
+.ins-pull p{
+  font-family:'Playfair Display',serif;font-size:19px;font-weight:400;
+  line-height:1.55;color:#0B1F3A;margin:0;font-style:italic;
+}
+.ins-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:36px 0;}
+@media(max-width:600px){.ins-stat-row{grid-template-columns:1fr;}}
+.ins-stat{
+  background:#fff;border:1px solid rgba(11,31,58,0.09);
+  border-radius:4px;padding:20px 18px;text-align:center;
+}
+.ins-stat-val{
+  font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;
+  color:#C9A84C;letter-spacing:-.01em;line-height:1;
+}
+.ins-stat-lbl{font-family:'Barlow',sans-serif;font-size:11px;color:#5A6A7E;margin-top:6px;line-height:1.4;}
+.ins-divider{height:1px;background:linear-gradient(90deg,rgba(201,168,76,0.3),transparent);margin:48px 0;}
+.ins-callout{
+  background:#0B1F3A;border-radius:4px;padding:28px 32px;margin:40px 0;
+  border-left:3px solid #C9A84C;
+}
+.ins-callout p{
+  font-family:'Barlow',sans-serif;font-size:14px;line-height:1.72;
+  color:rgba(240,237,230,0.65);margin:0;font-weight:300;
+}
+.ins-callout strong{color:#F0EDE6;}
+.ins-cta{
+  background:#0B1F3A;border-radius:4px;padding:36px 36px;margin-top:56px;
+  border:1px solid rgba(201,168,76,0.15);
+}
+.ins-cta h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:#F0EDE6;margin-bottom:10px;}
+.ins-cta p{font-family:'Barlow',sans-serif;font-size:13.5px;color:rgba(240,237,230,0.55);margin-bottom:20px;font-weight:300;line-height:1.65;}
+.ins-cta-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#C9A84C;color:#0B1F3A;border:none;border-radius:2px;
+  padding:12px 24px;font-family:'Barlow Condensed',sans-serif;font-size:13px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:.18s;
+}
+.ins-cta-btn:hover{filter:brightness(1.08);}
+.ins-footer-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:28px 0;margin-top:48px;border-top:1px solid rgba(11,31,58,0.1);flex-wrap:wrap;gap:12px;
+}
+.ins-footer-nav a{
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:#5A6A7E;text-decoration:none;transition:.15s;
+}
+.ins-footer-nav a:hover{color:#C9A84C;}
+@media(max-width:600px){.ins-body{padding:40px 20px 60px;}.ins-hero{padding:52px 0 46px;}}
+
+/* ===== insight-radar components ===== */
+.ins-list{margin:0 0 22px;padding-left:22px;list-style:disc;}
+.ins-list li{
+  font-family:'Barlow',sans-serif;font-size:15.5px;line-height:1.8;
+  color:#2D3748;margin-bottom:9px;padding-left:4px;
+}
+.ins-list li::marker{color:#C9A84C;}
+.ins-list li:last-child{margin-bottom:0;}
+
+.ins-radar-wrap{margin:34px 0 40px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.ins-radar{border-collapse:collapse;width:100%;min-width:560px;font-family:'Barlow',sans-serif;}
+.ins-radar caption{
+  caption-side:top;text-align:left;font-family:'Barlow Condensed',sans-serif;
+  font-size:10.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  color:#C9A84C;padding-bottom:12px;
+}
+.ins-radar th{
+  font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:#6B7A8D;
+  text-align:left;padding:0 14px 9px 0;border-bottom:1px solid #0B1F3A;white-space:nowrap;
+}
+.ins-radar td{
+  font-size:13.5px;line-height:1.55;color:#2D3748;
+  padding:13px 14px 13px 0;border-bottom:1px solid #E4E7EC;vertical-align:top;
+}
+.ins-radar tr:last-child td{border-bottom:none;}
+.ins-radar td:first-child{font-weight:600;color:#0B1F3A;min-width:170px;}
+.ins-radar .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+.ins-disc{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:#6B7A8D;white-space:nowrap;
+}
+.ins-badge{
+  display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:9.5px;
+  font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  padding:3px 7px;border-radius:3px;white-space:nowrap;border:1px solid transparent;
+}
+.ins-badge-e1{background:rgba(11,31,58,0.09);color:#0B1F3A;border-color:rgba(11,31,58,0.25);}
+.ins-badge-e2{background:rgba(201,168,76,0.14);color:#8A6F1F;border-color:rgba(201,168,76,0.4);}
+.ins-badge-e3{background:rgba(107,122,141,0.13);color:#4A5768;border-color:rgba(107,122,141,0.32);}
+.ins-badge-e4{background:rgba(192,57,43,0.09);color:#9E2E22;border-color:rgba(192,57,43,0.28);}
+.ins-ready{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:#0B1F3A;white-space:nowrap;
+}
+.ins-ready span{display:inline-block;width:34px;height:4px;border-radius:2px;background:#E4E7EC;margin-right:7px;vertical-align:middle;position:relative;}
+.ins-ready span::after{content:'';position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:#C9A84C;}
+.ins-ready[data-r="1"] span::after{width:25%;}
+.ins-ready[data-r="2"] span::after{width:50%;}
+.ins-ready[data-r="3"] span::after{width:75%;}
+.ins-ready[data-r="4"] span::after{width:100%;}
+.ins-body sup a{
+  color:#C9A84C;text-decoration:none;font-weight:600;font-size:10.5px;
+  padding:0 1px;font-variant-numeric:tabular-nums;
+}
+.ins-body sup a:hover{text-decoration:underline;}
+.ins-refs{margin:56px 0 0;padding-top:26px;border-top:2px solid rgba(201,168,76,0.25);}
+.ins-refs h2{
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:#C9A84C;
+  margin:0 0 20px;border-top:none;padding-top:0;
+}
+.ins-refs ol{list-style:none;counter-reset:ref;margin:0;padding:0;}
+.ins-refs li{
+  counter-increment:ref;position:relative;padding:0 0 16px 34px;
+  font-family:'Barlow',sans-serif;font-size:13px;line-height:1.62;color:#4A5768;
+}
+.ins-refs li::before{
+  content:counter(ref);position:absolute;left:0;top:1px;
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  color:#C9A84C;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.ins-refs li:target{background:rgba(201,168,76,0.07);border-radius:4px;}
+.ins-refs cite{font-style:italic;color:#2D3748;}
+.ins-refs a{color:#0B1F3A;text-decoration:underline;text-decoration-color:rgba(201,168,76,0.6);word-break:break-word;}
+.ins-refs .ins-access{
+  font-family:'Barlow Condensed',sans-serif;font-size:9.5px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:#6B7A8D;margin-left:6px;
+}
+.ins-method{
+  margin:40px 0 0;padding:18px 20px;background:#F8F5EE;
+  border:1px solid #E4E7EC;border-left:2px solid #6B7A8D;border-radius:4px;
+  font-family:'Barlow',sans-serif;font-size:12.5px;line-height:1.65;color:#4A5768;
+}
+.ins-method strong{color:#0B1F3A;font-weight:600;}
+@media(max-width:600px){
+  .ins-radar td:first-child{min-width:130px;}
+  .ins-radar{min-width:480px;}
+}
+</style>
+<!-- ===== SEO / social / structured data ===== -->
+<link rel="canonical" href="https://www.alpha-technical-centre.com/{{FILENAME}}">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Alpha Technical Centre">
+<meta property="og:title" content="{{TITLE}} — Alpha Technical Centre Insights">
+<meta property="og:description" content="{{DESC}}">
+<meta property="og:url" content="https://www.alpha-technical-centre.com/{{FILENAME}}">
+<meta property="og:image" content="https://www.alpha-technical-centre.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="{{ISO_DATE}}">
+<meta property="article:section" content="Insights">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{TITLE}} — Alpha Technical Centre Insights">
+<meta name="twitter:description" content="{{DESC}}">
+<meta name="twitter:image" content="https://www.alpha-technical-centre.com/og-image.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"{{TITLE_PLAIN}}","description":"{{DESC}}","image":"https://www.alpha-technical-centre.com/og-image.png","datePublished":"{{ISO_DATE}}","dateModified":"{{ISO_DATE}}","author":{"@type":"Organization","name":"Alpha Technical Centre","url":"https://www.alpha-technical-centre.com/"},"publisher":{"@type":"Organization","name":"Alpha Technical Centre","logo":{"@type":"ImageObject","url":"https://www.alpha-technical-centre.com/favicon.svg"}},"mainEntityOfPage":"https://www.alpha-technical-centre.com/{{FILENAME}}"}
+</script>
+<!-- ===== /SEO ===== -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NKCRSSV2RQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NKCRSSV2RQ');
+</script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre</span>
+        <span class="nav-wordmark-parent">An Alpha Energy company</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
+      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
+      <div class="nav-dropdown">
+        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
+        <div class="nav-dropdown-menu">
+          <a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
+          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
+        </div>
+      </div>
+      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
+      <a href="technical-due-diligence.html" data-en="Due Diligence" data-es="Diligencia Debida">Due Diligence</a>
+      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
+      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
+      <a href="insights.html" class="active" data-en="Insights" data-es="Análisis">Insights</a>
+      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
+      <div class="nav-lang">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<header class="ins-hero">
+  <div class="wrap" style="position:relative;z-index:2;">
+    <div class="ins-meta">
+      <span class="ins-tag">{{TAG}}</span>
+      <span class="ins-date">{{DATE_LABEL}} · Alpha Technical Centre</span>
+    </div>
+    <h1 class="ins-title">{{HERO_TITLE}}</h1>
+    <p class="ins-standfirst">{{STANDFIRST}}</p>
+    <div class="ins-byline">
+      <div class="ins-byline-mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ins-byline-author">Alpha Technical Centre Editorial</div>
+        <div class="ins-byline-org">Houston, Texas · alpha-technical-centre.com</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="ins-body">
+
+{{BODY}}
+
+  <div class="ins-cta">
+    <h3>{{CTA_TITLE}}</h3>
+    <p>{{CTA_TEXT}}</p>
+    <a href="{{CTA_HREF}}" class="ins-cta-btn">{{CTA_LABEL}}</a>
+  </div>
+
+  <div class="ins-footer-nav">
+    <a href="insights.html">← All Insights</a>
+    <a href="{{PREV_HREF}}">{{PREV_LABEL}} →</a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-grad"></div>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-wordmark">
+          <span class="nav-wordmark-main">Alpha</span>
+          <span class="nav-wordmark-sub">Technical Centre</span>
+        </span>
+        <p class="footer-tagline">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
+      </div>
+      <div class="footer-col"><h4>Capabilities</h4>
+        <ul>
+          <li><a href="technical-due-diligence.html">Technical Due Diligence</a></li>
+          <li><a href="oil-gas-modelling.html">Oil &amp; Gas Modelling</a></li>
+          <li><a href="financial-modelling.html">Financial Modelling</a></li>
+          <li><a href="plan-your-job.html">Plan Your Job</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About</a></li>
+          <li><a href="team.html">Team</a></li>
+          <li><a href="case-studies.html">Case Studies</a></li>
+          <li><a href="insights.html">Insights</a></li>
+        </ul>
+      </div>
+      <div class="footer-col"><h4>Connect</h4>
+        <ul>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="mailto:info@alpha-technical-centre.com">info@alpha-technical-centre.com</a></li>
+          <li><a href="https://alphaenergylatinamerica.com">Alpha Energy ↗</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Alpha Technical Centre · Houston, Texas · A wholly-owned Alpha Energy company</p>
+      <span class="footer-conf">Strictly Confidential</span>
+    </div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
