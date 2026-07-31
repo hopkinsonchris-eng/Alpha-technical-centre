@@ -1562,7 +1562,7 @@ function vContractTerms(M){
     psc:[['State royalty',fmtPct(cp.royalty),'% of gross revenue'],['Cost rec. ceiling',fmtPct(cp.costRecCeil),'% of gross that may be recovered'],['Contractor profit oil',fmtPct(cp.profitOilContractor),'of profit oil post cost recovery'],['State profit oil',(1-cp.profitOilContractor)*100+'%','of profit oil'],['Contractor income tax',fmtPct(cp.incomeTax),'on contractor profit oil'],['Signature bonus',fmt$(cp.signBonus,0)+'M','paid at Year 0']],
     rt:[['Royalty',fmtPct(cp.royalty),'% of gross (before tax)'],['Income / corp. tax',fmtPct(cp.incomeTax),'on net profit (post-royalty, post-OPEX/CAPEX)'],['Effective govt take',(M.totalGross>0?M.totalGovt/M.totalGross*100:0).toFixed(0)+'%','of 20yr gross revenue'],['Signature bonus',fmt$(cp.signBonus,0)+'M','at Year 0']],
     cpp:[['NOC royalty',fmtPct(cp.royalty),'on net production above baseline'],['Contractor entitlement',fmtPct(cp.profitOilContractor),'of net revenue after royalty'],['Infra as % of CAPEX',fmtPct(cp.infraOffset),'CAPEX delivered as non-cash infra']],
-    svc:[['Service fee',fmt$(cp.svcFee,0)+'/BOE','flat fee per barrel — no price exposure']],
+    svc:[['Service fee',`${fmt$(cp.svcFee,0)}/BOE`,'flat fee per barrel — no price exposure']],
     jv:[['Royalty',fmtPct(cp.royalty),'on gross production'],['JV equity share',fmtPct(cp.jvEquity),'contractor working interest'],['Income tax',fmtPct(cp.incomeTax),'on JV net profit'],['Signature bonus',fmt$(cp.signBonus,0)+'M','at Year 0']]
   }[ct]||[];
   let h='<div class="ae-covgrid" style="margin-top:8px;">';

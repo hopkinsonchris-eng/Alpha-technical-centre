@@ -7342,10 +7342,10 @@ function renderNomKPIs(){
   const kpis=[
     {label:'Today — Planned', value:todayRow?fmt2(todayRow.planned):'—',     unit:u, color:'--oil'},
     {label:'Today — Actual',  value:todayRow?.actual!=null?fmt2(todayRow.actual):'—', unit:u, color:'--liquid'},
-    {label:'Month Planned',   value:fmt2(sum(monthRows,'planned')),           unit:u+'/mo', color:'--oil'},
-    {label:'Month Actual',    value:fmt2(sum(monthRows.filter(r=>r.actual!=null),'actual')),unit:u+'/mo',color:'--liquid'},
-    {label:'Year Planned',    value:fmt2(sum(yearRows,'planned')/1000,1)+'k', unit:u+'/yr', color:'--oil'},
-    {label:'Year Actual',     value:fmt2(sum(yearRows.filter(r=>r.actual!=null),'actual')/1000,1)+'k',unit:u+'/yr',color:'--liquid'},
+    {label:'Month Planned',   value:fmt2(sum(monthRows,'planned')),           unit:`${u}/mo`, color:'--oil'},
+    {label:'Month Actual',    value:fmt2(sum(monthRows.filter(r=>r.actual!=null),'actual')),unit:`${u}/mo`,color:'--liquid'},
+    {label:'Year Planned',    value:fmt2(sum(yearRows,'planned')/1000,1)+'k', unit:`${u}/yr`, color:'--oil'},
+    {label:'Year Actual',     value:fmt2(sum(yearRows.filter(r=>r.actual!=null),'actual')/1000,1)+'k',unit:`${u}/yr`,color:'--liquid'},
   ];
   document.getElementById('nomKpiRow').innerHTML=kpis.map(k=>`
     <div class="kpi-card" style="--kpi-color:var(${k.color})">
@@ -7805,9 +7805,9 @@ function renderOvKPIs(){
     prodTiles=[
       {label:'Today Gas — Actual', value:fmtG(todayActGas,1), unit:gasU, color:'--gas',
        diff:'Dry gas', diffNeg:false, sub:'Field gas rate'},
-      {label:'Month Gas — Actual', value:fmtG(monthActGas,0), unit:gasU+'/mo', color:'--gas',
+      {label:'Month Gas — Actual', value:fmtG(monthActGas,0), unit:`${gasU}/mo`, color:'--gas',
        diff:'Cumulative', diffNeg:false, sub:'This month'},
-      {label:'Year Gas — Actual', value:fmtGk(yearActGas)+'k', unit:gasU+'/yr', color:'--gas',
+      {label:'Year Gas — Actual', value:fmtGk(yearActGas)+'k', unit:`${gasU}/yr`, color:'--gas',
        diff:'Cumulative', diffNeg:false, sub:'This year'},
     ];
   } else if(fluidT==='gas_condensate'){
@@ -7817,7 +7817,7 @@ function renderOvKPIs(){
       {label:'Today Condensate',   value:fmtD(todayActOil), unit:oilU, color:'--oil',
        diff:diffStr(todayActOil,todayPlanOil), diffNeg:todayActOil<todayPlanOil,
        sub:`Plan: ${fmtD(todayPlanOil)} ${oilU}`},
-      {label:'Year Gas — Actual',  value:fmtGk(yearActGas)+'k', unit:gasU+'/yr', color:'--gas',
+      {label:'Year Gas — Actual',  value:fmtGk(yearActGas)+'k', unit:`${gasU}/yr`, color:'--gas',
        diff:`Cond yr: ${+(cvt(yearActOil,'oil')/1000).toFixed(0)}k ${oilU}`, diffNeg:false, sub:'Cumulative year'},
     ];
   } else {
@@ -7825,10 +7825,10 @@ function renderOvKPIs(){
       {label:'Today Oil — Actual',   value:fmtD(todayActOil),  unit:oilU,  color:'--oil',
        diff:diffStr(todayActOil,todayPlanOil), diffNeg:todayActOil<todayPlanOil,
        sub:`Plan: ${fmtD(todayPlanOil)} ${oilU}`},
-      {label:'Month Oil — Actual',   value:fmtD(monthActOil,0)+'k', unit:oilU+'/mo', color:'--oil',
+      {label:'Month Oil — Actual',   value:fmtD(monthActOil,0)+'k', unit:`${oilU}/mo`, color:'--oil',
        diff:diffStr(monthActOil,monthPlanOil), diffNeg:monthActOil<monthPlanOil,
        sub:`Plan: ${fmtD(monthPlanOil,0)}k ${oilU}`},
-      {label:'Year Oil — Actual',    value:+(cvt(yearActOil,'oil')/1000).toFixed(0)+'k', unit:oilU+'/yr', color:'--oil',
+      {label:'Year Oil — Actual',    value:+(cvt(yearActOil,'oil')/1000).toFixed(0)+'k', unit:`${oilU}/yr`, color:'--oil',
        diff:diffStr(yearActOil,yearPlanOil), diffNeg:yearActOil<yearPlanOil,
        sub:`Plan: ${+(cvt(yearPlanOil,'oil')/1000).toFixed(0)}k ${oilU}`},
     ];
@@ -7847,11 +7847,11 @@ function renderOvKPIs(){
      diffNeg:nomDayAct!=null&&nomDayAct<nomDayPlan,
      sub:`Actual: ${nomDayAct!=null?nomCvt(nomDayAct).toLocaleString():'—'} ${nomUnit()}`},
     // Nomination monthly
-    {label:'Month Nomination',     value:nomCvt(nomMoPlan).toLocaleString(), unit:nomUnit()+'/mo', color:'--gas',
+    {label:'Month Nomination',     value:nomCvt(nomMoPlan).toLocaleString(), unit:`${nomUnit()}/mo`, color:'--gas',
      diff:`Act: ${nomCvt(nomMoAct).toLocaleString()} — ${nomMoPlan>0?(nomMoAct/nomMoPlan*100).toFixed(1):'—'}%`,
      diffNeg:nomMoAct<nomMoPlan*0.95, sub:'Cumulative month'},
     // Nomination annual
-    {label:'Year Nomination',      value:(nomCvt(nomYrPlan)/1000).toFixed(0)+'k', unit:nomUnit()+'/yr', color:'--gas',
+    {label:'Year Nomination',      value:(nomCvt(nomYrPlan)/1000).toFixed(0)+'k', unit:`${nomUnit()}/yr`, color:'--gas',
      diff:`Act: ${(nomCvt(nomYrAct)/1000).toFixed(0)}k — ${nomYrPlan>0?(nomYrAct/nomYrPlan*100).toFixed(1):'—'}%`,
      diffNeg:nomYrAct<nomYrPlan*0.95, sub:'Cumulative year'},
     // Well stock
@@ -8462,7 +8462,7 @@ function renderInjKPIs(scope){
   const kpiData = [
     {label:'Daily Injection',   value:dailyDisp.toLocaleString(),  unit:rateUnit,         color:'#3b9eff'},
     {label:'30-Day Injection',  value:monthlyDisp,                 unit:volUnit,          color:'#22d3a4'},
-    {label:'Annual Injection',  value:annualDisp,                  unit:volUnit+'/yr',    color:'#c084fc'},
+    {label:'Annual Injection',  value:annualDisp,                  unit:`${volUnit}/yr`,    color:'#c084fc'},
     {label:'Cum. Injection',    value:cumDisp,                     unit:volUnit+' total', color:'#fb923c'},
     {label:'VRR (30d avg)',     value:vrrDisplay,                  unit:'inj/prod res',   color:vrr30!=null&&vrr30>=1?'#22c55e':vrr30!=null&&vrr30>=0.8?'#fb923c':'#ef4444'},
     {label:'Avg Inj BHP (30d)',value:bhpDisp.toLocaleString(),     unit:presUnit,         color:'#e8a020'},
@@ -11491,7 +11491,7 @@ function _nodalDrawSensChart(w){
   const whpD=k=>isMet?(k||0).toFixed(0):((k||0)/0.0689476).toFixed(0);
   const gorD=k=>isMet?(k||0).toFixed(0):((k||0)*5.615).toFixed(0);
   info.sel.slice(0,8).forEach((cv,i)=>{
-    ds.push({points:cv.points, label:'W'+whpD(cv.whp_bar)+'/G'+gorD(cv.gor_m3m3)+'/'+((cv.wc_frac||0)*100).toFixed(0)+'%', color:COLS[i%COLS.length]});
+    ds.push({points:cv.points, label:`W${whpD(cv.whp_bar)}/G${gorD(cv.gor_m3m3)}/${((cv.wc_frac||0)*100).toFixed(0)}%`, color:COLS[i%COLS.length]});
   });
   nodalDrawIprVlpChart(ds, w.ipr, info.sel[0]||null);
   _nodalUpdateLegend(ds);
