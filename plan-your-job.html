@@ -747,7 +747,7 @@ function computeScaled(item,scaleIdx){
   const misc=Math.round(item.base.misc*(0.6+0.4*mult)*_MISC_MULT);
   const subtotal=labour+software+data+misc;
   const total=Math.round(subtotal*_MARGIN);
-  return {weeks,resources,labour,software,data,misc,total,scale};
+  return {weeks,resources,labour,software,data,misc,subtotal,total,scale};
 }
 function addonCost(item,name){const a=item.addons.find(x=>x.name===name);if(!a)return 0;if(a.fee)return a.fee;return Math.round(blendedWeekly(a.resources)*a.weeks);}
 function formatUSD(n){if(n>=1000000)return '$'+(n/1000000).toFixed(2)+'M';if(n>=1000)return '$'+Math.round(n/1000)+'k';return '$'+Math.round(n).toLocaleString();}
@@ -789,7 +789,11 @@ function render(){
   const calc=computeScaled(item,state.scaleIdx);
   const peoplePeak=calc.resources.reduce((s,r)=>s+r.count,0);
   const addonTotal=[...state.addons].reduce((s,n)=>s+addonCost(item,n),0);
-  const grand=calc.total+addonTotal;
+  const preTotal=calc.subtotal+addonTotal;
+  const grand=Math.round(preTotal*_MARGIN);
+  const marginAdj=grand-preTotal;
+  const marginPct=Math.round(Math.abs(_MARGIN-1)*100);
+  const marginLabel=marginAdj<0?('Discount ('+marginPct+'%)'):('Contractor margin ('+marginPct+'%)');
   const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   const bcL1=state.l1.replace(/^\d+\.\s*/,'').split(' ').slice(0,3).join(' ');
 
@@ -848,7 +852,7 @@ function render(){
   +'<div class="sow-section"><div class="sow-section-title">'+ICON.deliver+' Optional Add-Ons<span class="section-hint">Select to extend scope</span></div><div class="addon-list">'+addonHtml+'</div></div>'
   // COST
   +'<div class="sow-section"><div class="sow-section-title">'+ICON.cost+' Indicative Cost Estimate</div>'
-  +'<div class="cost-grid"><div class="cost-card"><div class="cc-label">Base Package</div><div class="cc-value">'+formatUSD(calc.total)+'</div><div class="cc-sub">'+calc.scale.tier+'</div></div><div class="cost-card"><div class="cc-label">Add-Ons</div><div class="cc-value">'+formatUSD(addonTotal)+'</div><div class="cc-sub">'+state.addons.size+' selected</div></div><div class="cost-card"><div class="cc-label">Total</div><div class="cc-value">'+formatUSD(grand)+'</div><div class="cc-sub">ex. VAT</div></div></div>'
+  +'<div class="cost-grid"><div class="cost-card"><div class="cc-label">Base Package</div><div class="cc-value">'+formatUSD(calc.subtotal)+'</div><div class="cc-sub">'+calc.scale.tier+'</div></div><div class="cost-card"><div class="cc-label">Add-Ons</div><div class="cc-value">'+formatUSD(addonTotal)+'</div><div class="cc-sub">'+state.addons.size+' selected</div></div><div class="cost-card"><div class="cc-label">Total</div><div class="cc-value">'+formatUSD(grand)+'</div><div class="cc-sub">'+(marginAdj!==0?('incl. '+marginPct+'% '+(marginAdj<0?'discount':'margin')+' · '):'')+'ex. VAT</div></div></div>'
   +'<div class="cost-breakdown">'
   +'<div class="cost-row subhead"><span>Base Package \u2014 '+calc.scale.tier+'</span><span></span></div>'
   +'<div class="cost-row"><span class="cost-row-label">Professional fees (labour)</span><span class="cost-row-value">'+formatUSD(calc.labour)+'</span></div>'
@@ -856,6 +860,8 @@ function render(){
   +'<div class="cost-row"><span class="cost-row-label">Data acquisition / third-party</span><span class="cost-row-value">'+formatUSD(calc.data)+'</span></div>'
   +'<div class="cost-row"><span class="cost-row-label">Travel, subsistence & miscellaneous</span><span class="cost-row-value">'+formatUSD(calc.misc)+'</span></div>'
   +(addonRows?('<div class="cost-row subhead"><span>Selected Add-Ons</span><span></span></div>'+addonRows):'')
+  +(marginAdj!==0?('<div class="cost-row" style="border-top:1px solid rgba(11,31,58,0.15);"><span class="cost-row-label" style="font-weight:600;">Subtotal</span><span class="cost-row-value">'+formatUSD(preTotal)+'</span></div>'
+  +'<div class="cost-row"><span class="cost-row-label" style="font-weight:600;">'+marginLabel+'</span><span class="cost-row-value">'+(marginAdj<0?'−':'+')+formatUSD(Math.abs(marginAdj))+'</span></div>'):'')
   +'<div class="cost-row total-row"><span class="cost-row-label">Total Estimate (ex. VAT)</span><span class="cost-row-value">'+formatUSD(grand)+'</span></div>'
   +'</div>'
   +'<p class="cost-note">Indicative estimate only. Final scope, duration, and cost depend on data availability, field complexity, and project-specific requirements. Estimates reflect Q2 2026 industry rate benchmarks. A detailed proposal and AFE will be issued prior to contract execution.</p>'
@@ -872,15 +878,19 @@ function copySOW(ev){
   if(!state.scope)return;
   const item=state.scope,partner=partnerInfo(item.partner),calc=computeScaled(item,state.scaleIdx);
   const addonTotal=[...state.addons].reduce((s,n)=>s+addonCost(item,n),0);
-  const grand=calc.total+addonTotal;
+  const preTotal=calc.subtotal+addonTotal;
+  const grand=Math.round(preTotal*_MARGIN);
+  const marginAdj=grand-preTotal;
+  const marginPct=Math.round(Math.abs(_MARGIN-1)*100);
   let t='ALPHA TECHNICAL CENTRE \u2014 SCOPE OF WORK\n'+'='.repeat(60)+'\n\n';
   t+=item.title+'\n';
   t+='Category: '+state.l1+' > '+state.l2+'\n';
   t+='Technical Lead: '+partner.name+'\n';
   t+='Project Scale: '+calc.scale.tier+' ('+calc.scale.desc+')\n';
   t+='Duration: '+fmtWk(calc.weeks)+' weeks\n';
-  t+='Base Package: USD '+calc.total.toLocaleString()+'\n';
+  t+='Base Package: USD '+calc.subtotal.toLocaleString()+'\n';
   if(state.addons.size){t+='Add-Ons: USD '+addonTotal.toLocaleString()+'\n';}
+  if(marginAdj!==0){t+='Subtotal: USD '+preTotal.toLocaleString()+'\n'+(marginAdj<0?('Discount ('+marginPct+'%): −USD '+Math.abs(marginAdj).toLocaleString()):('Contractor margin ('+marginPct+'%): +USD '+marginAdj.toLocaleString()))+'\n';}
   t+='TOTAL ESTIMATE: USD '+grand.toLocaleString()+'\n\n';
   t+='DESCRIPTION\n'+item.description+'\n\n';
   t+='BASE SCOPE OF WORK\n'+item.scope.map((s,i)=>(i+1)+'. '+s).join('\n')+'\n\n';
