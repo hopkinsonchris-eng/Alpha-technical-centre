@@ -5,6 +5,9 @@ services:
     staticPublishPath: .
     buildCommand: ""
     routes:
+      - type: redirect
+        source: /BOE
+        destination: /financial-modelling.html
       - type: rewrite
         source: /
         destination: /index.html

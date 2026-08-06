@@ -1008,8 +1008,8 @@ function vHump(){
   const refLine=(v,lbl,col)=>{const yy=fr.lin(v,0,top);
     b+=`<line x1="${fr.padL}" x2="${fr.w-fr.padR}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-dasharray="5 4" stroke-width="1.5"/>`+
        `<text x="${fr.w-fr.padR}" y="${yy-5}" text-anchor="end" font-size="11" fill="${col}">${lbl}</text>`;};
-  refLine(ll.opex,'Full field rate $'+ll.opex.toFixed(2)+'/bbl','#0B1F3A');
-  refLine(GOVT_OPEX,'Govt-baseline maintenance $'+GOVT_OPEX.toFixed(2)+'/bbl','#8C6E2F');
+  refLine(ll.opex,`Full field rate $${ll.opex.toFixed(2)}/bbl`,'#0B1F3A');
+  refLine(GOVT_OPEX,`Govt-baseline maintenance $${GOVT_OPEX.toFixed(2)}/bbl`,'#8C6E2F');
   b+=`<text x="${fr.padL+4}" y="${fr.padT+2}" font-size="11" fill="#6B7A8D">effective blended OPEX — govt barrels at the maintenance rate, incremental at the full field rate</text>`;
   $('ch-hump').innerHTML=SVG(fr,b,'Lagunillas effective OPEX rate by year under the two-tier policy');
 }
