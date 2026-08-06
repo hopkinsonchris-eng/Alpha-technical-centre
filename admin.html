@@ -285,7 +285,7 @@ body{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--white);backgrou
       </div>
       <table class="disc-table">
         <thead>
-          <tr><th>Partner</th><th>Role</th><th>Initials</th></tr>
+          <tr><th>Partner</th><th>Role</th><th>Initials</th><th>Charged At</th></tr>
         </thead>
         <tbody id="partner-tbody">
           <!-- rendered by JS -->
@@ -362,10 +362,10 @@ const DEFAULTS = {
   rates: { Principal: 13500, Senior: 11000, 'Mid-level': 8000, Junior: 5500 },
   swMult: 100, miscMult: 100, dataMult: 100, margin: 0,
   partners: [
-    { code: 'RE',    name: 'Chris Hopkinson',   role: 'Reservoir Engineer / Lead' },
-    { code: 'GEO',   name: 'Pavel Markman',      role: 'Geoscience Lead' },
-    { code: 'INFRA', name: 'Dmitry Sazonenko',   role: 'Infrastructure / Facilities' },
-    { code: 'COM',   name: 'Anton Agafonov',     role: 'Commercial / Finance' },
+    { code: 'MP',    name: 'Chris Hopkinson',   role: 'Managing Partner',     level: 'Principal' },
+    { code: 'RE',    name: 'Anton Agafonov',    role: 'Reservoir Engineer',   level: 'Senior' },
+    { code: 'INFRA', name: 'Pavel Markman',     role: 'Facilities / Wells',   level: 'Senior' },
+    { code: 'GEO',   name: 'Dmitry Sazonenko',  role: 'Geoscience / Geology', level: 'Senior' },
   ]
 };
 
@@ -410,7 +410,9 @@ function loadValues() {
   document.getElementById('misc-mult').value   = cfg.miscMult ?? DEFAULTS.miscMult;
   document.getElementById('data-mult').value   = cfg.dataMult ?? DEFAULTS.dataMult;
   document.getElementById('margin').value      = cfg.margin   ?? DEFAULTS.margin;
-  renderPartners(cfg.partners || DEFAULTS.partners);
+  let partners = cfg.partners || DEFAULTS.partners;
+  if (!partners.length || !partners.every(p => p.level) || partners.some(p => p.code === 'COM')) partners = DEFAULTS.partners;
+  renderPartners(partners);
   updatePreview();
 }
 function saveAll() {
@@ -419,7 +421,8 @@ function saveAll() {
     partners.push({
       code: row.dataset.code,
       name: row.querySelector('.p-name').value,
-      role: row.querySelector('.p-role').textContent
+      role: row.querySelector('.p-role').textContent,
+      level: row.dataset.level
     });
   });
   const cfg = {
@@ -474,13 +477,18 @@ function updatePreview() {
 // ══ PARTNER TABLE ══
 function renderPartners(partners) {
   const tbody = document.getElementById('partner-tbody');
-  tbody.innerHTML = partners.map(p => `
-    <tr class="partner-row" data-code="${p.code}">
+  tbody.innerHTML = partners.map(p => {
+    const level = p.level || 'Senior';
+    const rateInput = document.getElementById(level === 'Principal' ? 'r-principal' : 'r-senior');
+    const rate = rateInput && rateInput.value ? '$' + Number(rateInput.value).toLocaleString() + '/wk' : '';
+    return `
+    <tr class="partner-row" data-code="${p.code}" data-level="${level}">
       <td><span class="level-badge badge-senior" style="font-size:11px;">${p.code}</span></td>
       <td><span class="disc-note p-role">${p.role}</span></td>
       <td><input class="disc-input p-name" value="${p.name}" style="width:180px;text-align:left;"></td>
+      <td><span class="level-badge ${level === 'Principal' ? 'badge-principal' : 'badge-senior'}">${level}</span> <span class="disc-note">${rate}</span></td>
     </tr>
-  `).join('');
+  `;}).join('');
 }
 
 // ══ INIT ══
