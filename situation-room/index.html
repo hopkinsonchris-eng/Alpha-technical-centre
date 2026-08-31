@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Situation Room — Alpha Technical Centre</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="gate" id="gate">
+    <form class="gate-card" id="gate-form">
+      <div class="mark" style="margin:0 auto;">A</div>
+      <h1>Situation Room</h1>
+      <p>Alpha Technical Centre · restricted workspace</p>
+      <input id="gate-pass" type="password" placeholder="Access code" autocomplete="current-password" />
+      <button type="submit">ENTER</button>
+      <div class="gate-err" id="gate-err"></div>
+    </form>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">A</div>
+      <div class="brand-text">
+        <strong>ALPHA TECHNICAL CENTRE</strong>
+        <span>An Alpha Energy company</span>
+      </div>
+    </div>
+    <div class="title-block">
+      <h1>Situation Room</h1>
+      <div class="sub"><span class="live-dot"></span>Energy operations · public signals · internal use</div>
+    </div>
+    <div class="clocks">
+      <div>Houston<b id="clk-hou">--:--</b></div>
+      <div>London<b id="clk-lon">--:--</b></div>
+      <div>Caracas<b id="clk-ccs">--:--</b></div>
+      <div>Kyiv<b id="clk-iev">--:--</b></div>
+    </div>
+  </header>
+
+  <div class="ticker" aria-label="Market ticker">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+
+  <main class="layout">
+    <section class="col">
+      <article class="panel">
+        <h2>Book of business <em>click to fly the map</em></h2>
+        <div class="pad" id="assets"></div>
+      </article>
+      <article class="panel">
+        <h2>Operator brief <em>this week</em></h2>
+        <div class="pad note">
+          Three energy systems are binding at once: Gulf export routes (Hormuz still impaired), Russian product supply (Ukraine strikes + export bans), and residual policy risk on Venezuelan barrels. Crude in the $80s is not “calm” — it is a market that has already rerouted, drawn stocks, and bid US supply. Differentials, freight, and whether a cargo can actually sail matter more than the print.
+          <br /><br />
+          For Alpha the read-through is conventional: Gulf Coast barrels remain strategically long the disruption; Venezuela is a brownfield screening problem, not a geological one; Ukraine PSA value is real and option-like until security allows work.
+        </div>
+      </article>
+    </section>
+
+    <section class="col">
+      <article class="panel">
+        <h2>Marks <em>delayed public futures · fallback if blocked</em></h2>
+        <div class="pad">
+          <div class="kpis">
+            <div class="kpi"><div class="lbl">WTI</div><div class="val" id="kpi-wti">—</div><div class="hint" id="kpi-wti-chg">$/bbl</div></div>
+            <div class="kpi"><div class="lbl">Brent</div><div class="val" id="kpi-brent">—</div><div class="hint">$/bbl</div></div>
+            <div class="kpi"><div class="lbl">Brent–WTI</div><div class="val" id="kpi-spread">—</div><div class="hint">$/bbl spread</div></div>
+            <div class="kpi"><div class="lbl">Henry Hub</div><div class="val" id="kpi-hh">—</div><div class="hint" id="kpi-hh-chg">$/MMBtu</div></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel map-wrap">
+        <h2>Theatre map <em>gold = book · colour = chokepoint status</em></h2>
+        <div id="map"></div>
+        <div class="map-legend">
+          <div><span style="background:#c9a227"></span>Alpha book</div>
+          <div><span style="background:#e85d5d"></span>Critical choke</div>
+          <div><span style="background:#e0a354"></span>Elevated</div>
+          <div><span style="background:#6cb6ff"></span>Watch</div>
+          <div><span style="background:#8b9bb0"></span>M4.5+ quakes (24h)</div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Maritime chokepoints <em>energy-weighted</em></h2>
+        <div class="pad" id="chokes"></div>
+      </article>
+    </section>
+
+    <section class="col">
+      <article class="panel">
+        <h2>Market board <em id="asof">—</em></h2>
+        <div class="pad" id="market-board"></div>
+      </article>
+      <article class="panel">
+        <h2>Intelligence tape <em>public wires + operator notes</em></h2>
+        <div class="pad tape" id="tape"></div>
+      </article>
+      <article class="panel">
+        <h2>Context <em>USGS M4.5+ / 24h</em></h2>
+        <div class="pad">
+          <div class="kpi"><div class="lbl">Events plotted</div><div class="val" id="kpi-eq">—</div><div class="hint">Not a risk score — infrastructure context only</div></div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>Alpha Technical Centre · Situation Room prototype · not for external circulation until cleared.</div>
+    <div>Public marks and wires only. Delayed. Not investment advice. Chokepoint status is an operator judgment, not a live AIS feed.</div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
