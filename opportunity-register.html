@@ -132,7 +132,32 @@ main{padding:18px 22px 48px;max-width:1760px;margin:0 auto}
 .ladder-bar i{display:block;height:100%;transition:width .7s cubic-bezier(.2,.7,.2,1)}
 .ladder-bar .cur{background:#5b7394}
 .ladder-bar .pln{background:#3a557b}
+.ladder-bar .atc{background:#2ECC8A}
 .ladder-bar .gp{background:repeating-linear-gradient(135deg,var(--gold) 0 8px,#b8973f 8px 16px)}
+.ceiling-note{margin:12px 0 0;font-size:12.5px;line-height:1.55;color:var(--steel);max-width:92ch}
+.ceiling-note strong{color:var(--gold);font-weight:600}
+.prov{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-radius:9px;padding:2px 8px;border:1px solid}
+.prov.measured{color:#2ECC8A;border-color:rgba(46,204,138,.45);background:rgba(46,204,138,.10)}
+.prov.mixed{color:#E8963A;border-color:rgba(232,150,58,.45);background:rgba(232,150,58,.10)}
+.prov\-analogue-only,.prov.analogue-only{color:#E0544A;border-color:rgba(224,84,74,.45);background:rgba(224,84,74,.10)}
+.bridge{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+.bridge th{text-align:left;font-family:var(--font-cond);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.bridge td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.bridge td.num{text-align:right;font-family:var(--font-mono);font-size:12.5px;white-space:nowrap}
+.bridge .cost{color:#E0544A}
+.bridge tr.total td{border-bottom:none;font-weight:600;color:var(--cream)}
+.bridge .fnote{display:block;color:var(--steel);font-size:11.5px;margin-top:2px;max-width:46ch}
+.bridge input{width:74px;background:var(--navy3);border:1px solid var(--line);color:var(--cream);border-radius:4px;padding:4px 6px;font-family:var(--font-mono);font-size:12.5px;text-align:right}
+.calcbox{grid-column:1/-1;border:1px solid var(--line);border-radius:6px;padding:14px;background:var(--navy2)}
+.calcbox h3{margin:0 0 3px;font-family:var(--font-cond);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.calcbox .sub{margin:0 0 12px;font-size:12px;color:var(--steel);line-height:1.5}
+.calcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.calcout{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.calcout div{display:flex;flex-direction:column;gap:3px}
+.calcout span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);font-family:var(--font-cond)}
+.calcout strong{font-family:var(--font-mono);font-size:15px;color:var(--cream)}
+.calcwarn{margin-top:10px;font-size:12px;color:#E8963A;line-height:1.5}
+.calcwarn p{margin:0 0 4px}
 .ladder-key{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--cream-dim)}
 .ladder-key span{display:inline-flex;align-items:center;gap:6px}
 .sw{width:11px;height:11px;border-radius:2px;display:inline-block}
@@ -422,24 +447,29 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
 <main>
   <section class="totals" aria-label="Portfolio totals">
     <div class="kpi"><span class="label">Opportunities</span><strong data-kpi="count">0</strong><small id="kCountries">0 countries</small></div>
-    <div class="kpi"><span class="label">Current production</span><strong data-kpi="current">0</strong><small>kboe/d gross</small></div>
-    <div class="kpi"><span class="label">Operator plan</span><strong data-kpi="plan">0</strong><small>kboe/d gross</small></div>
-    <div class="kpi"><span class="label">Technical potential</span><strong data-kpi="potential">0</strong><small>kboe/d gross</small></div>
-    <div class="kpi gap"><span class="label">Portfolio gap</span><strong data-kpi="gap" data-sign="+">0</strong><small>kboe/d above plan</small></div>
-    <div class="kpi warn"><span class="label">High-risk exposure</span><strong data-kpi="red">0</strong><small id="kRedShare">of portfolio gap</small></div>
+    <div class="kpi"><span class="label">Fact, today</span><strong data-kpi="fact">0</strong><small>kboe/d gross</small></div>
+    <div class="kpi"><span class="label">Operator's plan</span><strong data-kpi="plan">0</strong><small>kboe/d gross</small></div>
+    <div class="kpi gap"><span class="label">ATC's plan</span><strong data-kpi="atc">0</strong><small>kboe/d gross</small></div>
+    <div class="kpi"><span class="label">Technical potential</span><strong data-kpi="potential">0</strong><small id="kTpBand">ceiling</small></div>
+    <div class="kpi warn"><span class="label">High-risk exposure</span><strong data-kpi="red">0</strong><small id="kRedShare">kboe/d of Alpha's uplift</small></div>
   </section>
 
   <section class="ladder" aria-label="Production ladder">
     <div class="ladder-head">
       <h2>Where the <em>upside</em> sits</h2>
-      <p id="ladderText">Current production, the operator's plan, and the technical gap Alpha can close.</p>
+      <p id="ladderText">Today, the operator's plan, what Alpha will commit to, and the physics ceiling above all of it.</p>
     </div>
-    <div class="ladder-bar" role="img" id="ladderBar" aria-label="Production ladder"><i class="cur" id="lCur"></i><i class="pln" id="lPln"></i><i class="gp" id="lGap"></i></div>
+    <div class="ladder-bar" role="img" id="ladderBar" aria-label="Production ladder"><i class="cur" id="lCur"></i><i class="pln" id="lPln"></i><i class="atc" id="lAtc"></i><i class="gp" id="lGap"></i></div>
     <div class="ladder-key">
-      <span><i class="sw" style="background:#5b7394"></i>Current <b id="lkCur">0</b></span>
-      <span><i class="sw" style="background:#3a557b"></i>Plan uplift <b id="lkPln">0</b></span>
-      <span><i class="sw" style="background:var(--gold)"></i>Technical gap <b id="lkGap">0</b></span>
+      <span><i class="sw" style="background:#5b7394"></i>Fact <b id="lkCur">0</b></span>
+      <span><i class="sw" style="background:#3a557b"></i>Operator's own <b id="lkPln">0</b></span>
+      <span><i class="sw" style="background:#2ECC8A"></i>Alpha's uplift <b id="lkAtc">0</b></span>
+      <span><i class="sw" style="background:var(--gold)"></i>Stretch to ceiling <b id="lkGap">0</b></span>
     </div>
+    <p class="ceiling-note">The technical potential is a ceiling computed from Darcy deliverability with the damage removed,
+      capped by what an <em>ideal</em> Buckley&#8209;Leverett sweep can recover. Areal and vertical sweep are held at unity,
+      so <strong>no field reaches it</strong>. It is the top of the ladder, never a target. What Alpha will commit to is
+      ATC's plan, and every barrel between the two is accounted for in the deduction ledger on each opportunity.</p>
   </section>
 
   <!-- ═══ PORTFOLIO ═══ -->
@@ -456,14 +486,14 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
         </div>
       </article>
       <article class="panel">
-        <div class="panel-head"><h2>Priority opportunities</h2><span class="hint">Ranked by attractiveness</span></div>
+        <div class="panel-head"><h2>Priority opportunities</h2><span class="hint">Ranked by Alpha’s uplift</span></div>
         <div class="priority" id="priority"></div>
       </article>
     </div>
     <article class="panel" style="margin-top:12px">
-      <div class="panel-head"><h2>Attractiveness against execution risk</h2><span class="hint">Bubble size shows the technical gap. Select a bubble to open it.</span></div>
+      <div class="panel-head"><h2>Alpha’s uplift against execution risk</h2><span class="hint">Bubble size shows the technical ceiling. Select a bubble to open it.</span></div>
       <div class="matrix-wrap" id="matrixWrap">
-        <svg id="matrix" viewBox="0 0 960 400" role="img" aria-label="Attractiveness versus execution risk matrix"></svg>
+        <svg id="matrix" viewBox="0 0 960 400" role="img" aria-label="Alpha’s uplift versus execution risk matrix"></svg>
         <div class="tip" id="tip"></div>
       </div>
     </article>
@@ -529,14 +559,50 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
         <div class="field"><label for="fCountry">Country</label><input id="fCountry" name="country" required placeholder=" " maxlength="80"></div>
         <div class="field"><label for="fSource">Source</label><select id="fSource" name="source"><option>Tennor</option><option>Alpha</option><option>Government</option><option>Intermediary</option></select></div>
         <div class="field"><label for="fStage">Stage</label><select id="fStage" name="stage"></select></div>
-        <div class="field"><label for="fCurrent">Current production (kboe/d)</label><input id="fCurrent" name="current" type="number" min="0" step="0.1" required placeholder=" " inputmode="decimal"></div>
-        <div class="field"><label for="fPlan">Operator plan (kboe/d)</label><input id="fPlan" name="plan" type="number" min="0" step="0.1" required placeholder=" " inputmode="decimal"></div>
-        <div class="field"><label for="fPotential">Technical potential (kboe/d)</label><input id="fPotential" name="potential" type="number" min="0" step="0.1" required placeholder=" " inputmode="decimal"></div>
+        <div class="field"><label for="fCurrent">Fact, today (kboe/d)</label><input id="fCurrent" name="current" type="number" min="0" step="0.1" required placeholder=" " inputmode="decimal"></div>
+        <div class="field"><label for="fPlan">Operator's plan (kboe/d)</label><input id="fPlan" name="plan" type="number" min="0" step="0.1" required placeholder=" " inputmode="decimal"></div>
         <div class="field"><label for="fRisk">Execution risk</label><select id="fRisk" name="risk"><option value="green">Managed</option><option value="amber" selected>Elevated</option><option value="red">High</option></select></div>
+
+        <div class="calcbox">
+          <h3>Technical potential</h3>
+          <p class="sub">Computed, not typed. Darcy deliverability with the damage removed, capped by what an ideal
+            Buckley&#8209;Leverett sweep recovers &mdash; or, on a gas asset, by p/Z material balance down to abandonment
+            pressure. Anything you leave alone is borrowed from the play analogue and marked as such.</p>
+          <div class="calcgrid">
+            <div class="field"><label for="fPlay">Play type</label><select id="fPlay" name="play"></select></div>
+            <div class="field"><label for="fArea">Area (acres)</label><input id="fArea" name="areaAcres" type="number" min="1" step="1" placeholder=" " inputmode="decimal"></div>
+            <div class="field"><label for="fStock">Well stock</label><input id="fStock" name="producers" type="number" min="1" step="1" placeholder=" " inputmode="numeric"></div>
+            <div class="field"><label for="fActive">Active producers</label><input id="fActive" name="activeProducers" type="number" min="0" step="1" placeholder=" " inputmode="numeric"></div>
+            <div class="field"><label for="fPres">Reservoir pressure (psi)</label><input id="fPres" name="pres" type="number" min="1" step="10" placeholder=" " inputmode="decimal"></div>
+            <div class="field"><label for="fSkin">Skin, today</label><input id="fSkin" name="skin" type="number" step="0.1" placeholder=" " inputmode="decimal"></div>
+            <div class="field"><label for="fPlateau">Plateau (years)</label><input id="fPlateau" name="plateauYears" type="number" min="0.5" step="0.5" placeholder=" " inputmode="decimal"></div>
+          </div>
+          <div class="calcout" aria-live="polite">
+            <div><span>Low case</span><strong id="cLow">&ndash;</strong></div>
+            <div><span>Mid case</span><strong id="cMid">&ndash;</strong></div>
+            <div><span>High case</span><strong id="cHigh">&ndash;</strong></div>
+            <div><span>Limited by</span><strong id="cBound">&ndash;</strong></div>
+            <div><span>Model vs today</span><strong id="cCalib">&ndash;</strong></div>
+            <div><span>Mobility ratio</span><strong id="cM">&ndash;</strong></div>
+            <div><span>Inputs</span><strong id="cProv">&ndash;</strong></div>
+          </div>
+          <div class="calcwarn" id="cWarn"></div>
+        </div>
+
+        <div class="calcbox">
+          <h3>From the ceiling to ATC's plan</h3>
+          <p class="sub">Every barrel between the technical ceiling and what Alpha will commit to has to be accounted for
+            on one of these lines. A factor left at 1.00 is a deduction someone decided not to take, and it shows.</p>
+          <table class="bridge" id="bridgeTable"><tbody></tbody></table>
+          <div class="calcgrid" style="margin-top:12px">
+            <div class="field"><label for="fSigned">Signed off by</label><input id="fSigned" name="signedBy" placeholder="Unsigned" maxlength="80"></div>
+          </div>
+        </div>
+
         <div class="sliders" id="sliders"></div>
         <div class="preview" aria-live="polite">
-          <div><span>Technical gap</span><strong id="pGap">+0</strong></div>
-          <div><span>Attractiveness</span><strong id="pAttr">–</strong></div>
+          <div><span>Alpha's uplift</span><strong id="pGap">+0</strong></div>
+          <div><span>ATC's plan</span><strong id="pAttr">–</strong></div>
           <div><span>Execution risk score</span><strong id="pRisk">–</strong></div>
         </div>
         <div class="field full"><label for="fThesis">Investment thesis</label><textarea id="fThesis" name="thesis" required placeholder=" " maxlength="1200"></textarea></div>
@@ -555,10 +621,19 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
 </dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<!-- The calculators live in their own modules so they can be unit tested under
+     node (npm test). They hand themselves to the page here. Module scripts are
+     deferred, so this runs before DOMContentLoaded and the page finds them. -->
+<script type="module">
+  import * as Potential from './js/potential.js';
+  import * as Analogues from './js/analogues.js';
+  window.ATCP = Object.assign({}, Potential, Analogues);
+  window.dispatchEvent(new Event('atc-calc-ready'));
+</script>
 <script>
 (function(){
 'use strict';
-var DEMO = [{"id":"ven-barinas","name":"Barinas–Apure Cluster","country":"Venezuela","source":"Tennor","stage":"Technical review","current":42,"plan":58,"potential":118,"risk":"red","riskScore":78,"attractiveness":92,"lat":8.1,"lon":-69.3,"thesis":"Material producing cluster with existing wells and facilities. The principal value lies in restoring inactive capacity and applying disciplined reservoir management.","next":"Confirm government access and obtain data pack","owner":"Lars / Chris","updated":"2026-09-22T12:00:00Z","risks":{"Geopolitical":88,"Sanctions":82,"Security":61,"Technical":38,"Commercial":66},"events":[{"category":"Geopolitical","severity":"critical","title":"National petroleum policy intervention risk elevated","date":"2026-09-22","distance":"Country-level","source":"World Monitor simulation","detail":"Government decision-making and licence allocation remain highly centralised. Direct state engagement is a critical path item."},{"category":"Sanctions","severity":"high","title":"US sanctions and licence conditions require transaction review","date":"2026-09-21","distance":"Country-level","source":"World Monitor simulation","detail":"The transaction structure, counterparties, services and payment routes require specific legal confirmation before commitment."},{"category":"Security","severity":"medium","title":"Cross-border security activity monitored west of asset area","date":"2026-09-20","distance":"185 km","source":"World Monitor simulation","detail":"No direct asset impact indicated. Monitor personnel movement and road logistics."}]},{"id":"ven-maracaibo","name":"Lake Maracaibo Redevelopment","country":"Venezuela","source":"Tennor","stage":"Qualified","current":27,"plan":39,"potential":91,"risk":"red","riskScore":81,"attractiveness":88,"lat":10.4,"lon":-71.6,"thesis":"Near-term brownfield production opportunity with extensive installed infrastructure and a large well stock. Integrity, power and sanctions require explicit workstreams.","next":"Define offshore target shortlist","owner":"Chris","updated":"2026-09-21T12:00:00Z","risks":{"Geopolitical":88,"Sanctions":85,"Security":58,"Technical":52,"Commercial":71},"events":[{"category":"Technical","severity":"high","title":"Power reliability and lake infrastructure integrity flagged","date":"2026-09-22","distance":"Asset area","source":"World Monitor simulation","detail":"Production restoration must include electrical reliability, flowline integrity and marine logistics."},{"category":"Sanctions","severity":"critical","title":"Counterparty and marine-services sanctions screening required","date":"2026-09-21","distance":"Country-level","source":"World Monitor simulation","detail":"Screen operators, service companies, vessels, beneficial owners and payment banks before data-room access."},{"category":"Security","severity":"medium","title":"Port and lake logistics disruption indicator","date":"2026-09-19","distance":"42 km","source":"World Monitor simulation","detail":"Short-duration disruption signal. No confirmed production impact; verify through local operating contacts."}]},{"id":"kaz-brownfield","name":"Western Kazakhstan Brownfield","country":"Kazakhstan","source":"Intermediary","stage":"Initial screen","current":16,"plan":22,"potential":47,"risk":"amber","riskScore":54,"attractiveness":76,"lat":47.1,"lon":51.9,"thesis":"Producing onshore asset where waterflood optimisation, artificial lift and targeted workovers may close a material performance gap.","next":"Validate ownership and sale status","owner":"Tom","updated":"2026-09-19T12:00:00Z","risks":{"Geopolitical":49,"Sanctions":42,"Security":29,"Technical":44,"Commercial":57},"events":[{"category":"Commercial","severity":"medium","title":"Beneficial ownership verification outstanding","date":"2026-09-21","distance":"Transaction-level","source":"World Monitor simulation","detail":"Confirm current legal ownership, historic restructuring interests and any sale mandate."},{"category":"Sanctions","severity":"medium","title":"Russia-linked logistics exposure screening","date":"2026-09-18","distance":"Regional","source":"World Monitor simulation","detail":"Review equipment supply, export routes, banking arrangements and any designated counterparties."}]},{"id":"gabon-redev","name":"Gabon Mature Field Package","country":"Gabon","source":"Tennor","stage":"Commercial review","current":11,"plan":17,"potential":34,"risk":"amber","riskScore":48,"attractiveness":73,"lat":-0.7,"lon":9.4,"thesis":"Producing field package with infrastructure-led upside from well restoration, debottlenecking and selective infill activity.","next":"Request production and well-level history","owner":"Christophe","updated":"2026-09-18T12:00:00Z","risks":{"Geopolitical":51,"Sanctions":18,"Security":35,"Technical":46,"Commercial":52},"events":[{"category":"Geopolitical","severity":"medium","title":"Post-transition policy continuity monitored","date":"2026-09-20","distance":"Country-level","source":"World Monitor simulation","detail":"Confirm petroleum-contract stability, fiscal treatment and decision-making authority."},{"category":"Infrastructure","severity":"medium","title":"Coastal export dependency concentration","date":"2026-09-17","distance":"68 km","source":"World Monitor simulation","detail":"Single-route exposure increases the importance of terminal uptime and storage availability."}]},{"id":"egy-onshore","name":"Egypt Onshore Gas Hub","country":"Egypt","source":"Government","stage":"Negotiation","current":31,"plan":46,"potential":68,"risk":"amber","riskScore":59,"attractiveness":81,"lat":30.5,"lon":30.2,"thesis":"Producing gas position with rapid tie-back potential and clear market access. Payment security and regional operating conditions remain key conditions.","next":"Resolve commercial terms and receivables protection","owner":"Tom / Lars","updated":"2026-09-20T12:00:00Z","risks":{"Geopolitical":67,"Sanctions":12,"Security":55,"Technical":31,"Commercial":69},"events":[{"category":"Commercial","severity":"high","title":"Receivables and payment-convertibility exposure","date":"2026-09-22","distance":"Country-level","source":"World Monitor simulation","detail":"Model payment delay and hard-currency access; require contractual protection or payment security."},{"category":"Security","severity":"medium","title":"Regional airspace and shipping volatility","date":"2026-09-21","distance":"Regional","source":"World Monitor simulation","detail":"Monitor mobilisation routes, imported equipment lead times and insurance costs."}]}];
+var DEMO = [{"id": "ven-barinas", "name": "Barinas–Apure Cluster", "country": "Venezuela", "source": "Tennor", "stage": "Technical review", "current": 42, "plan": 58, "risk": "red", "riskScore": 78, "attractiveness": 92, "lat": 8.1, "lon": -69.3, "thesis": "Material producing cluster with existing wells and facilities. The principal value lies in restoring inactive capacity and applying disciplined reservoir management.", "next": "Confirm government access and obtain data pack", "owner": "Lars / Chris", "updated": "2026-09-22T12:00:00Z", "risks": {"Geopolitical": 88, "Sanctions": 82, "Security": 61, "Technical": 38, "Commercial": 66}, "events": [{"category": "Geopolitical", "severity": "critical", "title": "National petroleum policy intervention risk elevated", "date": "2026-09-22", "distance": "Country-level", "source": "World Monitor simulation", "detail": "Government decision-making and licence allocation remain highly centralised. Direct state engagement is a critical path item."}, {"category": "Sanctions", "severity": "high", "title": "US sanctions and licence conditions require transaction review", "date": "2026-09-21", "distance": "Country-level", "source": "World Monitor simulation", "detail": "The transaction structure, counterparties, services and payment routes require specific legal confirmation before commitment."}, {"category": "Security", "severity": "medium", "title": "Cross-border security activity monitored west of asset area", "date": "2026-09-20", "distance": "185 km", "source": "World Monitor simulation", "detail": "No direct asset impact indicated. Monitor personnel movement and road logistics."}], "potentialModel": {"play": "onshore-clastic-waterflood", "measured": {"rock.areaAcres": 18000, "wells.producers": 140, "wells.activeProducers": 45, "pressure.pres": 2600}, "assumed": {"pressure.skin": 1.4}, "factors": [], "signedBy": "", "signedAt": ""}, "potentialLegacy": 118}, {"id": "ven-maracaibo", "name": "Lake Maracaibo Redevelopment", "country": "Venezuela", "source": "Tennor", "stage": "Qualified", "current": 27, "plan": 39, "risk": "red", "riskScore": 81, "attractiveness": 88, "lat": 10.4, "lon": -71.6, "thesis": "Near-term brownfield production opportunity with extensive installed infrastructure and a large well stock. Integrity, power and sanctions require explicit workstreams.", "next": "Define offshore target shortlist", "owner": "Chris", "updated": "2026-09-21T12:00:00Z", "risks": {"Geopolitical": 88, "Sanctions": 85, "Security": 58, "Technical": 52, "Commercial": 71}, "events": [{"category": "Technical", "severity": "high", "title": "Power reliability and lake infrastructure integrity flagged", "date": "2026-09-22", "distance": "Asset area", "source": "World Monitor simulation", "detail": "Production restoration must include electrical reliability, flowline integrity and marine logistics."}, {"category": "Sanctions", "severity": "critical", "title": "Counterparty and marine-services sanctions screening required", "date": "2026-09-21", "distance": "Country-level", "source": "World Monitor simulation", "detail": "Screen operators, service companies, vessels, beneficial owners and payment banks before data-room access."}, {"category": "Security", "severity": "medium", "title": "Port and lake logistics disruption indicator", "date": "2026-09-19", "distance": "42 km", "source": "World Monitor simulation", "detail": "Short-duration disruption signal. No confirmed production impact; verify through local operating contacts."}], "potentialModel": {"play": "shallow-marine-clastic-waterflood", "measured": {"rock.areaAcres": 26000, "wells.producers": 220, "wells.activeProducers": 60, "pressure.pres": 2100}, "assumed": {"pressure.skin": 15.0}, "factors": [], "signedBy": "", "signedAt": ""}, "potentialLegacy": 91}, {"id": "kaz-brownfield", "name": "Western Kazakhstan Brownfield", "country": "Kazakhstan", "source": "Intermediary", "stage": "Initial screen", "current": 16, "plan": 22, "risk": "amber", "riskScore": 54, "attractiveness": 76, "lat": 47.1, "lon": 51.9, "thesis": "Producing onshore asset where waterflood optimisation, artificial lift and targeted workovers may close a material performance gap.", "next": "Validate ownership and sale status", "owner": "Tom", "updated": "2026-09-19T12:00:00Z", "risks": {"Geopolitical": 49, "Sanctions": 42, "Security": 29, "Technical": 44, "Commercial": 57}, "events": [{"category": "Commercial", "severity": "medium", "title": "Beneficial ownership verification outstanding", "date": "2026-09-21", "distance": "Transaction-level", "source": "World Monitor simulation", "detail": "Confirm current legal ownership, historic restructuring interests and any sale mandate."}, {"category": "Sanctions", "severity": "medium", "title": "Russia-linked logistics exposure screening", "date": "2026-09-18", "distance": "Regional", "source": "World Monitor simulation", "detail": "Review equipment supply, export routes, banking arrangements and any designated counterparties."}], "potentialModel": {"play": "onshore-clastic-waterflood", "measured": {"rock.areaAcres": 7000, "wells.producers": 55, "wells.activeProducers": 24, "pressure.pres": 2900}, "assumed": {"pressure.skin": 6.1}, "factors": [], "signedBy": "", "signedAt": ""}, "potentialLegacy": 47}, {"id": "gabon-redev", "name": "Gabon Mature Field Package", "country": "Gabon", "source": "Tennor", "stage": "Commercial review", "current": 11, "plan": 17, "risk": "amber", "riskScore": 48, "attractiveness": 73, "lat": -0.7, "lon": 9.4, "thesis": "Producing field package with infrastructure-led upside from well restoration, debottlenecking and selective infill activity.", "next": "Request production and well-level history", "owner": "Christophe", "updated": "2026-09-18T12:00:00Z", "risks": {"Geopolitical": 51, "Sanctions": 18, "Security": 35, "Technical": 46, "Commercial": 52}, "events": [{"category": "Geopolitical", "severity": "medium", "title": "Post-transition policy continuity monitored", "date": "2026-09-20", "distance": "Country-level", "source": "World Monitor simulation", "detail": "Confirm petroleum-contract stability, fiscal treatment and decision-making authority."}, {"category": "Infrastructure", "severity": "medium", "title": "Coastal export dependency concentration", "date": "2026-09-17", "distance": "68 km", "source": "World Monitor simulation", "detail": "Single-route exposure increases the importance of terminal uptime and storage availability."}], "potentialModel": {"play": "offshore-clastic-waterflood", "measured": {"rock.areaAcres": 4200, "wells.producers": 22, "wells.activeProducers": 12, "pressure.pres": 3100}, "assumed": {"pressure.skin": 22.2}, "factors": [], "signedBy": "", "signedAt": ""}, "potentialLegacy": 34}, {"id": "egy-onshore", "name": "Egypt Onshore Gas Hub", "country": "Egypt", "source": "Government", "stage": "Negotiation", "current": 31, "plan": 46, "risk": "amber", "riskScore": 59, "attractiveness": 81, "lat": 30.5, "lon": 30.2, "thesis": "Producing gas position with rapid tie-back potential and clear market access. Payment security and regional operating conditions remain key conditions.", "next": "Resolve commercial terms and receivables protection", "owner": "Tom / Lars", "updated": "2026-09-20T12:00:00Z", "risks": {"Geopolitical": 67, "Sanctions": 12, "Security": 55, "Technical": 31, "Commercial": 69}, "events": [{"category": "Commercial", "severity": "high", "title": "Receivables and payment-convertibility exposure", "date": "2026-09-22", "distance": "Country-level", "source": "World Monitor simulation", "detail": "Model payment delay and hard-currency access; require contractual protection or payment security."}, {"category": "Security", "severity": "medium", "title": "Regional airspace and shipping volatility", "date": "2026-09-21", "distance": "Regional", "source": "World Monitor simulation", "detail": "Monitor mobilisation routes, imported equipment lead times and insurance costs."}], "potentialModel": {"play": "onshore-gas", "measured": {"rock.areaAcres": 21000, "wells.producers": 26, "wells.activeProducers": 11, "pressure.pres": 3900}, "assumed": {"pressure.skin": 40.1}, "factors": [], "signedBy": "", "signedAt": ""}, "potentialLegacy": 68}];
 var STAGES = ['Initial screen','Qualified','Technical review','Commercial review','Negotiation'];
 var CATS = ['Geopolitical','Sanctions','Security','Technical','Commercial'];
 var KEY = 'atc_opportunity_register_v1';
@@ -566,23 +641,66 @@ var SEV = {critical:4,high:3,medium:2,low:1};
 var RISK_DEFAULT_SCORE = {red:76,amber:55,green:28};
 
 var state = {data:[], filtered:[], mode:'local', tab:'portfolio', mapMode:'opportunity',
-  sort:{key:'attractiveness',dir:-1}, feedCat:'', openId:null, editingId:null, slidersTouched:false};
+  sort:{key:'gap',dir:-1}, feedCat:'', openId:null, editingId:null, slidersTouched:false};
 
 var $ = function(s,root){return (root||document).querySelector(s);};
 var $$ = function(s,root){return Array.prototype.slice.call((root||document).querySelectorAll(s));};
 var num = function(v){var n=Number(v);return isFinite(n)?n:0;};
 var fmt = function(n){return num(n).toLocaleString('en-GB',{maximumFractionDigits:1});};
 var esc = function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
-var gapOf = function(o){return num(o.potential)-num(o.plan);};
+/* ─── The four numbers ───────────────────────────────────────────────────
+   Fact and the operator's plan are recorded. ATC's plan and the technical
+   potential are computed: the ceiling from Darcy and Buckley-Leverett, the
+   plan from the ceiling less the named deductions. Everything downstream
+   reads these four accessors, so there is exactly one definition of each. */
+var factOf   = function(o){return num(o.current);};
+var opPlanOf = function(o){return num(o.plan);};
+var calcOf   = function(o){
+  if(o._calc!==undefined)return o._calc;
+  // Non-enumerable, so the cache can never reach JSON.stringify and end up in
+  // an export, a save, or the shared register.
+  Object.defineProperty(o,'_calc',{value:computeCalc(o),writable:true,configurable:true,enumerable:false});
+  return o._calc;
+};
+function computeCalc(o){
+  if(!window.ATCP||!o.potentialModel)return null;
+  try{
+    var pm=o.potentialModel;
+    var inp=ATCP.buildInputs(pm.play,{measured:pm.measured||{},assumed:pm.assumed||{}});
+    var band=ATCP.potentialBand(inp);
+    var factors=(pm.factors&&pm.factors.length)?pm.factors:ATCP.defaultFactors(band.mid.mobilityRatio);
+    var bridge=ATCP.applyModifyingFactors(band.mid.potentialKboed,factors);
+    return {band:band,bridge:bridge,factors:factors,inputs:inp,
+            prov:ATCP.provenanceSummary(inp.provenance),error:null};
+  }catch(e){
+    return {error:(e&&e.message)?e.message:String(e)};
+  }
+}
+var tpOf     = function(o){var c=calcOf(o);return (c&&!c.error)?c.band.mid.potentialKboed:0;};
+var atcPlanOf= function(o){var c=calcOf(o);return (c&&!c.error)?c.bridge.atcPlanKboed:0;};
+/* Alpha's uplift over the operator: the number that belongs in a proposal. */
+var gapOf    = function(o){return atcPlanOf(o)-opPlanOf(o);};
+/* Ceiling less what Alpha will commit to. Deliberately large, never a target. */
+var stretchOf= function(o){return tpOf(o)-atcPlanOf(o);};
 var riskLabel = function(r){return r==='red'?'High':r==='amber'?'Elevated':'Managed';};
 var riskColour = function(r){return r==='red'?'#E0544A':r==='amber'?'#E8963A':'#2ECC8A';};
 var clone = function(x){return JSON.parse(JSON.stringify(x));};
 var uid = function(){try{if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();}catch(e){}return Date.now().toString(36)+Math.random().toString(36).slice(2,10);};
 var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function attractivenessFor(o){
-  var plan=num(o.plan);
-  return Math.min(95,Math.round(55+Math.max(0,num(o.potential)-plan)/(plan||1)*25));
+/* A record arriving from an export or an older device may carry a typed
+   technical potential and no model behind it. Keep the old figure under
+   potentialLegacy so it is visible as a restatement, and give the record a
+   default model so the calculator has something to work from. */
+function ensurePotentialModel(o){
+  if(o.potential!=null&&o.potentialLegacy==null){o.potentialLegacy=o.potential;}
+  delete o.potential;
+  delete o.attractiveness;
+  if(!o.potentialModel||!o.potentialModel.play){
+    o.potentialModel={play:(window.ATCP?ATCP.PLAY_KEYS[0]:'onshore-clastic-waterflood'),
+      measured:{},assumed:{},factors:[],signedBy:'',signedAt:''};
+  }
+  return o;
 }
 function defaultRisks(r){
   var s=RISK_DEFAULT_SCORE[r]||55;
@@ -665,6 +783,7 @@ function applyFilters(){
   });
 }
 function render(){
+  state.data.forEach(function(o){delete o._calc;});
   applyFilters();
   syncSourceFilter();
   renderTotals(); renderLadder(); renderPriority(); renderMatrix();
@@ -690,66 +809,97 @@ function countTo(el,to){
   (function step(t){var k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);show(from+(to-from)*e);if(k<1)requestAnimationFrame(step);})(t0);
 }
 function sum(k){return state.filtered.reduce(function(a,o){return a+num(o[k]);},0);}
+function sumBy(fn){return state.filtered.reduce(function(a,o){return a+fn(o);},0);}
+/* The one place the four totals are defined. The KPI row and the ladder both
+   read this, so they cannot drift apart. */
+function totals(){
+  var fact=sumBy(factOf), plan=sumBy(opPlanOf), atc=sumBy(atcPlanOf), tp=sumBy(tpOf);
+  return {fact:fact, plan:plan, atc:atc, tp:tp,
+          operatorOwn:plan-fact, alphaUplift:atc-plan, stretch:tp-atc,
+          tpLow:sumBy(function(o){var c=calcOf(o);return (c&&!c.error)?c.band.low.potentialKboed:0;}),
+          tpHigh:sumBy(function(o){var c=calcOf(o);return (c&&!c.error)?c.band.high.potentialKboed:0;})};
+}
 function renderTotals(){
-  var f=state.filtered, g=sum('potential')-sum('plan');
+  var f=state.filtered, t=totals();
   var reds=f.filter(function(o){return o.risk==='red';});
-  var redGap=reds.reduce(function(a,o){return a+Math.max(0,gapOf(o));},0);
+  var redUplift=reds.reduce(function(a,o){return a+Math.max(0,gapOf(o));},0);
   countTo($('[data-kpi=count]'),f.length);
-  countTo($('[data-kpi=current]'),sum('current'));
-  countTo($('[data-kpi=plan]'),sum('plan'));
-  countTo($('[data-kpi=potential]'),sum('potential'));
-  countTo($('[data-kpi=gap]'),g);
-  countTo($('[data-kpi=red]'),reds.length);
+  countTo($('[data-kpi=fact]'),t.fact);
+  countTo($('[data-kpi=plan]'),t.plan);
+  countTo($('[data-kpi=atc]'),t.atc);
+  countTo($('[data-kpi=potential]'),t.tp);
+  // The number is a volume and the caption describes that volume.
+  countTo($('[data-kpi=red]'),redUplift);
   var nC=new Set(f.map(function(o){return o.country;})).size;
   $('#kCountries').textContent=nC+(nC===1?' country':' countries');
-  $('#kRedShare').textContent=g>0?Math.round(redGap/g*100)+'% of portfolio gap':'no gap in view';
+  $('#kTpBand').textContent=t.tp>0?('ceiling · '+fmt(t.tpLow)+'–'+fmt(t.tpHigh)+' range'):'ceiling';
+  $('#kRedShare').textContent=t.alphaUplift>0
+    ? 'kboe/d, '+Math.round(redUplift/t.alphaUplift*100)+'% of Alpha’s uplift, '+reds.length+(reds.length===1?' opportunity':' opportunities')
+    : 'kboe/d from '+reds.length+(reds.length===1?' high-risk opportunity':' high-risk opportunities');
 }
 function renderLadder(){
-  var cur=sum('current'),pln=sum('plan'),pot=sum('potential');
-  var top=Math.max(pot,pln,cur,1);
-  var planUp=Math.max(0,pln-cur),gap=Math.max(0,pot-Math.max(pln,cur));
-  $('#lCur').style.width=(cur/top*100)+'%';
-  $('#lPln').style.width=(planUp/top*100)+'%';
-  $('#lGap').style.width=(gap/top*100)+'%';
-  $('#lkCur').textContent=fmt(cur)+' kboe/d';
-  $('#lkPln').textContent='+'+fmt(planUp);
-  $('#lkGap').textContent='+'+fmt(gap);
-  var mult=pln>0?(pot/pln):0;
-  $('#ladderText').textContent=pln>0
-    ? 'Technical potential is '+mult.toFixed(1)+'× the operators\u2019 own plan across the '+state.filtered.length+' opportunities in view.'
-    : 'Add plan and potential figures to see the upside.';
-  $('#ladderBar').setAttribute('aria-label','Current '+fmt(cur)+', plan '+fmt(pln)+', technical potential '+fmt(pot)+' kboe/d');
+  var t=totals();
+  var top=Math.max(t.tp,t.atc,t.plan,t.fact,1);
+  var operatorOwn=Math.max(0,t.operatorOwn), alphaUplift=Math.max(0,t.alphaUplift), stretch=Math.max(0,t.stretch);
+  $('#lCur').style.width=(t.fact/top*100)+'%';
+  $('#lPln').style.width=(operatorOwn/top*100)+'%';
+  $('#lAtc').style.width=(alphaUplift/top*100)+'%';
+  $('#lGap').style.width=(stretch/top*100)+'%';
+  $('#lkCur').textContent=fmt(t.fact)+' kboe/d';
+  $('#lkPln').textContent='+'+fmt(operatorOwn);
+  $('#lkAtc').textContent='+'+fmt(alphaUplift);
+  $('#lkGap').textContent='+'+fmt(stretch);
+  $('#ladderText').textContent=t.plan>0
+    ? 'Alpha commits to '+fmt(t.atc)+' kboe/d against the operators\u2019 '+fmt(t.plan)+', an uplift of '+fmt(t.alphaUplift)
+      +'. The physics ceiling sits at '+fmt(t.tp)+' and is not a target.'
+    : 'Add today\u2019s rate and the operator\u2019s plan to see where the upside sits.';
+  $('#ladderBar').setAttribute('aria-label','Fact '+fmt(t.fact)+', operator plan '+fmt(t.plan)
+    +', ATC plan '+fmt(t.atc)+', technical ceiling '+fmt(t.tp)+' kboe/d');
+}
+/* Ranked on what Alpha adds over the operator, which is the thing being sold.
+   The old 0-100 attractiveness score was arithmetic on the gap wearing a
+   judgement's clothes, so it is gone. */
+function upliftShare(o){
+  var best=state.filtered.reduce(function(m,x){return Math.max(m,gapOf(x));},0);
+  return best>0?Math.max(0,Math.min(1,gapOf(o)/best))*100:0;
 }
 function renderPriority(){
-  var list=state.filtered.slice().sort(function(a,b){return num(b.attractiveness)-num(a.attractiveness);});
+  var list=state.filtered.slice().sort(function(a,b){return gapOf(b)-gapOf(a);});
   $('#priority').innerHTML=list.length?list.map(function(o){
+    var c=calcOf(o), bad=!c||c.error;
     return '<button type="button" class="op-card'+(o.id===state.openId?' selected':'')+'" data-open="'+esc(o.id)+'">'+
       '<div class="op-top"><div><div class="op-name">'+esc(o.name)+'</div><div class="op-sub">'+esc(o.country)+', '+esc(o.stage)+'</div></div><span class="badge '+esc(o.risk)+'">'+riskLabel(o.risk)+'</span></div>'+
-      '<div class="op-metrics"><div><span>Current</span><strong>'+fmt(o.current)+'</strong></div><div><span>Gap</span><strong class="up">+'+fmt(gapOf(o))+'</strong></div><div><span>Score</span><strong>'+num(o.attractiveness||70)+'</strong></div></div>'+
-      '<div class="meter"><i style="width:'+num(o.attractiveness||70)+'%"></i></div></button>';
+      '<div class="op-metrics"><div><span>Fact</span><strong>'+fmt(o.current)+'</strong></div>'+
+      '<div><span>Alpha uplift</span><strong class="up">'+(bad?'\u2013':'+'+fmt(gapOf(o)))+'</strong></div>'+
+      '<div><span>Ceiling</span><strong>'+(bad?'\u2013':fmt(tpOf(o)))+'</strong></div></div>'+
+      '<div class="meter"><i style="width:'+upliftShare(o).toFixed(0)+'%"></i></div></button>';
   }).join(''):'<div class="empty">Nothing matches these filters.<br><button class="btn" type="button" data-act="clear-filters">Clear filters</button></div>';
 }
 
-/* ─── Attractiveness vs risk matrix ─── */
+/* ─── Alpha's uplift against execution risk ───
+   The y axis is the uplift itself in kboe/d, not a 0-100 score derived from
+   it. Bubble area carries the technical ceiling, so a big circle low down is
+   an asset with headroom Alpha is not yet claiming. */
 function renderMatrix(){
   var W=960,H=400,L=58,R=24,T=18,B=46;
   var x=function(v){return L+(Math.max(0,Math.min(100,v))/100)*(W-L-R);};
-  var yMin=40,yMax=100;
-  var y=function(v){return T+(1-(Math.max(yMin,Math.min(yMax,v))-yMin)/(yMax-yMin))*(H-T-B);};
+  var upMax=state.filtered.reduce(function(m,o){return Math.max(m,gapOf(o));},0);
+  var yMax=Math.max(10,Math.ceil(upMax/10)*10), yMin=0;
+  var y=function(v){return T+(1-(Math.max(yMin,Math.min(yMax,v))-yMin)/(yMax-yMin||1))*(H-T-B);};
   var s='';
   for(var gx=0;gx<=100;gx+=20){s+='<line x1="'+x(gx)+'" x2="'+x(gx)+'" y1="'+T+'" y2="'+(H-B)+'" stroke="rgba(107,122,141,.14)"/>'+'<text class="ax" x="'+x(gx)+'" y="'+(H-B+16)+'" text-anchor="middle">'+gx+'</text>';}
-  for(var gy=40;gy<=100;gy+=10){s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(gy)+'" y2="'+y(gy)+'" stroke="rgba(107,122,141,.14)"/>'+'<text class="ax" x="'+(L-10)+'" y="'+(y(gy)+4)+'" text-anchor="end">'+gy+'</text>';}
+  for(var gi=0;gi<=5;gi++){var gy=yMin+(yMax-yMin)*gi/5;s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(gy)+'" y2="'+y(gy)+'" stroke="rgba(107,122,141,.14)"/>'+'<text class="ax" x="'+(L-10)+'" y="'+(y(gy)+4)+'" text-anchor="end">'+fmt(gy)+'</text>';}
   s+='<line x1="'+x(60)+'" x2="'+x(60)+'" y1="'+T+'" y2="'+(H-B)+'" stroke="rgba(201,168,76,.45)" stroke-dasharray="4 4"/>';
-  s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(75)+'" y2="'+y(75)+'" stroke="rgba(201,168,76,.45)" stroke-dasharray="4 4"/>';
+  s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(yMax/2)+'" y2="'+y(yMax/2)+'" stroke="rgba(201,168,76,.45)" stroke-dasharray="4 4"/>';
   s+='<text class="quad" x="'+(L+12)+'" y="'+(T+22)+'">Advance</text>';
   s+='<text class="quad" x="'+(W-R-12)+'" y="'+(T+22)+'" text-anchor="end">Structure and pursue</text>';
   s+='<text class="quad" x="'+(L+12)+'" y="'+(H-B-12)+'">Hold and monitor</text>';
   s+='<text class="quad" x="'+(W-R-12)+'" y="'+(H-B-12)+'" text-anchor="end">Deprioritise</text>';
   s+='<text class="ax" x="'+((L+W-R)/2)+'" y="'+(H-8)+'" text-anchor="middle">Execution risk score  (lower is better)</text>';
-  s+='<text class="ax" transform="translate(16 '+((T+H-B)/2)+') rotate(-90)" text-anchor="middle">Attractiveness</text>';
+  s+='<text class="ax" transform="translate(16 '+((T+H-B)/2)+') rotate(-90)" text-anchor="middle">Alpha\u2019s uplift over the operator  (kboe/d)</text>';
   var pts=state.filtered.slice().sort(function(a,b){return gapOf(b)-gapOf(a);});
   pts.forEach(function(o){
-    var cx=x(num(o.riskScore||50)),cy=y(num(o.attractiveness||70)),r=8+Math.sqrt(Math.max(0,gapOf(o)))*2.7;
+    var cx=x(num(o.riskScore||50)),cy=y(gapOf(o)),r=7+Math.sqrt(Math.max(0,tpOf(o)))*0.9;
     var right=cx<W-220;
     s+='<g class="bub" tabindex="0" role="button" aria-label="'+esc(o.name)+'" data-open="'+esc(o.id)+'">'+
       '<circle cx="'+cx+'" cy="'+cy+'" r="'+r.toFixed(1)+'" fill="'+riskColour(o.risk)+'" fill-opacity=".72" stroke="#F8F5EE" stroke-opacity=".85" stroke-width="1.5"/>'+
@@ -760,7 +910,9 @@ function renderMatrix(){
 }
 function showTip(evt,id){
   var o=byId(id),tip=$('#tip'); if(!o)return;
-  tip.innerHTML='<b>'+esc(o.name)+'</b><span>'+esc(o.country)+', '+esc(o.stage)+'</span><span>Attractiveness '+num(o.attractiveness)+' · Risk '+num(o.riskScore)+'</span><span>Gap +'+fmt(gapOf(o))+' kboe/d</span>';
+  tip.innerHTML='<b>'+esc(o.name)+'</b><span>'+esc(o.country)+', '+esc(o.stage)+'</span>'+
+    '<span>Alpha\u2019s uplift +'+fmt(gapOf(o))+' \u00b7 execution risk '+num(o.riskScore)+'</span>'+
+    '<span>Ceiling '+fmt(tpOf(o))+' kboe/d, unattainable by construction</span>';
   var box=$('#matrixWrap').getBoundingClientRect();
   var px=evt.clientX-box.left+14, py=evt.clientY-box.top+14;
   if(px>box.width-250)px-=270;
@@ -770,7 +922,7 @@ function showTip(evt,id){
 /* ─── Pipeline board ─── */
 function renderBoard(){
   $('#board').innerHTML=STAGES.map(function(st,i){
-    var items=state.filtered.filter(function(o){return o.stage===st;}).sort(function(a,b){return num(b.attractiveness)-num(a.attractiveness);});
+    var items=state.filtered.filter(function(o){return o.stage===st;}).sort(function(a,b){return gapOf(b)-gapOf(a);});
     var g=items.reduce(function(a,o){return a+Math.max(0,gapOf(o));},0);
     return '<section class="col" data-stage="'+esc(st)+'"><div class="col-head"><span class="step">Stage '+(i+1)+' of '+STAGES.length+'</span><h3>'+esc(st)+'</h3><p>'+items.length+(items.length===1?' opportunity':' opportunities')+' · +'+fmt(g)+' kboe/d gap</p></div><div class="col-body">'+
       (items.length?items.map(function(o){
@@ -827,8 +979,8 @@ function eventCard(e,o){
 /* ─── Register table ─── */
 var COLS=[
   {k:'name',t:'Opportunity'},{k:'country',t:'Country'},{k:'source',t:'Source'},{k:'stage',t:'Stage'},
-  {k:'current',t:'Current',n:1},{k:'plan',t:'Plan',n:1},{k:'potential',t:'Potential',n:1},{k:'gap',t:'Gap',n:1},
-  {k:'attractiveness',t:'Score',n:1},{k:'riskScore',t:'Risk',n:1},{k:'owner',t:'Owner'},{k:'next',t:'Next action'}
+  {k:'current',t:'Fact',n:1},{k:'plan',t:'Op plan',n:1},{k:'atcPlan',t:'ATC plan',n:1},{k:'gap',t:'Alpha uplift',n:1},
+  {k:'potential',t:'Ceiling',n:1},{k:'riskScore',t:'Risk',n:1},{k:'owner',t:'Owner'},{k:'next',t:'Next action'}
 ];
 function renderTable(){
   $('#regHead').innerHTML=COLS.map(function(c){
@@ -836,7 +988,7 @@ function renderTable(){
     return '<th class="'+(c.n?'num':'')+'" aria-sort="'+srt+'"><button type="button" data-sort="'+c.k+'" aria-sort="'+srt+'">'+c.t+'</button></th>';
   }).join('');
   var k=state.sort.key,d=state.sort.dir;
-  var val=function(o){return k==='gap'?gapOf(o):o[k];};
+  var val=function(o){return k==='gap'?gapOf(o):k==='atcPlan'?atcPlanOf(o):k==='potential'?tpOf(o):o[k];};
   var rows=state.filtered.slice().sort(function(a,b){
     var va=val(a),vb=val(b);
     if(typeof va==='number'||typeof vb==='number')return (num(va)-num(vb))*d;
@@ -844,11 +996,64 @@ function renderTable(){
   });
   $('#tableBody').innerHTML=rows.map(function(o){
     return '<tr data-open="'+esc(o.id)+'" tabindex="0"><td><strong>'+esc(o.name)+'</strong></td><td>'+esc(o.country)+'</td><td>'+esc(o.source)+'</td><td>'+esc(o.stage)+'</td>'+
-      '<td class="num">'+fmt(o.current)+'</td><td class="num">'+fmt(o.plan)+'</td><td class="num">'+fmt(o.potential)+'</td><td class="num up">+'+fmt(gapOf(o))+'</td>'+
-      '<td class="num">'+num(o.attractiveness)+'</td><td class="num"><span style="display:inline-flex;align-items:center;gap:6px"><i class="dot '+esc(o.risk)+'"></i>'+num(o.riskScore)+'</span></td>'+
+      '<td class="num">'+fmt(o.current)+'</td><td class="num">'+fmt(o.plan)+'</td><td class="num">'+fmt(atcPlanOf(o))+'</td><td class="num up">+'+fmt(gapOf(o))+'</td>'+
+      '<td class="num" title="Ceiling, unattainable by construction">'+fmt(tpOf(o))+'</td><td class="num"><span style="display:inline-flex;align-items:center;gap:6px"><i class="dot '+esc(o.risk)+'"></i>'+num(o.riskScore)+'</span></td>'+
       '<td>'+esc(o.owner||'Unassigned')+'</td><td>'+esc(o.next)+'</td></tr>';
   }).join('');
   $('#empty').hidden=rows.length>0;
+}
+
+/* ─── The potential block in the drawer ───
+   Four numbers, the band the ceiling sits in, how far the model is from today's
+   actual rate, and the deduction ledger that gets from the ceiling to the plan.
+   Every line of the ledger is named and sized, and they add up. */
+function potentialSection(o){
+  var c=calcOf(o);
+  if(!c) return '<div class="section"><h3>Technical potential</h3>'
+    + '<p class="thesis">The calculator has not loaded. Refresh the page.</p></div>';
+  if(c.error) return '<div class="section"><h3>Technical potential</h3>'
+    + '<p class="thesis">Cannot be computed: '+esc(c.error)+'</p></div>';
+  var b=c.band, m=b.mid, pm=o.potentialModel||{}, prov=c.prov;
+  var play=(ATCP.PLAYS[pm.play]||{}).label||pm.play||'unknown play';
+  var calib=factOf(o)>0?(m.currentSkinRateKboed/factOf(o)):0;
+  var calibText=factOf(o)>0
+    ? m.currentSkinRateKboed.toFixed(1)+' vs '+fmt(factOf(o))+' actual ('+(calib*100).toFixed(0)+'%)'
+    : '\u2013';
+  var rows=c.bridge.ledger.map(function(l){
+    return '<tr><td>'+esc(l.label)+'<span class="fnote">'+esc(l.note||'')+'</span></td>'
+      +'<td class="num">'+(l.kind==='volume'?('\u2212'+fmt(l.value)+' kboe/d'):l.value.toFixed(2)+'\u00d7')+'</td>'
+      +'<td class="num cost">'+(l.costKboed>0?'\u2212'+fmt(l.costKboed):'\u2013')+'</td>'
+      +'<td class="num">'+fmt(l.runningKboed)+'</td></tr>';
+  }).join('');
+  var warn=(m.warnings||[]).concat(c.bridge.warnings||[]);
+  return '<div class="section"><h3>Technical potential</h3>'
+    + '<p class="thesis">'+esc(play)+'. Ceiling '+fmt(m.potentialKboed)+' kboe/d, low\u2013high '
+    + fmt(b.low.potentialKboed)+'\u2013'+fmt(b.high.potentialKboed)
+    + ' (an input envelope, not percentiles). Limited by '
+    + (m.bound==='rate'?'what the wells can flow':'the movable volume an ideal sweep recovers')
+    + '. <strong>Unattainable by construction</strong>: areal and vertical sweep are held at unity and the damage is removed.</p>'
+    + '<div class="detail-grid" style="margin-top:10px">'
+    +   '<div class="stat"><span>Inputs</span><strong><span class="prov '+prov.grade+'">'+prov.grade.replace('-',' ')+'</span></strong></div>'
+    +   '<div class="stat"><span>Measured / analogue / assumed</span><strong>'+prov.measured+' / '+prov.analogue+' / '+prov.assumed+'</strong></div>'
+    +   '<div class="stat"><span>Model reproduces today</span><strong>'+calibText+'</strong></div>'
+    +   (m.mobilityRatio!=null?'<div class="stat"><span>Mobility ratio</span><strong>'+m.mobilityRatio.toFixed(2)+'</strong></div>':'')
+    +   (m.welge?'<div class="stat"><span>Ideal displacement</span><strong>'+(m.welge.edUltimate*100).toFixed(0)+'% of oil in place</strong></div>':'')
+    +   '<div class="stat"><span>Plateau at the ceiling</span><strong>'+m.plateauYearsAtCeiling.toFixed(1)+' years</strong></div>'
+    + '</div>'
+    + (warn.length?'<div class="calcwarn">'+warn.map(function(w){return '<p>\u26a0 '+esc(w)+'</p>';}).join('')+'</div>':'')
+    + '<h3 style="margin-top:18px">From the ceiling to ATC\u2019s plan</h3>'
+    + '<table class="bridge"><thead><tr><th>Deduction</th><th class="num">Factor</th><th class="num">Costs</th><th class="num">Running</th></tr></thead>'
+    + '<tbody><tr class="total"><td>Technical potential, mid case</td><td class="num">\u2013</td><td class="num">\u2013</td><td class="num">'+fmt(m.potentialKboed)+'</td></tr>'
+    + rows
+    + '<tr class="total"><td>ATC\u2019s plan'+(pm.signedBy?' \u00b7 signed by '+esc(pm.signedBy):' \u00b7 <em>unsigned</em>')+'</td>'
+    +   '<td class="num">\u2013</td><td class="num cost">\u2212'+fmt(c.bridge.sumDeductionsKboed)+'</td>'
+    +   '<td class="num">'+fmt(c.bridge.atcPlanKboed)+'</td></tr></tbody></table>'
+    + '<p class="fnote" style="margin-top:8px">The deductions sum to '+fmt(c.bridge.sumDeductionsKboed)
+    + ' and the ceiling less the plan is '+fmt(m.potentialKboed-c.bridge.atcPlanKboed)+'. '
+    + (c.bridge.balanced?'The bridge balances.':'The bridge does not balance \u2014 do not quote these numbers.')+'</p>'
+    + (o.potentialLegacy!=null?'<p class="fnote">Restated: this opportunity previously carried a typed technical potential of '
+      + fmt(o.potentialLegacy)+' kboe/d with no basis recorded. That figure has been replaced by the calculation above.</p>':'')
+    + '</div>';
 }
 
 /* ─── Detail drawer ─── */
@@ -862,13 +1067,14 @@ function openDetail(id,cat,silent){
   $('#detail').innerHTML=
     '<div class="stepper" role="group" aria-label="Stage">'+STAGES.map(function(s,i){return '<button type="button" class="'+(i<si?'done':i===si?'now':'')+'" data-stage-set="'+esc(s)+'" title="Move to '+esc(s)+'"><b>'+(i+1)+'</b>'+esc(s)+'</button>';}).join('')+'</div>'+
     '<div class="detail-grid">'+
-      '<div class="stat"><span>Current</span><strong>'+fmt(o.current)+' kboe/d</strong></div>'+
-      '<div class="stat"><span>Operator plan</span><strong>'+fmt(o.plan)+' kboe/d</strong></div>'+
-      '<div class="stat"><span>Technical potential</span><strong>'+fmt(o.potential)+' kboe/d</strong></div>'+
-      '<div class="stat"><span>Technical gap</span><strong class="up">+'+fmt(gapOf(o))+' kboe/d</strong></div>'+
-      '<div class="stat"><span>Attractiveness</span><strong>'+num(o.attractiveness)+' / 100</strong></div>'+
+      '<div class="stat"><span>Fact, today</span><strong>'+fmt(o.current)+' kboe/d</strong></div>'+
+      '<div class="stat"><span>Operator\u2019s plan</span><strong>'+fmt(o.plan)+' kboe/d</strong></div>'+
+      '<div class="stat"><span>ATC\u2019s plan</span><strong>'+fmt(atcPlanOf(o))+' kboe/d</strong></div>'+
+      '<div class="stat"><span>Alpha\u2019s uplift</span><strong class="up">+'+fmt(gapOf(o))+' kboe/d</strong></div>'+
+      '<div class="stat"><span>Technical ceiling</span><strong>'+fmt(tpOf(o))+' kboe/d</strong></div>'+
       '<div class="stat"><span>Execution risk</span><strong>'+num(o.riskScore)+' / 100</strong></div>'+
     '</div>'+
+    potentialSection(o)+
     '<div class="section"><h3>Investment thesis</h3><p class="thesis">'+esc(o.thesis)+'</p></div>'+
     '<div class="section"><h3>Risk scorecard</h3><div class="risk-list">'+CATS.map(function(k){
       var v=num(risks[k]);
@@ -911,41 +1117,126 @@ function openForm(id){
   $('#saveBtn').textContent=o?'Save changes':'Save opportunity';
   $('#formNotice').textContent=state.mode==='shared'?'Saves to the shared partner register.':'Saves on this device. Export to share with colleagues.';
   if(o){
-    ['name','country','source','stage','current','plan','potential','risk','thesis','next','owner','lat','lon'].forEach(function(k){if(f.elements[k])f.elements[k].value=o[k]==null?'':o[k];});
+    ['name','country','source','stage','current','plan','risk','thesis','next','owner','lat','lon'].forEach(function(k){if(f.elements[k])f.elements[k].value=o[k]==null?'':o[k];});
     buildSliders(o.risks||defaultRisks(o.risk));
   }else{
     f.elements.stage.value=STAGES[0];
     buildSliders(defaultRisks('amber'));
   }
+  buildPlayOptions();
+  fillCalcForm(o);
   updatePreview();
   var dlg=$('#opDialog');
   if(typeof dlg.showModal==='function')dlg.showModal();else dlg.setAttribute('open','');
   setTimeout(function(){$('#fName').focus();},50);
 }
+/* The form's own copy of the potential model, edited live and only written back
+   to the opportunity on save. */
+var formModel=null;
+function buildPlayOptions(){
+  var sel=$('#fPlay');
+  if(sel.options.length)return;
+  sel.innerHTML=ATCP.PLAY_KEYS.map(function(k){
+    return '<option value="'+esc(k)+'">'+esc(ATCP.PLAYS[k].label)+'</option>';}).join('');
+}
+function fillCalcForm(o){
+  var pm=(o&&o.potentialModel)?clone(o.potentialModel):{play:ATCP.PLAY_KEYS[0],measured:{},assumed:{},factors:[],signedBy:'',signedAt:''};
+  if(!pm.measured)pm.measured={};
+  if(!pm.assumed)pm.assumed={};
+  formModel=pm;
+  var E=$('#opForm').elements;
+  E.play.value=pm.play||ATCP.PLAY_KEYS[0];
+  var m=pm.measured, a=pm.assumed;
+  E.areaAcres.value=m['rock.areaAcres']!=null?m['rock.areaAcres']:'';
+  E.producers.value=m['wells.producers']!=null?m['wells.producers']:'';
+  E.activeProducers.value=m['wells.activeProducers']!=null?m['wells.activeProducers']:'';
+  E.pres.value=m['pressure.pres']!=null?m['pressure.pres']:'';
+  E.skin.value=a['pressure.skin']!=null?a['pressure.skin']:'';
+  E.plateauYears.value=a['plateauYears']!=null?a['plateauYears']:5;
+  E.signedBy.value=pm.signedBy||'';
+  refreshCalc();
+}
+/* Reads the calculator fields into formModel, recomputes, and paints both the
+   preview numbers and the deduction ledger. */
+function refreshCalc(){
+  if(!window.ATCP||!formModel)return null;
+  var E=$('#opForm').elements;
+  var setIf=function(bag,key,raw){ if(String(raw).trim()==='')delete bag[key]; else bag[key]=num(raw); };
+  formModel.play=E.play.value;
+  setIf(formModel.measured,'rock.areaAcres',E.areaAcres.value);
+  setIf(formModel.measured,'wells.producers',E.producers.value);
+  setIf(formModel.measured,'wells.activeProducers',E.activeProducers.value);
+  setIf(formModel.measured,'pressure.pres',E.pres.value);
+  setIf(formModel.assumed,'pressure.skin',E.skin.value);
+  setIf(formModel.assumed,'plateauYears',E.plateauYears.value);
+  formModel.signedBy=E.signedBy.value.trim();
+
+  var c=computeCalc({potentialModel:formModel});
+  var out={low:'#cLow',mid:'#cMid',high:'#cHigh'};
+  if(!c||c.error){
+    Object.keys(out).forEach(function(k){$(out[k]).textContent='\u2013';});
+    $('#cBound').textContent='\u2013'; $('#cCalib').textContent='\u2013';
+    $('#cM').textContent='\u2013'; $('#cProv').textContent='\u2013';
+    $('#cWarn').innerHTML=c?('<p>\u26a0 '+esc(c.error)+'</p>'):'';
+    $('#bridgeTable').querySelector('tbody').innerHTML='';
+    return null;
+  }
+  // The template is materialised the first time so the user can edit each line.
+  if(!formModel.factors||!formModel.factors.length)formModel.factors=clone(c.factors);
+  var b=c.band, m=b.mid;
+  $('#cLow').textContent=fmt(b.low.potentialKboed);
+  $('#cMid').textContent=fmt(m.potentialKboed);
+  $('#cHigh').textContent=fmt(b.high.potentialKboed);
+  $('#cBound').textContent=m.bound==='rate'?'well deliverability':'movable volume';
+  var fact=num(E.current.value);
+  $('#cCalib').textContent=fact>0
+    ? m.currentSkinRateKboed.toFixed(1)+' vs '+fmt(fact)+' ('+((m.currentSkinRateKboed/fact)*100).toFixed(0)+'%)'
+    : '\u2013';
+  $('#cM').textContent=m.mobilityRatio!=null?m.mobilityRatio.toFixed(2):'n/a (gas)';
+  $('#cProv').textContent=c.prov.measured+' measured, '+c.prov.analogue+' analogue, '+c.prov.assumed+' assumed';
+  $('#cWarn').innerHTML=(m.warnings||[]).map(function(w){return '<p>\u26a0 '+esc(w)+'</p>';}).join('');
+  renderBridgeEditor(m.potentialKboed);
+  return c;
+}
+function renderBridgeEditor(tpMid){
+  var bridge=ATCP.applyModifyingFactors(tpMid,formModel.factors);
+  var body=$('#bridgeTable').querySelector('tbody');
+  body.innerHTML='<tr class="total"><td>Technical potential, mid case</td><td class="num">\u2013</td><td class="num">'+fmt(tpMid)+'</td></tr>'
+    + bridge.ledger.map(function(l,i){
+        return '<tr><td>'+esc(l.label)+'<span class="fnote">'+esc(l.note||'')+'</span></td>'
+          +'<td class="num"><input type="number" step="'+(l.kind==='volume'?'0.1':'0.01')+'" min="0" '
+          +'data-factor="'+i+'" value="'+l.value+'" aria-label="'+esc(l.label)+'"></td>'
+          +'<td class="num">'+(l.costKboed>0?'\u2212'+fmt(l.costKboed):'\u2013')+' \u2192 '+fmt(l.runningKboed)+'</td></tr>';
+      }).join('')
+    + '<tr class="total"><td>ATC\u2019s plan</td><td class="num">\u2013</td><td class="num">'+fmt(bridge.atcPlanKboed)+'</td></tr>';
+  $('#pGap').textContent=(bridge.atcPlanKboed-num($('#opForm').elements.plan.value)>=0?'+':'')
+    +fmt(bridge.atcPlanKboed-num($('#opForm').elements.plan.value))+' kboe/d';
+  $('#pAttr').textContent=fmt(bridge.atcPlanKboed)+' kboe/d';
+}
 function closeForm(){var d=$('#opDialog');if(d.open){if(typeof d.close==='function')d.close();else d.removeAttribute('open');}}
 function updatePreview(){
-  var f=$('#opForm').elements, plan=num(f.plan.value), pot=num(f.potential.value);
-  var g=pot-plan;
-  $('#pGap').textContent=(g>=0?'+':'')+fmt(g)+' kboe/d';
+  var f=$('#opForm').elements;
   var existing=state.editingId?byId(state.editingId):null;
-  var attr=(existing&&num(existing.plan)===plan&&num(existing.potential)===pot)?num(existing.attractiveness):attractivenessFor({plan:plan,potential:pot});
-  $('#pAttr').textContent=(f.plan.value===''&&f.potential.value==='')?'–':attr+' / 100';
+  refreshCalc();
   var rs=state.slidersTouched?scoreFromRisks(readSliders()):(existing&&existing.risk===f.risk.value?num(existing.riskScore):RISK_DEFAULT_SCORE[f.risk.value]);
   $('#pRisk').textContent=rs+' / 100';
 }
 function submitForm(ev){
   ev.preventDefault();
   var f=ev.target, E=f.elements, missing=[];
-  ['name','country','current','plan','potential','thesis','next'].forEach(function(k){if(String(E[k].value).trim()==='')missing.push(E[k]);});
+  ['name','country','current','plan','thesis','next'].forEach(function(k){if(String(E[k].value).trim()==='')missing.push(E[k]);});
   if(missing.length){missing[0].focus();toast('Complete the highlighted fields to save.');missing.forEach(function(el){el.style.borderColor='rgba(192,57,43,.7)';setTimeout(function(){el.style.borderColor='';},2500);});return;}
   var existing=state.editingId?byId(state.editingId):null;
   var o=existing?clone(existing):{};
   o.name=E.name.value.trim(); o.country=E.country.value.trim(); o.source=E.source.value; o.stage=E.stage.value;
-  o.current=Math.max(0,num(E.current.value)); o.plan=Math.max(0,num(E.plan.value)); o.potential=Math.max(0,num(E.potential.value));
+  o.current=Math.max(0,num(E.current.value)); o.plan=Math.max(0,num(E.plan.value));
   o.risk=E.risk.value; o.thesis=E.thesis.value.trim(); o.next=E.next.value.trim(); o.owner=E.owner.value.trim()||'Unassigned';
   o.lat=Math.max(-90,Math.min(90,num(E.lat.value))); o.lon=Math.max(-180,Math.min(180,num(E.lon.value)));
-  var numbersChanged=!existing||num(existing.plan)!==o.plan||num(existing.potential)!==o.potential;
-  if(numbersChanged)o.attractiveness=attractivenessFor(o);
+  var c=refreshCalc();
+  if(!c){toast('The technical potential cannot be computed from these inputs. Fix the calculator before saving.');return;}
+  o.potentialModel=clone(formModel);
+  o.potentialModel.signedAt=o.potentialModel.signedBy?new Date().toISOString():'';
+  delete o._calc;
   if(state.slidersTouched){o.risks=readSliders();o.riskScore=scoreFromRisks(o.risks);}
   else if(!existing||existing.risk!==o.risk){o.risks=defaultRisks(o.risk);o.riskScore=RISK_DEFAULT_SCORE[o.risk];}
   o.updated=new Date().toISOString();
@@ -970,11 +1261,34 @@ function download(name,text,type){
 function stamp(){return new Date().toISOString().slice(0,10);}
 function exportJSON(){download('opportunity-register-'+stamp()+'.json',JSON.stringify(state.data,null,2),'application/json');toast('Register exported');}
 function exportCSV(){
-  var cols=['id','name','country','source','stage','current','plan','potential','gap','attractiveness','riskScore','risk','owner','next','lat','lon','updated','thesis'].concat(CATS);
+  var cols=['id','name','country','source','stage','fact','operatorPlan','atcPlan','alphaUplift',
+    'technicalPotentialLow','technicalPotentialMid','technicalPotentialHigh','limitedBy','plateauYearsAtCeiling',
+    'mobilityRatio','modelledTodayRate','inputGrade','inputsMeasured','inputsAnalogue','inputsAssumed',
+    'play','signedBy','signedAt','bridgeBalances','riskScore','risk','owner','next','lat','lon','updated','thesis']
+    .concat(CATS).concat(['deductions']);
   var q=function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   var lines=[cols.join(',')].concat(state.data.map(function(o){
-    var r=o.risks||{};
-    return cols.map(function(c){return q(c==='gap'?gapOf(o):CATS.indexOf(c)>=0?r[c]:o[c]);}).join(',');
+    var r=o.risks||{}, c=calcOf(o), pm=o.potentialModel||{};
+    var ok=c&&!c.error, m=ok?c.band.mid:null;
+    var v={id:o.id,name:o.name,country:o.country,source:o.source,stage:o.stage,
+      fact:factOf(o),operatorPlan:opPlanOf(o),
+      atcPlan:ok?atcPlanOf(o).toFixed(2):'',alphaUplift:ok?gapOf(o).toFixed(2):'',
+      technicalPotentialLow:ok?c.band.low.potentialKboed.toFixed(2):'',
+      technicalPotentialMid:ok?m.potentialKboed.toFixed(2):'',
+      technicalPotentialHigh:ok?c.band.high.potentialKboed.toFixed(2):'',
+      limitedBy:ok?m.bound:'',plateauYearsAtCeiling:ok?m.plateauYearsAtCeiling.toFixed(2):'',
+      mobilityRatio:(ok&&m.mobilityRatio!=null)?m.mobilityRatio.toFixed(3):'',
+      modelledTodayRate:ok?m.currentSkinRateKboed.toFixed(2):'',
+      inputGrade:ok?c.prov.grade:'',inputsMeasured:ok?c.prov.measured:'',
+      inputsAnalogue:ok?c.prov.analogue:'',inputsAssumed:ok?c.prov.assumed:'',
+      play:pm.play||'',signedBy:pm.signedBy||'',signedAt:pm.signedAt||'',
+      bridgeBalances:ok?String(c.bridge.balanced):'',
+      riskScore:o.riskScore,risk:o.risk,owner:o.owner,next:o.next,lat:o.lat,lon:o.lon,
+      updated:o.updated,thesis:o.thesis,
+      deductions:ok?c.bridge.ledger.map(function(l){
+        return l.label+' '+(l.kind==='volume'?('-'+l.value+' kboe/d'):(l.value+'x'))
+          +' costs '+l.costKboed.toFixed(2);}).join('; '):''};
+    return cols.map(function(k){return q(CATS.indexOf(k)>=0?r[k]:v[k]);}).join(',');
   }));
   download('opportunity-register-'+stamp()+'.csv',lines.join('\n'),'text/csv');toast('Register exported as CSV');
 }
@@ -993,7 +1307,7 @@ function importJSON(file){
         if(['green','amber','red'].indexOf(o.risk)<0)o.risk='amber';
         if(!o.risks)o.risks=defaultRisks(o.risk);
         if(o.riskScore==null)o.riskScore=scoreFromRisks(o.risks);
-        if(o.attractiveness==null)o.attractiveness=attractivenessFor(o);
+        ensurePotentialModel(o);
         if(!Array.isArray(o.events))o.events=[];
         if(byId(o.id))updated++;else added++;
         replaceById(o);
@@ -1011,7 +1325,7 @@ var geoMap=null, mapReady=false, usingFallback=false;
    Open Sans Regular, which 404s there, so every symbol layer has to name a font
    the host actually has or it draws no text at all. */
 var GLYPHS=['Noto Sans Regular'];
-function opportunityGeo(){return {type:'FeatureCollection',features:state.filtered.filter(function(o){return isFinite(o.lat)&&isFinite(o.lon);}).map(function(o){return {type:'Feature',geometry:{type:'Point',coordinates:[num(o.lon),num(o.lat)]},properties:{id:o.id,name:o.name,country:o.country,risk:o.risk,score:num(o.attractiveness||70)}};})};}
+function opportunityGeo(){return {type:'FeatureCollection',features:state.filtered.filter(function(o){return isFinite(o.lat)&&isFinite(o.lon);}).map(function(o){return {type:'Feature',geometry:{type:'Point',coordinates:[num(o.lon),num(o.lat)]},properties:{id:o.id,name:o.name,country:o.country,risk:o.risk,score:50+upliftShare(o)/2}};})};}
 function eventGeo(){return {type:'FeatureCollection',features:state.filtered.reduce(function(acc,o){(o.events||[]).forEach(function(e,i){acc.push({type:'Feature',geometry:{type:'Point',coordinates:[num(o.lon)+i*.35,num(o.lat)+i*.2]},properties:{id:o.id,title:e.title,severity:e.severity,category:e.category,asset:o.name}});});return acc;},[])};}
 function initMap(){
   if(!window.maplibregl){fallbackMap();return;}
@@ -1075,7 +1389,7 @@ function drawFallback(){
     eventGeo().features.forEach(function(f){var c=f.geometry.coordinates,w=SEV[f.properties.severity]||1;s+='<circle cx="'+X(c[0])+'" cy="'+Y(c[1])+'" r="'+(10+w*7)+'" fill="#C0392B" fill-opacity="'+(0.12+w*0.05)+'"/>';});
   }
   state.filtered.forEach(function(o){
-    var r=6+num(o.attractiveness)/16;
+    var r=6+upliftShare(o)/16;
     s+='<g class="pt" data-open="'+esc(o.id)+'" tabindex="0" role="button" aria-label="'+esc(o.name)+'"><circle cx="'+X(o.lon)+'" cy="'+Y(o.lat)+'" r="'+r.toFixed(1)+'" fill="'+riskColour(o.risk)+'" fill-opacity="'+(state.mapMode==='risk'?.55:.9)+'" stroke="#F8F5EE" stroke-width="1.5"/>'+
       '<text x="'+(X(o.lon)+r+4)+'" y="'+(Y(o.lat)+4)+'" font-size="10" fill="#F8F5EE">'+esc(o.name)+'</text></g>';
   });
@@ -1141,9 +1455,21 @@ function wire(){
   $('#addBtn').addEventListener('click',function(){openForm(null);});
   $('#opForm').addEventListener('submit',submitForm);
   $('#opForm').addEventListener('input',function(e){
-    if(e.target.dataset&&e.target.dataset.risk){state.slidersTouched=true;$('#o'+e.target.dataset.risk).textContent=e.target.value;}
+    var d=e.target.dataset||{};
+    if(d.risk){state.slidersTouched=true;$('#o'+d.risk).textContent=e.target.value;}
     if(e.target.name==='risk'&&!state.slidersTouched){buildSliders(defaultRisks(e.target.value));}
+    if(d.factor!==undefined&&formModel&&formModel.factors[d.factor]){
+      // Editing one deduction should not rebuild the row under the cursor, so
+      // the ledger is repainted only when focus leaves the field.
+      formModel.factors[d.factor].value=Math.max(0,num(e.target.value));
+      formModel.factors[d.factor].provenance='assumed';
+      return;
+    }
+    if(e.target.name==='play'){formModel&&(formModel.factors=[]);}
     updatePreview();
+  });
+  $('#opForm').addEventListener('change',function(e){
+    if(e.target.dataset&&e.target.dataset.factor!==undefined)updatePreview();
   });
   $('#opDialog').addEventListener('cancel',function(){state.editingId=null;});
   $('#importFile').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)importJSON(f);e.target.value='';});
