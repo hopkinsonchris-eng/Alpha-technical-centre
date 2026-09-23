@@ -166,6 +166,7 @@ body{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--white);backgrou
     </svg>
     <div class="login-title">Staff Portal</div>
     <div class="login-sub">Alpha Technical Centre · Internal access only</div>
+    <div class="login-sub" id="login-next" style="color:#C9A84C"></div>
     <div class="login-field">
       <label>Username</label>
       <input type="text" id="usr" placeholder="username" autocomplete="username">
@@ -384,6 +385,47 @@ const DEFAULTS = {
 
 const STORAGE_KEY = 'atc_admin_config';
 
+// ══ DEEP LINKS ══
+// A staff tool that bounced a signed-out visitor here puts its own address in
+// ?next=, so we can hand them straight on once they are in. Only these exact
+// pages are honoured and the fragment is restricted to a plain tab name, so the
+// parameter cannot send anyone off-site.
+const NEXT_ALLOWED = [
+  'opportunity-register.html',
+  'reservoir-simulator.html',
+  'ela-model-suite.html',
+  'ela-studio/index.html',
+];
+function nextTarget() {
+  try {
+    const raw = new URLSearchParams(location.search).get('next');
+    if (!raw) return null;
+    const cut = raw.indexOf('#');
+    const page = cut < 0 ? raw : raw.slice(0, cut);
+    const frag = cut < 0 ? '' : raw.slice(cut);
+    if (NEXT_ALLOWED.indexOf(page) < 0) return null;
+    if (frag && !/^#[a-z0-9-]{1,32}$/i.test(frag)) return null;
+    return page + frag;
+  } catch (e) { return null; }
+}
+function goNext() {
+  const t = nextTarget();
+  if (!t) return false;
+  location.replace(t);
+  return true;
+}
+// Tell people what they are signing in for when they arrived from a shared link.
+(function () {
+  const t = nextTarget();
+  if (!t) return;
+  const name = { 'opportunity-register.html': 'the Opportunity Register',
+                 'reservoir-simulator.html': 'the Reservoir Simulator',
+                 'ela-model-suite.html': 'the ELA Model Suite',
+                 'ela-studio/index.html': 'ELA Studio' }[t.split('#')[0]];
+  const sub = document.getElementById('login-next');
+  if (sub && name) sub.textContent = 'Sign in to open ' + name + '.';
+})();
+
 // ══ LOGIN ══
 function doLogin() {
   const u = document.getElementById('usr').value.trim().toLowerCase();
@@ -391,6 +433,7 @@ function doLogin() {
   const err = document.getElementById('login-err');
   if (CREDENTIALS[u] && CREDENTIALS[u] === p) {
     sessionStorage.setItem('atc_auth', '1');
+    if (goNext()) return;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     loadValues();
@@ -403,7 +446,7 @@ function doLogout() {
   sessionStorage.removeItem('atc_auth');
   location.reload();
 }
-if (sessionStorage.getItem('atc_auth') === '1') {
+if (sessionStorage.getItem('atc_auth') === '1' && !goNext()) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 }

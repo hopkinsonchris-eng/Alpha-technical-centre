@@ -7,17 +7,24 @@
 <title>Opportunity Register · Alpha APEX · Staff only</title>
 <!-- ═══ STAFF-ONLY ACCESS GATE ═══
      admin.html sets sessionStorage 'atc_auth'='1' after a valid staff login.
-     Anyone without that session is sent to the portal to sign in. -->
+     Anyone without that session is sent to the portal to sign in, carrying
+     this page (and its tab) in ?next= so the portal returns them here rather
+     than stranding them on its dashboard. That makes the register's own URL
+     shareable. -->
 <script>
 (function(){
+  var portal=function(){
+    var here='opportunity-register.html'+(location.hash||'');
+    return 'admin.html?next='+encodeURIComponent(here);
+  };
   try{
     if(sessionStorage.getItem('atc_auth')!=='1'){
       document.documentElement.style.display='none';
-      window.location.replace('admin.html');
+      window.location.replace(portal());
     }
   }catch(e){
     document.documentElement.style.display='none';
-    window.location.replace('admin.html');
+    window.location.replace(portal());
   }
 })();
 </script>
