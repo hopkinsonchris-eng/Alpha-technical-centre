@@ -1000,6 +1000,10 @@ function importJSON(file){
 
 /* ─── Map (MapLibre, with schematic fallback) ─── */
 var geoMap=null, mapReady=false, usingFallback=false;
+/* The Liberty glyph host serves Noto Sans only. MapLibre's default stack is
+   Open Sans Regular, which 404s there, so every symbol layer has to name a font
+   the host actually has or it draws no text at all. */
+var GLYPHS=['Noto Sans Regular'];
 function opportunityGeo(){return {type:'FeatureCollection',features:state.filtered.filter(function(o){return isFinite(o.lat)&&isFinite(o.lon);}).map(function(o){return {type:'Feature',geometry:{type:'Point',coordinates:[num(o.lon),num(o.lat)]},properties:{id:o.id,name:o.name,country:o.country,risk:o.risk,score:num(o.attractiveness||70)}};})};}
 function eventGeo(){return {type:'FeatureCollection',features:state.filtered.reduce(function(acc,o){(o.events||[]).forEach(function(e,i){acc.push({type:'Feature',geometry:{type:'Point',coordinates:[num(o.lon)+i*.35,num(o.lat)+i*.2]},properties:{id:o.id,title:e.title,severity:e.severity,category:e.category,asset:o.name}});});return acc;},[])};}
 function initMap(){
@@ -1012,11 +1016,11 @@ function initMap(){
   geoMap.on('error',function(){if(!mapReady){clearTimeout(timer);fallbackMap();}});
   geoMap.on('load',function(){
     clearTimeout(timer); if(usingFallback)return; mapReady=true;
-    geoMap.addSource('opportunities',{type:'geojson',data:opportunityGeo(),cluster:true,clusterMaxZoom:5,clusterRadius:42});
-    geoMap.addLayer({id:'clusters',type:'circle',source:'opportunities',filter:['has','point_count'],paint:{'circle-color':'#C9A84C','circle-radius':['step',['get','point_count'],18,4,23,8,29],'circle-stroke-color':'#0B1F3A','circle-stroke-width':2}});
-    geoMap.addLayer({id:'cluster-count',type:'symbol',source:'opportunities',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-size':12},paint:{'text-color':'#0B1F3A'}});
+    geoMap.addSource('opportunities',{type:'geojson',data:opportunityGeo(),cluster:true,clusterMaxZoom:4,clusterRadius:34,clusterProperties:{red:['+',['case',['==',['get','risk'],'red'],1,0]],amber:['+',['case',['==',['get','risk'],'amber'],1,0]]}});
+    geoMap.addLayer({id:'clusters',type:'circle',source:'opportunities',filter:['has','point_count'],paint:{'circle-color':['case',['>',['get','red'],0],'#E0544A',['>',['get','amber'],0],'#E8963A','#2ECC8A'],'circle-radius':['step',['get','point_count'],18,4,23,8,29],'circle-stroke-color':'#C9A84C','circle-stroke-width':3}});
+    geoMap.addLayer({id:'cluster-count',type:'symbol',source:'opportunities',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-font':GLYPHS,'text-size':13,'text-allow-overlap':true},paint:{'text-color':'#F8F5EE'}});
     geoMap.addLayer({id:'opportunity-points',type:'circle',source:'opportunities',filter:['!',['has','point_count']],paint:{'circle-radius':['interpolate',['linear'],['get','score'],50,9,95,16],'circle-color':['match',['get','risk'],'red','#E0544A','amber','#E8963A','#2ECC8A'],'circle-stroke-color':'#0B1F3A','circle-stroke-width':3}});
-    geoMap.addLayer({id:'opportunity-labels',type:'symbol',source:'opportunities',filter:['!',['has','point_count']],minzoom:2.2,layout:{'text-field':['get','name'],'text-size':11,'text-offset':[0,1.8],'text-anchor':'top'},paint:{'text-color':'#0B1F3A','text-halo-color':'#F8F5EE','text-halo-width':1.5}});
+    geoMap.addLayer({id:'opportunity-labels',type:'symbol',source:'opportunities',filter:['!',['has','point_count']],minzoom:2.2,layout:{'text-field':['get','name'],'text-font':GLYPHS,'text-size':11,'text-offset':[0,1.8],'text-anchor':'top'},paint:{'text-color':'#0B1F3A','text-halo-color':'#F8F5EE','text-halo-width':1.5}});
     geoMap.addSource('risk-events',{type:'geojson',data:eventGeo()});
     geoMap.addLayer({id:'risk-heat',type:'heatmap',source:'risk-events',layout:{visibility:'none'},paint:{'heatmap-weight':['match',['get','severity'],'critical',1,'high',.8,.5],'heatmap-intensity':1.35,'heatmap-radius':45,'heatmap-opacity':.78,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(11,31,58,0)',.25,'#E8963A',.55,'#D9622E',1,'#C0392B']}});
     geoMap.addLayer({id:'risk-points',type:'circle',source:'risk-events',layout:{visibility:'none'},paint:{'circle-radius':6,'circle-color':['match',['get','severity'],'critical','#B02028','high','#E0544A','#E8963A'],'circle-stroke-color':'#fff','circle-stroke-width':1.5}});
