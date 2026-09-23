@@ -12,7 +12,7 @@
  * real measurements arrive; the provenance badge will improve as you do.
  */
 
-import { PROVENANCE, mobilityRatio } from './potential.js';
+import { PROVENANCE, mobilityRatio, technicalPotential } from './potential.js';
 
 export const PLAYS = {
   'onshore-clastic-waterflood': {
@@ -212,4 +212,81 @@ export function playMobility(playKey) {
   const play = PLAYS[playKey];
   if (!play || play.drive !== 'waterflood') return null;
   return mobilityRatio(play.relperm, play.fluids);
+}
+
+/* ── Seeding a record that arrives with nothing ──────────────────────────
+ *
+ * A register entry imported from a spreadsheet, or saved before the
+ * calculator existed, carries a rate and a plan and no subsurface at all.
+ * Refusing to compute leaves the uplift column blank, which is worse than
+ * useless - it reads as "no upside" rather than "no data". So every such
+ * record gets a starting model instead.
+ *
+ * The seed is dummy data and is marked as such: nothing goes in the measured
+ * bag, so the provenance badge grades it analogue-only and anyone reading it
+ * can see the subsurface was invented. What makes it a useful starting point
+ * rather than noise is that it is tied to the one number the record really
+ * does have. The asset is sized off today's rate, then the skin is solved so
+ * the model reproduces that rate exactly. The answer is therefore the right
+ * order of magnitude and internally consistent from the first render, and
+ * every field is there to be overwritten as a data room fills it in.
+ */
+
+/** Picks a play from whatever the record says about itself. */
+export function inferPlay(o) {
+  const t = [o && o.name, o && o.thesis, o && o.country].filter(Boolean).join(' ').toLowerCase();
+  const offshore = /offshore|deepwater|deep water|subsea|tie-?back|platform|north sea|gulf of/.test(t);
+  if (/\bgas\b|lng|condensate|methane/.test(t)) return offshore ? 'offshore-gas' : 'onshore-gas';
+  if (offshore) return 'offshore-clastic-waterflood';
+  if (/carbonate|limestone|dolomite|chalk/.test(t)) return 'carbonate-waterflood';
+  if (/lake|lacustrine|maracaibo|shallow marine/.test(t)) return 'shallow-marine-clastic-waterflood';
+  return 'onshore-clastic-waterflood';
+}
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/**
+ * Builds a starting model for a record with no subsurface of its own.
+ * @param {object} o  the opportunity: { name, thesis, country, current }
+ */
+export function seedModel(o) {
+  const play = inferPlay(o);
+  const p = PLAYS[play];
+  const fact = Math.max(0, Number((o && o.current) || 0)) || 0;
+
+  // Size the field off today's rate. Gas wells carry far more rate each, so
+  // the same production implies far fewer of them over a much larger area.
+  const gas = p.drive === 'gas';
+  const producers = Math.round(clamp(fact * (gas ? 0.8 : 2.5), 4, 400));
+  const assumed = {
+    'rock.areaAcres': Math.round(clamp(fact * (gas ? 700 : 450), 400, 60000)),
+    'wells.producers': producers,
+    'wells.activeProducers': Math.max(1, Math.round(producers * 0.45)),
+    'pressure.pres': p.pressure.pres,
+    'plateauYears': 5,
+  };
+
+  // Solve the skin that reproduces today's rate. A brownfield sits below its
+  // deliverability for a reason, and this is the honest place to put it until
+  // somebody supplies a real well test.
+  const rateAt = (skin) => {
+    try {
+      const inp = buildInputs(play, { assumed: Object.assign({}, assumed, { 'pressure.skin': skin }) });
+      return technicalPotential(inp.mid).currentSkinRateKboed;
+    } catch (e) { return NaN; }
+  };
+  let skin = p.pressure.skin;
+  if (fact > 0 && Number.isFinite(rateAt(0))) {
+    let lo = -2, hi = 800;
+    for (let i = 0; i < 70; i++) {
+      const s = (lo + hi) / 2;
+      const q = rateAt(s);
+      if (!Number.isFinite(q)) break;
+      if (q > fact) lo = s; else hi = s;
+    }
+    skin = Math.round(((lo + hi) / 2) * 10) / 10;
+  }
+  assumed['pressure.skin'] = skin;
+
+  return { play, measured: {}, assumed, factors: [], signedBy: '', signedAt: '', seeded: true };
 }

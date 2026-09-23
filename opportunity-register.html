@@ -696,11 +696,20 @@ function ensurePotentialModel(o){
   if(o.potential!=null&&o.potentialLegacy==null){o.potentialLegacy=o.potential;}
   delete o.potential;
   delete o.attractiveness;
-  if(!o.potentialModel||!o.potentialModel.play){
-    o.potentialModel={play:(window.ATCP?ATCP.PLAY_KEYS[0]:'onshore-clastic-waterflood'),
-      measured:{},assumed:{},factors:[],signedBy:'',signedAt:''};
-  }
+  delete o._calc;
+  if(o.potentialModel&&o.potentialModel.play)return o;
+  if(!window.ATCP)return o;
+  // A record saved before the calculator existed, or imported from a
+  // spreadsheet, has no subsurface at all. One of the demonstration assets
+  // gets its curated model back; anything else is seeded from today's rate so
+  // the uplift column shows a starting number rather than a blank that reads
+  // as "no upside". Seeded values are marked assumed, never measured.
+  var demo=DEMO.filter(function(d){return d.id===o.id;})[0];
+  o.potentialModel=(demo&&demo.potentialModel)?clone(demo.potentialModel):ATCP.seedModel(o);
   return o;
+}
+function ensureAll(items){
+  return (Array.isArray(items)?items:[]).map(ensurePotentialModel);
 }
 function defaultRisks(r){
   var s=RISK_DEFAULT_SCORE[r]||55;
@@ -1026,7 +1035,12 @@ function potentialSection(o){
       +'<td class="num">'+fmt(l.runningKboed)+'</td></tr>';
   }).join('');
   var warn=(m.warnings||[]).concat(c.bridge.warnings||[]);
+  var seeded=pm.seeded===true;
   return '<div class="section"><h3>Technical potential</h3>'
+    + (seeded?'<div class="sim-banner" style="margin-bottom:8px"><span>\u26a0</span><div>'
+      +'<strong>Starting values.</strong> The subsurface for this opportunity was seeded from today\u2019s '
+      +'production rate, not taken from a data room. The field size, well count and skin below are placeholders '
+      +'sized to reproduce the rate the asset actually makes. Overwrite them as real data arrives.</div></div>':'')
     + '<p class="thesis">'+esc(play)+'. Ceiling '+fmt(m.potentialKboed)+' kboe/d, low\u2013high '
     + fmt(b.low.potentialKboed)+'\u2013'+fmt(b.high.potentialKboed)
     + ' (an input envelope, not percentiles). Limited by '
@@ -1170,6 +1184,7 @@ function refreshCalc(){
   setIf(formModel.assumed,'pressure.skin',E.skin.value);
   setIf(formModel.assumed,'plateauYears',E.plateauYears.value);
   formModel.signedBy=E.signedBy.value.trim();
+  // Once a value is typed by hand it is the user's assumption, not a seed.
 
   var c=computeCalc({potentialModel:formModel});
   var out={low:'#cLow',mid:'#cMid',high:'#cHigh'};
@@ -1469,7 +1484,30 @@ function wire(){
     updatePreview();
   });
   $('#opForm').addEventListener('change',function(e){
-    if(e.target.dataset&&e.target.dataset.factor!==undefined)updatePreview();
+    if(e.target.dataset&&e.target.dataset.factor!==undefined){updatePreview();return;}
+    // Entering today's rate on an untouched calculator seeds a starting model
+    // from it, so a new opportunity shows numbers straight away.
+    if(e.target.name==='current'&&formModel&&window.ATCP){
+      var blank=!formModel.measured['rock.areaAcres']&&!formModel.assumed['rock.areaAcres'];
+      if(blank&&num(e.target.value)>0){
+        var seeded=ATCP.seedModel({name:$('#opForm').elements.name.value,
+          thesis:$('#opForm').elements.thesis.value,
+          country:$('#opForm').elements.country.value,
+          current:num(e.target.value)});
+        formModel.play=seeded.play; formModel.assumed=seeded.assumed;
+        formModel.seeded=true; formModel.factors=[];
+        var E=$('#opForm').elements;
+        E.play.value=seeded.play;
+        E.areaAcres.value=seeded.assumed['rock.areaAcres'];
+        E.producers.value=seeded.assumed['wells.producers'];
+        E.activeProducers.value=seeded.assumed['wells.activeProducers'];
+        E.pres.value=seeded.assumed['pressure.pres'];
+        E.skin.value=seeded.assumed['pressure.skin'];
+        E.plateauYears.value=seeded.assumed['plateauYears'];
+        updatePreview();
+        toast('Starting subsurface seeded from '+fmt(num(e.target.value))+' kboe/d. Overwrite it as data arrives.');
+      }
+    }
   });
   $('#opDialog').addEventListener('cancel',function(){state.editingId=null;});
   $('#importFile').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)importJSON(f);e.target.value='';});
@@ -1492,7 +1530,9 @@ function start(){
   var h=(location.hash||'').slice(1);
   if(['portfolio','pipeline','risk','register'].indexOf(h)>=0)setTab(h);
   Store.load().then(function(items){
-    state.data=Array.isArray(items)?items:[];
+    state.data=ensureAll(items);
+    // Migrating in place is worth persisting, or every reload redoes it.
+    if(state.mode==='local')Store.saveLocal(state.data);
     var chip=$('#modeChip');
     chip.textContent=state.mode==='shared'?'Shared register':'Saved on this device';
     chip.title=state.mode==='shared'?'Connected to the shared opportunity database.':'Stored in this browser only. Use Data, Export to share.';

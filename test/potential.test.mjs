@@ -15,6 +15,7 @@ import {
   reFromSpacing, technicalPotential, potentialBand,
   applyModifyingFactors, provenanceSummary, PotentialError,
 } from '../js/potential.js';
+import { PLAYS, buildInputs, inferPlay, seedModel } from '../js/analogues.js';
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 
@@ -480,6 +481,75 @@ describe('degenerate inputs are named, never NaN', () => {
       }
     };
     walk(r);
+  });
+});
+
+/* ── Seeding a record that arrives with no model ─────────────────────── */
+
+describe('seeding a starting model', () => {
+  test('infers a gas play from the asset, otherwise an oil waterflood', () => {
+    assert.equal(inferPlay({ name: 'Egypt Onshore Gas Hub' }), 'onshore-gas');
+    assert.equal(inferPlay({ name: 'North Sea Gas', thesis: 'offshore tie-back' }), 'offshore-gas');
+    assert.equal(inferPlay({ name: 'Gabon Mature Field', thesis: 'offshore package' }),
+      'offshore-clastic-waterflood');
+    assert.equal(inferPlay({ name: 'Some Onshore Field' }), 'onshore-clastic-waterflood');
+    assert.equal(inferPlay({}), 'onshore-clastic-waterflood');
+  });
+
+  test('produces a model that computes', () => {
+    const m = seedModel({ name: 'Nameless Field', current: 24, plan: 31 });
+    assert.ok(PLAYS[m.play], 'a real play');
+    assert.equal(m.seeded, true, 'flagged as seeded');
+    const r = technicalPotential(buildInputs(m.play, m).mid);
+    assert.ok(r.potentialKboed > 0, 'the seeded model yields a potential');
+  });
+
+  test('the seeded model reproduces the rate it was seeded from', () => {
+    for (const fact of [3, 11, 27, 64, 150]) {
+      const m = seedModel({ name: 'Field ' + fact, current: fact, plan: fact * 1.3 });
+      const r = technicalPotential(buildInputs(m.play, m).mid);
+      near(r.currentSkinRateKboed, fact, 0.02, `seeded calibration at ${fact} kboe/d`);
+    }
+  });
+
+  test('a seeded ceiling sits above the rate it was seeded from', () => {
+    for (const fact of [5, 20, 80]) {
+      const m = seedModel({ name: 'F', current: fact, plan: fact * 1.2 });
+      const b = potentialBand(buildInputs(m.play, m));
+      assert.ok(b.mid.potentialKboed > fact, `ceiling above today at ${fact}`);
+      assert.ok(b.low.potentialKboed <= b.mid.potentialKboed, 'band ordered');
+      assert.ok(b.mid.potentialKboed <= b.high.potentialKboed, 'band ordered');
+    }
+  });
+
+  test('every seeded value is marked assumed, never measured', () => {
+    const m = seedModel({ name: 'F', current: 20, plan: 26 });
+    assert.deepEqual(m.measured, {}, 'nothing is claimed as measured');
+    const s = provenanceSummary(buildInputs(m.play, m).provenance);
+    assert.equal(s.measured, 0, 'provenance agrees');
+    assert.equal(s.grade, 'analogue-only', 'and grades as analogue-only so nobody trusts it');
+  });
+
+  test('a gas asset seeds down the gas route', () => {
+    const m = seedModel({ name: 'Onshore Gas Hub', current: 31, plan: 46 });
+    const r = technicalPotential(buildInputs(m.play, m).mid);
+    assert.equal(r.drive, 'gas');
+    assert.equal(r.welge, null, 'no fractional flow on a gas asset');
+    near(r.currentSkinRateKboed, 31, 0.02, 'gas seeding calibrates too');
+  });
+
+  test('survives a record with no rate at all', () => {
+    const m = seedModel({ name: 'Blank' });
+    const r = technicalPotential(buildInputs(m.play, m).mid);
+    assert.ok(Number.isFinite(r.potentialKboed) && r.potentialKboed > 0,
+      'still yields something rather than throwing');
+  });
+
+  test('a rate no well could deliver clamps the skin rather than looping', () => {
+    const m = seedModel({ name: 'Implausible', current: 100000, plan: 120000 });
+    assert.ok(Number.isFinite(m.assumed['pressure.skin']), 'skin is a number');
+    const r = technicalPotential(buildInputs(m.play, m).mid);
+    assert.ok(Number.isFinite(r.potentialKboed), 'and the model still computes');
   });
 });
 
