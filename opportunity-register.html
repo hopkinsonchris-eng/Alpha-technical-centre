@@ -628,7 +628,12 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
 <script type="module">
   // Dynamic import so a failed fetch is catchable. A static import that 404s
   // kills the module silently and the page would have no idea.
-  Promise.all([import('./js/potential.js'), import('./js/analogues.js')])
+  //
+  // The ?v token pins the page to a known version of its calculator. This HTML
+  // revalidates on every load, so bumping the token guarantees a matching
+  // module is fetched rather than whatever a proxy still happens to be holding.
+  // BUMP IT WHENEVER js/potential.js OR js/analogues.js CHANGES.
+  Promise.all([import('./js/potential.js?v=2'), import('./js/analogues.js?v=2')])
     .then(function (m) {
       window.ATCP = Object.assign({}, m[0], m[1]);
       window.ATCP_STATUS = 'ready';
