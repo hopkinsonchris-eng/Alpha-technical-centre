@@ -445,6 +445,7 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
 </div>
 
 <main>
+  <div class="sim-banner" id="calcAlert" hidden style="margin:0 0 14px"></div>
   <section class="totals" aria-label="Portfolio totals">
     <div class="kpi"><span class="label">Opportunities</span><strong data-kpi="count">0</strong><small id="kCountries">0 countries</small></div>
     <div class="kpi"><span class="label">Fact, today</span><strong data-kpi="fact">0</strong><small>kboe/d gross</small></div>
@@ -625,9 +626,20 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
      node (npm test). They hand themselves to the page here. Module scripts are
      deferred, so this runs before DOMContentLoaded and the page finds them. -->
 <script type="module">
-  import * as Potential from './js/potential.js';
-  import * as Analogues from './js/analogues.js';
-  window.ATCP = Object.assign({}, Potential, Analogues);
+  // Dynamic import so a failed fetch is catchable. A static import that 404s
+  // kills the module silently and the page would have no idea.
+  Promise.all([import('./js/potential.js'), import('./js/analogues.js')])
+    .then(function (m) {
+      window.ATCP = Object.assign({}, m[0], m[1]);
+      window.ATCP_STATUS = 'ready';
+    })
+    .catch(function (e) {
+      window.ATCP_STATUS = 'The calculator could not be loaded: ' + ((e && e.message) || e);
+    })
+    .then(function () { window.dispatchEvent(new Event('atc-calc-ready')); });
+</script>
+<script nomodule>
+  window.ATCP_STATUS = 'This browser does not support JavaScript modules, so the technical potential cannot be calculated here.';
   window.dispatchEvent(new Event('atc-calc-ready'));
 </script>
 <script>
@@ -823,7 +835,9 @@ function sumBy(fn){return state.filtered.reduce(function(a,o){return a+fn(o);},0
    read this, so they cannot drift apart. */
 function totals(){
   var fact=sumBy(factOf), plan=sumBy(opPlanOf), atc=sumBy(atcPlanOf), tp=sumBy(tpOf);
+  var computed=state.filtered.filter(function(o){var c=calcOf(o);return c&&!c.error;}).length;
   return {fact:fact, plan:plan, atc:atc, tp:tp,
+          computed:computed, total:state.filtered.length, allDark:computed===0&&state.filtered.length>0,
           operatorOwn:plan-fact, alphaUplift:atc-plan, stretch:tp-atc,
           tpLow:sumBy(function(o){var c=calcOf(o);return (c&&!c.error)?c.band.low.potentialKboed:0;}),
           tpHigh:sumBy(function(o){var c=calcOf(o);return (c&&!c.error)?c.band.high.potentialKboed:0;})};
@@ -835,16 +849,43 @@ function renderTotals(){
   countTo($('[data-kpi=count]'),f.length);
   countTo($('[data-kpi=fact]'),t.fact);
   countTo($('[data-kpi=plan]'),t.plan);
-  countTo($('[data-kpi=atc]'),t.atc);
-  countTo($('[data-kpi=potential]'),t.tp);
-  // The number is a volume and the caption describes that volume.
-  countTo($('[data-kpi=red]'),redUplift);
+  // A figure that could not be computed shows as a dash. Zero is a claim - it
+  // reads as "no upside" - and a calculator that did not load has not earned it.
+  if(t.allDark){
+    $('[data-kpi=atc]').textContent='\u2014';
+    $('[data-kpi=potential]').textContent='\u2014';
+    $('[data-kpi=red]').textContent='\u2014';
+  }else{
+    countTo($('[data-kpi=atc]'),t.atc);
+    countTo($('[data-kpi=potential]'),t.tp);
+    countTo($('[data-kpi=red]'),redUplift);
+  }
+  renderCalcAlert(t);
   var nC=new Set(f.map(function(o){return o.country;})).size;
   $('#kCountries').textContent=nC+(nC===1?' country':' countries');
-  $('#kTpBand').textContent=t.tp>0?('ceiling · '+fmt(t.tpLow)+'–'+fmt(t.tpHigh)+' range'):'ceiling';
-  $('#kRedShare').textContent=t.alphaUplift>0
+  $('#kTpBand').textContent=t.allDark?'not calculated'
+    :(t.tp>0?('ceiling · '+fmt(t.tpLow)+'–'+fmt(t.tpHigh)+' range'):'ceiling');
+  $('#kRedShare').textContent=t.allDark?'not calculated':t.alphaUplift>0
     ? 'kboe/d, '+Math.round(redUplift/t.alphaUplift*100)+'% of Alpha’s uplift, '+reds.length+(reds.length===1?' opportunity':' opportunities')
     : 'kboe/d from '+reds.length+(reds.length===1?' high-risk opportunity':' high-risk opportunities');
+}
+/* Says out loud when the calculated columns are missing, and why. Silence here
+   is what turns a module that failed to load into a page full of confident
+   zeros. */
+function renderCalcAlert(t){
+  var box=$('#calcAlert'); if(!box)return;
+  var status=window.ATCP_STATUS, msg='';
+  if(!window.ATCP){
+    msg='<strong>The technical-potential calculator did not load.</strong> '
+      +esc(status&&status!=='ready'?status:'The page could not reach js/potential.js.')
+      +' ATC’s plan, Alpha’s uplift and the ceiling are calculated from it, so they are shown as '
+      +'— rather than as zero. Reload the page; if it keeps happening the calculator files are not being served.';
+  }else if(t.total&&t.computed<t.total){
+    msg='<strong>'+(t.total-t.computed)+' of '+t.total+' opportunities could not be calculated.</strong> '
+      +'Open each one to see why. The totals cover only the '+t.computed+' that could.';
+  }
+  box.innerHTML=msg?'<span>⚠</span><div>'+msg+'</div>':'';
+  box.hidden=!msg;
 }
 function renderLadder(){
   var t=totals();
@@ -858,6 +899,15 @@ function renderLadder(){
   $('#lkPln').textContent='+'+fmt(operatorOwn);
   $('#lkAtc').textContent='+'+fmt(alphaUplift);
   $('#lkGap').textContent='+'+fmt(stretch);
+  if(t.allDark){
+    $('#lAtc').style.width='0%'; $('#lGap').style.width='0%';
+    $('#lkAtc').textContent='\u2014'; $('#lkGap').textContent='\u2014';
+    $('#ladderText').textContent='Today and the operators’ plans are shown. ATC’s plan and the '
+      +'technical ceiling are calculated, and the calculator is not available on this device.';
+    $('#ladderBar').setAttribute('aria-label','Fact '+fmt(t.fact)+', operator plan '+fmt(t.plan)
+      +'; ATC plan and technical ceiling not calculated');
+    return;
+  }
   $('#ladderText').textContent=t.plan>0
     ? 'Alpha commits to '+fmt(t.atc)+' kboe/d against the operators\u2019 '+fmt(t.plan)+', an uplift of '+fmt(t.alphaUplift)
       +'. The physics ceiling sits at '+fmt(t.tp)+' and is not a target.'
@@ -1529,6 +1579,7 @@ function start(){
   wire();
   var h=(location.hash||'').slice(1);
   if(['portfolio','pipeline','risk','register'].indexOf(h)>=0)setTab(h);
+  whenCalcReady(function(){
   Store.load().then(function(items){
     state.data=ensureAll(items);
     // Migrating in place is worth persisting, or every reload redoes it.
@@ -1540,6 +1591,16 @@ function start(){
   }).catch(function(){
     $('#priority').innerHTML='<div class="load-note">The register could not be loaded. Refresh the page to try again.</div>';
   });
+  });
+}
+/* The calculator arrives as a module, which is fetched. Rendering before it
+   lands would show dashes on a page that is about to be able to compute, so
+   wait for it - but never wait forever. */
+function whenCalcReady(fn){
+  if(window.ATCP||window.ATCP_STATUS){fn();return;}
+  var done=false, go=function(){if(done)return;done=true;fn();};
+  window.addEventListener('atc-calc-ready',go);
+  setTimeout(go,8000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

@@ -24,3 +24,10 @@ services:
       - path: /*.js
         name: Cache-Control
         value: public, max-age=31536000, immutable
+      # The calculator modules under /js are not fingerprinted, so a year-long
+      # immutable cache would let a stale module sit alongside a fresh page and
+      # quietly disagree with it. They revalidate on every load instead: a 304
+      # costs nothing and the page and its calculator always match.
+      - path: /js/*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
