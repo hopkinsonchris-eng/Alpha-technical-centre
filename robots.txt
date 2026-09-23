@@ -4,5 +4,6 @@ Allow: /
 # Internal tools — not for search indexing
 Disallow: /admin.html
 Disallow: /app.html
+Disallow: /opportunity-register.html
 
 Sitemap: https://www.alpha-technical-centre.com/sitemap.xml
