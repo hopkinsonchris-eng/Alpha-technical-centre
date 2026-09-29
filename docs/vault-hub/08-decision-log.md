@@ -16,3 +16,7 @@
 | M03 Tool registry and catalog | 775a37d | catalog (14) green; register pins follow `tool.json` | n/a |
 | M04 Vault client library | 5224720 | vault-client (9) green; e2e smoke loads it in Chromium | n/a |
 | M08 Staleness rules (engine only; re-run and delta note follow M05/M13) | ab151f5 | staleness (6) green incl. AC4 set and idempotence | n/a |
+| M02 Vault API core | see git log | vault api/audit/seed tests (59) green; 83 total | n/a |
+| M05 Opportunity Register capture | ceb7096 | e2e (3) green | `docs/vault-hub/evidence/m05-opportunity-register.png` |
+| M05 APEX Reservoir 3D capture, browser key removed | see git log | e2e (3) green; AC12 grep clean | `docs/vault-hub/evidence/m05-reservoir-simulator.png` |
+| M06 Hub Today page and settings | see git log | e2e (10) green incl. axe WCAG 2 A/AA | `docs/vault-hub/evidence/m06-hub-today.png` |
