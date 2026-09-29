@@ -11,7 +11,9 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: vault/package-lock.json }
-      - name: Root calculator tests
+      - name: Root install
+        run: npm ci
+      - name: Root calculator and client tests
         run: npm test
       - name: Vault install
         run: npm ci
@@ -25,6 +27,8 @@ jobs:
       - name: Schema fixtures are current
         run: npx tsx test/fixtures/generate.ts && git diff --exit-code -- test/fixtures
         working-directory: vault
+      - name: Browser end-to-end (Playwright)
+        run: npx playwright install --with-deps chromium && npm run e2e
       - name: No secrets in served files (AC12)
         run: scripts/check-no-secrets.sh
       - name: Public pages unchanged vs main (AC13)

@@ -7,6 +7,10 @@
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
     "test:vault": "npm --prefix vault test",
-    "test:all": "npm test && npm run test:vault"
+    "test:all": "npm test && npm run test:vault",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
   }
 }

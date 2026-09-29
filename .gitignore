@@ -9,3 +9,9 @@ ACCESS-SETUP-GUIDE.md
 vault/node_modules/
 vault/.env
 vault/pglite-data/
+vault/.storage/
+
+# Root dev dependencies (Playwright)
+node_modules/
+test-results/
+playwright-report/
