@@ -703,7 +703,10 @@ body{padding-top:0;}
 const PARTNERS={RE:{name:'Reservoir Engineering & Production',short:'RE&P Manager'},GEO:{name:'Geology',short:'Geology Manager'},INFRA:{name:'Infrastructure',short:'Infrastructure Manager'},SES:{name:'Seismic',short:'Seismic Manager'}};
 // Load rates from Staff Portal admin config (admin.html) — falls back to defaults
 const _ATC_DEFAULTS={Principal:13500,Senior:11000,'Mid-level':8000,Junior:5500};
-let _atcCfg={};try{_atcCfg=JSON.parse(localStorage.getItem('atc_admin_config'))||{};}catch(e){}
+let _atcCfg={};
+// Day rates: the Vault (GET /api/settings/day-rates) first, then this browser's saved copy exactly as before.
+try{const _x=new XMLHttpRequest();_x.open('GET','/api/settings/day-rates',false);_x.setRequestHeader('Accept','application/json');_x.send();if(_x.status===200){const _j=JSON.parse(_x.responseText);const _v=_j&&_j.value!==undefined?_j.value:_j;if(_v&&typeof _v==='object')_atcCfg=_v;}}catch(e){}
+if(!Object.keys(_atcCfg).length){try{_atcCfg=JSON.parse(localStorage.getItem('atc_admin_config'))||{};}catch(e){}}
 const WEEKLY_RATE=Object.assign({},_ATC_DEFAULTS,_atcCfg.rates||{});
 const _SW_MULT=(_atcCfg.swMult||100)/100;
 const _MISC_MULT=(_atcCfg.miscMult||100)/100;

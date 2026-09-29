@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub Settings — Alpha Technical Centre</title>
+<meta name="description" content="Staff settings: engineer weekly rates, cost adjustments and partner assignment used by Plan Your Job.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="hub.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body class="hub" data-page="settings">
+
+<a class="skip-link" href="#main" data-en="Skip to content" data-es="Saltar al contenido">Skip to content</a>
+
+<div class="hub-app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="hub-side">
+    <a class="nav-logo hub-brand" href="index.html" aria-label="Alpha Technical Centre Hub">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre · Hub</span>
+      </span>
+    </a>
+
+    <div class="hub-me" id="me" aria-live="polite">
+      <span class="hub-av off" id="me-av" aria-hidden="true">·</span>
+      <span>
+        <span class="hub-me-name" id="me-name" data-en="Checking session…" data-es="Comprobando sesión…">Checking session…</span>
+        <span class="hub-me-role" id="me-role"></span>
+      </span>
+    </div>
+
+    <nav aria-label="Hub">
+      <span class="hub-nav-group" data-en="Work" data-es="Trabajo">Work</span>
+      <div class="hub-nav">
+        <a href="index.html">
+          <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span data-en="Today" data-es="Hoy">Today</span>
+        </a>
+        <a href="search.html">
+          <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <span data-en="Find" data-es="Buscar">Find</span>
+        </a>
+      </div>
+      <span class="hub-nav-group" data-en="Firm" data-es="Firma">Firm</span>
+      <div class="hub-nav">
+        <a href="settings.html" aria-current="page">
+          <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          <span data-en="Settings" data-es="Ajustes">Settings</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="nav-lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+
+    <div class="hub-side-foot">
+      <span class="hub-dot off" id="vault-dot" aria-hidden="true"></span><span id="vault-state" data-en="Vault not checked" data-es="Vault sin comprobar">Vault not checked</span>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="hub-main">
+    <header class="hub-top">
+      <span class="hub-crumb"><span data-en="Hub" data-es="Hub">Hub</span> / <b data-en="Settings" data-es="Ajustes">Settings</b></span>
+      <form class="hub-find" role="search" action="search.html" method="get">
+        <label class="sr-only" for="find-q" data-en="Find across the Vault" data-es="Buscar en el Vault">Find across the Vault</label>
+        <input id="find-q" name="q" type="search" autocomplete="off" data-en-ph="Find across the Vault" data-es-ph="Buscar en el Vault" placeholder="Find across the Vault">
+        <button type="submit" data-en="Find" data-es="Buscar">Find</button>
+      </form>
+    </header>
+
+    <main class="hub-content" id="main">
+      <div class="hub-head">
+        <div>
+          <span class="label" data-en="Rate configuration" data-es="Configuración de tarifas">Rate configuration</span>
+          <h1 data-en="Engineer day rates" data-es="Tarifas de ingenieros">Engineer day rates</h1>
+          <p data-en="Weekly rates and cost adjustments used by Plan Your Job. Saved to the Vault so every machine sees the same rates; this browser keeps a copy as a fallback." data-es="Tarifas semanales y ajustes de coste que usa Plan Your Job. Se guardan en el Vault para que todos los equipos vean las mismas tarifas; este navegador conserva una copia de respaldo.">Weekly rates and cost adjustments used by Plan Your Job. Saved to the Vault so every machine sees the same rates; this browser keeps a copy as a fallback.</p>
+        </div>
+        <div class="hub-status" id="status-strip"></div>
+      </div>
+
+      <div id="notices" role="status"></div>
+
+      <form id="rates-form" novalidate>
+        <section aria-labelledby="h-rates">
+          <div class="card">
+            <div class="hub-card-head">
+              <h3 id="h-rates" data-en="Weekly labour rates (USD)" data-es="Tarifas semanales de personal (USD)">Weekly labour rates (USD)</h3>
+              <span class="hub-muted" data-en="per resource, per week" data-es="por recurso, por semana">per resource, per week</span>
+            </div>
+            <div class="hub-form-grid">
+              <div class="hub-field">
+                <label for="r-principal" data-en="Principal" data-es="Principal">Principal</label>
+                <input id="r-principal" type="number" min="0" step="500">
+                <span class="hint" data-en="Technical directors, competent persons, deal leads" data-es="Directores técnicos, personas competentes, líderes de operación">Technical directors, competent persons, deal leads</span>
+              </div>
+              <div class="hub-field">
+                <label for="r-senior" data-en="Senior" data-es="Senior">Senior</label>
+                <input id="r-senior" type="number" min="0" step="500">
+                <span class="hint" data-en="Lead engineers, discipline heads" data-es="Ingenieros líderes, jefes de disciplina">Lead engineers, discipline heads</span>
+              </div>
+              <div class="hub-field">
+                <label for="r-mid" data-en="Mid-level" data-es="Nivel medio">Mid-level</label>
+                <input id="r-mid" type="number" min="0" step="250">
+                <span class="hint" data-en="Supporting engineers, scribes, analysts" data-es="Ingenieros de apoyo, redactores, analistas">Supporting engineers, scribes, analysts</span>
+              </div>
+              <div class="hub-field">
+                <label for="r-junior" data-en="Junior" data-es="Junior">Junior</label>
+                <input id="r-junior" type="number" min="0" step="250">
+                <span class="hint" data-en="Graduate and junior support roles" data-es="Graduados y roles de apoyo junior">Graduate and junior support roles</span>
+              </div>
+            </div>
+            <div class="hub-preview" aria-live="polite">
+              <span class="label" data-en="Implied day rates (÷ 5 working days)" data-es="Tarifas diarias implícitas (÷ 5 días laborables)">Implied day rates (÷ 5 working days)</span>
+              <div class="hub-preview-grid">
+                <div><b id="d-principal">—</b><span class="hub-muted" data-en="Principal / day" data-es="Principal / día">Principal / day</span></div>
+                <div><b id="d-senior">—</b><span class="hub-muted" data-en="Senior / day" data-es="Senior / día">Senior / day</span></div>
+                <div><b id="d-mid">—</b><span class="hub-muted" data-en="Mid-level / day" data-es="Nivel medio / día">Mid-level / day</span></div>
+                <div><b id="d-junior">—</b><span class="hub-muted" data-en="Junior / day" data-es="Junior / día">Junior / day</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="h-adj">
+          <div class="card">
+            <div class="hub-card-head">
+              <h3 id="h-adj" data-en="Cost components: global adjustments" data-es="Componentes de coste: ajustes globales">Cost components: global adjustments</h3>
+              <span class="hub-muted" data-en="applied to all services" data-es="se aplican a todos los servicios">applied to all services</span>
+            </div>
+            <div class="hub-form-grid">
+              <div class="hub-field">
+                <label for="sw-mult" data-en="Software / tools uplift (%)" data-es="Incremento de software / herramientas (%)">Software / tools uplift (%)</label>
+                <input id="sw-mult" type="number" min="0" max="500" step="5">
+                <span class="hint" data-en="100 = no change · 120 = +20% on all software line items" data-es="100 = sin cambio · 120 = +20% en todas las partidas de software">100 = no change · 120 = +20% on all software line items</span>
+              </div>
+              <div class="hub-field">
+                <label for="misc-mult" data-en="Misc / expenses uplift (%)" data-es="Incremento de varios / gastos (%)">Misc / expenses uplift (%)</label>
+                <input id="misc-mult" type="number" min="0" max="500" step="5">
+                <span class="hint" data-en="100 = no change · 80 = -20% on all misc line items" data-es="100 = sin cambio · 80 = -20% en todas las partidas varias">100 = no change · 80 = -20% on all misc line items</span>
+              </div>
+              <div class="hub-field">
+                <label for="data-mult" data-en="Data / research uplift (%)" data-es="Incremento de datos / investigación (%)">Data / research uplift (%)</label>
+                <input id="data-mult" type="number" min="0" max="500" step="5">
+                <span class="hint" data-en="100 = no change" data-es="100 = sin cambio">100 = no change</span>
+              </div>
+              <div class="hub-field">
+                <label for="margin" data-en="Contractor margin (%)" data-es="Margen del contratista (%)">Contractor margin (%)</label>
+                <input id="margin" type="number" min="0" max="100" step="1">
+                <span class="hint" data-en="Applied on top of all costs; 0 = cost-plus only" data-es="Se aplica sobre todos los costes; 0 = solo coste más">Applied on top of all costs; 0 = cost-plus only</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="h-partners">
+          <div class="card">
+            <div class="hub-card-head">
+              <h3 id="h-partners" data-en="Partner assignment" data-es="Asignación de socios">Partner assignment</h3>
+              <span class="hub-muted" data-en="initials shown on scope-of-work documents" data-es="iniciales que figuran en los documentos de alcance">initials shown on scope-of-work documents</span>
+            </div>
+            <div class="hub-table-wrap">
+              <table class="hub-partners">
+                <thead>
+                  <tr>
+                    <th scope="col" data-en="Initials" data-es="Iniciales">Initials</th>
+                    <th scope="col" data-en="Role" data-es="Cargo">Role</th>
+                    <th scope="col" data-en="Partner" data-es="Socio">Partner</th>
+                    <th scope="col" data-en="Charged at" data-es="Facturado a">Charged at</th>
+                  </tr>
+                </thead>
+                <tbody id="partner-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <div class="hub-actions" style="padding-left:0">
+          <button type="submit" class="btn btn-primary" data-en="Save and apply" data-es="Guardar y aplicar">Save and apply</button>
+          <button type="button" class="btn btn-outline" id="reset" data-en="Reset to defaults" data-es="Restablecer valores">Reset to defaults</button>
+          <span id="save-status" role="status" class="hub-muted"></span>
+        </div>
+      </form>
+
+      <p class="hub-foot" data-en="Internal · Strictly confidential" data-es="Interno · Estrictamente confidencial">Internal · Strictly confidential</p>
+    </main>
+  </div>
+</div>
+
+<script src="../main.js"></script>
+<script type="module" src="hub.js"></script>
+<script type="module">
+import { api, mk, dv, add, setText } from './hub.js';
+
+/* Same defaults as admin.html and plan-your-job.html. */
+const DEFAULTS = {
+  rates: { Principal: 13500, Senior: 11000, 'Mid-level': 8000, Junior: 5500 },
+  swMult: 100, miscMult: 100, dataMult: 100, margin: 0,
+  partners: [
+    { code: 'MP',    name: 'Chris Hopkinson',   role: 'Managing Partner',     level: 'Principal' },
+    { code: 'RE',    name: 'Anton Agafonov',    role: 'Reservoir Engineer',   level: 'Senior' },
+    { code: 'INFRA', name: 'Pavel Markman',     role: 'Facilities / Wells',   level: 'Senior' },
+    { code: 'GEO',   name: 'Dmitry Sazonenko',  role: 'Geoscience / Geology', level: 'Senior' },
+  ],
+};
+const STORAGE_KEY = 'atc_admin_config';       // same key admin.html and plan-your-job.html use
+const IMPORTED_KEY = 'atc_admin_config_imported';
+const API_PATH = '/api/settings/day-rates';
+const $ = (id) => document.getElementById(id);
+
+function lsGet() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; } catch (e) { return null; } }
+function lsSet(cfg) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); return true; } catch (e) { return false; } }
+
+const setStatus = (en, es, bad) => {
+  const el = $('save-status');
+  setText(el, en, es);
+  el.style.color = bad ? 'var(--bad)' : 'var(--ok)';
+};
+const banner = (en, es) => { $('notices').textContent = ''; if (en) add($('notices'), add(mk('div', 'hub-notice warn'), mk('span', null, en, es))); };
+
+/* Vault first; the API answers {key, value, ...}. A JSON not_found means "API is up, nothing saved yet". */
+async function readVault() {
+  const r = await api(API_PATH);
+  if (r.ok && r.body) return { state: 'ok', cfg: r.body.value !== undefined ? r.body.value : r.body };
+  if (r.status === 404 && r.body && r.body.error && r.body.error.code === 'not_found') return { state: 'empty' };
+  return { state: 'down' };
+}
+async function writeVault(cfg) {
+  let r = await api(API_PATH, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ value: cfg }) });
+  if (r.status === 404 || r.status === 405) {
+    r = await api(API_PATH, { method: 'PUT', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ value: cfg }) });
+  }
+  return r.ok;
+}
+
+function fill(cfg) {
+  const r = (cfg && cfg.rates) || DEFAULTS.rates;
+  $('r-principal').value = r.Principal ?? DEFAULTS.rates.Principal;
+  $('r-senior').value = r.Senior ?? DEFAULTS.rates.Senior;
+  $('r-mid').value = r['Mid-level'] ?? DEFAULTS.rates['Mid-level'];
+  $('r-junior').value = r.Junior ?? DEFAULTS.rates.Junior;
+  $('sw-mult').value = (cfg && cfg.swMult) ?? DEFAULTS.swMult;
+  $('misc-mult').value = (cfg && cfg.miscMult) ?? DEFAULTS.miscMult;
+  $('data-mult').value = (cfg && cfg.dataMult) ?? DEFAULTS.dataMult;
+  $('margin').value = (cfg && cfg.margin) ?? DEFAULTS.margin;
+  let partners = (cfg && cfg.partners) || DEFAULTS.partners;
+  if (!partners.length || !partners.every((p) => p.level) || partners.some((p) => p.code === 'COM')) partners = DEFAULTS.partners;
+  renderPartners(partners);
+  preview();
+}
+
+function renderPartners(partners) {
+  const tb = $('partner-tbody');
+  tb.textContent = '';
+  for (const p of partners) {
+    const rate = Number($(p.level === 'Principal' ? 'r-principal' : 'r-senior').value);
+    const tr = mk('tr', 'partner-row', null, null, { 'data-code': p.code, 'data-level': p.level });
+    const nameCell = mk('td');
+    add(nameCell, mk('input', 'p-name', null, null, { type: 'text', value: p.name, 'aria-label': 'Partner name ' + p.code }));
+    add(tr, dv('td', null, p.code), dv('td', 'p-role', p.role), nameCell,
+      dv('td', null, p.level + (rate ? ' · $' + rate.toLocaleString('en-GB') + '/wk' : '')));
+    add(tb, tr);
+  }
+}
+
+function preview() {
+  for (const [id, key] of [['principal', 'r-principal'], ['senior', 'r-senior'], ['mid', 'r-mid'], ['junior', 'r-junior']]) {
+    const daily = Math.round((parseFloat($(key).value) || 0) / 5);
+    $('d-' + id).textContent = daily ? '$' + daily.toLocaleString('en-GB') : '—';
+  }
+}
+for (const id of ['r-principal', 'r-senior', 'r-mid', 'r-junior']) $(id).addEventListener('input', preview);
+
+function collect() {
+  const partners = [...document.querySelectorAll('.partner-row')].map((row) => ({
+    code: row.dataset.code, name: row.querySelector('.p-name').value, role: row.querySelector('.p-role').textContent, level: row.dataset.level,
+  }));
+  return {
+    rates: {
+      Principal: parseFloat($('r-principal').value) || DEFAULTS.rates.Principal,
+      Senior: parseFloat($('r-senior').value) || DEFAULTS.rates.Senior,
+      'Mid-level': parseFloat($('r-mid').value) || DEFAULTS.rates['Mid-level'],
+      Junior: parseFloat($('r-junior').value) || DEFAULTS.rates.Junior,
+    },
+    swMult: parseFloat($('sw-mult').value) || 100,
+    miscMult: parseFloat($('misc-mult').value) || 100,
+    dataMult: parseFloat($('data-mult').value) || 100,
+    margin: parseFloat($('margin').value) || 0,
+    partners,
+    savedAt: new Date().toISOString(),
+  };
+}
+
+let vaultUp = false;
+
+async function load() {
+  const v = await readVault();
+  const local = lsGet();
+  const strip = $('status-strip');
+  strip.textContent = '';
+  if (v.state === 'ok') {
+    vaultUp = true;
+    fill(v.cfg);
+    add(strip, mk('span', 'hub-pill ok', 'Stored in the Vault', 'Guardado en el Vault'));
+    lsSet(v.cfg);                       // keep the browser fallback current
+    return;
+  }
+  if (v.state === 'empty') {
+    vaultUp = true;
+    add(strip, mk('span', 'hub-pill ok', 'Stored in the Vault', 'Guardado en el Vault'));
+    if (local && !localStorage.getItem(IMPORTED_KEY)) {
+      // One-time import of rates previously saved in this browser via admin.html.
+      fill(local);
+      const saved = await writeVault(local);
+      if (saved) {
+        try { localStorage.setItem(IMPORTED_KEY, '1'); } catch (e) { /* ignore */ }
+        setStatus('Imported the rates saved in this browser into the Vault.', 'Se importaron al Vault las tarifas guardadas en este navegador.');
+      }
+      return;
+    }
+    fill(local);
+    return;
+  }
+  vaultUp = false;
+  add(strip, mk('span', 'hub-pill warn', 'Stored in this browser', 'Guardado en este navegador'));
+  banner('The Vault is unreachable. Rates are read from and saved to this browser only.', 'El Vault no es accesible. Las tarifas se leen y se guardan solo en este navegador.');
+  fill(local);
+}
+
+$('rates-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const cfg = collect();
+  const local = lsSet(cfg);
+  const remote = vaultUp ? await writeVault(cfg) : false;
+  if (remote) setStatus('Saved to the Vault. Plan Your Job will use these rates on next load.', 'Guardado en el Vault. Plan Your Job usará estas tarifas en la próxima carga.');
+  else if (local) setStatus('Saved in this browser only; the Vault could not be reached.', 'Guardado solo en este navegador; no se pudo acceder al Vault.', true);
+  else setStatus('Save failed.', 'Error al guardar.', true);
+  renderPartners(cfg.partners);
+});
+
+$('reset').addEventListener('click', async () => {
+  const msg = document.documentElement.lang === 'es' ? '¿Restablecer todas las tarifas a los valores de fábrica?' : 'Reset all rates to factory defaults?';
+  if (!confirm(msg)) return;
+  try { localStorage.removeItem(STORAGE_KEY); localStorage.setItem(IMPORTED_KEY, '1'); } catch (e) { /* ignore */ }
+  if (vaultUp) await api(API_PATH, { method: 'DELETE' });
+  fill(null);
+  setStatus('Reset to defaults.', 'Valores restablecidos.');
+});
+
+load();
+</script>
+</body>
+</html>
