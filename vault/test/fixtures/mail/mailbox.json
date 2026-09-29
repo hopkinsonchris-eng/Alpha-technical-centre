@@ -1,0 +1,207 @@
+{
+ "mailbox": "info@alpha-technical-centre.com",
+ "messages": [
+  {
+   "n": 1,
+   "file": "eml/01.eml",
+   "message_id": "m01@mail.fixture",
+   "folder": "inbox",
+   "uid": 1,
+   "gmail_id": "g01",
+   "late": false,
+   "labels_imap": [
+    "\\Seen"
+   ],
+   "label_ids": [
+    "INBOX",
+    "UNREAD"
+   ],
+   "date": "2026-03-02T09:15:00Z"
+  },
+  {
+   "n": 2,
+   "file": "eml/02.eml",
+   "message_id": "m02@mail.fixture",
+   "folder": "sent",
+   "uid": 1,
+   "gmail_id": "g02",
+   "late": false,
+   "labels_imap": [
+    "\\Seen"
+   ],
+   "label_ids": [
+    "SENT"
+   ],
+   "date": "2026-03-02T11:40:00Z"
+  },
+  {
+   "n": 3,
+   "file": "eml/03.eml",
+   "message_id": "m03@mail.fixture",
+   "folder": "inbox",
+   "uid": 2,
+   "gmail_id": "g03",
+   "late": false,
+   "labels_imap": [
+    "\\Seen"
+   ],
+   "label_ids": [
+    "INBOX",
+    "CATEGORY_PERSONAL"
+   ],
+   "date": "2026-03-04T15:02:00Z"
+  },
+  {
+   "n": 4,
+   "file": "eml/04.eml",
+   "message_id": "m04@mail.fixture",
+   "folder": "inbox",
+   "uid": 3,
+   "gmail_id": "g04",
+   "late": false,
+   "labels_imap": [],
+   "label_ids": [
+    "INBOX",
+    "CATEGORY_PROMOTIONS"
+   ],
+   "date": "2026-03-05T06:00:00Z"
+  },
+  {
+   "n": 5,
+   "file": "eml/05.eml",
+   "message_id": "m05@mail.fixture",
+   "folder": "inbox",
+   "uid": 4,
+   "gmail_id": "g05",
+   "late": false,
+   "labels_imap": [],
+   "label_ids": [
+    "INBOX"
+   ],
+   "date": "2026-03-09T13:30:00Z"
+  },
+  {
+   "n": 6,
+   "file": "eml/06.eml",
+   "message_id": "m06@mail.fixture",
+   "folder": "sent",
+   "uid": 2,
+   "gmail_id": "g06",
+   "late": false,
+   "labels_imap": [
+    "\\Seen"
+   ],
+   "label_ids": [
+    "SENT"
+   ],
+   "date": "2026-03-09T16:10:00Z"
+  },
+  {
+   "n": 7,
+   "file": "eml/07.eml",
+   "message_id": "m07@mail.fixture",
+   "folder": "inbox",
+   "uid": 5,
+   "gmail_id": "g07",
+   "late": false,
+   "labels_imap": [
+    "$Personal"
+   ],
+   "label_ids": [
+    "INBOX",
+    "Label_1"
+   ],
+   "date": "2026-03-10T18:45:00Z"
+  },
+  {
+   "n": 8,
+   "file": "eml/08.eml",
+   "message_id": "m08@mail.fixture",
+   "folder": "inbox",
+   "uid": 6,
+   "gmail_id": "g08",
+   "late": false,
+   "labels_imap": [
+    "\\Seen"
+   ],
+   "label_ids": [
+    "INBOX"
+   ],
+   "date": "2026-03-11T10:05:00Z"
+  },
+  {
+   "n": 9,
+   "file": "eml/09.eml",
+   "message_id": "m09@mail.fixture",
+   "folder": "sent",
+   "uid": 3,
+   "gmail_id": "g09",
+   "late": false,
+   "labels_imap": [
+    "\\Seen"
+   ],
+   "label_ids": [
+    "SENT"
+   ],
+   "date": "2026-03-12T08:20:00Z"
+  },
+  {
+   "n": 10,
+   "file": "eml/10.eml",
+   "message_id": "m10@mail.fixture",
+   "folder": "inbox",
+   "uid": 7,
+   "gmail_id": "g10",
+   "late": false,
+   "labels_imap": [],
+   "label_ids": [
+    "INBOX"
+   ],
+   "date": "2026-03-13T14:00:00Z"
+  },
+  {
+   "n": 11,
+   "file": "eml/11.eml",
+   "message_id": "m11@mail.fixture",
+   "folder": "sent",
+   "uid": 4,
+   "gmail_id": "g11",
+   "late": false,
+   "labels_imap": [
+    "\\Seen"
+   ],
+   "label_ids": [
+    "SENT"
+   ],
+   "date": "2026-03-16T09:00:00Z"
+  },
+  {
+   "n": 12,
+   "file": "eml/12.eml",
+   "message_id": "m12@mail.fixture",
+   "folder": "inbox",
+   "uid": 8,
+   "gmail_id": "g12",
+   "late": false,
+   "labels_imap": [],
+   "label_ids": [
+    "INBOX"
+   ],
+   "date": "2026-03-17T07:30:00Z"
+  },
+  {
+   "n": 13,
+   "file": "eml/13.eml",
+   "message_id": "m13@mail.fixture",
+   "folder": "inbox",
+   "uid": 9,
+   "gmail_id": "g13",
+   "late": true,
+   "labels_imap": [],
+   "label_ids": [
+    "INBOX"
+   ],
+   "date": "2026-03-20T12:00:00Z"
+  }
+ ]
+}

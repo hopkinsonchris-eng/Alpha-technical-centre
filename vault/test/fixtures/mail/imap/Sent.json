@@ -1,0 +1,42 @@
+{
+ "path": "Sent",
+ "uidValidity": 1700000002,
+ "messages": [
+  {
+   "uid": 1,
+   "file": "eml/02.eml",
+   "flags": [
+    "\\Seen"
+   ],
+   "internalDate": "2026-03-02T11:40:00Z",
+   "late": false
+  },
+  {
+   "uid": 2,
+   "file": "eml/06.eml",
+   "flags": [
+    "\\Seen"
+   ],
+   "internalDate": "2026-03-09T16:10:00Z",
+   "late": false
+  },
+  {
+   "uid": 3,
+   "file": "eml/09.eml",
+   "flags": [
+    "\\Seen"
+   ],
+   "internalDate": "2026-03-12T08:20:00Z",
+   "late": false
+  },
+  {
+   "uid": 4,
+   "file": "eml/11.eml",
+   "flags": [
+    "\\Seen"
+   ],
+   "internalDate": "2026-03-16T09:00:00Z",
+   "late": false
+  }
+ ]
+}

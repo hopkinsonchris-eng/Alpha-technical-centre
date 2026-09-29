@@ -1,0 +1,25 @@
+{
+ "messages": [
+  {
+   "id": "g05",
+   "threadId": "t-m05mailfixture"
+  },
+  {
+   "id": "g04",
+   "threadId": "t-m04mailfixture"
+  },
+  {
+   "id": "g03",
+   "threadId": "t-m03mailfixture"
+  },
+  {
+   "id": "g02",
+   "threadId": "t-m01mailfixture"
+  },
+  {
+   "id": "g01",
+   "threadId": "t-m01mailfixture"
+  }
+ ],
+ "resultSizeEstimate": 12
+}

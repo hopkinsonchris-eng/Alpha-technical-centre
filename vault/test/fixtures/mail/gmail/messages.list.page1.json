@@ -1,0 +1,34 @@
+{
+ "messages": [
+  {
+   "id": "g12",
+   "threadId": "t-m12mailfixture"
+  },
+  {
+   "id": "g11",
+   "threadId": "t-m11mailfixture"
+  },
+  {
+   "id": "g10",
+   "threadId": "t-m10mailfixture"
+  },
+  {
+   "id": "g09",
+   "threadId": "t-m03mailfixture"
+  },
+  {
+   "id": "g08",
+   "threadId": "t-m03mailfixture"
+  },
+  {
+   "id": "g07",
+   "threadId": "t-m07mailfixture"
+  },
+  {
+   "id": "g06",
+   "threadId": "t-m05mailfixture"
+  }
+ ],
+ "nextPageToken": "page2",
+ "resultSizeEstimate": 12
+}

@@ -1,0 +1,24 @@
+{
+ "history": [
+  {
+   "id": "1005",
+   "messages": [
+    {
+     "id": "g13"
+    }
+   ],
+   "messagesAdded": [
+    {
+     "message": {
+      "id": "g13",
+      "threadId": "t-m01mailfixture",
+      "labelIds": [
+       "INBOX"
+      ]
+     }
+    }
+   ]
+  }
+ ],
+ "historyId": "1010"
+}
