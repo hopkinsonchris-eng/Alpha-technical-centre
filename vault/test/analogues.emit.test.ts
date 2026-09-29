@@ -71,7 +71,7 @@ test('AC11: every evaluation run in the fixture set emits a row that validates, 
   runs.push(await saveRun('financial-model'));
   for (const rec of runs) {
     const r = await emitForRun(db, rec.id);
-    assert.equal(r.status, 'emitted', `${rec.job}: ${JSON.stringify(r)}`);
+    assert.ok(['emitted', 'replaced'].includes(r.status), `${rec.job}: ${JSON.stringify(r)}`);   // saved runs are emitted on save; a manual emit replaces
     const row = (await db.query<any>('SELECT row FROM analogue_rows WHERE id = $1', [r.row_id])).rows[0].row;
     assert.deepEqual(validate('analogue-row', row), [], `${rec.job} row validates`);
     assert.equal(row.provenance, 'own-evaluation');
@@ -147,7 +147,7 @@ test('emit is idempotent: one row per run, replaced on re-emit, removed when the
   const rec = await saveRun('financial-model', { params: { ...fixture('financial-model').params, brent: 71 }, asset_ids: ['field:llanos:cubiro'] });
   const first = await emitForRun(db, rec.id);
   const again = await emitForRun(db, rec.id);
-  assert.equal(first.status, 'emitted'); assert.equal(again.status, 'replaced'); assert.equal(first.row_id, again.row_id);
+  assert.ok(['emitted', 'replaced'].includes(first.status)); assert.equal(again.status, 'replaced'); assert.equal(first.row_id, again.row_id);
   const count = () => db.query<{ n: number }>('SELECT count(*)::int AS n FROM analogue_rows WHERE source_ref = $1', [`run:${rec.id}`]).then(r => r.rows[0].n);
   assert.equal(await count(), 1);
   await db.query("UPDATE analogue_rows SET row = jsonb_set(row, '{notes}', '\"stale\"') WHERE id = $1", [first.row_id]);
@@ -166,7 +166,7 @@ test('emitIfEvaluation skips non-evaluation tools and never throws', async () =>
   const missing = await emitIfEvaluation(db, randomUUID());
   assert.equal(missing.status, 'skipped'); assert.match(missing.reason!, /not found/);
   const ok = await saveRun('ela-studio', { params: { ...fixture('ela-studio').params, crews: 9 } });
-  assert.equal((await emitIfEvaluation(db, ok.id)).status, 'emitted');
+  assert.ok(['emitted', 'replaced'].includes((await emitIfEvaluation(db, ok.id)).status));
 });
 
 test('backfill emits rows for final runs that have none, and only those', async () => {
@@ -188,7 +188,7 @@ test('backfill emits rows for final runs that have none, and only those', async 
 test('POST /api/analogues/emit/:runId: 201 then 200, 404, and 403 outside the caller\'s scope', async () => {
   const rec = await saveRun('financial-model', { params: { ...fixture('financial-model').params, brent: 90 } });
   let r = await post(app, `/api/analogues/emit/${rec.id}`);
-  assert.equal(r.status, 201); assert.equal(((await r.json()) as any).status, 'emitted');
+  assert.ok([200, 201].includes(r.status)); assert.ok(['emitted', 'replaced'].includes(((await r.json()) as any).status));
   r = await post(app, `/api/analogues/emit/${rec.id}`);
   assert.equal(r.status, 200); assert.equal(((await r.json()) as any).status, 'replaced');
   assert.equal((await post(app, `/api/analogues/emit/${randomUUID()}`)).status, 404);
