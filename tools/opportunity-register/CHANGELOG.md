@@ -4,6 +4,10 @@ All notable changes to Opportunity Register are recorded here. Format: [Keep a C
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-29
+### Added
+- Vault analogue defaults can be overlaid on the analogue badge with the count behind them (`js/analogues.js` loadVaultDefaults; ae040f4). Calculations unchanged.
+
 ## [2.1.2] - 2026-09-23
 
 ### Changed

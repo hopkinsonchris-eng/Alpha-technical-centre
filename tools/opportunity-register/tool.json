@@ -16,6 +16,18 @@
   ],
   "versions": [
     {
+      "version": "2.2.0",
+      "released_at": "2026-09-29",
+      "commit": "ae040f4",
+      "status": "approved",
+      "modules": [
+        "js/potential.js",
+        "js/analogues.js"
+      ],
+      "breaking": false,
+      "notes": "js/analogues.js can overlay Vault analogue defaults (loadVaultDefaults); calculations unchanged."
+    },
+    {
       "version": "2.1.2",
       "released_at": "2026-09-23",
       "commit": "d8a4835",
@@ -76,7 +88,7 @@
     }
   ],
   "aliases": {
-    "current": "2.1.2",
-    "previous": "2.1.1"
+    "current": "2.2.0",
+    "previous": "2.1.2"
   }
 }

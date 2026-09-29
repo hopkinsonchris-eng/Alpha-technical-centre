@@ -631,6 +631,18 @@
       ],
       "versions": [
         {
+          "version": "2.2.0",
+          "released_at": "2026-09-29",
+          "commit": "ae040f4",
+          "status": "approved",
+          "modules": [
+            "js/potential.js",
+            "js/analogues.js"
+          ],
+          "breaking": false,
+          "notes": "js/analogues.js can overlay Vault analogue defaults (loadVaultDefaults); calculations unchanged."
+        },
+        {
           "version": "2.1.2",
           "released_at": "2026-09-23",
           "commit": "d8a4835",
@@ -691,14 +703,23 @@
         }
       ],
       "aliases": {
-        "current": "2.1.2",
-        "previous": "2.1.1"
+        "current": "2.2.0",
+        "previous": "2.1.2"
       },
       "releases": [
         {
           "version": "Unreleased",
           "date": "",
           "sections": {}
+        },
+        {
+          "version": "2.2.0",
+          "date": "2026-09-29",
+          "sections": {
+            "Added": [
+              "Vault analogue defaults can be overlaid on the analogue badge with the count behind them (`js/analogues.js` loadVaultDefaults; ae040f4). Calculations unchanged."
+            ]
+          }
         },
         {
           "version": "2.1.2",
@@ -859,6 +880,6 @@
       ]
     }
   ],
-  "built_at": "2026-09-29T22:23:55.352Z",
-  "commit": "a8e849a"
+  "built_at": "2026-09-29T23:15:53.552Z",
+  "commit": "ae040f4"
 }
