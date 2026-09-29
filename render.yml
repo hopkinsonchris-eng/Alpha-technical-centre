@@ -64,3 +64,22 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+
+  # APEX Asset Intelligence snapshot (M05, D6): files saved formations as runs
+  # until the app pushes them itself. Needs APP_TOKENS, APEX_AI_BASE_URL, APEX_AI_TOKEN.
+  - type: cron
+    name: atc-vault-apex-snapshot
+    runtime: node
+    rootDir: vault
+    schedule: "45 3 * * *"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/apex-snapshot.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_TOKENS
+        sync: false
+      - key: APEX_AI_BASE_URL
+        sync: false
+      - key: APEX_AI_TOKEN
+        sync: false

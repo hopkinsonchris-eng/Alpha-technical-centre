@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import type { Db } from './db/client.ts';
 import { authenticate, AuthError, configFromEnv, type AuthConfig, type Person } from './auth.ts';
 import { mountRoutes } from './api/index.ts';
+import { ensureAppPerson, verifyAppToken } from './app-tokens.ts';
 
 export type Env = { Variables: { person: Person; db: Db } };
 
@@ -22,6 +23,19 @@ export async function createApp({ db, auth = configFromEnv(), version = process.
   app.use('/api/*', async (c, next) => {
     if (c.req.path === '/api/health') return next();
     try {
+      // External apps push runs with an app token (M05, D6). Only that one
+      // route accepts it, and the token is verified here, not bypassed.
+      if (c.req.path === '/api/app/runs' && /^Bearer\s/i.test(c.req.header('authorization') ?? '')) {
+        try {
+          c.set('person', await ensureAppPerson(db, verifyAppToken(c.req.raw.headers)));
+        } catch (e) {
+          // Refused pushes are audited so a misconfigured app is visible on the Hub.
+          await db.query("INSERT INTO audit_events (person_id, action, scope, detail) VALUES ('app:unauthenticated', 'app.run.refused', 'firm', $1::jsonb)", [JSON.stringify({ status: 401, message: (e as Error).message })]);
+          throw e;
+        }
+        c.set('db', db);
+        return next();
+      }
       c.set('person', await authenticate(c.req.raw.headers, auth, db));
       c.set('db', db);
     } catch (e) {

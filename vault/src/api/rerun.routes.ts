@@ -18,6 +18,7 @@ import { headlessRun } from '../rerun/runner.ts';
 import { computeChanges, explainDelta, historicalSpread } from '../rerun/delta.ts';
 import { runInputHash } from '../hash.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
+import { adapterEnvVars, adapterFor } from '../adapters/index.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 export interface RerunDeps { siteOrigin?: string; provider?: LlmProvider | null; catalog?: () => Catalog; executablePath?: string | null }
@@ -44,12 +45,18 @@ async function rerun(x: Ctx): Promise<{ status?: number; body: unknown }> {
   const catalog = deps.catalog ? deps.catalog() : buildCatalog(REPO_ROOT);
   const tool = catalog.tools.find(t => t.id === old.job);
   if (!tool) throw notFound(`tool ${old.job} is not in the catalog`);
-  if (tool.kind !== 'browser-tool') throw new ApiError(501, 'not_implemented', `re-run of ${tool.kind} tools needs the app's own /rerun adapter (D6)`);
+  // External apps re-run through their own adapter (D6); it exists only when its base URL env var is set.
+  const adapter = tool.kind !== 'browser-tool' ? adapterFor(tool.id) : undefined;
+  if (tool.kind !== 'browser-tool' && !adapter) {
+    const vars = adapterEnvVars(tool.id);
+    throw new ApiError(501, 'not_implemented', `re-run of ${tool.kind} tools needs the app's own /rerun adapter (D6)${vars.length ? `: set ${vars.join(' and ')}` : ''}`);
+  }
   const cur = resolveTool(catalog, old.job);
-  const entryUrl = `${siteOrigin()}/${cur.entry.replace(/^\//, '')}`;
 
-  let r;
-  try { r = await headlessRun({ entryUrl, params: old.params, executablePath: deps.executablePath }); }
+  let r: { outputs?: any; inputs?: any[]; assumptions?: any; params?: any };
+  try {
+    r = adapter ? await adapter.rerun(old.params) : await headlessRun({ entryUrl: `${siteOrigin()}/${cur.entry.replace(/^\//, '')}`, params: old.params, executablePath: deps.executablePath });
+  }
   catch (e: any) { throw new ApiError(e.status ?? 502, e.code ?? 'rerun_failed', `re-run failed: ${e.message}`); }
 
   // Re-resolve reference and document inputs to their latest version and hash.
