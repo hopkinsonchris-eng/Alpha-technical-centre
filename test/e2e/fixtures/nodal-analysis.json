@@ -1,0 +1,27 @@
+{
+  "params": {
+    "mode": "oil",
+    "unitSys": "field",
+    "espOn": false,
+    "espTargetPwf": 734.795,
+    "Pr": 3600,
+    "Pb": 2400,
+    "J": 2.2,
+    "skin": 3,
+    "depth": 7500,
+    "thp": 250,
+    "tbg": 2.99,
+    "wc": 25,
+    "glr": 600
+  },
+  "expected": {
+    "operating_point_rate": {
+      "value": 897.7,
+      "unit": "bopd"
+    },
+    "operating_point_bhp": {
+      "value": 3017.1,
+      "unit": "psia"
+    }
+  }
+}

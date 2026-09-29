@@ -243,6 +243,51 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
   font-size:0.85rem; color:var(--on-dark-mute); line-height:1.55;}
 .sens-foot b{color:var(--gold-bright); font-weight:600;}
 .sens-axis-tag{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--on-dark-faint); font-weight:600;}
+
+/* ---- Vault: Runs drawer and Save button ---- */
+.vault-btns{display:flex;gap:10px;align-items:center;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-body);font-size:0.875rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:9px 18px;border-radius:4px;border:1px solid var(--line);background:var(--navy-panel);color:var(--on-dark);cursor:pointer;transition:all .2s ease;text-decoration:none;}
+.btn:hover{border-color:var(--gold);color:var(--gold);}
+.btn.ghost{background:transparent;border-color:var(--line);}
+.btn.ghost:hover{background:rgba(201,168,76,.08);}
+#projectPicker select{font-family:var(--font-body);font-size:0.875rem;padding:8px 12px;border:1px solid var(--line);background:var(--navy-panel);color:var(--on-dark);border-radius:4px;cursor:pointer;}
+#projectPicker select:disabled{opacity:0.5;cursor:not-allowed;}
+#modeChip{font-size:0.75rem;color:var(--on-dark-faint);font-style:italic;}
+
+.drawer{position:fixed;inset:0;z-index:40;pointer-events:none;}
+.drawer.open{pointer-events:auto;}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.66);opacity:0;transition:opacity .2s;}
+.drawer.open .scrim{opacity:1;}
+.sheet{position:absolute;right:0;top:0;height:100%;width:min(600px,100%);background:var(--navy-deep);border-left:1px solid var(--line);box-shadow:-25px 0 70px rgba(0,0,0,.5);transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column;}
+.drawer.open .sheet{transform:none;}
+.sheet-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;align-items:flex-start;}
+.sheet-head p{margin:0;color:var(--on-dark-faint);font-size:12px;}
+.sheet-head h2{margin:3px 0 0;font-family:var(--font-display);font-size:1.5rem;font-weight:400;line-height:1.15;}
+.sheet-tools{display:flex;gap:6px;flex:none;}
+.xbtn{border:1px solid var(--line);background:transparent;color:var(--on-dark);width:34px;height:34px;border-radius:4px;font-size:18px;line-height:1;cursor:pointer;transition:all .2s;}
+.xbtn:hover{border-color:var(--gold);color:var(--gold);}
+.sheet-body{padding:18px 22px 40px;overflow:auto;-webkit-overflow-scrolling:touch;}
+.runs-note{margin:0 0 14px;padding:9px 12px;border:1px solid rgba(201,168,76,.45);background:rgba(245,166,91,.06);color:var(--gold-bright);border-radius:5px;font-size:12.5px;}
+.run-empty{color:var(--on-dark-faint);font-size:13px;margin:0 0 12px;}
+.run-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+.run{border:1px solid var(--line);background:var(--navy-panel);border-radius:5px;padding:11px 13px;}
+.run-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+.run-top strong{font-weight:600;}
+.run-meta{font-family:var(--font-mono);font-size:11px;color:var(--on-dark-faint);margin-top:3px;}
+.run-out{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px;}
+.run-out div{background:var(--navy-mid);border:1px solid var(--line);border-radius:4px;padding:6px 9px;}
+.run-out span{display:block;color:var(--on-dark-faint);font-size:11px;}
+.run-out b{font-family:var(--font-mono);font-weight:500;font-size:13px;}
+.run-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.run-actions .btn{padding:6px 11px;font-size:11px;letter-spacing:.02em;}
+.badge{border-radius:3px;padding:2px 7px;font-family:var(--font-body);letter-spacing:.06em;text-transform:uppercase;font-size:9px;font-weight:700;white-space:nowrap;display:inline-block;}
+.badge.green{background:rgba(52,199,149,.2);color:#34C795;}
+.badge.amber{background:rgba(245,166,91,.2);color:var(--esp);}
+.badge.steel{background:rgba(107,122,141,.2);color:var(--on-dark-mute);}
+.badge.red{background:rgba(213,91,91,.2);color:#d65b5b;}
+#toast{position:fixed;bottom:20px;left:20px;right:20px;max-width:360px;background:var(--navy-panel);border:1px solid var(--line);border-radius:4px;padding:14px 16px;z-index:50;display:none;font-size:0.875rem;}
+#toast.show{display:block;animation:slideUp .3s ease;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
 </style>
 <!-- ===== SEO / social / structured data ===== -->
 <link rel="canonical" href="https://www.alpha-technical-centre.com/nodal-analysis-tool.html">
@@ -278,8 +323,17 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
 
   <!-- ============ HEADER ============ -->
   <header class="tool-head">
-    <span class="eyebrow">Demo Tool · Well Performance</span>
-    <h1>Where the reservoir <em>meets</em> the tubing.</h1>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:16px;">
+      <div>
+        <span class="eyebrow">Demo Tool · Well Performance</span>
+        <h1>Where the reservoir <em>meets</em> the tubing.</h1>
+      </div>
+      <div class="vault-btns">
+        <div id="projectPicker" style="flex:none;"></div>
+        <button class="btn" type="button" data-vact="save-run" title="Save this run to the vault">Save run</button>
+        <button class="btn ghost" type="button" data-vact="open-runs" title="Open the runs drawer">Runs</button>
+      </div>
+    </div>
     <p class="sub">Nodal analysis finds the one rate a well will actually flow — the point where the reservoir's ability to push fluid in (inflow) balances the tubing's ability to lift it out (outflow). Move a slider and watch the operating point chase the new equilibrium in real time.</p>
 
     <div class="mode-row">
@@ -292,6 +346,7 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
         <button data-unit="metric">Metric</button>
       </div>
       <span class="mode-hint" id="modeHint">Composite Darcy + Vogel inflow, two-phase tubing lift</span>
+      <span class="mode-hint" id="modeChip" style="margin-left:auto;"></span>
     </div>
   </header>
 
@@ -384,7 +439,7 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
       </div>
 
       <!-- ===== SENSITIVITY MATRIX ===== -->
-      <div class="sens-card">
+      <div class="sens-card" style="margin-bottom:60px;">
         <div class="sens-head">
           <div>
             <h2>Production Sensitivity — Drawdown × Skin</h2>
@@ -409,9 +464,35 @@ svg.plot{width:100%; height:auto; display:block; touch-action:none;}
       </p>
     </main>
   </div>
+
+<!-- ===== RUNS DRAWER ===== -->
+<div class="drawer" id="runsDrawer" aria-hidden="true">
+  <div class="scrim" data-vact="close-runs"></div>
+  <aside class="sheet" role="dialog" aria-modal="true" aria-labelledby="runsTitle">
+    <div class="sheet-head">
+      <div><p id="runsMeta" data-en="Saved runs for this project" data-es="Ejecuciones guardadas para este proyecto">Saved runs for this project</p>
+        <h2 id="runsTitle" data-en="Runs" data-es="Ejecuciones">Runs</h2></div>
+      <div class="sheet-tools">
+        <button class="xbtn" type="button" data-vact="close-runs" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="sheet-body">
+      <p class="runs-note" id="runsQueuedNote" hidden data-en="Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns." data-es="En cola local: el Vault no está disponible, así que las ejecuciones se guardan en este dispositivo y se sincronizan al volver.">Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns.</p>
+      <p class="run-empty" id="runsEmpty" hidden data-en="No runs saved for this project yet." data-es="Aún no hay ejecuciones guardadas para este proyecto.">No runs saved for this project yet.</p>
+      <ul class="run-list" id="runsList"></ul>
+    </div>
+  </aside>
 </div>
 
-<script>
+<!-- ===== TOAST ===== -->
+<div id="toast"></div>
+
+</div>
+
+<script type="module">
+import { vault } from './js/vault-client.js';
+window.ATC_VAULT = vault;
+
 (function(){
 'use strict';
 
@@ -1159,10 +1240,324 @@ document.getElementById('scenarios').addEventListener('click', e=>{
   render();
 });
 
+/* ============================================================
+   VAULT INTEGRATION — ATC_TOOL interface + Runs drawer
+   ============================================================ */
+
+const TOOL_ID = 'nodal-analysis';
+let vProject = null;
+let runsCache = {};
+let runsSeq = 0;
+
+// Extract current state into params object for ATC_TOOL
+function getParams(){
+  const p = Object.assign({}, state, {mode, unitSys, espOn, espTargetPwf});
+  return p;
+}
+
+// Restore state from params object
+function setParams(p){
+  if(!p) return;
+  mode = p.mode || mode;
+  unitSys = p.unitSys || unitSys;
+  espOn = p.espOn || false;
+  espTargetPwf = p.espTargetPwf || ESP_TARGET_ATM * ATM_PSI;
+
+  // restore state fields
+  [...PARAMS[mode].inflow, ...PARAMS[mode].outflow].forEach(param=>{
+    if(p.hasOwnProperty(param.id)) state[param.id] = p[param.id];
+  });
+
+  // update UI
+  document.querySelectorAll('#modeToggle button').forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
+  document.querySelectorAll('#unitToggle button').forEach(b=>b.classList.toggle('active', b.dataset.unit===unitSys));
+  const espGrp=document.getElementById('espGrp');
+  if(mode!=='oil'){ espOn=false; const c=document.getElementById('espChk'); if(c) c.checked=false; const tc=document.getElementById('espTargetCtrl'); if(tc) tc.style.display='none'; if(espGrp) espGrp.style.display='none'; }
+  else if(espGrp){ espGrp.style.display=''; }
+  document.getElementById('modeHint').textContent = mode==='oil'
+    ? 'Composite Darcy + Vogel inflow, two-phase tubing lift'
+    : 'Backpressure deliverability inflow, gas-column outflow';
+  syncReadoutUnits();
+  rebuildControlsKeepState();
+  buildEspSlider();
+  if(mode==='oil'){
+    const c=document.getElementById('espChk');
+    if(c) c.checked=espOn;
+    const tc=document.getElementById('espTargetCtrl');
+    if(tc) tc.style.display = espOn ? '' : 'none';
+  }
+  render();
+}
+
+// Compute outputs from current state
+function computeOutputs(){
+  const s = state;
+  const sol = solveOperating(s);
+  const esp_q = !espOn || mode !== 'oil' || (!sol.dead && sol.q <= 1) ? null : ipr(espTargetPwf, s) > 1 ? ipr(espTargetPwf, s) : null;
+
+  const rate = esp_q || (sol.dead ? 0 : sol.q);
+  const pwf = esp_q ? espTargetPwf : sol.pwf;
+
+  // Convert to display units for output
+  const rateDisp = rateToDisplay(rate);
+  const pwfDisp = pressureToDisplay(pwf);
+
+  return {
+    operating_point_rate: {value: Math.round(rateDisp*10)/10, unit: rateUnitLabel()},
+    operating_point_bhp: {value: Math.round(pwfDisp*10)/10, unit: pressureUnit()}
+  };
+}
+
+// Run computation for headless use (M05 AC2)
+function runComputation(p){
+  if(p) setParams(p);
+  return computeOutputs();
+}
+
+function getInputs(){
+  return [{ref:'tool:'+TOOL_ID, kind:'manual'}];
+}
+
+function getAssumptions(){
+  // Default assumptions: fluid properties, tubing roughness, pump efficiency, etc.
+  // For now, we mark all unset parameters as assumed defaults
+  const assumptions = {};
+
+  // Standard assumptions for oil/gas wells
+  if(mode === 'oil'){
+    assumptions.oilGrad = {value: 0.34, unit: 'psi/ft', source: 'assumed', provenance: 'assumed'};
+    assumptions.waterGrad = {value: 0.433, unit: 'psi/ft', source: 'assumed', provenance: 'assumed'};
+    assumptions.fricK = {value: 3.4e-5, unit: 'dimensionless', source: 'assumed', provenance: 'assumed'};
+  } else {
+    assumptions.Tavg = {value: 580, unit: 'R', source: 'assumed', provenance: 'assumed'};
+    assumptions.fricK = {value: 3.0e-8, unit: 'dimensionless', source: 'assumed', provenance: 'assumed'};
+  }
+  assumptions.voidFrac = {value: 0.62, unit: 'max', source: 'assumed', provenance: 'assumed'};
+  if(mode === 'oil'){
+    assumptions.espHeadPerStage = {value: ESP_HEAD_PER_STAGE_FT, unit: 'ft/stage', source: 'assumed', provenance: 'assumed'};
+  }
+
+  return assumptions;
+}
+
+function toast(msg){
+  const box = document.getElementById('toast');
+  box.textContent = msg;
+  box.classList.add('show');
+  setTimeout(()=>box.classList.remove('show'), 3500);
+}
+
+function legalTag(){
+  return vProject && projectMeta[vProject] && projectMeta[vProject].default_legal_tag || 'lt-firm';
+}
+let projectMeta = {};
+
+function partialRun(outputs){
+  return {
+    job: TOOL_ID,
+    project_id: vProject || 'firm',
+    legal_tag: legalTag(),
+    asset_ids: [],
+    inputs: getInputs(),
+    assumptions: getAssumptions(),
+    params: getParams(),
+    outputs,
+    status: 'draft'
+  };
+}
+
+async function captureRun(){
+  if(!vault.mode) return Promise.resolve(null);
+  const outputs = computeOutputs();
+  if(!Object.keys(outputs).length) {
+    toast('No outputs computed.');
+    return Promise.resolve(null);
+  }
+  return vault.saveRun(partialRun(outputs), {toolId: TOOL_ID})
+    .then(res => {
+      toast(res.queued ? 'Run queued locally. It syncs when the Vault is reachable.' : 'Run saved to the Vault.');
+      if(runsOpen()) refreshRuns();
+      return res;
+    })
+    .catch(e => {
+      toast('The run could not be saved: ' + ((e && e.message) || e));
+      return null;
+    });
+}
+
+function runsOpen(){ return document.getElementById('runsDrawer').classList.contains('open'); }
+function openRuns(){
+  const d = document.getElementById('runsDrawer');
+  d.classList.add('open');
+  d.setAttribute('aria-hidden', 'false');
+  refreshRuns();
+  setTimeout(()=>{const b = d.querySelector('.xbtn'); if(b) b.focus({preventScroll:true});}, 60);
+}
+function closeRuns(){
+  const d = document.getElementById('runsDrawer');
+  d.classList.remove('open');
+  d.setAttribute('aria-hidden', 'true');
+}
+
+function fmtInt(v){
+  const n = Number(v);
+  return isFinite(n) ? n.toLocaleString('en-GB', {maximumFractionDigits: 0}) : String(v);
+}
+
+function runRow(r){
+  const when = r.created_at ? new Date(r.created_at).toLocaleString('en-GB', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '–';
+  const st = r.status || 'draft';
+  const cls = st === 'final' || st === 'reviewed' ? 'green' : st === 'superseded' ? 'steel' : 'amber';
+  const outs = r.outputs || {};
+  let cells = '';
+  if(outs.operating_point_rate && outs.operating_point_rate.value != null) {
+    cells += '<div><span>Rate</span><b>' + fmtInt(outs.operating_point_rate.value) + ' ' + (outs.operating_point_rate.unit||'') + '</b></div>';
+  }
+  if(outs.operating_point_bhp && outs.operating_point_bhp.value != null) {
+    cells += '<div><span>BHP</span><b>' + fmtInt(outs.operating_point_bhp.value) + ' ' + (outs.operating_point_bhp.unit||'') + '</b></div>';
+  }
+  return '<li class="run" data-run="' + (r.id||'') + '">'
+    +'<div class="run-top"><strong>' + (r.title||r.job||'Run') + '</strong><span>'
+    +(r.queued?'<span class="badge amber">queued locally</span> ':'')
+    +'<span class="badge ' + cls + '">' + st + '</span></span></div>'
+    +'<div class="run-meta">' + when + ' · ' + (r.author||'–') + ' · ' + (r.tool_version?'v'+r.tool_version:'v–') + '</div>'
+    +(cells?'<div class="run-out">'+cells+'</div>':'')
+    +'<div class="run-actions">'
+    +'<button class="btn" type="button" data-vact="run-load" data-id="' + (r.id||'') + '">Load</button>'
+    +(st==='superseded'?'':'<button class="btn ghost" type="button" data-vact="run-supersede" data-id="' + (r.id||'') + '">Supersede</button>')
+    +'</div></li>';
+}
+
+function refreshRuns(){
+  const list = document.getElementById('runsList');
+  const note = document.getElementById('runsQueuedNote');
+  const empty = document.getElementById('runsEmpty');
+  const mine = ++runsSeq;
+
+  if(!vault.mode) {
+    list.innerHTML = '';
+    empty.hidden = true;
+    note.hidden = false;
+    return Promise.resolve([]);
+  }
+
+  return vault.listRuns({project: vProject || 'firm', job: TOOL_ID})
+    .then(runs => {
+      if(mine !== runsSeq) return runs;
+      runs = (runs || []).slice().sort((a,b) => String(b.created_at).localeCompare(String(a.created_at)));
+      runsCache = {};
+      runs.forEach(r => {runsCache[r.id] = r;});
+      list.innerHTML = runs.map(runRow).join('');
+      empty.hidden = runs.length > 0;
+      note.hidden = !(vault.mode() !== 'server' || runs.some(r => r.queued));
+      return runs;
+    })
+    .catch(e => {
+      if(mine !== runsSeq) return [];
+      list.innerHTML = '<li class="run">The runs could not be listed: ' + ((e && e.message) || e) + '</li>';
+      empty.hidden = true;
+      note.hidden = vault.mode() === 'server';
+      return [];
+    });
+}
+
+function loadRunAction(id){
+  vault.loadRun(id).then(rec => {
+    setParams(rec.params);
+    const now = runComputation();
+    let same = true;
+    Object.keys(rec.outputs || {}).forEach(k => {
+      const a = rec.outputs[k] && rec.outputs[k].value;
+      const b = now[k] && now[k].value;
+      if(typeof a !== 'number' || typeof b !== 'number' || Math.abs(a-b) > 1e-6*Math.max(1, Math.abs(a))) same = false;
+    });
+    closeRuns();
+    toast(same ? 'Run loaded. The outputs reproduce exactly.' : 'Run loaded. The outputs differ from the saved run, so the calculator has changed since.');
+  })
+  .catch(e => {toast('The run could not be loaded: ' + ((e && e.message) || e));});
+}
+
+function supersedeAction(id){
+  if(!vault.mode) return;
+  const old = runsCache[id];
+  const outputs = computeOutputs();
+  if(!Object.keys(outputs).length) {
+    toast('No outputs computed.');
+    return;
+  }
+  vault.supersede(id, partialRun(outputs), {toolId: TOOL_ID})
+    .then(res => {
+      toast(res.queued ? 'Superseding run queued locally.' : 'Run superseded.');
+      return refreshRuns();
+    })
+    .catch(e => {toast('The run could not be superseded: ' + ((e && e.message) || e));});
+}
+
+function loadProjectMeta(){
+  if(vault.mode() !== 'server') return Promise.resolve();
+  return fetch('/api/projects', {cache:'no-store', headers:{accept:'application/json'}})
+    .then(r => r.ok ? r.json() : [])
+    .then(b => {
+      (Array.isArray(b) ? b : (b && b.projects) || []).forEach(pr => {
+        if(pr && pr.id != null) projectMeta[String(pr.id)] = pr;
+      });
+    })
+    .catch(() => {});
+}
+
+function wireVault(){
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-vact]');
+    if(!b) return;
+    const a = b.getAttribute('data-vact');
+    if(a === 'open-runs') openRuns();
+    else if(a === 'close-runs') closeRuns();
+    else if(a === 'save-run') captureRun();
+    else if(a === 'run-load') loadRunAction(b.getAttribute('data-id'));
+    else if(a === 'run-supersede') supersedeAction(b.getAttribute('data-id'));
+  });
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && runsOpen()) closeRuns();
+  });
+}
+
+function initVault(){
+  if(!vault.mode) return;
+  const el = document.getElementById('projectPicker');
+  vault.pickProject(el).then(id => {
+    vProject = id || 'firm';
+    return loadProjectMeta();
+  }).catch(() => {});
+  el.addEventListener('vault:project', e => {
+    vProject = (e.detail && e.detail.projectId) || 'firm';
+    if(runsOpen()) refreshRuns();
+  });
+  vault.resolve(TOOL_ID).then(r => {
+    const chip = document.getElementById('modeChip');
+    if(vault.mode() === 'server') chip.textContent = 'Connected to Vault';
+    else chip.textContent = 'Saved on this device';
+  }).catch(() => {
+    const chip = document.getElementById('modeChip');
+    chip.textContent = 'Saved on this device';
+  });
+}
+
+// Expose the ATC_TOOL interface for M05 / M08
+window.ATC_TOOL = {
+  id: TOOL_ID,
+  getParams,
+  setParams,
+  run: (p) => runComputation(p == null ? null : p),
+  getInputs,
+  getAssumptions
+};
+
 // init
 buildControls();
 buildEspSlider();
 render();
+wireVault();
+initVault();
 
 })();
 </script>
