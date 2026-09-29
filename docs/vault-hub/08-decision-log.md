@@ -27,3 +27,6 @@
 | M07 Project file and tool pages | see git log | e2e (23) green; 33 with Today | `docs/vault-hub/evidence/m07-project.png`, `m07-tool.png` |
 | M12 core: scope predicate and hybrid search | ed0cf70 | gateway (4) green; oracle over every chunk/scope/role; 10,000-query property with zero cross-client hits (30 s) | n/a (Find page follows with the search route) |
 | M13 core: letter rendering (HTML, DOCX, PDF) and drafting with enforced citations | c2b2f59, 3b6a272 | render (4) + draft (6) green; AC15 context assembled from the Vault alone | `docs/vault-hub/evidence/m13-letter.png`, `.pdf`, `.docx` |
+| M09 Document ingest, legal and billing extraction, WorkDrive and Zoho Books sync | 6e2360d | ingest (16) green incl. OCR of a generated scan; 50-page PDF in ~2 s | n/a |
+| M11 Research and public-data miners | 226cf28 | miners (50) green on recorded responses; OnePetro refused by code and test | n/a |
+| M13 routes: draft, render, scoped LLM proxy | b87fd1b, c3c95d5 | draft.routes (3) green incl. DOCX and PDF downloads | n/a |

@@ -83,3 +83,51 @@ services:
         sync: false
       - key: APEX_AI_TOKEN
         sync: false
+
+  # Ingest sync (M09): WorkDrive and Zoho Books, then chunk anything new.
+  - type: cron
+    name: atc-vault-ingest-sync
+    runtime: node
+    rootDir: vault
+    schedule: "*/15 * * * *"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/ingest-sync.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+
+  # Mail poll (M10): Zoho Mail and Gmail cursors every five minutes.
+  - type: cron
+    name: atc-vault-mail-poll
+    runtime: node
+    rootDir: vault
+    schedule: "*/5 * * * *"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/mail-poll.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+
+  # Miners (M11): papers weekly; regulator feeds in the first week of the month.
+  - type: cron
+    name: atc-vault-miners
+    runtime: node
+    rootDir: vault
+    schedule: "20 4 * * 1"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/miners.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+
+  # Weekly dream (M15): proposes lessons into the review queue.
+  - type: cron
+    name: atc-vault-weekly-dream
+    runtime: node
+    rootDir: vault
+    schedule: "0 5 * * 0"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/dream.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false

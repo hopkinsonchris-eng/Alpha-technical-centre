@@ -56,6 +56,21 @@ which can drive the same `ATC_TOOL` hook in the partner's own browser
 (M07/M08 UI). Without a browser the endpoint answers 503 and everything
 else keeps working.
 
+## Operational notes from the build
+
+- **OCR.** Scanned PDFs are OCRed with tesseract.js. The English language
+  data is not bundled: put `eng.traineddata.gz` in `vault/.storage/tessdata/`
+  (or set `VAULT_TESSDATA_DIR`), or set `VAULT_OCR_DOWNLOAD=1` to let it
+  download. Without it scans are stored with `needs_ocr` and picked up later.
+- **xlsx package.** `xlsx@0.18.5` (npm) carries open advisories with no npm
+  fix; uploaded spreadsheets are untrusted input. Swap to SheetJS's own CDN
+  build when convenient.
+- **Zoho and feed endpoints.** WorkDrive, Zoho Books, ANP Brazil and
+  Perupetro were built against documented shapes and recorded fixtures, not
+  live calls; verify against a real account before relying on them. ANP and
+  Perupetro are off in `master/topics.json` until then.
+- **Re-run runner and PDF rendering** need Chromium (see above).
+
 ## Layout
 
 ```
