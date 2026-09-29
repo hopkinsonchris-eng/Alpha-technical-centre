@@ -52,7 +52,8 @@ const text = (input: LetterInput, s: string | null | undefined) => (s == null ? 
 export function letterHtml(input: LetterInput): string {
   const t = T[input.language];
   const esc = (s: string | null | undefined) => (s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!));
-  const logo = existsSync(path.join(ASSETS, 'logo-lockup-dark.png')) ? `data:image/png;base64,${readFileSync(path.join(ASSETS, 'logo-lockup-dark.png')).toString('base64')}` : '';
+  const markPath = path.join(ASSETS, 'mark-gold.svg');
+  const mark = existsSync(markPath) ? `data:image/svg+xml;base64,${readFileSync(markPath).toString('base64')}` : '';
   const addr = [input.contact?.name, input.contact?.role, input.organisation.name, input.contact?.postal_address ?? input.organisation.registered_address].filter(Boolean).map(esc).join('<br>');
   const salutation = input.salutation ?? (input.contact ? `${t.dear} ${input.contact.name.split(' ').slice(-2).join(' ')},` : (input.language === 'es' ? 'Estimados señores:' : 'Dear Sirs,'));
   const closing = input.closing ?? (input.contact ? t.sincerely : t.faithfully);
@@ -62,7 +63,7 @@ export function letterHtml(input: LetterInput): string {
 @page { size: A4; margin: 22mm 20mm 20mm 20mm; }
 body { font-family: 'Barlow', Arial, Helvetica, sans-serif; color: #${NAVY}; font-size: 11pt; line-height: 1.45; margin: 0; }
 .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #${GOLD}; padding-bottom: 8px; margin-bottom: 18px; }
-.head img { height: 40px; } .tag { font-size: 8.5pt; color: #${STEEL}; text-align: right; }
+.brand { display: flex; align-items: center; gap: 10px; } .brand img { height: 34px; } .wordmark span { font-weight: 400; color: #${STEEL}; font-size: 10pt; letter-spacing: .12em; } .tag { font-size: 8.5pt; color: #${STEEL}; text-align: right; }
 .wordmark { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; letter-spacing: .04em; font-size: 14pt; }
 .refs { display: flex; justify-content: space-between; font-size: 9.5pt; margin-bottom: 14px; } .mono { font-family: 'Barlow Condensed', 'Arial Narrow', monospace; letter-spacing: .03em; }
 .addr { margin: 0 0 14px; } .subject { font-weight: 600; margin: 14px 0 4px; } .conf { font-size: 9pt; color: #${STEEL}; margin-bottom: 12px; }
@@ -71,7 +72,7 @@ p { margin: 0 0 10px; text-align: justify; } .sig { margin-top: 22px; white-spac
 .prev table { border-collapse: collapse; width: 100%; } .prev td, .prev th { text-align: left; padding: 3px 6px 3px 0; border-bottom: 1px solid #D8DCE2; vertical-align: top; } .prev th { font-size: 7.5pt; letter-spacing: .1em; color: #${STEEL}; text-transform: uppercase; }
 .foot { position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid #${GOLD}; font-size: 7.5pt; color: #${STEEL}; text-align: center; padding-top: 4px; }
 </style></head><body>
-<div class="head"><div>${logo ? `<img src="${logo}" alt="Alpha Technical Centre">` : '<div class="wordmark">ALPHA TECHNICAL CENTRE</div>'}</div><div class="tag">${esc(t.tagline)}</div></div>
+<div class="head"><div class="brand">${mark ? `<img src="${mark}" alt="">` : ''}<div class="wordmark">ALPHA <span>TECHNICAL CENTRE</span></div></div><div class="tag">${esc(t.tagline)}</div></div>
 <div class="refs"><div><span class="mono">${esc(t.ourRef)}: ${esc(input.reference_no)}</span>${input.their_reference ? `&nbsp;&nbsp;&nbsp;<span class="mono">${esc(t.yourRef)}: ${esc(input.their_reference)}</span>` : ''}</div><div>${esc(dateWords(input.date, input.language))}</div></div>
 <div class="addr">${addr}</div>
 ${input.subject ? `<div class="subject">${esc(text(input, input.subject))}</div>` : ''}${input.confidentiality_note ? `<div class="conf">${esc(text(input, input.confidentiality_note))}</div>` : ''}
