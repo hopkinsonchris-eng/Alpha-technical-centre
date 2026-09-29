@@ -18,9 +18,11 @@ embeddings and full-text index.
 - `vault/src/ingest/embed.ts`: provider interface `embed(texts[]) → float[][]` with a Voyage implementation and a deterministic fake for tests; 1024 dimensions.
 - Chunks carry `legal_tag`, `client_id`, `project_id`, `item_id`, `version` so the gateway can filter inside the query.
 - Re-ingest on new item version; old version's chunks kept but marked.
+- `vault/src/ingest/legal-finance.ts`: typed extraction for `nda`, `contract`, `licence`, `insurance`, `invoice`, `purchase-order`, `proposal`, `timesheet`, `expense` (parties, dates, amounts, currency, expiry, governing law, paid status) with evidence quotes; an NDA's expiry is proposed as the client's legal-tag expiry in the review queue; items in these types get `partners_only: true` unless the project says otherwise.
+- `vault/src/ingest/zoho-books.ts` (only if D11 = a): sync invoices, purchase orders and expenses by modified time; each becomes an Item with the PDF as original and the structured record in `extracted`.
 
 ## Acceptance criteria
-1. Uploading the fixture set (PDF with text, scanned PDF, DOCX, XLSX with 3 sheets, PPTX) yields one Item each with non-empty text and anchors.
+1. Uploading the fixture set (PDF with text, scanned PDF, DOCX, XLSX with 3 sheets, PPTX, an NDA, an invoice) yields one Item each with non-empty text and anchors; the NDA and invoice have parties, dates and amounts extracted with quotes, and are `partners_only`.
 2. The same file uploaded twice yields one Item (hash dedupe); a changed file yields version 2.
 3. Every chunk has a context prefix and a tsvector; count per document within ±10% of `tokens/600`.
 4. WorkDrive sync on the test folder creates Items for new files and versions for modified files, none for unchanged.

@@ -65,6 +65,29 @@ Rules enforced by the API, not by convention:
 4. Nothing is returned by search or retrieval without a scope, and nothing
    outside the scope or past its tag's expiry is ever returned.
 
+## 2a. What goes in the Vault (inventory)
+
+Everything the firm produces, receives or relies on. Nothing is "outside" by
+design; if a class of record is missing here it is a gap to raise.
+
+| Class | Examples | How it gets in | Vault type(s) | Default legal tag |
+|---|---|---|---|---|
+| Tool runs and iterations | every Save in every tool, re-runs, superseded runs | tools write them (M04, M05) | Run | project default |
+| Evaluations and deliverables | reports, technical notes, presentations, letters to clients, basis notes | WorkDrive sync, upload, drafting assistant (M09, M13) | report, letter, presentation, evaluation, note | client-nda |
+| Correspondence | every email in and out of the firm mailboxes and partners' mailboxes, with attachments; meeting notes and call transcripts | mail capture (M10); upload | email, transcript, note | project default |
+| Client data | data-room files, production histories, well files, logs, maps, spreadsheets, photos | WorkDrive sync, upload (M09) | data-room-file, spreadsheet, image | client-nda |
+| Legal | NDAs, engagement letters, contracts, subcontracts, licences, insurance, corporate records, regulatory filings | WorkDrive `Legal/` sync, upload; key terms extracted (parties, dates, expiry) and an NDA's expiry proposed as the client's legal-tag expiry | nda, contract, licence, insurance, corporate-record, regulatory-filing | firm (contract itself) with client link |
+| Billing and finance | proposals, purchase orders, invoices, timesheets, expenses, bank statements | Zoho Books sync or export (D11); WorkDrive `Finance/`; upload | proposal, invoice, purchase-order, timesheet, expense, bank-statement | firm, partners only |
+| Research | scientific and geological papers, abstracts, reading lists, radar dossiers | miners (M11); upload of licensed PDFs | paper | firm-public or third-party licence |
+| Public and regulator data | ANH, ANP, Argentina, Perupetro, SEC, EIA snapshots; OPEC secondary sources | miners (M11) | feed-snapshot | public |
+| Reference data | price decks, fiscal terms, cost benchmarks, master data | committed in `vault/reference/`, `vault/master/` | reference-set | firm |
+| Firm knowledge | lessons, method notes, skills, procedures, templates | lessons loop (M15), repo | Lesson, note | firm |
+| Assistant output | drafts, delta notes, calc notes, transcripts of assistant sessions | M13, M08 | note, transcript | inherits scope |
+
+Finance and legal records are visible to partners only by default (a
+`partners-only` flag on the legal tag); associates see them when a partner
+grants it per project.
+
 ## 3. Storage
 
 Postgres (Supabase Pro): `people, clients, projects, assets, legal_tags, tools,
