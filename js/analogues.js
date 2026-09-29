@@ -290,3 +290,57 @@ export function seedModel(o) {
 
   return { play, measured: {}, assumed, factors: [], signedBy: '', signedAt: '', seeded: true };
 }
+
+/* ── Vault analogue overlay (M16) ────────────────────────────────────────
+ *
+ * Optional. The static PLAYS above stay the defaults the calculator uses;
+ * nothing here changes them or any other export. loadVaultDefaults asks the
+ * Vault what the analogue table proposes for a play and returns it as an
+ * overlay in the same shape as a PLAYS entry, so a caller can lay it over the
+ * play and show where each number came from:
+ *
+ *   { rock: { k: [lo, mid, hi], hFt: [...], phi: [...] },
+ *     fluids: { muo }, pressure: { pres }, wells: { spacingAcres },
+ *     meta: { n, provenance, play, scope } }
+ *
+ * The rock inputs are [low, mid, high] (P10, P50, P90 of the rows in scope);
+ * the single-valued inputs carry the P50. meta.n is the number of analogue rows
+ * the proposal rests on and meta.provenance says what kind they are. It resolves
+ * to null - never throws - when the Vault cannot be reached, the scope is not
+ * allowed, or there are too few rows, so a page carries on with the static
+ * defaults exactly as before.
+ */
+const OVERLAYS = {};
+const TRIPLE = new Set(['rock.k', 'rock.hFt', 'rock.phi']);
+
+/** Turns a /api/analogues/defaults body into an overlay, or null when it proposes nothing. */
+export function overlayFromDefaults(body) {
+  if (!body || typeof body !== 'object' || !body.inputs || !(body.n_rows > 0)) return null;
+  const out = {};
+  for (const [path, x] of Object.entries(body.inputs)) {
+    const [group, key] = path.split('.');
+    if (!group || !key || !x || ![x.low, x.mid, x.high].every(Number.isFinite)) continue;
+    (out[group] = out[group] || {})[key] = TRIPLE.has(path) ? [x.low, x.mid, x.high] : x.mid;
+  }
+  if (!Object.keys(out).length) return null;
+  out.meta = { n: body.n_rows, provenance: body.provenance || {}, play: body.play_type, scope: body.scope };
+  return out;
+}
+
+export async function loadVaultDefaults(playType, scope, opts) {
+  try {
+    const o = opts || {};
+    const f = o.fetch || (typeof fetch === 'function' ? fetch : null);
+    if (!f || !playType || !scope) return null;
+    if (!o.fetch && typeof location !== 'undefined' && location.protocol === 'file:') return null;
+    const url = (o.base || '') + '/api/analogues/defaults?scope=' + encodeURIComponent(scope) + '&play_type=' + encodeURIComponent(playType);
+    const res = await f(url, { headers: { accept: 'application/json' }, credentials: 'same-origin', cache: 'no-store' });
+    if (!res || !res.ok) return null;
+    const overlay = overlayFromDefaults(await res.json());
+    if (overlay) OVERLAYS[playType] = overlay;
+    return overlay;
+  } catch (e) { return null; }
+}
+
+/** The overlay loadVaultDefaults last loaded for a play, or null. */
+export const activeOverlay = (playType) => OVERLAYS[playType] || null;

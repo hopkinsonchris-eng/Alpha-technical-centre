@@ -12,6 +12,8 @@ import {
   requireWritableProject, resolveTag, route, scopeLabel, sinceParam, tagsOfRefs, uuidParam, type Access, type Ctx,
 } from './common.ts';
 
+import { emitIfEvaluation } from '../analogues/emit.ts';
+
 const RUN_COLS = 'id, job, tool_version, project_id, legal_tag, status, supersedes, hidden, created_at, record';
 
 /** The RunRecord as stored, with the one mutable field (status) taken from the row. */
@@ -75,6 +77,8 @@ export async function createRun(x: Ctx, rec: any, supersedesId: string | null) {
       [stored.id, i.ref, i.kind, i.version == null ? null : String(i.version), i.hash ?? null, i.role ?? null]);
   }
   if (supersedesId) await db.query("UPDATE runs SET status = 'superseded' WHERE id = $1 AND status <> 'superseded'", [supersedesId]);
+  // Analogue memory (M16): evaluation runs also become a row in the analogue table. Never blocks the save.
+  try { await emitIfEvaluation(db, stored.id); } catch (e) { console.warn('[analogues] emit failed for', stored.id, (e as Error).message); }
   x.a.detail = { deduplicated: false, legal_tag: legalTag, ...(supersedesId ? { supersedes: supersedesId } : {}) };
   return { status: 201, body: { id: stored.id, deduplicated: false } };
 }

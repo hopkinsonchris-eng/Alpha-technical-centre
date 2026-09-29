@@ -682,6 +682,10 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
     .catch(function (e) {
       window.ATCP_STATUS = 'The calculator could not be loaded: ' + ((e && e.message) || e);
     })
+    .then(function () {   // opt-in: ?analogues=<scope> loads the Vault's analogue defaults, shown as a count on the badge
+      var sc = new URLSearchParams(location.search).get('analogues');
+      return sc && window.ATCP && ATCP.loadVaultDefaults ? Promise.all(ATCP.PLAY_KEYS.map(function (k) { return ATCP.loadVaultDefaults(k, sc); })) : null;
+    })
     .then(function () { window.dispatchEvent(new Event('atc-calc-ready')); });
 </script>
 <script type="module">
@@ -1397,6 +1401,7 @@ function potentialSection(o){
   if(c.error) return '<div class="section"><h3>Technical potential</h3>'
     + '<p class="thesis">Cannot be computed: '+esc(c.error)+'</p></div>';
   var b=c.band, m=b.mid, pm=o.potentialModel||{}, prov=c.prov;
+  var ov=ATCP.activeOverlay&&ATCP.activeOverlay(pm.play);
   var play=(ATCP.PLAYS[pm.play]||{}).label||pm.play||'unknown play';
   var calib=factOf(o)>0?(m.currentSkinRateKboed/factOf(o)):0;
   var calibText=factOf(o)>0
@@ -1421,7 +1426,7 @@ function potentialSection(o){
     + (m.bound==='rate'?'what the wells can flow':'the movable volume an ideal sweep recovers')
     + '. <strong>Unattainable by construction</strong>: areal and vertical sweep are held at unity and the damage is removed.</p>'
     + '<div class="detail-grid" style="margin-top:10px">'
-    +   '<div class="stat"><span>Inputs</span><strong><span class="prov '+prov.grade+'">'+prov.grade.replace('-',' ')+'</span>'+toolBadge()+'</strong></div>'
+    +   '<div class="stat"><span>Inputs</span><strong><span class="prov '+prov.grade+'">'+(ov&&prov.grade!=='measured'?'analogue (n='+ov.meta.n+')':prov.grade.replace('-',' '))+'</span>'+toolBadge()+'</strong></div>'
     +   '<div class="stat"><span>Measured / analogue / assumed</span><strong>'+prov.measured+' / '+prov.analogue+' / '+prov.assumed+'</strong></div>'
     +   '<div class="stat"><span>Model reproduces today</span><strong>'+calibText+'</strong></div>'
     +   (m.mobilityRatio!=null?'<div class="stat"><span>Mobility ratio</span><strong>'+m.mobilityRatio.toFixed(2)+'</strong></div>':'')
