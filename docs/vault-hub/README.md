@@ -1,6 +1,6 @@
 # ATC Vault & Hub — design pack
 
-**Status: Gate 1 decided (29 Sep 2026, all eleven decisions recorded in `03-choice-sheet.md`). Gate 2 (approval of the Markup in `06-architecture.md`) is open. Nothing has been built.**
+**Status: Gate 1 decided (29 Sep 2026, all eleven decisions recorded in `03-choice-sheet.md`). Gate 2 approved by Chris Hopkinson on 29 Sep 2026 ("Approved. Start building."). Build in progress from wave 0; see `08-decision-log.md`.**
 
 This folder is the complete design for the Alpha Technical Centre internal
 platform: a **Vault** (every run, version, evaluation, client file, letter,

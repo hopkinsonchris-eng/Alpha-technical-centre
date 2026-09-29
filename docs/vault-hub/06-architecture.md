@@ -1,6 +1,6 @@
 # Phase 5 — The Markup (architecture, acceptance criteria, smoke plan)
 
-**Gate 2 status: awaiting approval. Nothing here is built.** Written against
+**Gate 2 status: APPROVED by Chris Hopkinson, 29 Sep 2026 ("Approved. Start building. I would like to see mockups of the system").** Written against
 the decisions recorded in `03-choice-sheet.md` (D1 monorepo, D2 Node +
 Supabase, D3 Cloudflare Access, D4 legal tags, D5 vault holds originals,
 D6 APEX apps write runs, D7 Anthropic + Voyage server-side, D8 three tiers,
