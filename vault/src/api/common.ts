@@ -117,6 +117,7 @@ export function route(app: Hono<Env>, method: string | string[], path: string, a
       }
     }
     await audit(ctx.db, ctx.person.id, action, ctx.a.scope, ctx.a.refs.slice(0, 100), { ...ctx.a.detail, status, ...(errCode ? { error: errCode } : {}) });
+    if (body instanceof Response) return body;          // binary downloads (DOCX, PDF) pass through untouched
     return c.json(body as any, status as any);
   });
 }
