@@ -19,7 +19,7 @@ export function runRecord(row: any) {
   return { ...row.record, status: row.status, supersedes: row.supersedes ?? row.record.supersedes ?? null };
 }
 
-async function createRun(x: Ctx, rec: any, supersedesId: string | null) {
+export async function createRun(x: Ctx, rec: any, supersedesId: string | null) {
   const { db, person } = x;
   if (supersedesId) {
     if (rec.supersedes != null && String(rec.supersedes).toLowerCase() !== supersedesId) throw bad('supersedes must match the run being superseded', '/supersedes');

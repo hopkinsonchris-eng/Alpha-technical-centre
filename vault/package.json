@@ -23,6 +23,7 @@
     "hono": "^4.13.11",
     "jose": "^6.2.12",
     "pg": "^8.23.0",
+    "playwright-core": "^1.63.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
