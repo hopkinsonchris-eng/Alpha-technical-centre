@@ -1,0 +1,34 @@
+{
+  "code": 0,
+  "message": "success",
+  "invoice": {
+    "invoice_id": "9001",
+    "customer_name": "Petrolera del Orinoco S.A.",
+    "customer_id": "5550001",
+    "status": "paid",
+    "invoice_number": "INV-000014",
+    "reference_number": "",
+    "date": "2026-08-03",
+    "due_date": "2026-09-02",
+    "currency_code": "USD",
+    "total": 8400.0,
+    "balance": 0.0,
+    "created_time": "2026-08-03T09:00:00-0500",
+    "last_modified_time": "2026-09-20T11:00:00-0500",
+    "has_attachment": false,
+    "line_items": [
+      {
+        "name": "Reservoir screening, Carabobo",
+        "quantity": 6,
+        "rate": 1200,
+        "item_total": 7200
+      },
+      {
+        "name": "Fiscal terms review",
+        "quantity": 1,
+        "rate": 1200,
+        "item_total": 1200
+      }
+    ]
+  }
+}

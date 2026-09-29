@@ -1,0 +1,57 @@
+{
+  "data": [
+    {
+      "id": "wd-001",
+      "type": "files",
+      "attributes": {
+        "name": "Carabobo screening report.docx",
+        "display_attr_name": "Carabobo screening report.docx",
+        "extn": "docx",
+        "type": "docx",
+        "is_folder": false,
+        "modified_time": "Sep 29, 10:00 PM",
+        "modified_time_in_millisecond": 1790000000000,
+        "created_time_in_millisecond": 1789999000000,
+        "storage_info": {
+          "size": "9000",
+          "storage_used": "9000"
+        },
+        "permalink": "https://workdrive.zoho.com/file/wd-001",
+        "parent_id": "F1"
+      }
+    },
+    {
+      "id": "wd-002",
+      "type": "files",
+      "attributes": {
+        "name": "Price deck.xlsx",
+        "display_attr_name": "Price deck.xlsx",
+        "extn": "xlsx",
+        "type": "xlsx",
+        "is_folder": false,
+        "modified_time": "Sep 29, 10:00 PM",
+        "modified_time_in_millisecond": 1790000005000,
+        "created_time_in_millisecond": 1789999005000,
+        "storage_info": {
+          "size": "5000",
+          "storage_used": "5000"
+        },
+        "permalink": "https://workdrive.zoho.com/file/wd-002",
+        "parent_id": "F1"
+      }
+    },
+    {
+      "id": "SUB1",
+      "type": "files",
+      "attributes": {
+        "name": "Legal",
+        "display_attr_name": "Legal",
+        "type": "folder",
+        "is_folder": true,
+        "modified_time": "Sep 29, 10:00 PM",
+        "modified_time_in_millisecond": 1790000000000,
+        "parent_id": "F1"
+      }
+    }
+  ]
+}

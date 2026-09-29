@@ -1,0 +1,43 @@
+{
+  "code": 0,
+  "message": "success",
+  "invoices": [
+    {
+      "invoice_id": "9001",
+      "customer_name": "Petrolera del Orinoco S.A.",
+      "customer_id": "5550001",
+      "status": "paid",
+      "invoice_number": "INV-000014",
+      "reference_number": "",
+      "date": "2026-08-03",
+      "due_date": "2026-09-02",
+      "currency_code": "USD",
+      "total": 8400.0,
+      "balance": 0.0,
+      "created_time": "2026-08-03T09:00:00-0500",
+      "last_modified_time": "2026-09-20T11:00:00-0500",
+      "has_attachment": false
+    },
+    {
+      "invoice_id": "9002",
+      "customer_name": "Acme Drilling Ltd",
+      "customer_id": "5550002",
+      "status": "paid",
+      "invoice_number": "INV-000015",
+      "reference_number": "",
+      "date": "2026-08-10",
+      "due_date": "2026-09-09",
+      "currency_code": "USD",
+      "total": 2500.0,
+      "balance": 0.0,
+      "created_time": "2026-08-03T09:00:00-0500",
+      "last_modified_time": "2026-08-12T14:00:00-0500",
+      "has_attachment": false
+    }
+  ],
+  "page_context": {
+    "page": 1,
+    "per_page": 200,
+    "has_more_page": false
+  }
+}

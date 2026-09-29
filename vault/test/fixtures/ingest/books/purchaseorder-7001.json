@@ -1,0 +1,24 @@
+{
+  "code": 0,
+  "message": "success",
+  "purchaseorder": {
+    "purchaseorder_id": "7001",
+    "purchaseorder_number": "PO-00007",
+    "vendor_name": "Seismic Data Brokers Inc",
+    "vendor_id": "6660001",
+    "status": "open",
+    "date": "2026-08-15",
+    "delivery_date": "2026-09-30",
+    "currency_code": "USD",
+    "total": 12000.0,
+    "last_modified_time": "2026-08-15T10:00:00-0500",
+    "line_items": [
+      {
+        "name": "Regional 2D seismic licence",
+        "quantity": 1,
+        "rate": 12000,
+        "item_total": 12000
+      }
+    ]
+  }
+}

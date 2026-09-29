@@ -1,0 +1,16 @@
+{
+  "code": 0,
+  "message": "success",
+  "expense": {
+    "expense_id": "8001",
+    "date": "2026-08-20",
+    "account_name": "Travel",
+    "vendor_name": "Avianca",
+    "description": "Flight BOG-CCS",
+    "currency_code": "USD",
+    "total": 640.0,
+    "status": "unbilled",
+    "last_modified_time": "2026-08-20T18:00:00-0500",
+    "line_items": []
+  }
+}

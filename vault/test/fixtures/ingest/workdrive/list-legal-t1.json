@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "id": "wd-003",
+      "type": "files",
+      "attributes": {
+        "name": "NDA Orinoco.txt",
+        "display_attr_name": "NDA Orinoco.txt",
+        "extn": "txt",
+        "type": "text",
+        "is_folder": false,
+        "modified_time": "Sep 29, 10:00 PM",
+        "modified_time_in_millisecond": 1790000009000,
+        "created_time_in_millisecond": 1789999009000,
+        "storage_info": {
+          "size": "1800",
+          "storage_used": "1800"
+        },
+        "permalink": "https://workdrive.zoho.com/file/wd-003",
+        "parent_id": "F1"
+      }
+    }
+  ]
+}
