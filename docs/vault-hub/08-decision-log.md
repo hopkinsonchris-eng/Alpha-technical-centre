@@ -22,3 +22,5 @@
 | M06 Hub Today page and settings | see git log | e2e (10) green incl. axe WCAG 2 A/AA | `docs/vault-hub/evidence/m06-hub-today.png` |
 | M05 ELA Studio, Nodal Analysis, Financial Model, Plan Your Job capture | 6deadc7, ece8f6f, 17ef913, 2d4d07d | e2e 3+2+2+2 green | `docs/vault-hub/evidence/m05-*.png` |
 | M08 re-run, delta note, review queue | 7c049e5 | rerun (3) + hash (2) green; AC5 proven headlessly against the Register fixture | n/a (Hub surface in M07) |
+| M05 ELA Model Suite capture | b62e35d | e2e (5) green | `docs/vault-hub/evidence/m05-ela-model-suite.png` |
+| M05 APEX external-app adapters (D6): push with app tokens, re-run adapters, nightly snapshot | bd0cedc | app-tokens (7) + adapters (7) green; 102 vault tests | n/a; developer contract in `vault/src/adapters/README.md` |
