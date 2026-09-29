@@ -1,0 +1,42 @@
+{
+ "meta": {
+  "count": 3,
+  "next_cursor": null
+ },
+ "results": [
+  {
+   "id": "https://openalex.org/W1003",
+   "doi": null,
+   "title": "Steam Assisted Recovery of Extra-Heavy Crude",
+   "publication_date": "2026-09-10",
+   "authorships": [
+    {
+     "author": {
+      "display_name": "M. Lopez"
+     }
+    },
+    {
+     "author": {
+      "display_name": "K. Tanaka"
+     }
+    }
+   ],
+   "abstract_inverted_index": {
+    "Steam": [
+     0
+    ],
+    "injection": [
+     1
+    ]
+   },
+   "primary_location": {
+    "landing_page_url": "https://example.org/W1003",
+    "source": {
+     "display_name": "Journal of Petroleum Science and Engineering"
+    }
+   },
+   "cited_by_count": 3,
+   "type": "article"
+  }
+ ]
+}

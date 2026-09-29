@@ -1,0 +1,26 @@
+{
+ "total": 3,
+ "token": null,
+ "data": [
+  {
+   "paperId": "s2ccc333",
+   "title": "Conformance Control for Waterflood in Clastic Reservoirs",
+   "abstract": null,
+   "year": 2026,
+   "publicationDate": "2026-09-01",
+   "venue": "SPE Journal",
+   "url": "https://www.semanticscholar.org/paper/s2ccc333",
+   "authors": [
+    {
+     "authorId": "1",
+     "name": "A. Rivera"
+    },
+    {
+     "authorId": "2",
+     "name": "J. Okafor"
+    }
+   ],
+   "externalIds": {}
+  }
+ ]
+}

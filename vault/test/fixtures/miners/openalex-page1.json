@@ -1,0 +1,101 @@
+{
+ "meta": {
+  "count": 3,
+  "next_cursor": "CUR2"
+ },
+ "results": [
+  {
+   "id": "https://openalex.org/W1001",
+   "doi": "https://doi.org/10.1016/j.petrol.2026.111",
+   "title": "Extra-Heavy Oil Recovery in the Orinoco Belt by Cold Production",
+   "publication_date": "2026-09-02",
+   "authorships": [
+    {
+     "author": {
+      "display_name": "M. Lopez"
+     }
+    },
+    {
+     "author": {
+      "display_name": "K. Tanaka"
+     }
+    }
+   ],
+   "abstract_inverted_index": {
+    "Cold": [
+     0
+    ],
+    "production": [
+     1,
+     9
+    ],
+    "with": [
+     2
+    ],
+    "sand": [
+     3
+    ],
+    "recovers": [
+     4
+    ],
+    "extra-heavy": [
+     5
+    ],
+    "oil": [
+     6
+    ],
+    "in": [
+     7
+    ],
+    "the": [
+     8
+    ],
+    "Orinoco": [
+     10
+    ]
+   },
+   "primary_location": {
+    "landing_page_url": "https://example.org/W1001",
+    "source": {
+     "display_name": "Journal of Petroleum Science and Engineering"
+    }
+   },
+   "cited_by_count": 3,
+   "type": "article"
+  },
+  {
+   "id": "https://openalex.org/W1002",
+   "doi": "https://doi.org/10.2118/999001-MS",
+   "title": "Polymer flooding pilot in a heavy oil reservoir",
+   "publication_date": "2026-08-20",
+   "authorships": [
+    {
+     "author": {
+      "display_name": "M. Lopez"
+     }
+    },
+    {
+     "author": {
+      "display_name": "K. Tanaka"
+     }
+    }
+   ],
+   "abstract_inverted_index": {
+    "Polymer": [
+     0
+    ],
+    "flooding": [
+     1
+    ]
+   },
+   "primary_location": {
+    "landing_page_url": "https://example.org/W1002",
+    "source": {
+     "display_name": "Journal of Petroleum Science and Engineering"
+    }
+   },
+   "cited_by_count": 3,
+   "type": "article"
+  }
+ ]
+}

@@ -1,0 +1,50 @@
+{
+ "total": 3,
+ "token": "NEXTTOKEN",
+ "data": [
+  {
+   "paperId": "s2aaa111",
+   "title": "Polymer Flooding Pilot in a Heavy Oil Reservoir",
+   "abstract": "Polymer flooding was applied to a 1,200 cP heavy oil reservoir. The pilot injected 0.25 PV of HPAM solution and recovered an additional 9% of OOIP over waterflood. Mobility control improved sweep efficiency across the pattern.",
+   "year": 2026,
+   "publicationDate": "2026-08-20",
+   "venue": "SPE Journal",
+   "url": "https://www.semanticscholar.org/paper/s2aaa111",
+   "authors": [
+    {
+     "authorId": "1",
+     "name": "A. Rivera"
+    },
+    {
+     "authorId": "2",
+     "name": "J. Okafor"
+    }
+   ],
+   "externalIds": {
+    "DOI": "10.2118/999001-MS"
+   }
+  },
+  {
+   "paperId": "s2bbb222",
+   "title": "Hydrogel Wound Dressings with Polymer Networks",
+   "abstract": "Polymer hydrogel wound dressing.",
+   "year": 2026,
+   "publicationDate": "2026-08-21",
+   "venue": "SPE Journal",
+   "url": "https://www.semanticscholar.org/paper/s2bbb222",
+   "authors": [
+    {
+     "authorId": "1",
+     "name": "A. Rivera"
+    },
+    {
+     "authorId": "2",
+     "name": "J. Okafor"
+    }
+   ],
+   "externalIds": {
+    "DOI": "10.1000/wound.1"
+   }
+  }
+ ]
+}

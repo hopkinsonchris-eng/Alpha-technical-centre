@@ -1,0 +1,19 @@
+{
+ "success": true,
+ "result": {
+  "records": [
+   {
+    "_id": 28,
+    "indice_tiempo": "2025-12-01T00:00:00",
+    "produccion_petroleo_crudo_ypf_sa": 19000000.0,
+    "produccion_gas_natural_ypf_sa": 10000000.0
+   },
+   {
+    "_id": 27,
+    "indice_tiempo": "2025-01-01T00:00:00",
+    "produccion_petroleo_crudo_ypf_sa": 1.0,
+    "produccion_gas_natural_ypf_sa": 1.0
+   }
+  ]
+ }
+}

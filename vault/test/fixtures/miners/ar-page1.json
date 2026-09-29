@@ -1,0 +1,23 @@
+{
+ "help": "https://datos.gob.ar/api/3/action/help_show?name=datastore_search",
+ "success": true,
+ "result": {
+  "include_total": true,
+  "limit": 2,
+  "records_format": "objects",
+  "records": [
+   {
+    "_id": 30,
+    "indice_tiempo": "2026-02-01T00:00:00",
+    "produccion_petroleo_crudo_ypf_sa": 20000000.5,
+    "produccion_gas_natural_ypf_sa": 11000000.0
+   },
+   {
+    "_id": 29,
+    "indice_tiempo": "2026-01-01T00:00:00",
+    "produccion_petroleo_crudo_ypf_sa": 21113765.46,
+    "produccion_gas_natural_ypf_sa": 11728022.06
+   }
+  ]
+ }
+}

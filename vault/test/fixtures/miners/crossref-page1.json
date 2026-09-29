@@ -1,0 +1,177 @@
+{
+ "status": "ok",
+ "message-type": "work-list",
+ "message-version": "1.0.0",
+ "message": {
+  "facets": {},
+  "total-results": 500294,
+  "items": [
+   {
+    "DOI": "10.9734/jerr/2021/v21i1017497",
+    "title": [
+     "Critical Review of Polymer Flooding in Daqing Field and Pelican Field: Case Studies of the World\u2019s Largest Polymer Flooding in Light and Heavy Oil Reservoirs, Respectively"
+    ],
+    "author": [
+     {
+      "given": "Okechukwu",
+      "family": "Ezeh",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Sunday Sunday",
+      "family": "Ikiensikimama",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Onyewuchi",
+      "family": "Akaranta",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     }
+    ],
+    "issued": {
+     "date-parts": [
+      [
+       2021,
+       12,
+       25
+      ]
+     ]
+    },
+    "abstract": "<jats:p>Aim: Polymer flooding is a promising chemical enhanced oil recovery. Originally it was thought that polymer flooding was not economical. The polymer flooding in Daqing field China has proved otherwise. After that, it was thought that polymer flooding could only be successful in light oil reservoirs, but then polymer flooding was implemented in Pelican field in Canada on a large scale and recorded success.\r\nMethodology: The methodology employed was to review polymer flooding from inception, beginning from the work of Kingsley Detling in 1944 who got a patent in the USA to late 1970\u2019s, t",
+    "URL": "https://doi.org/10.9734/jerr/2021/v21i1017497",
+    "container-title": [
+     "Journal of Engineering Research and Reports"
+    ],
+    "indexed": {
+     "date-parts": [
+      [
+       2026,
+       9,
+       29
+      ]
+     ],
+     "date-time": "2026-09-29T18:28:53Z",
+     "timestamp": 1790706533501
+    }
+   },
+   {
+    "DOI": "10.2516/ogst/2020008",
+    "title": [
+     "Effect of initial water flooding on the performance of polymer flooding for heavy oil production"
+    ],
+    "author": [
+     {
+      "given": "Clement",
+      "family": "Fabbri",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Romain",
+      "family": "de-Loubens",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Arne",
+      "family": "Skauge",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Gerald",
+      "family": "Hamon",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Marcel",
+      "family": "Bourgeois",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     }
+    ],
+    "issued": {
+     "date-parts": [
+      [
+       2020
+      ]
+     ]
+    },
+    "abstract": "<jats:p>In the domain of heavy to extra heavy oil production, viscous polymer may be injected after water injection (tertiary mode), or as an alternative (secondary mode) to improve the sweep efficiency and increase oil recovery. To prepare field implementation, nine polymer injection experiments in heavy oil have been performed at core scale, to assess key modelling parameters in both situations. Among this consistent set of experiments, two have been performed on reconstituted cylindrical sandpacks in field-like conditions, and seven on consolidated Bentheimer sandstone in laboratory conditi",
+    "URL": "https://doi.org/10.2516/ogst/2020008",
+    "container-title": [
+     "Oil &amp; Gas Science and Technology \u2013 Revue d\u2019IFP Energies nouvelles"
+    ],
+    "indexed": {
+     "date-parts": [
+      [
+       2026,
+       9,
+       24
+      ]
+     ],
+     "date-time": "2026-09-24T17:27:28Z",
+     "timestamp": 1790270848183
+    }
+   }
+  ],
+  "items-per-page": 2,
+  "query": {
+   "start-index": 0,
+   "search-terms": "polymer flooding heavy oil"
+  },
+  "next-cursor": "AoJ2NEXTCURSOR"
+ }
+}
