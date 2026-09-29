@@ -52,3 +52,15 @@ services:
         sync: false
       - key: ALLOWED_EMAIL_DOMAIN
         value: alpha-technical-centre.com
+
+  # Nightly staleness (M08): recomputes stale flags on runs and documents.
+  - type: cron
+    name: atc-vault-nightly-staleness
+    runtime: node
+    rootDir: vault
+    schedule: "15 3 * * *"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/nightly-staleness.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
