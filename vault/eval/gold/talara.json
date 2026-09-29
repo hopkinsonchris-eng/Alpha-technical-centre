@@ -1,0 +1,61 @@
+[
+  {
+    "id": "G19",
+    "question": "How large are the proven and probable reserves after the latest revision?",
+    "scope": "project:talara-brownfield",
+    "expected_refs": [
+      "doc:8c828b77-8644-5456-80a4-ffd69f22f16b"
+    ],
+    "expected_answer": "After the 2026 revision 2P reserves are 38.5 MMboe and 1P reserves are 22.1 MMboe.",
+    "kind": "fact"
+  },
+  {
+    "id": "G20",
+    "question": "How badly is the Talara pipeline corroded?",
+    "scope": "project:talara-brownfield",
+    "expected_refs": [
+      "doc:2973e80d-e30a-555b-b02e-730fa3b2ad22"
+    ],
+    "expected_answer": "Pipeline inspection found wall loss of up to 27 percent at km 4.2.",
+    "kind": "fact"
+  },
+  {
+    "id": "G21",
+    "question": "What is the redevelopment worth on the latest economics?",
+    "scope": "project:talara-brownfield",
+    "expected_refs": [
+      "run:c737b90c-d9e6-53c3-a72b-facedd5a612c"
+    ],
+    "expected_answer": "The Talara redevelopment economics run shows NPV10 of USD 186.4 MM.",
+    "kind": "run"
+  },
+  {
+    "id": "G22",
+    "question": "Did the water injection pilot raise oil production?",
+    "scope": "project:talara-brownfield",
+    "expected_refs": [
+      "doc:ad0b52f8-232c-51cc-9c65-326ac8a7c02e",
+      "run:6ec3fcff-bdf5-52ef-9296-a5f3c9fd51df"
+    ],
+    "expected_answer": "The secondary recovery pilot produced an oil response of 120 bopd after nine months.",
+    "kind": "fact"
+  },
+  {
+    "id": "G23",
+    "question": "How many wells were checked in the latest Costa Norte tests?",
+    "scope": "project:talara-brownfield",
+    "expected_refs": [
+      "doc:d705eb17-8b99-5d31-8b8c-c38d5a778806"
+    ],
+    "expected_answer": "Costa Norte reported 31 wells tested in the third quarter well tests.",
+    "kind": "correspondence"
+  },
+  {
+    "id": "G24",
+    "question": "What fee did we propose for the infill screening?",
+    "scope": "project:talara-brownfield",
+    "expected_refs": [],
+    "expected_answer": "The records in scope do not answer this question.",
+    "kind": "out-of-scope"
+  }
+]

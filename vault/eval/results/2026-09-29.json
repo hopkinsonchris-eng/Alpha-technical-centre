@@ -1,0 +1,612 @@
+{
+  "date": "2026-09-29",
+  "regress": null,
+  "k": 5,
+  "thresholds": {
+    "faithfulness": 0.85,
+    "context_precision": 0.7
+  },
+  "setup": {
+    "embedder": "fake",
+    "reranker": "recorded (gold-promoting stand-in for the Voyage cross-encoder)",
+    "provider": "fake extractive (answers from the prompt context only)",
+    "corpus": {
+      "items": 42,
+      "runs": 10,
+      "chunks": 52,
+      "lessons": 3,
+      "dispatches": 12
+    }
+  },
+  "metrics": {
+    "context_precision": 1,
+    "context_recall": 1,
+    "faithfulness": 1,
+    "response_relevancy": 0.6725
+  },
+  "by_kind": {
+    "correspondence": {
+      "n": 5,
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.4941
+    },
+    "fact": {
+      "n": 13,
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6337
+    },
+    "lesson": {
+      "n": 2,
+      "context_precision": null,
+      "context_recall": null,
+      "faithfulness": 1,
+      "response_relevancy": 1
+    },
+    "out-of-scope": {
+      "n": 2,
+      "context_precision": null,
+      "context_recall": null,
+      "faithfulness": null,
+      "response_relevancy": 1
+    },
+    "run": {
+      "n": 4,
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6938
+    }
+  },
+  "leaks": 0,
+  "passed": true,
+  "failures": [],
+  "questions": [
+    {
+      "id": "G25",
+      "kind": "fact",
+      "scope": "firm",
+      "retrieved": [
+        "doc:2915f215-6ae9-51d9-8c08-d41aad088228",
+        "doc:d0293afd-36fd-5ccd-8330-03fbb9798461",
+        "doc:55b7e363-ef41-5b35-9c39-202e00faaf2b",
+        "doc:86be7a9e-a7e0-5a77-8627-54e3b76d7773",
+        "doc:530f7e7f-790c-5e3c-9538-5cff352d595d"
+      ],
+      "expected_refs": [
+        "doc:2915f215-6ae9-51d9-8c08-d41aad088228"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6667,
+      "leaks": 0,
+      "answer": "A review of 62 waterfloods found a median recovery factor uplift of 8 percent of OOIP [doc:2915f215-6ae9-51d9-8c08-d41aad088228]. Voidage replacement between 0.9 and 1.2 gave the best results, and early breakthrough was the main cause of underperformance [doc:2915f215-6ae9-51d9-8c08-d41aad088228]."
+    },
+    {
+      "id": "G26",
+      "kind": "fact",
+      "scope": "firm",
+      "retrieved": [
+        "doc:25650f22-f4b6-53f9-b699-d191ca29d0a2",
+        "doc:d0293afd-36fd-5ccd-8330-03fbb9798461",
+        "doc:55b7e363-ef41-5b35-9c39-202e00faaf2b",
+        "doc:2915f215-6ae9-51d9-8c08-d41aad088228",
+        "doc:86be7a9e-a7e0-5a77-8627-54e3b76d7773"
+      ],
+      "expected_refs": [
+        "doc:25650f22-f4b6-53f9-b699-d191ca29d0a2"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6207,
+      "leaks": 0,
+      "answer": "Screening price deck: Brent flat real 68 USD/bbl, with sensitivities at 55 and 80 USD/bbl [doc:25650f22-f4b6-53f9-b699-d191ca29d0a2]. Henry Hub 3.10 USD/MMBtu for gas-linked cases [doc:25650f22-f4b6-53f9-b699-d191ca29d0a2]."
+    },
+    {
+      "id": "G01",
+      "kind": "fact",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:609e434d-7835-5446-9521-231105ba23ce",
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da",
+        "doc:2915f215-6ae9-51d9-8c08-d41aad088228",
+        "doc:0f729154-c130-5811-aa5c-77d13375b98a"
+      ],
+      "expected_refs": [
+        "doc:609e434d-7835-5446-9521-231105ba23ce"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6667,
+      "leaks": 0,
+      "answer": "Volumetrics for the Guadalupe reservoir from 14 wells: P50 OOIP is 412 MMSTB, with P10 498 and P90 351 MMSTB [doc:609e434d-7835-5446-9521-231105ba23ce]. Net-to-gross of 0.71 and porosity drive the range [doc:609e434d-7835-5446-9521-231105ba23ce]."
+    },
+    {
+      "id": "G02",
+      "kind": "fact",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:b5944103-4793-5067-afbe-e37f721f066b",
+        "doc:eebe756c-0a7e-59f5-aabe-c6021637be69",
+        "doc:25650f22-f4b6-53f9-b699-d191ca29d0a2",
+        "doc:d0293afd-36fd-5ccd-8330-03fbb9798461",
+        "doc:812cf603-ae49-59ce-aa11-52d98b0ccf2e"
+      ],
+      "expected_refs": [
+        "doc:b5944103-4793-5067-afbe-e37f721f066b"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.5172,
+      "leaks": 0,
+      "answer": "Basis of evaluation: five-spot injection pattern, voidage replacement ratio 1.1, Brent flat 68 USD/bbl real, discount rate 10 percent and a 15-year horizon [doc:b5944103-4793-5067-afbe-e37f721f066b]. OOIP is the P50 volumetric case [doc:b5944103-4793-5067-afbe-e37f721f066b].\n\nFrontera asks for an oil price sensitivity at 55 and 80 USD/bbl and for water disposal cost to be shown separately from lifting cost in the economics [doc:eebe756c-0a7e-59f5-aabe-c6021637be69]."
+    },
+    {
+      "id": "G03",
+      "kind": "fact",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:c0e6bbdb-ebc3-53e5-98c0-bc3cf2a68914",
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "doc:e2a8961f-9c69-5c6f-8fcf-d10524f69560",
+        "doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a",
+        "run:2016ba44-cf5b-5b1a-9f38-0d66b4735af8"
+      ],
+      "expected_refs": [
+        "doc:c0e6bbdb-ebc3-53e5-98c0-bc3cf2a68914"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.5263,
+      "leaks": 0,
+      "answer": "Cubiro-14 separator sample: bubble point pressure 1,850 psia at 168 F, oil viscosity 3.2 cP, formation volume factor 1.21 rb/stb and solution gas-oil ratio 420 scf/stb [doc:c0e6bbdb-ebc3-53e5-98c0-bc3cf2a68914]."
+    },
+    {
+      "id": "G04",
+      "kind": "correspondence",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a",
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "doc:c0e6bbdb-ebc3-53e5-98c0-bc3cf2a68914",
+        "run:2016ba44-cf5b-5b1a-9f38-0d66b4735af8",
+        "doc:e2a8961f-9c69-5c6f-8fcf-d10524f69560"
+      ],
+      "expected_refs": [
+        "doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6667,
+      "leaks": 0,
+      "answer": "Frontera confirms that Cubiro-14 injection averaged 8,200 bwpd over the last quarter [doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a]. Monthly allocation files follow by 10 October and the Station 2 meter calibration certificate is attached [doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a]."
+    },
+    {
+      "id": "G05",
+      "kind": "correspondence",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:11f921d8-1925-5bac-83d4-41066305d26f",
+        "doc:eebe756c-0a7e-59f5-aabe-c6021637be69",
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "run:994b26b5-99ca-506f-a3cc-fe4ce87ee107",
+        "doc:812cf603-ae49-59ce-aa11-52d98b0ccf2e"
+      ],
+      "expected_refs": [
+        "doc:11f921d8-1925-5bac-83d4-41066305d26f"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.1304,
+      "leaks": 0,
+      "answer": "Frontera asks for an oil price sensitivity at 55 and 80 USD/bbl and for water disposal cost to be shown separately from lifting cost in the economics [doc:eebe756c-0a7e-59f5-aabe-c6021637be69].\n\nWaterflood screening kickoff with Frontera: scope, data audit, OOIP volumetrics, voidage replacement, injection rates, PVT and schedule discussed [doc:812cf603-ae49-59ce-aa11-52d98b0ccf2e]. Frontera to share the Cubiro-14 PVT report and injection history [doc:812cf603-ae49-59ce-aa11-52d98b0ccf2e]."
+    },
+    {
+      "id": "G06",
+      "kind": "run",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "run:994b26b5-99ca-506f-a3cc-fe4ce87ee107",
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "doc:2915f215-6ae9-51d9-8c08-d41aad088228",
+        "doc:609e434d-7835-5446-9521-231105ba23ce",
+        "doc:812cf603-ae49-59ce-aa11-52d98b0ccf2e"
+      ],
+      "expected_refs": [
+        "run:994b26b5-99ca-506f-a3cc-fe4ce87ee107"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.8235,
+      "leaks": 0,
+      "answer": "Llanos waterflood screening: base case gives npv10 usd mm 84.6 USD MM, breakeven usd bbl 41 USD/bbl, incremental recovery factor 0.062 fraction [run:994b26b5-99ca-506f-a3cc-fe4ce87ee107]."
+    },
+    {
+      "id": "G07",
+      "kind": "run",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "run:a5ffb6de-0dc7-53c5-b5c5-02222694d565",
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da",
+        "doc:55b7e363-ef41-5b35-9c39-202e00faaf2b",
+        "doc:e2a8961f-9c69-5c6f-8fcf-d10524f69560"
+      ],
+      "expected_refs": [
+        "run:a5ffb6de-0dc7-53c5-b5c5-02222694d565"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6667,
+      "leaks": 0,
+      "answer": "Llanos five-spot pattern simulation gives incremental oil mmstb 9.8 MMSTB, water breakthrough months 14 months [run:a5ffb6de-0dc7-53c5-b5c5-02222694d565]."
+    },
+    {
+      "id": "G08",
+      "kind": "fact",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:9e23faae-682f-56fc-a53c-d3f11c265254",
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "doc:e2a8961f-9c69-5c6f-8fcf-d10524f69560",
+        "doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a",
+        "doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da"
+      ],
+      "expected_refs": [
+        "doc:9e23faae-682f-56fc-a53c-d3f11c265254"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6429,
+      "leaks": 0,
+      "answer": "Station 2 produced water treatment capacity is 45,000 bwpd [doc:9e23faae-682f-56fc-a53c-d3f11c265254]. Expansion to 60,000 bwpd needs a third skim tank and one additional injection pump [doc:9e23faae-682f-56fc-a53c-d3f11c265254]."
+    },
+    {
+      "id": "G09",
+      "kind": "fact",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da",
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "doc:609e434d-7835-5446-9521-231105ba23ce",
+        "doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a",
+        "doc:9e23faae-682f-56fc-a53c-d3f11c265254"
+      ],
+      "expected_refs": [
+        "doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.8571,
+      "leaks": 0,
+      "answer": "Cumulative water injected is 31.4 MMbbl to August 2026 [doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da]. The voidage replacement ratio was 0.82 over the last twelve months, below the 1.0 target [doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da]."
+    },
+    {
+      "id": "G10",
+      "kind": "lesson",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:d0293afd-36fd-5ccd-8330-03fbb9798461",
+        "doc:b5944103-4793-5067-afbe-e37f721f066b",
+        "doc:2915f215-6ae9-51d9-8c08-d41aad088228",
+        "doc:11f921d8-1925-5bac-83d4-41066305d26f",
+        "run:2016ba44-cf5b-5b1a-9f38-0d66b4735af8"
+      ],
+      "expected_refs": [
+        "lesson:5288435c-6f77-532b-bb86-d8e1edb87fdc"
+      ],
+      "context_precision": null,
+      "context_recall": null,
+      "faithfulness": 1,
+      "response_relevancy": 1,
+      "leaks": 0,
+      "answer": "Test aquifer strength before assuming a voidage replacement ratio of 1.0 in a waterflood screening [lesson:5288435c-6f77-532b-bb86-d8e1edb87fdc]."
+    },
+    {
+      "id": "G11",
+      "kind": "lesson",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:55b7e363-ef41-5b35-9c39-202e00faaf2b",
+        "doc:812cf603-ae49-59ce-aa11-52d98b0ccf2e",
+        "doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a",
+        "doc:c0e6bbdb-ebc3-53e5-98c0-bc3cf2a68914",
+        "doc:e2a8961f-9c69-5c6f-8fcf-d10524f69560"
+      ],
+      "expected_refs": [
+        "lesson:16ae4215-7e21-57a5-8683-dff45dc80180"
+      ],
+      "context_precision": null,
+      "context_recall": null,
+      "faithfulness": 1,
+      "response_relevancy": 1,
+      "leaks": 0,
+      "answer": "Reconcile injection allocation files against the Station 2 meters before history matching Cubiro [lesson:16ae4215-7e21-57a5-8683-dff45dc80180]."
+    },
+    {
+      "id": "G12",
+      "kind": "out-of-scope",
+      "scope": "project:llanos-waterflood",
+      "retrieved": [
+        "doc:a0cfef9f-ac78-5745-9e48-5abc136c27f9",
+        "doc:e2a8961f-9c69-5c6f-8fcf-d10524f69560",
+        "doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da",
+        "doc:0f729154-c130-5811-aa5c-77d13375b98a",
+        "doc:609e434d-7835-5446-9521-231105ba23ce"
+      ],
+      "expected_refs": [],
+      "context_precision": null,
+      "context_recall": null,
+      "faithfulness": null,
+      "response_relevancy": 1,
+      "leaks": 0,
+      "answer": "[QUESTION FOR YOU: the records in scope do not answer this question]"
+    },
+    {
+      "id": "G13",
+      "kind": "fact",
+      "scope": "project:middle-magdalena",
+      "retrieved": [
+        "doc:12c1dc68-dd6b-5e19-9905-d92ac04b6812",
+        "doc:36f6da0e-cd2c-5ce0-bfe5-2876f90d0361",
+        "doc:86be7a9e-a7e0-5a77-8627-54e3b76d7773",
+        "doc:d26414cd-72f6-5217-a5c6-4db80738fcde",
+        "doc:a3f3c40e-3c69-5495-bcdb-9a8ffd2beb93"
+      ],
+      "expected_refs": [
+        "doc:12c1dc68-dd6b-5e19-9905-d92ac04b6812"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.8108,
+      "leaks": 0,
+      "answer": "Reducing well spacing in the Mugrosa sands from 40 to 20 acres adds 34 infill locations [doc:12c1dc68-dd6b-5e19-9905-d92ac04b6812]. Estimated incremental reserves are 6.4 MMSTB, an average of 190 MSTB per well [doc:12c1dc68-dd6b-5e19-9905-d92ac04b6812]."
+    },
+    {
+      "id": "G14",
+      "kind": "correspondence",
+      "scope": "project:middle-magdalena",
+      "retrieved": [
+        "doc:bb2808d0-91a5-505b-b913-9b02a265e385",
+        "doc:36f6da0e-cd2c-5ce0-bfe5-2876f90d0361",
+        "doc:ad458cb0-aa53-5ec5-837d-52ec6a23839b",
+        "doc:12c1dc68-dd6b-5e19-9905-d92ac04b6812",
+        "doc:55b7e363-ef41-5b35-9c39-202e00faaf2b"
+      ],
+      "expected_refs": [
+        "doc:bb2808d0-91a5-505b-b913-9b02a265e385"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6429,
+      "leaks": 0,
+      "answer": "Ecopetrol sent the second quarter well tests: 22 wells tested, average water cut 78 percent and average oil rate 96 bopd per well [doc:bb2808d0-91a5-505b-b913-9b02a265e385]."
+    },
+    {
+      "id": "G15",
+      "kind": "run",
+      "scope": "project:middle-magdalena",
+      "retrieved": [
+        "run:146a9aeb-342e-5dd9-9076-a878f5e8ee04",
+        "doc:36f6da0e-cd2c-5ce0-bfe5-2876f90d0361",
+        "run:1914b1e4-45f3-5ce9-920a-e4a34d50c35f",
+        "doc:d26414cd-72f6-5217-a5c6-4db80738fcde",
+        "doc:06fa44c6-78b9-51bc-9937-14d0c3858cf7"
+      ],
+      "expected_refs": [
+        "run:146a9aeb-342e-5dd9-9076-a878f5e8ee04"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.7333,
+      "leaks": 0,
+      "answer": "Middle Magdalena infill base case gives irr 0.27 fraction, npv10 usd mm 41.2 USD MM, payback years 2.6 years [run:146a9aeb-342e-5dd9-9076-a878f5e8ee04]."
+    },
+    {
+      "id": "G16",
+      "kind": "fact",
+      "scope": "project:middle-magdalena",
+      "retrieved": [
+        "doc:ad458cb0-aa53-5ec5-837d-52ec6a23839b",
+        "doc:36f6da0e-cd2c-5ce0-bfe5-2876f90d0361",
+        "run:1914b1e4-45f3-5ce9-920a-e4a34d50c35f",
+        "doc:86be7a9e-a7e0-5a77-8627-54e3b76d7773",
+        "run:146a9aeb-342e-5dd9-9076-a878f5e8ee04"
+      ],
+      "expected_refs": [
+        "doc:ad458cb0-aa53-5ec5-837d-52ec6a23839b"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.5455,
+      "leaks": 0,
+      "answer": "Gas handling at Nare is limited to 6 MMscfd [doc:ad458cb0-aa53-5ec5-837d-52ec6a23839b]. The infill programme needs 2 MMscfd of additional compression and a new 3 km flowline [doc:ad458cb0-aa53-5ec5-837d-52ec6a23839b].\n\nInfill screening kickoff with Ecopetrol: well spacing, type curves, drilling cost, facilities constraints, well tests and schedule discussed [doc:06fa44c6-78b9-51bc-9937-14d0c3858cf7]. Ecopetrol to share well tests and the drilling cost history [doc:06fa44c6-78b9-51bc-9937-14d0c3858cf7]."
+    },
+    {
+      "id": "G17",
+      "kind": "correspondence",
+      "scope": "project:middle-magdalena",
+      "retrieved": [
+        "doc:72b74fd2-525d-5983-b9a5-a35669c59cf2",
+        "doc:d0293afd-36fd-5ccd-8330-03fbb9798461",
+        "doc:36f6da0e-cd2c-5ce0-bfe5-2876f90d0361",
+        "run:146a9aeb-342e-5dd9-9076-a878f5e8ee04",
+        "run:1914b1e4-45f3-5ce9-920a-e4a34d50c35f"
+      ],
+      "expected_refs": [
+        "doc:72b74fd2-525d-5983-b9a5-a35669c59cf2"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6667,
+      "leaks": 0,
+      "answer": "We propose a two-phase infill screening, locations first and economics second, for a fixed fee of USD 74,000 with delivery in eight weeks from data receipt [doc:72b74fd2-525d-5983-b9a5-a35669c59cf2]."
+    },
+    {
+      "id": "G18",
+      "kind": "fact",
+      "scope": "project:middle-magdalena",
+      "retrieved": [
+        "doc:84f3d0a1-e549-5d2d-995a-c0f9e3d07d70",
+        "doc:36f6da0e-cd2c-5ce0-bfe5-2876f90d0361",
+        "run:1914b1e4-45f3-5ce9-920a-e4a34d50c35f",
+        "doc:06fa44c6-78b9-51bc-9937-14d0c3858cf7",
+        "run:146a9aeb-342e-5dd9-9076-a878f5e8ee04"
+      ],
+      "expected_refs": [
+        "doc:84f3d0a1-e549-5d2d-995a-c0f9e3d07d70"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.3846,
+      "leaks": 0,
+      "answer": "Basis: type curve from 12 offset wells, initial rate 320 bopd, hyperbolic decline with b factor 1.1, drilling and completion cost USD 3.8 MM per well and Brent flat 68 USD/bbl real [doc:84f3d0a1-e549-5d2d-995a-c0f9e3d07d70].\n\nInfill screening kickoff with Ecopetrol: well spacing, type curves, drilling cost, facilities constraints, well tests and schedule discussed [doc:06fa44c6-78b9-51bc-9937-14d0c3858cf7]. Ecopetrol to share well tests and the drilling cost history [doc:06fa44c6-78b9-51bc-9937-14d0c3858cf7]."
+    },
+    {
+      "id": "G19",
+      "kind": "fact",
+      "scope": "project:talara-brownfield",
+      "retrieved": [
+        "doc:8c828b77-8644-5456-80a4-ffd69f22f16b",
+        "doc:a19af2d0-8013-5e22-be56-1c27362929be",
+        "doc:c616f099-ad80-5794-9b6c-a79b4918b196",
+        "doc:19df64d5-68f9-5c89-b76f-75c334984250",
+        "run:c737b90c-d9e6-53c3-a72b-facedd5a612c"
+      ],
+      "expected_refs": [
+        "doc:8c828b77-8644-5456-80a4-ffd69f22f16b"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.7333,
+      "leaks": 0,
+      "answer": "After the 2026 revision 2P reserves are 38.5 MMboe and 1P reserves are 22.1 MMboe [doc:8c828b77-8644-5456-80a4-ffd69f22f16b]. The increase reflects production histories to May 2026 and a revised decline analysis [doc:8c828b77-8644-5456-80a4-ffd69f22f16b]."
+    },
+    {
+      "id": "G20",
+      "kind": "fact",
+      "scope": "project:talara-brownfield",
+      "retrieved": [
+        "doc:2973e80d-e30a-555b-b02e-730fa3b2ad22",
+        "doc:a19af2d0-8013-5e22-be56-1c27362929be",
+        "doc:9a8f8860-ecb0-53fe-a8da-93c9a9323de2",
+        "run:c737b90c-d9e6-53c3-a72b-facedd5a612c",
+        "run:6ec3fcff-bdf5-52ef-9296-a5f3c9fd51df"
+      ],
+      "expected_refs": [
+        "doc:2973e80d-e30a-555b-b02e-730fa3b2ad22"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6667,
+      "leaks": 0,
+      "answer": "Pipeline inspection found wall loss of up to 27 percent at km 4.2 [doc:2973e80d-e30a-555b-b02e-730fa3b2ad22]. Remaining life is six years at the current corrosion rate and 11 tanks need recoating [doc:2973e80d-e30a-555b-b02e-730fa3b2ad22]."
+    },
+    {
+      "id": "G21",
+      "kind": "run",
+      "scope": "project:talara-brownfield",
+      "retrieved": [
+        "run:c737b90c-d9e6-53c3-a72b-facedd5a612c",
+        "doc:a19af2d0-8013-5e22-be56-1c27362929be",
+        "doc:c616f099-ad80-5794-9b6c-a79b4918b196",
+        "doc:9a8f8860-ecb0-53fe-a8da-93c9a9323de2",
+        "doc:19df64d5-68f9-5c89-b76f-75c334984250"
+      ],
+      "expected_refs": [
+        "run:c737b90c-d9e6-53c3-a72b-facedd5a612c"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.5517,
+      "leaks": 0,
+      "answer": "Talara redevelopment economics v2 gives npv10 usd mm 186.4 USD MM, breakeven usd bbl 38 USD/bbl, recovery factor frac 0.21 fraction [run:c737b90c-d9e6-53c3-a72b-facedd5a612c]."
+    },
+    {
+      "id": "G22",
+      "kind": "fact",
+      "scope": "project:talara-brownfield",
+      "retrieved": [
+        "doc:ad0b52f8-232c-51cc-9c65-326ac8a7c02e",
+        "run:6ec3fcff-bdf5-52ef-9296-a5f3c9fd51df",
+        "doc:a19af2d0-8013-5e22-be56-1c27362929be",
+        "doc:55b7e363-ef41-5b35-9c39-202e00faaf2b",
+        "doc:b02b2fa1-1d04-516a-be74-56f52c75f36e"
+      ],
+      "expected_refs": [
+        "doc:ad0b52f8-232c-51cc-9c65-326ac8a7c02e",
+        "run:6ec3fcff-bdf5-52ef-9296-a5f3c9fd51df"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.6,
+      "leaks": 0,
+      "answer": "Pilot water injection of 1,500 bwpd in four patterns produced an oil response of 120 bopd after nine months, with breakthrough in one pattern only [doc:ad0b52f8-232c-51cc-9c65-326ac8a7c02e]."
+    },
+    {
+      "id": "G23",
+      "kind": "correspondence",
+      "scope": "project:talara-brownfield",
+      "retrieved": [
+        "doc:d705eb17-8b99-5d31-8b8c-c38d5a778806",
+        "doc:a19af2d0-8013-5e22-be56-1c27362929be",
+        "doc:19df64d5-68f9-5c89-b76f-75c334984250",
+        "doc:82bf67dc-b7b8-584e-96dc-f0757339d597",
+        "doc:86be7a9e-a7e0-5a77-8627-54e3b76d7773"
+      ],
+      "expected_refs": [
+        "doc:d705eb17-8b99-5d31-8b8c-c38d5a778806"
+      ],
+      "context_precision": 1,
+      "context_recall": 1,
+      "faithfulness": 1,
+      "response_relevancy": 0.3636,
+      "leaks": 0,
+      "answer": "Costa Norte forwards the third quarter well tests for Talara: 31 wells tested, average water cut 64 percent, and three wells shut in for casing repairs [doc:d705eb17-8b99-5d31-8b8c-c38d5a778806].\n\nRedevelopment kickoff with Costa Norte: reserves, facilities integrity, secondary recovery pilot, well tests and schedule discussed [doc:82bf67dc-b7b8-584e-96dc-f0757339d597]. Costa Norte to open the data room and share production history [doc:82bf67dc-b7b8-584e-96dc-f0757339d597]."
+    },
+    {
+      "id": "G24",
+      "kind": "out-of-scope",
+      "scope": "project:talara-brownfield",
+      "retrieved": [
+        "doc:c616f099-ad80-5794-9b6c-a79b4918b196",
+        "doc:a19af2d0-8013-5e22-be56-1c27362929be",
+        "doc:d0293afd-36fd-5ccd-8330-03fbb9798461",
+        "doc:19df64d5-68f9-5c89-b76f-75c334984250",
+        "run:c737b90c-d9e6-53c3-a72b-facedd5a612c"
+      ],
+      "expected_refs": [],
+      "context_precision": null,
+      "context_recall": null,
+      "faithfulness": null,
+      "response_relevancy": 1,
+      "leaks": 0,
+      "answer": "[QUESTION FOR YOU: the records in scope do not answer this question]"
+    }
+  ]
+}

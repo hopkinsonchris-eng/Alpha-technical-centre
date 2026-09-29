@@ -24,6 +24,12 @@ jobs:
       - name: Vault tests (embedded Postgres)
         run: npm test
         working-directory: vault
+      - name: Retrieval evaluation (M17, AC9) when gateway, ingest or llm changed
+        run: |
+          base=$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD~1)
+          [ "$base" = "$(git rev-parse HEAD)" ] && base=$(git rev-parse HEAD~1)
+          if git diff --name-only "$base" HEAD | grep -qE '^vault/src/(gateway|ingest|llm)/'; then npx tsx eval/runner.ts && npx tsx --test eval/test/*.test.ts; else echo "no change under vault/src/gateway, ingest or llm: skipped"; fi
+        working-directory: vault
       - name: Schema fixtures are current
         run: npx tsx test/fixtures/generate.ts && git diff --exit-code -- test/fixtures
         working-directory: vault
