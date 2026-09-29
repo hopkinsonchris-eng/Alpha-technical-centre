@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.alpha-technical-centre.com/schemas/run-record.schema.json",
+  "title": "RunRecord",
+  "description": "One execution of one tool version on one set of inputs. Written by the tool itself on Save. Immutable: a corrected run supersedes, never overwrites. Vocabulary follows OpenLineage (job, run, inputs, outputs, facets).",
+  "type": "object",
+  "required": ["id", "job", "tool_version", "tool_commit", "author", "created_at", "project_id", "legal_tag", "inputs", "params", "outputs", "input_hash", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "job": { "type": "string", "description": "Tool id from tool.json" },
+    "tool_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "tool_commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+    "author": { "type": "string", "description": "Person id (email local part)" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "client_id": { "type": ["string", "null"] },
+    "project_id": { "type": "string", "description": "Engagement id; 'firm' for internal work" },
+    "asset_ids": { "type": "array", "items": { "type": "string" }, "description": "Master-data ids: basin/field/well/block this run is about" },
+    "legal_tag": { "type": "string", "pattern": "^lt-[a-z0-9-]{3,64}$" },
+    "title": { "type": "string" },
+    "inputs": {
+      "type": "array",
+      "description": "Every record, reference set or file this run depended on, with the version used. This is what the staleness engine walks.",
+      "items": {
+        "type": "object",
+        "required": ["ref", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "ref": { "type": "string", "description": "Vault id, e.g. run:<uuid>, doc:<uuid>, ref:price_decks/brent-2026-09, tool:<id>" },
+          "kind": { "type": "string", "enum": ["run", "document", "reference", "asset", "manual"] },
+          "version": { "type": ["string", "integer", "null"] },
+          "hash": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+          "role": { "type": "string", "description": "e.g. price_deck, fiscal_terms, seed_model, production_history" }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "object",
+      "description": "Named assumptions with a source each (premises-sheet rule)",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value", "source"],
+        "properties": {
+          "value": {},
+          "unit": { "type": "string" },
+          "source": { "type": "string", "description": "Vault ref, URL, 'analogue', or 'client-stated'" },
+          "provenance": { "type": "string", "enum": ["measured", "client-stated", "analogue", "assumed"] }
+        }
+      }
+    },
+    "params": { "type": "object", "description": "The tool's full input state, as the tool would reload it. Opaque to the vault, validated by the tool's own schema." },
+    "outputs": {
+      "type": "object",
+      "description": "Headline numbers, keyed by the names declared in tool.json produces[]",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value"],
+        "properties": { "value": {}, "unit": { "type": "string" }, "low": {}, "high": {} }
+      }
+    },
+    "artifacts": { "type": "array", "items": { "type": "string" }, "description": "doc:<uuid> refs of files the run produced (charts, exports)" },
+    "input_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$", "description": "Hash of canonicalised inputs+params+assumptions; identical re-runs collapse" },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "parents": { "type": "array", "items": { "type": "string", "format": "uuid" }, "description": "Runs this run was derived or re-run from" },
+    "supersedes": { "type": ["string", "null"], "format": "uuid" },
+    "status": { "type": "string", "enum": ["draft", "reviewed", "final", "superseded"] },
+    "reviewed_by": { "type": ["string", "null"] },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "facets": { "type": "object", "description": "Extensible metadata; each facet carries _producer and _schema_url", "additionalProperties": true }
+  }
+}

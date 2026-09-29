@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.alpha-technical-centre.com/schemas/vault-item.schema.json",
+  "title": "VaultItem",
+  "description": "Metadata envelope for any non-run record: letter, report, email, spreadsheet, paper, regulator feed snapshot, reference set, evaluation. The original bytes are immutable in object storage; text and chunks are derived.",
+  "type": "object",
+  "required": ["id", "type", "title", "created_at", "project_id", "legal_tag", "origin", "content_hash", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "type": { "type": "string", "enum": ["letter", "report", "email", "spreadsheet", "presentation", "paper", "feed-snapshot", "reference-set", "evaluation", "note", "transcript", "image", "other"] },
+    "title": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time", "description": "When the vault item was created" },
+    "authored_at": { "type": ["string", "null"], "format": "date-time", "description": "Date of the original (email sent, letter dated, paper published)" },
+    "authors": { "type": "array", "items": { "type": "string" } },
+    "client_id": { "type": ["string", "null"] },
+    "project_id": { "type": "string" },
+    "asset_ids": { "type": "array", "items": { "type": "string" } },
+    "legal_tag": { "type": "string", "pattern": "^lt-[a-z0-9-]{3,64}$" },
+    "origin": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "source": { "type": "string", "enum": ["upload", "zoho-workdrive", "zoho-mail", "gmail", "semantic-scholar", "crossref", "openalex", "regulator-feed", "tool", "assistant"] },
+        "external_id": { "type": "string", "description": "Message-Id, WorkDrive file id, DOI, dataset URL" },
+        "url": { "type": "string" },
+        "fetched_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "storage_key": { "type": ["string", "null"], "description": "Object storage key of the immutable original" },
+    "mime": { "type": "string" },
+    "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "version": { "type": "integer", "minimum": 1, "description": "Increments only when content_hash changes" },
+    "supersedes": { "type": ["string", "null"], "format": "uuid" },
+    "cites": {
+      "type": "array",
+      "description": "Runs, evaluations, reference sets or other items whose numbers or conclusions this item relies on. Drives staleness propagation to documents.",
+      "items": { "type": "string", "description": "run:<uuid> | doc:<uuid> | ref:<path>" }
+    },
+    "filing": {
+      "type": "object",
+      "description": "How the item was assigned to its project (email classifier, WorkDrive path, manual)",
+      "properties": {
+        "method": { "type": "string", "enum": ["manual", "classifier", "path", "tool"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "confirmed_by": { "type": ["string", "null"] }
+      }
+    },
+    "extracted": { "type": "object", "description": "Structured facts pulled from the item (paper_facts, headline numbers, contacts). Free-form per type; each fact should carry an evidence quote.", "additionalProperties": true },
+    "stale": { "type": "boolean", "default": false, "description": "Set by the staleness engine when anything in cites[] has a newer version" },
+    "tags": { "type": "array", "items": { "type": "string" } }
+  }
+}
