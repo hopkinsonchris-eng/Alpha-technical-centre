@@ -191,7 +191,9 @@ test('scope on items: an associate outside the project gets 403 on client-nda it
   assert.deepEqual((await (await call(ana, 'GET', '/api/items?project=orinoco-partnership')).json()).items.map((i: any) => i.id).filter((id: string) => id === nda), []);
   assert.equal((await upload(ana, meta({ title: 'Sneaky' }), 'x')).status, 403);
   // the NDA itself carries lt-firm, so any associate can read it
-  assert.equal((await call(ana, 'GET', '/api/items/00000000-0000-4000-8000-000000000053')).status, 200);
+  // The NDA itself is a legal record: partners-only by type even though its tag is firm-wide.
+  assert.equal((await call(ana, 'GET', '/api/items/00000000-0000-4000-8000-000000000053')).status, 403);
+  assert.equal((await call(app, 'GET', '/api/items/00000000-0000-4000-8000-000000000053')).status, 200);
   // membership opens the project
   await db.query("UPDATE projects SET members = '{ana.perez}' WHERE id = 'orinoco-partnership'");
   assert.equal((await call(ana, 'GET', `/api/items/${nda}`)).status, 200);

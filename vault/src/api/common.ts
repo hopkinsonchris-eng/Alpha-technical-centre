@@ -155,9 +155,18 @@ export function scopeFor(acc: Access, projectId: string | null | undefined, tag:
   return { ...parseScope('firm', clientOf), is_partner: false };
 }
 
-export function canSee(acc: Access, tagId: string, projectId: string | null | undefined): boolean {
+/** Finance and legal records (invoices, NDAs, contracts…) are partners-only unless a partner opens them per project. */
+export const PARTNERS_ONLY_TYPES = new Set(['invoice', 'purchase-order', 'timesheet', 'expense', 'bank-statement', 'nda', 'contract', 'licence', 'insurance', 'corporate-record', 'proposal']);
+export function itemPartnersOnly(row: { type?: string; extracted?: any }): boolean {
+  if (row?.extracted?.partners_only === true) return true;
+  if (row?.extracted?.partners_only === false) return false;
+  return !!row?.type && PARTNERS_ONLY_TYPES.has(row.type);
+}
+
+export function canSee(acc: Access, tagId: string, projectId: string | null | undefined, row?: { type?: string; extracted?: any }): boolean {
   const tag = acc.tags.get(tagId);
   if (!tag) return false;
+  if (row && acc.person.role !== 'partner' && itemPartnersOnly(row)) return false;
   // Partners see every record that has not expired, including multi-client
   // derivations that no single-client scope may see (isVisible refuses those).
   if (acc.person.role === 'partner' && isConflictTag(tag)) return !isExpired(tag, acc.now);
@@ -165,10 +174,10 @@ export function canSee(acc: Access, tagId: string, projectId: string | null | un
 }
 
 /** 404 when expired (the record is hidden by its tag), 403 when outside the caller's scope. */
-export function assertVisible(acc: Access, tagId: string, projectId: string | null | undefined, what: string): void {
+export function assertVisible(acc: Access, tagId: string, projectId: string | null | undefined, what: string, row?: { type?: string; extracted?: any }): void {
   const tag = acc.tags.get(tagId);
   if (!tag || isExpired(tag, acc.now)) throw notFound(`${what} not found`);
-  if (!canSee(acc, tagId, projectId)) throw forbidden(`${what} is outside your scope`);
+  if (!canSee(acc, tagId, projectId, row)) throw forbidden(`${what} is outside your scope`);
 }
 
 export function scopeLabel(projectId?: string | null, clientId?: string | null): string {

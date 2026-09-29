@@ -166,16 +166,16 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const row = (await x.db.query<any>(`SELECT ${ITEM_COLS} FROM items WHERE id = $1`, [id])).rows[0];
     if (!row || row.hidden) throw notFound(`item ${id} not found`);
     x.a.refs = [`doc:${id}`]; x.a.scope = scopeLabel(row.project_id);
-    assertVisible(await loadAccess(x.db, x.person, x.now), row.legal_tag, row.project_id, `item ${id}`);
+    assertVisible(await loadAccess(x.db, x.person, x.now), row.legal_tag, row.project_id, `item ${id}`, row);
     return { body: itemRecord(row, (await citesOf(x, [id])).get(id) ?? []) };
   });
 
   route(app, 'GET', '/api/items/:id/versions', 'item.versions', async (x) => {
     const id = uuidParam(x.c);
-    const row = (await x.db.query<any>('SELECT id, project_id, legal_tag, hidden FROM items WHERE id = $1', [id])).rows[0];
+    const row = (await x.db.query<any>('SELECT id, project_id, legal_tag, hidden, type, extracted FROM items WHERE id = $1', [id])).rows[0];
     if (!row || row.hidden) throw notFound(`item ${id} not found`);
     x.a.refs = [`doc:${id}`]; x.a.scope = scopeLabel(row.project_id);
-    assertVisible(await loadAccess(x.db, x.person, x.now), row.legal_tag, row.project_id, `item ${id}`);
+    assertVisible(await loadAccess(x.db, x.person, x.now), row.legal_tag, row.project_id, `item ${id}`, row);
     const versions = (await x.db.query<any>('SELECT version, content_hash, storage_key, created_at FROM item_versions WHERE item_id = $1 ORDER BY version DESC', [id])).rows
       .map(v => ({ ...v, created_at: iso(v.created_at) }));
     return { body: { item_id: id, versions } };
@@ -195,7 +195,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const limit = intParam(c, 'limit', 200, 1000);
     const rows = (await x.db.query<any>(`SELECT ${ITEM_COLS} FROM items WHERE ${where.join(' AND ')} ORDER BY created_at DESC, id`, params)).rows;
     const acc = await loadAccess(x.db, x.person, x.now);
-    const visible = rows.filter(r => canSee(acc, r.legal_tag, r.project_id)).slice(0, limit);
+    const visible = rows.filter(r => canSee(acc, r.legal_tag, r.project_id, r)).slice(0, limit);
     const cites = await citesOf(x, visible.map(r => r.id));
     x.a.scope = scopeLabel(c.req.query('project'));
     x.a.refs = visible.map(r => `doc:${r.id}`);
