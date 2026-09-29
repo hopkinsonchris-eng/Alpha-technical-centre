@@ -30,8 +30,8 @@ test('POST /api/draft validates, drafts a letter with citations, saves it as a n
   assert.equal((await app.request('/api/draft', json({ kind: 'memo', project_id: 'orinoco-partnership', brief: 'x' }))).status, 400);
   assert.equal((await app.request('/api/draft', json({ kind: 'letter', project_id: 'nope', brief: 'Propose the scope.' }))).status, 400);
   const r = await app.request('/api/draft', json({ kind: 'letter', project_id: 'orinoco-partnership', organisation_id: 'petrolera-del-orinoco', brief: 'Propose the scope of a joint technical evaluation.' }));
-  assert.equal(r.status, 201, await r.text());
   const b: any = await r.json();
+  assert.equal(r.status, 201, JSON.stringify(b));
   assert.ok(b.id && b.draft.includes('[doc:'));
   assert.equal(b.citations.length, 2);
   assert.equal(b.context.dispatches.length, 6);
