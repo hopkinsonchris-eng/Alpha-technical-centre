@@ -1,0 +1,294 @@
+{
+  "_comment": "Known scenario for test/e2e/ela-studio.spec.mjs. The default Phase 1 state with Brent 65, capex 1.10x, 8 crews, phase cap 1b and 400 gas-lift optimisation wells. Expected values come from ela-studio/engine.js and econ.js at tool 1.0.1; npv10 is always the NPV at a 10% rate, whatever the scenario's own discount.",
+  "name": "Fixture · $65 · 8 crews · Phase 1b",
+  "params": {
+    "crews": 8,
+    "phaseCap": "1b",
+    "econ": {
+      "brent": 65,
+      "capexMult": 1.1,
+      "opexMult": 1,
+      "discount": 0.15,
+      "gasPrice": 3,
+      "royalty": 0.3,
+      "govtDecline": 0.05,
+      "tax": 0,
+      "drawdownYear": 2026
+    },
+    "classes": [
+      {
+        "name": "Surface tie-in restoration",
+        "N": 14,
+        "mu": 60,
+        "cov": 0.3,
+        "ps": 0.95,
+        "cost": 85,
+        "dur": 4,
+        "fit": {
+          "use": true,
+          "p10": 64.5,
+          "p50": 155.5,
+          "p90": 635.5
+        }
+      },
+      {
+        "name": "Gas-lift restoration (valve/mandrel)",
+        "N": 213,
+        "mu": 75,
+        "cov": 0.38,
+        "ps": 0.95,
+        "cost": 210,
+        "dur": 6.5,
+        "fit": {
+          "use": true,
+          "p10": 27,
+          "p50": 62,
+          "p90": 214.6
+        }
+      },
+      {
+        "name": "Chemical + slickline cleanout",
+        "N": 2,
+        "mu": 70,
+        "cov": 0.42,
+        "ps": 0.95,
+        "cost": 165,
+        "dur": 7.5,
+        "fit": {
+          "use": true,
+          "p10": 23,
+          "p50": 31,
+          "p90": 43.5
+        }
+      },
+      {
+        "name": "Gas-lift optimization (active)",
+        "N": 400,
+        "mu": 28,
+        "cov": 0.45,
+        "ps": 0.95,
+        "cost": 121,
+        "dur": 3,
+        "fit": {
+          "use": true,
+          "p10": 28,
+          "p50": 85,
+          "p90": 406
+        }
+      },
+      {
+        "name": "ESP-equipped reactivation (Cat 2)",
+        "N": 71,
+        "mu": 115,
+        "cov": 0.48,
+        "ps": 0.95,
+        "cost": 480,
+        "dur": 15,
+        "fit": {
+          "use": true,
+          "p10": 110,
+          "p50": 168,
+          "p90": 401.8
+        }
+      },
+      {
+        "name": "ESP rehabilitation program",
+        "N": 191,
+        "mu": 110,
+        "cov": 0.5,
+        "ps": 0.95,
+        "cost": 310,
+        "dur": 14,
+        "fit": {
+          "use": true,
+          "p10": 22,
+          "p50": 38,
+          "p90": 79
+        }
+      },
+      {
+        "name": "Tubing + light recompletion",
+        "N": 0,
+        "mu": 95,
+        "cov": 0.5,
+        "ps": 0.95,
+        "cost": 640,
+        "dur": 19,
+        "fit": {
+          "use": false
+        }
+      },
+      {
+        "name": "Acid stimulation / matrix",
+        "N": 0,
+        "mu": 55,
+        "cov": 0.6,
+        "ps": 0.95,
+        "cost": 185,
+        "dur": 5,
+        "fit": {
+          "use": false
+        }
+      },
+      {
+        "name": "Recompletions / add-perfs",
+        "N": 0,
+        "mu": 125,
+        "cov": 0.55,
+        "ps": 0.95,
+        "cost": 420,
+        "dur": 12,
+        "fit": {
+          "use": false
+        }
+      },
+      {
+        "name": "Water shutoff / conformance",
+        "N": 0,
+        "mu": 45,
+        "cov": 0.58,
+        "ps": 0.95,
+        "cost": 165,
+        "dur": 6,
+        "fit": {
+          "use": false
+        }
+      }
+    ],
+    "fields": [
+      {
+        "name": "Lagunillas Lago",
+        "baseline": 6000,
+        "opex": 12,
+        "qDisc": 15,
+        "weight": 0.4082,
+        "inProgram": true
+      },
+      {
+        "name": "Tía Juana Lago-Tierra",
+        "baseline": 20000,
+        "opex": 11,
+        "qDisc": 14,
+        "weight": 0.3469,
+        "inProgram": true
+      },
+      {
+        "name": "Rosa Mediano",
+        "baseline": 3500,
+        "opex": 9,
+        "qDisc": 5,
+        "weight": 0.0816,
+        "inProgram": true
+      },
+      {
+        "name": "Cabimas Field",
+        "baseline": 5000,
+        "opex": 10,
+        "qDisc": 10,
+        "weight": 0.1633,
+        "inProgram": true
+      },
+      {
+        "name": "Trevi Field",
+        "baseline": 0,
+        "opex": 6,
+        "qDisc": 3,
+        "weight": 0,
+        "inProgram": false,
+        "greenfieldPlateau": 8000,
+        "gasPlateau": 0
+      }
+    ]
+  },
+  "expected": {
+    "npv10": {
+      "value": 4430.509455607915,
+      "unit": "MMUSD"
+    },
+    "production_profile": {
+      "value": [
+        {
+          "year": 2025,
+          "bopd": 34500
+        },
+        {
+          "year": 2026,
+          "bopd": 32775
+        },
+        {
+          "year": 2027,
+          "bopd": 83825.66855200323
+        },
+        {
+          "year": 2028,
+          "bopd": 127890.24514647931
+        },
+        {
+          "year": 2029,
+          "bopd": 131497
+        },
+        {
+          "year": 2030,
+          "bopd": 131497
+        },
+        {
+          "year": 2031,
+          "bopd": 131497
+        },
+        {
+          "year": 2032,
+          "bopd": 131497
+        },
+        {
+          "year": 2033,
+          "bopd": 131497
+        },
+        {
+          "year": 2034,
+          "bopd": 131497
+        },
+        {
+          "year": 2035,
+          "bopd": 131497
+        },
+        {
+          "year": 2036,
+          "bopd": 131497
+        },
+        {
+          "year": 2037,
+          "bopd": 131497
+        },
+        {
+          "year": 2038,
+          "bopd": 131497
+        },
+        {
+          "year": 2039,
+          "bopd": 131497
+        },
+        {
+          "year": 2040,
+          "bopd": 131497
+        },
+        {
+          "year": 2041,
+          "bopd": 131497
+        },
+        {
+          "year": 2042,
+          "bopd": 131497
+        },
+        {
+          "year": 2043,
+          "bopd": 131497
+        },
+        {
+          "year": 2044,
+          "bopd": 131497
+        }
+      ],
+      "unit": "bopd"
+    }
+  }
+}
