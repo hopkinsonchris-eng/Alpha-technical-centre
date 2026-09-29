@@ -10,7 +10,7 @@
   "produces": [
     "npv10",
     "irr",
-    "payback_years"
+    "payback_year"
   ],
   "consumes": [
     "price_deck",

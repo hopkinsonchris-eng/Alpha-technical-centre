@@ -406,7 +406,7 @@
       "produces": [
         "npv10",
         "irr",
-        "payback_years"
+        "payback_year"
       ],
       "consumes": [
         "price_deck",
@@ -859,6 +859,6 @@
       ]
     }
   ],
-  "built_at": "2026-09-29T21:56:08.378Z",
-  "commit": "ab151f5"
+  "built_at": "2026-09-29T22:23:55.352Z",
+  "commit": "a8e849a"
 }

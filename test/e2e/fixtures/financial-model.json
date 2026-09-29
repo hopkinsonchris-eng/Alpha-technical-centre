@@ -58,7 +58,7 @@
       "value": 0.9594799186138336,
       "unit": "fraction"
     },
-    "payback_years": {
+    "payback_year": {
       "value": 2027,
       "unit": "year"
     }

@@ -2221,7 +2221,7 @@ function runForCapture(){
     out.irr={value:LAST.portIRR,unit:'fraction'};
   }
   if(LAST.portPayback!==null && LAST.portPayback!==undefined){
-    out.payback_years={value:LAST.portPayback,unit:'year'};
+    out.payback_year={value:LAST.portPayback,unit:'year'};
   }
   return out;
 }
@@ -2358,11 +2358,11 @@ function initVault(){
     var el=$('projectPicker');
     if(el){
       metaReady=vault.pickProject(el).then(function(id){
-        if(vault.mode()==='server'){
-          el.style.display='';
-          $('saveRunBtn').style.display='';
-          $('runsBtn').style.display='';
-        }
+        // Shown in both modes: in local mode saves queue in the browser and
+        // sync when the Vault is reachable (see js/vault-client.js).
+        el.style.display='';
+        $('saveRunBtn').style.display='';
+        $('runsBtn').style.display='';
         vProject=id||'firm';
         return loadProjectMeta(vault);
       }).catch(function(){});

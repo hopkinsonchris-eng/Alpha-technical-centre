@@ -174,16 +174,17 @@ test('save writes a valid Run, run() reproduces it, the drawer lists, loads and 
 test('local mode: the run is queued and the drawer says so', async ({ page }) => {
   await stubApi(page, { server: false });
   await openPage(page);
-  await expect(page.locator('#runsBtn')).toBeHidden();   // no project picker in local mode
-
-  // Set fixture and save
+  // Save is available offline: the client queues the run and syncs later.
+  await expect(page.locator('#saveRunBtn')).toBeVisible();
+  await expect(page.locator('#runsBtn')).toBeVisible();
   await page.evaluate((p) => window.ATC_TOOL.setParams(p), FIXTURE.params);
-  await page.waitForTimeout(200);  // let DOM settle
-
-  // Queued run stores locally
-  const stored = await page.evaluate(() => {
-    const q = JSON.parse(localStorage.getItem('vault_queue_v1') || '[]');
-    return q;
-  });
-  expect(stored.length).toBe(0);   // no runs yet until we save
+  await page.waitForTimeout(200);
+  await page.locator('#saveRunBtn').click();
+  await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('vault_queue_v1') || '[]').length)).toBe(1);
+  const queued = await page.evaluate(() => JSON.parse(localStorage.getItem('vault_queue_v1') || '[]')[0]);
+  const rec = queued.record || queued.run || queued;
+  expect(rec.job).toBe('financial-model');
+  expect(Object.keys(rec.outputs)).toEqual(expect.arrayContaining(['npv10', 'irr', 'payback_year']));
+  await page.locator('#runsBtn').click();
+  await expect(page.getByText(/queued locally/i).first()).toBeVisible();
 });
