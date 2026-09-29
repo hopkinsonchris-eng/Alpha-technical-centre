@@ -32,3 +32,15 @@
 | M13 routes: draft, render, scoped LLM proxy | b87fd1b, c3c95d5 | draft.routes (3) green incl. DOCX and PDF downloads | n/a |
 | M15 Lessons, weekly dream, firm index, hooks and skills | 40e4d02 | lessons.api (8), dream (9), lessons.index (5), hooks (6) green | n/a (queue surface arrives with M10) |
 | Partners-only rule on item reads (gap from M09) | 1f53cff | api.partners-only (1) + items (9) green | n/a |
+| M16 Analogue memory | ae040f4, c58069e (Register 2.2.0) | analogues emit/similar/defaults green; e2e (10) green | `docs/vault-hub/evidence/m16-analogues.png` |
+| M12 routes and Find page | see git log | search.routes + rerank (18) green; e2e (8) green. **Miss:** p95 851–932 ms at 100k chunks on PGlite vs 800 ms target; follow-up F1 below | `docs/vault-hub/evidence/m12-find.png` |
+
+## Follow-ups (Tier A)
+
+| # | Item | Why | Plan |
+|---|---|---|---|
+| F1 | Index-only vector scan | The vector query joins `legal_tags` for the classification, so the planner never uses an HNSW index on `chunks.embedding`; p95 misses 800 ms at 100k chunks on the embedded database | Migration 002: denormalise `classification` (and `partners_only`, `expires_at` already present) onto `chunks`; ingest writes them; predicate stops joining; add HNSW index; re-measure on Supabase |
+| F2 | Batch API for chunk contexts, paper facts and the dream | All three call the provider sequentially today | One `BatchProvider` behind the same interface |
+| F3 | xlsx package advisory | `xlsx@0.18.5` has unpatched advisories on npm | Swap to SheetJS's own distribution |
+| F4 | Zoho WorkDrive, Zoho Books, ANP and Perupetro endpoints | Built from documented shapes and recorded fixtures only | Verify against live accounts before enabling the crons |
+| F5 | Re-run runner and PDF need Chromium on the server | Render's native Node runtime has none | Docker runtime for `vault-api`, or run re-runs from the Hub in the partner's browser |
