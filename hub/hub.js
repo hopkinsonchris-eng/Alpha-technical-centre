@@ -85,18 +85,18 @@ export function fmtDateLong(d) {
     es: cap(d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })),
   };
 }
-function fmtStamp(iso) {
+export function fmtStamp(iso) {
   const d = new Date(iso);
   if (isNaN(d)) return { en: '—', es: '—' };
   const o = { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
   return { en: d.toLocaleString('en-GB', o), es: d.toLocaleString('es-ES', o) };
 }
-function fmtShortDate(iso) {
+export function fmtShortDate(iso) {
   const d = new Date(iso);
   if (isNaN(d)) return { en: '—', es: '—' };
   return { en: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }), es: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) };
 }
-function ago(iso, now) {
+export function ago(iso, now) {
   const d = new Date(iso);
   if (isNaN(d)) return { en: '—', es: '—' };
   const days = Math.floor((now - d) / 864e5);
@@ -106,22 +106,22 @@ function ago(iso, now) {
   const w = Math.floor(days / 30);
   return { en: w + ' months ago', es: 'hace ' + w + ' meses' };
 }
-const num = (v) => (typeof v === 'number' ? v.toLocaleString('en-GB', { maximumFractionDigits: 2 }) : v);
+export const num = (v) => (typeof v === 'number' ? v.toLocaleString('en-GB', { maximumFractionDigits: 2 }) : v);
 
-const LIFECYCLE = {
+export const LIFECYCLE = {
   production: ['Production', 'Producción', 'ok'],
   experimental: ['Experimental', 'Experimental', 'warn'],
   deprecated: ['Deprecated', 'Obsoleta', 'bad'],
   retired: ['Retired', 'Retirada', 'muted'],
 };
-const KIND = {
+export const KIND = {
   'browser-tool': ['Browser tool', 'Herramienta web'],
   'external-app': ['External app', 'App externa'],
   pipeline: ['Pipeline', 'Pipeline'],
   skill: ['Skill', 'Skill'],
 };
-const RUN_STATUS = { draft: ['Draft', 'Borrador', 'muted'], reviewed: ['Reviewed', 'Revisada', 'info'], final: ['Final', 'Final', 'ok'], superseded: ['Superseded', 'Reemplazada', 'muted'] };
-const SECTION = { Added: 'Añadido', Changed: 'Cambiado', Fixed: 'Corregido', Removed: 'Eliminado', Deprecated: 'Obsoleto', Security: 'Seguridad' };
+export const RUN_STATUS = { draft: ['Draft', 'Borrador', 'muted'], reviewed: ['Reviewed', 'Revisada', 'info'], final: ['Final', 'Final', 'ok'], superseded: ['Superseded', 'Reemplazada', 'muted'] };
+export const SECTION = { Added: 'Añadido', Changed: 'Cambiado', Fixed: 'Corregido', Removed: 'Eliminado', Deprecated: 'Obsoleto', Security: 'Seguridad' };
 
 /* ── session display ─────────────────────────────────────────────────── */
 
@@ -148,7 +148,7 @@ export async function showSession() {
   return person;
 }
 
-function showVault(reachable) {
+export function showVault(reachable) {
   const dot = $('#vault-dot'), st = $('#vault-state');
   if (!dot || !st) return;
   dot.classList.toggle('off', !reachable);
@@ -397,7 +397,7 @@ function renderAttnCard(card, cfg) {
   }
 }
 
-const reasonText = (r) => (r == null ? '' : typeof r === 'string' ? r : (r.detail || r.rule || ''));
+export const reasonText = (r) => (r == null ? '' : typeof r === 'string' ? r : (r.detail || r.rule || ''));
 
 async function renderAttention(projects) {
   const sec = $('#sec-attention');
