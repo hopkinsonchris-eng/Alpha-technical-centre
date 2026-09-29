@@ -1,0 +1,109 @@
+{
+  "_comment": "Known scenario for test/e2e/plan-your-job.spec.mjs. One deterministic scope selection with explicit day rates and expected cost/duration.",
+  "params": {
+    "scope": {
+      "id": "S-1-1-1",
+      "title": "Structural & Stratigraphic Framework Modelling",
+      "partner": "GEO",
+      "description": "Construction of a fit-for-purpose 3D structural-stratigraphic geocellular model integrating available well log, core, and seismic data, with petrophysical property population and volumetric estimation.",
+      "scope": [
+        "Well data compilation, QC, and normalization (logs, deviation surveys, tops)",
+        "Correlation framework: marker picking, zonation, net-pay cut-off analysis",
+        "Seismic-to-well tie and horizon interpretation (where data available)",
+        "Structural modelling: fault network, pillar gridding, layering scheme",
+        "Facies modelling (SIS or object-based) and petrophysical property population",
+        "Model upscaling and static volumetrics (STOIIP/GIIP) with P10/P50/P90 range"
+      ],
+      "deliverables": [
+        "3D geocellular model",
+        "Volumetric report (P10/P50/P90)",
+        "Data QC report",
+        "Facies/property maps",
+        "Petrophysical summary"
+      ],
+      "base": {
+        "weeks": 4,
+        "resources": [
+          { "discipline": "Geologist (Lead)", "level": "Senior", "count": 1 },
+          { "discipline": "Petrophysicist", "level": "Mid-level", "count": 1 },
+          { "discipline": "Managing Partner (Oversight)", "level": "Principal", "count": 1, "util": 0.2 }
+        ],
+        "software": 8000,
+        "data": 3000,
+        "misc": 4000
+      },
+      "scales": [
+        {
+          "tier": "Single Block / Pilot",
+          "desc": "1 reservoir unit, <5 wells, limited seismic",
+          "scopeNote": "single reservoir interval, basic deterministic model",
+          "mult": 1.0
+        },
+        {
+          "tier": "Standard Field",
+          "desc": "Single field, 5-50 wells, 2D/sparse 3D seismic",
+          "scopeNote": "multi-zone field model with facies modelling",
+          "mult": 2.0
+        },
+        {
+          "tier": "Large / Mature Field",
+          "desc": "50-300 wells, full 3D seismic, multiple reservoirs",
+          "scopeNote": "multi-reservoir model, geostatistical workflows, full uncertainty",
+          "mult": 3.2
+        },
+        {
+          "tier": "Complex / Multi-Field",
+          "desc": "300+ wells, multiple stacked reservoirs / fields",
+          "scopeNote": "integrated multi-field model, advanced workflows",
+          "mult": 4.5
+        }
+      ],
+      "timeline": [
+        { "phase": "Mobilisation", "frac": 0.1, "desc": "Project kick-off, data request and receipt, preliminary QC." },
+        { "phase": "Data integration", "frac": 0.15, "desc": "Well log processing, correlation framework, seismic interpretation." },
+        { "phase": "Modelling", "frac": 0.6, "desc": "Geocellular model construction, property population, volumetric computation." },
+        { "phase": "Review & delivery", "frac": 0.15, "desc": "Final QC, documentation, and handover." }
+      ],
+      "addons": [
+        {
+          "name": "Sensitivity modelling",
+          "desc": "Additional low/mid/high case models",
+          "weeks": 2,
+          "resources": [
+            { "discipline": "Reservoir Engineer", "level": "Mid-level", "count": 1 }
+          ],
+          "fee": 16000
+        },
+        {
+          "name": "Fault seal analysis",
+          "desc": "Pressure regime and trap integrity assessment",
+          "weeks": 1.5,
+          "resources": [
+            { "discipline": "Geologist", "level": "Senior", "count": 1 }
+          ],
+          "fee": 12000
+        }
+      ]
+    },
+    "l1": "1. Reservoir Simulation & Subsurface Studies",
+    "l2": "Static Geological Modelling",
+    "scaleIdx": 1,
+    "addons": [],
+    "dayRates": {
+      "Principal": 13500,
+      "Senior": 11000,
+      "Mid-level": 8000,
+      "Junior": 5500
+    }
+  },
+  "expectedOutputs": {
+    "scope_of_work": {
+      "value": "1. Reservoir Simulation & Subsurface Studies > Static Geological Modelling > Structural & Stratigraphic Framework Modelling",
+      "unit": "text"
+    },
+    "cost_estimate": {
+      "value": 0.19,
+      "unit": "USD MM"
+    }
+  }
+}
