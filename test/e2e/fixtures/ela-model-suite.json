@@ -1,0 +1,118 @@
+{
+  "_comment": "Known case for test/e2e/ela-model-suite.spec.mjs. The default override set (Lagunillas AICO actuals) plus two extra field-year overrides (Tia Juana 2027 production, Rosa Mediano 2027 CAPEX), on a custom Phase 1a + 1b case: Brent 65, CAPEX 1.10x, pre-financing 12%, Phase 2 off, Trevi off. Expected values come from the model in ela-model-suite.html at tool 2.0.2; npv10 is always the NPV at a 10% rate, whatever the case's own discount; government_take is the 20-year royalty plus declining-baseline value of the active fields.",
+  "name": "Custom · Brent $65 · Ph1a+1b",
+  "params": {
+    "ov": {
+      "LL": {
+        "prod": {
+          "2026": 17412.87,
+          "2027": 42620.39
+        },
+        "capex": {
+          "2026": 47.1,
+          "2027": 0
+        },
+        "opex": {
+          "2026": 217.02,
+          "2027": 207.41
+        }
+      },
+      "TJ": {
+        "prod": {
+          "2027": 30000
+        },
+        "capex": {},
+        "opex": {}
+      },
+      "RM": {
+        "prod": {},
+        "capex": {
+          "2027": 12.5
+        },
+        "opex": {}
+      },
+      "CB": {
+        "prod": {},
+        "capex": {},
+        "opex": {}
+      },
+      "TV": {
+        "prod": {},
+        "capex": {},
+        "opex": {}
+      }
+    },
+    "src": {
+      "LL": {
+        "prod": {
+          "2026": "AICO_Occidente_mod2.xlsx · LL Budget",
+          "2027": "AICO_Occidente_mod2.xlsx · LL Budget"
+        },
+        "capex": {
+          "2026": "AICO_Occidente_mod2.xlsx · LL Budget",
+          "2027": "AICO_Occidente_mod2.xlsx · LL Budget"
+        },
+        "opex": {
+          "2026": "AICO_Occidente_mod2.xlsx · LL Budget",
+          "2027": "AICO_Occidente_mod2.xlsx · LL Budget"
+        }
+      },
+      "TJ": {
+        "prod": {
+          "2027": "Fixture · TJ 2027 actual"
+        },
+        "capex": {},
+        "opex": {}
+      },
+      "RM": {
+        "prod": {},
+        "capex": {
+          "2027": "Fixture · RM 2027 capex"
+        },
+        "opex": {}
+      },
+      "CB": {
+        "prod": {},
+        "capex": {},
+        "opex": {}
+      },
+      "TV": {
+        "prod": {},
+        "capex": {},
+        "opex": {}
+      }
+    },
+    "case": {
+      "brent": 65,
+      "capex": 1.1,
+      "opex": 1,
+      "disc": 0.15,
+      "gas": 3,
+      "prefin": 0.12,
+      "ph1b": true,
+      "ph2": false,
+      "ph3": true,
+      "on": {
+        "LL": true,
+        "TJ": true,
+        "RM": true,
+        "CB": true,
+        "TV": false
+      }
+    }
+  },
+  "expected": {
+    "npv10": {
+      "value": 5880.602907116229,
+      "unit": "MMUSD"
+    },
+    "irr": {
+      "value": 1.3161522293535515,
+      "unit": "fraction"
+    },
+    "government_take": {
+      "value": 18785.769520267917,
+      "unit": "MMUSD"
+    }
+  }
+}
