@@ -12,6 +12,7 @@ The staff dashboard entry. Replaces `admin.html` as the place everyone starts.
 - `hub/index.html` (Today) using `style.css` and `main.js`, with EN/ES attributes per house rule, `noindex`, not in the sitemap, listed in `robots.txt` Disallow.
 - Sections: **Tools** (every catalog entry: name, owner, lifecycle pill, current version, "what's new" badge when the changelog's newest entry is < 14 days, Open button that resolves `@current`); **My projects** (projects where I authored a run or item in 90 days, with counts and last activity); **Needs attention** (stale runs and documents from M08, filing queue from M10, lesson proposals from M15, re-run deltas; each section hides when its API returns 501); **Recent runs across the firm** (last 20, scope-filtered).
 - `hub/hub.js`: fetch helpers, session display, error states, empty states.
+- `hub/organisations.html` (Tier C): counterparty list and file view (contacts, contracts, dispatches with dates and references); a dispatch form for post, courier and portal sends.
 - `hub/settings.html`: the day-rate config moved from `admin.html`, stored via `POST /api/settings` (M02 adds a small key-value table) instead of localStorage; `plan-your-job.html` reads it from the API with localStorage fallback.
 - `admin.html`: banner linking to `/hub/` (deleted in wave 2).
 

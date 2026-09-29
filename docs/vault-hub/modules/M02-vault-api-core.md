@@ -18,6 +18,9 @@ Handlers in `vault/src/api/`:
 - `GET /api/items/:id`, `/versions`, `GET /api/items?project=&type=`.
 - `GET /api/projects/:id/timeline` (runs + items merged, newest first, with stale flags), `/lineage` (nodes and edges from `run_inputs` and `item_cites`).
 - `POST /api/projects`, `GET /api/projects`, `GET /api/clients`, `GET /api/assets?q=`.
+- Organisations and contacts: `GET/POST /api/organisations`, `GET /api/organisations/:id/file` (contacts, contracts in force, dispatches in both directions with dates and references, projects, open invoices), `POST /api/contacts`; match rules on normalised name, domain and registration number to stop duplicates.
+- Dispatch register: `GET /api/dispatches?organisation=&direction=&since=`, `POST /api/dispatches`, `POST /api/dispatches/:id/acknowledge`; `POST /api/references/reserve` returns the next `ATC-<yyyy>-<nnnn>` atomically.
+- Firm assets: `GET /api/firm-assets`, `GET /api/firm-assets/:kind/current?language=`.
 - Soft delete `POST /api/:kind/:id/hide`; `purge` command refuses if cited.
 - `vault/src/audit.ts`: `audit(person, action, scope, refs)` on every handler.
 
@@ -31,6 +34,7 @@ Request and response bodies are exactly the schemas; errors are `{error: {code, 
 4. An item from a client project without an explicit tag gets the project's default tag; a run whose inputs include a `client-nda` item gets a `client-nda` tag even if posted with `firm`.
 5. Every handler writes exactly one audit event.
 6. `timeline` for a project with 50 seeded records returns in < 300 ms locally.
+7. `organisations/:id/file` for the AC15 fixture lists all six dispatches with dates and reference numbers in order, and the NDA in force; reserving two references concurrently never yields the same number.
 
 ## Smoke tests
 `vault/test/api.runs.test.mjs`, `api.items.test.mjs`, `api.timeline.test.mjs`, `audit.test.mjs` using the M00 fixtures against a test database.

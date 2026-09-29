@@ -1,6 +1,6 @@
 # ATC Vault & Hub — design pack
 
-**Status: Phase 1–5 artefacts drafted. Gate 1 (Choice Sheet) and Gate 2 (Markup approval) are open and waiting for Chris. Nothing has been built.**
+**Status: Gate 1 decided (29 Sep 2026, all eleven decisions recorded in `03-choice-sheet.md`). Gate 2 (approval of the Markup in `06-architecture.md`) is open. Nothing has been built.**
 
 This folder is the complete design for the Alpha Technical Centre internal
 platform: a **Vault** (every run, version, evaluation, client file, letter,
@@ -22,7 +22,7 @@ approve → build). Read in order:
 | `06-architecture.md` | 5 · **Gate 2** | The Markup: system design, data model, surfaces, acceptance criteria, smoke plan, risks, rollback |
 | `07-build-plan.md` | 5 | Module breakdown, build waves, which model tier builds what, cost model |
 | `modules/M*.md` | 5 | One contract per module: interfaces, fixtures, acceptance criteria, smoke tests |
-| `schemas/*.json` | 5 | The JSON Schema contracts every module and every model builds against |
+| `schemas/*.json` | 5 | The seven JSON Schema contracts every module and every model builds against |
 
 ## How the module specs are meant to be used
 

@@ -1,9 +1,35 @@
 # Phase 2 — Gate 1: the Choice Sheet
 
-**Status: PROPOSED. Every decision below carries a recommended default. None is
-adopted until Chris answers.** Downstream artefacts (`04`–`07`, `modules/`,
-`schemas/`) are written against the recommended defaults so they can be read
-now; if a default is reversed, the "changes downstream" note says what moves.
+**Status: DECIDED by Chris Hopkinson on 29 Sep 2026.** Answers recorded
+verbatim below; the option table that follows is kept for the reasoning and
+for the "changes downstream" notes should any decision be reversed later.
+
+## Decisions record
+
+| # | Decision | Answer (verbatim) |
+|---|---|---|
+| D1 | Where the Vault lives | "Monorepo, this repo (Recommended)" |
+| D2 | Backend stack | "Node + Supabase (Recommended)" |
+| D3 | Staff authentication | "Cloudflare Access, email PIN (Recommended)" |
+| D4 | Confidentiality model | "Legal tag on every record (Recommended)" |
+| D5 | Originals of files and email | "Vault stores immutable copies (Recommended)" |
+| D6 | External APEX apps | "They write runs to the vault (Recommended)" |
+| D7 | LLM and embedding providers | "Anthropic + Voyage, server-side (Recommended)" |
+| D8 | Build strategy | "Three model tiers, contract first (Recommended)" |
+| D9 | Wave 1 scope | "Vault core + latest versions (Recommended)" |
+| D10 | Learning loop | "Structured lessons with review queue (Recommended)" |
+| D11 | Billing source of truth | "Zoho Books (Recommended if in use)" |
+
+Standing requirements added by Chris during Gate 1 (they shape the Markup, not
+the options): "I want all of the correspondence, scientific/geological papers,
+emails, legal documentation, billing etc etc all in the vault." and "If I need
+to write a legal letter to a potential job partner all the information needed
+to be able to write that letter should be in the vault or accessible from the
+API. Dates that previous documents were sent, ATC letterhead etc." These are
+recorded as requirement R1 (complete inventory) and R2 (letter-ready vault)
+in `06-architecture.md` §0.
+
+## Option table (for reference)
 
 | # | Decision | Options | Recommended default and why | Changes downstream if reversed |
 |---|---|---|---|---|
@@ -18,5 +44,3 @@ now; if a default is reversed, the "changes downstream" note says what moves.
 | D9 | **Scope of wave 1 (what ships first)** | (a) Vault core + tool registry + client library + Opportunity Register and Reservoir Simulator writing runs + Hub "Today" page. (b) Start with email and document ingest. | **(a).** It removes the most damaging gap today (runs trapped in browsers, versions pinned by hand) in one wave and gives every later wave something to link to. | (b): reorder waves; the run record still comes first because documents cite runs. |
 | D10 | **Learning loop** | (a) Structured lessons with evidence, weekly consolidation into a partner review queue, core index injected into every drafting context and Claude Code session. (b) Free-text "lessons learned" pages. | **(a).** Free-text pages are where lessons go to die (the research is unanimous). | (b): M15 becomes a markdown folder; no injection, no decay. |
 | D11 | **Legal and billing records: source of truth for sync** | (a) Zoho Books (or whichever invoicing system is in use) synced by API for invoices, POs, expenses; NDAs and contracts from a WorkDrive `Legal/` folder; anything else by upload. (b) Everything by upload or WorkDrive folder only, no accounting API. | **(a) if Zoho Books is in use, else (b).** Invoices and contracts carry the dates the vault needs (NDA expiry becomes the legal-tag expiry; unpaid invoices show on the project page). Tell me which system holds invoicing today. | (b): M09 loses the Books adapter; billing facts are extracted from PDFs instead. |
-
-Answer format that works: "D1 a, D2 a, D3 b, ..." plus any notes. Any decision left unanswered is treated as *not yet decided*, not as accepted.

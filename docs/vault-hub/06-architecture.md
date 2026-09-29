@@ -1,10 +1,26 @@
 # Phase 5 — The Markup (architecture, acceptance criteria, smoke plan)
 
 **Gate 2 status: awaiting approval. Nothing here is built.** Written against
-the recommended defaults in `03-choice-sheet.md` (D1 monorepo, D2 Node +
+the decisions recorded in `03-choice-sheet.md` (D1 monorepo, D2 Node +
 Supabase, D3 Cloudflare Access, D4 legal tags, D5 vault holds originals,
-D6 APEX apps write runs, D7 Anthropic + Voyage server-side, D10 structured
-lessons).
+D6 APEX apps write runs, D7 Anthropic + Voyage server-side, D8 three tiers,
+D9 vault core first, D10 structured lessons, D11 Zoho Books).
+
+## 0. Standing requirements
+
+- **R1 Complete inventory.** Every class of record the firm produces, receives
+  or relies on is in the Vault: runs, deliverables, correspondence, client
+  data, legal, billing and finance, research, public data, reference data,
+  firm knowledge, firm assets. The inventory in §2a is the checklist; a class
+  missing from it is a defect.
+- **R2 Letter-ready vault.** Writing a legal letter to a prospective job
+  partner must need nothing outside the Vault or its API: the counterparty's
+  file (organisation, contacts, addresses, roles), every document previously
+  sent to or received from them with dates, channels and reference numbers,
+  the contracts and NDAs in force, the relevant runs and evaluations, the
+  firm's letterhead, templates, signature blocks and reference numbering, and
+  the house style. The output is a finished document on letterhead, not a
+  block of text. AC15 tests this end to end.
 
 ## 1. System overview
 
@@ -40,8 +56,12 @@ protects `/hub/*`, `/api/*` and `/mcp`; the public site is untouched.
 
 | Object | Key fields | Links |
 |---|---|---|
-| Person | id (email local part), name, role, disciplines[] | owns Tool, authors Run/Item/Lesson |
-| Client | id, name, country, contracts[] | has Projects, LegalTags |
+| Person | id (email local part), name, role, disciplines[], signature block | owns Tool, authors Run/Item/Lesson, signs Dispatch |
+| Organisation | id, name, kind (client / partner / operator / regulator / vendor / counsel), registered address, jurisdiction, identifiers | has Contacts, Contracts; counterparty of Dispatches |
+| Contact | id, organisation_id, name, role, emails[], phones[], postal address, language | recipient of Dispatches, party in Items |
+| FirmAsset | id, kind (letterhead / template / signature / logo / style), file, version, language | used by Drafting to render documents |
+| Dispatch | `schemas/dispatch` : item_id, direction (out / in), organisation_id, contact_ids[], channel (email / post / courier / portal / hand), sent_at, received_at, reference_no, in_reply_to, acknowledged_at | links Item to Organisation and Contacts; drives "documents previously sent" |
+| Client | an Organisation with kind client; contracts[] | has Projects, LegalTags |
 | Project | id, client_id, name, status, contacts[], asset_ids[], default legal_tag | contains Runs, Items, Lessons |
 | Asset (master data) | id, kind (basin/field/well/block), name, parent_id, country, operator | referenced by Runs, Items, AnalogueRows |
 | LegalTag | `schemas/legal-tag` | on every Run, Item, Lesson, AnalogueRow |
@@ -83,6 +103,9 @@ design; if a class of record is missing here it is a gap to raise.
 | Reference data | price decks, fiscal terms, cost benchmarks, master data | committed in `vault/reference/`, `vault/master/` | reference-set | firm |
 | Firm knowledge | lessons, method notes, skills, procedures, templates | lessons loop (M15), repo | Lesson, note | firm |
 | Assistant output | drafts, delta notes, calc notes, transcripts of assistant sessions | M13, M08 | note, transcript | inherits scope |
+| Firm assets | ATC letterhead (EN/ES), document and letter templates, signature blocks, logos, brand tokens, house style, reference-number scheme | committed in `vault/firm/assets/`, versioned | firm-asset | firm |
+| Counterparties and contacts | every organisation the firm deals with (clients, prospective partners, operators, regulators, vendors, counsel) and their people, addresses, roles | master registry `organisations`/`contacts`, auto-proposed from correspondence, confirmed in the Hub | Organisation, Contact | firm |
+| Dispatch register | what was sent or received, to whom, when, by which channel, under which reference, acknowledged when; outbound email creates it automatically, post and courier are entered in the Hub | M10 (sent mail), M13 (letters), Hub entry | Dispatch | inherits the item's tag |
 
 Finance and legal records are visible to partners only by default (a
 `partners-only` flag on the legal tag); associates see them when a partner
@@ -90,7 +113,7 @@ grants it per project.
 
 ## 3. Storage
 
-Postgres (Supabase Pro): `people, clients, projects, assets, legal_tags, tools,
+Postgres (Supabase Pro): `people, organisations, contacts, projects, assets, legal_tags, firm_assets, dispatches, tools,
 tool_versions, runs, items, item_versions, item_cites, run_inputs, lessons,
 analogue_rows, chunks (vector(1024) + tsvector), filing_queue, review_queue,
 jobs, audit_events`. Object storage: `originals/<sha256-prefix>/<sha256>` for
@@ -133,7 +156,13 @@ then an LLM tie-break) assigns a project with a confidence; ≥ 0.85 files
 directly, below that goes to the review queue in the Hub.
 
 **F5 Draft with everything taken into account.** `POST /api/draft` with
-`{kind: email|report-section|calc-note, project_id, brief, thread_id?}`. The
+`{kind: email|letter|report-section|calc-note, project_id, brief, thread_id?,
+organisation_id?}`. For `letter`, the context always includes the
+counterparty's Organisation and Contacts, every Dispatch to or from them with
+dates and reference numbers, the contracts and NDAs in force with them, and the
+firm's letterhead and letter template; the draft is rendered to DOCX and PDF on
+letterhead with the next reference number reserved, and saved as an Item with a
+pending Dispatch that is completed when the letter is sent. The
 gateway fixes the scope (`project ∪ client-firm-wide ∪ firm ∪ public`),
 decomposes the brief into up to six sub-queries, runs hybrid search + rerank,
 assembles 5–7 cited sources, the run records they quote, the current lessons
@@ -177,7 +206,12 @@ GET  /api/items/:id  POST /api/items   multipart original + VaultItem metadata
 GET  /api/items/:id/versions
 GET  /api/projects/:id/timeline  /stale  /vintages  /lineage
 GET  /api/search?q=&scope=project:<id>  (scope required; 400 without)
-POST /api/draft                        {kind, project_id, brief, thread_id?}
+POST /api/draft                        {kind, project_id, brief, thread_id?, organisation_id?}
+GET  /api/organisations?q=  /:id  /:id/file   (contacts, contracts in force, dispatches, projects, open items)
+POST /api/organisations  POST /api/contacts
+GET  /api/dispatches?organisation=&direction=  POST /api/dispatches  POST /api/dispatches/:id/acknowledge
+GET  /api/firm-assets  GET /api/firm-assets/:kind/current
+POST /api/render                       {item_id | draft, template, language} → DOCX + PDF on letterhead
 POST /api/llm                          server-side proxy used by tools (scope-tagged, logged)
 GET  /api/lessons?scope=   POST /api/lessons   POST /api/lessons/:id/confirm
 GET  /api/queue/filing  POST /api/queue/filing/:id/assign
@@ -242,6 +276,8 @@ render.yml                 static site + vault-api service + cron jobs
 | AC12 | No provider key or password is present in any file served to the browser | CI grep over the static output for known key patterns; the simulator's key store removed |
 | AC13 | Public site untouched: every public URL in `sitemap.xml` returns 200 with identical HTML before and after wave 1 | CI diff of the 19 public pages |
 | AC14 | Monthly running cost of infrastructure ≤ USD 60 excluding LLM tokens; token spend visible per feature on the Hub | Cost page reads Render/Supabase invoices and the audit log's token counts |
+| AC15 | A `letter` draft to a seeded prospective partner cites every document previously sent to or received from them with the correct dates and reference numbers, names the NDA in force, is rendered to DOCX and PDF on the current letterhead with a reserved reference number, and needs no input outside the API (R2) | `test/draft.letter.test.mjs` with a seeded organisation, 6 dispatches, 1 NDA; assert the "previous correspondence" list equals the fixture; assert the DOCX uses the letterhead asset id; a Playwright run from the Hub with the network restricted to the API origin |
+| AC16 | Every outbound email from a firm mailbox produces a Dispatch within one poll; a letter marked sent by post produces one with the entered date | `mail.dispatch.test.mjs` on the sent-folder fixture; Playwright on the Hub dispatch form |
 
 ## 10. Risks and rollback
 

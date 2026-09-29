@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.alpha-technical-centre.com/schemas/dispatch.schema.json",
+  "title": "Dispatch",
+  "description": "One transmission of a document to or from a counterparty: what, to whom, when, by which channel, under which reference. Outbound email creates one automatically; post, courier and portal uploads are entered in the Hub. This is the record behind 'documents previously sent'.",
+  "type": "object",
+  "required": [
+    "id",
+    "item_id",
+    "direction",
+    "organisation_id",
+    "channel",
+    "occurred_at",
+    "recorded_by"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "item_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The Vault item transmitted (letter, email, report, invoice, contract)"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "out",
+        "in"
+      ]
+    },
+    "organisation_id": {
+      "type": "string"
+    },
+    "contact_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "email",
+        "post",
+        "courier",
+        "portal",
+        "hand",
+        "fax"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Sent (out) or received (in)"
+    },
+    "reference_no": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^ATC-\\d{4}-\\d{4}[A-Z]?$",
+      "description": "Firm reference, reserved at draft time for outbound letters"
+    },
+    "their_reference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "in_reply_to": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid",
+      "description": "Dispatch this one answers"
+    },
+    "signed_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Person id"
+    },
+    "acknowledged_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "tracking": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Courier tracking or portal receipt"
+    },
+    "recorded_by": {
+      "type": "string",
+      "description": "Person id or 'mail-capture'"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

@@ -16,6 +16,7 @@ attachments, and with a review queue for uncertain filing.
 - `vault/src/ingest/mail/classify.ts`: score each project by sender/recipient domain and address match against the project contact list (0.5), thread already filed (0.3), subject and body tokens against project name, client name, asset names (0.2); LLM tie-break only when the top two are within 0.1. Result `{project_id, confidence}`; ≥ 0.85 files directly, else into `filing_queue`.
 - Items of type `email` with `authored_at`, `authors`, `extracted.contacts`; attachments as child Items through M09 with `parent_id`.
 - Hub queue page `hub/queue.html` (Tier C component): list, assign, "not a project email" (files to `firm/inbox`), remembers sender → project choices as new contacts.
+- Sent folders: every outbound message from a firm mailbox creates a Dispatch (`direction: out`, channel email, contacts matched or proposed, `in_reply_to` from the thread); inbound messages from a known contact create `direction: in` dispatches. Unknown senders' organisations are proposed into the review queue with name and domain (AC16).
 - Sensitive-mail rule: messages labelled personal or matching a configured exclusion list are never ingested.
 
 ## Acceptance criteria

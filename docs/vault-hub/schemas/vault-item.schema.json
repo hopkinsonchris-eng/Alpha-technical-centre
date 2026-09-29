@@ -49,6 +49,7 @@
         "insurance",
         "corporate-record",
         "data-room-file",
+        "firm-asset",
         "other"
       ]
     },
@@ -203,6 +204,20 @@
       "items": {
         "type": "string"
       }
+    },
+    "organisation_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Counterparties this item concerns (parties to a contract, addressee of a letter)"
+    },
+    "reference_no": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Firm reference number for outbound documents, same value as the Dispatch"
     }
   }
 }
