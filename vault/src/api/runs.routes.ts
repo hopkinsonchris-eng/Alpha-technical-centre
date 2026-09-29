@@ -78,7 +78,9 @@ export async function createRun(x: Ctx, rec: any, supersedesId: string | null) {
   }
   if (supersedesId) await db.query("UPDATE runs SET status = 'superseded' WHERE id = $1 AND status <> 'superseded'", [supersedesId]);
   // Analogue memory (M16): evaluation runs also become a row in the analogue table. Never blocks the save.
-  try { await emitIfEvaluation(db, stored.id); } catch (e) { console.warn('[analogues] emit failed for', stored.id, (e as Error).message); }
+  // Only reviewed and final runs enter the analogue table; drafts would be noise. Superseding removes the old row.
+  if (stored.status === 'reviewed' || stored.status === 'final') { try { await emitIfEvaluation(db, stored.id); } catch (e) { console.warn('[analogues] emit failed for', stored.id, (e as Error).message); } }
+  if (supersedesId) { try { await emitIfEvaluation(db, supersedesId); } catch { /* row removal is best effort */ } }
   x.a.detail = { deduplicated: false, legal_tag: legalTag, ...(supersedesId ? { supersedes: supersedesId } : {}) };
   return { status: 201, body: { id: stored.id, deduplicated: false } };
 }

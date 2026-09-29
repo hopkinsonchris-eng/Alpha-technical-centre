@@ -174,6 +174,8 @@ test('backfill emits rows for final runs that have none, and only those', async 
   const b = await saveRun('opportunity-register', { params: { ...fixture('opportunity-register').params, extra: 1 }, asset_ids: ['field:llanos:cubiro'] });
   const draft = await saveRun('ela-studio', { params: { ...fixture('ela-studio').params, extra: 1 }, status: 'draft' });
   const other = await saveRun('nodal-analysis', { params: { ...fixture('nodal-analysis').params, extra: 1 } });
+  // Simulate runs saved before the emit hook existed: drop their rows so the backfill has work to do.
+  await db.query('DELETE FROM analogue_rows WHERE source_ref = ANY($1::text[])', [[`run:${a.id}`, `run:${b.id}`]]);
   const s = await runAnaloguesBackfill(db);
   assert.deepEqual(s.failed, []);
   const has = async (id: string) => (await db.query('SELECT 1 FROM analogue_rows WHERE source_ref = $1', [`run:${id}`])).rows.length === 1;

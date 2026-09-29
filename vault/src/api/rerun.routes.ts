@@ -18,6 +18,7 @@ import { headlessRun } from '../rerun/runner.ts';
 import { computeChanges, explainDelta, historicalSpread } from '../rerun/delta.ts';
 import { runInputHash } from '../hash.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
+import { emitIfEvaluation } from '../analogues/emit.ts';
 import { adapterEnvVars, adapterFor } from '../adapters/index.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -150,6 +151,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       await x.db.query('UPDATE review_queue SET status=$2, resolved_by=$3, resolved_at=$4 WHERE id=$1', [id, verb === 'accept' ? 'accepted' : 'rejected', x.person.id, x.now.toISOString()]);
       if (verb === 'accept' && row.kind === 'rerun-delta' && row.payload?.rerun) {
         await x.db.query("UPDATE runs SET status='reviewed', record = jsonb_set(record, '{reviewed_by}', to_jsonb($2::text)) WHERE id=$1 AND status='draft'", [row.payload.rerun, x.person.id]);
+        try { await emitIfEvaluation(x.db, row.payload.rerun); } catch { /* analogue row is best effort */ }
       }
       x.a.refs = [`review:${id}`]; x.a.detail = { kind: row.kind };
       return { body: { id, status: verb === 'accept' ? 'accepted' : 'rejected' } };
