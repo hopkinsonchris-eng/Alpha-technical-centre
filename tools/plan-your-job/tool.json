@@ -1,0 +1,25 @@
+{
+  "id": "plan-your-job",
+  "name": "Scope of Work Generator",
+  "description": "Interactive Scope-of-Work generator with cost breakdown and service packages.",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "plan-your-job.html",
+  "changelog": "tools/plan-your-job/CHANGELOG.md",
+  "produces": [
+    "scope_of_work",
+    "cost_estimate"
+  ],
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released_at": "2026-08-06",
+      "commit": "a99e633",
+      "status": "approved"
+    }
+  ],
+  "aliases": {
+    "current": "1.0.0"
+  }
+}

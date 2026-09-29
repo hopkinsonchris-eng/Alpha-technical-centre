@@ -1,0 +1,82 @@
+{
+  "id": "opportunity-register",
+  "name": "Opportunity Register",
+  "description": "Global opportunity register with map, analogue seeding and a calculated technical-potential bridge.",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "opportunity-register.html",
+  "changelog": "tools/opportunity-register/CHANGELOG.md",
+  "produces": [
+    "technical_potential_bopd",
+    "uplift_bopd"
+  ],
+  "consumes": [
+    "price_deck"
+  ],
+  "versions": [
+    {
+      "version": "2.1.2",
+      "released_at": "2026-09-23",
+      "commit": "d8a4835",
+      "status": "approved",
+      "modules": [
+        "js/potential.js",
+        "js/analogues.js"
+      ]
+    },
+    {
+      "version": "2.1.1",
+      "released_at": "2026-09-23",
+      "commit": "6793367",
+      "status": "approved",
+      "modules": [
+        "js/potential.js",
+        "js/analogues.js"
+      ]
+    },
+    {
+      "version": "2.1.0",
+      "released_at": "2026-09-23",
+      "commit": "bbb50b2",
+      "status": "approved",
+      "modules": [
+        "js/potential.js",
+        "js/analogues.js"
+      ]
+    },
+    {
+      "version": "2.0.0",
+      "released_at": "2026-09-23",
+      "commit": "3f68b41",
+      "status": "approved",
+      "modules": [
+        "js/potential.js",
+        "js/analogues.js"
+      ],
+      "breaking": true
+    },
+    {
+      "version": "1.1.1",
+      "released_at": "2026-09-23",
+      "commit": "fe72a4f",
+      "status": "deprecated"
+    },
+    {
+      "version": "1.1.0",
+      "released_at": "2026-09-23",
+      "commit": "5d7c56f",
+      "status": "deprecated"
+    },
+    {
+      "version": "1.0.0",
+      "released_at": "2026-09-23",
+      "commit": "5e2b80c",
+      "status": "deprecated"
+    }
+  ],
+  "aliases": {
+    "current": "2.1.2",
+    "previous": "2.1.1"
+  }
+}

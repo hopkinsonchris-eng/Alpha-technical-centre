@@ -1,0 +1,56 @@
+{
+  "id": "ela-model-suite",
+  "name": "ELA New Law Model Suite",
+  "description": "Investor model suite for the January 2026 ELA new law, with Phase 1a and 1b cases.",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "ela-model-suite.html",
+  "changelog": "tools/ela-model-suite/CHANGELOG.md",
+  "produces": [
+    "npv10",
+    "irr",
+    "government_take"
+  ],
+  "consumes": [
+    "price_deck",
+    "fiscal_terms"
+  ],
+  "versions": [
+    {
+      "version": "2.0.2",
+      "released_at": "2026-07-31",
+      "commit": "7bdfb35",
+      "status": "approved"
+    },
+    {
+      "version": "2.0.1",
+      "released_at": "2026-07-17",
+      "commit": "c76db10",
+      "status": "approved"
+    },
+    {
+      "version": "2.0.0",
+      "released_at": "2026-07-17",
+      "commit": "fab9024",
+      "status": "approved",
+      "breaking": true
+    },
+    {
+      "version": "1.1.0",
+      "released_at": "2026-07-17",
+      "commit": "cf97ecf",
+      "status": "deprecated"
+    },
+    {
+      "version": "1.0.0",
+      "released_at": "2026-07-15",
+      "commit": "f12dc31",
+      "status": "deprecated"
+    }
+  ],
+  "aliases": {
+    "current": "2.0.2",
+    "previous": "2.0.1"
+  }
+}

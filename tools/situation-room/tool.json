@@ -1,0 +1,21 @@
+{
+  "id": "situation-room",
+  "name": "Situation Room",
+  "description": "Operator-facing energy dashboard: prices, book of business, theatre map, maritime status and news tape.",
+  "owner": "chris",
+  "lifecycle": "experimental",
+  "kind": "browser-tool",
+  "entry": "situation-room/index.html",
+  "changelog": "tools/situation-room/CHANGELOG.md",
+  "versions": [
+    {
+      "version": "0.9.0",
+      "released_at": "2026-08-31",
+      "commit": "1c54095",
+      "status": "approved"
+    }
+  ],
+  "aliases": {
+    "current": "0.9.0"
+  }
+}

@@ -630,10 +630,12 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
   // kills the module silently and the page would have no idea.
   //
   // The ?v token pins the page to a known version of its calculator. This HTML
-  // revalidates on every load, so bumping the token guarantees a matching
+  // revalidates on every load, so changing the token guarantees a matching
   // module is fetched rather than whatever a proxy still happens to be holding.
-  // BUMP IT WHENEVER js/potential.js OR js/analogues.js CHANGES.
-  Promise.all([import('./js/potential.js?v=2'), import('./js/analogues.js?v=2')])
+  // The token is derived from aliases.current in tools/opportunity-register/tool.json.
+  // BUMP THAT VERSION (and add a CHANGELOG entry) WHENEVER js/potential.js OR
+  // js/analogues.js CHANGES, then update the token here to match.
+  Promise.all([import('./js/potential.js?v=2.1.2'), import('./js/analogues.js?v=2.1.2')])
     .then(function (m) {
       window.ATCP = Object.assign({}, m[0], m[1]);
       window.ATCP_STATUS = 'ready';

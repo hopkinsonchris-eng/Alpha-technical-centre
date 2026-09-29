@@ -1,0 +1,36 @@
+{
+  "id": "ela-studio",
+  "name": "ELA Phase 1 Scenario Studio",
+  "description": "Alpha ELA Phase 1 scenario studio: phased production ramp and field economics.",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "ela-studio/index.html",
+  "changelog": "tools/ela-studio/CHANGELOG.md",
+  "produces": [
+    "npv10",
+    "production_profile"
+  ],
+  "consumes": [
+    "price_deck",
+    "fiscal_terms"
+  ],
+  "versions": [
+    {
+      "version": "1.0.1",
+      "released_at": "2026-07-15",
+      "commit": "75171b5",
+      "status": "approved"
+    },
+    {
+      "version": "1.0.0",
+      "released_at": "2026-07-15",
+      "commit": "06793c9",
+      "status": "approved"
+    }
+  ],
+  "aliases": {
+    "current": "1.0.1",
+    "previous": "1.0.0"
+  }
+}

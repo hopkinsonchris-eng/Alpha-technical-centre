@@ -1,0 +1,65 @@
+{
+  "id": "apex-reservoir-3d",
+  "name": "APEX Reservoir 3D",
+  "description": "Multiwell black-oil reservoir simulator with Monte Carlo P10/P50/P90 forecasting and an AI run advisor.",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "reservoir-simulator.html",
+  "changelog": "tools/apex-reservoir-3d/CHANGELOG.md",
+  "produces": [
+    "cum_oil_np",
+    "cum_water_wp",
+    "avg_reservoir_pressure",
+    "production_forecast_p10_p50_p90"
+  ],
+  "versions": [
+    {
+      "version": "2.2.0",
+      "released_at": "2026-07-10",
+      "commit": "f300901",
+      "status": "approved"
+    },
+    {
+      "version": "2.1.0",
+      "released_at": "2026-07-10",
+      "commit": "ae98bbb",
+      "status": "approved"
+    },
+    {
+      "version": "2.0.0",
+      "released_at": "2026-07-10",
+      "commit": "fa44819",
+      "status": "approved",
+      "breaking": true
+    },
+    {
+      "version": "1.2.0",
+      "released_at": "2026-07-10",
+      "commit": "63c1b98",
+      "status": "deprecated"
+    },
+    {
+      "version": "1.1.1",
+      "released_at": "2026-07-06",
+      "commit": "33034ef",
+      "status": "deprecated"
+    },
+    {
+      "version": "1.1.0",
+      "released_at": "2026-06-28",
+      "commit": "71f54c0",
+      "status": "deprecated"
+    },
+    {
+      "version": "1.0.0",
+      "released_at": "2026-06-25",
+      "commit": "ca43b36",
+      "status": "deprecated"
+    }
+  ],
+  "aliases": {
+    "current": "2.2.0",
+    "previous": "2.1.0"
+  }
+}
