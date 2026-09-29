@@ -20,3 +20,5 @@
 | M05 Opportunity Register capture | ceb7096 | e2e (3) green | `docs/vault-hub/evidence/m05-opportunity-register.png` |
 | M05 APEX Reservoir 3D capture, browser key removed | see git log | e2e (3) green; AC12 grep clean | `docs/vault-hub/evidence/m05-reservoir-simulator.png` |
 | M06 Hub Today page and settings | see git log | e2e (10) green incl. axe WCAG 2 A/AA | `docs/vault-hub/evidence/m06-hub-today.png` |
+| M05 ELA Studio, Nodal Analysis, Financial Model, Plan Your Job capture | 6deadc7, ece8f6f, 17ef913, 2d4d07d | e2e 3+2+2+2 green | `docs/vault-hub/evidence/m05-*.png` |
+| M08 re-run, delta note, review queue | 7c049e5 | rerun (3) + hash (2) green; AC5 proven headlessly against the Register fixture | n/a (Hub surface in M07) |

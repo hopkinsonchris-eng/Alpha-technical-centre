@@ -11,7 +11,7 @@ external APEX apps push Runs through the same HTTP contract.
 
 ## Per-tool deliverable (one PR each)
 For each of `opportunity-register.html`, `reservoir-simulator.html`, `ela-studio/`, `ela-model-suite.html`, `financial-modelling.html`, `nodal-analysis-tool.html`, `plan-your-job.html`:
-1. Expose `window.ATC_TOOL = { id, getParams(), setParams(p), run(p) → outputs, getInputs() → inputs[], getAssumptions() }` so the page can be driven headlessly (needed by M08 re-run).
+1. Expose `window.ATC_TOOL = { id, getParams(), setParams(p), run(p) → outputs, getInputs() → inputs[], getAssumptions(), ready?() }` so the page can be driven headlessly (needed by M08 re-run). `ready()` is optional: a promise that resolves once late-loading calculator modules are available; without it the runner retries `setParams` while the page reports "not loaded".
 2. On the tool's existing Save action, call `vault.saveRun({ job, project_id, legal_tag, asset_ids, inputs, assumptions, params, outputs, status:'draft', title })`. Project is chosen from a small project picker the client library provides (`vault.pickProject()`), remembered per page.
 3. A "Runs" drawer listing prior runs for the project (`vault.listRuns`) with "load" and "supersede".
 4. Provenance badge (already in the Register) extended to show `tool_version`.

@@ -44,6 +44,18 @@ If Access cannot be scoped by path on this zone, fall back to a dedicated
 hostname `hub.alpha-technical-centre.com` (CNAME to Render) and gate the whole
 host; the Hub pages are served from the same repo either way.
 
+## Re-run runner (M08)
+
+`POST /api/runs/:id/rerun` drives the tool page in headless Chromium. It
+needs `SITE_ORIGIN` (the static site's origin) and a Chromium binary:
+`RERUN_CHROMIUM=/path/to/chrome`, or `PLAYWRIGHT_BROWSERS_PATH`, or a
+Playwright cache. On Render's native Node runtime there is no Chromium, so
+either deploy `vault-api` with the Docker runtime (`FROM
+mcr.microsoft.com/playwright:v1.63.0-noble`) or leave re-runs to the Hub,
+which can drive the same `ATC_TOOL` hook in the partner's own browser
+(M07/M08 UI). Without a browser the endpoint answers 503 and everything
+else keeps working.
+
 ## Layout
 
 ```
