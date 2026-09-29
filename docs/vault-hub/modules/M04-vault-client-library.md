@@ -40,3 +40,21 @@ Local mode stores runs under `localStorage['vault_queue_v1']` and lists them wit
 
 ## Out of scope
 Any tool-specific field mapping (M05).
+
+## Usage (as built)
+```js
+import { vault } from './js/vault-client.js';   // adjust the path; no other dependency
+
+const saved = await vault.saveRun({
+  job: 'opportunity-register',                  // tool id from tool.json (also the default toolId)
+  project_id: 'firm',
+  legal_tag: 'lt-firm-internal',
+  inputs: [{ ref: 'ref:price_decks/brent-2026-09', kind: 'reference', version: 3 }],
+  params: { discount: 0.1 },                    // the tool's full state, as it would reload it
+  outputs: { npv10: { value: 12.5, unit: 'MMUSD' } },
+  status: 'draft',
+});                                             // -> { id, deduplicated, queued }
+```
+The client fills `id`, `created_at`, `input_hash` (hash of `{inputs, params, assumptions}`), `author` (from `me()`) and `tool_version`/`tool_commit` (from `resolve(job)`). Missing or malformed fields reject with a message naming the JSON path (for example `Invalid run record: $.project_id is required`, also on `error.path`) before any request is made. Without a reachable `/api/me` the run is queued under `localStorage['vault_queue_v1']` (`queued: true`; `author`, `tool_version` and `tool_commit` are filled at flush) and `listRuns` returns it with `queued: true`. When `/api/me` answers 200 the queue flushes on its own, or call `await vault.flushQueue()`. A queued run the server rejects with a 4xx stays in the queue with an `error` note, and is not resent. From `file://` no request is made.
+
+Also on `vault`: `pickProject(el?)` (project `<select>` from `GET /api/projects`, remembered per page, fires `vault:project` on `el`; without `el` returns the remembered id) and `configure({ apiBase })` (default same-origin `''`; resets mode and caches, keeps the queue). `mountFind(el, scope)` renders a search box with inline styles and brand tokens. `supersede(oldId, partial)` posts to `/api/runs/:id/supersede` and queues offline like `saveRun`.
