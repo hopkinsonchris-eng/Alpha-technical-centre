@@ -34,6 +34,7 @@
 | Partners-only rule on item reads (gap from M09) | 1f53cff | api.partners-only (1) + items (9) green | n/a |
 | M16 Analogue memory | ae040f4, c58069e (Register 2.2.0) | analogues emit/similar/defaults green; e2e (10) green | `docs/vault-hub/evidence/m16-analogues.png` |
 | M12 routes and Find page | see git log | search.routes + rerank (18) green; e2e (8) green. **Miss:** p95 851–932 ms at 100k chunks on PGlite vs 800 ms target; follow-up F1 below | `docs/vault-hub/evidence/m12-find.png` |
+| M10 Correspondence capture and review queue | 829c01a | mail imap/gmail/classify/capture (41) green; e2e (16) green; classifier precision 0.976 on 63 labelled messages | `docs/vault-hub/evidence/m10-queue.png` |
 
 ## Follow-ups (Tier A)
 
