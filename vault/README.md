@@ -71,6 +71,22 @@ else keeps working.
   Perupetro are off in `master/topics.json` until then.
 - **Re-run runner and PDF rendering** need Chromium (see above).
 
+## Connecting Claude Code, claude.ai or Cursor (M14)
+
+The MCP endpoint is `https://www.alpha-technical-centre.com/mcp`, behind the
+same Cloudflare Access application as the Hub. Each partner connects with a
+personal Access token so every tool call is audited under their own name
+(a shared service token would not be, and is deliberately not accepted):
+
+```bash
+cloudflared access login https://www.alpha-technical-centre.com/mcp
+claude mcp add --transport http --scope user atc-vault https://www.alpha-technical-centre.com/mcp \
+  --header "cf-access-token: $(cloudflared access token -app=https://www.alpha-technical-centre.com/mcp)"
+```
+
+Locally, opening the repo picks up `.mcp.json` (defaults to
+`http://localhost:8787/mcp`; the dev server needs `DEV_USER_EMAIL`).
+
 ## Layout
 
 ```
