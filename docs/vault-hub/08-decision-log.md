@@ -30,3 +30,5 @@
 | M09 Document ingest, legal and billing extraction, WorkDrive and Zoho Books sync | 6e2360d | ingest (16) green incl. OCR of a generated scan; 50-page PDF in ~2 s | n/a |
 | M11 Research and public-data miners | 226cf28 | miners (50) green on recorded responses; OnePetro refused by code and test | n/a |
 | M13 routes: draft, render, scoped LLM proxy | b87fd1b, c3c95d5 | draft.routes (3) green incl. DOCX and PDF downloads | n/a |
+| M15 Lessons, weekly dream, firm index, hooks and skills | 40e4d02 | lessons.api (8), dream (9), lessons.index (5), hooks (6) green | n/a (queue surface arrives with M10) |
+| Partners-only rule on item reads (gap from M09) | 1f53cff | api.partners-only (1) + items (9) green | n/a |
