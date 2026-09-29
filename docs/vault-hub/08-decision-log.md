@@ -26,3 +26,4 @@
 | M05 APEX external-app adapters (D6): push with app tokens, re-run adapters, nightly snapshot | bd0cedc | app-tokens (7) + adapters (7) green; 102 vault tests | n/a; developer contract in `vault/src/adapters/README.md` |
 | M07 Project file and tool pages | see git log | e2e (23) green; 33 with Today | `docs/vault-hub/evidence/m07-project.png`, `m07-tool.png` |
 | M12 core: scope predicate and hybrid search | ed0cf70 | gateway (4) green; oracle over every chunk/scope/role; 10,000-query property with zero cross-client hits (30 s) | n/a (Find page follows with the search route) |
+| M13 core: letter rendering (HTML, DOCX, PDF) and drafting with enforced citations | c2b2f59, 3b6a272 | render (4) + draft (6) green; AC15 context assembled from the Vault alone | `docs/vault-hub/evidence/m13-letter.png`, `.pdf`, `.docx` |
