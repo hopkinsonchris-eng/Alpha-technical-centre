@@ -1,0 +1,10 @@
+{
+  "id": "fiscal_terms/co/anh-e-and-p-2026",
+  "as_of": "2026-01-01",
+  "source": "ANH E&P contract model; Colombian income tax law. Simplified for screening; verify against the contract in force.",
+  "royalty": { "type": "sliding-scale", "oil_pct_by_kbopd": [[0, 8], [5, 8], [125, 20], [400, 25], [600, 26]] },
+  "income_tax_pct": 35,
+  "high_price_participation": { "trigger_usd_bbl": 45.0, "note": "ANH high-price share applies above the trigger; indexed" },
+  "depreciation": "unit-of-production",
+  "loss_carry_forward_years": 12
+}

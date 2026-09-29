@@ -5,6 +5,8 @@
   "type": "module",
   "description": "Alpha Technical Centre site. Static pages; this manifest exists so the calculators can be unit tested.",
   "scripts": {
-    "test": "node --test \"test/*.test.mjs\""
+    "test": "node --test \"test/*.test.mjs\"",
+    "test:vault": "npm --prefix vault test",
+    "test:all": "npm test && npm run test:vault"
   }
 }

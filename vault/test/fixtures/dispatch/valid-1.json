@@ -1,0 +1,18 @@
+{
+  "id": "00000000-0000-4000-8000-000000000041",
+  "item_id": "00000000-0000-4000-8000-000000000051",
+  "direction": "out",
+  "organisation_id": "petrolera-del-orinoco",
+  "contact_ids": [
+    "maria-fernandez"
+  ],
+  "channel": "email",
+  "occurred_at": "2026-02-03T14:20:00Z",
+  "reference_no": "ATC-2026-0098",
+  "their_reference": null,
+  "in_reply_to": null,
+  "signed_by": "chris",
+  "acknowledged_at": "2026-02-03T14:20:00Z",
+  "recorded_by": "mail-capture",
+  "notes": "Introduction and capability statement"
+}

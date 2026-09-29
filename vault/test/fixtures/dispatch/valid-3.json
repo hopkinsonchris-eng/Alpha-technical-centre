@@ -1,0 +1,18 @@
+{
+  "id": "00000000-0000-4000-8000-000000000043",
+  "item_id": "00000000-0000-4000-8000-000000000053",
+  "direction": "out",
+  "organisation_id": "petrolera-del-orinoco",
+  "contact_ids": [
+    "maria-fernandez"
+  ],
+  "channel": "courier",
+  "occurred_at": "2026-02-14T00:00:00Z",
+  "reference_no": "ATC-2026-0103",
+  "their_reference": null,
+  "in_reply_to": "00000000-0000-4000-8000-000000000042",
+  "signed_by": "chris",
+  "acknowledged_at": "2026-02-14T00:00:00Z",
+  "recorded_by": "chris",
+  "notes": "Signed mutual NDA"
+}

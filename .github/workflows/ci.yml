@@ -1,0 +1,32 @@
+name: ci
+on:
+  push:
+    branches: ['**']
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: vault/package-lock.json }
+      - name: Root calculator tests
+        run: npm test
+      - name: Vault install
+        run: npm ci
+        working-directory: vault
+      - name: Vault typecheck
+        run: npm run typecheck
+        working-directory: vault
+      - name: Vault tests (embedded Postgres)
+        run: npm test
+        working-directory: vault
+      - name: Schema fixtures are current
+        run: npx tsx test/fixtures/generate.ts && git diff --exit-code -- test/fixtures
+        working-directory: vault
+      - name: No secrets in served files (AC12)
+        run: scripts/check-no-secrets.sh
+      - name: Public pages unchanged vs main (AC13)
+        if: github.ref != 'refs/heads/main'
+        run: scripts/check-public-pages.sh

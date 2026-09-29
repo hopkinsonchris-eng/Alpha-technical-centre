@@ -1,0 +1,10 @@
+{
+  "id": "price_decks/brent-2026-09",
+  "as_of": "2026-09-01",
+  "source": "ATC house deck, September 2026; replace with the deck actually in use",
+  "currency": "USD",
+  "basis": "real 2026",
+  "brent_usd_bbl": { "2026": 70, "2027": 70, "2028": 70, "2029": 70, "2030+": 70 },
+  "henry_hub_usd_mmbtu": { "2026": 3.5, "2027": 3.5, "2028": 3.5, "2029": 3.5, "2030+": 3.5 },
+  "differentials": { "vasconia_vs_brent": -8, "merey_vs_brent": -14 }
+}
