@@ -252,6 +252,16 @@ field values — the tools are client-facing credibility pieces.
 
 ---
 
+## 9a. The Vault and the Hub (internal platform)
+
+The staff platform lives in this repo: `vault/` (the Vault API: runs,
+documents, correspondence, legal and billing records, research, lessons),
+`hub/` (the staff dashboard at `/hub/`, behind Cloudflare Access) and
+`js/vault-client.js` (how every tool saves its runs). Start with
+`docs/vault-hub/README.md` for the design and `vault/README.md` to run,
+deploy and connect it. The tools save runs to the Vault when it is
+reachable and queue them in the browser when it is not.
+
 ## 10. AI automation (`.claude/skills/`)
 
 The repo ships two Claude Code skills:

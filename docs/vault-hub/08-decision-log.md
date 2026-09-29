@@ -36,6 +36,7 @@
 | M12 routes and Find page | see git log | search.routes + rerank (18) green; e2e (8) green. **Miss:** p95 851–932 ms at 100k chunks on PGlite vs 800 ms target; follow-up F1 below | `docs/vault-hub/evidence/m12-find.png` |
 | M10 Correspondence capture and review queue | 829c01a | mail imap/gmail/classify/capture (41) green; e2e (16) green; classifier precision 0.976 on 63 labelled messages | `docs/vault-hub/evidence/m10-queue.png` |
 | M14 Company MCP server, skills, connection notes | 5fa1f8b | mcp (9) green; personal Access tokens documented, service tokens deliberately refused | n/a |
+| M17 Retrieval evaluation, scorecards, cost | 77ffbdd | eval runner PASS on 26 gold questions (faithfulness 1.00, context precision 1.00, recall 1.00; regression run fails the gate at 0.53); scorecards + cost (vault) green; e2e (11) green | `docs/vault-hub/evidence/m17-cost.png` |
 
 ## Follow-ups (Tier A)
 
@@ -46,3 +47,24 @@
 | F3 | xlsx package advisory | `xlsx@0.18.5` has unpatched advisories on npm | Swap to SheetJS's own distribution |
 | F4 | Zoho WorkDrive, Zoho Books, ANP and Perupetro endpoints | Built from documented shapes and recorded fixtures only | Verify against live accounts before enabling the crons |
 | F5 | Re-run runner and PDF need Chromium on the server | Render's native Node runtime has none | Docker runtime for `vault-api`, or run re-runs from the Hub in the partner's browser |
+| F6 | Two scorecard rule sets | `hub/project.js` (M07) computes the six rules named in the mockup; the server (M17) implements the six rules in the module spec. **Decision: the server rules are canonical.** | Wire the project page and the Today dot to `GET /api/projects/:id/scorecard`; retire the client-side rules |
+| F7 | Evaluation numbers are structural until a real reranker runs | The eval reranker promotes gold refs, so precision measures scoping and citation hygiene; faithfulness is 1.00 because the fake model is extractive | Run `eval/runner.ts` once with `VOYAGE_API_KEY` and a recorded provider to establish the real baseline; keep the gate |
+| F8 | Settings entry for infrastructure costs and budgets | `hub/settings.html` has no form for `infra_costs` and `budgets` | Add the two forms; until then PUT `/api/settings/<key>` |
+
+## Build complete (29 Sep 2026)
+
+All eighteen modules of `07-build-plan.md` are on `claude/busy-carson-y75611`. Evidence on the final head:
+
+| Suite | Result |
+|---|---|
+| Root calculators and client (`npm test`) | 67 pass |
+| Vault (`cd vault && npm test`) | 344 pass, 1 skipped (Chromium-dependent) |
+| Vault typecheck | clean |
+| Browser end-to-end (`npx playwright test`) | 89 pass (100 with the cost page spec) |
+| Retrieval evaluation (`npx tsx eval/runner.ts`) | PASS, zero cross-scope leaks |
+| Secret scan of served files (AC12) | clean |
+| Public pages vs main (AC13) | unchanged |
+
+Acceptance criteria AC1–AC16 each have a passing test named in their module's spec, with two honest exceptions recorded above: AC-latency (F1) and the evaluation's structural precision (F7).
+
+Steps only Chris can do before staff use it: create the Supabase project and set `DATABASE_URL`; create the Cloudflare Access application for `/hub/*`, `/api/*` and `/mcp` and set the Access variables; set the provider keys (Anthropic, Voyage) and the Zoho, Gmail and APEX variables listed in `vault/.env.example`; choose the Docker runtime for `vault-api` if server-side re-runs and PDFs are wanted (F5); hand `vault/src/adapters/README.md` to the APEX apps' developer; open the pull request from this branch.
