@@ -165,9 +165,15 @@ function setupUpload(project) {
     const fd = new FormData();
     fd.append('project_id', project.id);
     for (const f of files) fd.append('files', f, f.name);
+    const progress = $('#up-progress'), ptext = $('#up-progress-text');
+    const n = files.length;
+    setText(ptext, 'Uploading ' + n + (n === 1 ? ' file' : ' files') + '… reading and indexing can take up to a minute for a long PDF or a scan.',
+      'Subiendo ' + n + (n === 1 ? ' archivo' : ' archivos') + '… leer e indexar puede tardar hasta un minuto con un PDF largo o un escaneo.');
+    progress.removeAttribute('hidden');
     drop.classList.add('busy');
-    const res = await api('/api/ingest/upload', { method: 'POST', body: fd, signal: AbortSignal.timeout(120000) });
+    const res = await api('/api/ingest/upload', { method: 'POST', body: fd, signal: AbortSignal.timeout(180000) });
     drop.classList.remove('busy');
+    progress.setAttribute('hidden', '');
     input.value = '';
     if (!res.ok) {
       const msg = errMessage(res);

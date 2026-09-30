@@ -514,3 +514,7 @@ a.hub-proj:hover { border-color: #CDBB85; }
 .hub-upload-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13.5px; }
 .hub-upload-row b { font-weight: 500; color: var(--navy); overflow-wrap: anywhere; }
 #up-reload { margin: 0 20px 18px; }
+.hub-upload-progress { display: flex; align-items: center; gap: 10px; margin: 0 20px 14px; font-size: 13.5px; color: var(--navy); }
+.hub-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--rule); border-top-color: var(--gold); animation: hub-spin .9s linear infinite; flex: none; }
+@keyframes hub-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hub-spin { animation: none; } }
