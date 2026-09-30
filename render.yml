@@ -8,6 +8,11 @@ services:
       - type: redirect
         source: /BOE
         destination: /financial-modelling.html
+      # The Hub is a directory: at /hub (no slash) its relative stylesheet and script would
+      # resolve to the site root. Cloudflare Access's launcher links to /hub.
+      - type: redirect
+        source: /hub
+        destination: /hub/
       - type: rewrite
         source: /
         destination: /index.html
