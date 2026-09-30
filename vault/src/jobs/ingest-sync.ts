@@ -25,6 +25,8 @@ export interface IngestSyncOptions {
 export interface IngestSyncSummary {
   workdrive: SyncStats | null; books: SyncStats | null;
   ingested: number; skipped: number; needs_attention: number; failed: number; errors: string[];
+  /** Set when the run had nothing to do, so the log says why rather than failing on a key it never needed. */
+  idle?: string;
 }
 
 export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promise<IngestSyncSummary> {
@@ -38,17 +40,23 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
     if (wd) summary.workdrive = await syncWorkdrive(db, sink!, wd);
     if (bk) summary.books = await syncBooks(db, sink!, bk);
 
-    const storage = opts.storage ?? openStorage();
-    const deps = opts.deps ?? { provider: openProvider(), embedder: openEmbedder() };
     const pending = (await db.query<{ id: string; version: number }>(
       `SELECT i.id, i.version FROM items i
         WHERE NOT i.hidden AND i.storage_key IS NOT NULL
           AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.item_id = i.id AND c.item_version = i.version AND c.current)
           AND coalesce(i.extracted->'ingest'->>'version', '') <> i.version::text
         ORDER BY i.created_at LIMIT $1`, [opts.limit ?? 200])).rows;
+    if (!pending.length && !wd && !bk) {
+      summary.idle = 'nothing to ingest and no WorkDrive or Books source configured';
+      console.log(`ingest-sync: ${summary.idle}`);
+    }
+    // The embedder and provider are opened only when there is work: in production they refuse to
+    // start without their keys, and an idle run must not fail on a key it would never have used.
+    const storage = opts.storage ?? openStorage();
+    const deps = opts.deps ?? (pending.length ? { provider: openProvider(), embedder: openEmbedder() } : null);
     for (const it of pending) {
       try {
-        const r = await ingestItem(db, storage, it.id, deps);
+        const r = await ingestItem(db, storage, it.id, deps!);
         if (r.status === 'ok') summary.ingested++; else if (r.status === 'skipped') summary.skipped++; else summary.needs_attention++;
         await db.query(`UPDATE jobs SET status = 'ok', finished_at = now() WHERE name = 'ingest-queue' AND finished_at IS NULL AND summary->>'item_id' = $1`, [it.id]);
       } catch (e) { summary.failed++; summary.errors.push(`${it.id}: ${(e as Error).message}`); }
