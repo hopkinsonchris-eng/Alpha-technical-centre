@@ -111,7 +111,45 @@
             <span class="label" data-en="My projects" data-es="Mis proyectos">My projects</span>
             <h2 id="h-projects" data-en="Where I worked in the last 90 days" data-es="Donde trabajé en los últimos 90 días">Where I worked in the last 90 days</h2>
           </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-new-project" hidden aria-expanded="false" aria-controls="new-project" data-en="New project" data-es="Nuevo proyecto">New project</button>
         </div>
+        <form class="card hub-newproj" id="new-project" hidden novalidate>
+          <div class="hub-card-head">
+            <div>
+              <h3 data-en="New project" data-es="Nuevo proyecto">New project</h3>
+              <span class="hub-muted" data-en="A project file holds every run, document, letter and email for one piece of work. An internal project carries the firm tag; a client project carries the client's NDA tag." data-es="La ficha de un proyecto guarda cada ejecución, documento, carta y correo de un trabajo. Un proyecto interno lleva la etiqueta de la firma; un proyecto de cliente lleva la etiqueta del NDA del cliente.">A project file holds every run, document, letter and email for one piece of work. An internal project carries the firm tag; a client project carries the client's NDA tag.</span>
+            </div>
+          </div>
+          <div id="np-notices" role="status"></div>
+          <div class="hub-form-grid">
+            <div class="hub-field">
+              <label for="np-name" data-en="Name" data-es="Nombre">Name</label>
+              <input id="np-name" type="text" required autocomplete="off">
+              <span class="hint" data-en="As it should appear on letters and reports" data-es="Tal como debe aparecer en cartas e informes">As it should appear on letters and reports</span>
+            </div>
+            <div class="hub-field">
+              <label for="np-id" data-en="Project id" data-es="Id del proyecto">Project id</label>
+              <input id="np-id" type="text" required autocomplete="off" pattern="[a-z0-9][a-z0-9-]{1,63}">
+              <span class="hint" data-en="Lowercase letters, digits and hyphens. Used in addresses and citations; it cannot change later." data-es="Minúsculas, dígitos y guiones. Se usa en direcciones y citas; no se puede cambiar después.">Lowercase letters, digits and hyphens. Used in addresses and citations; it cannot change later.</span>
+            </div>
+            <div class="hub-field">
+              <label for="np-client" data-en="Client" data-es="Cliente">Client</label>
+              <select id="np-client">
+                <option value="" data-en="Internal (no client)" data-es="Interno (sin cliente)">Internal (no client)</option>
+              </select>
+              <span class="hint" data-en="From the organisations in the Vault" data-es="De las organizaciones del Vault">From the organisations in the Vault</span>
+            </div>
+            <div class="hub-field" id="np-tag-field" hidden>
+              <label for="np-tag" data-en="Legal tag" data-es="Etiqueta legal">Legal tag</label>
+              <input id="np-tag" type="text" autocomplete="off">
+              <span class="hint" data-en="The id of the client's NDA tag, for example lt-frontera-nda-2026. Every record in the project inherits it." data-es="El id de la etiqueta del NDA del cliente, por ejemplo lt-frontera-nda-2026. Cada registro del proyecto la hereda.">The id of the client's NDA tag, for example lt-frontera-nda-2026. Every record in the project inherits it.</span>
+            </div>
+          </div>
+          <div class="hub-actions">
+            <button type="submit" class="btn btn-primary btn-sm" data-en="Create project" data-es="Crear proyecto">Create project</button>
+            <button type="button" class="btn btn-outline btn-sm" id="np-cancel" data-en="Cancel" data-es="Cancelar">Cancel</button>
+          </div>
+        </form>
         <div class="hub-projects" id="projects-grid"></div>
       </section>
 

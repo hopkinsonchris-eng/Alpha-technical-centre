@@ -330,7 +330,7 @@ function projectName(p) { return p.name || p.title || p.id; }
 function clientName(p) { return p.client_name || (p.client && (p.client.name || p.client)) || p.client_id || ''; }
 function pick(p, ...keys) { for (const k of keys) { const v = k.split('.').reduce((o, x) => (o == null ? o : o[x]), p); if (v !== undefined && v !== null) return v; } return undefined; }
 
-async function renderProjects() {
+async function renderProjects(person) {
   const res = await api('/api/projects?mine=1');
   if (!res.ok) return [];
   const list = listOf(res.body, 'projects', 'items');
@@ -338,7 +338,8 @@ async function renderProjects() {
   sec.removeAttribute('hidden');
   const now = Date.now();
   if (!list.length) {
-    add(grid, mk('div', 'hub-empty', 'No project activity in the last 90 days.', 'Sin actividad en proyectos en los últimos 90 días.'));
+    if (person && person.role === 'partner') add(grid, mk('div', 'hub-empty', 'No project activity in the last 90 days. Use New project to open one.', 'Sin actividad en proyectos en los últimos 90 días. Use Nuevo proyecto para abrir uno.'));
+    else add(grid, mk('div', 'hub-empty', 'No project activity in the last 90 days.', 'Sin actividad en proyectos en los últimos 90 días.'));
     return [];
   }
   for (const p of list) {
@@ -360,6 +361,60 @@ async function renderProjects() {
     add(grid, card);
   }
   return list;
+}
+
+/* ── Today: new project (partners) ───────────────────────────────────── */
+
+/** A project id from a name: ascii, lowercase, hyphens; the API's slug rule. */
+export const slugify = (name) => String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
+const SLUG = /^[a-z0-9][a-z0-9-]{1,63}$/;
+
+/**
+ * The New project form: shown to partners only (POST /api/projects requires one). The id follows
+ * the name until edited; a client project also asks for the client's legal tag. On success the
+ * new project file opens; a refusal from the API is shown in the form with its message.
+ */
+function setupNewProject(person) {
+  const btn = $('#btn-new-project'), form = $('#new-project');
+  if (!btn || !form || !person || person.role !== 'partner') return;
+  btn.removeAttribute('hidden');
+  const name = $('#np-name'), id = $('#np-id'), client = $('#np-client'), tagField = $('#np-tag-field'), tag = $('#np-tag'), notices = $('#np-notices');
+  let idTouched = false, orgsLoaded = false;
+  name.addEventListener('input', () => { if (!idTouched) id.value = slugify(name.value); });
+  id.addEventListener('input', () => { idTouched = id.value.trim() !== ''; });
+  client.addEventListener('change', () => { if (client.value) tagField.removeAttribute('hidden'); else tagField.setAttribute('hidden', ''); });
+  const open = async () => {
+    form.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); name.focus();
+    if (orgsLoaded) return;
+    orgsLoaded = true;
+    const r = await api('/api/organisations');
+    for (const o of listOf(r.body, 'organisations')) if (o && o.id) add(client, dv('option', null, o.name || o.id, { value: o.id }));
+  };
+  const close = () => { form.setAttribute('hidden', ''); btn.setAttribute('aria-expanded', 'false'); btn.focus(); };
+  btn.addEventListener('click', () => (form.hasAttribute('hidden') ? open() : close()));
+  $('#np-cancel').addEventListener('click', close);
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    notices.textContent = '';
+    const body = { id: id.value.trim(), name: name.value.trim(), client_id: client.value || null };
+    if (client.value) body.default_legal_tag = tag.value.trim();
+    if (!body.name || !SLUG.test(body.id)) {
+      add(notices, notice('bad', 'Check the form.', 'Revise el formulario.', 'A name and a project id of lowercase letters, digits and hyphens are required.', 'Se requieren un nombre y un id del proyecto en minúsculas, dígitos y guiones.'));
+      return;
+    }
+    if (client.value && !body.default_legal_tag) {
+      add(notices, notice('bad', 'Check the form.', 'Revise el formulario.', 'A client project needs the id of its legal tag.', 'Un proyecto de cliente necesita el id de su etiqueta legal.'));
+      return;
+    }
+    const submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    const res = await api('/api/projects', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    submit.disabled = false;
+    if (res.ok && res.body && res.body.id) { location.href = projectHref(res.body.id); return; }
+    const msg = (res.body && res.body.error && res.body.error.message) || '';
+    if (res.status === 0) add(notices, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The project was not created.', 'No se creó el proyecto.'));
+    else add(notices, notice('bad', 'The project was not created.', 'No se creó el proyecto.', msg || 'HTTP ' + res.status, msg || 'HTTP ' + res.status));
+  });
 }
 
 const ICON = {
@@ -507,7 +562,8 @@ async function initToday() {
   setText($('#today-date'), d.en, d.es);
   const person = await showSession();
   await renderTools(person);
-  const projects = await renderProjects();
+  setupNewProject(person);
+  const projects = await renderProjects(person);
   await Promise.all([renderAttention(projects), renderRuns(projects)]);
   document.body.setAttribute('data-ready', '1');
 }

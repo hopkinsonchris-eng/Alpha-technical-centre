@@ -142,6 +142,66 @@ function renderHeader(ctx) {
   add(card, twrap);
 }
 
+/* ── add documents (M09 upload) ──────────────────────────────────────── */
+
+const UP_STATUS = {
+  ingested: ['Indexed', 'Indexado', 'ok'], queued: ['Queued for indexing', 'En cola para indexar', 'info'],
+  unchanged: ['Already in the Vault', 'Ya está en el Vault', 'muted'], stored: ['Stored, not indexed', 'Guardado, no indexado', 'warn'],
+  failed: ['Failed', 'Falló', 'bad'],
+};
+
+/**
+ * Files chosen or dropped go to POST /api/ingest/upload as one multipart request with the
+ * project id; the API files each one under the project's legal tag and indexes it (or queues
+ * it). One row per file shows the outcome. The page is not reloaded automatically: the
+ * timeline already on screen stays valid, and a button offers the refresh.
+ */
+function setupUpload(project) {
+  const input = $('#up-files'), drop = $('#up-drop'), list = $('#up-results'), notices = $('#up-notices');
+  if (!input || !drop || !list) return;
+  const send = async (files) => {
+    if (!files || !files.length) return;
+    notices.textContent = '';
+    const fd = new FormData();
+    fd.append('project_id', project.id);
+    for (const f of files) fd.append('files', f, f.name);
+    drop.classList.add('busy');
+    const res = await api('/api/ingest/upload', { method: 'POST', body: fd, signal: AbortSignal.timeout(120000) });
+    drop.classList.remove('busy');
+    input.value = '';
+    if (!res.ok) {
+      const msg = errMessage(res);
+      if (res.status === 0) add(notices, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The files were not uploaded.', 'Los archivos no se subieron.'));
+      else add(notices, notice('bad', 'The files were not uploaded.', 'Los archivos no se subieron.', msg || 'HTTP ' + res.status, msg || 'HTTP ' + res.status));
+      return;
+    }
+    const results = listOf(res.body, 'results');
+    for (const r of results) {
+      const li = mk('li', 'hub-upload-row', null, null, { 'data-upload-file': r.filename || '' });
+      const st = UP_STATUS[r.status] || [r.status || '?', r.status || '?', 'muted'];
+      add(li, dv('b', null, r.filename), mk('span', 'hub-pill ' + st[2], st[0], st[1], { 'data-status': r.status || '' }));
+      const meta = mk('span', 'hub-muted');
+      const bits = [];
+      if (r.type) bits.push(dv('span', null, r.type));
+      if (r.version) bits.push(mk('span', null, 'version ' + r.version, 'versión ' + r.version));
+      if (typeof r.chunks === 'number') bits.push(mk('span', null, r.chunks + ' chunks', r.chunks + ' fragmentos'));
+      if (r.error) bits.push(dv('span', null, r.error));
+      bits.forEach((b, i) => { if (i) add(meta, document.createTextNode(' · ')); add(meta, b); });
+      add(li, meta);
+      add(list, li);
+    }
+    if (results.length && !$('#up-reload')) {
+      const b = mk('button', 'btn btn-outline btn-sm', 'Reload the project file', 'Recargar la ficha del proyecto', { type: 'button', id: 'up-reload' });
+      b.addEventListener('click', () => location.reload());
+      add(list.parentElement, b);
+    }
+  };
+  input.addEventListener('change', () => send(input.files));
+  drop.addEventListener('dragover', (ev) => { ev.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', (ev) => { ev.preventDefault(); drop.classList.remove('over'); send(ev.dataTransfer && ev.dataTransfer.files); });
+}
+
 /* ── scorecard ───────────────────────────────────────────────────────── */
 
 const RULES = [
@@ -522,6 +582,7 @@ async function init() {
   const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now };
 
   renderHeader(ctx);
+  setupUpload(project);
 
   const rules = computeScorecard(ctx);
   const card = renderScorecard(rules);

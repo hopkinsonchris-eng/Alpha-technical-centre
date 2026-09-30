@@ -349,3 +349,72 @@ test('plan-your-job reads day rates from the API first, then from localStorage',
   await page2.goto('/plan-your-job.html');
   expect(await page2.evaluate(() => WEEKLY_RATE.Principal)).toBe(1);
 });
+
+/* ── New project (partners) ───────────────────────────────────────────── */
+
+test('new project: a partner creates a project from Today; the form posts to POST /api/projects and opens the project file', async ({ page }) => {
+  const cat = seededCatalog();
+  const h = baseHandlers(cat);
+  let posted = null;
+  h['/api/organisations'] = (u, r) => json(r, { organisations: [{ id: 'frontera-energy', name: 'Frontera Energy', kind: 'operator' }] });
+  h['/api/projects'] = (u, r) => {
+    if (r.request().method() === 'POST') { posted = JSON.parse(r.request().postData()); return json(r, { ...posted, status: 'active', contacts: [] }, 201); }
+    return json(r, { projects: [] });
+  };
+  await stubApi(page, h);
+  await page.goto('/hub/index.html');
+  await ready(page);
+
+  // Empty state names the button; the button is there for a partner; the form is closed until asked for.
+  await expect(page.locator('#sec-projects')).toBeVisible();
+  await expect(page.locator('#projects-grid .hub-empty')).toContainText('New project');
+  const btn = page.getByRole('button', { name: 'New project' });
+  await expect(btn).toBeVisible();
+  await expect(page.locator('#new-project')).toBeHidden();
+  await btn.click();
+  const form = page.locator('#new-project');
+  await expect(form).toBeVisible();
+
+  // The id follows the name as a slug and can be edited; the client list is loaded from the API with Internal first.
+  await form.locator('#np-name').fill('Cubiro 2027 Review (Phase 2)');
+  await expect(form.locator('#np-id')).toHaveValue('cubiro-2027-review-phase-2');
+  await expect(form.locator('#np-client option')).toHaveCount(2);
+  await expect(form.locator('#np-client option').nth(0)).toHaveText('Internal (no client)');
+  await expect(form.locator('#np-client option').nth(1)).toHaveText('Frontera Energy');
+  await expect(form.locator('#np-tag-field')).toBeHidden();   // a legal tag is only asked for with a client
+
+  await form.getByRole('button', { name: 'Create project' }).click();
+  await page.waitForURL(/project\.html\?id=cubiro-2027-review-phase-2$/);
+  expect(posted).toEqual({ id: 'cubiro-2027-review-phase-2', name: 'Cubiro 2027 Review (Phase 2)', client_id: null });
+});
+
+test('new project: a client project asks for its legal tag; an API refusal is shown in the form; associates get no button', async ({ page }) => {
+  const cat = seededCatalog();
+  const h = baseHandlers(cat);
+  let posted = null;
+  h['/api/organisations'] = (u, r) => json(r, { organisations: [{ id: 'frontera-energy', name: 'Frontera Energy', kind: 'operator' }] });
+  h['/api/projects'] = (u, r) => {
+    if (r.request().method() === 'POST') { posted = JSON.parse(r.request().postData()); return json(r, { error: { code: 'unknown_legal_tag', message: 'legal tag "lt-frontera-nda-2026" does not exist' } }, 400); }
+    return json(r, { projects: [] });
+  };
+  await stubApi(page, h);
+  await page.goto('/hub/index.html');
+  await ready(page);
+  await page.getByRole('button', { name: 'New project' }).click();
+  const form = page.locator('#new-project');
+  await form.locator('#np-name').fill('Cubiro waterflood');
+  await form.locator('#np-client').selectOption('frontera-energy');
+  await expect(form.locator('#np-tag-field')).toBeVisible();
+  await form.locator('#np-tag').fill('lt-frontera-nda-2026');
+  await form.getByRole('button', { name: 'Create project' }).click();
+  await expect(form.locator('.hub-notice.bad')).toContainText('legal tag "lt-frontera-nda-2026" does not exist');
+  expect(posted).toEqual({ id: 'cubiro-waterflood', name: 'Cubiro waterflood', client_id: 'frontera-energy', default_legal_tag: 'lt-frontera-nda-2026' });
+  expect(page.url()).toContain('/hub/index.html');   // still here, nothing lost
+
+  // An associate cannot create projects (the API requires a partner), so the button is not offered.
+  h['/api/me'] = (u, r) => json(r, { ...PARTNER, role: 'associate' });
+  await page.goto('/hub/index.html');
+  await ready(page);
+  await expect(page.getByRole('button', { name: 'New project' })).toHaveCount(0);
+  await expect(page.locator('#projects-grid .hub-empty')).not.toContainText('New project');
+});

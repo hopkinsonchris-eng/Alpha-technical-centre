@@ -101,6 +101,22 @@
         <div class="card hub-pfile" id="p-file"></div>
         <div class="hub-kpis" id="p-kpis"></div>
 
+        <section class="card hub-upload" id="p-upload" aria-labelledby="h-upload">
+          <div class="hub-card-head">
+            <div>
+              <h3 id="h-upload" data-en="Add documents" data-es="Añadir documentos">Add documents</h3>
+              <span class="hub-muted" data-en="Letters, emails, spreadsheets, papers and scans. Each file becomes a record in this project with its legal tag, and is indexed for Find and the assistant." data-es="Cartas, correos, hojas de cálculo, artículos y escaneos. Cada archivo se convierte en un registro de este proyecto con su etiqueta legal, y se indexa para Buscar y el asistente.">Letters, emails, spreadsheets, papers and scans. Each file becomes a record in this project with its legal tag, and is indexed for Find and the assistant.</span>
+            </div>
+          </div>
+          <div id="up-notices" role="status"></div>
+          <div class="hub-drop" id="up-drop">
+            <label class="btn btn-primary btn-sm hub-file-btn" for="up-files" data-en="Choose files" data-es="Elegir archivos">Choose files</label>
+            <input type="file" id="up-files" multiple class="sr-only">
+            <span class="hub-muted" data-en="or drop them here. PDF, Word, Excel, PowerPoint, text and .eml. Large files are indexed in the background." data-es="o suéltelos aquí. PDF, Word, Excel, PowerPoint, texto y .eml. Los archivos grandes se indexan en segundo plano.">or drop them here. PDF, Word, Excel, PowerPoint, text and .eml. Large files are indexed in the background.</span>
+          </div>
+          <ul class="hub-upload-list" id="up-results" aria-live="polite"></ul>
+        </section>
+
         <div class="hub-tabs" role="tablist" aria-label="Project sections" id="p-tabs"></div>
 
         <div class="hub-tabpanel" role="tabpanel" id="panel-timeline" aria-labelledby="tab-timeline" tabindex="0">
