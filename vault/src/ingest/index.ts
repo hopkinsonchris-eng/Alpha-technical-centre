@@ -105,9 +105,12 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
       `INSERT INTO chunks (item_id, item_version, ordinal, anchor, context, text, legal_tag, client_id, project_id, partners_only, expires_at, current, embedding) VALUES ${values.join(',')}`, params);
   }
   await db.query('UPDATE chunks SET current = false WHERE item_id = $1 AND item_version < $2 AND current', [item.id, version]);
-  await mark('ok', patch);
+  // A scan that could not be OCRed here is indexed on whatever residual text it has, but stays
+  // marked needs_ocr so the sync job retries it once language data is available.
+  const finalStatus: IngestStatus = ex.needs_ocr ? 'needs_ocr' : 'ok';
+  await mark(finalStatus, patch);
 
   let review: string | null = null;
   if (lf) review = await proposeNdaExpiry(db, { id: item.id, version, client_id: item.client_id ?? null, project_id: item.project_id, legal_tag: item.legal_tag, title: item.title }, lf);
-  return { ...base, status: 'ok', chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}) };
+  return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}) };
 }
