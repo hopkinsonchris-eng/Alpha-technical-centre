@@ -102,8 +102,10 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
             r.status = out.status === 'ok' || out.status === 'skipped' ? 'ingested' : 'stored';
           } catch (e) { r.error = `stored, not indexed: ${(e as Error).message}`; await queue(id, version, r.error); r.status = 'queued'; }
         } else {
-          await queue(id, version, file.size >= SYNC_LIMIT_BYTES ? `larger than ${SYNC_LIMIT_BYTES} bytes` : depsError);
-          r.status = 'queued';
+          // Not indexed now: say why in the result as well as in the queue, so the person uploading can act on it.
+          const reason = file.size >= SYNC_LIMIT_BYTES ? `larger than ${SYNC_LIMIT_BYTES} bytes; the ingest job indexes it in the background` : `not indexed now: ${depsError}`;
+          await queue(id, version, reason);
+          r.status = 'queued'; r.error = reason;
         }
       } catch (e) {
         r.status = 'failed';
