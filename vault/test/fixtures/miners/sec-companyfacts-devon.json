@@ -1,0 +1,107 @@
+{
+ "cik": 1090012,
+ "entityName": "DEVON ENERGY CORP/DE",
+ "facts": {
+  "us-gaap": {
+   "StandardizedMeasureOfDiscountedFutureNetCashFlowsRelatingToProvedOilAndGasReserves": {
+    "label": "Standardized Measure of Discounted Future Net Cash Flows Relating to Proved Oil and Gas Reserves",
+    "description": "Amount of discounted future accumulated cash inflow relating to proved oil and gas reserves.",
+    "units": {
+     "USD": [
+      {
+       "end": "2016-12-31",
+       "val": 4198000000,
+       "accn": "0001564590-17-001607",
+       "fy": 2016,
+       "fp": "FY",
+       "form": "10-K",
+       "filed": "2017-02-15"
+      },
+      {
+       "end": "2016-12-31",
+       "val": 5440000000,
+       "accn": "0001564590-18-002582",
+       "fy": 2017,
+       "fp": "FY",
+       "form": "10-K",
+       "filed": "2018-02-21",
+       "frame": "CY2016Q4I"
+      },
+      {
+       "end": "2017-12-31",
+       "val": 11337000000,
+       "accn": "0001564590-18-002582",
+       "fy": 2017,
+       "fp": "FY",
+       "form": "10-K",
+       "filed": "2018-02-21",
+       "frame": "CY2017Q4I"
+      }
+     ]
+    }
+   },
+   "ProvedDevelopedReservesBOE1": {
+    "label": "Proved Developed Reserves (Energy)",
+    "description": "Energy measure of interests in proved developed reserves of crude oil, including condensate and natural gas liquids, nat",
+    "units": {
+     "MMBoe": [
+      {
+       "end": "2016-12-31",
+       "val": 1649,
+       "accn": "0001564590-17-001607",
+       "fy": 2016,
+       "fp": "FY",
+       "form": "10-K",
+       "filed": "2017-02-15"
+      },
+      {
+       "end": "2016-12-31",
+       "val": 1649,
+       "accn": "0001564590-18-002582",
+       "fy": 2017,
+       "fp": "FY",
+       "form": "10-K",
+       "filed": "2018-02-21",
+       "frame": "CY2016Q4I"
+      },
+      {
+       "end": "2017-12-31",
+       "val": 1742,
+       "accn": "0001564590-18-002582",
+       "fy": 2017,
+       "fp": "FY",
+       "form": "10-K",
+       "filed": "2018-02-21",
+       "frame": "CY2017Q4I"
+      },
+      {
+       "end": "2025-12-31",
+       "val": 1500,
+       "accn": "0000000000-26-000001",
+       "fy": 2025,
+       "fp": "FY",
+       "form": "10-K",
+       "filed": "2026-02-20"
+      }
+     ]
+    }
+   },
+   "Revenues": {
+    "label": "Revenues",
+    "units": {
+     "USD": [
+      {
+       "end": "2025-12-31",
+       "val": 1,
+       "accn": "x",
+       "fy": 2025,
+       "fp": "FY",
+       "form": "10-K",
+       "filed": "2026-02-20"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

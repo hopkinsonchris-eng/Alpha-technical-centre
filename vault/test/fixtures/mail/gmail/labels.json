@@ -1,0 +1,34 @@
+{
+ "labels": [
+  {
+   "id": "INBOX",
+   "name": "INBOX",
+   "type": "system"
+  },
+  {
+   "id": "SENT",
+   "name": "SENT",
+   "type": "system"
+  },
+  {
+   "id": "UNREAD",
+   "name": "UNREAD",
+   "type": "system"
+  },
+  {
+   "id": "CATEGORY_PERSONAL",
+   "name": "CATEGORY_PERSONAL",
+   "type": "system"
+  },
+  {
+   "id": "CATEGORY_PROMOTIONS",
+   "name": "CATEGORY_PROMOTIONS",
+   "type": "system"
+  },
+  {
+   "id": "Label_1",
+   "name": "Personal",
+   "type": "user"
+  }
+ ]
+}

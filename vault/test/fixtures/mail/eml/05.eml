@@ -1,0 +1,25 @@
+Message-ID: <m05@mail.fixture>
+Date: Mon, 09 Mar 2026 13:30:00 GMT
+From: Jorge Salazar <jorge.salazar@andinolabs.co>
+To: info@alpha-technical-centre.com
+Subject: PVT report Cubiro-14
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_atc_5"
+
+------=_atc_5
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hello,
+
+Attached is the PVT report for Cubiro-14 as agreed.
+
+Jorge
+------=_atc_5
+Content-Type: text/csv; name="cubiro-14-pvt.csv"
+Content-Disposition: attachment; filename="cubiro-14-pvt.csv"
+Content-Transfer-Encoding: base64
+
+cHJlc3N1cmVfcHNpYSxyc19zY2Zfc3RiLGJvX3JiX3N0YgozNTAwLDYyMCwxLjMxCjI1MDAsNDU1
+LDEuMjcK
+------=_atc_5--

@@ -1,0 +1,28 @@
+Message-ID: <m08@mail.fixture>
+Date: Wed, 11 Mar 2026 10:05:00 GMT
+From: María Fernández <mfernandez@petroleradelorinoco.com>
+To: info@alpha-technical-centre.com
+Subject: =?UTF-8?B?UmU6IEJvcnJhZG9yIGRlIE5EQSDigJQgcmV2aXNpw7Nu?=
+In-Reply-To: <m03@mail.fixture>
+References: <m03@mail.fixture>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_atc_8"
+
+------=_atc_8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Gracias, revisaremos el borrador y le enviamos comentarios.
+------=_atc_8
+Content-Type: text/plain; name="comments-1.txt"
+Content-Disposition: attachment; filename="comments-1.txt"
+Content-Transfer-Encoding: base64
+
+Q2xhdXNlIDQ6IGNvbmZpZGVudGlhbGl0eSB0ZXJtIDI0IG1vbnRocy4K
+------=_atc_8
+Content-Type: text/plain; name="comments-2.txt"
+Content-Disposition: attachment; filename="comments-2.txt"
+Content-Transfer-Encoding: base64
+
+Q2xhdXNlIDk6IGdvdmVybmluZyBsYXcgRW5nbGFuZCBhbmQgV2FsZXMuCg==
+------=_atc_8--

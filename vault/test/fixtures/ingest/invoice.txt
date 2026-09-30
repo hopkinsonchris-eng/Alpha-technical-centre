@@ -1,0 +1,19 @@
+# INVOICE
+
+Invoice Number: ATC-2026-014
+Invoice Date: 3 August 2026
+Due Date: 2 September 2026
+Bill To: Petrolera del Orinoco S.A.
+From: Alpha Technical Centre Ltd
+
+| Description | Days | Rate (USD) | Amount (USD) |
+| --- | --- | --- | --- |
+| Reservoir screening, Carabobo | 6 | 1,200.00 | 7,200.00 |
+| Fiscal terms review | 1 | 1,200.00 | 1,200.00 |
+
+Subtotal: USD 8,400.00
+VAT (0%): USD 0.00
+Total Due: USD 8,400.00
+Currency: USD
+Status: Unpaid
+Payment terms: Net 30

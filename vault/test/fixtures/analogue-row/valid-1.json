@@ -1,0 +1,31 @@
+{
+  "id": "00000000-0000-4000-8000-000000000031",
+  "source_ref": "run:00000000-0000-4000-8000-000000000002",
+  "asset_id": "field:llanos:cubiro",
+  "basin_id": "basin:llanos",
+  "country": "CO",
+  "as_of": "2026-09-25",
+  "legal_tag": "lt-frontera-nda-2026",
+  "provenance": "own-evaluation",
+  "lithology": "clastic",
+  "drive_mechanism": "waterflood",
+  "fluid_type": "heavy-oil",
+  "porosity_frac": {
+    "value": 0.21,
+    "provenance": "measured"
+  },
+  "permeability_md": {
+    "value": 150,
+    "low": 60,
+    "high": 320,
+    "provenance": "analogue"
+  },
+  "recovery_factor_frac": {
+    "value": 0.31,
+    "provenance": "calculated"
+  },
+  "method": [
+    "analogy",
+    "volumetric"
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.alpha-technical-centre.com/schemas/tool-manifest.schema.json",
+  "title": "ToolManifest",
+  "description": "tool.json placed beside every tool (Backstage catalog-info pattern). Aggregated into the catalog the Hub reads. The 'current' alias, not a version number, is what every link resolves.",
+  "type": "object",
+  "required": ["id", "name", "owner", "lifecycle", "kind", "entry", "versions", "aliases"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]{2,40}$", "description": "e.g. opportunity-register, apex-reservoir-3d, apex-asset-intelligence, apex-3d-model" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "owner": { "type": "string", "description": "Partner responsible (person id)" },
+    "lifecycle": { "type": "string", "enum": ["experimental", "production", "deprecated", "retired"] },
+    "kind": { "type": "string", "enum": ["browser-tool", "external-app", "pipeline", "skill"] },
+    "entry": { "type": "string", "description": "URL or repo path of the current entry point" },
+    "docs": { "type": "string", "description": "Path to README or user guide" },
+    "changelog": { "type": "string", "description": "Path to CHANGELOG.md (Keep a Changelog format)" },
+    "produces": { "type": "array", "items": { "type": "string" }, "description": "Output kinds this tool writes to run.outputs, e.g. npv10, irr, technical_potential" },
+    "consumes": { "type": "array", "items": { "type": "string" }, "description": "Reference sets or record kinds it reads, e.g. price_deck, fiscal_terms, run:apex-reservoir-3d" },
+    "versions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["version", "released_at", "commit"],
+        "additionalProperties": false,
+        "properties": {
+          "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+          "released_at": { "type": "string", "format": "date" },
+          "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+          "status": { "type": "string", "enum": ["draft", "reviewed", "approved", "deprecated"], "default": "approved" },
+          "modules": { "type": "array", "items": { "type": "string" }, "description": "Files whose change constitutes a new version, e.g. js/potential.js" },
+          "breaking": { "type": "boolean", "default": false, "description": "True when runs from earlier versions are not comparable" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "aliases": {
+      "type": "object",
+      "required": ["current"],
+      "properties": {
+        "current": { "type": "string" },
+        "previous": { "type": "string" },
+        "beta": { "type": "string" }
+      },
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

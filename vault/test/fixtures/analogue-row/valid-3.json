@@ -1,0 +1,13 @@
+{
+  "id": "00000000-0000-4000-8000-000000000033",
+  "source_ref": "doc:00000000-0000-4000-8000-000000000013",
+  "asset_id": "field:neuquen:loma-campana",
+  "country": "AR",
+  "as_of": "2026-08-01",
+  "legal_tag": "lt-public",
+  "provenance": "regulator",
+  "peak_rate_bopd": {
+    "value": 65000,
+    "provenance": "reported"
+  }
+}

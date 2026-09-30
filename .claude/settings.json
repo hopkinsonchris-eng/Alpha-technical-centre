@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const fs=require('fs'),p=require('path').join(process.env.CLAUDE_PROJECT_DIR||process.cwd(),'vault','firm','LESSONS.md');if(fs.existsSync(p))process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'SessionStart',additionalContext:fs.readFileSync(p,'utf8')}}))\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{let p={};try{p=JSON.parse(s)}catch(e){}const path=require('path'),ti=p.tool_input||{},f=String(ti.file_path||ti.path||'');if(!f)process.exit(0);const root=process.env.CLAUDE_PROJECT_DIR||process.cwd();const rel=path.relative(root,path.resolve(root,f)).split(path.sep).join('/');if(!rel.startsWith('docs/vault-hub/schemas/'))process.exit(0);let b=process.env.HOOK_BRANCH;if(b===undefined){try{b=require('child_process').execSync('git rev-parse --abbrev-ref HEAD',{cwd:root,encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim()}catch(e){b=''}}if(b.startsWith('schema/'))process.exit(0);console.error('Blocked: docs/vault-hub/schemas/ holds the Tier A contracts. Edit them only on a branch named schema/<topic> (current branch: '+(b||'unknown')+').');process.exit(2)})\""
+          }
+        ]
+      }
+    ]
+  }
+}

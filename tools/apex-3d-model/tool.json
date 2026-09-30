@@ -1,0 +1,22 @@
+{
+  "id": "apex-3d-model",
+  "name": "APEX 3D Model",
+  "description": "External APEX 3D geological model viewer, access by key.",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "external-app",
+  "entry": "https://apex-3d-model.uk",
+  "changelog": "tools/apex-3d-model/CHANGELOG.md",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released_at": "2026-07-09",
+      "commit": "7bf455e",
+      "status": "approved",
+      "notes": "External app; the real version is unknown, 1.0.0 is a placeholder. Release date and commit are those of the tools.html link."
+    }
+  ],
+  "aliases": {
+    "current": "1.0.0"
+  }
+}

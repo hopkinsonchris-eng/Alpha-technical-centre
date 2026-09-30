@@ -1,0 +1,41 @@
+{
+ "status": "ok",
+ "message-type": "work-list",
+ "message-version": "1.0.0",
+ "message": {
+  "total-results": 3,
+  "items": [
+   {
+    "DOI": "10.2118/999001-MS",
+    "title": [
+     "Polymer flooding pilot in a heavy oil reservoir"
+    ],
+    "author": [
+     {
+      "given": "A.",
+      "family": "Rivera"
+     }
+    ],
+    "issued": {
+     "date-parts": [
+      [
+       2026,
+       8
+      ]
+     ]
+    },
+    "abstract": "<jats:p>Polymer flooding pilot.</jats:p>",
+    "URL": "https://doi.org/10.2118/999001-MS",
+    "container-title": [
+     "SPE Latin America Conference"
+    ],
+    "type": "proceedings-article",
+    "indexed": {
+     "date-time": "2026-09-03T10:00:00Z"
+    }
+   }
+  ],
+  "next-cursor": null,
+  "items-per-page": 2
+ }
+}

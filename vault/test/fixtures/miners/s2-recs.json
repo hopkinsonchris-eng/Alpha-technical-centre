@@ -1,0 +1,48 @@
+{
+ "recommendedPapers": [
+  {
+   "paperId": "s2rec444",
+   "title": "Sweep Efficiency Improvement by Polymer Gels",
+   "abstract": "Gel treatments were evaluated for conformance.",
+   "year": 2026,
+   "publicationDate": "2026-09-05",
+   "venue": "SPE Journal",
+   "url": "https://www.semanticscholar.org/paper/s2rec444",
+   "authors": [
+    {
+     "authorId": "1",
+     "name": "A. Rivera"
+    },
+    {
+     "authorId": "2",
+     "name": "J. Okafor"
+    }
+   ],
+   "externalIds": {
+    "DOI": "10.2118/999002-MS"
+   }
+  },
+  {
+   "paperId": "s2old555",
+   "title": "Older Recommendation From 2019",
+   "abstract": "Old work.",
+   "year": 2019,
+   "publicationDate": "2019-01-01",
+   "venue": "SPE Journal",
+   "url": "https://www.semanticscholar.org/paper/s2old555",
+   "authors": [
+    {
+     "authorId": "1",
+     "name": "A. Rivera"
+    },
+    {
+     "authorId": "2",
+     "name": "J. Okafor"
+    }
+   ],
+   "externalIds": {
+    "DOI": "10.2118/old-MS"
+   }
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+{
+  "id": "nodal-analysis",
+  "name": "Nodal Analysis",
+  "description": "IPR/VLP nodal analysis well performance optimiser with an ESP option.",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "nodal-analysis-tool.html",
+  "changelog": "tools/nodal-analysis/CHANGELOG.md",
+  "produces": [
+    "operating_point_rate",
+    "operating_point_bhp"
+  ],
+  "versions": [
+    {
+      "version": "1.2.0",
+      "released_at": "2026-07-08",
+      "commit": "91ac232",
+      "status": "approved"
+    },
+    {
+      "version": "1.1.0",
+      "released_at": "2026-07-08",
+      "commit": "5ece372",
+      "status": "approved"
+    },
+    {
+      "version": "1.0.0",
+      "released_at": "2026-07-06",
+      "commit": "33034ef",
+      "status": "approved"
+    }
+  ],
+  "aliases": {
+    "current": "1.2.0",
+    "previous": "1.1.0"
+  }
+}

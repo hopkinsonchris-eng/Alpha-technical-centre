@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.alpha-technical-centre.com/schemas/legal-tag.schema.json",
+  "title": "LegalTag",
+  "description": "Confidentiality and contract envelope on every vault record (OSDU-style). Derivatives inherit the union of their parents' tags; an expired tag hides the record and its derivatives.",
+  "type": "object",
+  "required": [
+    "id",
+    "classification",
+    "data_type",
+    "originator"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^lt-[a-z0-9-]{3,64}$",
+      "description": "Stable id, e.g. lt-firm-public, lt-clientA-nda-2026"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "public",
+        "firm",
+        "client-nda"
+      ]
+    },
+    "data_type": {
+      "type": "string",
+      "enum": [
+        "public",
+        "first-party",
+        "second-party",
+        "third-party",
+        "transferred"
+      ]
+    },
+    "client_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Required when classification is client-nda"
+    },
+    "contract_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "NDA or licence reference (e.g. OnePetro subscription id for third-party papers)"
+    },
+    "country_of_origin": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z]{2}$"
+      }
+    },
+    "originator": {
+      "type": "string",
+      "description": "Organisation the data came from"
+    },
+    "expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "Date after which the record and its derivatives are hidden"
+    },
+    "personal_data": {
+      "type": "boolean",
+      "default": false
+    },
+    "export_restricted": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    },
+    "partners_only": {
+      "type": "boolean",
+      "default": false,
+      "description": "Finance, legal and HR records: visible to partners unless granted per project"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "classification": {
+            "const": "client-nda"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "client_id"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "Bad_ID",
+  "name": "X",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "x.html",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released_at": "2026-01-01",
+      "commit": "abcdef1"
+    }
+  ],
+  "aliases": {
+    "current": "1.0.0"
+  }
+}

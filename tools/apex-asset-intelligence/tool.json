@@ -1,0 +1,22 @@
+{
+  "id": "apex-asset-intelligence",
+  "name": "APEX Asset Intelligence",
+  "description": "External APEX asset intelligence application (v4).",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "external-app",
+  "entry": "https://apex-app2.onrender.com",
+  "changelog": "tools/apex-asset-intelligence/CHANGELOG.md",
+  "versions": [
+    {
+      "version": "4.0.0",
+      "released_at": "2026-07-09",
+      "commit": "7bf455e",
+      "status": "approved",
+      "notes": "External app; version 4 as labelled by the app. Release date and commit are those of the tools.html link, not of the external build."
+    }
+  ],
+  "aliases": {
+    "current": "4.0.0"
+  }
+}

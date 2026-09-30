@@ -140,6 +140,23 @@ main{padding:18px 22px 48px;max-width:1760px;margin:0 auto}
 .prov.measured{color:#2ECC8A;border-color:rgba(46,204,138,.45);background:rgba(46,204,138,.10)}
 .prov.mixed{color:#E8963A;border-color:rgba(232,150,58,.45);background:rgba(232,150,58,.10)}
 .prov\-analogue-only,.prov.analogue-only{color:#E0544A;border-color:rgba(224,84,74,.45);background:rgba(224,84,74,.10)}
+.prov.tool{color:var(--cyan);border-color:rgba(74,173,202,.45);background:rgba(74,173,202,.10);margin-left:6px}
+/* Vault: project picker, Runs drawer */
+#projectPicker select{background:var(--navy3)!important;color:var(--cream)!important;border:1px solid var(--line)!important;border-radius:4px!important;padding:8px 10px!important;font-family:var(--font-body)!important;font-size:13px!important;max-width:200px}
+.runs-note{margin:0 0 14px;padding:9px 12px;border:1px solid rgba(232,150,58,.45);background:var(--amber-dim);color:#F3B774;border-radius:5px;font-size:12.5px}
+.run-empty{color:var(--steel);font-size:13px;margin:0 0 12px}
+.run-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.run{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:11px 13px}
+.run-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.run-top strong{font-weight:600}
+.run-meta{font-family:var(--font-mono);font-size:11px;color:var(--steel);margin-top:3px}
+.run-out{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}
+.run-out div{background:var(--navy);border:1px solid var(--line);border-radius:4px;padding:6px 9px}
+.run-out span{display:block;color:var(--steel);font-size:11px}
+.run-out b{font-family:var(--font-mono);font-weight:500;font-size:13px}
+.run-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.run-actions .btn{padding:6px 11px;font-size:12px}
+.badge.steel{background:var(--steel-dim);color:var(--cream-dim)}
 .bridge{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
 .bridge th{text-align:left;font-family:var(--font-cond);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
 .bridge td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -409,6 +426,8 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
     <span class="apex-chip sim" title="World Monitor is not connected. Events and risk scores are illustrative.">World Monitor: simulated</span>
   </div>
   <div class="head-actions">
+    <span id="projectPicker" title="Project the saved runs belong to"></span>
+    <button class="btn ghost" id="runsBtn" type="button" data-vact="open-runs" data-en="Runs" data-es="Ejecuciones">Runs</button>
     <a class="btn ghost" href="admin.html">Staff portal</a>
     <button class="btn gold" id="addBtn" type="button">＋ Add opportunity</button>
   </div>
@@ -541,12 +560,32 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
     <div class="sheet-head">
       <div><p id="dMeta"></p><h2 id="dTitle"></h2></div>
       <div class="sheet-tools">
+        <button class="btn" type="button" data-vact="save-run" id="saveRunBtn" data-en="Save run" data-es="Guardar ejecución">Save run</button>
         <button class="btn" type="button" data-act="edit">Edit</button>
         <button class="btn danger" type="button" data-act="delete">Delete</button>
         <button class="xbtn" type="button" data-act="close-drawer" aria-label="Close">×</button>
       </div>
     </div>
     <div class="sheet-body" id="detail"></div>
+  </aside>
+</div>
+
+<!-- ═══ RUNS DRAWER (Vault) ═══ -->
+<div class="drawer" id="runsDrawer" aria-hidden="true">
+  <div class="scrim" data-vact="close-runs"></div>
+  <aside class="sheet" role="dialog" aria-modal="true" aria-labelledby="runsTitle">
+    <div class="sheet-head">
+      <div><p id="runsMeta" data-en="Saved calculations for this project" data-es="Cálculos guardados de este proyecto">Saved calculations for this project</p>
+        <h2 id="runsTitle" data-en="Runs" data-es="Ejecuciones">Runs</h2></div>
+      <div class="sheet-tools">
+        <button class="xbtn" type="button" data-vact="close-runs" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="sheet-body">
+      <p class="runs-note" id="runsQueuedNote" hidden data-en="Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns." data-es="En cola local: el Vault no está disponible, así que las ejecuciones se guardan en este dispositivo y se sincronizan al volver.">Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns.</p>
+      <p class="run-empty" id="runsEmpty" hidden data-en="No runs saved for this project yet. Save an opportunity, or use Save run in its detail panel." data-es="Aún no hay ejecuciones guardadas para este proyecto. Guarde una oportunidad o use Guardar ejecución en su panel de detalle.">No runs saved for this project yet. Save an opportunity, or use Save run in its detail panel.</p>
+      <ul class="run-list" id="runsList"></ul>
+    </div>
   </aside>
 </div>
 
@@ -630,10 +669,12 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
   // kills the module silently and the page would have no idea.
   //
   // The ?v token pins the page to a known version of its calculator. This HTML
-  // revalidates on every load, so bumping the token guarantees a matching
+  // revalidates on every load, so changing the token guarantees a matching
   // module is fetched rather than whatever a proxy still happens to be holding.
-  // BUMP IT WHENEVER js/potential.js OR js/analogues.js CHANGES.
-  Promise.all([import('./js/potential.js?v=2'), import('./js/analogues.js?v=2')])
+  // The token is derived from aliases.current in tools/opportunity-register/tool.json.
+  // BUMP THAT VERSION (and add a CHANGELOG entry) WHENEVER js/potential.js OR
+  // js/analogues.js CHANGES, then update the token here to match.
+  Promise.all([import('./js/potential.js?v=2.2.0'), import('./js/analogues.js?v=2.2.0')])
     .then(function (m) {
       window.ATCP = Object.assign({}, m[0], m[1]);
       window.ATCP_STATUS = 'ready';
@@ -641,7 +682,18 @@ dialog::backdrop{background:rgba(2,8,17,.78)}
     .catch(function (e) {
       window.ATCP_STATUS = 'The calculator could not be loaded: ' + ((e && e.message) || e);
     })
+    .then(function () {   // opt-in: ?analogues=<scope> loads the Vault's analogue defaults, shown as a count on the badge
+      var sc = new URLSearchParams(location.search).get('analogues');
+      return sc && window.ATCP && ATCP.loadVaultDefaults ? Promise.all(ATCP.PLAY_KEYS.map(function (k) { return ATCP.loadVaultDefaults(k, sc); })) : null;
+    })
     .then(function () { window.dispatchEvent(new Event('atc-calc-ready')); });
+</script>
+<script type="module">
+  // The Vault client. Every save the page makes is also captured as a Run.
+  // If this import fails the register carries on exactly as it did before.
+  import { vault } from './js/vault-client.js';
+  window.ATC_VAULT = vault;
+  window.dispatchEvent(new Event('atc-vault-ready'));
 </script>
 <script nomodule>
   window.ATCP_STATUS = 'This browser does not support JavaScript modules, so the technical potential cannot be calculated here.';
@@ -799,6 +851,277 @@ var Store = {
 function replaceById(o){var i=state.data.findIndex(function(x){return x.id===o.id;});if(i>=0)state.data[i]=o;else state.data.unshift(o);}
 function dropById(id){state.data=state.data.filter(function(x){return x.id!==id;});}
 function byId(id){return state.data.find(function(x){return x.id===id;});}
+
+/* ─── Vault: runs, project, tool version ───
+   The register list itself stays on /api/opportunities and localStorage (that
+   endpoint is not part of the Vault yet). What the Vault adds is a Run for every
+   calculation the page saves, so it can be reloaded, compared and re-run. */
+var TOOL_ID='opportunity-register';
+var TOOL_OUTPUTS=[
+  ['technical_potential_bopd','Technical potential','Potencial técnico'],
+  ['uplift_bopd','Alpha uplift','Mejora de Alpha']
+];
+var LEGAL_TAG_RE=/^lt-[a-z0-9-]{3,64}$/;
+var selectedId=null, priceDeck=null, vProject='firm', projectMeta={}, metaReady=Promise.resolve();
+var runsCache={}, runsSeq=0;
+var toolVer={version:pageVersion(),commit:'',source:'page'};
+var UNITS={'rock.areaAcres':'acres','wells.producers':'wells','wells.activeProducers':'wells','wells.spacingAcres':'acres/well',
+  'wells.rwFt':'ft','pressure.pres':'psi','pressure.pwfFrac':'fraction','pressure.pwfNowFrac':'fraction','plateauYears':'years',
+  'mscfPerBoe':'mscf/boe','rock.k':'mD','rock.hFt':'ft','rock.phi':'fraction','relperm.swc':'fraction','relperm.sor':'fraction',
+  'relperm.krwMax':'fraction','relperm.kroMax':'fraction','fluids.muo':'cP','fluids.muw':'cP','fluids.bo':'rb/stb','fluids.boi':'rb/stb',
+  'gas.mug':'cP','gas.tempF':'degF','gas.pi':'psi','gas.pab':'psi','gas.bgiCfPerScf':'cf/scf','gas.swc':'fraction'};
+
+function vaultOf(){return window.ATC_VAULT||null;}
+function onVault(fn){
+  if(vaultOf()){fn(vaultOf());return;}
+  window.addEventListener('atc-vault-ready',function(){if(vaultOf())fn(vaultOf());},{once:true});
+}
+function vLang(){return String(document.documentElement.lang||'en').toLowerCase().indexOf('es')===0?'es':'en';}
+function bi(en,es){return '<span data-en="'+esc(en)+'" data-es="'+esc(es)+'">'+esc(vLang()==='es'?es:en)+'</span>';}
+function localizeStatic(){
+  if(vLang()!=='es')return;
+  $$('[data-en][data-es]').forEach(function(el){el.textContent=el.getAttribute('data-es');});
+}
+/* The token on the calculator import is the version this page was built for.
+   It is what the badge shows when the Vault cannot say otherwise. */
+function pageVersion(){
+  var ms=$$('script[type="module"]');
+  for(var i=0;i<ms.length;i++){
+    var r=/potential\.js\?v=(\d+\.\d+\.\d+)/.exec(ms[i].textContent||'');
+    if(r)return r[1];
+  }
+  return '';
+}
+function toolBadge(){
+  if(!toolVer.version)return '';
+  var tip='Tool version '+toolVer.version+(toolVer.commit?' ('+toolVer.commit+')':'')
+    +(toolVer.source==='vault'?', as resolved by the Vault':', from the page import token (Vault not reachable)');
+  return '<span class="prov tool toolver" data-source="'+toolVer.source+'" title="'+esc(tip)+'">v'+esc(toolVer.version)+'</span>';
+}
+function paintToolVer(){
+  $$('.toolver').forEach(function(el){el.outerHTML=toolBadge();});
+}
+
+/* Headline numbers, computed exactly as the page computes them and with no DOM.
+   A number the calculator did not produce is left out, never written as zero. */
+function runFor(p){
+  if(!window.ATCP)throw new Error(window.ATCP_STATUS||'The calculator has not loaded.');
+  var out={};
+  if(!p||!p.opportunity)return out;
+  var o=clone(p.opportunity); ensurePotentialModel(o);
+  var c=computeCalc(o);
+  if(!c||c.error)return out;
+  var mid=c.band.mid.potentialKboed*1000;
+  if(isFinite(mid)){
+    out.technical_potential_bopd={value:mid,unit:'bopd'};
+    var lo=c.band.low.potentialKboed*1000, hi=c.band.high.potentialKboed*1000;
+    if(isFinite(lo))out.technical_potential_bopd.low=lo;
+    if(isFinite(hi))out.technical_potential_bopd.high=hi;
+  }
+  if(o.plan!=null&&isFinite(Number(o.plan))){
+    var up=(c.bridge.atcPlanKboed-num(o.plan))*1000;
+    if(isFinite(up))out.uplift_bopd={value:up,unit:'bopd'};
+  }
+  return out;
+}
+function currentOpp(){
+  var id=selectedId||state.openId, o=id?byId(id):null;
+  return o||state.data[0]||null;
+}
+function paramsFor(o){
+  if(!o)return {opportunity:null,price_deck:priceDeck};
+  var c=clone(o);
+  delete c.updated;   // a timestamp is not an input; leaving it in would stop identical re-runs collapsing
+  return {opportunity:c,price_deck:priceDeck};
+}
+function getParams(){return paramsFor(currentOpp());}
+function setParams(p){
+  if(!window.ATCP)throw new Error(window.ATCP_STATUS||'The calculator has not loaded.');
+  if(!p||typeof p!=='object'||!p.opportunity||!p.opportunity.id)throw new Error('setParams needs params.opportunity with an id.');
+  var o=clone(p.opportunity), prev=byId(o.id);
+  if(!o.updated&&prev&&prev.updated)o.updated=prev.updated;
+  ensurePotentialModel(o);
+  priceDeck=p.price_deck||null;
+  replaceById(o); selectedId=o.id;
+  render();
+  return getParams();
+}
+function inputsFor(p){
+  var id=p&&p.price_deck;
+  return id?[{ref:'ref:price_decks/'+id,kind:'reference',role:'price_deck'}]:[{ref:'tool:'+TOOL_ID,kind:'manual'}];
+}
+function lookupInput(inp,path){
+  if(path==='pressure.pwfFrac')return Number((inp.pressure.pwf/inp.pressure.pres).toPrecision(12));
+  if(path==='pressure.pwfNowFrac')return Number((inp.pressure.pwfNow/inp.pressure.pres).toPrecision(12));
+  var v=inp; path.split('.').forEach(function(k){v=(v==null)?undefined:v[k];});
+  return v;
+}
+/* Every analogue default the calculation leaned on, so a reader of the run can see
+   what was borrowed from the play rather than supplied for this asset. */
+function assumptionsFor(p){
+  var out={};
+  if(!p||!p.opportunity||!window.ATCP)return out;
+  var o=clone(p.opportunity); ensurePotentialModel(o);
+  var c=computeCalc(o);
+  if(!c||c.error)return out;
+  var prov=c.inputs.provenance||{};
+  Object.keys(prov).forEach(function(path){
+    if(prov[path]!=='analogue')return;
+    var v=lookupInput(c.inputs.mid,path);
+    if(v===undefined)return;
+    var a={value:v,source:'analogue',provenance:'analogue'};
+    if(UNITS[path])a.unit=UNITS[path];
+    var lo=lookupInput(c.inputs.low,path), hi=lookupInput(c.inputs.high,path);
+    if(lo!==undefined&&hi!==undefined&&(lo!==v||hi!==v)){a.low=lo;a.high=hi;}
+    out[path]=a;
+  });
+  (c.factors||[]).forEach(function(f){
+    if(f.provenance==='analogue')out['factor.'+f.id]={value:f.value,unit:f.kind==='volume'?'kboe/d':'fraction',source:'analogue',provenance:'analogue'};
+  });
+  return out;
+}
+window.ATC_TOOL={
+  id:TOOL_ID,
+  getParams:getParams,
+  setParams:setParams,
+  run:function(p){return runFor(p==null?getParams():p);},
+  getInputs:function(p){return inputsFor(p==null?getParams():p);},
+  getAssumptions:function(p){return assumptionsFor(p==null?getParams():p);}
+};
+
+function legalTag(){
+  var m=projectMeta[vProject], t=m&&m.default_legal_tag;
+  return (typeof t==='string'&&LEGAL_TAG_RE.test(t))?t:'lt-firm';
+}
+function partialFor(o,p,outputs){
+  return {job:TOOL_ID,project_id:vProject||'firm',legal_tag:legalTag(),asset_ids:[],
+    inputs:inputsFor(p),assumptions:assumptionsFor(p),params:p,outputs:outputs,
+    status:'draft',title:(o.name||o.id)+' · technical potential'};
+}
+/* Writes a Run for the opportunity as it now stands. The register save has already
+   succeeded by the time this runs, so a Vault problem never blocks it. */
+function captureRun(o,how){
+  var vault=vaultOf();
+  if(!vault||!o)return Promise.resolve(null);
+  var p=paramsFor(o), outputs;
+  try{outputs=runFor(p);}catch(e){outputs={};}
+  if(!Object.keys(outputs).length){toast('No run saved: the technical potential could not be computed.');return Promise.resolve(null);}
+  return metaReady.then(function(){return vault.saveRun(partialFor(o,p,outputs),{toolId:TOOL_ID});})
+    .then(function(res){
+      if(how==='button')toast(res.queued?'Run queued locally. It syncs when the Vault is reachable.':'Run saved to the Vault.');
+      else if(res.queued)toast('Saved. The run is queued locally until the Vault is reachable.');
+      if(runsOpen())refreshRuns();
+      return res;
+    })
+    .catch(function(e){toast('The run could not be saved: '+((e&&e.message)||e));return null;});
+}
+
+/* ─── Runs drawer ─── */
+function runsOpen(){return $('#runsDrawer').classList.contains('open');}
+function openRuns(){
+  var d=$('#runsDrawer'); d.classList.add('open'); d.setAttribute('aria-hidden','false');
+  refreshRuns();
+  setTimeout(function(){var b=$('#runsDrawer .xbtn');if(b)b.focus({preventScroll:true});},60);
+}
+function closeRuns(){var d=$('#runsDrawer'); d.classList.remove('open'); d.setAttribute('aria-hidden','true');}
+function fmtInt(v){var n=Number(v);return isFinite(n)?n.toLocaleString('en-GB',{maximumFractionDigits:0}):String(v);}
+function runRow(r){
+  var when=r.created_at?new Date(r.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'–';
+  var st=r.status||'draft', cls=st==='final'||st==='reviewed'?'green':st==='superseded'?'steel':'amber';
+  var outs=r.outputs||{};
+  var cells=TOOL_OUTPUTS.filter(function(k){return outs[k[0]]&&outs[k[0]].value!=null;}).map(function(k){
+    var v=outs[k[0]];
+    return '<div><span>'+bi(k[1],k[2])+'</span><b>'+esc(fmtInt(v.value)+(v.unit?' '+v.unit:''))+'</b></div>';
+  }).join('');
+  return '<li class="run" data-run="'+esc(r.id)+'">'
+    +'<div class="run-top"><strong>'+esc(r.title||r.job||'Run')+'</strong><span>'
+    +(r.queued?'<span class="badge amber">'+bi('queued locally','en cola local')+'</span> ':'')
+    +'<span class="badge '+cls+'">'+esc(st)+'</span></span></div>'
+    +'<div class="run-meta">'+esc(when)+' · '+esc(r.author||'–')+' · '+(r.tool_version?'v'+esc(r.tool_version):'v–')+'</div>'
+    +(cells?'<div class="run-out">'+cells+'</div>':'')
+    +'<div class="run-actions">'
+    +'<button class="btn" type="button" data-vact="run-load" data-id="'+esc(r.id)+'">'+bi('Load','Cargar')+'</button>'
+    +(st==='superseded'?'':'<button class="btn ghost" type="button" data-vact="run-supersede" data-id="'+esc(r.id)+'">'+bi('Supersede with current inputs','Reemplazar con las entradas actuales')+'</button>')
+    +'</div></li>';
+}
+function refreshRuns(){
+  var vault=vaultOf(), list=$('#runsList'), note=$('#runsQueuedNote'), empty=$('#runsEmpty'), mine=++runsSeq;
+  if(!vault){list.innerHTML='';empty.hidden=true;note.hidden=false;return Promise.resolve([]);}
+  return vault.listRuns({project:vProject||'firm',job:TOOL_ID}).then(function(runs){
+    if(mine!==runsSeq)return runs;
+    runs=(runs||[]).slice().sort(function(a,b){return String(b.created_at).localeCompare(String(a.created_at));});
+    runsCache={}; runs.forEach(function(r){runsCache[r.id]=r;});
+    list.innerHTML=runs.map(runRow).join('');
+    empty.hidden=runs.length>0;
+    note.hidden=!(vault.mode()!=='server'||runs.some(function(r){return r.queued;}));
+    return runs;
+  }).catch(function(e){
+    if(mine!==runsSeq)return [];
+    list.innerHTML='<li class="run">'+esc('The runs could not be listed: '+((e&&e.message)||e))+'</li>';
+    empty.hidden=true; note.hidden=vault.mode()==='server';
+    return [];
+  });
+}
+function loadRunAction(id){
+  var vault=vaultOf(); if(!vault)return;
+  vault.loadRun(id).then(function(rec){
+    setParams(rec.params);
+    var now=runFor(getParams()), same=true;
+    Object.keys(rec.outputs||{}).forEach(function(k){
+      var a=rec.outputs[k]&&rec.outputs[k].value, b=now[k]&&now[k].value;
+      if(typeof a!=='number'||typeof b!=='number'||Math.abs(a-b)>1e-9*Math.max(1,Math.abs(a)))same=false;
+    });
+    closeRuns(); openDetail(selectedId);
+    toast(same?'Run loaded. The outputs reproduce exactly.':'Run loaded. The outputs differ from the saved run, so the calculator has changed since.');
+  }).catch(function(e){toast('The run could not be loaded: '+((e&&e.message)||e));});
+}
+function supersedeAction(id){
+  var vault=vaultOf(), o=currentOpp(); if(!vault)return;
+  if(!o){toast('Open an opportunity first, then supersede with its inputs.');return;}
+  var old=runsCache[id], oldOpp=old&&old.params&&old.params.opportunity;
+  if(oldOpp&&oldOpp.id!==o.id&&!window.confirm('That run is for “'+(oldOpp.name||oldOpp.id)+'”. Supersede it with “'+(o.name||o.id)+'”?'))return;
+  var p=paramsFor(o), outputs;
+  try{outputs=runFor(p);}catch(e){outputs={};}
+  if(!Object.keys(outputs).length){toast('No run saved: the technical potential could not be computed.');return;}
+  metaReady.then(function(){return vault.supersede(id,partialFor(o,p,outputs),{toolId:TOOL_ID});})
+    .then(function(res){toast(res.queued?'Superseding run queued locally.':'Run superseded.');return refreshRuns();})
+    .catch(function(e){toast('The run could not be superseded: '+((e&&e.message)||e));});
+}
+function loadProjectMeta(vault){
+  if(vault.mode()!=='server')return Promise.resolve();
+  return fetch('/api/projects',{cache:'no-store',headers:{accept:'application/json'}})
+    .then(function(r){return r.ok?r.json():[];})
+    .then(function(b){
+      (Array.isArray(b)?b:(b&&b.projects)||[]).forEach(function(pr){if(pr&&pr.id!=null)projectMeta[String(pr.id)]=pr;});
+    }).catch(function(){});
+}
+function wireVault(){
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('[data-vact]'); if(!b)return;
+    var a=b.getAttribute('data-vact');
+    if(a==='open-runs')openRuns();
+    else if(a==='close-runs')closeRuns();
+    else if(a==='save-run'){var o=state.openId&&byId(state.openId);if(o)captureRun(o,'button');}
+    else if(a==='run-load')loadRunAction(b.getAttribute('data-id'));
+    else if(a==='run-supersede')supersedeAction(b.getAttribute('data-id'));
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&runsOpen())closeRuns();});
+}
+function initVault(){
+  localizeStatic();
+  onVault(function(vault){
+    var el=$('#projectPicker');
+    metaReady=vault.pickProject(el).then(function(id){vProject=id||'firm';return loadProjectMeta(vault);}).catch(function(){});
+    el.addEventListener('vault:project',function(e){
+      vProject=(e.detail&&e.detail.projectId)||'firm';
+      if(runsOpen())refreshRuns();
+    });
+    vault.resolve(TOOL_ID).then(function(r){
+      toolVer={version:r.version,commit:r.commit||'',source:'vault'};
+      paintToolVer();
+    }).catch(function(){});
+  });
+}
 
 /* ─── Filtering + master render ─── */
 function applyFilters(){
@@ -1078,6 +1401,7 @@ function potentialSection(o){
   if(c.error) return '<div class="section"><h3>Technical potential</h3>'
     + '<p class="thesis">Cannot be computed: '+esc(c.error)+'</p></div>';
   var b=c.band, m=b.mid, pm=o.potentialModel||{}, prov=c.prov;
+  var ov=ATCP.activeOverlay&&ATCP.activeOverlay(pm.play);
   var play=(ATCP.PLAYS[pm.play]||{}).label||pm.play||'unknown play';
   var calib=factOf(o)>0?(m.currentSkinRateKboed/factOf(o)):0;
   var calibText=factOf(o)>0
@@ -1102,7 +1426,7 @@ function potentialSection(o){
     + (m.bound==='rate'?'what the wells can flow':'the movable volume an ideal sweep recovers')
     + '. <strong>Unattainable by construction</strong>: areal and vertical sweep are held at unity and the damage is removed.</p>'
     + '<div class="detail-grid" style="margin-top:10px">'
-    +   '<div class="stat"><span>Inputs</span><strong><span class="prov '+prov.grade+'">'+prov.grade.replace('-',' ')+'</span></strong></div>'
+    +   '<div class="stat"><span>Inputs</span><strong><span class="prov '+prov.grade+'">'+(ov&&prov.grade!=='measured'?'analogue (n='+ov.meta.n+')':prov.grade.replace('-',' '))+'</span>'+toolBadge()+'</strong></div>'
     +   '<div class="stat"><span>Measured / analogue / assumed</span><strong>'+prov.measured+' / '+prov.analogue+' / '+prov.assumed+'</strong></div>'
     +   '<div class="stat"><span>Model reproduces today</span><strong>'+calibText+'</strong></div>'
     +   (m.mobilityRatio!=null?'<div class="stat"><span>Mobility ratio</span><strong>'+m.mobilityRatio.toFixed(2)+'</strong></div>':'')
@@ -1128,7 +1452,7 @@ function potentialSection(o){
 /* ─── Detail drawer ─── */
 function openDetail(id,cat,silent){
   var o=byId(id); if(!o)return;
-  state.openId=id;
+  state.openId=id; selectedId=id;
   var updated=o.updated?new Date(o.updated).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'today';
   $('#dMeta').textContent=o.country+' · '+o.source+' · Updated '+updated;
   $('#dTitle').textContent=o.name;
@@ -1319,6 +1643,7 @@ function submitForm(ev){
     closeForm(); render();
     toast(existing?'Changes saved':'Opportunity added to the register');
     openDetail((saved&&saved.id)||o.id);
+    captureRun(byId((saved&&saved.id)||o.id)||o,'save');
   }).catch(function(err){toast(err.message);}).then(function(){btn.disabled=false;});
 }
 
@@ -1523,6 +1848,7 @@ function wire(){
   document.addEventListener('click',function(e){var m=$('#dataMenu');if(m.open&&!m.contains(e.target))m.removeAttribute('open');},true);
 
   $('#addBtn').addEventListener('click',function(){openForm(null);});
+  wireVault();
   $('#opForm').addEventListener('submit',submitForm);
   $('#opForm').addEventListener('input',function(e){
     var d=e.target.dataset||{};
@@ -1592,7 +1918,7 @@ function start(){
     var chip=$('#modeChip');
     chip.textContent=state.mode==='shared'?'Shared register':'Saved on this device';
     chip.title=state.mode==='shared'?'Connected to the shared opportunity database.':'Stored in this browser only. Use Data, Export to share.';
-    render(); initMap();
+    render(); initMap(); initVault();
   }).catch(function(){
     $('#priority').innerHTML='<div class="load-note">The register could not be loaded. Refresh the page to try again.</div>';
   });

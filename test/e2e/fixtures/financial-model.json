@@ -1,0 +1,66 @@
+{
+  "scenario": "Base case · PSC",
+  "params": {
+    "brent": 70,
+    "disc": 0.15,
+    "gaspr": 3,
+    "capexM": 1,
+    "opexM": 1,
+    "preFinRate": 0.1,
+    "contractType": "psc",
+    "cp": {
+      "royalty": 0.05,
+      "costRecCeil": 0.7,
+      "profitOilContractor": 0.4,
+      "incomeTax": 0.3,
+      "signBonus": 0,
+      "infraOffset": 0,
+      "svcFee": 0,
+      "jvEquity": 0.4
+    },
+    "fields": [
+      {
+        "id": "F1",
+        "type": "oil",
+        "color": "#E0544A",
+        "active": true,
+        "name": "Oil Field A",
+        "plateau": 40000,
+        "rampYrs": 3,
+        "platYrs": 5,
+        "capexTotal": 500,
+        "opexPerUnit": 10,
+        "qdiscount": 5,
+        "capexProfile": "front"
+      },
+      {
+        "id": "F2",
+        "type": "oil",
+        "color": "#E8963A",
+        "active": true,
+        "name": "Oil Field B",
+        "plateau": 10000,
+        "rampYrs": 2,
+        "platYrs": 5,
+        "capexTotal": 150,
+        "opexPerUnit": 10,
+        "qdiscount": 5,
+        "capexProfile": "front"
+      }
+    ]
+  },
+  "expected": {
+    "npv10": {
+      "value": 1038.4483601123864,
+      "unit": "MMUSD"
+    },
+    "irr": {
+      "value": 0.9594799186138336,
+      "unit": "fraction"
+    },
+    "payback_year": {
+      "value": 2027,
+      "unit": "year"
+    }
+  }
+}

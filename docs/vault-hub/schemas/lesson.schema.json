@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.alpha-technical-centre.com/schemas/lesson.schema.json",
+  "title": "Lesson",
+  "description": "A firm learning with provenance, scope, validity and decay. Contradicted lessons are invalidated (valid_to set, superseded_by set), never deleted.",
+  "type": "object",
+  "required": ["id", "claim", "scope", "evidence", "author", "created_at", "status", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "claim": { "type": "string", "maxLength": 400, "description": "One or two sentences, actionable" },
+    "detail": { "type": "string", "description": "Background, contributing factors, recommendation (after-action-review shape)" },
+    "scope": { "type": "string", "enum": ["firm", "discipline", "client", "project", "tool"] },
+    "scope_id": { "type": ["string", "null"], "description": "Discipline name, client id, project id or tool id" },
+    "disciplines": { "type": "array", "items": { "type": "string" } },
+    "legal_tag": { "type": "string", "pattern": "^lt-[a-z0-9-]{3,64}$", "description": "Inherited from the most restrictive evidence unless the lesson has been sanitised" },
+    "sanitised": { "type": "boolean", "default": false, "description": "True when client-identifying detail has been removed so the lesson may be firm-wide" },
+    "evidence": { "type": "array", "minItems": 1, "items": { "type": "string", "description": "run:<uuid> | doc:<uuid> | transcript:<id>" } },
+    "author": { "type": "string", "description": "Person id, or 'dream:<job-id>' when machine-proposed" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "valid_from": { "type": "string", "format": "date-time" },
+    "valid_to": { "type": ["string", "null"], "format": "date-time" },
+    "superseded_by": { "type": ["string", "null"], "format": "uuid" },
+    "status": { "type": "string", "enum": ["proposed", "confirmed", "invalidated"] },
+    "confirmed_by": { "type": ["string", "null"] },
+    "last_confirmed": { "type": ["string", "null"], "format": "date-time", "description": "Decay: unconfirmed for 12 months drops in rank and is queued for review" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "recurrence": { "type": "integer", "minimum": 1, "default": 1, "description": "Number of distinct projects the lesson has been observed on; 3 promotes project scope to firm scope for review" }
+  }
+}

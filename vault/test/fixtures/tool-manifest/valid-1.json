@@ -1,0 +1,39 @@
+{
+  "id": "opportunity-register",
+  "name": "Opportunity Register",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "opportunity-register.html",
+  "changelog": "tools/opportunity-register/CHANGELOG.md",
+  "produces": [
+    "technical_potential_bopd",
+    "uplift_bopd"
+  ],
+  "consumes": [
+    "price_deck"
+  ],
+  "versions": [
+    {
+      "version": "2.1.0",
+      "released_at": "2026-09-23",
+      "commit": "d8a4835",
+      "status": "approved",
+      "modules": [
+        "js/potential.js",
+        "js/analogues.js"
+      ]
+    },
+    {
+      "version": "2.0.0",
+      "released_at": "2026-09-15",
+      "commit": "3f68b41",
+      "status": "deprecated",
+      "breaking": true
+    }
+  ],
+  "aliases": {
+    "current": "2.1.0",
+    "previous": "2.0.0"
+  }
+}

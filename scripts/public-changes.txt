@@ -1,0 +1,8 @@
+# Intentional changes to public pages (paths from sitemap.xml), one per line
+# with a reason after a tab. CI (scripts/check-public-pages.sh) fails on any
+# public page that differs from main and is not declared here. Clear the
+# entries once the change is merged; they are reviewed as part of the PR.
+plan-your-job.html	Vault run capture (Save run, Runs drawer) added below the fold; costing unchanged
+financial-modelling.html	Vault run capture added below the fold; formulas unchanged
+nodal-analysis-tool.html	Vault run capture added below the fold; physics unchanged
+reservoir-simulator.html	Vault run capture added; browser-held Anthropic key removed; physics unchanged

@@ -1,0 +1,48 @@
+{
+  "_comment": "M11 miner configuration. Topics drive the literature feeds (Semantic Scholar, Crossref, OpenAlex); sec_issuers drive SEC EDGAR; sources switch each feed on or off. Keys: S2_API_KEY, OPENALEX_API_KEY, EIA_API_KEY, SOCRATA_APP_TOKEN, SEC_USER_AGENT, CROSSREF_MAILTO are read from the environment, never from this file.",
+  "topics": [
+    {
+      "id": "polymer-eor-heavy-oil",
+      "query": "polymer flooding enhanced oil recovery heavy oil",
+      "keywords": ["polymer", "heavy oil", "viscous oil", "mobility control", "EOR"],
+      "negative": ["hydrogel wound", "drug delivery", "dental", "polymer electrolyte", "photovoltaic"]
+    },
+    {
+      "id": "waterflood-conformance-llanos",
+      "query": "waterflood conformance control clastic reservoir Llanos Basin",
+      "keywords": ["waterflood", "conformance", "water injection", "sweep efficiency", "Llanos", "profile control"],
+      "negative": ["wastewater treatment", "flood risk", "flood forecasting", "river flood"]
+    },
+    {
+      "id": "orinoco-extra-heavy-recovery",
+      "query": "Orinoco Belt extra-heavy oil recovery",
+      "keywords": ["Orinoco", "extra-heavy", "extra heavy", "Faja", "cold production", "steam"],
+      "negative": ["river ecology", "fish", "delta sediment"]
+    }
+  ],
+  "negative": ["retracted", "erratum"],
+  "sec_issuers": [
+    { "cik": "0000821189", "name": "EOG Resources, Inc." },
+    { "cik": "0001090012", "name": "Devon Energy Corporation" }
+  ],
+  "lookback_days": { "weekly": 8, "monthly": 40 },
+  "sources": {
+    "semantic-scholar": { "enabled": true },
+    "crossref": { "enabled": true },
+    "openalex": { "enabled": true },
+    "anh-co": { "enabled": true },
+    "anp-br": {
+      "enabled": false,
+      "url_template": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos/arquivos-producao-de-petroleo-e-gas-natural/producao-mensal-por-poco-{month}.zip"
+    },
+    "ar-energia": {
+      "enabled": true,
+      "resources": [
+        { "id": "c730496f-48df-525f-bb72-9b27f79f6d4a", "label": "Argentina oil and gas production and sales by company", "date_field": "indice_tiempo" }
+      ]
+    },
+    "perupetro": { "enabled": false, "downloads": [] },
+    "sec-edgar": { "enabled": true },
+    "eia": { "enabled": true }
+  }
+}

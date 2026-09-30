@@ -1,0 +1,62 @@
+[
+  {
+    "id": "G13",
+    "question": "How many additional wells fit in the Mugrosa if spacing is reduced to 20 acres?",
+    "scope": "project:middle-magdalena",
+    "expected_refs": [
+      "doc:12c1dc68-dd6b-5e19-9905-d92ac04b6812"
+    ],
+    "expected_answer": "Reducing well spacing from 40 to 20 acres adds 34 infill locations with 6.4 MMSTB of incremental reserves.",
+    "kind": "fact"
+  },
+  {
+    "id": "G14",
+    "question": "How wet are the Nare wells according to the latest tests?",
+    "scope": "project:middle-magdalena",
+    "expected_refs": [
+      "doc:bb2808d0-91a5-505b-b913-9b02a265e385"
+    ],
+    "expected_answer": "Ecopetrol reported an average water cut of 78 percent from 22 wells tested.",
+    "kind": "correspondence"
+  },
+  {
+    "id": "G15",
+    "question": "What return and payback period does the infill base case show?",
+    "scope": "project:middle-magdalena",
+    "expected_refs": [
+      "run:146a9aeb-342e-5dd9-9076-a878f5e8ee04"
+    ],
+    "expected_answer": "The infill base case shows NPV10 of USD 41.2 MM and payback of 2.6 years.",
+    "kind": "run"
+  },
+  {
+    "id": "G16",
+    "question": "Is there enough compression capacity for the infill wells?",
+    "scope": "project:middle-magdalena",
+    "expected_refs": [
+      "doc:ad458cb0-aa53-5ec5-837d-52ec6a23839b"
+    ],
+    "expected_answer": "Gas handling at Nare is limited to 6 MMscfd and the infill programme needs 2 MMscfd of additional compression.",
+    "kind": "fact"
+  },
+  {
+    "id": "G17",
+    "question": "What fee did we propose for the infill screening and how soon could we deliver?",
+    "scope": "project:middle-magdalena",
+    "expected_refs": [
+      "doc:72b74fd2-525d-5983-b9a5-a35669c59cf2"
+    ],
+    "expected_answer": "We proposed a fixed fee of USD 74,000 with delivery in eight weeks from data receipt.",
+    "kind": "correspondence"
+  },
+  {
+    "id": "G18",
+    "question": "What well cost do we assume for the infill economics?",
+    "scope": "project:middle-magdalena",
+    "expected_refs": [
+      "doc:84f3d0a1-e549-5d2d-995a-c0f9e3d07d70"
+    ],
+    "expected_answer": "The basis note assumes drilling and completion cost of USD 3.8 MM per well.",
+    "kind": "fact"
+  }
+]

@@ -1,0 +1,120 @@
+[
+  {
+    "id": "G01",
+    "question": "How big is the oil in place of the Guadalupe reservoir and how uncertain is it?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "doc:609e434d-7835-5446-9521-231105ba23ce"
+    ],
+    "expected_answer": "The P50 OOIP of the Guadalupe reservoir is 412 MMSTB, with P10 498 and P90 351 MMSTB.",
+    "kind": "fact"
+  },
+  {
+    "id": "G02",
+    "question": "Which injection pattern and price assumptions underpin the screening economics?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "doc:b5944103-4793-5067-afbe-e37f721f066b"
+    ],
+    "expected_answer": "The basis note assumes a five-spot injection pattern, voidage replacement ratio 1.1 and Brent flat 68 USD/bbl real.",
+    "kind": "fact"
+  },
+  {
+    "id": "G03",
+    "question": "At what pressure does the Cubiro-14 oil start releasing gas?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "doc:c0e6bbdb-ebc3-53e5-98c0-bc3cf2a68914"
+    ],
+    "expected_answer": "The Cubiro-14 bubble point pressure is 1,850 psia at 168 F.",
+    "kind": "fact"
+  },
+  {
+    "id": "G04",
+    "question": "How much water per day is Frontera putting into Cubiro-14?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "doc:76e2e5bb-1a18-5dfd-b31f-f4328585e61a"
+    ],
+    "expected_answer": "Frontera confirms that Cubiro-14 injection averaged 8,200 bwpd over the last quarter.",
+    "kind": "correspondence"
+  },
+  {
+    "id": "G05",
+    "question": "What did we quote Frontera for the screening work?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "doc:11f921d8-1925-5bac-83d4-41066305d26f"
+    ],
+    "expected_answer": "We proposed a fixed fee of USD 96,000 for the three-phase waterflood screening.",
+    "kind": "correspondence"
+  },
+  {
+    "id": "G06",
+    "question": "How much extra oil recovery and value does the base waterflood case deliver?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "run:994b26b5-99ca-506f-a3cc-fe4ce87ee107"
+    ],
+    "expected_answer": "The waterflood base case gives an incremental recovery factor of 0.062 and NPV10 of USD 84.6 MM.",
+    "kind": "run"
+  },
+  {
+    "id": "G07",
+    "question": "How long before injected water reaches the producers in the pattern model?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "run:a5ffb6de-0dc7-53c5-b5c5-02222694d565"
+    ],
+    "expected_answer": "Water breakthrough occurs at 14 months in the five-spot pattern simulation.",
+    "kind": "run"
+  },
+  {
+    "id": "G08",
+    "question": "How much produced water can Station 2 treat?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "doc:9e23faae-682f-56fc-a53c-d3f11c265254"
+    ],
+    "expected_answer": "Station 2 produced water treatment capacity is 45,000 bwpd.",
+    "kind": "fact"
+  },
+  {
+    "id": "G09",
+    "question": "How much water has gone into Cubiro so far and is voidage being replaced?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "doc:f7a561aa-0abe-52d3-afb3-ba3e34b999da"
+    ],
+    "expected_answer": "Cumulative water injected is 31.4 MMbbl and the voidage replacement ratio was 0.82 over the last twelve months.",
+    "kind": "fact"
+  },
+  {
+    "id": "G10",
+    "question": "What should we test before assuming a voidage replacement ratio of 1.0?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "lesson:5288435c-6f77-532b-bb86-d8e1edb87fdc"
+    ],
+    "expected_answer": "Test aquifer strength before assuming a voidage replacement ratio of 1.0 in a waterflood screening.",
+    "kind": "lesson"
+  },
+  {
+    "id": "G11",
+    "question": "What should we reconcile before history matching Cubiro?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [
+      "lesson:16ae4215-7e21-57a5-8683-dff45dc80180"
+    ],
+    "expected_answer": "Reconcile injection allocation files against the Station 2 meters before history matching Cubiro.",
+    "kind": "lesson"
+  },
+  {
+    "id": "G12",
+    "question": "What drilling cost per well does the Middle Magdalena benchmark show?",
+    "scope": "project:llanos-waterflood",
+    "expected_refs": [],
+    "expected_answer": "The records in scope do not answer this question.",
+    "kind": "out-of-scope"
+  }
+]

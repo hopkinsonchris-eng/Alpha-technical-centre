@@ -1,0 +1,885 @@
+{
+  "tools": [
+    {
+      "id": "apex-3d-model",
+      "name": "APEX 3D Model",
+      "description": "External APEX 3D geological model viewer, access by key.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "external-app",
+      "entry": "https://apex-3d-model.uk",
+      "changelog": "tools/apex-3d-model/CHANGELOG.md",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "released_at": "2026-07-09",
+          "commit": "7bf455e",
+          "status": "approved",
+          "notes": "External app; the real version is unknown, 1.0.0 is a placeholder. Release date and commit are those of the tools.html link."
+        }
+      ],
+      "aliases": {
+        "current": "1.0.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-07-09",
+          "sections": {
+            "Added": [
+              "Listed on the Our Tools page. The app is built and released outside this repository. (7bf455e)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apex-asset-intelligence",
+      "name": "APEX Asset Intelligence",
+      "description": "External APEX asset intelligence application (v4).",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "external-app",
+      "entry": "https://apex-app2.onrender.com",
+      "changelog": "tools/apex-asset-intelligence/CHANGELOG.md",
+      "versions": [
+        {
+          "version": "4.0.0",
+          "released_at": "2026-07-09",
+          "commit": "7bf455e",
+          "status": "approved",
+          "notes": "External app; version 4 as labelled by the app. Release date and commit are those of the tools.html link, not of the external build."
+        }
+      ],
+      "aliases": {
+        "current": "4.0.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "4.0.0",
+          "date": "2026-07-09",
+          "sections": {
+            "Added": [
+              "Listed on the Our Tools page (v4). The app is built and released outside this repository; commit is the repo commit that last touched tools.html. (7bf455e)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apex-reservoir-3d",
+      "name": "APEX Reservoir 3D",
+      "description": "Multiwell black-oil reservoir simulator with Monte Carlo P10/P50/P90 forecasting and an AI run advisor.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "browser-tool",
+      "entry": "reservoir-simulator.html",
+      "changelog": "tools/apex-reservoir-3d/CHANGELOG.md",
+      "produces": [
+        "cum_oil_np",
+        "cum_water_wp",
+        "avg_reservoir_pressure",
+        "production_forecast_p10_p50_p90"
+      ],
+      "versions": [
+        {
+          "version": "2.2.0",
+          "released_at": "2026-07-10",
+          "commit": "f300901",
+          "status": "approved"
+        },
+        {
+          "version": "2.1.0",
+          "released_at": "2026-07-10",
+          "commit": "ae98bbb",
+          "status": "approved"
+        },
+        {
+          "version": "2.0.0",
+          "released_at": "2026-07-10",
+          "commit": "fa44819",
+          "status": "approved",
+          "breaking": true
+        },
+        {
+          "version": "1.2.0",
+          "released_at": "2026-07-10",
+          "commit": "63c1b98",
+          "status": "deprecated"
+        },
+        {
+          "version": "1.1.1",
+          "released_at": "2026-07-06",
+          "commit": "33034ef",
+          "status": "deprecated"
+        },
+        {
+          "version": "1.1.0",
+          "released_at": "2026-06-28",
+          "commit": "71f54c0",
+          "status": "deprecated"
+        },
+        {
+          "version": "1.0.0",
+          "released_at": "2026-06-25",
+          "commit": "ca43b36",
+          "status": "deprecated"
+        }
+      ],
+      "aliases": {
+        "current": "2.2.0",
+        "previous": "2.1.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "2.2.0",
+          "date": "2026-07-10",
+          "sections": {
+            "Added": [
+              "AI Run Advisor and session persistence. (6db3740)",
+              "AI Run Advisor hooked to the Claude API. (f300901)"
+            ]
+          }
+        },
+        {
+          "version": "2.1.0",
+          "date": "2026-07-10",
+          "sections": {
+            "Added": [
+              "Mission Control shell with routed build screens. (960b6ba)",
+              "Interactive Wells & Completions editor. (ae98bbb)"
+            ]
+          }
+        },
+        {
+          "version": "2.0.0",
+          "date": "2026-07-10",
+          "sections": {
+            "Changed": [
+              "BREAKING: explicit per-well data model with per-layer completions. (fa44819)"
+            ]
+          }
+        },
+        {
+          "version": "1.2.0",
+          "date": "2026-07-10",
+          "sections": {
+            "Added": [
+              "Monte Carlo ensemble P10/P50/P90 forecasting. (63c1b98)"
+            ]
+          }
+        },
+        {
+          "version": "1.1.1",
+          "date": "2026-07-06",
+          "sections": {
+            "Added": [
+              "Google Analytics 4 (gtag.js). (33034ef)"
+            ],
+            "Changed": [
+              "SEO: canonical tags, social cards, structured data. (5e2b92f)"
+            ]
+          }
+        },
+        {
+          "version": "1.1.0",
+          "date": "2026-06-28",
+          "sections": {
+            "Added": [
+              "Iterative simulator uploads. (0d0833f)",
+              "Iterative simulator uploads. (ff2dc49)",
+              "Iterative simulator uploads. (7c06c26)",
+              "Iterative simulator uploads. (cb848c0)",
+              "Iterative simulator uploads. (8dcf5db)",
+              "Iterative simulator uploads. (eacc04c)",
+              "Iterative simulator uploads. (b4dbbb8)",
+              "Iterative simulator uploads. (7ae9a5f)",
+              "Iterative simulator uploads. (f0eb8b5)",
+              "Iterative simulator uploads. (71f54c0)"
+            ]
+          }
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-06-25",
+          "sections": {
+            "Added": [
+              "Initial upload of the simulator page. (ca43b36)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ela-model-suite",
+      "name": "ELA New Law Model Suite",
+      "description": "Investor model suite for the January 2026 ELA new law, with Phase 1a and 1b cases.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "browser-tool",
+      "entry": "ela-model-suite.html",
+      "changelog": "tools/ela-model-suite/CHANGELOG.md",
+      "produces": [
+        "npv10",
+        "irr",
+        "government_take"
+      ],
+      "consumes": [
+        "price_deck",
+        "fiscal_terms"
+      ],
+      "versions": [
+        {
+          "version": "2.0.2",
+          "released_at": "2026-07-31",
+          "commit": "7bdfb35",
+          "status": "approved"
+        },
+        {
+          "version": "2.0.1",
+          "released_at": "2026-07-17",
+          "commit": "c76db10",
+          "status": "approved"
+        },
+        {
+          "version": "2.0.0",
+          "released_at": "2026-07-17",
+          "commit": "fab9024",
+          "status": "approved",
+          "breaking": true
+        },
+        {
+          "version": "1.1.0",
+          "released_at": "2026-07-17",
+          "commit": "cf97ecf",
+          "status": "deprecated"
+        },
+        {
+          "version": "1.0.0",
+          "released_at": "2026-07-15",
+          "commit": "f12dc31",
+          "status": "deprecated"
+        }
+      ],
+      "aliases": {
+        "current": "2.0.2",
+        "previous": "2.0.1"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "2.0.2",
+          "date": "2026-07-31",
+          "sections": {
+            "Fixed": [
+              "Phantom /BOE 404 in Search Console. (7bdfb35)"
+            ]
+          }
+        },
+        {
+          "version": "2.0.1",
+          "date": "2026-07-17",
+          "sections": {
+            "Changed": [
+              "OPEX methodology and labels aligned with the two-tier policy. (c76db10)"
+            ]
+          }
+        },
+        {
+          "version": "2.0.0",
+          "date": "2026-07-17",
+          "sections": {
+            "Changed": [
+              "BREAKING: OPEX modelled as government-baseline maintenance plus full rate on incremental production. (fab9024)"
+            ]
+          }
+        },
+        {
+          "version": "1.1.0",
+          "date": "2026-07-17",
+          "sections": {
+            "Changed": [
+              "Phase 1a is a truly standalone restart case. (cf97ecf)"
+            ]
+          }
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-07-15",
+          "sections": {
+            "Added": [
+              "ELA New Law Model Suite (Investor) added to the staff portal, with Phase 1a/1b split. (f12dc31)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ela-studio",
+      "name": "ELA Phase 1 Scenario Studio",
+      "description": "Alpha ELA Phase 1 scenario studio: phased production ramp and field economics.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "browser-tool",
+      "entry": "ela-studio/index.html",
+      "changelog": "tools/ela-studio/CHANGELOG.md",
+      "produces": [
+        "npv10",
+        "production_profile"
+      ],
+      "consumes": [
+        "price_deck",
+        "fiscal_terms"
+      ],
+      "versions": [
+        {
+          "version": "1.0.1",
+          "released_at": "2026-07-15",
+          "commit": "75171b5",
+          "status": "approved"
+        },
+        {
+          "version": "1.0.0",
+          "released_at": "2026-07-15",
+          "commit": "06793c9",
+          "status": "approved"
+        }
+      ],
+      "aliases": {
+        "current": "1.0.1",
+        "previous": "1.0.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "1.0.1",
+          "date": "2026-07-15",
+          "sections": {
+            "Fixed": [
+              "Plateau KPI and ramp track the active-phase target. (75171b5)"
+            ]
+          }
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-07-15",
+          "sections": {
+            "Added": [
+              "Alpha ELA Phase 1 Scenario Studio added to the staff portal. (06793c9)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "financial-model",
+      "name": "Upstream Quick-Look Financial Model",
+      "description": "Generic-contract upstream quick-look economics: NPV, IRR, payback, cash flow and sensitivities.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "browser-tool",
+      "entry": "financial-modelling.html",
+      "changelog": "tools/financial-model/CHANGELOG.md",
+      "produces": [
+        "npv10",
+        "irr",
+        "payback_year"
+      ],
+      "consumes": [
+        "price_deck",
+        "fiscal_terms"
+      ],
+      "versions": [
+        {
+          "version": "1.0.0",
+          "released_at": "2026-07-31",
+          "commit": "7bdfb35",
+          "status": "approved"
+        }
+      ],
+      "aliases": {
+        "current": "1.0.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-07-31",
+          "sections": {
+            "Added": [
+              "Initial upload of the financial model page (page states Version 1.0, June 2026). (ca43b36)",
+              "Google Analytics 4 (gtag.js). (33034ef)"
+            ],
+            "Changed": [
+              "SEO: canonical tags, social cards, structured data. (5e2b92f)",
+              "Unify contact email. (6b9bf39)",
+              "Technical Due Diligence service page cross-links. (7bf455e)"
+            ],
+            "Fixed": [
+              "Phantom /BOE 404 in Search Console. (7bdfb35)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "insight-radar",
+      "name": "Insight Radar",
+      "description": "Claude Code skill that researches, ranks and publishes the monthly Oil & Gas Technology Radar article.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "skill",
+      "entry": ".claude/skills/insight-radar/SKILL.md",
+      "changelog": "tools/insight-radar/CHANGELOG.md",
+      "produces": [
+        "insight_article",
+        "citation_ledger"
+      ],
+      "versions": [
+        {
+          "version": "1.3.0",
+          "released_at": "2026-07-30",
+          "commit": "22b308c",
+          "status": "approved"
+        },
+        {
+          "version": "1.2.0",
+          "released_at": "2026-07-30",
+          "commit": "b392092",
+          "status": "approved"
+        },
+        {
+          "version": "1.1.0",
+          "released_at": "2026-07-30",
+          "commit": "c86a6e3",
+          "status": "approved"
+        },
+        {
+          "version": "1.0.0",
+          "released_at": "2026-07-30",
+          "commit": "ef836f3",
+          "status": "approved"
+        }
+      ],
+      "aliases": {
+        "current": "1.3.0",
+        "previous": "1.2.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "1.3.0",
+          "date": "2026-07-30",
+          "sections": {
+            "Changed": [
+              "Use the societies as an index and substantiate from open sources. (22b308c)"
+            ]
+          }
+        },
+        {
+          "version": "1.2.0",
+          "date": "2026-07-30",
+          "sections": {
+            "Changed": [
+              "Publish only fully-read sources; move access gaps to a reading list. (b392092)"
+            ]
+          }
+        },
+        {
+          "version": "1.1.0",
+          "date": "2026-07-30",
+          "sections": {
+            "Changed": [
+              "Remove regional weighting; expand SPE and commercial sources. (c86a6e3)"
+            ]
+          }
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-07-30",
+          "sections": {
+            "Added": [
+              "insight-radar skill for the monthly O&G technology radar. (ef836f3)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "nodal-analysis",
+      "name": "Nodal Analysis",
+      "description": "IPR/VLP nodal analysis well performance optimiser with an ESP option.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "browser-tool",
+      "entry": "nodal-analysis-tool.html",
+      "changelog": "tools/nodal-analysis/CHANGELOG.md",
+      "produces": [
+        "operating_point_rate",
+        "operating_point_bhp"
+      ],
+      "versions": [
+        {
+          "version": "1.2.0",
+          "released_at": "2026-07-08",
+          "commit": "91ac232",
+          "status": "approved"
+        },
+        {
+          "version": "1.1.0",
+          "released_at": "2026-07-08",
+          "commit": "5ece372",
+          "status": "approved"
+        },
+        {
+          "version": "1.0.0",
+          "released_at": "2026-07-06",
+          "commit": "33034ef",
+          "status": "approved"
+        }
+      ],
+      "aliases": {
+        "current": "1.2.0",
+        "previous": "1.1.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "1.2.0",
+          "date": "2026-07-08",
+          "sections": {
+            "Added": [
+              "Indicative ESP pump head and stage estimate. (91ac232)"
+            ]
+          }
+        },
+        {
+          "version": "1.1.0",
+          "date": "2026-07-08",
+          "sections": {
+            "Added": [
+              "ESP option holding bottomhole pressure at 50 atm. (30fb42d)",
+              "Adjustable ESP target BHP. (5ece372)"
+            ]
+          }
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-07-06",
+          "sections": {
+            "Added": [
+              "Initial upload of the nodal analysis tool. (ca43b36)",
+              "Google Analytics 4 (gtag.js). (33034ef)"
+            ],
+            "Changed": [
+              "SEO: canonical tags, social cards, structured data. (5e2b92f)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "opportunity-register",
+      "name": "Opportunity Register",
+      "description": "Global opportunity register with map, analogue seeding and a calculated technical-potential bridge.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "browser-tool",
+      "entry": "opportunity-register.html",
+      "changelog": "tools/opportunity-register/CHANGELOG.md",
+      "produces": [
+        "technical_potential_bopd",
+        "uplift_bopd"
+      ],
+      "consumes": [
+        "price_deck"
+      ],
+      "versions": [
+        {
+          "version": "2.2.0",
+          "released_at": "2026-09-29",
+          "commit": "ae040f4",
+          "status": "approved",
+          "modules": [
+            "js/potential.js",
+            "js/analogues.js"
+          ],
+          "breaking": false,
+          "notes": "js/analogues.js can overlay Vault analogue defaults (loadVaultDefaults); calculations unchanged."
+        },
+        {
+          "version": "2.1.2",
+          "released_at": "2026-09-23",
+          "commit": "d8a4835",
+          "status": "approved",
+          "modules": [
+            "js/potential.js",
+            "js/analogues.js"
+          ]
+        },
+        {
+          "version": "2.1.1",
+          "released_at": "2026-09-23",
+          "commit": "6793367",
+          "status": "approved",
+          "modules": [
+            "js/potential.js",
+            "js/analogues.js"
+          ]
+        },
+        {
+          "version": "2.1.0",
+          "released_at": "2026-09-23",
+          "commit": "bbb50b2",
+          "status": "approved",
+          "modules": [
+            "js/potential.js",
+            "js/analogues.js"
+          ]
+        },
+        {
+          "version": "2.0.0",
+          "released_at": "2026-09-23",
+          "commit": "3f68b41",
+          "status": "approved",
+          "modules": [
+            "js/potential.js",
+            "js/analogues.js"
+          ],
+          "breaking": true
+        },
+        {
+          "version": "1.1.1",
+          "released_at": "2026-09-23",
+          "commit": "fe72a4f",
+          "status": "deprecated"
+        },
+        {
+          "version": "1.1.0",
+          "released_at": "2026-09-23",
+          "commit": "5d7c56f",
+          "status": "deprecated"
+        },
+        {
+          "version": "1.0.0",
+          "released_at": "2026-09-23",
+          "commit": "5e2b80c",
+          "status": "deprecated"
+        }
+      ],
+      "aliases": {
+        "current": "2.2.0",
+        "previous": "2.1.2"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "2.2.0",
+          "date": "2026-09-29",
+          "sections": {
+            "Added": [
+              "Vault analogue defaults can be overlaid on the analogue badge with the count behind them (`js/analogues.js` loadVaultDefaults; ae040f4). Calculations unchanged."
+            ]
+          }
+        },
+        {
+          "version": "2.1.2",
+          "date": "2026-09-23",
+          "sections": {
+            "Changed": [
+              "Page pins its calculator imports with a ?v token (now derived from tool.json). (d8a4835)"
+            ]
+          }
+        },
+        {
+          "version": "2.1.1",
+          "date": "2026-09-23",
+          "sections": {
+            "Fixed": [
+              "Never show a calculated figure as zero when it was not calculated. (6793367)"
+            ]
+          }
+        },
+        {
+          "version": "2.1.0",
+          "date": "2026-09-23",
+          "sections": {
+            "Added": [
+              "Seed a starting model from the play analogue so the uplift is never blank. (bbb50b2)"
+            ]
+          }
+        },
+        {
+          "version": "2.0.0",
+          "date": "2026-09-23",
+          "sections": {
+            "Added": [
+              "Technical potential is now computed (js/potential.js, js/analogues.js) and the bridge is shown. (3f68b41)"
+            ],
+            "Changed": [
+              "BREAKING: figures come from the calculator rather than typed estimates, so earlier records are not comparable. (3f68b41)"
+            ]
+          }
+        },
+        {
+          "version": "1.1.1",
+          "date": "2026-09-23",
+          "sections": {
+            "Fixed": [
+              "Staff portal returns people to the tool they asked for after sign-in. (fe72a4f)"
+            ]
+          }
+        },
+        {
+          "version": "1.1.0",
+          "date": "2026-09-23",
+          "sections": {
+            "Added": [
+              "Venezuela opportunities shown on the map. (5d7c56f)"
+            ]
+          }
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-09-23",
+          "sections": {
+            "Added": [
+              "Global Opportunity Register added to the staff area. (5e2b80c)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "plan-your-job",
+      "name": "Scope of Work Generator",
+      "description": "Interactive Scope-of-Work generator with cost breakdown and service packages.",
+      "owner": "chris",
+      "lifecycle": "production",
+      "kind": "browser-tool",
+      "entry": "plan-your-job.html",
+      "changelog": "tools/plan-your-job/CHANGELOG.md",
+      "produces": [
+        "scope_of_work",
+        "cost_estimate"
+      ],
+      "versions": [
+        {
+          "version": "1.0.0",
+          "released_at": "2026-08-06",
+          "commit": "a99e633",
+          "status": "approved"
+        }
+      ],
+      "aliases": {
+        "current": "1.0.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "1.0.0",
+          "date": "2026-08-06",
+          "sections": {
+            "Added": [
+              "Initial upload of the Scope of Work generator (page states v1.0). (ca43b36)",
+              "Google Analytics 4 (gtag.js). (33034ef)",
+              "Field Rehabilitation package. (24d16ae)",
+              "Margin or discount shown as a line in the cost breakdown. (a99e633)"
+            ],
+            "Changed": [
+              "SEO: canonical tags, social cards, structured data. (5e2b92f)",
+              "Unify contact email. (6b9bf39)",
+              "Technical Due Diligence package cross-links. (7bf455e)",
+              "Recost Field Rehabilitation on the SoW effort budget. (beed3ae)",
+              "Letter the Field Rehabilitation scope items as Phase 1a, 1b, ... (172a5f9)",
+              "Charge the Managing Partner one day per week on every project. (f9ae7f3)",
+              "Field Rehabilitation names the four-person team with per-discipline weeks. (1ee8e57)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "situation-room",
+      "name": "Situation Room",
+      "description": "Operator-facing energy dashboard: prices, book of business, theatre map, maritime status and news tape.",
+      "owner": "chris",
+      "lifecycle": "experimental",
+      "kind": "browser-tool",
+      "entry": "situation-room/index.html",
+      "changelog": "tools/situation-room/CHANGELOG.md",
+      "versions": [
+        {
+          "version": "0.9.0",
+          "released_at": "2026-08-31",
+          "commit": "1c54095",
+          "status": "approved"
+        }
+      ],
+      "aliases": {
+        "current": "0.9.0"
+      },
+      "releases": [
+        {
+          "version": "Unreleased",
+          "date": "",
+          "sections": {}
+        },
+        {
+          "version": "0.9.0",
+          "date": "2026-08-31",
+          "sections": {
+            "Added": [
+              "Temporary preview at /situation-room/ and nav button. (1c54095)"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "built_at": "2026-09-29T23:15:53.552Z",
+  "commit": "ae040f4"
+}

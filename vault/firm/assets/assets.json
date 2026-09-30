@@ -1,0 +1,10 @@
+[
+  { "id": "letterhead-en-v1", "kind": "letterhead", "language": "en", "version": 1, "path": "vault/firm/assets/letterhead-en.docx", "is_current": true },
+  { "id": "letterhead-es-v1", "kind": "letterhead", "language": "es", "version": 1, "path": "vault/firm/assets/letterhead-es.docx", "is_current": true },
+  { "id": "letter-template-v1", "kind": "template", "language": "en", "version": 1, "path": "vault/firm/assets/letter-template.md", "is_current": true },
+  { "id": "report-template-v1", "kind": "template", "language": "en", "version": 1, "path": "vault/firm/assets/report-template.md", "is_current": true },
+  { "id": "house-style-v1", "kind": "style", "language": "en", "version": 1, "path": "vault/firm/assets/house-style.md", "is_current": true },
+  { "id": "logo-light", "kind": "logo", "language": "en", "version": 1, "path": "vault/firm/assets/logo-lockup-light.png", "is_current": true },
+  { "id": "logo-dark", "kind": "logo", "language": "en", "version": 1, "path": "vault/firm/assets/logo-lockup-dark.png", "is_current": true },
+  { "id": "mark-gold", "kind": "logo", "language": "en", "version": 1, "path": "vault/firm/assets/mark-gold.svg", "is_current": true }
+]

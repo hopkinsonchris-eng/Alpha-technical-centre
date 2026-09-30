@@ -1,0 +1,131 @@
+{
+  "_comment": "Known scenario for test/e2e/opportunity-register.spec.mjs. One waterflood opportunity with explicit measured inputs and an explicit deduction ledger; expected values come from js/potential.js and js/analogues.js at tool 2.1.2.",
+  "params": {
+    "opportunity": {
+      "id": "fixture-llanos-screen",
+      "name": "Llanos Screening Block",
+      "country": "Colombia",
+      "source": "Alpha",
+      "stage": "Qualified",
+      "current": 12,
+      "plan": 15,
+      "risk": "amber",
+      "riskScore": 55,
+      "lat": 4.6,
+      "lon": -72.1,
+      "thesis": "Fixture scenario for the run-capture tests: one waterflood asset with explicit measured inputs so every output is deterministic.",
+      "next": "Request the data room index",
+      "owner": "Chris",
+      "risks": {
+        "Geopolitical": 45,
+        "Sanctions": 20,
+        "Security": 50,
+        "Technical": 45,
+        "Commercial": 50
+      },
+      "events": [],
+      "potentialModel": {
+        "play": "onshore-clastic-waterflood",
+        "measured": {
+          "rock.areaAcres": 6000,
+          "wells.producers": 60,
+          "wells.activeProducers": 24,
+          "pressure.pres": 3100
+        },
+        "assumed": {
+          "pressure.skin": 2.5,
+          "plateauYears": 5
+        },
+        "factors": [
+          {
+            "id": "areal",
+            "label": "Areal sweep efficiency",
+            "kind": "multiplier",
+            "value": 0.67,
+            "note": "Screening default read off a mobility ratio of 2.22.",
+            "provenance": "analogue"
+          },
+          {
+            "id": "vertical",
+            "label": "Vertical sweep and layering",
+            "kind": "multiplier",
+            "value": 0.75,
+            "note": "Screening default. Replace with a Dykstra-Parsons value once layer permeabilities exist.",
+            "provenance": "analogue"
+          },
+          {
+            "id": "access",
+            "label": "Well access and integrity",
+            "kind": "multiplier",
+            "value": 0.85,
+            "note": "Share of the well stock that can actually be worked.",
+            "provenance": "assumed"
+          },
+          {
+            "id": "facility",
+            "label": "Facility and processing limit",
+            "kind": "volume",
+            "value": 0,
+            "note": "Hard ceiling in kboe/d imposed by the plant. Zero means no limit recorded.",
+            "provenance": "assumed"
+          },
+          {
+            "id": "water",
+            "label": "Water handling and injection capacity",
+            "kind": "multiplier",
+            "value": 0.9,
+            "note": "Voidage replacement the surface plant can actually support.",
+            "provenance": "assumed"
+          },
+          {
+            "id": "power",
+            "label": "Power and utilities",
+            "kind": "multiplier",
+            "value": 0.95,
+            "note": "Availability of electrical supply and utilities.",
+            "provenance": "assumed"
+          },
+          {
+            "id": "capex",
+            "label": "Capex and schedule",
+            "kind": "multiplier",
+            "value": 0.85,
+            "note": "What can be funded and executed inside the plan window.",
+            "provenance": "assumed"
+          },
+          {
+            "id": "legal",
+            "label": "Legal, sanctions and contracting",
+            "kind": "multiplier",
+            "value": 1,
+            "note": "Access to services, equipment and markets. Set below 1 where screening says so.",
+            "provenance": "assumed"
+          },
+          {
+            "id": "contingency",
+            "label": "Subsurface uncertainty contingency",
+            "kind": "multiplier",
+            "value": 0.9,
+            "note": "Explicit reserve against the analogue inputs being wrong.",
+            "provenance": "assumed"
+          }
+        ],
+        "signedBy": "",
+        "signedAt": ""
+      }
+    },
+    "price_deck": null
+  },
+  "expected": {
+    "technical_potential_bopd": {
+      "value": 77581.22423408263,
+      "unit": "bopd",
+      "low": 32838.61343241593,
+      "high": 170760.78984856282
+    },
+    "uplift_bopd": {
+      "value": 6674.005048272662,
+      "unit": "bopd"
+    }
+  }
+}

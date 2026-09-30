@@ -1,0 +1,1158 @@
+{
+ "note": "Hand-built from the documented abstract style; replies are what the fake provider returns. Papers 18-20 have abstracts under 400 characters.",
+ "papers": [
+  {
+   "n": 1,
+   "title": "Field performance review at Rubiales: lessons for heavy oil development (1)",
+   "doi": "10.2118/900001-MS",
+   "authored_at": "2026-01-15T00:00:00.000Z",
+   "abstract": "This paper reports a field performance review at the Rubiales field, CO. The reservoir has oil viscosity of 1200 cP and crude of 12.5 degrees API. Further data include permeability of 2500 md, an average porosity of 30%, net pay of 40 m. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the water-drive mechanism.",
+   "field": "Rubiales",
+   "master": true
+  },
+  {
+   "n": 2,
+   "title": "Waterflood surveillance at Castilla: lessons for heavy oil development (2)",
+   "doi": "10.2118/900002-MS",
+   "authored_at": "2026-02-15T00:00:00.000Z",
+   "abstract": "This paper reports a waterflood surveillance at the Castilla field, CO. The reservoir has a water cut of 85% and 310 wells. Further data include a recovery factor of 18%, a depth of 2400 m. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the waterflood mechanism.",
+   "field": "Castilla",
+   "master": true
+  },
+  {
+   "n": 3,
+   "title": "Reservoir simulation at Chichimene: lessons for heavy oil development (3)",
+   "doi": "10.2118/900003-MS",
+   "authored_at": "2026-03-15T00:00:00.000Z",
+   "abstract": "This paper reports a reservoir simulation at the Chichimene field, CO. The reservoir has permeability of 900 md and an average porosity of 24%. Further data include an initial pressure of 3000 psi, a reservoir temperature of 88 C. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the water-drive mechanism.",
+   "field": "Chichimene",
+   "master": true
+  },
+  {
+   "n": 4,
+   "title": "Field polymer flood at Pelican Lake: lessons for heavy oil development (4)",
+   "doi": "10.2118/900004-MS",
+   "authored_at": "2026-04-15T00:00:00.000Z",
+   "abstract": "This paper reports a field polymer flood at the Pelican Lake field, CA. The reservoir has oil viscosity of 1650 cP and permeability of 3000 md. Further data include an average porosity of 28%, net pay of 4 m, a recovery factor of 25%. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the eor-polymer mechanism.",
+   "field": "Pelican Lake",
+   "master": false
+  },
+  {
+   "n": 5,
+   "title": "Field polymer flood at Daqing: lessons for black oil development (5)",
+   "doi": "10.2118/900005-MS",
+   "authored_at": "2026-05-15T00:00:00.000Z",
+   "abstract": "This paper reports a field polymer flood at the Daqing field, CN. The reservoir has oil viscosity of 9 cP and permeability of 1000 md. Further data include an average porosity of 26%, a depth of 1000 m, a recovery factor of 12%. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the eor-polymer mechanism.",
+   "field": "Daqing",
+   "master": false
+  },
+  {
+   "n": 6,
+   "title": "Field polymer flood at Mangala: lessons for black oil development (6)",
+   "doi": "10.2118/900006-MS",
+   "authored_at": "2026-06-15T00:00:00.000Z",
+   "abstract": "This paper reports a field polymer flood at the Mangala field, IN. The reservoir has oil viscosity of 14 cP and crude of 28 degrees API. Further data include permeability of 5000 md, a reservoir temperature of 65 C. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the eor-polymer mechanism.",
+   "field": "Mangala",
+   "master": false
+  },
+  {
+   "n": 7,
+   "title": "Field polymer flood at Captain: lessons for heavy oil development (7)",
+   "doi": "10.2118/900007-MS",
+   "authored_at": "2026-07-15T00:00:00.000Z",
+   "abstract": "This paper reports a field polymer flood at the Captain field, GB. The reservoir has oil viscosity of 80 cP and crude of 19 degrees API. Further data include net pay of 30 m, 10 wells. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the eor-polymer mechanism.",
+   "field": "Captain",
+   "master": false
+  },
+  {
+   "n": 8,
+   "title": "Cold production review at Cerro Negro: lessons for extra heavy development (8)",
+   "doi": "10.2118/900008-MS",
+   "authored_at": "2026-08-15T00:00:00.000Z",
+   "abstract": "This paper reports a cold production review at the Cerro Negro field, VE. The reservoir has crude of 8.5 degrees API and oil viscosity of 5000 cP. Further data include a depth of 1000 m, a recovery factor of 8%. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the solution-gas mechanism.",
+   "field": "Cerro Negro",
+   "master": false
+  },
+  {
+   "n": 9,
+   "title": "Simulation at Hamaca: lessons for extra heavy development (9)",
+   "doi": "10.2118/900009-MS",
+   "authored_at": "2026-09-15T00:00:00.000Z",
+   "abstract": "This paper reports a simulation at the Hamaca field, VE. The reservoir has crude of 9 degrees API and a reservoir temperature of 54 C. Further data include an average porosity of 32%, permeability of 4000 md. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the solution-gas mechanism.",
+   "field": "Hamaca",
+   "master": false
+  },
+  {
+   "n": 10,
+   "title": "Analogue screening at Carabobo: lessons for extra heavy development (10)",
+   "doi": "10.2118/900010-MS",
+   "authored_at": "2026-01-15T00:00:00.000Z",
+   "abstract": "This paper reports a analogue screening at the Carabobo field, VE. The reservoir has crude of 8 degrees API and oil viscosity of 10000 cP. Further data include net pay of 25 m, STOIIP of 2000 MMbbl. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the solution-gas mechanism.",
+   "field": "Carabobo",
+   "master": false
+  },
+  {
+   "n": 11,
+   "title": "Pilot at Quifa: lessons for heavy oil development (11)",
+   "doi": "10.2118/900011-MS",
+   "authored_at": "2026-02-15T00:00:00.000Z",
+   "abstract": "This paper reports a pilot at the Quifa field, CO. The reservoir has oil viscosity of 300 cP and crude of 14 degrees API. Further data include a depth of 2300 m, 6 wells. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the eor-thermal mechanism.",
+   "field": "Quifa",
+   "master": true
+  },
+  {
+   "n": 12,
+   "title": "Steam pilot at Peace River: lessons for extra heavy development (12)",
+   "doi": "10.2118/900012-MS",
+   "authored_at": "2026-03-15T00:00:00.000Z",
+   "abstract": "This paper reports a steam pilot at the Peace River field, CA. The reservoir has oil viscosity of 100000 cP and net pay of 20 m. Further data include a depth of 500 m, a reservoir temperature of 12 C. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the eor-thermal mechanism.",
+   "field": "Peace River",
+   "master": false
+  },
+  {
+   "n": 13,
+   "title": "Simulation at Zuata: lessons for extra heavy development (13)",
+   "doi": "10.2118/900013-MS",
+   "authored_at": "2026-04-15T00:00:00.000Z",
+   "abstract": "This paper reports a simulation at the Zuata field, VE. The reservoir has crude of 9.5 degrees API and an average porosity of 30%. Further data include an initial pressure of 1100 psi. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the eor-other mechanism.",
+   "field": "Zuata",
+   "master": false
+  },
+  {
+   "n": 14,
+   "title": "Gas cycling review at Cusiana: lessons for volatile oil development (14)",
+   "doi": "10.2118/900014-MS",
+   "authored_at": "2026-05-15T00:00:00.000Z",
+   "abstract": "This paper reports a gas cycling review at the Cusiana field, CO. The reservoir has an initial pressure of 5000 psi and a depth of 4800 m. Further data include a reservoir temperature of 130 C, a recovery factor of 40%. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the gas-injection mechanism.",
+   "field": "Cusiana",
+   "master": true
+  },
+  {
+   "n": 15,
+   "title": "Waterflood at Casabe: lessons for black oil development (15)",
+   "doi": "10.2118/900015-MS",
+   "authored_at": "2026-06-15T00:00:00.000Z",
+   "abstract": "This paper reports a waterflood at the Casabe field, CO. The reservoir has permeability of 400 md and an average porosity of 22%. Further data include 800 wells, a water cut of 90%. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the waterflood mechanism.",
+   "field": "Casabe",
+   "master": false
+  },
+  {
+   "n": 16,
+   "title": "Conformance case at Kuparuk: lessons for black oil development (16)",
+   "doi": "10.2118/900016-MS",
+   "authored_at": "2026-07-15T00:00:00.000Z",
+   "abstract": "This paper reports a conformance case at the Kuparuk field, US. The reservoir has permeability of 100 md and an average porosity of 21%. Further data include net pay of 12 m, a water cut of 80%, a depth of 1800 m. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the waterflood mechanism.",
+   "field": "Kuparuk",
+   "master": false
+  },
+  {
+   "n": 17,
+   "title": "Core flood at Grimbeek: lessons for heavy oil development (17)",
+   "doi": "10.2118/900017-MS",
+   "authored_at": "2026-08-15T00:00:00.000Z",
+   "abstract": "This paper reports a core flood at the Grimbeek field, CO. The reservoir has oil viscosity of 500 cP and permeability of 1500 md. Further data include a reservoir temperature of 60 C. The authors compare the outcome with offset wells and discuss operational implications for future development planning in similar clastic reservoirs, including surveillance requirements and cost drivers. Results are discussed for the eor-polymer mechanism.",
+   "field": "Grimbeek",
+   "master": false
+  },
+  {
+   "n": 18,
+   "title": "Polymer flooding notes (18)",
+   "doi": "10.2118/900018-MS",
+   "authored_at": "2026-06-01T00:00:00.000Z",
+   "abstract": "Short abstract number 1 with a porosity of 20% and nothing else worth extracting.",
+   "field": "x",
+   "master": false
+  },
+  {
+   "n": 19,
+   "title": "Orinoco extra-heavy summary (19)",
+   "doi": "10.2118/900019-MS",
+   "authored_at": "2026-06-01T00:00:00.000Z",
+   "abstract": "Short abstract number 2 with a porosity of 20% and nothing else worth extracting.",
+   "field": "x",
+   "master": false
+  },
+  {
+   "n": 20,
+   "title": "Waterflood conformance letter (20)",
+   "doi": "10.2118/900020-MS",
+   "authored_at": "2026-06-01T00:00:00.000Z",
+   "abstract": "Short abstract number 3 with a porosity of 20% and nothing else worth extracting.",
+   "field": "x",
+   "master": false
+  }
+ ],
+ "replies": {
+  "Field performance review at Rubiales: lessons for heavy oil development (1)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Rubiales",
+    "basin_name": "Llanos Orientales",
+    "country": "CO",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "heavy-oil",
+     "drive_mechanism": "water-drive",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "oil_viscosity_cp",
+      "value": 1200,
+      "provenance": "reported",
+      "quote": "oil viscosity of 1200 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "api_gravity",
+      "value": 12.5,
+      "provenance": "reported",
+      "quote": "crude of 12.5 degrees API",
+      "location": "abstract"
+     },
+     {
+      "property": "permeability_md",
+      "value": 2500,
+      "provenance": "reported",
+      "quote": "permeability of 2500 md",
+      "location": "abstract"
+     },
+     {
+      "property": "porosity_frac",
+      "value": 0.3,
+      "provenance": "reported",
+      "quote": "an average porosity of 30%",
+      "location": "abstract"
+     },
+     {
+      "property": "net_pay_m",
+      "value": 40,
+      "provenance": "reported",
+      "quote": "net pay of 40 m",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "field performance review",
+     "summary": "field performance review at Rubiales.",
+     "findings": [
+      {
+       "statement": "Rubiales results are reported for the water-drive mechanism.",
+       "quote": "Results are discussed for the water-drive mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Waterflood surveillance at Castilla: lessons for heavy oil development (2)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Castilla",
+    "basin_name": "Llanos Orientales",
+    "country": "CO",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "heavy-oil",
+     "drive_mechanism": "waterflood",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "water_cut_frac",
+      "value": 0.85,
+      "provenance": "reported",
+      "quote": "a water cut of 85%",
+      "location": "abstract"
+     },
+     {
+      "property": "well_count",
+      "value": 310,
+      "provenance": "reported",
+      "quote": "310 wells",
+      "location": "abstract"
+     },
+     {
+      "property": "recovery_factor_frac",
+      "value": 0.18,
+      "provenance": "reported",
+      "quote": "a recovery factor of 18%",
+      "location": "abstract"
+     },
+     {
+      "property": "depth_m",
+      "value": 2400,
+      "provenance": "reported",
+      "quote": "a depth of 2400 m",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "waterflood surveillance",
+     "summary": "waterflood surveillance at Castilla.",
+     "findings": [
+      {
+       "statement": "Castilla results are reported for the waterflood mechanism.",
+       "quote": "Results are discussed for the waterflood mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Reservoir simulation at Chichimene: lessons for heavy oil development (3)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Chichimene",
+    "basin_name": "Llanos Orientales",
+    "country": "CO",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "heavy-oil",
+     "drive_mechanism": "water-drive",
+     "environment": "onshore",
+     "method": [
+      "simulation"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "permeability_md",
+      "value": 900,
+      "provenance": "reported",
+      "quote": "permeability of 900 md",
+      "location": "abstract"
+     },
+     {
+      "property": "porosity_frac",
+      "value": 0.24,
+      "provenance": "reported",
+      "quote": "an average porosity of 24%",
+      "location": "abstract"
+     },
+     {
+      "property": "initial_pressure_psi",
+      "value": 3000,
+      "provenance": "reported",
+      "quote": "an initial pressure of 3000 psi",
+      "location": "abstract"
+     },
+     {
+      "property": "temperature_c",
+      "value": 88,
+      "provenance": "reported",
+      "quote": "a reservoir temperature of 88 C",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "reservoir simulation",
+     "summary": "reservoir simulation at Chichimene.",
+     "findings": [
+      {
+       "statement": "Chichimene results are reported for the water-drive mechanism.",
+       "quote": "Results are discussed for the water-drive mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Field polymer flood at Pelican Lake: lessons for heavy oil development (4)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Pelican Lake",
+    "basin_name": null,
+    "country": "CA",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "heavy-oil",
+     "drive_mechanism": "eor-polymer",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "oil_viscosity_cp",
+      "value": 1650,
+      "provenance": "reported",
+      "quote": "oil viscosity of 1650 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "permeability_md",
+      "value": 3000,
+      "provenance": "reported",
+      "quote": "permeability of 3000 md",
+      "location": "abstract"
+     },
+     {
+      "property": "porosity_frac",
+      "value": 0.28,
+      "provenance": "reported",
+      "quote": "an average porosity of 28%",
+      "location": "abstract"
+     },
+     {
+      "property": "net_pay_m",
+      "value": 4,
+      "provenance": "reported",
+      "quote": "net pay of 4 m",
+      "location": "abstract"
+     },
+     {
+      "property": "recovery_factor_frac",
+      "value": 0.25,
+      "provenance": "reported",
+      "quote": "a recovery factor of 25%",
+      "location": "abstract"
+     },
+     {
+      "property": "stoiip_mmbbl",
+      "value": 700,
+      "provenance": "reported"
+     },
+     {
+      "property": "eur_mmbbl",
+      "value": 120,
+      "provenance": "reported",
+      "quote": "EUR of 120 MMbbl was reported in the full text"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "field polymer flood",
+     "summary": "field polymer flood at Pelican Lake.",
+     "findings": [
+      {
+       "statement": "Pelican Lake results are reported for the eor-polymer mechanism.",
+       "quote": "Results are discussed for the eor-polymer mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Field polymer flood at Daqing: lessons for black oil development (5)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Daqing",
+    "basin_name": null,
+    "country": "CN",
+    "categorical": {
+     "lithology": "sandstone",
+     "fluid_type": "black-oil",
+     "drive_mechanism": "eor-polymer",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "oil_viscosity_cp",
+      "value": 9,
+      "provenance": "reported",
+      "quote": "oil viscosity of 9 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "permeability_md",
+      "value": 1000,
+      "provenance": "reported",
+      "quote": "permeability of 1000 md",
+      "location": "abstract"
+     },
+     {
+      "property": "porosity_frac",
+      "value": 0.26,
+      "provenance": "reported",
+      "quote": "an average porosity of 26%",
+      "location": "abstract"
+     },
+     {
+      "property": "depth_m",
+      "value": 1000,
+      "provenance": "reported",
+      "quote": "a depth of 1000 m",
+      "location": "abstract"
+     },
+     {
+      "property": "recovery_factor_frac",
+      "value": 0.12,
+      "provenance": "reported",
+      "quote": "a recovery factor of 12%",
+      "location": "abstract"
+     },
+     {
+      "property": "skin_factor",
+      "value": 3,
+      "provenance": "reported",
+      "quote": "skin factor of 3"
+     },
+     {
+      "property": "net_pay_m",
+      "value": 15,
+      "provenance": "reported",
+      "quote": "Results are discussed"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "field polymer flood",
+     "summary": "field polymer flood at Daqing.",
+     "findings": [
+      {
+       "statement": "Daqing results are reported for the eor-polymer mechanism.",
+       "quote": "Results are discussed for the eor-polymer mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Field polymer flood at Mangala: lessons for black oil development (6)": {
+   "kind": "fenced",
+   "body": {
+    "asset_name": "Mangala",
+    "basin_name": null,
+    "country": "IN",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "black-oil",
+     "drive_mechanism": "eor-polymer",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "oil_viscosity_cp",
+      "value": 14,
+      "provenance": "reported",
+      "quote": "oil viscosity of 14 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "api_gravity",
+      "value": 28,
+      "provenance": "reported",
+      "quote": "crude of 28 degrees API",
+      "location": "abstract"
+     },
+     {
+      "property": "permeability_md",
+      "value": 5000,
+      "provenance": "reported",
+      "quote": "permeability of 5000 md",
+      "location": "abstract"
+     },
+     {
+      "property": "temperature_c",
+      "value": 65,
+      "provenance": "reported",
+      "quote": "a reservoir temperature of 65 C",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "field polymer flood",
+     "summary": "field polymer flood at Mangala.",
+     "findings": [
+      {
+       "statement": "Mangala results are reported for the eor-polymer mechanism.",
+       "quote": "Results are discussed for the eor-polymer mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Field polymer flood at Captain: lessons for heavy oil development (7)": {
+   "kind": "raw",
+   "body": "I cannot extract facts from this abstract."
+  },
+  "Cold production review at Cerro Negro: lessons for extra heavy development (8)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Cerro Negro",
+    "basin_name": null,
+    "country": "VE",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "extra-heavy",
+     "drive_mechanism": "solution-gas",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "api_gravity",
+      "value": 8.5,
+      "provenance": "reported",
+      "quote": "CRUDE  OF  8.5  DEGREES  API",
+      "location": "abstract"
+     },
+     {
+      "property": "oil_viscosity_cp",
+      "value": 5000,
+      "provenance": "reported",
+      "quote": "oil viscosity of 5000 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "depth_m",
+      "value": 1000,
+      "provenance": "reported",
+      "quote": "a depth of 1000 m",
+      "location": "abstract"
+     },
+     {
+      "property": "recovery_factor_frac",
+      "value": 0.08,
+      "provenance": "reported",
+      "quote": "a recovery factor of 8%",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "cold production review",
+     "summary": "cold production review at Cerro Negro.",
+     "findings": [
+      {
+       "statement": "Cerro Negro results are reported for the solution-gas mechanism.",
+       "quote": "Results are discussed for the solution-gas mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Simulation at Hamaca: lessons for extra heavy development (9)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Hamaca",
+    "basin_name": null,
+    "country": "VE",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "extra-heavy",
+     "drive_mechanism": "solution-gas",
+     "environment": "onshore",
+     "method": [
+      "simulation"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "api_gravity",
+      "value": 9,
+      "provenance": "client-stated",
+      "quote": "crude of 9 degrees API",
+      "location": "abstract",
+      "low": 99999,
+      "high": 0
+     },
+     {
+      "property": "temperature_c",
+      "value": 54,
+      "provenance": "reported",
+      "quote": "a reservoir temperature of 54 C",
+      "location": "abstract"
+     },
+     {
+      "property": "porosity_frac",
+      "value": 0.32,
+      "provenance": "reported",
+      "quote": "an average porosity of 32%",
+      "location": "abstract"
+     },
+     {
+      "property": "permeability_md",
+      "value": 4000,
+      "provenance": "reported",
+      "quote": "permeability of 4000 md",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "simulation",
+     "summary": "simulation at Hamaca.",
+     "findings": [
+      {
+       "statement": "Hamaca results are reported for the solution-gas mechanism.",
+       "quote": "Results are discussed for the solution-gas mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Analogue screening at Carabobo: lessons for extra heavy development (10)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Carabobo",
+    "basin_name": null,
+    "country": "VE",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "extra-heavy",
+     "drive_mechanism": "solution-gas",
+     "environment": "onshore",
+     "method": [
+      "analogy"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "api_gravity",
+      "value": 8,
+      "provenance": "reported",
+      "quote": "crude of 8 degrees API",
+      "location": "abstract"
+     },
+     {
+      "property": "oil_viscosity_cp",
+      "value": 10000,
+      "provenance": "reported",
+      "quote": "oil viscosity of 10000 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "net_pay_m",
+      "value": 25,
+      "provenance": "reported",
+      "quote": "net pay of 25 m",
+      "location": "abstract"
+     },
+     {
+      "property": "stoiip_mmbbl",
+      "value": 2000,
+      "provenance": "reported",
+      "quote": "STOIIP of 2000 MMbbl",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "analogue screening",
+     "summary": "analogue screening at Carabobo.",
+     "findings": [
+      {
+       "statement": "Carabobo results are reported for the solution-gas mechanism.",
+       "quote": "Results are discussed for the solution-gas mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Pilot at Quifa: lessons for heavy oil development (11)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Quifa",
+    "basin_name": "Llanos Orientales",
+    "country": "CO",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "heavy-oil",
+     "drive_mechanism": "eor-thermal",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "oil_viscosity_cp",
+      "value": 300,
+      "provenance": "reported",
+      "quote": "oil viscosity of 300 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "api_gravity",
+      "value": 14,
+      "provenance": "reported",
+      "quote": "crude of 14 degrees API",
+      "location": "abstract"
+     },
+     {
+      "property": "depth_m",
+      "value": 2300,
+      "provenance": "reported",
+      "quote": "a depth of 2300 m",
+      "location": "abstract"
+     },
+     {
+      "property": "well_count",
+      "value": 6,
+      "provenance": "reported",
+      "quote": "6 wells",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "pilot",
+     "summary": "pilot at Quifa.",
+     "findings": [
+      {
+       "statement": "Quifa results are reported for the eor-thermal mechanism.",
+       "quote": "Results are discussed for the eor-thermal mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Steam pilot at Peace River: lessons for extra heavy development (12)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Peace River",
+    "basin_name": null,
+    "country": "CA",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "extra-heavy",
+     "drive_mechanism": "eor-thermal",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "oil_viscosity_cp",
+      "value": 100000,
+      "provenance": "reported",
+      "quote": "oil viscosity of 100000 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "net_pay_m",
+      "value": 20,
+      "provenance": "reported",
+      "quote": "net pay of 20 m",
+      "location": "abstract"
+     },
+     {
+      "property": "depth_m",
+      "value": 500,
+      "provenance": "reported",
+      "quote": "a depth of 500 m",
+      "location": "abstract"
+     },
+     {
+      "property": "temperature_c",
+      "value": 12,
+      "provenance": "reported",
+      "quote": "a reservoir temperature of 12 C",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "steam pilot",
+     "summary": "steam pilot at Peace River.",
+     "findings": [
+      {
+       "statement": "Peace River results are reported for the eor-thermal mechanism.",
+       "quote": "Results are discussed for the eor-thermal mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Simulation at Zuata: lessons for extra heavy development (13)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Zuata",
+    "basin_name": null,
+    "country": "VE",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "extra-heavy",
+     "drive_mechanism": "eor-other",
+     "environment": "onshore",
+     "method": [
+      "simulation"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "api_gravity",
+      "value": 9.5,
+      "provenance": "reported",
+      "quote": "crude of 9.5 degrees API",
+      "location": "abstract"
+     },
+     {
+      "property": "porosity_frac",
+      "value": 0.3,
+      "provenance": "reported",
+      "quote": "an average porosity of 30%",
+      "location": "abstract"
+     },
+     {
+      "property": "initial_pressure_psi",
+      "value": 1100,
+      "provenance": "reported",
+      "quote": "an initial pressure of 1100 psi",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "simulation",
+     "summary": "simulation at Zuata.",
+     "findings": [
+      {
+       "statement": "Zuata results are reported for the eor-other mechanism.",
+       "quote": "Results are discussed for the eor-other mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Gas cycling review at Cusiana: lessons for volatile oil development (14)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Cusiana",
+    "basin_name": "Llanos Orientales",
+    "country": "CO",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "volatile-oil",
+     "drive_mechanism": "gas-injection",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "initial_pressure_psi",
+      "value": 5000,
+      "provenance": "reported",
+      "quote": "an initial pressure of 5000 psi",
+      "location": "abstract"
+     },
+     {
+      "property": "depth_m",
+      "value": 4800,
+      "provenance": "reported",
+      "quote": "a depth of 4800 m",
+      "location": "abstract"
+     },
+     {
+      "property": "temperature_c",
+      "value": 130,
+      "provenance": "reported",
+      "quote": "a reservoir temperature of 130 C",
+      "location": "abstract"
+     },
+     {
+      "property": "recovery_factor_frac",
+      "value": 0.4,
+      "provenance": "reported",
+      "quote": "a recovery factor of 40%",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "gas cycling review",
+     "summary": "gas cycling review at Cusiana.",
+     "findings": [
+      {
+       "statement": "Cusiana results are reported for the gas-injection mechanism.",
+       "quote": "Results are discussed for the gas-injection mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Waterflood at Casabe: lessons for black oil development (15)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Casabe",
+    "basin_name": null,
+    "country": "CO",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "black-oil",
+     "drive_mechanism": "waterflood",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "permeability_md",
+      "value": 400,
+      "provenance": "reported",
+      "quote": "permeability of 400 md",
+      "location": "abstract"
+     },
+     {
+      "property": "porosity_frac",
+      "value": 0.22,
+      "provenance": "reported",
+      "quote": "an average porosity of 22%",
+      "location": "abstract"
+     },
+     {
+      "property": "well_count",
+      "value": 800,
+      "provenance": "reported",
+      "quote": "800 wells",
+      "location": "abstract"
+     },
+     {
+      "property": "water_cut_frac",
+      "value": 0.9,
+      "provenance": "reported",
+      "quote": "a water cut of 90%",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "waterflood",
+     "summary": "waterflood at Casabe.",
+     "findings": [
+      {
+       "statement": "Casabe results are reported for the waterflood mechanism.",
+       "quote": "Results are discussed for the waterflood mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Conformance case at Kuparuk: lessons for black oil development (16)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Kuparuk",
+    "basin_name": null,
+    "country": "US",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "black-oil",
+     "drive_mechanism": "waterflood",
+     "environment": "onshore",
+     "method": [
+      "performance"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "permeability_md",
+      "value": 100,
+      "provenance": "reported",
+      "quote": "permeability of 100 md",
+      "location": "abstract"
+     },
+     {
+      "property": "porosity_frac",
+      "value": 0.21,
+      "provenance": "reported",
+      "quote": "an average porosity of 21%",
+      "location": "abstract"
+     },
+     {
+      "property": "net_pay_m",
+      "value": 12,
+      "provenance": "reported",
+      "quote": "net pay of 12 m",
+      "location": "abstract"
+     },
+     {
+      "property": "water_cut_frac",
+      "value": 0.8,
+      "provenance": "reported",
+      "quote": "a water cut of 80%",
+      "location": "abstract"
+     },
+     {
+      "property": "depth_m",
+      "value": 1800,
+      "provenance": "reported",
+      "quote": "a depth of 1800 m",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "conformance case",
+     "summary": "conformance case at Kuparuk.",
+     "findings": [
+      {
+       "statement": "Kuparuk results are reported for the waterflood mechanism.",
+       "quote": "Results are discussed for the waterflood mechanism"
+      }
+     ]
+    }
+   }
+  },
+  "Core flood at Grimbeek: lessons for heavy oil development (17)": {
+   "kind": "json",
+   "body": {
+    "asset_name": "Grimbeek",
+    "basin_name": null,
+    "country": "CO",
+    "categorical": {
+     "lithology": "clastic",
+     "fluid_type": "heavy-oil",
+     "drive_mechanism": "eor-polymer",
+     "environment": "onshore",
+     "method": [
+      "simulation"
+     ],
+     "operator": null
+    },
+    "numeric": [
+     {
+      "property": "oil_viscosity_cp",
+      "value": 500,
+      "provenance": "reported",
+      "quote": "oil viscosity of 500 cP",
+      "location": "abstract"
+     },
+     {
+      "property": "permeability_md",
+      "value": 1500,
+      "provenance": "reported",
+      "quote": "permeability of 1500 md",
+      "location": "abstract"
+     },
+     {
+      "property": "temperature_c",
+      "value": 60,
+      "provenance": "reported",
+      "quote": "a reservoir temperature of 60 C",
+      "location": "abstract"
+     }
+    ],
+    "paper_facts": {
+     "study_type": "core flood",
+     "summary": "core flood at Grimbeek.",
+     "findings": [
+      {
+       "statement": "Grimbeek results are reported for the eor-polymer mechanism.",
+       "quote": "Results are discussed for the eor-polymer mechanism"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

@@ -223,6 +223,34 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
 @keyframes runPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4);}50%{box-shadow:0 0 0 8px rgba(201,168,76,0);}}
 .run-btn.running{animation:runPulse 1.2s infinite;}
 
+
+/* ── VAULT RUNS (M05) ── */
+.vault-bar{display:none;align-items:center;gap:8px;padding:8px 20px 8px 22px;flex-wrap:wrap;flex:1 1 100%;border-top:1px solid var(--line);}
+.vault-bar select{background:rgba(0,0,0,0.25)!important;color:var(--cream)!important;border:1px solid var(--line)!important;border-radius:var(--r-sm)!important;font-family:var(--font-body)!important;font-size:11px!important;padding:5px 8px!important;}
+.vault-bar .io-btn{flex:0 0 auto;padding:6px 12px;}
+.vault-note{font-family:var(--font-mono);font-size:10px;color:var(--steel);max-width:260px;}
+.vault-note.ok{color:var(--green-bright);} .vault-note.warn{color:var(--amber);}
+.runs-drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--panel);border-left:1px solid var(--gold-line);z-index:900;display:none;flex-direction:column;box-shadow:-12px 0 32px rgba(0,0,0,0.45);}
+.runs-drawer.open{display:flex;}
+.runs-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--navy);border-bottom:1px solid var(--line);}
+.runs-title{font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--cream);}
+.runs-title em{color:var(--gold);font-style:italic;}
+.runs-close{background:none;border:none;color:var(--steel);font-size:20px;cursor:pointer;line-height:1;}
+.runs-close:hover{color:var(--gold);}
+.runs-note{margin:12px 18px 0;padding:8px 10px;border:1px solid rgba(232,150,58,0.35);background:var(--amber-dim);color:var(--amber);border-radius:var(--r-sm);font-size:11px;line-height:1.5;}
+.runs-msg{margin:10px 18px 0;font-family:var(--font-mono);font-size:10.5px;color:var(--steel);min-height:1em;}
+.runs-list{list-style:none;overflow-y:auto;padding:8px 18px 18px;flex:1;}
+.run-item{border-top:1px solid var(--line);padding:11px 0;}
+.run-item:first-child{border-top:none;}
+.run-item-title{font-size:12.5px;font-weight:600;color:var(--cream);}
+.run-item-meta{font-family:var(--font-mono);font-size:10px;color:var(--steel);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 10px;}
+.run-item-out{font-size:11px;color:var(--cream-dim);margin-top:4px;}
+.run-item-actions{display:flex;gap:7px;margin-top:8px;}
+.run-item-actions .io-btn{flex:0 0 auto;padding:6px 12px;}
+.run-tag{font-family:var(--font-cond);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border-radius:3px;border:1px solid var(--line);}
+.run-tag.queued{color:var(--amber);border-color:rgba(232,150,58,0.35);background:var(--amber-dim);}
+.runs-empty{font-size:12px;color:var(--steel);padding:14px 0;}
+
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:3px;}
 
@@ -345,6 +373,13 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
     <div class="apex-chip">3D Layered</div>
     <div class="apex-chip">IMPES</div>
     <div class="apex-chip">v2.2</div>
+    <div class="apex-chip" id="toolVersionChip" style="display:none;" title="Registered tool version (Vault)"></div>
+  </div>
+  <div class="vault-bar" id="vaultBar">
+    <span id="vaultProject"></span>
+    <button class="io-btn" id="saveRunBtn" type="button" data-en="Save run" data-es="Guardar corrida">Save run</button>
+    <button class="io-btn" id="runsBtn" type="button" data-en="Runs" data-es="Corridas">Runs</button>
+    <span class="vault-note" id="vaultNote" role="status"></span>
   </div>
 </header>
 
@@ -451,8 +486,7 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
         <div id="aiClaudeBody" class="ai-body"></div>
       </div>
       <div class="io-btn-row" style="padding:0;margin-top:10px;">
-        <button class="io-btn" id="aiAnalyseBtn" style="display:none;" onclick="runClaudeAdvisor(true)">✦ Analyse with Claude</button>
-        <button class="io-btn" onclick="configureClaudeKey()">⚙ API Key</button>
+        <button class="io-btn" id="aiAnalyseBtn" onclick="runClaudeAdvisor(true)">✦ Analyse with Claude</button>
       </div>
     </div>
   </aside>
@@ -812,6 +846,17 @@ body{background:var(--navy-dark);color:var(--cream);font-family:var(--font-body)
   <div class="sim-progress-label" id="progressLabel">0%</div>
 </div>
 
+<!-- RUNS DRAWER (M05) -->
+<aside class="runs-drawer" id="runsDrawer" aria-hidden="true" aria-labelledby="runsTitle">
+  <div class="runs-head">
+    <div class="runs-title" id="runsTitle"><span data-en="Saved" data-es="Corridas">Saved</span> <em data-en="Runs" data-es="guardadas">Runs</em></div>
+    <button class="runs-close" id="runsClose" type="button" aria-label="Close" data-en-label="Close" data-es-label="Cerrar">×</button>
+  </div>
+  <div class="runs-note" id="runsQueuedNote" style="display:none;" data-en="Queued locally: runs saved without the Vault stay on this device and sync automatically when it is reachable." data-es="En cola local: las corridas guardadas sin el Vault permanecen en este dispositivo y se sincronizan cuando esté disponible.">Queued locally: runs saved without the Vault stay on this device and sync automatically when it is reachable.</div>
+  <div class="runs-msg" id="runsMsg" role="status"></div>
+  <ul class="runs-list" id="runsList"></ul>
+</aside>
+
 <!-- IO MODAL -->
 <div class="modal-overlay" id="ioModal">
   <div class="modal">
@@ -837,6 +882,7 @@ const P = {
   gravity:true,gas:true
 };
 
+const P_DEFAULTS=Object.assign({},P);   // pristine copy for headless runs (M05)
 let LAYERS=[];      // per-layer {phi,k,ntg,depth}
 let WELLS=[];       // explicit well list {name,type,i,j,pwf,rw,skin,perf[],active,custom}
 const RES={ran:false,times:[],qo:[],qw:[],pres:[],np:[],wp:[],gor:[],wor:[],satFrames:[],presFrames:[]};
@@ -864,9 +910,9 @@ function syncRange(key,el){
 function set(id,v){const e=document.getElementById(id); if(e)e.textContent=v;}
 
 // ── LAYER GENERATION (fining-upward, Dykstra-Parsons) ──
-function generateLayers(){
-  LAYERS=[];
-  const nk=P.nk, baseK=P.k, basePhi=P.phi, vdp=P.vdp;
+function makeLayers(Q){
+  const out=[];
+  const nk=Q.nk, baseK=Q.k, basePhi=Q.phi, vdp=Q.vdp;
   // Dykstra-Parsons: log-normal perm spread. vdp=0 → uniform, vdp→1 → high contrast
   for(let k=0;k<nk;k++){
     const frac = nk>1 ? k/(nk-1) : 0.5;       // 0 top → 1 bottom
@@ -877,9 +923,13 @@ function generateLayers(){
     const kL = Math.max(1, baseK*permMult);
     const phiL = Math.max(0.03, Math.min(0.4, basePhi*(1+0.12*z)));
     const ntg = Math.max(0.5, Math.min(1.0, 0.95-0.06*Math.abs(z)));
-    const depth = P.topd + (k+0.5)*P.dz;
-    LAYERS.push({phi:phiL,k:kL,ntg:ntg,depth:depth});
+    const depth = Q.topd + (k+0.5)*Q.dz;
+    out.push({phi:phiL,k:kL,ntg:ntg,depth:depth});
   }
+  return out;
+}
+function generateLayers(){
+  LAYERS=makeLayers(P);
   buildLayerTable();
   drawLayerCharts();
 }
@@ -945,16 +995,20 @@ function updateDerived(){
 const WELL_PP=[[0.78,0.78],[0.22,0.78],[0.5,0.22],[0.8,0.35],[0.2,0.35],[0.5,0.65]];
 const WELL_IP=[[0.5,0.5],[0.15,0.5],[0.85,0.5],[0.5,0.15]];
 let selWell=-1;
-function mkWell(name,type,i,j){
+function mkWell(name,type,i,j,Q){
+  Q=Q||P;
   return {name,type,i,j,active:true,custom:false,
-    pwf:type==='prod'?P.pwfp:P.pwfi,rw:P.rw,skin:P.skin,
-    perf:Array.from({length:P.nk},()=>true)};
+    pwf:type==='prod'?Q.pwfp:Q.pwfi,rw:Q.rw,skin:Q.skin,
+    perf:Array.from({length:Q.nk},()=>true)};
+}
+function makeWells(Q){
+  const {ni,nj}=Q; const w=[];
+  for(let p=0;p<Q.np;p++) w.push(mkWell(`P${p+1}`,'prod',Math.floor(WELL_PP[p][0]*ni),Math.floor(WELL_PP[p][1]*nj),Q));
+  for(let q=0;q<Q.ni2;q++) w.push(mkWell(`I${q+1}`,'inj',Math.floor(WELL_IP[q][0]*ni),Math.floor(WELL_IP[q][1]*nj),Q));
+  return w;
 }
 function generateWells(){
-  const {ni,nj}=P; const w=[];
-  for(let p=0;p<P.np;p++) w.push(mkWell(`P${p+1}`,'prod',Math.floor(WELL_PP[p][0]*ni),Math.floor(WELL_PP[p][1]*nj)));
-  for(let q=0;q<P.ni2;q++) w.push(mkWell(`I${q+1}`,'inj',Math.floor(WELL_IP[q][0]*ni),Math.floor(WELL_IP[q][1]*nj)));
-  WELLS=w; selWell=-1;
+  WELLS=makeWells(P); selWell=-1;
 }
 // Count sliders add/remove default wells at the end of the pattern — existing
 // (possibly customised) wells are never touched.
@@ -1259,9 +1313,8 @@ function runAdvisor(){
   F.sort((a,b)=>a.sev-b.sev);
   const chip=s=>s===0?'<span class="ai-chip warn">Attention</span>':s===1?'<span class="ai-chip note">Note</span>':'<span class="ai-chip info">Info</span>';
   el.innerHTML=F.slice(0,7).map(f=>`<div class="ai-item">${chip(f.sev)}<span>${f.text}</span></div>`).join('');
-  // If a Claude API key is linked, follow up with the full narrative analysis
-  if(typeof runClaudeAdvisor==='function'&&typeof getClaudeKey==='function'&&getClaudeKey())
-    setTimeout(()=>runClaudeAdvisor(false),80);
+  // Follow up with the narrative analysis through the Vault assistant when it is connected
+  if(typeof runClaudeAdvisor==='function') setTimeout(()=>runClaudeAdvisor(false),80);
 }
 
 // ── HOME RIGHT RAIL SUMMARY ──
@@ -2230,16 +2283,17 @@ function closeModal(){document.getElementById('ioModal').classList.remove('open'
 function downloadJSON(){ downloadFile('apex-reservoir-model.json',JSON.stringify({P,LAYERS,WELLS},null,2)); }
 function copyJSON(){const t=document.getElementById('jsonOut');t.select();document.execCommand('copy');}
 function importJSONText(){try{applyImport(JSON.parse(document.getElementById('jsonIn').value));closeModal();}catch(e){alert('Invalid JSON: '+e.message);}}
-function sanitizeWells(list){
+function sanitizeWells(list,Q){
+  Q=Q||P;
   return (Array.isArray(list)?list:[]).map((w,ix)=>({
     name:w.name||`W${ix+1}`, type:w.type==='inj'?'inj':'prod',
-    i:Math.min(P.ni-1,Math.max(0,Math.round(w.i||0))),
-    j:Math.min(P.nj-1,Math.max(0,Math.round(w.j||0))),
+    i:Math.min(Q.ni-1,Math.max(0,Math.round(w.i||0))),
+    j:Math.min(Q.nj-1,Math.max(0,Math.round(w.j||0))),
     active:w.active!==false, custom:!!w.custom,
-    pwf:isFinite(w.pwf)?+w.pwf:(w.type==='inj'?P.pwfi:P.pwfp),
-    rw:isFinite(w.rw)&&w.rw>0?+w.rw:P.rw,
-    skin:isFinite(w.skin)?+w.skin:P.skin,
-    perf:Array.from({length:P.nk},(_,k)=>w.perf?w.perf[k]!==false:true)
+    pwf:isFinite(w.pwf)?+w.pwf:(w.type==='inj'?Q.pwfi:Q.pwfp),
+    rw:isFinite(w.rw)&&w.rw>0?+w.rw:Q.rw,
+    skin:isFinite(w.skin)?+w.skin:Q.skin,
+    perf:Array.from({length:Q.nk},(_,k)=>w.perf?w.perf[k]!==false:true)
   }));
 }
 // Session persistence — the model survives screen reloads within the
@@ -2337,44 +2391,41 @@ function pushToAPEX(){
 }
 
 // ════════════════════════════════════════════════════
-//  CLAUDE-POWERED RUN ADVISOR (Anthropic Messages API)
+//  AI RUN ADVISOR — through the Vault assistant (POST /api/llm)
 // ════════════════════════════════════════════════════
-// The deterministic rule-based findings render instantly; when an API key is
-// configured, the full run snapshot is also sent to Claude for a narrative
-// engineering analysis. The key is entered once and stored ONLY in this
-// browser's localStorage — it is never written to the model JSON, the repo,
-// or any server other than api.anthropic.com.
-const CLAUDE_KEY_STORE='atc_claude_key';
-const CLAUDE_MODEL='claude-opus-4-8';
-const CLAUDE_SYSTEM=`You are the AI Run Advisor inside APEX Reservoir 3D, Alpha Technical Centre's black-oil waterflood simulator (IMPES, BHP-controlled wells with per-layer completions, Fetkovich aquifer, Corey rel-perm; water-drive displacement only — no primary depletion or free gas phase). You receive a JSON snapshot of the model, per-layer rock, per-well completions, base-case results, per-well cumulative volumes, ensemble P10/P50/P90 (SPE exceedance convention) and the tool's own deterministic findings.
+// The deterministic rule-based findings render instantly. The narrative analysis
+// is requested from the Vault's server-side assistant; no provider key or
+// provider call lives in this page. Until the assistant is connected the API
+// answers 501 and the advisor shows a friendly waiting state instead of an error.
+const ADVISOR_BRIEF=`You are the AI Run Advisor inside APEX Reservoir 3D, Alpha Technical Centre's black-oil waterflood simulator (IMPES, BHP-controlled wells with per-layer completions, Fetkovich aquifer, Corey rel-perm; water-drive displacement only — no primary depletion or free gas phase). You receive a JSON snapshot of the model, per-layer rock, per-well completions, base-case results, per-well cumulative volumes, ensemble P10/P50/P90 (SPE exceedance convention) and the tool's own deterministic findings.
 Reply for a reservoir engineer:
 1. A 2-3 sentence overall assessment of the development scheme.
 2. **Key observations** — bullets grounded in the numbers (breakthrough timing, sweep efficiency, drive balance, pressure maintenance, per-well imbalances, uncertainty spread).
 3. **Recommended next steps** — at most 4, each actionable inside the simulator (per-layer completions, well BHPs, well placement, aquifer strength, horizon, ensemble settings).
 Be quantitative and cite values from the payload. Do not restate the deterministic findings verbatim — add engineering judgement beyond them. Keep it under 250 words. Plain text with markdown bullets and **bold** only.`;
 
-function getClaudeKey(){ try{ return localStorage.getItem(CLAUDE_KEY_STORE)||''; }catch(e){ return ''; } }
-function setClaudeKey(k){
-  try{ if(k) localStorage.setItem(CLAUDE_KEY_STORE,k); else localStorage.removeItem(CLAUDE_KEY_STORE); }catch(e){}
-  updateClaudeKeyUI();
+let advisorState='unknown';   // 'unknown' | 'unavailable' | 'ready'
+function advisorLang(){ return (document.documentElement.lang||'en').toLowerCase().startsWith('es')?'es':'en'; }
+function advisorSay(en,es,cls){
+  const body=document.getElementById('aiClaudeBody'), sec=document.getElementById('aiClaudeSection');
+  if(sec) sec.style.display='';
+  if(!body) return;
+  body.innerHTML='';
+  const span=document.createElement('span');
+  span.setAttribute('data-en',en); span.setAttribute('data-es',es);
+  span.textContent=advisorLang()==='es'?es:en;
+  if(cls==='err') span.style.color='#E07070'; else span.style.color='var(--steel)';
+  body.appendChild(span);
 }
-function configureClaudeKey(){
-  const cur=getClaudeKey();
-  const k=prompt(cur
-    ?`A key is linked (…${cur.slice(-4)}). Paste a new Anthropic API key to replace it, or clear the box and press OK to remove it.`
-    :'Paste your Anthropic API key (sk-ant-…).\n\nIt is stored only in this browser and sent only to api.anthropic.com.', '');
-  if(k===null) return;
-  setClaudeKey(k.trim());
-  if(k.trim()&&RES.ran) runClaudeAdvisor(false);
+function updateAdvisorStatus(){
+  const st=document.getElementById('aiKeyStatus'); if(!st) return;
+  if(advisorState==='ready') st.innerHTML='<span style="color:var(--green-bright);">● assistant connected</span>';
+  else if(advisorState==='unavailable') st.innerHTML='<span style="color:var(--steel);">○ assistant not connected</span>';
+  else st.innerHTML='';
 }
-function updateClaudeKeyUI(){
-  const k=getClaudeKey();
-  const st=document.getElementById('aiKeyStatus');
-  if(st) st.innerHTML=k
-    ?`<span style="color:var(--green-bright);">● claude linked ·…${k.slice(-4)}</span>`
-    :'<span style="color:var(--steel);">○ no key</span>';
-  const btn=document.getElementById('aiAnalyseBtn');
-  if(btn) btn.style.display=k?'':'none';
+function advisorUnavailable(){
+  advisorState='unavailable'; updateAdvisorStatus();
+  advisorSay('AI advisor is available once the Vault assistant is connected.','El asesor de IA estará disponible cuando el asistente del Vault esté conectado.');
 }
 
 // Compact, token-conscious snapshot of the whole run for the model
@@ -2413,44 +2464,46 @@ function buildAdvisorPayload(){
 
 let claudeBusy=false;
 async function runClaudeAdvisor(manual){
-  let key=getClaudeKey();
-  if(!key){ if(manual){ configureClaudeKey(); key=getClaudeKey(); } if(!key) return; }
-  if(!RES.ran){ if(manual) alert('Run a simulation first — Claude analyses the results.'); return; }
+  if(!RES.ran){ if(manual) alert('Run a simulation first — the advisor analyses the results.'); return; }
   if(claudeBusy) return;
+  // Never send anything unless the Vault API is reachable. An automatic request is not
+  // repeated once the assistant is known to be unavailable; the button retries.
+  const V=window.ATC_VAULT;
+  if(!V){ advisorUnavailable(); return; }
+  if(!manual&&advisorState==='unavailable') return;
   claudeBusy=true;
-  const sec=document.getElementById('aiClaudeSection'), body=document.getElementById('aiClaudeBody');
-  if(sec) sec.style.display='';
-  if(body) body.innerHTML='<span style="color:var(--steel);">✦ Claude is analysing the run…</span>';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'content-type':'application/json',
-        'x-api-key':key,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({
-        model:CLAUDE_MODEL,
-        max_tokens:4000,
-        thinking:{type:'adaptive'},
-        system:CLAUDE_SYSTEM,
-        messages:[{role:'user',content:JSON.stringify(buildAdvisorPayload())}]
-      })
-    });
+    await V.me();
+    if(V.mode()!=='server'){ advisorUnavailable(); return; }
+    advisorSay('✦ The assistant is analysing the run…','✦ El asistente está analizando la corrida…');
+    const project=(typeof window.atcProjectId==='function'&&window.atcProjectId())||'firm';
+    let res;
+    try{
+      res=await fetch('/api/llm',{
+        method:'POST', credentials:'same-origin',
+        headers:{'content-type':'application/json',accept:'application/json'},
+        body:JSON.stringify({
+          purpose:'simulator-advice',
+          scope:'project:'+project,
+          messages:[{role:'user',content:ADVISOR_BRIEF+'\n\nRun snapshot (JSON):\n'+JSON.stringify(buildAdvisorPayload())}]
+        })
+      });
+    }catch(e){ advisorUnavailable(); return; }
+    if(res.status===501||res.status===404||res.status===503){ advisorUnavailable(); return; }
     if(!res.ok){
-      const err=await res.json().catch(()=>null);
-      if(res.status===401) throw new Error('API key rejected (401) — check it via ⚙ API Key.');
-      if(res.status===429) throw new Error('Rate limited (429) — try again in a moment.');
-      throw new Error((err&&err.error&&err.error.message)||`API error (HTTP ${res.status}).`);
+      advisorSay('The AI advisor could not analyse this run right now. Try again in a moment.','El asesor de IA no pudo analizar esta corrida ahora. Inténtelo de nuevo en un momento.','err');
+      return;
     }
-    const data=await res.json();
-    if(data.stop_reason==='refusal') throw new Error('Claude declined to analyse this request.');
-    const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    const data=await res.json().catch(()=>null)||{};
+    const text=(typeof data.text==='string'?data.text
+      :typeof data.content==='string'?data.content
+      :Array.isArray(data.content)?data.content.filter(b=>b&&b.type==='text').map(b=>b.text).join('\n')
+      :typeof data.message==='string'?data.message:'').trim();
+    advisorState='ready'; updateAdvisorStatus();
+    const body=document.getElementById('aiClaudeBody');
     if(body) body.innerHTML=text?mdLite(text):'<span class="io-note">No analysis returned.</span>';
   }catch(err){
-    const msg=(err&&err.message)||'request failed';
-    if(body) body.innerHTML=`<span style="color:#E07070;">✕ ${escapeHtml(/fetch|network/i.test(msg)?'Could not reach api.anthropic.com — check the connection.':msg)}</span>`;
+    advisorSay('The AI advisor could not analyse this run right now. Try again in a moment.','El asesor de IA no pudo analizar esta corrida ahora. Inténtelo de nuevo en un momento.','err');
   }finally{
     claudeBusy=false;
   }
@@ -2485,8 +2538,10 @@ function gauss(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return M
 
 // One stochastic realization: a copy of P + LAYERS with sampled multipliers.
 // Ranges are typical appraisal-stage uncertainty; the base case is the mode.
-function sampleRealization(rng){
-  const Q=Object.assign({},P);
+function sampleRealization(rng,base){
+  base=base||{P,LAYERS,WELLS};
+  const P0=base.P, LAY0=base.LAYERS, W0=base.WELLS;
+  const Q=Object.assign({},P0);
   const mult={
     k:    Math.exp(gauss(rng)*0.35),   // layer kh — lognormal, ±40% at 1σ
     phi:  1+gauss(rng)*0.08,           // porosity — normal, ±8% at 1σ
@@ -2494,14 +2549,14 @@ function sampleRealization(rng){
     aq:   Math.exp(gauss(rng)*0.50),   // aquifer strength — lognormal
     skin: gauss(rng)*2                 // completion skin — additive, ±2 at 1σ
   };
-  Q.kvkh=Math.min(1.0,Math.max(0.01,P.kvkh*mult.kvkh));
-  Q.aqstr=P.aqstr*mult.aq;
-  const LAY=LAYERS.map(L=>({
+  Q.kvkh=Math.min(1.0,Math.max(0.01,P0.kvkh*mult.kvkh));
+  Q.aqstr=P0.aqstr*mult.aq;
+  const LAY=LAY0.map(L=>({
     phi:Math.min(0.40,Math.max(0.03,L.phi*mult.phi)),
     k:Math.max(1,L.k*mult.k),
     ntg:L.ntg, depth:L.depth}));
   // Skin delta applies to every well on top of its own (possibly customised) skin
-  const wells=WELLS.filter(w=>w.active).map(w=>Object.assign({},w,{
+  const wells=W0.filter(w=>w.active).map(w=>Object.assign({},w,{
     skin:Math.min(20,Math.max(-3,w.skin+mult.skin)), perf:(w.perf||[]).slice()}));
   return {Q,LAY,wells,mult};
 }
@@ -2683,6 +2738,70 @@ function exportEnsembleCSV(){
 }
 
 // ════════════════════════════════════════════════════
+//  HEADLESS RUN (M05) — no DOM, same engine, same ensemble sampler
+// ════════════════════════════════════════════════════
+// params = {P, LAYERS, WELLS, ens:{n,seed}}, the complete scenario the page saves. ens.n < 2 skips the
+// Monte Carlo step and the P10/P50/P90 forecast is then not computed (and so not returned).
+// Returns the headline outputs keyed as declared in tools/apex-reservoir-3d/tool.json.
+function* headlessGen(params){
+  const p=params||{};
+  const Q=Object.assign({},P_DEFAULTS,p.P||{});
+  const LAY=(Array.isArray(p.LAYERS)&&p.LAYERS.length?p.LAYERS:makeLayers(Q)).map(L=>Object.assign({},L));
+  const wells=(Array.isArray(p.WELLS)&&p.WELLS.length?sanitizeWells(p.WELLS,Q):makeWells(Q));
+  const eng=createSimEngine(Q,LAY,wells);
+  const ens=p.ens||{};
+  const nReal=ens.n===undefined?0:Math.floor(+ens.n);
+  const seed=parseInt(ens.seed)||42;
+  const total=1+(nReal>=2?nReal:0);         // simulations to run: base case + realizations
+  let k=0;
+  while(eng.advance()){ if(++k%20===0) yield (eng.simT/eng.T_end)/total; }
+  const last=a=>a[a.length-1];
+  const out={
+    cum_oil_np:{value:last(eng.nps),unit:'10^3 m3'},
+    cum_water_wp:{value:last(eng.wps),unit:'10^3 m3'},
+    avg_reservoir_pressure:{value:last(eng.pres),unit:'bar'}
+  };
+  if(nReal>=2){
+    const rng=mulberry32((Math.imul(seed,2654435761)>>>0)||1);
+    const runs=[];
+    for(let r=0;r<nReal;r++){
+      const spec=sampleRealization(rng,{P:Q,LAYERS:LAY,WELLS:wells});
+      const e=createSimEngine(spec.Q,spec.LAY,spec.wells);
+      while(e.advance()){ if(++k%20===0) yield (1+r+e.simT/e.T_end)/total; }
+      runs.push({qo:e.qos,npEnd:last(e.nps)});
+    }
+    const nT=runs[0].qo.length;
+    const p10=[],p50=[],p90=[];
+    for(let i=0;i<nT;i++){
+      const v=runs.map(rn=>rn.qo[i]).sort((a,b)=>a-b);
+      p90.push(pctile(v,0.10)); p50.push(pctile(v,0.50)); p10.push(pctile(v,0.90));
+    }
+    const nps=runs.map(rn=>rn.npEnd).sort((a,b)=>a-b);
+    out.cum_oil_np.low=pctile(nps,0.10);     // P90 (low case)
+    out.cum_oil_np.high=pctile(nps,0.90);    // P10 (high case)
+    out.production_forecast_p10_p50_p90={
+      value:{t_yr:eng.times.slice(0,nT),oil_rate_p10:p10,oil_rate_p50:p50,oil_rate_p90:p90,n:nReal,seed},
+      unit:'m3/d'};
+  }
+  return out;
+}
+function headlessRun(params){
+  const g=headlessGen(params); let r;
+  while(!(r=g.next()).done){}
+  return r.value;
+}
+// Same computation, yielding to the browser between slices so a Save on a large model stays responsive.
+async function headlessRunAsync(params,onProgress){
+  const g=headlessGen(params);
+  for(;;){
+    const r=g.next();
+    if(r.done) return r.value;
+    if(onProgress) onProgress(r.value);
+    await new Promise(res=>setTimeout(res,0));
+  }
+}
+
+// ════════════════════════════════════════════════════
 //  BOOT
 // ════════════════════════════════════════════════════
 window.addEventListener('load',()=>{
@@ -2691,7 +2810,7 @@ window.addEventListener('load',()=>{
   const saved=loadSavedState();
   if(saved) applyImport(saved,true); else updateDerived();
   attachWellMapEvents();
-  updateClaudeKeyUI();
+  updateAdvisorStatus();
   showScreen();               // activate the routed screen (default #home)
   drawPVT(); drawSCAL(); drawAquifer();
   initThree(); // single shared renderer; results scene created inside
@@ -2706,6 +2825,241 @@ window.addEventListener('load',()=>{
   });
   setTimeout(()=>{resizeShared();rebuild3D();},150);
 });
+</script>
+<script type="module">
+// ════════════════════════════════════════════════════
+//  VAULT RUN CAPTURE (M05) — window.ATC_TOOL, Save run, Runs drawer
+// ════════════════════════════════════════════════════
+import { vault } from './js/vault-client.js';
+
+const TOOL_ID = 'apex-reservoir-3d';
+const $ = id => document.getElementById(id);
+const clone = o => JSON.parse(JSON.stringify(o));
+let currentProject = null;       // project id chosen in the toolbar picker
+let loadedFromRun = null;        // run id the current scenario was loaded from
+let projectsCache = null;        // GET /api/projects, server mode only
+let ensPlan = { n: 0, seed: 42 };  // ensemble settings carried by the scenario (n < 2: none)
+
+function lang(){ return (document.documentElement.lang || 'en').toLowerCase().startsWith('es') ? 'es' : 'en'; }
+function bi(el, en, es){ el.setAttribute('data-en', en); el.setAttribute('data-es', es); el.textContent = lang() === 'es' ? es : en; return el; }
+function mk(tag, cls, en, es){ const e = document.createElement(tag); if (cls) e.className = cls; if (en !== undefined) bi(e, en, es); return e; }
+
+/* ── the tool contract ─────────────────────────────────────────────── */
+
+// The scenario includes its Monte Carlo settings when an ensemble has been run (or was loaded with
+// the scenario). A plain base case saves without one: the ensemble is many simulations and is opt-in.
+function getParams(){
+  const ens = ENS.ran ? { n: ENS.n, seed: ENS.seed } : { n: ensPlan.n, seed: ensPlan.seed };
+  return clone({ P, LAYERS, WELLS, ens });
+}
+
+function setParams(p){
+  const q = clone(p || {});
+  Object.keys(P).forEach(k => { delete P[k]; });
+  Object.assign(P, P_DEFAULTS, q.P || {});
+  applyImport({ LAYERS: q.LAYERS, WELLS: q.WELLS }, true);
+  ensPlan = { n: 0, seed: 42 };
+  if (q.ens){
+    ensPlan = { n: Math.floor(+q.ens.n) || 0, seed: parseInt(q.ens.seed) || 42 };
+    const n = $('ens-n'), sd = $('ens-seed');
+    if (n && q.ens.n !== undefined){ n.value = q.ens.n; const l = $('v-ensn'); if (l) l.textContent = n.value; }
+    if (sd && q.ens.seed !== undefined) sd.value = q.ens.seed;
+  }
+  saveState();
+}
+
+function run(p){ return headlessRun(p === undefined ? getParams() : p); }
+
+function getInputs(){
+  const inputs = [{ ref: 'tool:' + TOOL_ID, kind: 'manual' }];
+  if (loadedFromRun) inputs.push({ ref: 'run:' + loadedFromRun, kind: 'run', role: 'seed_model' });
+  return inputs;
+}
+
+function getAssumptions(){
+  const a = (value, unit) => ({ value, unit, source: 'assumed', provenance: 'assumed' });
+  const q = Object.assign({}, P_DEFAULTS, P);
+  return {
+    initial_pressure: a(q.pi, 'bar'), bubble_point_pressure: a(q.pb, 'bar'),
+    oil_viscosity: a(q.muo, 'cP'), water_viscosity: a(q.muw, 'cP'),
+    oil_fvf: a(q.bo, 'rm3/sm3'), solution_gor_initial: a(q.rsi, 'sm3/sm3'),
+    connate_water_saturation: a(q.swi, 'fraction'), residual_oil_saturation: a(0.28, 'fraction'),
+    porosity: a(q.phi, 'fraction'), permeability_kh: a(q.k, 'mD'), kv_kh: a(q.kvkh, 'fraction'),
+    dykstra_parsons: a(q.vdp, 'fraction'), aquifer_type: a(q.aqtype), aquifer_strength: a(q.aqstr, 'multiplier')
+  };
+}
+
+window.ATC_TOOL = { id: TOOL_ID, getParams, setParams, run, getInputs, getAssumptions };
+window.ATC_VAULT = vault;
+window.atcProjectId = () => currentProject;
+
+/* ── tool version chip ─────────────────────────────────────────────── */
+
+vault.resolve(TOOL_ID).then(v => {
+  const chip = $('toolVersionChip'); if (!chip) return;
+  chip.textContent = '';
+  chip.append(bi(document.createElement('span'), 'Vault', 'Vault'), ' ');
+  const b = document.createElement('b'); b.textContent = 'v' + v.version + ' · ' + v.commit; chip.append(b);
+  chip.style.display = '';
+}).catch(() => { /* local mode: nothing to show */ });
+
+/* ── toolbar: project picker, Save run, Runs ───────────────────────── */
+
+function note(en, es, cls){
+  const n = $('vaultNote'); if (!n) return;
+  n.className = 'vault-note' + (cls ? ' ' + cls : '');
+  if (!en){ n.textContent = ''; n.removeAttribute('data-en'); n.removeAttribute('data-es'); return; }
+  bi(n, en, es);
+}
+
+async function defaultLegalTag(){
+  if (!currentProject || vault.mode() !== 'server') return 'lt-firm';
+  try {
+    if (!projectsCache){
+      const res = await fetch('/api/projects', { headers: { accept: 'application/json' }, credentials: 'same-origin' });
+      const b = res.ok ? await res.json() : [];
+      projectsCache = Array.isArray(b) ? b : (b && b.projects) || [];
+    }
+    const proj = projectsCache.find(x => String(x.id) === currentProject);
+    if (proj && typeof proj.default_legal_tag === 'string' && proj.default_legal_tag) return proj.default_legal_tag;
+  } catch (e) { /* fall back */ }
+  return 'lt-firm';
+}
+
+function runTitle(params){
+  const q = params.P;
+  return 'APEX Reservoir 3D · ' + q.ni + '×' + q.nj + '×' + q.nk + ' · ' + q.yr + ' yr · ' + new Date().toISOString().slice(0, 16).replace('T', ' ');
+}
+
+async function buildPartial(){
+  const params = getParams();
+  const outputs = await headlessRunAsync(params, f => note('Computing outputs… ' + Math.round(f * 100) + '%', 'Calculando resultados… ' + Math.round(f * 100) + '%'));
+  const project_id = currentProject || 'firm';
+  const legal_tag = await defaultLegalTag();
+  return {
+    job: TOOL_ID, project_id, legal_tag,
+    inputs: getInputs(), assumptions: getAssumptions(),
+    params, outputs, status: 'draft', title: runTitle(params)
+  };
+}
+
+let saving = false;
+async function saveRunToVault(supersedesId){
+  if (saving) return;
+  saving = true;
+  const btn = $('saveRunBtn'); if (btn) btn.disabled = true;
+  note('Computing outputs…', 'Calculando resultados…');
+  await new Promise(r => setTimeout(r, 20));          // let the note paint before the headless run
+  try {
+    const partial = await buildPartial();
+    const r = supersedesId ? await vault.supersede(supersedesId, partial) : await vault.saveRun(partial);
+    const noEns = !partial.outputs.production_forecast_p10_p50_p90;
+    if (r.queued) note('Queued locally — will sync when the Vault is reachable.', 'En cola local: se sincronizará cuando el Vault esté disponible.', 'warn');
+    else note('Saved to the Vault · ' + String(r.id).slice(0, 8) + (noEns ? ' · no ensemble' : ''), 'Guardado en el Vault · ' + String(r.id).slice(0, 8) + (noEns ? ' · sin ensamble' : ''), 'ok');
+    if ($('runsDrawer').classList.contains('open')) await refreshRuns();
+  } catch (e) {
+    note('Save failed: ' + e.message, 'No se pudo guardar: ' + e.message, 'warn');
+  } finally {
+    saving = false; if (btn) btn.disabled = false;
+  }
+}
+
+/* ── Runs drawer ───────────────────────────────────────────────────── */
+
+function fmt(n, d = 0){ return typeof n === 'number' && isFinite(n) ? n.toLocaleString('en-US', { maximumFractionDigits: d }) : '—'; }
+
+function renderRun(r){
+  const li = mk('li', 'run-item');
+  li.dataset.runId = r.id;
+  const t = document.createElement('div'); t.className = 'run-item-title'; t.textContent = r.title || r.id; li.append(t);
+  const meta = mk('div', 'run-item-meta');
+  const when = document.createElement('span'); when.textContent = String(r.created_at || '').slice(0, 16).replace('T', ' '); meta.append(when);
+  const st = document.createElement('span'); st.textContent = r.status || ''; meta.append(st);
+  if (r.tool_version){ const v = document.createElement('span'); v.textContent = 'v' + r.tool_version; meta.append(v); }
+  if (r.queued) meta.append(mk('span', 'run-tag queued', 'queued locally', 'en cola local'));
+  li.append(meta);
+  const np = r.outputs && r.outputs.cum_oil_np;
+  if (np && typeof np.value === 'number'){
+    const o = mk('div', 'run-item-out');
+    o.append(bi(document.createElement('span'), 'Np ', 'Np '), document.createTextNode(fmt(np.value) + ' ×10³ m³'));
+    li.append(o);
+  }
+  const acts = mk('div', 'run-item-actions');
+  const load = mk('button', 'io-btn', 'Load', 'Cargar'); load.type = 'button'; load.dataset.action = 'load';
+  load.addEventListener('click', () => loadRunIntoPage(r));
+  const sup = mk('button', 'io-btn', 'Supersede', 'Reemplazar'); sup.type = 'button'; sup.dataset.action = 'supersede';
+  if (r.status === 'superseded') sup.disabled = true;
+  sup.addEventListener('click', () => saveRunToVault(r.id));
+  acts.append(load, sup); li.append(acts);
+  return li;
+}
+
+async function refreshRuns(){
+  const list = $('runsList'), msg = $('runsMsg');
+  let runs = [];
+  try {
+    const q = { job: TOOL_ID }; if (currentProject) q.project = currentProject;
+    runs = await vault.listRuns(q);
+  } catch (e) {
+    bi(msg, 'Could not load runs from the Vault.', 'No se pudieron cargar las corridas del Vault.');
+  }
+  list.textContent = '';
+  if (!runs.length){
+    const li = mk('li', 'runs-empty', 'No saved runs yet. Use Save run to capture this scenario.', 'Aún no hay corridas guardadas. Use Guardar corrida para capturar este escenario.');
+    list.append(li);
+  } else {
+    runs.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).forEach(r => list.append(renderRun(r)));
+    msg.textContent = ''; msg.removeAttribute('data-en'); msg.removeAttribute('data-es');
+  }
+  const local = vault.mode() !== 'server' || runs.some(r => r.queued);
+  $('runsQueuedNote').style.display = local ? '' : 'none';
+}
+
+async function openDrawer(){
+  const d = $('runsDrawer');
+  d.classList.add('open'); d.setAttribute('aria-hidden', 'false');
+  await refreshRuns();
+}
+function closeDrawer(){ const d = $('runsDrawer'); d.classList.remove('open'); d.setAttribute('aria-hidden', 'true'); }
+
+async function loadRunIntoPage(r){
+  const msg = $('runsMsg');
+  try {
+    const full = r.params ? r : await vault.loadRun(r.id);
+    setParams(full.params);
+    loadedFromRun = full.id;
+    const again = run(getParams());
+    const same = (await vault.canonicalHash(again)) === (await vault.canonicalHash(full.outputs || {}));
+    if (same) bi(msg, 'Loaded. Re-run reproduces the saved outputs.', 'Cargada. La re-ejecución reproduce los resultados guardados.');
+    else bi(msg, 'Loaded. Outputs differ from the saved run (tool or inputs changed).', 'Cargada. Los resultados difieren de la corrida guardada (cambió la herramienta o las entradas).');
+    msg.dataset.reproduced = same ? 'true' : 'false';
+    const rb = $('runBtn');
+    if (rb && !rb.disabled && typeof runSimulation === 'function') runSimulation();
+  } catch (e) {
+    bi(msg, 'Could not load this run: ' + e.message, 'No se pudo cargar la corrida: ' + e.message);
+  }
+}
+
+/* ── wire up ───────────────────────────────────────────────────────── */
+
+function init(){
+  const bar = $('vaultBar'); if (!bar) return;
+  bar.style.display = 'flex';
+  $('saveRunBtn').addEventListener('click', () => saveRunToVault(null));
+  $('runsBtn').addEventListener('click', () => ($('runsDrawer').classList.contains('open') ? closeDrawer() : openDrawer()));
+  $('runsClose').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+  const mount = $('vaultProject');
+  mount.addEventListener('vault:project', e => {
+    currentProject = (e.detail && e.detail.projectId) || null;
+    if ($('runsDrawer').classList.contains('open')) refreshRuns();
+  });
+  vault.pickProject(mount).then(id => {
+    currentProject = id || null;
+    if ($('runsDrawer').classList.contains('open')) refreshRuns();
+  }).catch(() => {});
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 </script>
 </body>
 </html>

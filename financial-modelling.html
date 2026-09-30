@@ -181,6 +181,43 @@ tr.r-tot td{font-weight:700;color:var(--navy);border-bottom:none;border-top:2px 
 /* ════ FOOTER ════ */
 footer{font-size:11px;color:var(--steel);padding:8px 26px 0;line-height:1.5;}
 footer b{color:var(--navy);}
+/* ════ VAULT: DRAWER & RUNS (M05) ════ */
+.drawer{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:none;}
+.drawer.open{display:flex;}
+.drawer .scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);cursor:pointer;}
+.drawer .sheet{position:relative;background:var(--panel);border-left:1px solid var(--line);max-width:400px;margin-left:auto;display:flex;flex-direction:column;max-height:100vh;box-shadow:-8px 0 40px rgba(0,0,0,.3);}
+.drawer .sheet-head{border-bottom:1px solid var(--line);padding:18px 20px;flex:0;}
+.drawer .sheet-head div{margin-bottom:10px;}
+.drawer .sheet-head p{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);margin:0 0 6px;}
+.drawer .sheet-head h2{font-family:'Playfair Display',serif;font-size:22px;color:var(--navy);margin:0;}
+.drawer .sheet-tools{display:flex;gap:8px;}
+.drawer .xbtn{background:none;border:none;font-size:20px;color:var(--steel);cursor:pointer;padding:0;width:24px;height:24px;flex:none;}
+.drawer .xbtn:hover{color:var(--navy);}
+.drawer .sheet-body{flex:1;overflow-y:auto;padding:16px;font-size:13px;}
+.drawer .runs-note{background:var(--tint);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:4px;padding:10px 12px;margin:0 0 14px;font-size:12px;line-height:1.5;color:var(--navy);}
+.drawer .run-empty{color:var(--steel);margin:20px 0;text-align:center;font-size:12px;}
+.drawer .run-list{list-style:none;padding:0;margin:0;}
+.drawer .run{background:var(--tint);border:1px solid var(--line);border-radius:5px;padding:12px;margin-bottom:10px;font-size:12px;}
+.drawer .run-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px;}
+.drawer .run-top strong{color:var(--navy);font-weight:600;flex:1;}
+.drawer .run-top span{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}
+.drawer .badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:3px;font-weight:600;white-space:nowrap;}
+.drawer .badge.amber{background:#FBF6E9;color:#8C6E2F;border:1px solid #E8C96A;}
+.drawer .badge.draft{background:#FBF6E9;color:#8C6E2F;border:1px solid #E8C96A;}
+.drawer .badge.green{background:#E8F7F1;color:#1A7A4A;border:1px solid #1A7A4A;}
+.drawer .badge.steel{background:var(--tint);color:var(--steel);border:1px solid var(--line);}
+.drawer .run-meta{font-size:11px;color:var(--steel);margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px;}
+.drawer .run-out{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;padding:6px 0;}
+.drawer .run-out>div{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;}
+.drawer .run-out span{color:var(--steel);flex:1;}
+.drawer .run-out b{color:var(--navy);font-weight:600;text-align:right;font-variant-numeric:tabular-nums;}
+.drawer .run-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.drawer .run-actions .btn{font-size:11px;padding:5px 10px;border:1px solid var(--line);background:none;color:var(--navy);border-radius:3px;cursor:pointer;font-weight:500;}
+.drawer .run-actions .btn:hover{background:var(--panel);border-color:var(--navy);}
+.drawer .run-actions .btn.ghost{border-color:var(--steel);color:var(--steel);}
+.drawer .run-actions .btn.ghost:hover{border-color:var(--navy);color:var(--navy);}
+#projectPicker{display:inline-block;max-width:280px;}
+#projectPicker select{font-family:'Barlow',sans-serif;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--navy);width:100%;}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
@@ -686,7 +723,12 @@ body{padding-top:0;}
       <h1 class="ae-title">Upstream <em>Quick-Look</em> Financial Model</h1>
       <div class="ae-sub">Generic Contract Tool · PSC · R/T · CPP · Service Contract · ±10% Screening Accuracy</div>
     </div>
-    <div class="ae-chips" id="qlm-chips"></div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <div class="ae-chips" id="qlm-chips"></div>
+      <div id="projectPicker" style="display:none;"></div>
+      <button class="ae-btn primary" type="button" data-vact="save-run" id="saveRunBtn" data-en="Save run" data-es="Guardar ejecución" style="display:none;">Save run</button>
+      <button class="ae-btn" type="button" data-vact="open-runs" id="runsBtn" data-en="Runs" data-es="Ejecuciones" style="display:none;">Runs</button>
+    </div>
   </header>
 
   <!-- License / access banner -->
@@ -2026,6 +2068,26 @@ function resetAll(){
   }
 })();
 </script>
+
+<!-- ═══ VAULT: RUNS DRAWER ═══ -->
+<div class="drawer" id="runsDrawer" aria-hidden="true">
+  <div class="scrim" data-vact="close-runs"></div>
+  <aside class="sheet" role="dialog" aria-modal="true" aria-labelledby="runsTitle">
+    <div class="sheet-head">
+      <div><p id="runsMeta" data-en="Saved calculations for this project" data-es="Cálculos guardados de este proyecto">Saved calculations for this project</p>
+        <h2 id="runsTitle" data-en="Runs" data-es="Ejecuciones">Runs</h2></div>
+      <div class="sheet-tools">
+        <button class="xbtn" type="button" data-vact="close-runs" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="sheet-body">
+      <p class="runs-note" id="runsQueuedNote" hidden data-en="Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns." data-es="En cola local: el Vault no está disponible, así que las ejecuciones se guardan en este dispositivo y se sincronizan al volver.">Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns.</p>
+      <p class="run-empty" id="runsEmpty" hidden data-en="No runs saved for this project yet." data-es="Aún no hay ejecuciones guardadas para este proyecto.">No runs saved for this project yet.</p>
+      <ul class="run-list" id="runsList"></ul>
+    </div>
+  </aside>
+</div>
+
 </div>
 <footer class="footer">
   <div class="footer-grad"></div>
@@ -2072,6 +2134,256 @@ function resetAll(){
 </footer>
 
 <script src="main.js"></script>
+<script type="module">
+  // Vault client (M04/M05). If this import fails the page carries on as before.
+  import { vault } from './js/vault-client.js';
+  window.ATC_VAULT = vault;
+  window.dispatchEvent(new Event('atc-vault-ready'));
+</script>
+<script>
+/* ════ VAULT: ATC_TOOL INTERFACE & RUNS DRAWER (M05) ════ */
+(function(){
+'use strict';
+var TOOL_ID='financial-model';
+var vProject=null, runsSeq=0, runsCache={};
+var $ = function(id){return document.getElementById(id);};
+
+// Project metadata from /api/projects (in server mode)
+var projectMeta = {};
+var metaReady = Promise.resolve();
+
+// Window event to detect Vault readiness
+function onVault(fn){
+  if(window.ATC_VAULT){fn(window.ATC_VAULT);return;}
+  window.addEventListener('atc-vault-ready',function(){if(window.ATC_VAULT)fn(window.ATC_VAULT);});
+}
+
+// Format helpers
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function fmtInt(v){var n=Number(v);return isFinite(n)?n.toLocaleString('en-GB',{maximumFractionDigits:0}):String(v);}
+function fmt$(v){return typeof v==='number'?'$'+v.toFixed(1):String(v);}
+function bi(en,es){return '<span data-en="'+esc(en)+'" data-es="'+esc(es)+'">'+en+'</span>';}
+
+// Get current params from DOM (mirrors getParams from the main script)
+function getParams(){
+  return {
+    brent:+$('s-brent').value,
+    disc:+$('s-disc').value/100,
+    gaspr:+$('s-gaspr').value,
+    capexM:+$('s-capex').value,
+    opexM:+$('s-opex').value,
+    preFinRate:($('tog-prefin').checked ? +$('s-prefin').value/100 : null),
+    contractType:CONTRACT_TYPE,
+    cp:{...CONTRACT_P},
+    fields:FIELDS.map(f=>({id:f.id,type:f.type,color:f.color,active:f.active,name:f.name,plateau:f.plateau,rampYrs:f.rampYrs,platYrs:f.platYrs,capexTotal:f.capexTotal,opexPerUnit:f.opexPerUnit,qdiscount:f.qdiscount,capexProfile:f.capexProfile}))
+  };
+}
+
+// Set params to DOM
+function setParams(p){
+  if(!p)return;
+  $('s-brent').value=p.brent||70;$('s-disc').value=(p.disc||0.15)*100;$('s-gaspr').value=p.gaspr||3;
+  $('s-capex').value=p.capexM||1;$('s-opex').value=p.opexM||1;
+  if(p.preFinRate!==null){$('tog-prefin').checked=true;$('s-prefin').value=(p.preFinRate||0.1)*100;}
+  else{$('tog-prefin').checked=false;}
+  if(p.contractType){CONTRACT_TYPE=p.contractType;$('sel-contract').value=p.contractType;}
+  if(p.cp){CONTRACT_P={...p.cp};}
+  if(p.fields&&Array.isArray(p.fields)){
+    FIELDS=p.fields.slice();
+  }
+  renderFieldCards();document.querySelectorAll('input[type=range]').forEach(function(el){
+    try{var pct=100*((+el.value)-(+el.min))/((+el.max)-(+el.min));el.style.setProperty('--pct',pct+'%');}catch(e){}
+  });
+  vContractSliders();recalc();
+}
+
+// Build inputs and assumptions for the Run record
+function inputsFor(){
+  // Check if there are price_decks or fiscal_terms references; for now, just manual
+  return [{ref:'tool:'+TOOL_ID,kind:'manual'}];
+}
+
+function assumptionsFor(){
+  var out={};
+  // Brent, discount, gas price, etc. can be assumptions if not from a price deck
+  // For simplicity, mark the defaults as assumptions
+  return out;
+}
+
+// Wrap the run() function to capture outputs
+function runForCapture(){
+  if(!LAST)return {};
+  var out={};
+  if(LAST.portNPV!==null && LAST.portNPV!==undefined){
+    out.npv10={value:LAST.portNPV,unit:'MMUSD'};
+  }
+  if(LAST.portIRR!==null && LAST.portIRR!==undefined){
+    out.irr={value:LAST.portIRR,unit:'fraction'};
+  }
+  if(LAST.portPayback!==null && LAST.portPayback!==undefined){
+    out.payback_year={value:LAST.portPayback,unit:'year'};
+  }
+  return out;
+}
+
+// ATC_TOOL interface
+window.ATC_TOOL={
+  id:TOOL_ID,
+  getParams:getParams,
+  setParams:setParams,
+  run:function(p){setParams(p||getParams());recalc();return runForCapture();},
+  getInputs:function(){return inputsFor();},
+  getAssumptions:function(){return assumptionsFor();}
+};
+
+// Legal tag from project metadata or fallback
+function legalTag(){
+  var m=projectMeta[vProject], t=m&&m.default_legal_tag;
+  return (typeof t==='string'&&/^lt-[a-z0-9-]{3,64}$/.test(t))?t:'lt-firm';
+}
+
+// Build the partial Run record for saveRun
+function partialFor(){
+  return {job:TOOL_ID,project_id:vProject||'firm',legal_tag:legalTag(),asset_ids:[],
+    inputs:inputsFor(),assumptions:assumptionsFor(),params:getParams(),outputs:runForCapture(),
+    status:'draft',title:'Portfolio · '+CONTRACT_TYPE.toUpperCase()};
+}
+
+// Capture and save the current run
+function captureRun(){
+  var vault=vaultOf();
+  if(!vault)return Promise.resolve(null);
+  var outputs=runForCapture();
+  if(!Object.keys(outputs).length){return Promise.resolve(null);}
+  return metaReady.then(function(){return vault.saveRun(partialFor(),{toolId:TOOL_ID});})
+    .then(function(res){
+      if(runsOpen())refreshRuns();
+      return res;
+    })
+    .catch(function(e){return null;});
+}
+
+// Drawer state
+function runsOpen(){return $('#runsDrawer').classList.contains('open');}
+function openRuns(){
+  var d=$('runsDrawer'); d.classList.add('open'); d.setAttribute('aria-hidden','false');
+  refreshRuns();
+  setTimeout(function(){var b=$('runsDrawer').querySelector('.xbtn');if(b)b.focus({preventScroll:true});},60);
+}
+function closeRuns(){var d=$('runsDrawer'); d.classList.remove('open'); d.setAttribute('aria-hidden','true');}
+
+// Format and render runs
+function runRow(r){
+  var when=r.created_at?new Date(r.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'–';
+  var st=r.status||'draft', cls=st==='final'||st==='reviewed'?'green':st==='superseded'?'steel':'amber';
+  var outs=r.outputs||{};
+  var cells=Object.keys(outs).filter(function(k){return outs[k]&&outs[k].value!=null;}).map(function(k){
+    var v=outs[k];
+    return '<div><span>'+k+'</span><b>'+esc(fmtInt(v.value)+(v.unit?' '+v.unit:''))+'</b></div>';
+  }).join('');
+  return '<li class="run" data-run="'+esc(r.id)+'">'
+    +'<div class="run-top"><strong>'+esc(r.title||r.job||'Run')+'</strong><span>'
+    +(r.queued?'<span class="badge amber">'+bi('queued locally','en cola local')+'</span> ':'')
+    +'<span class="badge '+cls+'">'+esc(st)+'</span></span></div>'
+    +'<div class="run-meta">'+esc(when)+' · '+esc(r.author||'–')+' · '+(r.tool_version?'v'+esc(r.tool_version):'v–')+'</div>'
+    +(cells?'<div class="run-out">'+cells+'</div>':'')
+    +'<div class="run-actions">'
+    +'<button class="btn" type="button" data-vact="run-load" data-id="'+esc(r.id)+'">'+bi('Load','Cargar')+'</button>'
+    +(st==='superseded'?'':'<button class="btn ghost" type="button" data-vact="run-supersede" data-id="'+esc(r.id)+'">'+bi('Supersede','Reemplazar')+'</button>')
+    +'</div></li>';
+}
+
+function refreshRuns(){
+  var vault=vaultOf(), list=$('runsList'), note=$('runsQueuedNote'), empty=$('runsEmpty'), mine=++runsSeq;
+  if(!vault){list.innerHTML='';empty.hidden=true;note.hidden=false;return Promise.resolve([]);}
+  return vault.listRuns({project:vProject||'firm',job:TOOL_ID}).then(function(runs){
+    if(mine!==runsSeq)return runs;
+    runs=(runs||[]).slice().sort(function(a,b){return String(b.created_at).localeCompare(String(a.created_at));});
+    runsCache={}; runs.forEach(function(r){runsCache[r.id]=r;});
+    list.innerHTML=runs.map(runRow).join('');
+    empty.hidden=runs.length>0;
+    note.hidden=!(vault.mode()!=='server'||runs.some(function(r){return r.queued;}));
+    return runs;
+  }).catch(function(e){
+    if(mine!==runsSeq)return [];
+    list.innerHTML='<li class="run">'+esc('The runs could not be listed: '+((e&&e.message)||e))+'</li>';
+    empty.hidden=true; note.hidden=vault.mode()==='server';
+    return [];
+  });
+}
+
+function loadRunAction(id){
+  var vault=vaultOf(); if(!vault)return;
+  vault.loadRun(id).then(function(rec){
+    setParams(rec.params);
+    closeRuns();
+  }).catch(function(e){});
+}
+
+function supersedeAction(id){
+  var vault=vaultOf(); if(!vault)return;
+  var outputs=runForCapture();
+  if(!Object.keys(outputs).length)return;
+  metaReady.then(function(){return vault.supersede(id,partialFor(),{toolId:TOOL_ID});})
+    .then(function(res){return refreshRuns();})
+    .catch(function(e){});
+}
+
+function loadProjectMeta(vault){
+  if(vault.mode()!=='server')return Promise.resolve();
+  return fetch('/api/projects',{cache:'no-store',headers:{accept:'application/json'}})
+    .then(function(r){return r.ok?r.json():[];})
+    .then(function(b){
+      (Array.isArray(b)?b:(b&&b.projects)||[]).forEach(function(pr){if(pr&&pr.id!=null)projectMeta[String(pr.id)]=pr;});
+    }).catch(function(){});
+}
+
+function vaultOf(){return window.ATC_VAULT;}
+
+function wireVault(){
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('[data-vact]'); if(!b)return;
+    var a=b.getAttribute('data-vact');
+    if(a==='open-runs')openRuns();
+    else if(a==='close-runs')closeRuns();
+    else if(a==='save-run')captureRun();
+    else if(a==='run-load')loadRunAction(b.getAttribute('data-id'));
+    else if(a==='run-supersede')supersedeAction(b.getAttribute('data-id'));
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&runsOpen())closeRuns();});
+}
+
+function initVault(){
+  onVault(function(vault){
+    var el=$('projectPicker');
+    if(el){
+      metaReady=vault.pickProject(el).then(function(id){
+        // Shown in both modes: in local mode saves queue in the browser and
+        // sync when the Vault is reachable (see js/vault-client.js).
+        el.style.display='';
+        $('saveRunBtn').style.display='';
+        $('runsBtn').style.display='';
+        vProject=id||'firm';
+        return loadProjectMeta(vault);
+      }).catch(function(){});
+      el.addEventListener('vault:project',function(e){
+        vProject=(e.detail&&e.detail.projectId)||'firm';
+        if(runsOpen())refreshRuns();
+      });
+    }
+    vault.resolve(TOOL_ID).catch(function(){});
+  });
+}
+
+// Initialize on DOM ready
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',function(){wireVault();initVault();});
+} else {
+  wireVault();initVault();
+}
+
+})();
+</script>
 <script>
 /* ════ APEX IMPORT READER ════ */
 (function(){

@@ -190,6 +190,45 @@
   #alpha-ela .ae-tabpanel:first-of-type{page-break-before:auto;}
   #alpha-ela .ae-card,#alpha-ela .ae-kpi,#alpha-ela .ae-fcard{break-inside:avoid;}
 }
+/* ─── Vault: project picker, version badge, Runs drawer (js/ela-model-suite-bridge.js) ─── */
+#alpha-ela .ae-tools{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;justify-content:flex-end;}
+#alpha-ela .ae-tools[hidden],#alpha-ela .ae-toolver[hidden],#alpha-ela .ae-runs-note[hidden],#alpha-ela .ae-run-empty[hidden]{display:none;}
+#alpha-ela .ae-toolver{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.07em;border:1px solid rgba(201,168,76,.4);border-radius:12px;padding:2px 10px;color:var(--gold);}
+#alpha-ela #projectPicker select{max-width:170px;border-radius:4px!important;border:1px solid rgba(201,168,76,.4)!important;background:var(--navy2)!important;color:#D6DEE9!important;font-family:'Barlow',sans-serif!important;font-size:13px!important;padding:6px 9px!important;}
+#alpha-ela .ae-tools .ae-btn{color:var(--cream);border-color:rgba(201,168,76,.55);}
+#alpha-ela .ae-tools .ae-btn:hover{border-color:var(--gold);color:var(--gold);}
+#alpha-ela .ae-drawer{position:fixed;inset:0;z-index:9000;pointer-events:none;}
+#alpha-ela .ae-drawer.open{pointer-events:auto;}
+#alpha-ela .ae-scrim{position:absolute;inset:0;background:rgba(11,31,58,.5);opacity:0;transition:opacity .2s;}
+#alpha-ela .ae-drawer.open .ae-scrim{opacity:1;}
+#alpha-ela .ae-sheet{position:absolute;right:0;top:0;height:100%;width:min(560px,100%);background:var(--panel);border-left:3px solid var(--gold);box-shadow:-20px 0 60px rgba(11,31,58,.28);transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column;}
+#alpha-ela .ae-drawer.open .ae-sheet{transform:none;}
+#alpha-ela .ae-sheet-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;align-items:flex-start;}
+#alpha-ela .ae-sheet-head p{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);}
+#alpha-ela .ae-sheet-head h2{margin:3px 0 0;font-family:'Playfair Display',serif;font-size:24px;font-weight:600;color:var(--navy);line-height:1.15;}
+#alpha-ela .ae-sheet-body{padding:18px 22px 40px;overflow:auto;}
+#alpha-ela .ae-xbtn{background:none;border:0;font-size:26px;line-height:1;color:var(--steel);cursor:pointer;padding:0 4px;}
+#alpha-ela .ae-xbtn:hover{color:var(--red);}
+#alpha-ela .ae-runs-note{margin:0 0 14px;padding:9px 12px;border:1px solid #E6D9AE;border-left:4px solid var(--gold);background:var(--tint);color:var(--bronze);border-radius:4px;font-size:12.5px;}
+#alpha-ela .ae-run-empty{color:var(--steel);font-size:13px;margin:0 0 12px;}
+#alpha-ela .ae-run-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+#alpha-ela .ae-run{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:11px 13px;}
+#alpha-ela .ae-run-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+#alpha-ela .ae-run-top strong{font-weight:600;color:var(--navy);}
+#alpha-ela .ae-run-meta{font-size:11.5px;color:var(--steel);margin-top:3px;}
+#alpha-ela .ae-run-out{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:9px;}
+@media(max-width:520px){#alpha-ela .ae-run-out{grid-template-columns:1fr 1fr;}}
+#alpha-ela .ae-run-out div{background:var(--navy);color:#fff;border-radius:4px;padding:6px 9px;}
+#alpha-ela .ae-run-out span{display:block;color:#A9B6C7;font-size:11px;}
+#alpha-ela .ae-run-out b{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--gold);font-variant-numeric:tabular-nums;}
+#alpha-ela .ae-run-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+#alpha-ela .ae-run-actions .ae-btn.solid{background:var(--navy);border-color:var(--navy);color:var(--gold);}
+#alpha-ela .ae-rbadge{display:inline-block;border-radius:3px;padding:2px 7px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;font-size:10.5px;font-weight:700;white-space:nowrap;}
+#alpha-ela .ae-rbadge.green{background:#E3EEE6;color:#2F6B45;} #alpha-ela .ae-rbadge.amber{background:var(--tint);color:var(--bronze);} #alpha-ela .ae-rbadge.steel{background:var(--grid);color:var(--steel);}
+#alpha-ela .ae-toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,30px);opacity:0;background:var(--gold);color:var(--navy);padding:10px 16px;border-radius:4px;font-weight:600;font-size:13px;z-index:9100;transition:.25s;pointer-events:none;max-width:calc(100% - 32px);}
+#alpha-ela .ae-toast.show{opacity:1;transform:translate(-50%,0);}
+@media(prefers-reduced-motion:reduce){#alpha-ela .ae-sheet,#alpha-ela .ae-scrim,#alpha-ela .ae-toast{transition:none;}}
+@media print{#alpha-ela .ae-tools,#alpha-ela .ae-drawer,#alpha-ela .ae-toast{display:none!important;}}
 </style>
 </head>
 <body style="margin:0;background:#F8F5EE;">
@@ -202,6 +241,12 @@
       <div class="ae-sub">New Hydrocarbon Law (Jan 2026) · Phase-1 Best-First Integrated Model Suite · AICO-Linked</div>
     </div>
     <div class="ae-chips" id="ae-chips"></div>
+    <div class="ae-tools" id="ae-tools" hidden>
+      <span class="ae-toolver" id="toolVer" hidden></span>
+      <span id="projectPicker" title="Project the saved runs belong to"></span>
+      <button class="ae-btn" id="saveBtn" type="button" data-vact="save-run" title="Save this case and record a run" data-en="Save" data-es="Guardar">Save</button>
+      <button class="ae-btn" id="runsBtn" type="button" data-vact="open-runs" data-en="Runs" data-es="Ejecuciones">Runs</button>
+    </div>
   </header>
 
   <div id="ae-errbanner"></div>
@@ -400,6 +445,24 @@
   </div>
 
   <div class="ae-tip" id="ae-tip"></div>
+
+  <!-- ═══ RUNS DRAWER (Vault) ═══ -->
+  <div class="ae-drawer" id="runsDrawer" aria-hidden="true">
+    <div class="ae-scrim" data-vact="close-runs"></div>
+    <aside class="ae-sheet" role="dialog" aria-modal="true" aria-labelledby="runsTitle">
+      <div class="ae-sheet-head">
+        <div><p id="runsMeta" data-en="Saved calculations for this project" data-es="Cálculos guardados de este proyecto">Saved calculations for this project</p>
+          <h2 id="runsTitle" data-en="Runs" data-es="Ejecuciones">Runs</h2></div>
+        <button class="ae-xbtn" type="button" data-vact="close-runs" aria-label="Close">×</button>
+      </div>
+      <div class="ae-sheet-body">
+        <p class="ae-runs-note" id="runsQueuedNote" hidden data-en="Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns." data-es="En cola local: el Vault no está disponible, así que las ejecuciones se guardan en este dispositivo y se sincronizan al volver.">Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns.</p>
+        <p class="ae-run-empty" id="runsEmpty" hidden data-en="No runs saved for this project yet. Press Save to capture one." data-es="Aún no hay ejecuciones guardadas para este proyecto. Pulse Guardar para capturar una.">No runs saved for this project yet. Press Save to capture one.</p>
+        <ul class="ae-run-list" id="runsList"></ul>
+      </div>
+    </aside>
+  </div>
+  <div class="ae-toast" id="toast" role="status" aria-live="polite"></div>
 
   <footer>
     <b>Disclaimer:</b> "New Hydrocarbon Law January 2026" refers to the regime as described by Alpha Energy Latin America management. Terms should be verified against the official MINHIDROCARBUROS gazette and legal counsel opinion prior to any investment commitment. OFAC General Licence applicability requires separate legal review. Production forecasts are internal estimates; not independently audited. Lagunillas 2026–27 production and 2026 CAPEX ($47.1M) are AICO actuals (AICO_Occidente_mod2.xlsx). OPEX follows the licence two-tier basis — $4.00/bbl on the government's declining baseline, full field rate on incremental barrels — so the AICO restart-OPEX figures ($217.0M / $207.4M) are superseded by this basis and no longer drive the cash flow. Remaining fields use steady-state model estimates pending AICO budgets. Trevi gas treated as Phase-2-dependent.
@@ -1122,7 +1185,7 @@ function renderAll(){
 }
 function syncAll(rebuildLedger){
   if(rebuildLedger)renderLedger();
-  renderAll();saveOv();vPersist();
+  renderAll();(window.AlphaELA?window.AlphaELA.saveOv:saveOv)();vPersist();
 }
 
 /* tabs are CSS-only (radio :checked) — no JS wiring required, so navigation
@@ -1207,6 +1270,80 @@ document.getElementById('alpha-ela').addEventListener('mousemove',e=>{
 document.getElementById('alpha-ela').addEventListener('mouseleave',()=>{tip.style.display='none';});
 
 /* ════════════════════════════════════════════════════════════════════════
+   6b. ATC SURFACE (M05) — lets js/ela-model-suite-bridge.js read, apply and
+   compute a state headlessly. It only calls the functions above; no formula,
+   element id or storage behaviour is changed. State = {ov, src, case}.
+   ════════════════════════════════════════════════════════════════════════ */
+const jclone=o=>JSON.parse(JSON.stringify(o));
+const CASE_NUM=['brent','capex','opex','disc','gas','prefin'];
+function normOv(rawOv,rawSrc){
+  const ov=emptyOv(),src=emptyOv();
+  for(const f of FIELDS)for(const c of ['prod','capex','opex']){
+    const a=rawOv&&rawOv[f.id]&&rawOv[f.id][c];if(!a||typeof a!=='object')continue;
+    for(const y in a){
+      const raw=a[y],v=Number(raw),yy=Number(y);
+      if(raw===null||raw===''||typeof raw==='boolean'||!isFinite(v)||v<0||!Number.isInteger(yy)||yy<2025||yy>2044)continue;
+      ov[f.id][c][yy]=v;
+      const sv=rawSrc&&rawSrc[f.id]&&rawSrc[f.id][c]&&rawSrc[f.id][c][y];
+      src[f.id][c][yy]=sv==null?'':String(sv);
+    }
+  }
+  return {ov,src};
+}
+function normCase(c){
+  const o=jclone(BASE);
+  if(c&&typeof c==='object'){
+    for(const k of CASE_NUM)if(c[k]!==undefined&&c[k]!==null&&c[k]!==''&&isFinite(Number(c[k])))o[k]=Number(c[k]);
+    for(const k of ['ph1b','ph2','ph3'])if(c[k]!==undefined)o[k]=!!c[k];
+    if(c.on&&typeof c.on==='object')for(const id in o.on)if(c.on[id]!==undefined)o.on[id]=!!c.on[id];
+  }
+  return o;
+}
+function presetOf(c){
+  for(const k in PRESETS){const ps=PRESETS[k];
+    if(Math.abs(c.brent-ps.brent)<1e-9&&Math.abs(c.capex-ps.capex)<1e-9&&Math.abs(c.opex-ps.opex)<1e-9&&Math.abs(c.disc*100-ps.disc)<1e-9&&Math.abs(c.prefin*100-ps.prefin)<1e-9)return k;}
+  return null;
+}
+const PRESET_NAME={base:'Base $70',cons:'Conservative $55',stress:'Stress $40',up:'Upside $90'};
+function caseName(c){
+  c=normCase(c);
+  const ps=presetOf(c);
+  const ph=c.ph2?(c.ph3?'Ph1+2+3':'Ph1+2'):(c.ph1b?'Ph1a+1b':'Ph1a only');
+  return (ps?PRESET_NAME[ps]:'Custom · Brent $'+c.brent)+' · '+ph;
+}
+function getState(){return {ov:jclone(OV),src:jclone(SRC),case:jclone(P)};}
+function setState(st){
+  const n=normOv(st&&st.ov,st&&st.src);OV=n.ov;SRC=n.src;
+  Object.assign(P,normCase(st&&st.case));
+  const put=(sid,oid,val,txt)=>{$(sid).value=val;$(oid).textContent=txt;};
+  put('s-brent','o-brent',P.brent,'$'+P.brent);
+  put('s-capex','o-capex',P.capex,P.capex.toFixed(2)+'×');
+  put('s-opex','o-opex',P.opex,P.opex.toFixed(2)+'×');
+  put('s-disc','o-disc',+(P.disc*100).toFixed(6),(P.disc*100).toFixed(1)+'%');
+  put('s-gas','o-gas',P.gas,'$'+P.gas.toFixed(2));
+  put('s-prefin','o-prefin',+(P.prefin*100).toFixed(6),(P.prefin*100).toFixed(1)+'%');
+  SLIDERS.forEach(([sid])=>paintRange($(sid)));
+  $('t-ph1b').checked=P.ph1b;$('t-ph2').checked=P.ph2;$('t-ph3').checked=P.ph3;
+  ft.querySelectorAll('input').forEach(i=>{i.checked=!!P.on[i.dataset.fid];});
+  const ps=presetOf(P);
+  if(ps){
+    $('ae-presnote').textContent=PRESETS[ps].note;
+    document.querySelectorAll('#alpha-ela .ae-preset').forEach(x=>x.classList.toggle('ae-on',x.dataset.ps===ps));
+  }else clearPreset();
+  renderAll();
+}
+/* Pure: swaps the override set in for the duration of one runModel call, touches no DOM. */
+function computeState(st){
+  const n=normOv(st&&st.ov,st&&st.src),c=normCase(st&&st.case),keep=OV;
+  OV=n.ov;
+  try{return runModel(c);}finally{OV=keep;}
+}
+function modelDefaults(){
+  return {base:jclone(BASE),fields:jclone(FIELDS),royalty:ROYALTY,decline:DECLINE,govtOpex:GOVT_OPEX,ov:aicoDefaults()};
+}
+window.AlphaELA={saveOv,getState,setState,compute:computeState,caseName,defaults:modelDefaults,years:YEARS.slice()};
+
+/* ════════════════════════════════════════════════════════════════════════
    7. BOOT
    ════════════════════════════════════════════════════════════════════════ */
 vRegime();
@@ -1220,5 +1357,7 @@ renderAll();
 }
 })();
 </script>
+<!-- The ?v token is the tool version this page was built for (tools/ela-model-suite/tool.json aliases.current); the badge shows it when the Vault cannot say otherwise. -->
+<script type="module" src="js/ela-model-suite-bridge.js?v=2.0.2"></script>
 </body>
 </html>

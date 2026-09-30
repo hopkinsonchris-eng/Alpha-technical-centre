@@ -1,0 +1,12 @@
+{
+  "id": "lt-frontera-nda-2026",
+  "classification": "client-nda",
+  "data_type": "second-party",
+  "client_id": "frontera",
+  "contract_id": "NDA-2026-02",
+  "originator": "Frontera Energy",
+  "expires_at": "2027-03-31",
+  "country_of_origin": [
+    "CO"
+  ]
+}

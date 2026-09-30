@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find — Alpha Technical Centre</title>
+<meta name="description" content="Scope-aware search across runs, documents, correspondence, papers and lessons in the Vault.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="hub.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+/* Find page (M12). Page-local layout on the Hub tokens from hub.css. */
+.find-box { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 400px) auto; gap: 10px; align-items: end; padding: 20px; }
+.find-field label { display: block; font-family: var(--font-label); font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.find-field label .req { color: var(--gold-ink); }
+.find-input { display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px; background: var(--white); border: 1.5px solid var(--navy); border-radius: var(--r); }
+.find-input:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.3); }
+.find-input input { flex: 1; min-width: 0; border: none; outline: none !important; background: none; font: inherit; font-size: 16px; color: var(--navy); }
+.find-input input::placeholder { color: var(--muted); }
+.find-scope { width: 100%; height: 42px; padding: 0 10px; font: inherit; font-size: 14px; color: var(--navy); background: var(--white); border: 1.5px solid var(--rule); border-radius: var(--r); }
+.find-scope[aria-invalid="true"] { border-color: var(--bad); background: var(--bad-bg); }
+.find-go { height: 42px; padding: 0 20px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.find-pred { max-width: none; margin: 0 20px 20px; padding: 8px 12px; border: 1px dashed var(--gold); border-radius: var(--r); font-size: 12.5px; color: var(--navy-mid); background: var(--white); }
+.find-pred code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; color: var(--navy); }
+.find-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 18px 0 12px; }
+.find-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.find-chip { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font: inherit; font-size: 12.5px; color: var(--navy-mid); background: var(--white); border: 1px solid var(--rule); border-radius: 999px; padding: 3px 12px; }
+.find-chip:hover { border-color: var(--gold); color: var(--navy); }
+.find-chip[aria-pressed="true"] { background: var(--navy); color: var(--white); border-color: var(--navy); }
+.find-chip .n { font-size: 11px; opacity: .85; }
+.find-date { display: flex; align-items: center; gap: 8px; }
+.find-date label { font-family: var(--font-label); font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+.find-date select { height: 34px; padding: 0 8px; font: inherit; font-size: 13.5px; color: var(--navy); background: var(--white); border: 1px solid var(--rule); border-radius: var(--r); }
+.find-who { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid #ECEEF1; background: #FCFBF7; }
+.find-who .label { margin: 0; color: var(--muted); }
+.find-who-chip { display: inline-flex; align-items: center; gap: 8px; padding: 2px 12px 2px 3px; background: var(--white); border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; color: var(--navy); }
+.find-who-chip small { color: var(--muted); font-size: 11.5px; }
+.find-av { width: 26px; height: 26px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--navy); color: var(--gold-light); border: 2px solid var(--white); font-family: var(--font-label); font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+.find-av-stack { display: inline-flex; }
+.find-av-stack .find-av + .find-av { margin-left: -4px; }
+.find-count { font-size: 13.5px; color: var(--navy); }
+.find-list { list-style: none; margin: 0; padding: 0; }
+.result { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #ECEEF1; }
+.result:last-child { border-bottom: none; }
+.result:hover { background: #FCFBF7; }
+.r-ico { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--rule); background: var(--cream); color: var(--navy); }
+.r-ico .hub-ic { width: 18px; height: 18px; }
+.r-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; line-height: 1.3; color: var(--navy); overflow-wrap: anywhere; }
+.r-title a { color: inherit; text-decoration: none; }
+.r-title a:hover { color: var(--gold-ink); text-decoration: underline; text-decoration-color: var(--gold); }
+.snip { font-size: 13.5px; color: var(--navy-mid); margin-top: 4px; max-width: 88ch; overflow-wrap: anywhere; }
+mark { background: #F6E7A8; color: var(--navy); border-radius: 2px; padding: 0 1px; }
+.path { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
+.r-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.r-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 120px; font-size: 12.5px; color: var(--muted); }
+.r-side .label { margin-bottom: 3px; text-align: right; color: var(--muted); }
+.find-state { padding: 36px 20px; text-align: center; color: var(--muted); font-size: 13.5px; }
+.find-state b { display: block; color: var(--navy); font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 4px; }
+@media (max-width: 1100px) { .find-box { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) auto; } }
+@media (max-width: 720px) {
+  .find-box { grid-template-columns: 1fr; }
+  .result { grid-template-columns: 36px minmax(0, 1fr); }
+  .r-side { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; }
+}
+</style>
+</head>
+<body class="hub" data-page="find">
+
+<a class="skip-link" href="#main" data-en="Skip to content" data-es="Saltar al contenido">Skip to content</a>
+
+<div class="hub-app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="hub-side">
+    <a class="nav-logo hub-brand" href="index.html" aria-label="Alpha Technical Centre Hub">
+      <span class="nav-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
+          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
+        </svg>
+      </span>
+      <span class="nav-wordmark">
+        <span class="nav-wordmark-main">Alpha</span>
+        <span class="nav-wordmark-sub">Technical Centre · Hub</span>
+      </span>
+    </a>
+
+    <div class="hub-me" id="me" aria-live="polite">
+      <span class="hub-av off" id="me-av" aria-hidden="true">·</span>
+      <span>
+        <span class="hub-me-name" id="me-name" data-en="Checking session…" data-es="Comprobando sesión…">Checking session…</span>
+        <span class="hub-me-role" id="me-role"></span>
+      </span>
+    </div>
+
+    <nav aria-label="Hub">
+      <span class="hub-nav-group" data-en="Work" data-es="Trabajo">Work</span>
+      <div class="hub-nav">
+        <a href="index.html">
+          <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span data-en="Today" data-es="Hoy">Today</span>
+        </a>
+        <a href="search.html" aria-current="page">
+          <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <span data-en="Find" data-es="Buscar">Find</span>
+        </a>
+      </div>
+      <span class="hub-nav-group" data-en="Firm" data-es="Firma">Firm</span>
+      <div class="hub-nav">
+        <a href="settings.html">
+          <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          <span data-en="Settings" data-es="Ajustes">Settings</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="nav-lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+
+    <div class="hub-side-foot">
+      <span class="hub-dot off" id="vault-dot" aria-hidden="true"></span><span id="vault-state" data-en="Vault not checked" data-es="Vault sin comprobar">Vault not checked</span>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="hub-main">
+    <header class="hub-top">
+      <span class="hub-crumb"><a href="index.html" data-en="Hub" data-es="Hub">Hub</a> / <b data-en="Find" data-es="Buscar">Find</b></span>
+    </header>
+
+    <main class="hub-content" id="main">
+      <div id="notices" role="status"></div>
+
+      <div class="hub-head">
+        <div>
+          <span class="label" data-en="Find" data-es="Buscar">Find</span>
+          <h1 data-en="Search the <em>Vault</em>" data-es="Buscar en el <em>Vault</em>">Search the <em>Vault</em></h1>
+          <p class="hub-sub" data-en="Every search runs inside a scope. Nothing outside the scope, or past its legal tag's expiry, is ever returned." data-es="Toda búsqueda se ejecuta dentro de un alcance. Nunca se devuelve nada fuera del alcance ni con la etiqueta legal vencida.">Every search runs inside a scope. Nothing outside the scope, or past its legal tag's expiry, is ever returned.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 18px">
+        <form class="find-box" id="find-form" role="search" autocomplete="off" novalidate>
+          <div class="find-field">
+            <label for="find-q" data-en="Query" data-es="Consulta">Query</label>
+            <div class="find-input">
+              <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input id="find-q" name="q" type="search" data-en-ph="e.g. waterflood voidage, royalty, PVT" data-es-ph="p. ej. voidage de inyección, regalías, PVT" placeholder="e.g. waterflood voidage, royalty, PVT">
+            </div>
+          </div>
+          <div class="find-field">
+            <label for="find-scope"><span data-en="Scope" data-es="Alcance">Scope</span> <span class="req" data-en="(required)" data-es="(obligatorio)">(required)</span></label>
+            <select class="find-scope" id="find-scope" name="scope" aria-describedby="scope-pred" required>
+              <option value="" data-en="Choose a scope…" data-es="Elija un alcance…">Choose a scope…</option>
+            </select>
+          </div>
+          <button class="btn btn-primary find-go" type="submit"><span data-en="Find" data-es="Buscar">Find</span></button>
+        </form>
+        <p class="find-pred" id="scope-pred"></p>
+      </div>
+
+      <div class="find-bar">
+        <div class="find-chips" id="find-types" role="group" aria-label="Filter by type" hidden></div>
+        <div class="find-date" id="find-date-wrap" hidden>
+          <label for="find-date" data-en="Date" data-es="Fecha">Date</label>
+          <select id="find-date">
+            <option value="any" data-en="Any time" data-es="Cualquier fecha">Any time</option>
+            <option value="30" data-en="Last 30 days" data-es="Últimos 30 días">Last 30 days</option>
+            <option value="120" data-en="Last 4 months" data-es="Últimos 4 meses">Last 4 months</option>
+            <option value="365" data-en="Last 12 months" data-es="Últimos 12 meses">Last 12 months</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card" id="results-card">
+        <div class="hub-card-head">
+          <div class="find-count" id="find-count" role="status" aria-live="polite"></div>
+          <span class="hub-muted" style="font-size:12.5px" data-en="hybrid search + rerank · every retrieval is logged" data-es="búsqueda híbrida + reordenación · cada consulta queda registrada">hybrid search + rerank · every retrieval is logged</span>
+        </div>
+        <div class="find-who" id="find-who" hidden></div>
+        <div id="find-results"></div>
+      </div>
+
+      <p class="hub-foot" data-en="Internal · Strictly confidential" data-es="Interno · Estrictamente confidencial">Internal · Strictly confidential</p>
+    </main>
+  </div>
+</div>
+
+<script src="../main.js"></script>
+<script type="module" src="search.js"></script>
+</body>
+</html>

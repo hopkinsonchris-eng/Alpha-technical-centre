@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ATC Hub · Mockups</title>
+<meta name="description" content="Clickable mockup of the Alpha Technical Centre staff dashboard (ATC Hub). Seeded data, not connected to the Vault.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%230B1F3A'/%3E%3Cpath d='M12 4 L18 19 L14.5 19 L12 12.5 L9.5 19 L6 19 Z' fill='%23C9A84C'/%3E%3C/svg%3E">
+<style>
+/* Same font import as style.css (the only external resource) */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap');
+
+:root{
+  --navy:#0B1F3A; --navy-mid:#132845; --gold:#C9A84C; --gold-light:#E8C96A;
+  --cream:#F8F5EE; --white:#fff; --steel:#6B7A8D; --rule:#D8DCE2; --summa-red:#C0392B;
+  --ok:#2E7D5B; --ok-bg:#E6F2EC; --warn:#A8720F; --warn-bg:#FBF1DB; --bad:#C0392B; --bad-bg:#FBE9E6;
+  --info:#2F5D8A; --info-bg:#E6EEF7; --gold-bg:#F6EED6;
+  --font-display:'Playfair Display',Georgia,serif;
+  --font-body:'Barlow',system-ui,sans-serif;
+  --font-label:'Barlow Condensed',system-ui,sans-serif;
+  --r:6px; --r-lg:12px; --ease:cubic-bezier(.4,0,.2,1);
+  --side-w:248px;
+  --shadow:0 1px 2px rgba(11,31,58,.05),0 4px 14px rgba(11,31,58,.05);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--font-body);font-size:14.5px;line-height:1.5;color:var(--navy);background:var(--cream);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+ul{list-style:none}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4{font-family:var(--font-display);line-height:1.2;color:var(--navy)}
+h1{font-size:30px;font-weight:700}
+h2{font-size:21px;font-weight:600}
+h3{font-size:16.5px;font-weight:600}
+p{color:var(--navy-mid)}
+.label{font-family:var(--font-label);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.label.steel{color:var(--steel)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+.muted{color:var(--steel)}
+.num{font-variant-numeric:tabular-nums}
+.right{text-align:right}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+.ic.lg{width:20px;height:20px}
+
+/* ---------- Shell ---------- */
+.app{background:linear-gradient(to right,var(--navy) var(--side-w),transparent var(--side-w));display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);min-height:100vh}
+.side{background:var(--navy);color:#fff;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:20px 12px 14px;border-right:1px solid rgba(201,168,76,.18);overflow-y:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:2px 8px 18px}
+.brand-mark{width:38px;height:38px;border:1.5px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.brand-mark svg{width:19px;height:19px}
+.brand-text{font-family:var(--font-label);line-height:1.2}
+.brand-main{font-size:13.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff}
+.brand-sub{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.me{display:flex;align-items:center;gap:10px;padding:10px;margin:0 0 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg)}
+.me .av{width:34px;height:34px;font-size:13px;background:var(--gold);color:var(--navy)}
+.me-name{font-weight:600;font-size:14px;line-height:1.2}
+.me-role{font-family:var(--font-label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-light);opacity:.9}
+.nav-group{font-family:var(--font-label);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.4);padding:14px 10px 6px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--r);color:rgba(255,255,255,.78);font-family:var(--font-label);font-size:13px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;transition:color .2s,background .2s;position:relative}
+.nav a .ic{opacity:.8}
+.nav a:hover{color:var(--gold-light);background:rgba(201,168,76,.09)}
+.nav a.active{color:var(--gold);background:rgba(201,168,76,.13)}
+.nav a.active::before{content:"";position:absolute;left:-12px;top:7px;bottom:7px;width:3px;background:var(--gold);border-radius:0 3px 3px 0}
+.nav .count{margin-left:auto;background:var(--gold);color:var(--navy);font-size:11px;font-weight:700;letter-spacing:0;padding:0 7px;border-radius:999px;line-height:18px}
+.side-foot{margin-top:auto;padding:14px 8px 0;font-size:11.5px;color:rgba(255,255,255,.5);border-top:1px solid rgba(255,255,255,.08);line-height:1.5}
+.side-foot .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4CB58A;margin-right:6px}
+.main{min-width:0;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:56px;background:var(--white);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:18px;padding:0 36px;position:sticky;top:0;z-index:20}
+.crumb{font-family:var(--font-label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel)}
+.crumb b{color:var(--navy);font-weight:600}
+.top-search{margin-left:auto;display:flex;align-items:center;gap:8px;border:1px solid var(--rule);border-radius:999px;padding:0 6px 0 14px;height:34px;background:var(--cream);width:min(340px,38vw);transition:border-color .2s,box-shadow .2s}
+.top-search:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.18)}
+.top-search input{border:none;background:none;outline:none;flex:1;min-width:0;font-size:13.5px}
+.top-search .ic{color:var(--steel)}
+.kbd{font-family:var(--font-label);font-size:11px;border:1px solid var(--rule);border-radius:4px;padding:0 5px;color:var(--steel);background:#fff}
+.content{padding:28px 36px 24px;width:100%;max-width:1400px}
+.screen{display:none}
+.screen.on{display:block;animation:fade .25s var(--ease)}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px;flex-wrap:wrap}
+.page-head h1{margin-top:4px}
+.page-head .sub{margin-top:6px;color:var(--steel);max-width:70ch}
+.page-head h1 em{font-style:italic;color:var(--gold);font-weight:600}
+.mock-foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--rule);font-family:var(--font-label);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+.mock-foot span:last-child{text-transform:none;letter-spacing:.02em;font-family:var(--font-body);font-size:12px}
+
+/* ---------- Components ---------- */
+.card{background:var(--white);border:1px solid var(--rule);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+.card-pad{padding:18px 20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--rule)}
+.card-head h3{font-size:16px}
+.section{margin-top:30px}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.section-head .label{display:block;margin-bottom:2px}
+.grad-rule{height:3px;background:linear-gradient(90deg,#C9A84C 0%,#C0392B 50%,#0B1F3A 100%);border:none;width:100%;border-radius:2px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cols-2-1{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.cols-3-2{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-label);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:1px 9px;border-radius:999px;border:1px solid var(--rule);background:#fff;color:var(--steel);white-space:nowrap;line-height:18px}
+.pill .ic{width:12px;height:12px;vertical-align:-2px}
+.pill.ok{color:var(--ok);background:var(--ok-bg);border-color:#BFDCCD}
+.pill.warn{color:var(--warn);background:var(--warn-bg);border-color:#EBD6A3}
+.pill.bad{color:var(--bad);background:var(--bad-bg);border-color:#F0BDB6}
+.pill.info{color:var(--info);background:var(--info-bg);border-color:#BFD2E6}
+.pill.gold{color:#7A5F17;background:var(--gold-bg);border-color:#E3D08F}
+.pill.navy{color:#fff;background:var(--navy);border-color:var(--navy)}
+.pill.ghost{background:transparent}
+.pill.lt{text-transform:none;letter-spacing:.02em;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;font-weight:500;color:#7A5F17;background:var(--gold-bg);border-color:#E3D08F}
+.pill.new{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.stale-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-label);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--bad);background:var(--bad-bg);border:1px solid #F0BDB6;border-radius:4px;padding:0 7px;line-height:18px}
+.rag{display:inline-block;width:11px;height:11px;border-radius:50%;flex:none;vertical-align:middle;box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.rag.g{background:#2E9E6E}.rag.a{background:#E0A020}.rag.r{background:#C0392B}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);background:#fff;border-radius:999px;padding:2px 11px;font-size:12.5px;color:var(--navy-mid);cursor:pointer;transition:all .15s;font-family:var(--font-body)}
+.chip:hover{border-color:var(--gold);color:var(--navy)}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.chip.static{cursor:default}
+.chip.static:hover{border-color:var(--rule)}
+.asset-chip{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:var(--cream);border:1px solid var(--rule);border-radius:4px;padding:1px 8px;color:var(--navy-mid)}
+.av{width:24px;height:24px;border-radius:50%;background:var(--navy);color:var(--gold-light);font-family:var(--font-label);font-weight:700;font-size:11px;letter-spacing:.04em;display:inline-flex;align-items:center;justify-content:center;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px var(--rule)}
+.av.gs{background:#3E5B7A;color:#fff}.av.in{background:#2C6B63;color:#fff}.av.cm{background:#7A5C1E;color:#fff}.av.ext{background:#8A94A1;color:#fff}
+.av-stack{display:inline-flex}.av-stack .av+.av{margin-left:-7px}
+.who{white-space:nowrap;display:inline-flex;align-items:center;gap:7px;font-size:13px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-label);font-size:12.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;padding:8px 15px;border-radius:var(--r);border:1.5px solid transparent;transition:all .2s var(--ease);white-space:nowrap;line-height:1.2;background:none}
+.btn.sm{padding:5px 11px;font-size:11.5px}
+.btn-gold{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.btn-gold:hover{background:var(--gold-light);border-color:var(--gold-light);transform:translateY(-1px);box-shadow:0 4px 12px rgba(201,168,76,.35)}
+.btn-navy{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-navy:hover{background:var(--navy-mid);transform:translateY(-1px)}
+.btn-outline{border-color:var(--navy);color:var(--navy);background:#fff}
+.btn-outline:hover{background:var(--navy);color:#fff}
+.btn-ghost{color:var(--navy-mid);border-color:var(--rule);background:#fff}
+.btn-ghost:hover{border-color:var(--gold);color:var(--navy)}
+.btn-danger{color:var(--bad);border-color:#F0BDB6;background:#fff}
+.btn-danger:hover{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn-ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.btn-ok:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.link{color:var(--navy);border-bottom:1px solid var(--gold);cursor:pointer;transition:color .15s}
+.link:hover{color:#7A5F17}
+
+.tbl-wrap{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{font-family:var(--font-label);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);text-align:left;padding:9px 12px;border-bottom:1.5px solid var(--rule);background:#FBFAF6;white-space:nowrap;position:relative}
+.tbl th.sortable{cursor:pointer}
+.tbl th.sortable:hover{color:var(--navy)}
+.tbl td{padding:10px 12px;border-bottom:1px solid #ECEEF1;vertical-align:top}
+.tbl tbody tr{transition:background .12s}
+.tbl tbody tr:hover{background:#FCFBF7}
+.tbl tr.is-stale td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
+.tbl tr.sel{background:var(--gold-bg)!important}
+.tbl td.nowrap,.tbl td .nowrap{white-space:nowrap}
+.tbl .sub{display:block;font-size:12px;color:var(--steel)}
+.tbl-foot{padding:10px 20px;font-size:12.5px;color:var(--steel);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+.notice{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:var(--r-lg);border:1px solid;font-size:13.5px}
+.notice .ic{margin-top:2px}
+.notice.bad{background:var(--bad-bg);border-color:#F0BDB6;color:#7d2418}
+.notice.warn{background:var(--warn-bg);border-color:#EBD6A3;color:#5f4209}
+.notice.info{background:var(--info-bg);border-color:#BFD2E6;color:#1f4266}
+.notice.ok{background:var(--ok-bg);border-color:#BFDCCD;color:#1d5a40}
+.notice b{font-weight:600}
+.notice .grow{flex:1}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:28px 20px;color:var(--steel)}
+.empty .ic{width:28px;height:28px;color:var(--gold)}
+.empty b{color:var(--navy);font-family:var(--font-display);font-size:16px;font-weight:600}
+
+.bar{height:8px;border-radius:999px;background:#ECEEF1;overflow:hidden;position:relative}
+.bar>i{display:block;height:100%;border-radius:999px;background:var(--navy);transition:width .5s var(--ease)}
+.bar.gold>i{background:var(--gold)}
+.bar.ok>i{background:#2E9E6E}.bar.warn>i{background:#E0A020}.bar.bad>i{background:var(--bad)}
+.conf{display:flex;align-items:center;gap:8px;min-width:150px}
+.conf .bar{flex:1;height:7px}
+.conf .mark{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--navy);opacity:.55}
+
+.tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--rule);margin:22px 0 20px;overflow-x:auto}
+.tabs a{font-family:var(--font-label);font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);padding:10px 16px;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap;transition:color .15s;display:inline-flex;align-items:center;gap:8px}
+.tabs a:hover{color:var(--navy)}
+.tabs a.on{color:var(--navy);border-bottom-color:var(--gold)}
+.tabs a .n{font-size:11px;background:var(--cream);border:1px solid var(--rule);border-radius:999px;padding:0 7px;line-height:17px;color:var(--steel)}
+.tabs a .n.bad{background:var(--bad-bg);color:var(--bad);border-color:#F0BDB6}
+.tabpane{display:none}.tabpane.on{display:block}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:#fff;border:1px solid var(--rule);border-radius:var(--r-lg);padding:12px 16px}
+.kpi .k{font-family:var(--font-label);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--steel)}
+.kpi .v{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.25;color:var(--navy)}
+.kpi .d{font-size:12px;color:var(--steel)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:8px 14px;font-size:13.5px}
+.kv dt{font-family:var(--font-label);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--steel);padding-top:2px}
+.kv dd{color:var(--navy)}
+.delta.up{color:var(--ok);font-weight:600}.delta.dn{color:var(--bad);font-weight:600}.delta.flat{color:var(--steel)}
+mark{background:#F6E19A;color:inherit;padding:0 2px;border-radius:2px}
+
+/* Toast + modal */
+.toast-host{position:fixed;right:24px;bottom:24px;display:flex;flex-direction:column;gap:10px;z-index:200;pointer-events:none}
+.toast{background:var(--navy);color:#fff;border-left:4px solid var(--gold);border-radius:var(--r);padding:11px 16px;font-size:13.5px;box-shadow:0 12px 32px rgba(11,31,58,.35);max-width:420px;animation:tin .25s var(--ease);pointer-events:auto;display:flex;gap:10px}
+.toast b{color:var(--gold-light);font-weight:600}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.modal-bg{position:fixed;inset:0;background:rgba(11,31,58,.55);display:none;align-items:center;justify-content:center;z-index:150;padding:20px}
+.modal-bg.on{display:flex}
+.modal{background:#fff;border-radius:var(--r-lg);width:min(520px,100%);box-shadow:0 24px 60px rgba(0,0,0,.4);animation:tin .2s var(--ease);max-height:92vh;overflow:auto}
+.modal-h{padding:18px 22px 12px;border-bottom:1px solid var(--rule)}
+.modal-b{padding:16px 22px;display:flex;flex-direction:column;gap:14px}
+.modal-f{padding:12px 22px 18px;display:flex;justify-content:flex-end;gap:10px}
+.field label{display:block;font-family:var(--font-label);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);margin-bottom:4px}
+.inp,.sel,.txt{width:100%;border:1px solid var(--rule);border-radius:var(--r);padding:7px 11px;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;font-size:14px}
+.inp:focus,.sel:focus,.txt:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.18)}
+.txt{resize:vertical;line-height:1.5}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:var(--r);overflow:hidden;background:#fff}
+.seg button{border:none;background:#fff;padding:6px 14px;font-family:var(--font-label);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--steel);transition:all .15s;border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:none}
+.seg button:hover{color:var(--navy);background:var(--cream)}
+.seg button.on{background:var(--navy);color:#fff}
+.radio-row{display:flex;gap:8px}
+.radio-row label{flex:1;border:1px solid var(--rule);border-radius:var(--r);padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13.5px;margin:0;font-family:var(--font-body);letter-spacing:0;text-transform:none;color:var(--navy)}
+.radio-row label:has(input:checked){border-color:var(--gold);background:var(--gold-bg)}
+
+/* ---------- Today ---------- */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px}
+.tool{background:#fff;border:1px solid var(--rule);border-radius:var(--r-lg);padding:15px 16px 14px;display:flex;flex-direction:column;gap:9px;transition:box-shadow .2s,transform .2s,border-color .2s;position:relative}
+.tool:hover{box-shadow:0 8px 24px rgba(11,31,58,.10);transform:translateY(-2px);border-color:#CDBB85}
+.tool.dep{background:#FBFAF8;opacity:.92}
+.tool-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.tool-name{font-family:var(--font-display);font-weight:600;font-size:16.5px;line-height:1.25;cursor:pointer}
+.tool-name:hover{color:#7A5F17}
+.tool-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--steel)}
+.tool-ver{display:flex;align-items:baseline;gap:8px}
+.tool-ver .v{font-family:var(--font-label);font-size:24px;font-weight:600;letter-spacing:.02em}
+.tool-ver .t{font-size:12px;color:var(--steel)}
+.tool-runs{font-size:12.5px;color:var(--steel);display:flex;flex-direction:column;gap:5px}
+.tool-runs b{color:var(--navy);font-size:14px}
+.tool-foot{display:flex;gap:8px;align-items:center;margin-top:auto;padding-top:4px}
+.whatsnew{position:absolute;top:-9px;right:14px}
+.proj{padding:16px 18px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s}
+.proj:hover{box-shadow:0 8px 24px rgba(11,31,58,.10);transform:translateY(-2px);border-color:#CDBB85}
+.proj h3{font-size:16px}
+.proj-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--steel)}
+.attn{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.attn .card-head .count{background:var(--navy);color:#fff;font-family:var(--font-label);font-size:12px;border-radius:999px;padding:0 9px;line-height:20px}
+.attn-item{display:flex;gap:12px;padding:12px 20px;border-bottom:1px solid #ECEEF1;align-items:flex-start;transition:background .12s}
+.attn-item:last-child{border-bottom:none}
+.attn-item:hover{background:#FCFBF7}
+.attn-item .ico{width:30px;height:30px;border-radius:8px;background:var(--cream);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;flex:none;color:var(--navy-mid)}
+.attn-item .ico.bad{background:var(--bad-bg);border-color:#F0BDB6;color:var(--bad)}
+.attn-item .ico.gold{background:var(--gold-bg);border-color:#E3D08F;color:#7A5F17}
+.attn-item .body{flex:1;min-width:0;font-size:13.5px}
+.attn-item .body .t{color:var(--navy);line-height:1.4}
+.attn-item .body .m{font-size:12.5px;color:var(--steel);margin-top:2px}
+.attn-item .act{display:flex;gap:6px;flex:none;align-items:center}
+.status-strip{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--steel)}
+.hero-strip{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:12px;margin-bottom:6px}
+
+/* ---------- Timeline (project) ---------- */
+.tl{position:relative;padding:4px 0}
+.tl-item{display:grid;grid-template-columns:118px 32px minmax(0,1fr) auto;gap:0 12px;padding:12px 8px 12px 0;position:relative;border-bottom:1px solid #F0F1F4;align-items:start}
+.tl-item:last-child{border-bottom:none}
+.tl-item:hover{background:#FCFBF7}
+.tl-date{font-family:var(--font-label);font-size:12.5px;letter-spacing:.08em;color:var(--steel);text-align:right;padding-top:3px;text-transform:uppercase}
+.tl-ico{width:32px;height:32px;border-radius:50%;background:#fff;border:1.5px solid var(--rule);display:flex;align-items:center;justify-content:center;color:var(--navy-mid);position:relative;z-index:1}
+.tl-ico.run{color:var(--navy);border-color:var(--navy);background:#EEF2F8}
+.tl-ico.letter{border-color:var(--gold);color:#7A5F17;background:var(--gold-bg)}
+.tl-ico.email{color:var(--info);border-color:#BFD2E6;background:var(--info-bg)}
+.tl-ico.sheet{color:var(--ok);border-color:#BFDCCD;background:var(--ok-bg)}
+.tl-ico.paper{color:#6B4B8A;border-color:#D8C9E6;background:#F1EBF7}
+.tl-ico.invoice{color:#8A5A1E;border-color:#E7CFA8;background:#FAF0E0}
+.tl-ico.stale{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-bg)}
+.tl-line{position:absolute;left:150px;top:0;bottom:0;width:1.5px;background:var(--rule)}
+.tl-body .t{font-weight:500;color:var(--navy);line-height:1.4}
+.tl-body .m{font-size:12.5px;color:var(--steel);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.tl-body .why{margin-top:6px;font-size:12.5px;color:#7d2418;background:var(--bad-bg);border:1px solid #F0BDB6;border-radius:var(--r);padding:5px 10px;display:flex;gap:7px;align-items:flex-start}
+.tl-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+
+/* ---------- Lineage ---------- */
+.lineage{width:100%;height:auto;display:block}
+.ln-node{cursor:pointer}
+.ln-node rect{transition:filter .15s,stroke-width .15s}
+.ln-node:hover rect{filter:drop-shadow(0 4px 8px rgba(11,31,58,.25))}
+.ln-edge{fill:none;stroke:#9AA6B5;stroke-width:1.5}
+.ln-edge.bad{stroke:var(--bad);stroke-dasharray:5 4}
+.ln-col{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.18em;fill:#6B7A8D;text-transform:uppercase}
+.ln-t{font-family:'Barlow',sans-serif;font-size:12px;fill:#0B1F3A;font-weight:600}
+.ln-s{font-family:'Barlow',sans-serif;font-size:10.5px;fill:#6B7A8D}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--steel);align-items:center}
+.legend i{display:inline-block;width:16px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* ---------- Find ---------- */
+.find-box{display:grid;grid-template-columns:minmax(0,1fr) 320px auto;gap:10px;align-items:end}
+.find-input{display:flex;align-items:center;gap:10px;border:1.5px solid var(--navy);border-radius:var(--r);padding:0 12px;background:#fff;height:42px;transition:box-shadow .15s}
+.find-input:focus-within{box-shadow:0 0 0 3px rgba(201,168,76,.3);border-color:var(--gold)}
+.find-input input{flex:1;border:none;outline:none;background:none;font-size:16px;min-width:0}
+.result{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:14px;padding:16px 20px;border-bottom:1px solid #ECEEF1;transition:background .12s}
+.result:hover{background:#FCFBF7}
+.result:last-child{border-bottom:none}
+.result .r-title{font-family:var(--font-display);font-weight:600;font-size:16px;line-height:1.3;color:var(--navy);cursor:pointer}
+.result .r-title:hover{color:#7A5F17}
+.result .snip{font-size:13.5px;color:var(--navy-mid);margin-top:4px;max-width:88ch}
+.result .path{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--steel);margin-top:6px;word-break:break-all}
+.result .r-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.result .r-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:120px}
+.r-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--rule);background:var(--cream)}
+.scope-pred{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--navy-mid);background:#fff;border:1px dashed #CDBB85;border-radius:var(--r);padding:6px 10px}
+
+/* ---------- Draft ---------- */
+.draft-form{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr)) auto;gap:12px;align-items:end}
+.draft-wrap{display:grid;grid-template-columns:minmax(330px,390px) minmax(0,1fr);gap:20px;align-items:start;margin-top:16px}
+.ctx{display:flex;flex-direction:column;gap:12px}
+.ctx .card-head{padding:10px 16px}
+.ctx .card-head h3{font-size:14.5px;display:flex;gap:8px;align-items:center}
+.ctx-body{padding:10px 16px 14px;font-size:13px}
+.ctx-body .row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed #E5E7EB}
+.ctx-body .row:last-child{border-bottom:none}
+.disp{display:grid;grid-template-columns:18px 78px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px dashed #E5E7EB;font-size:12.5px;align-items:start}
+.disp:last-child{border-bottom:none}
+.disp .dir{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-top:1px}
+.disp .dir.out{background:var(--navy)}.disp .dir.in{background:var(--gold);color:var(--navy)}
+.disp .d{font-family:var(--font-label);letter-spacing:.06em;color:var(--steel);text-transform:uppercase;font-size:12px;padding-top:1px}
+.disp .r{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--navy)}
+.disp.new{background:var(--gold-bg);margin:0 -8px;padding:6px 8px;border-radius:6px;border-bottom:none}
+.actions-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px 12px;background:#fff;border:1px solid var(--rule);border-radius:var(--r-lg)}
+.actions-bar .sp{flex:1}
+.paper-wrap{background:#E9E6DD;border:1px solid var(--rule);border-radius:var(--r-lg);padding:26px;overflow:auto}
+.paper{background:#fff;width:100%;max-width:760px;margin:0 auto;box-shadow:0 10px 40px rgba(11,31,58,.18);color:#1b2433;font-family:'Barlow',sans-serif;font-size:13.5px;line-height:1.62;position:relative}
+.lh-bar{background:var(--navy);color:#fff;padding:20px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.lh-brand{display:flex;align-items:center;gap:13px}
+.lh-mark{width:40px;height:40px;border:1.5px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lh-mark svg{width:20px;height:20px}
+.lh-name{font-family:var(--font-label);font-weight:700;font-size:17px;letter-spacing:.14em;text-transform:uppercase;line-height:1.1}
+.lh-sub{font-family:var(--font-label);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.lh-right{text-align:right;font-family:var(--font-label);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65);line-height:1.5}
+.lh-rule{height:3px;background:var(--gold)}
+.paper-body{padding:28px 44px 20px}
+.ref-block{display:flex;justify-content:space-between;gap:20px;font-size:12.5px;margin-bottom:20px}
+.ref-block .l b{font-family:var(--font-label);letter-spacing:.1em;text-transform:uppercase;color:var(--steel);font-weight:600;font-size:11.5px;margin-right:6px}
+.reserved{font-family:ui-monospace,Menlo,monospace;background:var(--gold-bg);border:1px solid #E3D08F;border-radius:4px;padding:0 6px;font-size:12px}
+.addr{margin-bottom:18px;line-height:1.5}
+.subject{font-weight:600;font-size:14.5px;margin:6px 0 14px;border-bottom:1px solid var(--rule);padding-bottom:8px;color:var(--navy)}
+.paper p{color:#1b2433;max-width:none;margin-bottom:11px;font-size:13.5px}
+.cite{display:inline-flex;align-items:center;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;background:var(--info-bg);color:var(--info);border:1px solid #BFD2E6;border-radius:4px;padding:0 5px;margin:0 1px;cursor:pointer;line-height:16px;vertical-align:1px;transition:all .12s}
+.cite:hover{background:var(--info);color:#fff}
+.cite.doc{background:var(--gold-bg);color:#7A5F17;border-color:#E3D08F}
+.cite.doc:hover{background:#7A5F17;color:#fff}
+.cite.les{background:#F1EBF7;color:#6B4B8A;border-color:#D8C9E6}
+.cite.les:hover{background:#6B4B8A;color:#fff}
+.q4you{background:#FFF3C4;border:1px dashed #C9A84C;border-radius:4px;padding:1px 6px;display:inline;color:#5f4209;font-style:italic}
+.q4you b{font-style:normal;font-family:var(--font-label);letter-spacing:.08em;text-transform:uppercase;font-size:11px;margin-right:4px}
+.sign{margin-top:16px}
+.sign .space{height:44px;display:flex;align-items:flex-end;font-family:'Playfair Display',serif;font-style:italic;color:#1F3B63;font-size:22px;opacity:.85}
+.annex{margin-top:20px;border-top:1px solid var(--rule);padding-top:10px}
+.annex h4{font-family:var(--font-label);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-bottom:6px;font-weight:600}
+.annex table{width:100%;border-collapse:collapse;font-size:11.5px}
+.annex td,.annex th{text-align:left;padding:3px 6px 3px 0;border-bottom:1px solid #EEF0F3;vertical-align:top}
+.annex th{font-family:var(--font-label);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel)}
+.lh-foot{border-top:1px solid var(--rule);margin:16px 44px 0;padding:10px 0 18px;font-family:var(--font-label);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);display:flex;justify-content:space-between;gap:10px}
+.gen-anim{position:absolute;inset:0;background:rgba(255,255,255,.85);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:5;font-family:var(--font-label);letter-spacing:.14em;text-transform:uppercase;color:var(--navy)}
+.gen-anim.on{display:flex}
+.spin{width:28px;height:28px;border:3px solid var(--rule);border-top-color:var(--gold);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- Org / queue / analogues / cost ---------- */
+.org-head{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px}
+.q-card{padding:16px 20px;border-bottom:1px solid #ECEEF1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 24px;align-items:start;transition:background .2s,opacity .3s,transform .3s}
+.q-card:last-child{border-bottom:none}
+.q-card:hover{background:#FCFBF7}
+.q-card.gone{opacity:0;transform:translateX(24px)}
+.q-card .q-title{font-weight:600;font-size:14.5px;color:var(--navy);line-height:1.4}
+.q-card .q-meta{font-size:12.5px;color:var(--steel);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.q-card .q-body{margin-top:8px;font-size:13.5px;color:var(--navy-mid)}
+.q-act{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:230px}
+.q-act .row{display:flex;gap:8px}
+.ev{display:inline-flex;gap:5px;align-items:center;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--info);border:1px solid #BFD2E6;background:var(--info-bg);border-radius:4px;padding:0 6px;cursor:pointer}
+.ev:hover{background:var(--info);color:#fff}
+.sim-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.sim-tile{border:1px solid var(--rule);border-radius:var(--r-lg);padding:12px 14px;background:#fff;cursor:pointer;transition:all .15s}
+.sim-tile:hover{border-color:var(--gold);box-shadow:0 6px 18px rgba(11,31,58,.10);transform:translateY(-2px)}
+.sim-row{display:grid;grid-template-columns:22px minmax(0,1fr) 120px;gap:10px;padding:10px 0;border-bottom:1px solid #ECEEF1;align-items:center;font-size:13px}
+.sim-row:last-child{border-bottom:none}
+.sim-rank{width:22px;height:22px;border-radius:50%;background:var(--navy);color:var(--gold-light);font-family:var(--font-label);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.cost-row{display:grid;grid-template-columns:150px minmax(0,1fr) 84px;gap:14px;align-items:center;padding:8px 0;font-size:13.5px}
+.cost-row .bar{height:12px}
+.spark{width:100%;height:auto;display:block}
+.dotgrid{display:inline-flex;gap:4px}
+.dotgrid i{width:12px;height:12px;border-radius:3px;background:#2E9E6E}
+.dotgrid i.f{background:#fff;border:1.5px solid var(--bad);position:relative}
+.dotgrid i.f::after{content:"";position:absolute;left:2px;right:2px;top:4px;height:1.5px;background:var(--bad)}
+.ragas{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ragas .big{font-family:var(--font-display);font-size:38px;font-weight:600;line-height:1}
+.rule-list li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:12px;padding:12px 0;border-bottom:1px solid #ECEEF1;align-items:start}
+.rule-list li:last-child{border-bottom:none}
+.tick{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+.tick.p{background:#2E9E6E}.tick.f{background:var(--bad)}
+.tick .ic{width:13px;height:13px;stroke-width:2.4}
+.basis{background:#fff;border:1px solid var(--rule);border-radius:var(--r-lg)}
+.basis h4{font-family:var(--font-label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 4px;font-weight:600}
+.basis ul.b{list-style:disc;padding-left:20px;font-size:13.5px;color:var(--navy-mid)}
+.basis ul.b li{margin:2px 0}
+.cl h4{font-family:var(--font-display);font-size:15px;margin:14px 0 6px;color:var(--navy)}
+.cl h4 small{font-family:var(--font-body);font-weight:400;font-size:12.5px;color:var(--steel);margin-left:8px}
+.cl h5{font-family:var(--font-label);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:8px 0 3px;font-weight:600}
+.cl ul{list-style:disc;padding-left:20px;font-size:13.5px}
+.cl li{margin:2px 0}
+.hbar{display:grid;grid-template-columns:70px minmax(0,1fr) 60px;gap:12px;align-items:center;padding:6px 0;font-size:13.5px}
+.hbar .bar{height:14px}
+.side-note{font-size:12px;color:var(--steel)}
+.hide{display:none!important}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1280px){
+  :root{--side-w:216px}
+  .content{padding:24px 24px 20px}.topbar{padding:0 24px}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sim-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hero-strip{grid-template-columns:1fr 1fr}
+  .find-box{grid-template-columns:minmax(0,1fr) 260px auto}
+  .draft-wrap{grid-template-columns:minmax(300px,340px) minmax(0,1fr)}
+  .paper-body{padding:24px 28px 16px}.lh-bar{padding:18px 28px}.lh-foot{margin:14px 28px 0}
+}
+@media (max-width:1100px){
+  .attn{grid-template-columns:1fr}
+  .cols-2-1,.cols-3-2,.org-head{grid-template-columns:1fr}
+  .draft-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .draft-wrap{grid-template-columns:minmax(0,1fr)}
+  .draft-wrap .ctx{order:2}
+  .ctx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  .g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .q-card{grid-template-columns:1fr}.q-act{min-width:0}
+  .tl-item{grid-template-columns:96px 32px minmax(0,1fr)}.tl-side{grid-column:3;align-items:flex-start;flex-direction:row}.tl-line{left:128px}
+}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr;background:none}
+  .side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px}
+  .side .me,.side-foot,.nav-group{display:none}
+  .nav{display:flex;flex-wrap:wrap;gap:2px}
+  .draft-wrap{grid-template-columns:1fr}
+  .find-box{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-today" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M8 14h3v3H8z"/></symbol>
+    <symbol id="i-project" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0 5 5L21 13l-8 8-4-4 8-8z"/><path d="M14 5l-3-3-8 8 3 3"/></symbol>
+    <symbol id="i-find" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-draft" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-org" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16"/><path d="M14 10h5a1 1 0 0 1 1 1v10M2 21h20M8 8h2M8 12h2M8 16h2"/></symbol>
+    <symbol id="i-queue" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></symbol>
+    <symbol id="i-analogue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></symbol>
+    <symbol id="i-cost" viewBox="0 0 24 24"><path d="M3 20h18"/><rect x="5" y="11" width="3.5" height="7"/><rect x="10.5" y="6" width="3.5" height="12"/><rect x="16" y="13" width="3.5" height="5"/></symbol>
+    <symbol id="i-run" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+    <symbol id="i-letter" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h8M9 9h3"/></symbol>
+    <symbol id="i-email" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+    <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/></symbol>
+    <symbol id="i-paper" viewBox="0 0 24 24"><path d="M4 4h10a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 9h6M8 13h6"/></symbol>
+    <symbol id="i-invoice" viewBox="0 0 24 24"><path d="M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h3"/></symbol>
+    <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><rect x="9" y="12" width="2" height="6"/><rect x="13" y="14" width="2" height="4"/></symbol>
+    <symbol id="i-ref" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 3h14v14l-5 4H5z"/><path d="M14 21v-4h5M8 8h8M8 12h5"/></symbol>
+    <symbol id="i-feed" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.5"/></symbol>
+    <symbol id="i-lesson" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12A9 9 0 0 1 18.5 5.8L21 8M21 3v5h-5M3 21v-5h5"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-mail-out" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6"/><path d="M3 6h18v12H3z"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="side" aria-label="Hub navigation">
+    <a class="brand" href="#today" aria-label="Alpha Technical Centre Hub">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/><rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/></svg></span>
+      <span class="brand-text"><span class="brand-main">Alpha Technical Centre</span><br><span class="brand-sub">&middot; Hub</span></span>
+    </a>
+    <div class="me">
+      <span class="av">CH</span>
+      <div><div class="me-name">Chris Hopkinson</div><div class="me-role">Partner</div></div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="nav-group">Work</div>
+      <a href="#today" data-nav="today"><svg class="ic"><use href="#i-today"/></svg>Today</a>
+      <a href="#project" data-nav="project"><svg class="ic"><use href="#i-project"/></svg>Project file</a>
+      <a href="#tool" data-nav="tool"><svg class="ic"><use href="#i-tool"/></svg>Tool page</a>
+      <a href="#find" data-nav="find"><svg class="ic"><use href="#i-find"/></svg>Find</a>
+      <a href="#draft" data-nav="draft"><svg class="ic"><use href="#i-draft"/></svg>Draft</a>
+      <div class="nav-group">Registry</div>
+      <a href="#organisation" data-nav="organisation"><svg class="ic"><use href="#i-org"/></svg>Organisation file</a>
+      <a href="#queue" data-nav="queue"><svg class="ic"><use href="#i-queue"/></svg>Review queue<span class="count" id="nav-queue-count">9</span></a>
+      <a href="#analogues" data-nav="analogues"><svg class="ic"><use href="#i-analogue"/></svg>Analogues</a>
+      <div class="nav-group">Firm</div>
+      <a href="#cost" data-nav="cost"><svg class="ic"><use href="#i-cost"/></svg>Cost &amp; health</a>
+    </nav>
+    <div class="side-foot">
+      <div><span class="dot"></span>vault-api healthy</div>
+      <div>Signed in via Cloudflare Access</div>
+      <div>Hub build 0.14 &middot; mockup</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb" id="crumb">Hub / <b>Today</b></div>
+      <form class="top-search" id="top-search" autocomplete="off">
+        <svg class="ic"><use href="#i-find"/></svg>
+        <input id="top-q" type="text" placeholder="Find across the Vault (scope chosen next)" aria-label="Find">
+        <span class="kbd">Enter</span>
+      </form>
+    </header>
+    <div class="content">
+
+<!-- ===================== 1. TODAY ===================== -->
+<section class="screen" id="s-today" data-title="Today">
+  <div class="page-head">
+    <div>
+      <span class="label">Tuesday 29 September 2026</span>
+      <h1>Good morning, <em>Chris</em></h1>
+      <p class="sub">Eleven tools in the catalog and one deprecated, four projects of yours, and nine items waiting for a partner.</p>
+    </div>
+    <div class="status-strip">
+      <span class="pill ok"><svg class="ic"><use href="#i-check"/></svg>Catalog from tool.json</span>
+      <span>Nightly staleness job ran 02:10 &middot; next 02:10</span>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:0">
+    <div class="section-head">
+      <div><span class="label">Tools</span><h2>Catalog</h2></div>
+      <div class="filters" id="tool-filter">
+        <button class="chip on" data-f="all">All 12</button>
+        <button class="chip" data-f="production">Production</button>
+        <button class="chip" data-f="experimental">Experimental</button>
+        <button class="chip" data-f="deprecated">Deprecated</button>
+      </div>
+    </div>
+    <div class="tools-grid" id="tools-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div><span class="label">My projects</span><h2>Where I worked in the last 90 days</h2></div>
+      <a class="link" href="#project">Open Llanos project file</a>
+    </div>
+    <div class="grid g4" id="my-projects"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div><span class="label">Needs attention</span><h2>Waiting on a partner</h2></div>
+      <a class="link" href="#queue">Open review queue</a>
+    </div>
+    <div class="attn">
+      <div class="card">
+        <div class="card-head"><h3>Stale runs and documents</h3><span class="count" id="c-stale">4</span></div>
+        <div id="attn-stale"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Filing queue</h3><span class="count" id="c-filing">5</span></div>
+        <div id="attn-filing"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Lesson proposals</h3><span class="count">2</span></div>
+        <div id="attn-lessons"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Re-run deltas</h3><span class="count">1</span></div>
+        <div id="attn-delta"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div><span class="label">Recent runs across the firm</span><h2>Last 12 runs in your scope</h2></div>
+      <div class="filters" id="run-filter">
+        <button class="chip on" data-f="all">All</button>
+        <button class="chip" data-f="draft">Draft</button>
+        <button class="chip" data-f="reviewed">Reviewed</button>
+        <button class="chip" data-f="final">Final</button>
+        <button class="chip" data-f="stale">Stale only</button>
+      </div>
+    </div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl" id="runs-tbl">
+      <thead><tr><th>Time</th><th>Who</th><th>Tool @ version</th><th>Project</th><th>Headline output</th><th>Status</th><th>Stale</th></tr></thead>
+      <tbody></tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ===================== 2. PROJECT ===================== -->
+<section class="screen" id="s-project" data-title="Project file">
+  <div class="page-head">
+    <div>
+      <span class="label">Project file &middot; Colombia</span>
+      <h1>Llanos Basin waterflood screening</h1>
+      <p class="sub">Client <a class="link" href="#project" data-toast="Mockup: the Frontera Energy organisation file is not seeded. The Petrolera del Orinoco file is.">Frontera Energy</a> &middot; engagement EL-2026-014 &middot; opened 2 June 2026 &middot; status <span class="pill ok">Active</span></p>
+    </div>
+    <div class="filters">
+      <button class="btn btn-ghost sm" data-toast="Mockup: would open Draft with this project preselected." data-goto="draft"><svg class="ic"><use href="#i-draft"/></svg>Draft for this project</button>
+      <button class="btn btn-gold sm" data-action="rerun-project"><svg class="ic"><use href="#i-refresh"/></svg>Re-run stale with current</button>
+    </div>
+  </div>
+
+  <div class="card card-pad">
+    <div class="grid" style="grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:24px">
+      <dl class="kv" style="grid-template-columns:100px 1fr">
+        <dt>Legal tag</dt><dd><span class="pill lt"><svg class="ic"><use href="#i-lock"/></svg>lt-frontera-nda-2026</span><div class="side-note" style="margin-top:4px">client-nda &middot; first-party &middot; expires <b style="color:var(--navy)">2027-03-31</b> (183 days) &middot; NDA FEL-NDA-2026-03</div></dd>
+        <dt>Assets</dt><dd style="display:flex;gap:6px;flex-wrap:wrap"><span class="asset-chip">basin:llanos</span><span class="asset-chip">field:llanos:cubiro</span></dd>
+        <dt>Default tag</dt><dd>inherited by every run and item</dd>
+      </dl>
+      <div>
+        <div class="label steel" style="margin-bottom:6px">Client contacts</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px">
+          <div><b>Jorge Salazar</b> <span class="muted">&middot; Subsurface Manager</span><div class="side-note">jorge.salazar@fronteraenergy.example &middot; ES</div></div>
+          <div><b>Adriana Rincón</b> <span class="muted">&middot; Asset Manager, Llanos</span><div class="side-note">adriana.rincon@fronteraenergy.example &middot; ES</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="label steel" style="margin-bottom:6px">ATC team</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px">
+          <div class="who" style="white-space:normal;align-items:flex-start"><span class="av">CH</span><span><b>Chris Hopkinson</b> <span class="muted">&middot; lead</span></span></div>
+          <div class="who" style="white-space:normal;align-items:flex-start"><span class="av gs">GS</span><span><b>Partner &mdash; Geoscience</b> <span class="muted">&middot; petrophysics</span></span></div>
+          <div class="who" style="white-space:normal;align-items:flex-start"><span class="av cm">CM</span><span><b>Partner &mdash; Commercial</b> <span class="muted">&middot; invoicing</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="kpis" style="margin-top:14px">
+    <div class="kpi"><div class="k">Latest 2P</div><div class="v num">16.0 <small style="font-size:13px;color:var(--steel);font-family:var(--font-body)">MMbbl</small></div><div class="d">vintage 3 &middot; draft</div></div>
+    <div class="kpi"><div class="k">Latest NPV10</div><div class="v num">171.1 <small style="font-size:13px;color:var(--steel);font-family:var(--font-body)">USD MM</small></div><div class="d"><span class="delta dn">&minus;8.2%</span> vs vintage 2</div></div>
+    <div class="kpi"><div class="k">Active runs</div><div class="v">7</div><div class="d">2 superseded</div></div>
+    <div class="kpi"><div class="k">Stale records</div><div class="v" style="color:var(--bad)">3</div><div class="d">1 run &middot; 1 letter &middot; 1 note</div></div>
+    <div class="kpi"><div class="k">Scorecard</div><div class="v"><span class="rag a"></span> 4/6</div><div class="d">2 rules failing</div></div>
+  </div>
+
+  <div class="tabs" id="project-tabs">
+    <a href="#project/timeline" data-tab="timeline">Timeline <span class="n">14</span></a>
+    <a href="#project/vintages" data-tab="vintages">Headline numbers <span class="n">3</span></a>
+    <a href="#project/lineage" data-tab="lineage">Lineage</a>
+    <a href="#project/basis" data-tab="basis">Basis notes <span class="n">2</span></a>
+    <a href="#project/lessons" data-tab="lessons">Lessons in scope <span class="n">4</span></a>
+    <a href="#project/scorecard" data-tab="scorecard">Scorecard <span class="n bad">2 fail</span></a>
+  </div>
+
+  <div class="tabpane" id="tab-timeline">
+    <div class="card">
+      <div class="card-head">
+        <div class="filters" id="tl-filter"></div>
+        <span class="side-note" id="tl-count"></span>
+      </div>
+      <div class="tl" id="tl-list" style="padding:0 12px 0 12px"></div>
+    </div>
+  </div>
+
+  <div class="tabpane" id="tab-vintages">
+    <div class="notice info" style="margin-bottom:14px"><svg class="ic lg"><use href="#i-info"/></svg><div class="grow"><b>Vintage 3 is a draft.</b> It was produced by &ldquo;re-run with current&rdquo; on 2026-09-28 and has not been reviewed. Vintage 2 stays as the last reviewed number until a partner marks vintage 3 reviewed.</div></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl" id="vint-tbl">
+      <thead><tr><th>Vintage</th><th>Date</th><th>Tool version</th><th class="right">1P MMbbl</th><th class="right">2P MMbbl</th><th class="right">3P MMbbl</th><th class="right">NPV10 USD MM</th><th class="right">RF</th><th>Method</th><th>Delta vs previous</th><th>Reason for change</th></tr></thead>
+      <tbody></tbody></table></div></div>
+    <div class="card card-pad" style="margin-top:14px">
+      <div class="label" style="margin-bottom:6px">Delta note &middot; vintage 2 to vintage 3</div>
+      <p style="max-width:none;font-size:13.5px">NPV10 falls 8.2% (USD 186.4 MM to 171.1 MM). About 6.1 points come from the CO-2026 fiscal terms update, which moves the ANH high-price participation threshold and raises royalties in the upside years [ref:fiscal_terms/CO-2026]. About 2.1 points come from <span class="mono">potential.js</span> 2.1.0, which now treats voidage replacement as capped at the injector capacity of 8,500 bwpd, trimming 1P by 2.1% [run:9f3a&hellip;c2d]. Volumetrics, Brent deck 2026-06 and the production history are unchanged. <span class="muted">Drafted by the delta job, reviewed by nobody yet.</span></p>
+    </div>
+  </div>
+
+  <div class="tabpane" id="tab-lineage">
+    <div class="card">
+      <div class="card-head"><div><h3>Lineage of the interim evaluation</h3><div class="side-note">Reference sets and documents &rarr; runs &rarr; evaluation &rarr; letter and basis note. Click a node to open the record.</div></div>
+        <div class="legend"><span><i style="border:2px solid #0B1F3A;background:#fff"></i>current</span><span><i style="border:2px solid #C0392B;background:#FBE9E6"></i>stale</span><span><i style="border:2px solid #9AA6B5;background:#F0F1F4"></i>superseded</span></div></div>
+      <div style="padding:10px 14px 16px"><svg class="lineage" id="lineage" viewBox="0 0 1060 500" role="img" aria-label="Lineage graph"></svg></div>
+    </div>
+  </div>
+
+  <div class="tabpane" id="tab-basis">
+    <div class="grid cols-2-1" id="basis-grid"></div>
+  </div>
+  <div class="tabpane" id="tab-lessons"><div class="card" id="lessons-card"></div></div>
+  <div class="tabpane" id="tab-scorecard"><div class="grid cols-2-1" id="score-grid"></div></div>
+</section>
+
+<!-- ===================== 3. TOOL ===================== -->
+<section class="screen" id="s-tool" data-title="Tool page">
+  <div class="page-head">
+    <div>
+      <span class="label">Tool &middot; browser tool</span>
+      <h1>Opportunity <em>Register</em></h1>
+      <p class="sub">Screens upstream opportunities, calculates technical potential and NPV10 per opportunity, and saves every calculation to the Vault as a Run.</p>
+    </div>
+    <div class="filters">
+      <span class="pill ok">Production</span>
+      <button class="btn btn-ghost sm" data-toast="Mockup: would open docs/opportunity-register/README.md"><svg class="ic"><use href="#i-paper"/></svg>Docs</button>
+      <button class="btn btn-gold" data-toast="Resolved <b>opportunity-register@2.1.0</b> &middot; entry /opportunity-register.html &middot; modules pinned to commit 3fa9c1e"><svg class="ic"><use href="#i-arrow"/></svg>Open current 2.1.0</button>
+    </div>
+  </div>
+
+  <div class="notice bad" id="older-alert" style="margin-bottom:18px">
+    <svg class="ic lg"><use href="#i-alert"/></svg>
+    <div class="grow"><b>7 runs on older versions.</b> 5 on 2.0.0 and 2 on 1.2.0. Version 2.1.0 is marked breaking, so these runs are not comparable with current and every document citing them is flagged stale. Re-running creates new Runs with <span class="mono">parents=[old]</span>; nothing is overwritten.</div>
+    <button class="btn btn-danger sm" data-action="rerun-all"><svg class="ic"><use href="#i-refresh"/></svg>Re-run all 7</button>
+  </div>
+
+  <div class="grid cols-2-1">
+    <div class="card">
+      <div class="card-head"><h3>Manifest</h3><span class="mono muted">tools/opportunity-register/tool.json</span></div>
+      <div class="card-pad"><dl class="kv">
+        <dt>id</dt><dd class="mono">opportunity-register</dd>
+        <dt>Name</dt><dd>Opportunity Register</dd>
+        <dt>Owner</dt><dd><span class="who"><span class="av">CH</span>Chris Hopkinson</span></dd>
+        <dt>Lifecycle</dt><dd><span class="pill ok">production</span></dd>
+        <dt>Kind</dt><dd class="mono">browser-tool</dd>
+        <dt>Entry</dt><dd class="mono">/opportunity-register.html</dd>
+        <dt>Changelog</dt><dd class="mono">tools/opportunity-register/CHANGELOG.md</dd>
+        <dt>Produces</dt><dd style="display:flex;gap:6px;flex-wrap:wrap"><span class="asset-chip">technical_potential</span><span class="asset-chip">npv10</span><span class="asset-chip">irr</span><span class="asset-chip">breakeven_usd_bbl</span></dd>
+        <dt>Consumes</dt><dd style="display:flex;gap:6px;flex-wrap:wrap"><span class="asset-chip">price_deck</span><span class="asset-chip">fiscal_terms</span><span class="asset-chip">analogue_table</span></dd>
+        <dt>Aliases</dt><dd><span class="mono">current</span> &rarr; <b>2.1.0</b> &middot; <span class="mono">previous</span> &rarr; 2.0.0 &middot; <span class="mono">beta</span> &rarr; <span class="muted">none</span></dd>
+      </dl></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Active runs by version</h3><span class="side-note">not superseded</span></div>
+      <div class="card-pad" id="runs-by-version"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div><span class="label">Versions</span><h2>Release history</h2></div></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Version</th><th>Released</th><th>Commit</th><th>Status</th><th>Alias</th><th>Breaking</th><th>Modules</th><th class="right">Active runs</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><b class="num" style="font-size:15px">2.1.0</b></td><td class="nowrap">2026-09-22</td><td class="mono">3fa9c1e</td><td><span class="pill ok">approved</span></td><td><span class="pill gold">current</span></td><td><span class="pill bad">breaking</span></td><td class="mono">js/potential.js, js/fiscal.js</td><td class="right num">41</td><td>Voidage capped at injector capacity; fiscal engine reads CO-2026 terms</td></tr>
+        <tr><td><b class="num" style="font-size:15px">2.0.0</b></td><td class="nowrap">2026-06-09</td><td class="mono">b71d0a4</td><td><span class="pill bad">deprecated</span></td><td><span class="pill ghost">previous</span></td><td><span class="pill bad">breaking</span></td><td class="mono">js/potential.js, js/lifting.js</td><td class="right num">5</td><td>Water-cut-dependent lifting cost; not comparable with 1.x</td></tr>
+        <tr><td><b class="num" style="font-size:15px">1.2.0</b></td><td class="nowrap">2026-02-03</td><td class="mono">9c4e2d8</td><td><span class="pill ok">approved</span></td><td class="muted">&mdash;</td><td><span class="pill ghost">no</span></td><td class="mono">js/analogues.js</td><td class="right num">2</td><td>Analogue table extended to 14 plays</td></tr>
+      </tbody></table></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div><span class="label">Changelog</span><h2>What changed</h2></div><span class="side-note">Keep a Changelog format &middot; rendered from CHANGELOG.md</span></div>
+    <div class="card card-pad cl">
+      <h4>[2.1.0] &ndash; 2026-09-22 <span class="pill bad" style="margin-left:6px">breaking</span> <small>3fa9c1e &middot; released by Chris Hopkinson</small></h4>
+      <h5>Changed</h5><ul><li>Voidage replacement in the technical potential calculation is capped at the stated injector capacity instead of assuming a ratio of 1.0.</li><li>Fiscal engine reads reference sets by id (<span class="mono">ref:fiscal_terms/CO-2026</span>) and records the version used in <span class="mono">inputs[]</span>.</li></ul>
+      <h5>Fixed</h5><ul><li>Break-even price ignored the abandonment provision when opex was entered per well.</li></ul>
+      <h5>Added</h5><ul><li>Each Save writes a Run with tool version and commit; identical inputs return the existing Run.</li></ul>
+      <h4>[2.0.0] &ndash; 2026-06-09 <span class="pill bad" style="margin-left:6px">breaking</span> <small>b71d0a4</small></h4>
+      <h5>Changed</h5><ul><li>Lifting cost now depends on water cut. Runs made on 1.x are not comparable.</li></ul>
+      <h5>Deprecated</h5><ul><li>Manual <span class="mono">?v=</span> cache-busting token. Use the resolved version.</li></ul>
+      <h4>[1.2.0] &ndash; 2026-02-03 <small>9c4e2d8</small></h4>
+      <h5>Added</h5><ul><li>Analogue table extended to 14 plays, including Llanos Cretaceous sandstone waterflood.</li></ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div><span class="label">Older versions</span><h2>Runs to re-run</h2></div></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl" id="old-runs">
+      <thead><tr><th>Run</th><th>Project</th><th>Author</th><th>Version</th><th>Saved</th><th>Downstream</th><th></th></tr></thead><tbody></tbody></table></div></div>
+  </div>
+</section>
+
+<!-- ===================== 4. FIND ===================== -->
+<section class="screen" id="s-find" data-title="Find">
+  <div class="page-head">
+    <div><span class="label">Find</span><h1>Search the <em>Vault</em></h1>
+    <p class="sub">Every search runs inside a scope. Nothing outside the scope, or past its legal tag&rsquo;s expiry, is ever returned.</p></div>
+  </div>
+  <div class="card card-pad">
+    <form class="find-box" id="find-form" autocomplete="off">
+      <div class="field"><label for="find-q">Query</label>
+        <div class="find-input"><svg class="ic lg muted"><use href="#i-find"/></svg><input id="find-q" type="text" value="waterflood voidage" placeholder="e.g. waterflood voidage, royalty, PVT"></div></div>
+      <div class="field"><label for="find-scope">Scope (required)</label>
+        <select class="sel" id="find-scope" style="height:42px">
+          <option value="project">Project: Llanos Basin waterflood screening</option>
+          <option value="client">Client: Frontera Energy (all projects)</option>
+          <option value="firm">Firm: lessons, templates, firm-tagged</option>
+          <option value="public">Public: regulators, papers, feeds</option>
+        </select></div>
+      <button class="btn btn-gold" style="height:42px" type="submit"><svg class="ic"><use href="#i-find"/></svg>Find</button>
+    </form>
+    <div class="scope-pred" id="scope-pred" style="margin-top:12px"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;margin:18px 0 12px;flex-wrap:wrap">
+    <div class="filters" id="find-types"></div>
+    <div class="field" style="display:flex;align-items:center;gap:8px"><label style="margin:0">Date</label>
+      <select class="sel" id="find-date" style="width:auto"><option value="any">Any time</option><option value="30">Last 30 days</option><option value="120">Last 4 months</option><option value="365">Last 12 months</option></select></div>
+  </div>
+  <div class="card"><div class="card-head"><div id="find-count" style="font-size:13.5px"></div><span class="side-note">hybrid search + rerank &middot; every retrieval is logged</span></div><div id="find-results"></div></div>
+</section>
+
+<!-- ===================== 5. DRAFT ===================== -->
+<section class="screen" id="s-draft" data-title="Draft">
+  <div class="page-head">
+    <div><span class="label">Drafting assistant</span><h1>Draft a <em>letter</em></h1>
+    <p class="sub">The draft carries citations to records in scope. It is never sent from here: it becomes a file, a Gmail draft, or a recorded dispatch.</p></div>
+  </div>
+  <div class="card card-pad">
+    <div class="draft-form">
+      <div class="field"><label>Kind</label>
+        <div class="seg" id="kind-seg"><button data-kind="email">Email</button><button data-kind="letter" class="on">Letter</button><button data-kind="report">Report section</button><button data-kind="calc">Calc note</button></div></div>
+      <div class="field"><label>Project</label>
+        <select class="sel"><option>BD &middot; Orinoco Belt joint evaluation (prospect)</option><option>Llanos Basin waterflood screening</option><option>Middle Magdalena infill screening</option><option>Firm &middot; no project</option></select></div>
+      <div class="field"><label>Counterparty</label>
+        <select class="sel"><option>Petrolera del Orinoco S.A. &middot; prospective partner</option><option>Frontera Energy &middot; client</option><option>Ecopetrol S.A. &middot; client</option></select></div>
+      <div class="field"><label>Addressee</label>
+        <select class="sel"><option>Ing. María Fernández &middot; Caracas</option><option>Ing. Luis Barreto &middot; Caracas</option><option>Abg. Carolina Méndez &middot; Legal</option></select></div>
+      <div class="field"><label>Language</label>
+        <div class="seg" id="lang-seg"><button data-lang="en" class="on">EN</button><button data-lang="es">ES</button></div></div>
+    </div>
+    <div class="field" style="margin-top:12px"><label>Brief</label>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:stretch">
+        <textarea class="txt" id="brief" rows="3">Follow up our capabilities statement of 16 July. Propose the scope of a joint technical evaluation of extra-heavy oil development options for one of their Orinoco Belt blocks. Point to the screening work we already did on analogue fields, confirm the NDA covers the exchange, agree the data basis in writing before any number is issued, and mention that any activity is subject to sanctions authorisations. Ask for a call in mid-October.</textarea>
+        <button class="btn btn-navy" id="regen" style="align-self:stretch;flex-direction:column;padding:8px 22px"><svg class="ic lg"><use href="#i-refresh"/></svg>Regenerate</button>
+      </div></div>
+  </div>
+
+  <div class="notice warn" style="margin-top:14px" id="draft-warnings">
+    <svg class="ic lg"><use href="#i-alert"/></svg>
+    <div class="grow"><b>2 warnings.</b> 1 sentence has no citation and was turned into a question for you (paragraph 3, highlighted). Reference ATC-2026-0151 is reserved and not yet in the dispatch register; it is recorded when you mark the letter as sent.</div>
+  </div>
+
+  <div class="draft-wrap">
+    <div class="ctx" id="ctx"></div>
+    <div>
+      <div class="actions-bar">
+        <span class="pill gold" id="ref-pill">ATC-2026-0151 reserved</span>
+        <span class="side-note" id="draft-saved">Saved as note item &middot; cites 7 records</span>
+        <span class="sp"></span>
+        <button class="btn btn-ghost sm" data-action="dl" data-fmt="DOCX"><svg class="ic"><use href="#i-down"/></svg>Download DOCX</button>
+        <button class="btn btn-ghost sm" data-action="dl" data-fmt="PDF"><svg class="ic"><use href="#i-down"/></svg>Download PDF</button>
+        <button class="btn btn-navy sm" data-action="gmail"><svg class="ic"><use href="#i-email"/></svg>Save to Gmail drafts</button>
+        <button class="btn btn-gold sm" data-action="mark-sent" id="btn-sent"><svg class="ic"><use href="#i-send"/></svg>Mark as sent (post/courier/email)</button>
+      </div>
+      <div class="paper-wrap"><div class="paper" id="paper"><div class="gen-anim" id="gen-anim"><div class="spin"></div>Assembling context&hellip;</div><div id="paper-inner"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 6. ORGANISATION ===================== -->
+<section class="screen" id="s-organisation" data-title="Organisation file">
+  <div class="page-head">
+    <div>
+      <span class="label">Organisation file &middot; Venezuela</span>
+      <h1>Petrolera del <em>Orinoco</em> S.A.</h1>
+      <p class="sub">Prospective job partner. First contact February 2026; NDA in force. Counterparty file used by the drafting assistant for letters.</p>
+    </div>
+    <div class="filters"><span class="pill info">kind: partner</span><button class="btn btn-gold sm" data-goto="draft"><svg class="ic"><use href="#i-draft"/></svg>Draft a letter</button></div>
+  </div>
+  <div class="org-head">
+    <div class="card card-pad"><dl class="kv">
+      <dt>Legal name</dt><dd>Petrolera del Orinoco S.A.</dd>
+      <dt>Kind</dt><dd><span class="pill info">partner</span> <span class="muted">(prospective)</span></dd>
+      <dt>Registered address</dt><dd>Av. Francisco de Miranda, Torre Faja, Piso 12<br>Chacao, Caracas 1060, Bolivarian Republic of Venezuela</dd>
+      <dt>Jurisdiction</dt><dd>VE</dd>
+      <dt>Identifiers</dt><dd class="mono">RIF J-30215487-6</dd>
+      <dt>Working language</dt><dd>Spanish, English for technical correspondence</dd>
+      <dt>Added</dt><dd>2026-02-03 by mail capture, confirmed by Chris Hopkinson 2026-02-05</dd>
+    </dl></div>
+    <div class="card card-pad">
+      <div class="label" style="margin-bottom:8px">Contracts in force</div>
+      <div style="border:1px solid var(--rule);border-radius:var(--r-lg);padding:12px 14px;background:var(--cream)">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>Mutual NDA</b><span class="pill ok"><svg class="ic"><use href="#i-shield"/></svg>in force</span></div>
+        <div class="side-note" style="margin:4px 0 8px">Effective 2026-02-14 &middot; expires 2028-02-13 (502 days) &middot; doc:nda-pdo-2026 &middot; signed for ATC by Chris Hopkinson</div>
+        <span class="pill lt"><svg class="ic"><use href="#i-lock"/></svg>lt-pdo-nda-2026</span>
+      </div>
+      <div class="side-note" style="margin-top:10px">No engagement letter or purchase order yet. Finance and legal records are partners-only.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div><span class="label">Contacts</span><h2>People</h2></div></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Language</th><th>Last dispatch</th></tr></thead>
+      <tbody>
+        <tr><td><b>Ing. María Fernández</b><span class="sub">Primary addressee</span></td><td>Gerente de Alianzas Técnicas</td><td class="mono">m.fernandez@pdo-orinoco.example</td><td class="nowrap">+58 212 555 0142</td><td>ES / EN</td><td class="nowrap">2026-07-16 &middot; courier</td></tr>
+        <tr><td><b>Ing. Luis Barreto</b></td><td>Gerente de Yacimientos</td><td class="mono">l.barreto@pdo-orinoco.example</td><td class="nowrap">+58 212 555 0177</td><td>ES</td><td class="nowrap">2026-05-06 &middot; email (in)</td></tr>
+        <tr><td><b>Abg. Carolina Méndez</b></td><td>Consultora jurídica</td><td class="mono">c.mendez@pdo-orinoco.example</td><td class="nowrap">+58 212 555 0119</td><td>ES</td><td class="nowrap">2026-02-16 &middot; courier</td></tr>
+      </tbody></table></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div><span class="label">Dispatch register</span><h2>Sent and received</h2></div>
+      <button class="btn btn-ghost sm" data-action="open-dispatch-form"><svg class="ic"><use href="#i-mail-out"/></svg>Record a dispatch (post, courier, portal)</button></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl" id="disp-tbl">
+      <thead><tr><th>Direction</th><th>Date</th><th>Channel</th><th>Reference</th><th>Their reference</th><th>Subject</th><th>Signed by</th><th>Acknowledged</th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-foot"><span>6 dispatches recorded &middot; outbound email is captured automatically, post and courier are entered here.</span><span>schema: dispatch.schema.json</span></div></div>
+  </div>
+
+  <div class="grid g3 section">
+    <div class="card"><div class="card-head"><h3>Projects</h3></div><div class="card-pad" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><b>BD &middot; Orinoco Belt joint evaluation</b><div class="side-note">prospect &middot; opened 2026-02-03</div></div><span class="pill warn">prospect</span></div>
+      <div class="side-note">2 runs &middot; 6 dispatches &middot; 0 invoices</div></div></div>
+    <div class="card"><div class="card-head"><h3>Open invoices</h3></div>
+      <div class="empty"><svg class="ic"><use href="#i-check"/></svg><b>None open</b><span>No invoice has been issued to this organisation. Nothing is owed by or to us.</span></div></div>
+    <div class="card"><div class="card-head"><h3>Notes</h3></div><div class="card-pad" style="font-size:13.5px;display:flex;flex-direction:column;gap:10px">
+      <div><span class="side-note">2026-07-28 &middot; CH</span><br>María Fernández confirmed by phone that PDO wants the scope in writing before their board meets in November.</div>
+      <div><span class="side-note">2026-05-06 &middot; GS</span><br>Their data request list assumes we hold well logs. We do not. Clarify in the next letter.</div>
+      <div><span class="side-note">2026-02-05 &middot; CH</span><br>Counterparty screened; any activity is subject to sanctions authorisations.</div></div></div>
+  </div>
+</section>
+
+<!-- ===================== 7. QUEUE ===================== -->
+<section class="screen" id="s-queue" data-title="Review queue">
+  <div class="page-head">
+    <div><span class="label">Review queue</span><h1>Waiting for a <em>partner</em></h1>
+    <p class="sub">Machine proposals stay proposals until a partner confirms them. Confirming files, changes a legal tag, or adds a lesson to the firm&rsquo;s core index.</p></div>
+    <div class="status-strip"><span id="queue-total" class="pill navy">9 open</span></div>
+  </div>
+  <div class="card"><div class="card-head"><div><h3>Filing</h3><div class="side-note">Emails below the 0.85 confidence threshold. Above it, mail files itself.</div></div><span class="pill info" id="q-filing-n"></span></div><div id="q-filing"></div></div>
+  <div class="card" style="margin-top:18px"><div class="card-head"><div><h3>Lesson proposals</h3><div class="side-note">From the weekly dream job (2026-W39). Confirmed lessons regenerate vault/firm/LESSONS.md.</div></div><span class="pill info" id="q-lessons-n"></span></div><div id="q-lessons"></div></div>
+  <div class="card" style="margin-top:18px"><div class="card-head"><div><h3>NDA expiry proposals</h3><div class="side-note">Key terms extracted from legal documents. Confirming sets the client&rsquo;s legal-tag expiry.</div></div><span class="pill info" id="q-nda-n"></span></div><div id="q-nda"></div></div>
+</section>
+
+<!-- ===================== 8. ANALOGUES ===================== -->
+<section class="screen" id="s-analogues" data-title="Analogues">
+  <div class="page-head">
+    <div><span class="label">Analogue memory</span><h1>Analogue <em>table</em></h1>
+    <p class="sub">One row per evaluation, paper or regulator record. Provenance is always shown; proposed defaults for a tool come from here, never silently.</p></div>
+    <div class="status-strip"><span>212 rows &middot; 61 own evaluations &middot; 96 papers &middot; 55 regulator</span></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><span class="label">Similar to</span><h3 style="margin-top:2px"><span class="asset-chip" style="font-size:13px">field:llanos:cubiro</span> &middot; 5 nearest analogues</h3></div><span class="side-note">weighted Gower distance on numeric and categorical fields; lower is closer</span></div>
+    <div class="card-pad">
+      <div class="side-note" style="margin-bottom:12px">Cubiro: onshore clastic &middot; black oil, 24 API &middot; 2,900 m &middot; &phi; 0.17 &middot; k 320 mD &middot; water drive, waterflood candidate.</div>
+      <div class="sim-grid" id="sim-list"></div>
+      <div class="notice info" style="margin-top:14px"><svg class="ic"><use href="#i-info"/></svg><div class="grow">Proposed default for the Register&rsquo;s waterflood recovery factor: <b>0.20 (P50), range 0.14 to 0.27</b> from the 5 nearest analogues, 2 of them own evaluations. Shown with provenance; nothing is applied until a partner accepts it in the tool.</div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:18px">
+    <div class="card-head" style="flex-wrap:wrap">
+      <div class="filters" id="an-prov"></div>
+      <div style="display:flex;gap:8px"><select class="sel" id="an-country" style="width:auto"><option value="">All countries</option></select><select class="sel" id="an-fluid" style="width:auto"><option value="">All fluids</option></select></div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl" id="an-tbl">
+      <thead><tr><th class="sortable" data-sort="asset">Asset</th><th>Provenance</th><th>Setting, fluid, drive</th><th class="right sortable" data-sort="depth">Depth m</th><th class="right sortable" data-sort="phi">&phi;</th><th class="right sortable" data-sort="k">k mD</th><th class="right sortable" data-sort="rf">RF</th><th class="right sortable" data-sort="eur">EUR/well Mbbl</th><th class="right sortable" data-sort="dist">Distance</th><th>Source</th></tr></thead>
+      <tbody></tbody></table></div>
+    <div class="tbl-foot"><span id="an-count"></span><span>click a header to sort &middot; click a tile above to highlight its row</span></div>
+  </div>
+</section>
+
+<!-- ===================== 9. COST ===================== -->
+<section class="screen" id="s-cost" data-title="Cost &amp; health">
+  <div class="page-head">
+    <div><span class="label">Cost &amp; health</span><h1>September <em>2026</em></h1>
+    <p class="sub">Token spend per feature, infrastructure invoices, retrieval quality and project scorecards. Month to date, 29 September.</p></div>
+  </div>
+  <div class="kpis" style="margin-bottom:18px">
+    <div class="kpi"><div class="k">Tokens (LLM)</div><div class="v num">USD 68.05</div><div class="d">budget band 20&ndash;80</div></div>
+    <div class="kpi"><div class="k">Infrastructure</div><div class="v num">USD 35</div><div class="d"><span class="delta up">within</span> the 60 ceiling (AC14)</div></div>
+    <div class="kpi"><div class="k">Total</div><div class="v num">USD 103.05</div><div class="d">forecast month end 109</div></div>
+    <div class="kpi"><div class="k">Cache hit rate</div><div class="v num">71%</div><div class="d">prompt caching on stable prefix</div></div>
+    <div class="kpi"><div class="k">Retrievals logged</div><div class="v num">1,284</div><div class="d">0 cross-scope hits</div></div>
+  </div>
+  <div class="grid g2" style="align-items:start">
+    <div class="card"><div class="card-head"><h3>Token spend by feature</h3><span class="side-note">USD, month to date</span></div><div class="card-pad" id="token-bars"></div>
+      <div style="padding:0 20px 16px"><div class="label steel" style="margin-bottom:4px">Daily spend</div><svg class="spark" id="daily" viewBox="0 0 520 80"></svg></div></div>
+    <div class="card"><div class="card-head"><h3>Infrastructure line items</h3><span class="side-note">from provider invoices</span></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th><th>Plan</th><th class="right">USD / month</th></tr></thead><tbody>
+        <tr><td>Render</td><td>Web service vault-api, starter; static site free</td><td class="right num">7.00</td></tr>
+        <tr><td>Supabase</td><td>Pro: Postgres, pgvector, storage, backups</td><td class="right num">25.00</td></tr>
+        <tr><td>Cloudflare</td><td>Access, 6 of 50 seats</td><td class="right num">0.00</td></tr>
+        <tr><td>Voyage</td><td>Embeddings and rerank, 4.1 M tokens</td><td class="right num">3.00</td></tr>
+        <tr style="background:#FBFAF6"><td><b>Infrastructure total</b></td><td class="muted">ceiling 60</td><td class="right num"><b>35.00</b></td></tr>
+        <tr><td>LLM tokens</td><td>Anthropic, all features</td><td class="right num">68.05</td></tr>
+        <tr style="background:var(--gold-bg)"><td><b>Total</b></td><td></td><td class="right num"><b>103.05</b></td></tr>
+      </tbody></table></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div><span class="label">Retrieval quality</span><h2>RAGAS on the gold set</h2></div><span class="side-note">40 partner-written questions &middot; run on every index change</span></div>
+    <div class="card card-pad"><div class="ragas" id="ragas"></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div><span class="label">Scorecards</span><h2>All projects</h2></div>
+      <div class="legend"><span><span class="dotgrid"><i></i></span> pass</span><span><span class="dotgrid"><i class="f"></i></span> fail</span></div></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl" id="sc-tbl"><thead></thead><tbody></tbody></table></div></div>
+  </div>
+</section>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-bg"><div class="modal" id="modal"></div></div>
+<div class="toast-host" id="toasts"></div>
+<script>
+(function(){
+'use strict';
+/* ============ helpers ============ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const ic=(n,c='')=>`<svg class="ic ${c}"><use href="#i-${n}"/></svg>`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const P={CH:{n:'Chris Hopkinson',c:''},GS:{n:'Partner — Geoscience',c:'gs'},IN:{n:'Partner — Infrastructure',c:'in'},CM:{n:'Partner — Commercial',c:'cm'},MC:{n:'mail-capture',c:'ext'}};
+const av=k=>`<span class="av ${P[k].c}" title="${esc(P[k].n)}">${k==='MC'?'MC':k}</span>`;
+const who=k=>`<span class="who">${av(k)}<span>${k==='CH'?'Chris Hopkinson':k==='GS'?'Geoscience':k==='IN'?'Infrastructure':k==='CM'?'Commercial':'mail-capture'}</span></span>`;
+const lt=t=>`<span class="pill lt">${ic('lock')}${esc(t)}</span>`;
+const fmtDate=d=>{const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const [y,mo,da]=d.split('-');return `${+da} ${m[+mo-1]} ${y}`};
+const TODAY='2026-09-29';
+const daysAgo=d=>Math.round((new Date(TODAY)-new Date(d))/864e5);
+function toast(html){const t=document.createElement('div');t.className='toast';t.innerHTML=`<span>${html}</span>`;$('#toasts').appendChild(t);setTimeout(()=>{t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),300)},3800)}
+function modal(html){$('#modal').innerHTML=html;$('#modal-bg').classList.add('on')}
+function closeModal(){$('#modal-bg').classList.remove('on')}
+$('#modal-bg').addEventListener('click',e=>{if(e.target.id==='modal-bg'||e.target.closest('[data-close]'))closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+/* ============ seed data ============ */
+const TOOLS=[
+ {id:'opportunity-register',name:'Opportunity Register',ver:'2.1.0',life:'production',kind:'Browser tool',owner:'CH',runs:64,isNew:true,newTxt:'2.1.0 · 22 Sep: voidage capped at injector capacity',entry:'/opportunity-register.html',link:true},
+ {id:'apex-reservoir-3d',name:'APEX Reservoir 3D',ver:'2.2.0',life:'production',kind:'Browser tool',owner:'GS',runs:41,entry:'/reservoir-simulator.html'},
+ {id:'apex-asset-intelligence',name:'APEX Asset Intelligence',ver:'4.0.0',life:'production',kind:'External app',owner:'CM',runs:27,external:true,entry:'https://apex-app2.example/'},
+ {id:'apex-3d-model',name:'APEX 3D model',ver:'1.3.0',life:'production',kind:'External app',owner:'GS',runs:12,external:true,entry:'https://apex-3d.example/'},
+ {id:'ela-scenario-studio',name:'ELA Scenario Studio',ver:'1.0.0',life:'production',kind:'Browser tool',owner:'CM',runs:19,entry:'/ela-studio/'},
+ {id:'ela-model-suite',name:'ELA Model Suite',ver:'1.0.0',life:'production',kind:'Browser tool',owner:'CM',runs:14,entry:'/ela-model-suite.html'},
+ {id:'financial-model',name:'Financial Model',ver:'1.0.0',life:'production',kind:'Browser tool',owner:'CM',runs:33,entry:'/financial-modelling.html'},
+ {id:'nodal-analysis',name:'Nodal Analysis',ver:'1.1.0',life:'production',kind:'Browser tool',owner:'CH',runs:22,isNew:true,newTxt:'1.1.0 · 18 Sep: ESP gas-handling limit',entry:'/nodal-analysis-tool.html'},
+ {id:'plan-your-job',name:'Plan Your Job',ver:'1.0.0',life:'production',kind:'Browser tool',owner:'IN',runs:9,entry:'/plan-your-job.html'},
+ {id:'situation-room',name:'Situation Room',ver:'0.9.0',life:'experimental',kind:'Browser tool',owner:'CM',runs:6,entry:'/situation-room/'},
+ {id:'insight-radar',name:'Insight Radar',ver:'1.4.0',life:'production',kind:'Skill',owner:'CH',runs:1,runsLabel:'article this month',entry:'.claude/skills/insight-radar'},
+ {id:'reservoir-simulator',name:'Reservoir Simulator',ver:'1.4.2',life:'deprecated',kind:'Browser tool',owner:'GS',runs:3,replacement:'APEX Reservoir 3D 2.2.0',entry:'/reservoir-simulator.html'}
+];
+const PROJECTS=[
+ {name:'Llanos Basin waterflood screening',client:'Frontera Energy',cc:'CO',last:'Today 09:40',stale:3,rag:'a',runs:9,tag:'lt-frontera-nda-2026',live:true},
+ {name:'Middle Magdalena infill screening',client:'Ecopetrol',cc:'CO',last:'Yesterday',stale:2,rag:'r',runs:12,tag:'lt-ecopetrol-nda-2026'},
+ {name:'Talara brownfield redevelopment',client:'Costa Norte Petróleos',cc:'PE',last:'6 days ago',stale:0,rag:'g',runs:8,tag:'lt-costanorte-nda-2025'},
+ {name:'Recôncavo late-life economics',client:'Bahía Oil & Gas',cc:'BR',last:'3 weeks ago',stale:1,rag:'a',runs:5,tag:'lt-bahia-nda-2026'}
+];
+const RUNS=[
+ ['Today 09:03','GS','apex-reservoir-3d','2.2.0','Middle Magdalena infill','OOIP 412 MMbbl · RF 0.22 (3D sim)','draft',''],
+ ['Today 08:47','CM','financial-model','1.0.0','Talara brownfield','NPV10 USD 58.3 MM · IRR 27%','reviewed',''],
+ ['Yesterday 17:20','CH','opportunity-register','2.1.0','Llanos waterflood (re-run)','NPV10 USD 171.1 MM · 2P 16.0 MMbbl','draft',''],
+ ['Yesterday 15:05','CH','ela-scenario-studio','1.0.0','BD · Orinoco joint evaluation','Steam-assisted +USD 46 MM NPV10 at USD 65/bbl','reviewed',''],
+ ['Yesterday 11:32','IN','plan-your-job','1.0.0','Talara brownfield','Job cost USD 1.84 MM · 31 days','reviewed',''],
+ ['25 Sep 14:44','CM','nodal-analysis','1.1.0','Recôncavo late-life','Operating point 1,840 bopd at 620 psi THP','reviewed',''],
+ ['24 Sep 10:15','GS','apex-asset-intelligence','4.0.0','Middle Magdalena infill','Decline fit: EUR 1.9 MMbbl, b = 0.8','final',''],
+ ['23 Sep 17:58','CH','opportunity-register','2.1.0','Talara brownfield','Potential 12.4 MMbbl · breakeven USD 41/bbl','final',''],
+ ['22 Sep 12:20','CM','financial-model','1.0.0','Recôncavo late-life','NPV10 USD 12.7 MM · payback 4.1 y','final','Price deck brent-2026-06: newer brent-2026-09 exists'],
+ ['21 Sep 09:02','GS','apex-3d-model','1.3.0','Llanos waterflood','Structural model v7 · 14 faults','reviewed',''],
+ ['18 Sep 15:37','CH','opportunity-register','2.0.0','Middle Magdalena infill','Potential 38 MMbbl · NPV10 USD 91.2 MM','final','potential.js 2.0.0, now 2.1.0 (breaking)'],
+ ['17 Sep 16:11','CM','situation-room','0.9.0','Firm','Weekly brief · Brent 71.4 · 5 alerts','draft','']
+];
+const TL=[
+ {d:'2026-09-28',t:'14:12',type:'run',title:'Cubiro waterflood – base (re-run on 2.1.0)',meta:['opportunity-register@2.1.0','NPV10 USD 171.1 MM · 2P 16.0 MMbbl'],who:'CH',status:'draft',note:'parents: run 4d7e…a90 (vintage 2)'},
+ {d:'2026-09-28',t:'09:40',type:'note',title:'Delta note: NPV10 −8.2% after fiscal terms CO-2026 update',meta:['drafted by delta job','cites 2 runs · 1 reference set'],who:'CH',status:'draft'},
+ {d:'2026-09-25',t:'11:04',type:'email',title:'RE: Cubiro water injection data request',meta:['from Jorge Salazar, Frontera','2 attachments','filed automatically, confidence 0.91'],who:'MC'},
+ {d:'2026-09-19',t:'15:30',type:'run',title:'Yopal sector sensitivity, injector spacing 20 / 30 / 40 acres',meta:['opportunity-register@2.0.0','NPV10 USD 92 to 141 MM'],who:'GS',status:'reviewed',stale:'Tool moved from 2.0.0 to 2.1.0 (breaking), and fiscal terms CO-2025 are superseded by CO-2026.'},
+ {d:'2026-09-17',t:'16:45',type:'letter',title:'Letter ATC-2026-0139 to Frontera: interim results, Cubiro waterflood screening',meta:['sent by email · acknowledged 2026-09-18','signed Chris Hopkinson'],who:'CH',status:'final',stale:'Cites run 4d7e…a90 (vintage 2), superseded by the re-run of 2026-09-28. Numbers in paragraph 2 differ by −8.2% NPV10.'},
+ {d:'2026-09-15',t:'10:20',type:'sheet',title:'Cubiro_injectors_layout_v4.xlsx',meta:['data room file from Frontera','6 injectors · 14 producers','lt-frontera-nda-2026'],who:'CM'},
+ {d:'2026-09-14',t:'08:00',type:'ref',title:'Fiscal terms CO-2026 published: ANH sliding-scale royalties on incremental production',meta:['ref:fiscal_terms/CO-2026','loaded from vault/reference'],who:'MC'},
+ {d:'2026-09-10',t:'13:12',type:'paper',title:'Waterflood performance and voidage management in Llanos Basin Cretaceous sandstones',meta:['OnePetro conference paper','third-party licence lt-onepetro-sub-2026','added by weekly paper miner'],who:'MC'},
+ {d:'2026-08-27',t:'12:00',type:'invoice',title:'Invoice INV-2026-0061: milestone 2, interim evaluation',meta:['USD 42,500 · issued 2026-08-27 · paid 2026-09-15','partners only'],who:'CM'},
+ {d:'2026-08-19',t:'17:05',type:'note',title:'Basis note BN-LLA-02: interim evaluation, vintage 2',meta:['PRMS §1.2.0.12 shape','27 assumptions'],who:'CH',status:'final',stale:'Cites run 4d7e…a90 (superseded) and fiscal terms CO-2025 (now CO-2026). Vintage 3 has no basis note yet.'},
+ {d:'2026-08-04',t:'09:33',type:'email',title:'Data request list for Cubiro and Yopal sectors',meta:['to Jorge Salazar, Frontera','sent from chris@ mailbox · dispatch recorded'],who:'CH'},
+ {d:'2026-06-24',t:'16:20',type:'run',title:'Cubiro waterflood – base (vintage 2)',meta:['opportunity-register@2.0.0','NPV10 USD 186.4 MM · 2P 16.2 MMbbl'],who:'CH',status:'final',superseded:true},
+ {d:'2026-06-02',t:'11:00',type:'letter',title:'Engagement letter EL-2026-014, signed both sides',meta:['legal · partners only','NDA FEL-NDA-2026-03 attached'],who:'CH',status:'final'},
+ {d:'2026-03-18',t:'15:02',type:'run',title:'Cubiro waterflood – base (vintage 1, pre-engagement screening)',meta:['opportunity-register@1.2.0','NPV10 USD 142.7 MM · 2P 14.1 MMbbl'],who:'CH',status:'final',superseded:true}
+];
+const TYPE_META={run:['run','Run'],letter:['letter','Letter'],email:['email','Email'],sheet:['sheet','Spreadsheet'],paper:['paper','Paper'],invoice:['invoice','Invoice'],note:['note','Note'],ref:['ref','Reference set']};
+const VINT=[
+ {v:1,d:'2026-03-18',tool:'1.2.0',brk:false,p1:8.4,p2:14.1,p3:21.9,npv:142.7,rf:.18,method:'Analogue recovery factor on OOIP',status:'final',dn:'',reason:'Initial screening before engagement. Public production data only.'},
+ {v:2,d:'2026-06-24',tool:'2.0.0',brk:true,p1:9.6,p2:16.2,p3:24.8,npv:186.4,rf:.21,method:'Decline analysis plus material balance',status:'final',dn:'NPV10 +30.6% · 2P +14.9%',dnUp:true,reason:'Client production histories to May 2026 added. Lifting cost now depends on water cut (2.0.0, breaking). Brent deck 2026-06.'},
+ {v:3,d:'2026-09-28',tool:'2.1.0',brk:true,p1:9.4,p2:16.0,p3:24.1,npv:171.1,rf:.20,method:'Decline analysis plus material balance',status:'draft',dn:'NPV10 −8.2% · 2P −1.2%',dnUp:false,reason:'Fiscal terms CO-2026 (about −6.1 pts). Voidage capped at injector capacity in potential.js 2.1.0 (about −2.1 pts). Volumetrics unchanged.'}
+];
+const LESSONS_PROJECT=[
+ {id:'l-0451',scope:'project',claim:'Cubiro injection is limited by CPF water handling at 8,500 bwpd. Voidage replacement above that is not physical before the 2027 expansion.',status:'confirmed',by:'CH',when:'2026-08-14',ev:['email 2026-09-25','run 4d7e…a90','doc:CPF-water-2026'],tag:'lt-frontera-nda-2026'},
+ {id:'l-0433',scope:'client',claim:'Frontera monthly production files are net of royalty. Gross them up before fitting a decline.',status:'confirmed',by:'GS',when:'2026-07-02',ev:['sheet Cubiro_prod_2026-05.xlsx','email 2026-06-18'],tag:'lt-frontera-nda-2026'},
+ {id:'l-proposed-a',scope:'discipline · reservoir',claim:'Test aquifer strength before assuming voidage replacement of 1.0 in a waterflood screening. Two of three runs this year overshot recovery factor by about 6 points.',status:'proposed',by:'dream:2026-W39',when:'2026-09-27',ev:['run 9f3a…c2d','run 41be…07a','doc:BN-LLA-02'],tag:'lt-frontera-nda-2026'},
+ {id:'l-0231',scope:'firm',claim:'Quote the price deck vintage next to every NPV10 in letters and reports.',status:'confirmed',by:'CH',when:'2025-10-21',ev:['doc:ATC-2025-0044','doc:ATC-2025-0061'],tag:'lt-firm',decay:true}
+];
+const SCORE_RULES=[
+ ['Every headline number traces to a run','p','3 of 3 vintages link to a run id and a tool commit.'],
+ ['Every assumption carries a source and provenance','p','27 of 27 assumptions sourced. 19 measured, 4 client-stated, 3 analogue, 1 assumed.'],
+ ['No stale record in a delivered set','f','Letter ATC-2026-0139 and basis note BN-LLA-02 cite the superseded vintage 2 run. Yopal sensitivity is on 2.0.0.'],
+ ['Basis note current for the latest vintage','f','BN-LLA-02 covers vintage 2. Vintage 3 is a draft with no basis note.'],
+ ['Legal tag valid with more than 90 days left','p','lt-frontera-nda-2026 expires 2027-03-31, 183 days remain.'],
+ ['Every outbound letter has a dispatch and an acknowledgement','p','3 letters, 3 dispatches, 3 acknowledged (latest 2026-09-18).']
+];
+const DISPATCHES=[
+ {dir:'out',d:'2026-07-16',ch:'courier',ref:'ATC-2026-0133',their:'',subj:'Capabilities statement and outline scope of work',by:'CH',ack:'2026-07-28',trk:'DHL 4471 9082 33'},
+ {dir:'in',d:'2026-05-06',ch:'email',ref:'',their:'PDO/GT/0271/26',subj:'Data request list and handling of exchanged information',by:'',ack:'',reply:true},
+ {dir:'out',d:'2026-04-22',ch:'email',ref:'ATC-2026-0117',their:'',subj:'Approach note: screening options for extra-heavy oil',by:'CH',ack:'2026-04-23'},
+ {dir:'out',d:'2026-02-16',ch:'courier',ref:'ATC-2026-0104',their:'',subj:'Executed mutual NDA, ATC counterpart',by:'CH',ack:'2026-02-19',trk:'DHL 3390 1177 05'},
+ {dir:'in',d:'2026-02-09',ch:'email',ref:'',their:'PDO/GT/0214/26',subj:'Comments on draft mutual NDA',by:'',ack:'',reply:true},
+ {dir:'out',d:'2026-02-03',ch:'email',ref:'ATC-2026-0098',their:'',subj:'Introduction and draft mutual NDA',by:'CH',ack:'2026-02-04'}
+];
+const state={filing:[
+ {id:'F1',subj:'RE: Cubiro water injection data request',from:'Jorge Salazar <jorge.salazar@fronteraenergy.example>',when:'2026-09-28 11:04',att:2,sug:'Llanos Basin waterflood screening',conf:.78,why:'sender domain matches Frontera contact · thread quotes “Cubiro” · no project id in subject'},
+ {id:'F2',subj:'Updated PVT report, Cubiro-14 sample',from:'Laboratorio Andino <lab@andino-pvt.example>',when:'2026-09-28 16:20',att:1,sug:'Llanos Basin waterflood screening',conf:.71,why:'subject token “Cubiro-14” · sender unknown, asked for by Frontera 2026-09-25 · alt: Middle Magdalena (0.18)'},
+ {id:'F3',subj:'Ecopetrol: comentarios a la carta ATC-2026-0142',from:'Sofía Peña <s.pena@ecopetrol.example>',when:'2026-09-29 07:52',att:0,sug:'Middle Magdalena infill screening',conf:.83,why:'reference ATC-2026-0142 in body · sender is a project contact · 0.02 under the auto-file threshold'},
+ {id:'F4',subj:'Fwd: Talara well tests, Q3 summary',from:'Rafael Quispe <r.quispe@costanorte.example>',when:'2026-09-26 18:11',att:3,sug:'Talara brownfield redevelopment',conf:.64,why:'forwarded thread, original sender not a listed contact · well names match Talara'},
+ {id:'F5',subj:'INV-77120 GeoLogic licence renewal',from:'Billing <billing@geologic-software.example>',when:'2026-09-27 06:30',att:1,sug:'Firm · administration (no project)',conf:.46,why:'vendor domain · no project token · invoice pattern'}
+],lessons:[
+ {id:'LA',claim:'Test aquifer strength before assuming voidage replacement of 1.0 in a waterflood screening. Two of three runs this year overshot recovery factor by about 6 points.',scope:'discipline',scopeId:'reservoir-engineering',ev:['run 9f3a…c2d','run 41be…07a','doc:BN-LLA-02'],conf:.82,rec:2,tag:'lt-frontera-nda-2026',san:false,detail:'Recurrence 2 of 3: needs one more project before firm-scope review. Not sanitised, so it stays visible to Frontera-scoped work only.'},
+ {id:'LB',claim:'State the price deck vintage in the same sentence as every NPV10 in letters and reports.',scope:'firm',scopeId:'',ev:['doc:ATC-2026-0139','doc:ATC-2026-0142','transcript:2026-09-22-cm'],conf:.91,rec:3,tag:'lt-firm',san:true,detail:'Recurrence 3: observed on 3 projects, promoted from project to firm scope for your review. Sanitised, no client names.'}
+],nda:[
+ {id:'N1',org:'Frontera Energy',tag:'lt-frontera-nda-2025',exp:'2027-03-31',days:183,doc:'doc:FEL-NDA-2026-03 clause 12.1 (the 2026 NDA also covers the legacy Sabanero data)',conf:.94,affects:61,cur:'no expiry set (the 2026 tag already expires 2027-03-31)'},
+ {id:'N2',org:'Costa Norte Petróleos',tag:'lt-costanorte-nda-2025',exp:'2026-12-15',days:77,doc:'doc:CN-NDA-2025-11 clause 9.2',conf:.88,affects:96,cur:'no expiry set',soon:true}
+]};
+
+/* ============ router ============ */
+const SCREENS=['today','project','tool','find','draft','organisation','queue','analogues','cost'];
+function setTab(t){
+  const tabs=['timeline','vintages','lineage','basis','lessons','scorecard'];
+  if(!tabs.includes(t)) t='timeline';
+  $$('#project-tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===t));
+  $$('#s-project .tabpane').forEach(p=>p.classList.toggle('on',p.id==='tab-'+t));
+}
+function route(){
+  const h=(location.hash||'#today').slice(1); const [scr0,sub]=h.split('/');
+  const scr=SCREENS.includes(scr0)?scr0:'today';
+  $$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+scr));
+  $$('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.nav===scr));
+  if(scr==='project') setTab(sub);
+  const title=$('#s-'+scr).dataset.title;
+  $('#crumb').innerHTML=`Hub / <b>${title}</b>`+(scr==='project'?` / <b>${{timeline:'Timeline',vintages:'Headline numbers',lineage:'Lineage',basis:'Basis notes',lessons:'Lessons',scorecard:'Scorecard'}[sub]||'Timeline'}</b>`:'');
+  document.title=`${title.replace(/&amp;/g,'&')} · ATC Hub (mockup)`;
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',route);
+
+/* ============ TODAY ============ */
+function renderTools(f='all'){
+  const list=TOOLS.filter(t=>f==='all'||t.life===f);
+  $('#tools-grid').innerHTML=list.map(t=>{
+    const lifePill=t.life==='production'?'<span class="pill ok">production</span>':t.life==='experimental'?'<span class="pill warn">experimental</span>':'<span class="pill bad">deprecated</span>';
+    const max=64;
+    return `<div class="tool ${t.life==='deprecated'?'dep':''}">
+      ${t.isNew?`<span class="pill new whatsnew" title="${esc(t.newTxt)}">What’s new</span>`:''}
+      <div class="tool-top"><div class="tool-name" data-tool="${t.id}">${esc(t.name)}</div>${lifePill}</div>
+      <div class="tool-meta"><span class="pill ${t.external?'info':'ghost'}">${t.kind}</span><span class="who">${av(t.owner)}<span>${t.owner==='CH'?'Chris H.':t.owner==='GS'?'Geoscience':t.owner==='IN'?'Infrastructure':'Commercial'}</span></span></div>
+      <div class="tool-ver"><span class="v">${t.ver}</span><span class="t">${t.life==='deprecated'?'last version':'current'}</span></div>
+      ${t.replacement?`<div class="side-note">Replaced by <b style="color:var(--navy)">${t.replacement}</b>. Links redirect.</div>`:`<div class="tool-runs"><span><b class="num">${t.runs}</b> ${t.runsLabel||'runs this month'}</span><div class="bar ${t.life==='experimental'?'warn':'gold'}"><i style="width:${Math.max(4,t.runs/max*100)}%"></i></div></div>`}
+      ${t.isNew?`<div class="side-note" style="margin-top:-2px">${esc(t.newTxt)}</div>`:''}
+      <div class="tool-foot"><button class="btn btn-gold sm" data-open="${t.id}">Open current</button><button class="btn btn-ghost sm" data-tool="${t.id}">Changelog</button></div>
+    </div>`}).join('');
+}
+$('#tool-filter').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;$$('#tool-filter .chip').forEach(c=>c.classList.toggle('on',c===b));renderTools(b.dataset.f)});
+document.addEventListener('click',e=>{
+  const o=e.target.closest('[data-open]'); if(o){const t=TOOLS.find(x=>x.id===o.dataset.open);toast(`Resolved <b>${t.id}@${t.ver}</b> from aliases.current<br><span class="mono" style="color:#cfd6df">${t.entry}</span>`);return}
+  const n=e.target.closest('[data-tool]'); if(n){ if(n.dataset.tool==='opportunity-register') location.hash='#tool'; else toast('Mockup: only the Opportunity Register tool page is seeded. Others render from the same manifest fields.'); }
+});
+function renderProjects(){
+  $('#my-projects').innerHTML=PROJECTS.map((p,i)=>`<div class="card proj" data-proj="${i}">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(p.name)}</h3><span class="rag ${p.rag}" title="Scorecard ${p.rag==='g'?'green':p.rag==='a'?'amber':'red'}" style="margin-top:5px"></span></div>
+    <div class="proj-row"><span>${esc(p.client)} &middot; ${p.cc}</span></div>
+    <div class="proj-row"><span>Last activity</span><b style="color:var(--navy);font-weight:500">${p.last}</b></div>
+    <div class="proj-row"><span>Runs · items</span><b style="color:var(--navy);font-weight:500" class="num">${p.runs} · ${p.runs*3+4}</b></div>
+    <div class="proj-row"><span>Stale</span>${p.stale?`<span class="stale-badge">${p.stale} stale</span>`:'<span class="pill ok">0 stale</span>'}</div>
+  </div>`).join('');
+}
+document.addEventListener('click',e=>{const c=e.target.closest('[data-proj]');if(!c)return;const p=PROJECTS[+c.dataset.proj];if(p.live)location.hash='#project';else toast('Mockup: only the Llanos Basin project file is seeded.')});
+function attnItem(ico,cls,title,meta,acts){return `<div class="attn-item"><div class="ico ${cls}">${ic(ico)}</div><div class="body"><div class="t">${title}</div><div class="m">${meta}</div></div><div class="act">${acts}</div></div>`}
+function renderAttn(){
+  $('#attn-stale').innerHTML=[
+   attnItem('letter','bad','Letter ATC-2026-0142 to Ecopetrol cites run on potential.js 2.0.0, now 2.1.0 (breaking)','Middle Magdalena infill screening · sent 2026-09-19 by courier','<a class="btn btn-ghost sm" href="#tool">Re-run</a>'),
+   attnItem('letter','bad','Letter ATC-2026-0139 to Frontera cites the Cubiro base run of 2026-06-24, superseded by the re-run of 2026-09-28','Llanos Basin waterflood screening · NPV10 differs by −8.2%','<a class="btn btn-ghost sm" href="#project/timeline">Open</a>'),
+   attnItem('note','bad','Basis note BN-LLA-02 cites fiscal terms CO-2025, now CO-2026','Llanos Basin waterflood screening · vintage 3 has no basis note','<a class="btn btn-ghost sm" href="#project/basis">Open</a>'),
+   attnItem('run','bad','Run “Yopal sector sensitivity” is on Opportunity Register 2.0.0, now 2.1.0 (breaking)','Llanos Basin waterflood screening · by Geoscience','<a class="btn btn-ghost sm" href="#tool">Re-run</a>')
+  ].join('');
+  $('#c-stale').textContent=4;
+  renderAttnFiling(); renderAttnLessons();
+  $('#attn-delta').innerHTML=attnItem('refresh','gold','NPV10 −8.2% after fiscal terms CO-2026 update','Llanos · Cubiro waterflood – base · USD 186.4 MM to 171.1 MM · re-run by CH yesterday 14:12','<a class="btn btn-gold sm" href="#project/vintages">Review</a>');
+}
+function renderAttnFiling(){
+  const f=state.filing;
+  $('#c-filing').textContent=f.length;
+  $('#attn-filing').innerHTML=f.length?f.slice(0,3).map(x=>attnItem('email','',esc(x.subj),`from ${esc(x.from.split(' <')[0])} · suggested <b style="color:var(--navy);font-weight:500">${esc(x.sug)}</b> · <span class="num">${x.conf.toFixed(2)}</span>`,'<a class="btn btn-ghost sm" href="#queue">Assign</a>')).join('')+(f.length>3?`<div class="attn-item" style="justify-content:center"><a class="link" href="#queue">${f.length-3} more in the review queue</a></div>`:''):`<div class="empty"><svg class="ic"><use href="#i-check"/></svg><b>Filing queue clear</b><span>Everything below 0.85 confidence has been assigned.</span></div>`;
+}
+function renderAttnLessons(){
+  const l=state.lessons;
+  $('#attn-lessons').innerHTML=l.length?l.map(x=>attnItem('lesson','gold',esc(x.claim.length>112?x.claim.slice(0,110)+'…':x.claim),`${x.scope}${x.scopeId?' · '+x.scopeId:''} · confidence ${x.conf.toFixed(2)} · dream:2026-W39`,'<a class="btn btn-ghost sm" href="#queue">Review</a>')).join(''):`<div class="empty"><svg class="ic"><use href="#i-check"/></svg><b>No proposals waiting</b><span>The next dream job runs Sunday 04:00.</span></div>`;
+}
+function renderRuns(f='all'){
+  const rows=RUNS.filter(r=>f==='all'||(f==='stale'?r[7]:r[6]===f));
+  $('#runs-tbl tbody').innerHTML=rows.length?rows.map(r=>`<tr class="${r[7]?'is-stale':''}">
+    <td class="nowrap">${r[0]}</td><td>${who(r[1])}</td><td class="nowrap"><span class="mono">${r[2]}</span><b class="num" style="margin-left:2px">@${r[3]}</b></td><td>${esc(r[4])}</td><td>${esc(r[5])}</td>
+    <td><span class="pill ${r[6]==='final'?'ok':r[6]==='reviewed'?'info':''}">${r[6]}</span></td>
+    <td>${r[7]?`<span class="stale-badge" title="${esc(r[7])}">${ic('alert')}stale</span><span class="sub">${esc(r[7])}</span>`:'<span class="muted">&mdash;</span>'}</td></tr>`).join(''):`<tr><td colspan="7"><div class="empty"><svg class="ic"><use href="#i-check"/></svg><b>No runs match</b></div></td></tr>`;
+}
+$('#run-filter').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;$$('#run-filter .chip').forEach(c=>c.classList.toggle('on',c===b));renderRuns(b.dataset.f)});
+
+/* ============ PROJECT ============ */
+let tlFilter='all';
+function renderTimeline(){
+  const types=[['all','All'],['run','Runs'],['letter','Letters'],['email','Emails'],['sheet','Spreadsheets'],['paper','Papers'],['invoice','Invoices'],['other','Other'],['stale','Stale only']];
+  $('#tl-filter').innerHTML=types.map(([k,l])=>`<button class="chip ${tlFilter===k?'on':''}" data-f="${k}">${l}</button>`).join('');
+  const rows=TL.filter(x=>tlFilter==='all'||(tlFilter==='stale'?x.stale:tlFilter==='other'?['note','ref'].includes(x.type):x.type===tlFilter));
+  $('#tl-count').textContent=`${rows.length} of ${TL.length} records · newest first`;
+  $('#tl-list').innerHTML=rows.length?rows.map(x=>{
+    const [icn,lab]=TYPE_META[x.type];
+    return `<div class="tl-item">
+      <div class="tl-date">${fmtDate(x.d).replace(' 2026','')}<div class="muted" style="letter-spacing:.04em">${x.t}</div></div>
+      <div class="tl-ico ${x.type} ${x.stale?'stale':''}" title="${lab}">${ic(icn)}</div>
+      <div class="tl-body"><div class="t">${esc(x.title)}</div>
+        <div class="m"><span class="pill ghost">${lab}</span>${x.meta.map(m=>`<span>${esc(m)}</span>`).join('')}</div>
+        ${x.stale?`<div class="why">${ic('alert')}<span><b>Stale:</b> ${esc(x.stale)}</span></div>`:''}
+        ${x.note?`<div class="side-note" style="margin-top:4px">${esc(x.note)}</div>`:''}</div>
+      <div class="tl-side">${x.stale?'<span class="stale-badge">stale</span>':x.superseded?'<span class="pill ghost">superseded</span>':''}${x.status?`<span class="pill ${x.status==='final'?'ok':x.status==='reviewed'?'info':''}">${x.status}</span>`:''}${who(x.who)}</div>
+    </div>`}).join(''):`<div class="empty"><svg class="ic"><use href="#i-check"/></svg><b>No records of this type</b></div>`;
+}
+$('#tl-filter').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;tlFilter=b.dataset.f;renderTimeline()});
+function renderVintages(){
+  $('#vint-tbl tbody').innerHTML=VINT.slice().reverse().map(v=>`<tr>
+    <td><b style="font-size:15px">Vintage ${v.v}</b><span class="sub"><span class="pill ${v.status==='final'?'ok':''}">${v.status}</span></span></td>
+    <td class="nowrap">${v.d}</td>
+    <td class="nowrap"><b class="num">${v.tool}</b>${v.brk?'<span class="sub"><span class="pill bad">breaking</span></span>':''}</td>
+    <td class="right num">${v.p1.toFixed(1)}</td><td class="right num"><b>${v.p2.toFixed(1)}</b></td><td class="right num">${v.p3.toFixed(1)}</td>
+    <td class="right num"><b>${v.npv.toFixed(1)}</b></td><td class="right num">${(v.rf*100).toFixed(0)}%</td>
+    <td style="min-width:150px">${esc(v.method)}</td>
+    <td class="nowrap">${v.dn?`<span class="delta ${v.dnUp?'up':'dn'}">${v.dn}</span>`:'<span class="muted">first vintage</span>'}</td>
+    <td style="min-width:260px">${esc(v.reason)}</td></tr>`).join('');
+}
+function renderLineage(){
+  const W=210,H=56;
+  const N={
+   fisc25:{x:10,y:24,k:'ref',t:'ref:fiscal_terms/CO-2025',s:'superseded by CO-2026',st:'sup'},
+   fisc26:{x:10,y:104,k:'ref',t:'ref:fiscal_terms/CO-2026',s:'published 2026-09-14',st:'cur'},
+   brent:{x:10,y:184,k:'ref',t:'ref:price_decks/brent-2026-06',s:'Brent deck, June 2026',st:'cur'},
+   prod:{x:10,y:264,k:'doc',t:'Cubiro_prod_2026-05.xlsx',s:'client production history',st:'cur'},
+   pvt:{x:10,y:344,k:'doc',t:'Cubiro_PVT_2025-11.pdf',s:'PVT report, data room',st:'cur'},
+   v2:{x:290,y:44,k:'run',t:'Run · vintage 2 · OR 2.0.0',s:'2026-06-24 · NPV10 186.4',st:'sup'},
+   v3:{x:290,y:184,k:'run',t:'Run · vintage 3 · OR 2.1.0',s:'2026-09-28 · NPV10 171.1 · draft',st:'cur'},
+   yop:{x:290,y:324,k:'run',t:'Run · Yopal sensitivity',s:'OR 2.0.0 · 2026-09-19',st:'stale'},
+   rep2:{x:570,y:84,k:'doc',t:'Evaluation report v2',s:'interim, issued 2026-08-19',st:'stale'},
+   ev3:{x:570,y:224,k:'doc',t:'Evaluation report v3',s:'not issued · in draft',st:'cur',dash:true},
+   let39:{x:840,y:34,k:'letter',t:'Letter ATC-2026-0139',s:'to Frontera · 2026-09-17',st:'stale'},
+   bn:{x:840,y:144,k:'doc',t:'Basis note BN-LLA-02',s:'vintage 2 · 27 assumptions',st:'stale'}
+  };
+  const E=[['fisc25','v2'],['fisc25','yop'],['fisc26','v3'],['brent','v2'],['brent','v3'],['brent','yop'],['prod','v2'],['prod','v3'],['prod','yop'],['pvt','v2'],['pvt','v3'],['v2','rep2'],['yop','rep2','bad'],['v2','bn','bad'],['rep2','let39','bad'],['v3','ev3']];
+  const anchor=(k,side)=>{const n=N[k];return [n.x+(side==='r'?W:0),n.y+H/2]};
+  let s=`<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#9AA6B5"/></marker><marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#C0392B"/></marker></defs>`;
+  [['Reference sets and documents',10],['Runs',290],['Evaluation',570],['Deliverables',840]].forEach(([t,x])=>s+=`<text class="ln-col" x="${x}" y="14">${t}</text>`);
+  E.forEach(([a,b,c])=>{const [x1,y1]=anchor(a,'r'),[x2,y2]=anchor(b,'l');const m=(x1+x2)/2;s+=`<path class="ln-edge ${c||''}" d="M${x1} ${y1} C${m} ${y1} ${m} ${y2} ${x2-2} ${y2}" marker-end="url(#${c?'arb':'ar'})"/>`});
+  const fill={ref:'#E6EEF7',run:'#EEF2F8',doc:'#F6EED6',letter:'#F6EED6'};
+  Object.entries(N).forEach(([id,n])=>{
+    const stale=n.st==='stale',sup=n.st==='sup';
+    const stroke=stale?'#C0392B':sup?'#9AA6B5':'#0B1F3A';
+    s+=`<g class="ln-node" data-node="${esc(n.t)}"><rect x="${n.x}" y="${n.y}" width="${W}" height="${H}" rx="8" fill="${stale?'#FBE9E6':sup?'#F0F1F4':fill[n.k]}" stroke="${stroke}" stroke-width="${stale?2.5:1.6}" ${n.dash?'stroke-dasharray="5 4"':''} ${sup?'stroke-dasharray="3 3"':''}/>
+      <text class="ln-t" x="${n.x+12}" y="${n.y+23}">${esc(n.t)}</text><text class="ln-s" x="${n.x+12}" y="${n.y+40}">${esc(n.s)}</text>
+      ${stale?`<g transform="translate(${n.x+W-52},${n.y-9})"><rect width="46" height="17" rx="4" fill="#C0392B"/><text x="23" y="12" text-anchor="middle" fill="#fff" font-family="Barlow Condensed,sans-serif" font-size="11" font-weight="700" letter-spacing="1.2">STALE</text></g>`:''}</g>`;
+  });
+  s+=`<text class="ln-s" x="10" y="470">Red dashed edges: the citing record depends on a superseded or moved input.</text><text class="ln-s" x="10" y="486">Vintage 3 (current) has no evaluation report, letter or basis note yet, which is why 3 records are stale.</text>`;
+  $('#lineage').innerHTML=s;
+}
+document.addEventListener('click',e=>{const n=e.target.closest('.ln-node');if(n)toast(`Would open record <b>${esc(n.dataset.node)}</b> in the Vault viewer`)});
+function renderBasis(){
+  $('#basis-grid').innerHTML=`<div class="basis card-pad" style="padding:20px 24px">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h3>BN-LLA-02 · Basis of preparation, interim evaluation</h3><div style="display:flex;gap:6px"><span class="stale-badge">stale</span><span class="pill ok">final</span></div></div>
+    <div class="side-note" style="margin-top:2px">Vintage 2 · opportunity-register@2.0.0 · signed Chris Hopkinson 2026-08-19 · PRMS §1.2.0.12 shape</div>
+    <h4>Method</h4><ul class="b"><li>Decline curve analysis on 14 producers, then material balance to bound aquifer support.</li><li>Waterflood recovery factor from four analogues (own evaluations and ANH data).</li></ul>
+    <h4>Data relied on</h4><ul class="b"><li>Production history to May 2026 (Cubiro_prod_2026-05.xlsx), verified against ANH monthly reports.</li><li>Brent price deck June 2026, fiscal terms CO-2025.</li></ul>
+    <h4>Data accepted as represented</h4><ul class="b"><li>PVT report Cubiro_PVT_2025-11.pdf: not re-verified by ATC.</li><li>Injector capacity of 8,500 bwpd, as stated by Frontera on 2026-09-25.</li></ul>
+    <h4>Assumptions (27, each with source)</h4><ul class="b"><li>Voidage replacement 1.0 <span class="pill ghost">assumed</span></li><li>Kh 320 mD <span class="pill ghost">measured</span></li><li>Opex USD 11.20/bbl <span class="pill ghost">client-stated</span></li><li class="muted">24 more…</li></ul>
+    <div class="notice bad" style="margin-top:14px">${ic('alert','lg')}<div class="grow"><b>Why stale.</b> Cites run 4d7e…a90 (superseded 2026-09-28) and fiscal terms CO-2025. Regenerate from the vintage 3 run to issue BN-LLA-03.</div><button class="btn btn-danger sm" data-toast="Mockup: would draft BN-LLA-03 from the vintage 3 run (calc-note kind).">Draft BN-LLA-03</button></div>
+  </div>
+  <div class="card"><div class="card-head"><h3>Notes on this project</h3></div>
+    <div class="card-pad" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;gap:8px"><div><b>BN-LLA-02</b><div class="side-note">2026-08-19 · vintage 2</div></div><span class="stale-badge">stale</span></div>
+      <div style="display:flex;justify-content:space-between;gap:8px"><div><b>BN-LLA-01</b><div class="side-note">2026-03-20 · vintage 1</div></div><span class="pill ghost">superseded</span></div>
+      <div class="notice warn">${ic('info')}<div class="grow">No basis note exists for vintage 3. Scorecard rule 4 fails until one is issued.</div></div>
+    </div></div>`;
+}
+function renderLessonsTab(){
+  $('#lessons-card').innerHTML=LESSONS_PROJECT.map(l=>`<div class="q-card" style="grid-template-columns:minmax(0,1fr) auto">
+    <div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><span class="pill info">${esc(l.scope)}</span>${l.status==='proposed'?'<span class="pill warn">proposed · in review queue</span>':'<span class="pill ok">confirmed</span>'}${l.decay?'<span class="pill warn">unconfirmed 11 months · queued for review</span>':''}${lt(l.tag)}</div>
+      <div class="q-title">${esc(l.claim)}</div>
+      <div class="q-meta"><span>${l.status==='proposed'?'proposed by '+l.by:'confirmed by '+(P[l.by]?P[l.by].n:l.by)}, ${l.when}</span><span>${l.id}</span></div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${l.ev.map(e=>`<span class="ev">${esc(e)}</span>`).join('')}</div></div>
+    <div>${l.status==='proposed'?'<a class="btn btn-gold sm" href="#queue">Review</a>':''}</div></div>`).join('');
+}
+function renderScore(){
+  const pass=SCORE_RULES.filter(r=>r[1]==='p').length;
+  $('#score-grid').innerHTML=`<div class="card card-pad"><ul class="rule-list">${SCORE_RULES.map((r,i)=>`<li><span class="tick ${r[1]}">${ic(r[1]==='p'?'check':'x')}</span><div><b>${i+1}. ${r[0]}</b><div class="side-note" style="font-size:13px;margin-top:2px">${esc(r[2])}</div></div><span class="pill ${r[1]==='p'?'ok':'bad'}">${r[1]==='p'?'pass':'fail'}</span></li>`).join('')}</ul></div>
+   <div class="card card-pad"><div class="label" style="margin-bottom:8px">Summary</div>
+     <div style="display:flex;align-items:center;gap:14px"><span class="rag a" style="width:26px;height:26px"></span><div><div style="font-family:var(--font-display);font-size:28px;font-weight:600;line-height:1">${pass}/6 rules pass</div><div class="side-note">Amber: 4 or 5 of 6. Red at 3 or fewer.</div></div></div>
+     <div style="margin-top:16px" class="side-note">Trend, last four weeks</div>
+     <div style="display:flex;gap:6px;margin-top:6px;align-items:flex-end;height:54px">${[[5,'g'],[5,'g'],[6,'g'],[4,'a']].map(([n,c],i)=>`<div style="flex:1;text-align:center"><div class="bar ${n===6?'ok':n>=4?'warn':'bad'}" style="height:${n*8}px;border-radius:4px"><i style="width:100%;height:100%;background:${n===6?'#2E9E6E':n>=4?'#E0A020':'#C0392B'}"></i></div></div>`).join('')}</div>
+     <div style="display:flex;gap:6px" class="side-note">${['W36','W37','W38','W39'].map(w=>`<div style="flex:1;text-align:center">${w}</div>`).join('')}</div>
+     <div class="notice info" style="margin-top:16px">${ic('info')}<div class="grow">Fixing rules 3 and 4 needs one re-run of the Yopal sensitivity, a redraft of ATC-2026-0139 and BN-LLA-03.</div></div>
+   </div>`;
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-action="rerun-project"]')){modal(`<div class="modal-h"><span class="label">Re-run with current</span><h2>Re-run stale runs in this project?</h2></div><div class="modal-b"><p style="max-width:none">1 run is stale by tool version: <b>Yopal sector sensitivity</b> (OR 2.0.0 &rarr; 2.1.0). Fiscal terms CO-2026 will be applied. A new Run is written with <span class="mono">parents=[old]</span>; the old run is kept and marked superseded. A delta note is drafted from the two records.</p><p style="max-width:none" class="muted">Documents citing it (evaluation report v2) stay stale until redrafted.</p></div><div class="modal-f"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-gold" data-confirm="rerun1">Re-run 1 run</button></div>`)}
+  if(e.target.closest('[data-confirm="rerun1"]')){closeModal();toast('Re-run queued: <b>Yopal sector sensitivity</b> on opportunity-register@2.1.0. Delta note will appear in the timeline.')}
+  const g=e.target.closest('[data-goto]'); if(g){ if(g.dataset.toast) toast(g.dataset.toast); location.hash='#'+g.dataset.goto; return }
+  const t=e.target.closest('[data-toast]'); if(t&&!t.dataset.goto){ toast(t.dataset.toast) }
+});
+
+/* ============ TOOL ============ */
+const OLD_RUNS=[
+ ['Yopal sector sensitivity','Llanos waterflood','GS','2.0.0','2026-09-19','Evaluation report v2'],
+ ['Magdalena infill: base case','Middle Magdalena','CH','2.0.0','2026-09-18','Letter ATC-2026-0142'],
+ ['Magdalena infill: low price','Middle Magdalena','CH','2.0.0','2026-09-18','Letter ATC-2026-0142'],
+ ['Magdalena infill: high price','Middle Magdalena','CH','2.0.0','2026-09-18','none'],
+ ['Recôncavo late-life: base','Recôncavo late-life','CM','2.0.0','2026-08-30','Basis note BN-REC-01'],
+ ['Talara type-well screening','Talara brownfield','IN','1.2.0','2026-04-02','none'],
+ ['Recôncavo field ranking (legacy)','Recôncavo late-life','CM','1.2.0','2026-03-11','none']
+];
+let rerunDone=false;
+function renderTool(){
+  const v=[['2.1.0',41,'ok'],['2.0.0',5,'bad'],['1.2.0',2,'bad']],max=41;
+  $('#runs-by-version').innerHTML=v.map(([n,c,k])=>`<div class="hbar"><b class="num">${n}</b><div class="bar ${n==='2.1.0'?'gold':'bad'}"><i style="width:${c/max*100}%"></i></div><span class="num right">${c}</span></div>`).join('')+`<div class="side-note" style="margin-top:8px">48 active runs · <b style="color:var(--bad)">7 (15%)</b> on versions older than current</div><div class="side-note" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)">64 runs saved this month, including 9 re-runs and 4 superseded.</div>`;
+  $('#old-runs tbody').innerHTML=OLD_RUNS.map((r,i)=>`<tr class="${rerunDone?'':'is-stale'}"><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${who(r[2])}</td><td><span class="mono">${r[3]}</span></td><td class="nowrap">${r[4]}</td><td>${r[5]==='none'?'<span class="muted">none</span>':esc(r[5])}</td><td class="right">${rerunDone?'<span class="pill ok">re-run · draft</span>':`<button class="btn btn-ghost sm" data-rr="${i}">Re-run</button>`}</td></tr>`).join('');
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-action="rerun-all"]')){modal(`<div class="modal-h"><span class="label">Re-run all</span><h2>Re-run 7 runs on opportunity-register@2.1.0?</h2></div><div class="modal-b"><p style="max-width:none">Each run is replayed through <span class="mono">window.ATC_TOOL.run(params)</span>. Seven new Runs are written as <b>draft</b> with <span class="mono">parents=[old]</span>, and a delta note is drafted for each. Old runs are marked superseded, never deleted.</p><div class="notice warn">${ic('alert')}<div class="grow">3 runs are cited by client letters. Those letters stay stale until you redraft them.</div></div></div><div class="modal-f"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-gold" data-confirm="rerunall">Re-run all 7</button></div>`)}
+  if(e.target.closest('[data-confirm="rerunall"]')){closeModal();rerunDone=true;renderTool();
+    $('#older-alert').className='notice ok';$('#older-alert').innerHTML=`${ic('check','lg')}<div class="grow"><b>7 re-runs written as drafts.</b> 7 delta notes were drafted and are waiting in Today &rarr; Needs attention. Nothing was overwritten.</div>`;
+    toast('7 re-runs queued on <b>2.1.0</b>')}
+  const rr=e.target.closest('[data-rr]');if(rr){toast(`Re-run queued: <b>${esc(OLD_RUNS[+rr.dataset.rr][0])}</b> on 2.1.0`);rr.outerHTML='<span class="pill ok">queued</span>'}
+});
+
+/* ============ FIND ============ */
+const FIND=[
+ {lv:'project',type:'run',title:'Cubiro waterflood – base (re-run on 2.1.0)',snip:'Voidage replacement capped at injector capacity of 8,500 bwpd. Waterflood recovery factor 0.20 on OOIP; NPV10 USD 171.1 MM on the Brent 2026-06 deck and CO-2026 fiscal terms.',path:'vault://runs/9f3a…c2d · project llanos-wf',tag:'lt-frontera-nda-2026',who:['CH'],d:'2026-09-28'},
+ {lv:'project',type:'email',title:'RE: Cubiro water injection data request',snip:'Current injection is 6,400 bwpd across 6 injectors. The CPF water handling limit stays at 8,500 bwpd, so full voidage replacement is not possible before the 2027 expansion.',path:'vault://items/mail/2026-09-25-salazar · thread cubiro-injection',tag:'lt-frontera-nda-2026',who:['CH','GS'],d:'2026-09-25'},
+ {lv:'project',type:'letter',title:'Letter ATC-2026-0139 to Frontera: interim results, Cubiro waterflood screening',snip:'The waterflood screening supports an incremental 2P of 16.2 MMbbl, provided a voidage replacement close to 1.0 can be sustained over the first five years.',path:'vault://items/letters/ATC-2026-0139 · v2',tag:'lt-frontera-nda-2026',who:['CH','CM'],d:'2026-09-17',stale:true},
+ {lv:'project',type:'report',title:'Evaluation report v2: Cubiro waterflood screening',snip:'Analogue waterfloods in the Llanos show recovery gains of 6 to 11 points. Voidage management and water cut control explain most of the spread; royalty treatment moves NPV10 by less than 5%.',path:'vault://items/reports/eval-llanos-v2.pdf',tag:'lt-frontera-nda-2026',who:['CH','GS'],d:'2026-08-19',stale:true},
+ {lv:'project',type:'note',title:'Basis note BN-LLA-02',snip:'Voidage replacement of 1.0 is an assumption (assumed). Production history accepted as represented by Frontera after cross-check against ANH monthly reports. Waterflood analogue set: four fields.',path:'vault://items/notes/BN-LLA-02',tag:'lt-frontera-nda-2026',who:['CH'],d:'2026-08-19',stale:true},
+ {lv:'project',type:'sheet',title:'Cubiro_injectors_layout_v4.xlsx',snip:'Injector-producer pairs, cumulative injection, water cut by well and voidage balance by pattern. 6 injectors, 14 producers.',path:'vault://items/data-room/frontera/Cubiro_injectors_layout_v4.xlsx',tag:'lt-frontera-nda-2026',who:['CM','GS'],d:'2026-09-15'},
+ {lv:'project',type:'paper',title:'Waterflood performance and voidage management in Llanos Basin Cretaceous sandstones',snip:'Voidage replacement ratios below 0.8 correlated with early water breakthrough in 7 of 11 waterflood patterns; recovery gains were largest where injection was pattern-balanced.',path:'vault://items/papers/onepetro/… · added by paper miner',tag:'lt-onepetro-sub-2026',who:['GS'],d:'2026-09-10'},
+ {lv:'client',type:'email',title:'Water handling capacity at Cubiro CPF',snip:'The CPF can handle 8,500 bwpd today. Expansion to 14,000 bwpd is planned for Q3 2027, which would allow voidage replacement above 1.0 in the western patterns.',path:'vault://items/mail/2026-07-30-rincon · client frontera',tag:'lt-frontera-nda-2026',who:['CH'],d:'2026-07-30'},
+ {lv:'client',type:'report',title:'Sabanero polymer flood screening (2025)',snip:'Polymer flood compared with waterflood on the Sabanero sands. Voidage replacement held at 1.0; incremental recovery 4 to 7 points; water cut fell from 91% to 84% in the pilot.',path:'vault://items/reports/frontera-sabanero-2025.pdf · project sabanero-2025',tag:'lt-frontera-nda-2025',who:['GS','CH'],d:'2025-11-12'},
+ {lv:'client',type:'sheet',title:'Cubiro_PVT_2025-11.pdf',snip:'Bubble point 1,850 psi, Bo 1.18 rb/stb, oil viscosity 6.2 cp. Formation volume factors used for the voidage calculation.',path:'vault://items/data-room/frontera/Cubiro_PVT_2025-11.pdf',tag:'lt-frontera-nda-2026',who:['GS'],d:'2025-11-30'},
+ {lv:'firm',type:'lesson',title:'Lesson l-0304: derive voidage from injector capacity, not from a target ratio',snip:'In a waterflood screening, take voidage replacement from the stated injector and facility capacity. A target ratio of 1.0 overstates recovery when water handling is the constraint.',path:'vault://lessons/l-0304 · scope firm · sanitised',tag:'lt-firm',who:['CH','GS'],d:'2026-05-19'},
+ {lv:'firm',type:'note',title:'Calc note template v2: basis of preparation',snip:'A waterflood evaluation lists the voidage replacement assumption, its source and its provenance (measured, client-stated, analogue, assumed).',path:'vault://firm/assets/templates/calc-note-v2.docx',tag:'lt-firm',who:['CH'],d:'2026-03-04'},
+ {lv:'firm',type:'sheet',title:'Analogue table extract: Llanos waterflood analogues (sanitised)',snip:'Four waterflood analogues with voidage replacement ratios from 0.7 to 1.1 and recovery gains of 6 to 11 points. Own evaluations only.',path:'vault://analogues/extract/llanos-waterflood-2026-06.csv',tag:'lt-firm',who:['GS'],d:'2026-06-30'},
+ {lv:'public',type:'feed',title:'ANH Colombia: production by field, 2026-08',snip:'CUBIRO: oil 9,420 bopd, water cut 88%. Fields under waterflood report water injection volumes monthly; regional water cut rose 1.4 points year on year.',path:'vault://feeds/anh/production-by-field/2026-08.json · source ANH Socrata',tag:'lt-public',who:['MC'],d:'2026-09-20'},
+ {lv:'public',type:'paper',title:'Voidage replacement ratio and recovery in mature waterfloods: a literature synthesis',snip:'Across 63 field cases, recovery correlated with cumulative voidage replacement between 0.9 and 1.1; ratios above 1.1 added water cut without additional oil.',path:'vault://items/papers/openalex/… · open access',tag:'lt-public',who:['MC'],d:'2026-08-12'},
+ {lv:'public',type:'feed',title:'ANH Acuerdo 2/2026: sliding-scale royalties on incremental production',snip:'Royalty steps apply to incremental production from waterflood and other improved-recovery projects, from the first barrel above the certified baseline.',path:'vault://feeds/anh/regulation/acuerdo-2-2026 · source ANH',tag:'lt-public',who:['MC'],d:'2026-09-14'}
+];
+const FIND_TYPES=[['all','All types'],['run','Runs'],['letter','Letters'],['email','Emails'],['report','Reports'],['sheet','Spreadsheets & data'],['paper','Papers'],['feed','Feeds & regulator'],['lesson','Lessons'],['note','Notes']];
+const LV=['project','client','firm','public'];
+const PRED={project:'scope = project:llanos-wf   AND legal_tag.expires_at > now()   → project records only',
+ client:'scope = project:llanos-wf ∪ client:frontera   AND legal_tag.expires_at > now()   → this project and other Frontera work',
+ firm:'scope = project ∪ client:frontera ∪ classification:firm   AND legal_tag.expires_at > now()   → adds lessons, templates and firm-tagged records',
+ public:'scope = project ∪ client:frontera ∪ firm ∪ classification:public   AND legal_tag.expires_at > now()   → adds regulator data, feeds and open papers. Other clients are never included.'};
+let findType='all';
+const TYPE_ICON={run:'run',letter:'letter',email:'email',report:'report',sheet:'sheet',paper:'paper',feed:'feed',lesson:'lesson',note:'note'};
+function renderFind(){
+  const q=$('#find-q').value.trim(), scope=$('#find-scope').value, dateF=$('#find-date').value;
+  $('#scope-pred').textContent=PRED[scope];
+  const terms=q.toLowerCase().split(/\s+/).filter(t=>t.length>=2);
+  let rows=FIND.filter(r=>LV.indexOf(r.lv)<=LV.indexOf(scope));
+  const inScope=rows.length;
+  if(terms.length) rows=rows.map(r=>{const h=(r.title+' '+r.snip).toLowerCase();const s=terms.reduce((a,t)=>a+(h.split(t).length-1),0);return {...r,score:s}}).filter(r=>r.score>0);
+  else rows=[];
+  const beforeFilters=rows.length;
+  if(findType!=='all') rows=rows.filter(r=>r.type===findType);
+  if(dateF!=='any') rows=rows.filter(r=>daysAgo(r.d)<=+dateF);
+  rows.sort((a,b)=>(b.score-a.score)||(b.d.localeCompare(a.d)));
+  $('#find-types').innerHTML=FIND_TYPES.map(([k,l])=>`<button class="chip ${findType===k?'on':''}" data-f="${k}">${l}</button>`).join('');
+  const hl=s=>{let o=esc(s);terms.forEach(t=>{o=o.replace(new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>')});return o};
+  $('#find-count').innerHTML=terms.length?`<b>${rows.length}</b> result${rows.length===1?'':'s'} for “${esc(q)}” in <b>${scope==='project'?'this project':scope==='client'?'Frontera Energy':scope==='firm'?'the firm scope':'public scope'}</b>`:'Type a query to search';
+  $('#find-results').innerHTML=!terms.length?`<div class="empty">${ic('find')}<b>Enter a query</b><span>Scope is already set. Search never runs without one.</span></div>`:rows.length?rows.map(r=>`<div class="result"><div class="r-ico" title="${r.type}">${ic(TYPE_ICON[r.type],'lg')}</div>
+    <div><div class="r-title" data-toast="Would open <b>${esc(r.title)}</b> at the matched anchor">${hl(r.title)}</div><div class="snip">…${hl(r.snip)}…</div><div class="path">${esc(r.path)}</div>
+      <div class="r-meta">${lt(r.tag)}<span class="pill ghost">${r.type}</span>${r.stale?'<span class="stale-badge">stale</span>':''}<span class="pill ghost">${r.lv==='project'?'this project':r.lv}</span></div></div>
+    <div class="r-side"><span class="side-note">${fmtDate(r.d)}</span><div><div class="label steel" style="margin-bottom:3px;text-align:right">Who worked this</div><span class="av-stack">${r.who.map(av).join('')}</span></div></div></div>`).join(''):`<div class="empty">${ic('find')}<b>No results${beforeFilters?' with these filters':''}</b><span>${beforeFilters?'Clear the type or date filter, or ':''}${scope!=='public'?'widen the scope to '+(scope==='project'?'Client':scope==='client'?'Firm':'Public')+'. ':'try other terms. '}${inScope} records are in scope.</span></div>`;
+}
+$('#find-form').addEventListener('submit',e=>{e.preventDefault();renderFind()});
+$('#find-scope').addEventListener('change',renderFind);$('#find-date').addEventListener('change',renderFind);
+$('#find-q').addEventListener('input',renderFind);
+$('#find-types').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;findType=b.dataset.f;renderFind()});
+$('#top-search').addEventListener('submit',e=>{e.preventDefault();const v=$('#top-q').value.trim();if(v)$('#find-q').value=v;$('#top-q').value='';location.hash='#find';renderFind();toast('Scope required: choose one before searching. Defaulted to <b>this project</b>.')});
+
+/* ============ DRAFT ============ */
+const CITES={
+ 'doc:ATC-2026-0117':['doc','Letter ATC-2026-0117 · 2026-04-22 · approach note, sent by email'],
+ 'doc:PDO/GT/0271/26':['doc','Incoming email PDO/GT/0271/26 · 2026-05-06 · data request list'],
+ 'doc:ATC-2026-0133':['doc','Letter ATC-2026-0133 · 2026-07-16 · capabilities statement, courier, acknowledged 2026-07-28'],
+ 'doc:nda-pdo-2026':['doc','Mutual NDA with Petrolera del Orinoco · effective 2026-02-14, expires 2028-02-13'],
+ 'run:7c1e9a04':['run','Run 7c1e9a04 · opportunity-register@2.1.0 · extra-heavy oil screening, 8 analogue fields · tag lt-firm'],
+ 'run:b2f4d611':['run','Run b2f4d611 · ela-scenario-studio@1.0.0 · steam-assisted vs cold production · tag lt-firm'],
+ 'lesson:l-0412':['les','Lesson l-0412 · agree the data basis in writing before issuing any number'],
+ 'lesson:l-0388':['les','Lesson l-0388 · sanctions authorisations for Venezuelan counterparties'],
+ 'lesson:l-0356':['les','Lesson l-0356 · state drive mechanism and analogue set with any recovery factor']
+};
+const c=id=>`<span class="cite ${CITES[id][0]==='doc'?'doc':CITES[id][0]==='les'?'les':''}" data-cite="${id}" title="${esc(CITES[id][1])}">${id.split(':')[0]}:${id.split(':')[1]}</span>`;
+const LETTER={
+ en:{lh:'Letterhead v3 · EN',tag:'Oil &amp; gas technical consultancy · Latin America',our:'Our ref',your:'Your ref',date:'Date',dateV:'29 September 2026',via:'By courier and email',conf:'Confidential under the NDA of 14 February 2026',
+  subj:'Proposed scope of a joint technical evaluation of extra-heavy oil development options',sal:'Dear Ing. Fernández,',
+  paras:[
+   `Further to our approach note of 22 April 2026 ${c('doc:ATC-2026-0117')}, your data request list of 6 May 2026 ${c('doc:PDO/GT/0271/26')} and our capabilities statement of 16 July 2026, acknowledged by your office on 28 July ${c('doc:ATC-2026-0133')}, we write to propose the scope of a joint technical evaluation of extra-heavy oil development options for one of your Orinoco Belt blocks.`,
+   `The exchange proposed below falls within the mutual non-disclosure agreement in force between our companies since 14 February 2026 and expiring on 13 February 2028 ${c('doc:nda-pdo-2026')}. Our screening of eight analogue fields indicates primary recovery of 6% to 12% of STOIIP under cold production ${c('run:7c1e9a04')}, and a steam-assisted case has the higher NPV10 in seven of the eight analogues on a USD 65 per barrel deck ${c('run:b2f4d611')}. We would treat both as starting points to be tested against your data, not as findings for your asset.`,
+   `We propose three work packages: a data audit and review of the reservoir characterisation; a screening of cold, steam-assisted and hybrid development concepts; and an economic comparison of the concepts on a common price deck and fiscal basis. <span class="q4you"><b>Question for you</b>What start date and total duration should the letter propose? No record in scope gives a schedule.</span>`,
+   `Before any number is issued we would agree in writing the data basis, including which data ATC accepts as represented by Petrolera del Orinoco and which it has verified ${c('lesson:l-0412')}. Any activity would proceed only with the authorisations required under applicable sanctions and export-control regimes ${c('lesson:l-0388')}, and recovery factors would be reported together with the drive mechanism and the analogue set behind them ${c('lesson:l-0356')}.`,
+   `We would welcome a call in the week of 12 October to agree the scope and the data exchange, at a time convenient to you and Ing. Barreto. Please treat this letter as confidential under the agreement referred to above.`],
+  close:'Yours sincerely,',annex:'Previous correspondence with Petrolera del Orinoco S.A.',cols:['Date','Dir.','Reference','Subject'],page:'Page 1 of 2'},
+ es:{lh:'Membrete v3 · ES',tag:'Consultoría técnica de petróleo y gas · América Latina',our:'Nuestra ref.',your:'Su ref.',date:'Fecha',dateV:'29 de septiembre de 2026',via:'Por mensajería y correo electrónico',conf:'Confidencial bajo el NDA del 14 de febrero de 2026',
+  subj:'Propuesta de alcance para una evaluación técnica conjunta de opciones de desarrollo de crudo extrapesado',sal:'Estimada Ing. Fernández:',
+  paras:[
+   `En seguimiento a nuestra nota de aproximación del 22 de abril de 2026 ${c('doc:ATC-2026-0117')}, a su lista de solicitud de datos del 6 de mayo de 2026 ${c('doc:PDO/GT/0271/26')} y a nuestra presentación de capacidades del 16 de julio de 2026, acusada por su oficina el 28 de julio ${c('doc:ATC-2026-0133')}, nos dirigimos a usted para proponer el alcance de una evaluación técnica conjunta de opciones de desarrollo de crudo extrapesado para uno de sus bloques de la Faja del Orinoco.`,
+   `El intercambio propuesto se enmarca en el acuerdo mutuo de confidencialidad vigente entre nuestras empresas desde el 14 de febrero de 2026 y hasta el 13 de febrero de 2028 ${c('doc:nda-pdo-2026')}. Nuestro cribado de ocho campos análogos indica un factor de recobro primario de 6% a 12% del POES bajo producción en frío ${c('run:7c1e9a04')}, y un caso asistido por vapor tiene el mayor VPN10 en siete de los ocho análogos con un precio de referencia de USD 65 por barril ${c('run:b2f4d611')}. Los consideramos puntos de partida que deben contrastarse con sus datos, no hallazgos sobre su activo.`,
+   `Proponemos tres paquetes de trabajo: una auditoría de datos y revisión de la caracterización del yacimiento; un cribado de conceptos de desarrollo en frío, asistidos por vapor e híbridos; y una comparación económica de los conceptos sobre un mismo precio de referencia y régimen fiscal. <span class="q4you"><b>Pregunta para usted</b>¿Qué fecha de inicio y qué duración total debe proponer la carta? Ningún registro dentro del alcance indica un cronograma.</span>`,
+   `Antes de emitir cualquier cifra acordaríamos por escrito la base de datos, incluyendo cuáles datos ATC acepta tal como los presenta Petrolera del Orinoco y cuáles ha verificado ${c('lesson:l-0412')}. Toda actividad avanzaría únicamente con las autorizaciones exigidas por los regímenes de sanciones y de control de exportaciones aplicables ${c('lesson:l-0388')}, y los factores de recobro se reportarían junto con el mecanismo de empuje y el conjunto de análogos que los sustenta ${c('lesson:l-0356')}.`,
+   `Agradeceremos una llamada en la semana del 12 de octubre para acordar el alcance y el intercambio de datos, en el horario que resulte conveniente para usted y para el Ing. Barreto. Le pedimos tratar esta carta como confidencial conforme al acuerdo mencionado.`],
+  close:'Atentamente,',annex:'Correspondencia previa con Petrolera del Orinoco S.A.',cols:['Fecha','Dir.','Referencia','Asunto'],page:'Página 1 de 2'}
+};
+let draftLang='en', sentInfo=null, kind='letter';
+const CH_LABEL={email:'email',post:'post',courier:'courier',portal:'portal',hand:'by hand'};
+function dispatchList(){
+  const l=DISPATCHES.slice();
+  return l;
+}
+function renderPaper(){
+  const L=LETTER[draftLang];
+  const refHtml=sentInfo?`<span class="reserved">ATC-2026-0151</span> <span class="pill ok" style="margin-left:4px">sent by ${sentInfo.ch} ${sentInfo.d}</span>`:`<span class="reserved" title="Reserved at draft time; recorded when marked sent">ATC-2026-0151</span> <span class="pill gold" style="margin-left:4px">reserved</span>`;
+  const rows=DISPATCHES.filter(d=>!d.mine).slice().reverse();
+  $('#paper-inner').innerHTML=`
+   <div class="lh-bar"><div class="lh-brand"><span class="lh-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/><rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/></svg></span><div><div class="lh-name">Alpha Technical Centre</div><div class="lh-sub">${L.tag}</div></div></div><div class="lh-right">${L.lh}<br>firm-asset fa-letterhead-v3</div></div>
+   <div class="lh-rule"></div>
+   <div class="paper-body">
+    <div class="ref-block"><div class="l"><div><b>${L.our}</b>${refHtml}</div><div style="margin-top:2px"><b>${L.your}</b><span class="mono">PDO/GT/0271/26</span></div></div><div style="text-align:right"><div><b class="muted" style="font-family:var(--font-label);letter-spacing:.1em;text-transform:uppercase;font-size:11.5px">${L.date}</b> ${L.dateV}</div><div class="muted" style="font-size:12.5px">${L.via}</div></div></div>
+    <div class="addr">Ing. María Fernández<br>Gerente de Alianzas Técnicas<br><b>Petrolera del Orinoco S.A.</b><br>Av. Francisco de Miranda, Torre Faja, Piso 12<br>Chacao, Caracas 1060<br>Venezuela</div>
+    <div class="subject">${L.subj}<div class="muted" style="font-weight:400;font-size:12px;margin-top:2px">${L.conf}</div></div>
+    <p>${L.sal}</p>${L.paras.map(p=>`<p>${p}</p>`).join('')}
+    <div class="sign"><p style="margin-bottom:0">${L.close}</p><div class="space">Chris Hopkinson</div><div><b>Chris Hopkinson</b><br>Managing Partner<br>Alpha Technical Centre</div></div>
+    <div class="annex"><h4>${L.annex}</h4><table><thead><tr>${L.cols.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(d=>`<tr><td style="white-space:nowrap">${d.d}</td><td>${d.dir==='out'?'→':'←'}</td><td class="mono" style="font-size:11px">${d.ref||d.their}</td><td>${esc(d.subj)}</td></tr>`).join('')}</tbody></table></div>
+   </div>
+   <div class="lh-foot"><span>Alpha Technical Centre · Confidential</span><span>${refHtml.includes('sent')?'ATC-2026-0151':'ATC-2026-0151 (reserved)'} · ${L.page}</span></div>`;
+}
+function renderCtx(){
+  const rows=DISPATCHES.slice();
+  const disp=rows.map(d=>`<div class="disp ${d.mine?'new':''}"><span class="dir ${d.dir}" title="${d.dir==='out'?'sent by ATC':'received'}">${d.dir==='out'?'↑':'↓'}</span><span class="d">${d.d} <br><span style="text-transform:none;letter-spacing:0">${CH_LABEL[d.ch]||d.ch}</span></span><span><span class="r">${d.ref||d.their}</span><br>${esc(d.subj)}${d.ack?`<br><span class="side-note">acknowledged ${d.ack}</span>`:''}</span></div>`).join('');
+  $('#ctx').innerHTML=`
+  <div class="card"><div class="card-head"><h3>${ic('org')}Counterparty file</h3><a class="link" href="#organisation" style="font-size:12.5px">Open</a></div><div class="ctx-body">
+    <div class="row"><span class="muted">Organisation</span><b>Petrolera del Orinoco S.A.</b></div>
+    <div class="row"><span class="muted">Kind</span><span class="pill info">partner (prospect)</span></div>
+    <div class="row"><span class="muted">Addressee</span><span>Ing. María Fernández, Caracas</span></div>
+    <div class="row"><span class="muted">Address</span><span style="text-align:right">Chacao, Caracas 1060, VE</span></div>
+    <div style="margin:10px 0 4px" class="label steel">Previous dispatches (${DISPATCHES.filter(d=>!d.mine).length})</div>${disp}</div></div>
+  <div class="card"><div class="card-head"><h3>${ic('shield')}Contracts in force</h3><span class="pill ok">1</span></div><div class="ctx-body">
+    <div style="font-weight:600">Mutual NDA</div><div class="side-note">In force since 2026-02-14 · expires 2028-02-13 · 502 days left</div><div style="margin-top:6px">${lt('lt-pdo-nda-2026')}</div>
+    <div class="side-note" style="margin-top:6px">Covers exchange of technical data. No engagement letter.</div></div></div>
+  <div class="card"><div class="card-head"><h3>${ic('run')}Relevant runs (2)</h3></div><div class="ctx-body">
+    <div class="row" style="display:block"><div><b>Extra-heavy oil screening, 8 analogue fields</b></div><div class="side-note"><span class="mono">run:7c1e9a04</span> · opportunity-register@2.1.0 · CH · 2026-09-24</div><div class="side-note">${lt('lt-firm')} shareable under the NDA</div></div>
+    <div class="row" style="display:block"><div><b>Steam-assisted vs cold production, NPV10</b></div><div class="side-note"><span class="mono">run:b2f4d611</span> · ela-scenario-studio@1.0.0 · GS · 2026-09-11</div><div class="side-note">${lt('lt-firm')} shareable under the NDA</div></div></div></div>
+  <div class="card"><div class="card-head"><h3>${ic('lesson')}Lessons in scope (3)</h3></div><div class="ctx-body">
+    <div class="row" style="display:block"><span class="cite les">lesson:l-0412</span> Agree the data basis, and the accepted-as-represented list, in writing before issuing any number.</div>
+    <div class="row" style="display:block"><span class="cite les">lesson:l-0388</span> Venezuelan counterparties: state that activity is subject to sanctions authorisations.</div>
+    <div class="row" style="display:block"><span class="cite les">lesson:l-0356</span> Quote extra-heavy recovery factors with drive mechanism and analogue set.</div></div></div>
+  <div class="card"><div class="card-head"><h3>${ic('letter')}Firm assets</h3></div><div class="ctx-body">
+    <div class="row"><span class="muted">Letterhead</span><b>v3 · <span id="ctx-lang">${draftLang.toUpperCase()}</span></b></div>
+    <div class="row"><span class="muted">Template</span><span>letter-partner-approach v4</span></div>
+    <div class="row"><span class="muted">Signature</span><span>Chris Hopkinson, Managing Partner</span></div>
+    <div class="row"><span class="muted">Reference</span><span class="mono">ATC-2026-0151 ${sentInfo?'(recorded)':'(reserved)'}</span></div>
+    <div class="row"><span class="muted">House style</span><span>humaniser v2</span></div></div></div>
+  <div class="card"><div class="card-head"><h3>${ic('find')}Retrieval</h3></div><div class="ctx-body">
+    <div class="side-note">6 sub-queries · 41 hits · reranked to 7 sources. Scope: org:pdo ∪ project:bd-pdo ∪ firm ∪ public. Audit event ev-0x91c2 logged.</div>
+    <div class="row" style="margin-top:6px"><span class="muted">Who to ask</span><span class="who">${av('GS')}Geoscience, last worked Orinoco analogues</span></div></div></div>`;
+}
+$('#kind-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.kind!=='letter'){toast('Mockup: only the <b>Letter</b> draft is populated. Email, report section and calc note use the same pane with different required context.');return}});
+$('#lang-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;draftLang=b.dataset.lang;$$('#lang-seg button').forEach(x=>x.classList.toggle('on',x===b));renderPaper();renderCtx();$('#draft-warnings').style.display=''});
+$('#regen').addEventListener('click',()=>{const g=$('#gen-anim');g.classList.add('on');setTimeout(()=>{g.classList.remove('on');toast('Draft regenerated: 7 sources, 9 citations, 1 sentence turned into a question.')},900)});
+document.addEventListener('click',e=>{
+  const ci=e.target.closest('[data-cite]');if(ci){toast(`<b>${esc(ci.dataset.cite)}</b><br>${esc(CITES[ci.dataset.cite][1])}<br><span style="color:#cfd6df">Resolves in scope.</span>`)}
+  const dl=e.target.closest('[data-action="dl"]');if(dl){const f=dl.dataset.fmt;toast(`Rendered <b>ATC-2026-0151.${f.toLowerCase()}</b> on letterhead fa-letterhead-v3 (${draftLang.toUpperCase()}).<br><span style="color:#cfd6df">Mockup: no file is produced.</span>`)}
+  if(e.target.closest('[data-action="gmail"]')) toast('Saved to <b>Gmail drafts</b> as “ATC-2026-0151 · Proposed scope…”. Not sent.')
+  if(e.target.closest('[data-action="mark-sent"]')){
+    modal(`<div class="modal-h"><span class="label">Dispatch register</span><h2>Mark ATC-2026-0151 as sent</h2></div><div class="modal-b">
+      <p style="max-width:none" class="muted">Creates a Dispatch for Petrolera del Orinoco S.A. and completes the pending record. The letter stays a Vault item, immutable from now on.</p>
+      <div class="field"><label>Channel</label><div class="radio-row"><label><input type="radio" name="ch" value="post"> Post</label><label><input type="radio" name="ch" value="courier" checked> Courier</label><label><input type="radio" name="ch" value="email"> Email</label></div></div>
+      <div class="grid g2"><div class="field"><label>Date sent</label><input class="inp" id="md-date" value="2026-09-29"></div><div class="field"><label>Tracking (optional)</label><input class="inp" id="md-trk" placeholder="e.g. DHL 4471 9082 33"></div></div></div>
+      <div class="modal-f"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-gold" data-confirm="sent">Record dispatch</button></div>`);
+  }
+  if(e.target.closest('[data-confirm="sent"]')){
+    const ch=($('input[name=ch]:checked')||{value:'courier'}).value, d=$('#md-date').value||'2026-09-29', trk=$('#md-trk').value;
+    closeModal();
+    DISPATCHES.unshift({dir:'out',d,ch,ref:'ATC-2026-0151',their:'',subj:'Proposed scope of a joint technical evaluation of extra-heavy oil development options',by:'CH',ack:'',trk,mine:true});
+    sentInfo={ch:CH_LABEL[ch],d};
+    renderPaper();renderCtx();renderDispTbl();
+    $('#ref-pill').className='pill ok';$('#ref-pill').textContent='ATC-2026-0151 · sent by '+CH_LABEL[ch];
+    $('#btn-sent').disabled=true;$('#btn-sent').innerHTML=ic('check')+'Recorded as sent';
+    $('#draft-warnings').className='notice ok';$('#draft-warnings').innerHTML=`${ic('check','lg')}<div class="grow"><b>Dispatch recorded.</b> ATC-2026-0151 is now in the register, awaiting acknowledgement. The unanswered question in paragraph 3 was sent as written: check the DOCX before it goes out.</div>`;
+    toast('Dispatch recorded: <b>ATC-2026-0151</b> · '+CH_LABEL[ch]+' · '+d);
+  }
+});
+
+/* ============ ORGANISATION ============ */
+function renderDispTbl(){
+  $('#disp-tbl tbody').innerHTML=DISPATCHES.map(d=>`<tr class="${d.mine?'sel':''}"><td>${d.dir==='out'?'<span class="pill navy">out</span>':'<span class="pill gold">in</span>'}</td><td class="nowrap">${d.d}</td><td>${CH_LABEL[d.ch]||d.ch}${d.trk?`<span class="sub mono">${esc(d.trk)}</span>`:''}</td>
+   <td class="mono">${d.ref||'<span class="muted">—</span>'}</td><td class="mono">${d.their||'<span class="muted">—</span>'}</td><td style="min-width:240px">${esc(d.subj)}</td><td>${d.by?who(d.by):'<span class="muted">—</span>'}</td>
+   <td class="nowrap">${d.dir==='in'?'<span class="muted">n/a · received</span>':d.ack?`<span class="pill ok">${ic('check')}${d.ack}</span>`:'<span class="pill warn">awaiting</span>'}</td></tr>`).join('');
+  $('#disp-tbl').closest('.card').querySelector('.tbl-foot span').textContent=`${DISPATCHES.length} dispatches recorded · outbound email is captured automatically, post and courier are entered here.`;
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-action="open-dispatch-form"]')){
+    modal(`<div class="modal-h"><span class="label">Dispatch register</span><h2>Record a dispatch</h2></div><div class="modal-b">
+     <div class="grid g2"><div class="field"><label>Direction</label><select class="sel" id="df-dir"><option value="out">Sent by ATC</option><option value="in">Received</option></select></div><div class="field"><label>Channel</label><select class="sel" id="df-ch"><option value="post">Post</option><option value="courier">Courier</option><option value="portal">Portal</option><option value="hand">By hand</option></select></div></div>
+     <div class="grid g2"><div class="field"><label>Date</label><input class="inp" id="df-date" value="2026-09-29"></div><div class="field"><label>Reference</label><input class="inp" id="df-ref" placeholder="ATC-2026-0152 (next)"></div></div>
+     <div class="field"><label>Subject</label><input class="inp" id="df-subj" placeholder="What was sent or received"></div></div>
+     <div class="modal-f"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-gold" data-confirm="dispatch">Save to register</button></div>`);
+  }
+  if(e.target.closest('[data-confirm="dispatch"]')){
+    const dir=$('#df-dir').value;
+    DISPATCHES.unshift({dir,d:$('#df-date').value||'2026-09-29',ch:$('#df-ch').value,ref:dir==='out'?($('#df-ref').value||'ATC-2026-0152'):'',their:dir==='in'?$('#df-ref').value:'',subj:$('#df-subj').value||'(no subject)',by:dir==='out'?'CH':'',ack:'',mine:true});
+    closeModal();renderDispTbl();renderCtx();renderPaper();toast('Dispatch saved to the register.');
+  }
+});
+
+/* ============ QUEUE ============ */
+function projectOptions(sel){return ['Llanos Basin waterflood screening','Middle Magdalena infill screening','Talara brownfield redevelopment','Recôncavo late-life economics','Firm · administration (no project)'].map(p=>`<option ${p===sel?'selected':''}>${p}</option>`).join('')}
+function renderQueue(){
+  const f=state.filing,l=state.lessons,n=state.nda;
+  $('#q-filing-n').textContent=f.length+' open';$('#q-lessons-n').textContent=l.length+' open';$('#q-nda-n').textContent=n.length+' open';
+  const total=f.length+l.length+n.length;
+  $('#queue-total').textContent=total+' open';$('#nav-queue-count').textContent=total;$('#nav-queue-count').style.display=total?'':'none';
+  $('#q-filing').innerHTML=f.length?f.map(x=>{const cls=x.conf>=.75?'warn':'bad';return `<div class="q-card" data-q="${x.id}">
+    <div><div class="q-title">${ic('email')} ${esc(x.subj)}</div>
+      <div class="q-meta"><span>${esc(x.from)}</span><span>${x.when}</span><span>${x.att} attachment${x.att===1?'':'s'}</span></div>
+      <div class="q-body" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><span class="side-note">Suggested</span><b>${esc(x.sug)}</b>
+        <div class="conf"><div class="bar ${cls}"><i style="width:${x.conf*100}%"></i><span class="mark" style="left:85%" title="auto-file threshold 0.85"></span></div><b class="num">${x.conf.toFixed(2)}</b></div></div>
+      <div class="side-note" style="margin-top:6px">Why: ${esc(x.why)}</div></div>
+    <div class="q-act"><select class="sel" data-sel="${x.id}">${projectOptions(x.sug)}</select><div class="row"><button class="btn btn-gold sm" style="flex:1" data-assign="${x.id}">Assign</button><button class="btn btn-ghost sm" style="flex:1" data-notproj="${x.id}">Not a project email</button></div></div></div>`}).join(''):`<div class="empty">${ic('check')}<b>Filing queue clear</b><span>Mail above 0.85 confidence files itself. Nothing is waiting.</span></div>`;
+  $('#q-lessons').innerHTML=l.length?l.map(x=>`<div class="q-card" data-q="${x.id}">
+    <div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><span class="pill info">${x.scope}${x.scopeId?' · '+x.scopeId:''}</span>${lt(x.tag)}${x.san?'<span class="pill ok">sanitised</span>':'<span class="pill warn">not sanitised</span>'}<span class="pill ghost">recurrence ${x.rec}</span></div>
+      <div class="q-title" data-claim="${x.id}">${esc(x.claim)}</div>
+      <div class="q-meta"><span>proposed by dream:2026-W39</span><span>confidence <b class="num">${x.conf.toFixed(2)}</b></span></div>
+      <div class="q-body side-note">${esc(x.detail)}</div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="side-note">Evidence</span>${x.ev.map(e=>`<span class="ev" data-toast="Would open evidence <b>${esc(e)}</b>">${esc(e)}</span>`).join('')}</div></div>
+    <div class="q-act"><div class="row"><button class="btn btn-ok sm" style="flex:1" data-lconfirm="${x.id}">${ic('check')}Confirm</button><button class="btn btn-danger sm" style="flex:1" data-lreject="${x.id}">${ic('x')}Reject</button></div><button class="btn btn-ghost sm" data-ledit="${x.id}">${ic('edit')}Edit claim</button></div></div>`).join(''):`<div class="empty">${ic('check')}<b>No proposals waiting</b><span>The weekly dream job runs Sundays at 04:00.</span></div>`;
+  $('#q-nda').innerHTML=n.length?n.map(x=>`<div class="q-card" data-q="${x.id}">
+    <div><div class="q-title">${ic('shield')} NDA with ${esc(x.org)} expires ${x.exp} &rarr; set legal tag expiry?</div>
+      <div class="q-meta"><span>${lt(x.tag)}</span><span>currently: ${x.cur}</span><span>${x.days} days from today</span>${x.soon?'<span class="pill warn">expires within 90 days</span>':''}</div>
+      <div class="q-body side-note">Extracted from ${esc(x.doc)}, confidence <b class="num">${x.conf.toFixed(2)}</b>. On ${x.exp} +1 day, ${x.affects} records and their derivatives (runs, letters, chunks) disappear from search, timeline and drafting. The originals stay in storage.</div></div>
+    <div class="q-act"><div class="row"><button class="btn btn-gold sm" style="flex:1" data-nconfirm="${x.id}">Set expiry ${x.exp}</button><button class="btn btn-ghost sm" data-ndismiss="${x.id}">Dismiss</button></div></div></div>`).join(''):`<div class="empty">${ic('check')}<b>No expiry proposals</b><span>Every NDA on file has a legal-tag expiry.</span></div>`;
+}
+function drop(id,arr,msg){const el=$(`[data-q="${id}"]`);const done=()=>{state[arr]=state[arr].filter(x=>x.id!==id);renderQueue();renderAttnFiling();renderAttnLessons();toast(msg)};if(el){el.classList.add('gone');setTimeout(done,280)}else done()}
+document.addEventListener('click',e=>{
+  let b;
+  if(b=e.target.closest('[data-assign]')){const id=b.dataset.assign,x=state.filing.find(y=>y.id===id),p=$(`[data-sel="${id}"]`).value;drop(id,'filing',`Filed under <b>${esc(p)}</b>. Item created with that project’s legal tag; the sender is now a suggested contact.`)}
+  if(b=e.target.closest('[data-notproj]')){drop(b.dataset.notproj,'filing','Marked <b>not a project email</b>. Kept in the mailbox archive, excluded from project scope.')}
+  if(b=e.target.closest('[data-lconfirm]')){drop(b.dataset.lconfirm,'lessons','Lesson <b>confirmed</b>. vault/firm/LESSONS.md regenerated (143 of 200 lines).')}
+  if(b=e.target.closest('[data-lreject]')){drop(b.dataset.lreject,'lessons','Lesson <b>rejected</b>. Kept as invalidated, so the dream job will not propose it again.')}
+  if(b=e.target.closest('[data-ledit]')){const id=b.dataset.ledit,el=$(`[data-claim="${id}"]`);if(el.tagName==='DIV'){const ta=document.createElement('textarea');ta.className='txt';ta.rows=3;ta.value=state.lessons.find(y=>y.id===id).claim;ta.dataset.claim=id;el.replaceWith(ta);b.innerHTML=ic('check')+'Save claim'}else{const d=document.createElement('div');d.className='q-title';d.dataset.claim=id;d.textContent=el.value;state.lessons.find(y=>y.id===id).claim=el.value;el.replaceWith(d);b.innerHTML=ic('edit')+'Edit claim';toast('Claim updated. Confirm to add it to the core index.')}}
+  if(b=e.target.closest('[data-nconfirm]')){const x=state.nda.find(y=>y.id===b.dataset.nconfirm);drop(x.id,'nda',`Legal tag <b>${x.tag}</b> now expires <b>${x.exp}</b>. Audit event written.`)}
+  if(b=e.target.closest('[data-ndismiss]')){drop(b.dataset.ndismiss,'nda','Proposal dismissed. It will not be raised again for this document version.')}
+});
+
+/* ============ ANALOGUES ============ */
+const AN=[
+ {id:'field:llanos:yopal-sector',cc:'CO',prov:'own-evaluation',set:'Onshore clastic',fl:'black-oil',drive:'waterflood',depth:2750,phi:.18,k:290,rf:.21,eur:340,asof:'2026-06',src:'run 4d7e…a90',dist:.09},
+ {id:'field:llanos:chichimene',cc:'CO',prov:'regulator',set:'Onshore clastic',fl:'heavy-oil',drive:'water-drive',depth:2600,phi:.19,k:450,rf:.22,eur:310,asof:'2026-06',src:'ANH production by field',dist:.14},
+ {id:'field:llanos:castilla',cc:'CO',prov:'regulator',set:'Onshore clastic',fl:'heavy-oil',drive:'water-drive',depth:2300,phi:.21,k:900,rf:.24,eur:380,asof:'2026-06',src:'ANH production by field',dist:.18},
+ {id:'field:magdalena:la-cira-infantas',cc:'CO',prov:'paper',set:'Onshore clastic',fl:'black-oil',drive:'waterflood',depth:1500,phi:.20,k:400,rf:.19,eur:150,asof:'2025-03',src:'OnePetro, mature waterflood review',dist:.23},
+ {id:'field:frontera:sabanero',cc:'CO',prov:'own-evaluation',set:'Onshore clastic',fl:'heavy-oil',drive:'eor-polymer',depth:2200,phi:.24,k:1200,rf:.27,eur:520,asof:'2025-11',src:'run c31f…8e2',dist:.27},
+ {id:'field:oriente:sacha',cc:'EC',prov:'paper',set:'Onshore clastic',fl:'black-oil',drive:'water-drive',depth:2900,phi:.16,k:250,rf:.28,eur:290,asof:'2024-09',src:'SPE paper, Oriente Basin',dist:.33},
+ {id:'field:putumayo:orito',cc:'CO',prov:'regulator',set:'Onshore clastic',fl:'black-oil',drive:'solution-gas',depth:2400,phi:.15,k:120,rf:.15,eur:95,asof:'2026-06',src:'ANH production by field',dist:.36},
+ {id:'field:llanos:cubiro-north',cc:'CO',prov:'client-stated',set:'Onshore clastic',fl:'black-oil',drive:'water-drive',depth:2820,phi:.17,k:310,rf:.20,eur:330,asof:'2026-08',src:'Frontera data room',dist:.38},
+ {id:'field:reconcavo:buracica',cc:'BR',prov:'own-evaluation',set:'Onshore clastic',fl:'black-oil',drive:'waterflood',depth:1100,phi:.22,k:180,rf:.31,eur:90,asof:'2026-08',src:'run 88ab…f10',dist:.41},
+ {id:'field:talara:parinas',cc:'PE',prov:'own-evaluation',set:'Onshore clastic',fl:'black-oil',drive:'solution-gas',depth:1800,phi:.13,k:25,rf:.12,eur:45,asof:'2026-09',src:'run 2c90…d4b',dist:.47},
+ {id:'field:gsj:cerro-dragon',cc:'AR',prov:'paper',set:'Onshore clastic',fl:'black-oil',drive:'waterflood',depth:1700,phi:.17,k:60,rf:.26,eur:110,asof:'2023-11',src:'SPE paper, GSJ waterflood',dist:.49},
+ {id:'field:maracaibo:lagunillas',cc:'VE',prov:'paper',set:'Onshore clastic',fl:'heavy-oil',drive:'waterflood',depth:1000,phi:.30,k:1500,rf:.25,eur:180,asof:'2022-05',src:'OnePetro, Lake Maracaibo review',dist:.53},
+ {id:'field:llanos:rubiales',cc:'CO',prov:'vendor-database',set:'Onshore clastic',fl:'extra-heavy',drive:'water-drive',depth:1300,phi:.28,k:2500,rf:.30,eur:900,asof:'2025-12',src:'Vendor field database',dist:.58},
+ {id:'field:orinoco:junin-4',cc:'VE',prov:'paper',set:'Onshore clastic',fl:'extra-heavy',drive:'solution-gas',depth:600,phi:.32,k:5000,rf:.09,eur:210,asof:'2025-02',src:'OnePetro, Faja cold production',dist:.66},
+ {id:'field:neuquen:loma-campana',cc:'AR',prov:'regulator',set:'Onshore shale',fl:'volatile-oil',drive:'solution-gas',depth:2700,phi:.08,k:.0005,rf:.09,eur:520,asof:'2026-07',src:'Argentina CKAN, shale wells',dist:.83}
+];
+const PROV_PILL={'own-evaluation':'navy','regulator':'info','paper':'gold','vendor-database':'ghost','client-stated':'warn'};
+let anProv='all',anSort='dist',anDir=1,anHi=null;
+function renderAn(){
+  const provs=['all','own-evaluation','paper','regulator','vendor-database','client-stated'];
+  $('#an-prov').innerHTML=provs.map(p=>`<button class="chip ${anProv===p?'on':''}" data-p="${p}">${p==='all'?'All provenance':p}</button>`).join('');
+  const cc=$('#an-country'),fl=$('#an-fluid');
+  if(cc.options.length===1){[...new Set(AN.map(a=>a.cc))].sort().forEach(v=>cc.add(new Option(v,v)));[...new Set(AN.map(a=>a.fl))].sort().forEach(v=>fl.add(new Option(v,v)))}
+  let rows=AN.filter(a=>(anProv==='all'||a.prov===anProv)&&(!cc.value||a.cc===cc.value)&&(!fl.value||a.fl===fl.value));
+  rows.sort((a,b)=>{const va=anSort==='asset'?a.id:a[anSort==='depth'?'depth':anSort==='phi'?'phi':anSort==='k'?'k':anSort==='rf'?'rf':anSort==='eur'?'eur':'dist'],vb=anSort==='asset'?b.id:b[anSort==='depth'?'depth':anSort==='phi'?'phi':anSort==='k'?'k':anSort==='rf'?'rf':anSort==='eur'?'eur':'dist'];return (va>vb?1:va<vb?-1:0)*anDir});
+  $('#an-tbl tbody').innerHTML=rows.length?rows.map(a=>`<tr class="${anHi===a.id?'sel':''}" data-row="${a.id}"><td><b style="font-weight:600">${a.id.split(':').slice(-1)[0].replace(/-/g,' ')}</b><span class="sub mono">${a.id} · ${a.cc}</span></td>
+    <td><span class="pill ${PROV_PILL[a.prov]}">${a.prov}</span></td><td>${a.set}<span class="sub">${a.fl} · ${a.drive}</span></td>
+    <td class="right num">${a.depth.toLocaleString()}</td><td class="right num">${a.phi.toFixed(2)}</td><td class="right num">${a.k<1?a.k:a.k.toLocaleString()}</td><td class="right num">${(a.rf*100).toFixed(0)}%</td><td class="right num">${a.eur}</td>
+    <td class="right num"><b>${a.dist.toFixed(2)}</b></td><td style="min-width:160px">${esc(a.src)}<span class="sub">as of ${a.asof}</span></td></tr>`).join(''):`<tr><td colspan="10"><div class="empty">${ic('analogue')}<b>No analogue rows match</b><span>Loosen the provenance, country or fluid filter.</span></div></td></tr>`;
+  $('#an-count').textContent=`${rows.length} of ${AN.length} rows shown (seeded sample of 212)`;
+  $$('#an-tbl th.sortable').forEach(th=>th.innerHTML=th.textContent.replace(/[ ▲▼]+$/,'')+(th.dataset.sort===anSort?(anDir>0?' ▲':' ▼'):''));
+  const near=AN.slice().sort((a,b)=>a.dist-b.dist).slice(0,5);
+  $('#sim-list').innerHTML=near.map((a,i)=>`<div class="sim-tile" data-hi="${a.id}"><div style="display:flex;justify-content:space-between;align-items:center"><span class="sim-rank">${i+1}</span><span class="pill ${PROV_PILL[a.prov]}">${a.prov}</span></div>
+    <div style="font-weight:600;margin-top:8px;font-family:var(--font-display);font-size:15px">${a.id.split(':').slice(-1)[0].replace(/-/g,' ')}</div><div class="side-note mono">${a.id}</div>
+    <div class="side-note" style="margin:6px 0">${a.fl} · ${a.drive}<br>${a.depth.toLocaleString()} m · φ ${a.phi.toFixed(2)} · k ${a.k} mD · RF ${(a.rf*100).toFixed(0)}%</div>
+    <div style="display:flex;align-items:center;gap:8px"><div class="bar gold" style="flex:1"><i style="width:${(1-a.dist)*100}%"></i></div><b class="num">${a.dist.toFixed(2)}</b></div></div>`).join('');
+}
+$('#an-prov').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;anProv=b.dataset.p;renderAn()});
+$('#an-country').addEventListener('change',renderAn);$('#an-fluid').addEventListener('change',renderAn);
+$('#an-tbl thead').addEventListener('click',e=>{const th=e.target.closest('th.sortable');if(!th)return;if(anSort===th.dataset.sort)anDir*=-1;else{anSort=th.dataset.sort;anDir=1}renderAn()});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-hi]');if(t){anHi=t.dataset.hi;anProv='all';renderAn();const r=$(`[data-row="${anHi}"]`);if(r)r.scrollIntoView({block:'center',behavior:'smooth'})}});
+
+/* ============ COST ============ */
+function spark(id,vals,lo,hi,thr,fmt){
+  const w=520,h=90,pad=10,n=vals.length;const x=i=>pad+i*(w-2*pad)/(n-1),y=v=>h-pad-(v-lo)/(hi-lo)*(h-2*pad);
+  const d=vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h+16}" class="spark" role="img" aria-label="trend"><line x1="${pad}" x2="${w-pad}" y1="${y(thr)}" y2="${y(thr)}" stroke="#C0392B" stroke-dasharray="4 3" stroke-width="1"/><text x="${pad}" y="${y(thr)+12}" text-anchor="start" font-size="10" fill="#C0392B" font-family="Barlow">target ${thr}</text>
+   <path d="${d} L${x(n-1)} ${h} L${x(0)} ${h} Z" fill="rgba(201,168,76,.18)"/><path d="${d}" fill="none" stroke="#0B1F3A" stroke-width="2"/>${vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="${i===n-1?4:2.5}" fill="${i===n-1?'#C9A84C':'#0B1F3A'}"/>`).join('')}
+   ${['Aug 04','Aug 18','Sep 01','Sep 08','Sep 15','Sep 22'].map((t,i)=>`<text x="${x(i)}" y="${h+12}" text-anchor="middle" font-size="10" fill="#6B7A8D" font-family="Barlow">${t}</text>`).join('')}</svg>`;
+}
+const SC_PROJ=[
+ ['Llanos Basin waterflood screening','Frontera Energy',[1,1,0,0,1,1]],
+ ['Middle Magdalena infill screening','Ecopetrol',[1,1,0,0,1,0]],
+ ['Talara brownfield redevelopment','Costa Norte Petróleos',[1,1,1,1,1,1]],
+ ['Recôncavo late-life economics','Bahía Oil & Gas',[1,1,0,1,1,1]],
+ ['Putumayo tight-sand review','Andean Resources (prospect)',[1,0,1,1,1,1]],
+ ['Barinas farm-in support','Confidential operator',[1,1,1,1,1,1]],
+ ['Neuquén type-well audit','Patagonia Upstream',[1,0,0,0,1,1]],
+ ['BD · Orinoco joint evaluation','Petrolera del Orinoco',[1,1,1,1,1,0]],
+ ['Sabanero polymer screening (closed)','Frontera Energy',[1,1,1,1,1,1]]
+];
+function renderCost(){
+  const feats=[['Drafting (email, letter, report, calc note)',27.40,'3.1 M in · 0.42 M out',''],['Extraction (legal terms, analogues, dispatches)',18.15,'5.8 M in · 0.31 M out',''],['Chunking (contextual retrieval)',11.60,'9.4 M in · 0.55 M out','cached 82%'],['Dream (weekly lessons, Batch −50%)',6.80,'2.2 M in · 0.12 M out','batch'],['Delta notes (re-run explanations)',4.10,'0.9 M in · 0.09 M out','']];
+  const max=30;
+  $('#token-bars').innerHTML=feats.map(([n,v,t,x])=>`<div style="padding:7px 0"><div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span>${n}</span><b class="num">USD ${v.toFixed(2)}</b></div><div class="bar gold" style="margin:5px 0 3px;height:12px"><i style="width:${v/max*100}%"></i></div><div class="side-note">${t}${x?' · '+x:''}</div></div>`).join('')+`<div style="display:flex;justify-content:space-between;border-top:1.5px solid var(--rule);padding-top:10px;margin-top:6px"><b>Total tokens</b><b class="num">USD 68.05</b></div>`;
+  const raw=[1.2,2.1,2.8,2.6,1.9,0.6,0.4,2.4,3.1,2.9,2.5,2.2,0.7,0.5,2.6,3.4,2.7,2.3,2.0,0.8,0.6,2.9,3.6,3.0,2.4,2.1,0.9,3.3,2.8];const sum=raw.reduce((a,b)=>a+b,0),vals=raw.map(v=>v*68.05/sum),mx=Math.max(...vals);
+  $('#daily').innerHTML=vals.map((v,i)=>`<rect x="${4+i*17.6}" y="${76-v/mx*66}" width="13" height="${v/mx*66}" rx="2" fill="${i===28?'#C9A84C':'#0B1F3A'}"><title>Sep ${i+1}: USD ${v.toFixed(2)}</title></rect>`).join('');
+  $('#ragas').innerHTML=[['Faithfulness',0.91,0.85,[.86,.88,.87,.90,.89,.91],'Every claim in the answer is supported by the retrieved context.'],['Context precision',0.78,0.70,[.71,.73,.74,.77,.76,.78],'Retrieved chunks that matter are ranked near the top.']].map(([n,v,t,s,d])=>`<div><div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><span class="label steel">${n}</span><span class="big">${v.toFixed(2)}</span><span class="pill ok">${ic('check')}target ≥ ${t.toFixed(2)}</span><span class="delta up">+${(v-s[s.length-2]).toFixed(2)} vs last run</span></div><div class="side-note" style="margin:4px 0 8px">${d}</div>${spark('',s,.65,.95,t)}</div>`).join('');
+  const rules=['Trace','Sources','Not stale','Basis note','Tag','Dispatch'];
+  $('#sc-tbl thead').innerHTML=`<tr><th>Project</th><th>Client</th>${rules.map((r,i)=>`<th title="Rule ${i+1}">R${i+1} ${r}</th>`).join('')}<th>Score</th><th>RAG</th></tr>`;
+  $('#sc-tbl tbody').innerHTML=SC_PROJ.map(p=>{const n=p[2].reduce((a,b)=>a+b,0),rag=n===6?'g':n>=4?'a':'r';return `<tr><td><b>${p[0]}</b></td><td>${p[1]}</td>${p[2].map(v=>`<td><span class="dotgrid"><i class="${v?'':'f'}"></i></span></td>`).join('')}<td class="num"><b>${n}/6</b></td><td><span class="rag ${rag}"></span></td></tr>`}).join('');
+}
+
+/* ============ init ============ */
+$$('.screen').forEach(s=>{const f=document.createElement('footer');f.className='mock-foot';f.innerHTML='<span>Mockup · not connected to the Vault</span><span>All names, numbers and dates are illustrative seed data.</span>';s.appendChild(f)});
+renderTools();renderProjects();renderAttn();renderRuns();
+renderTimeline();renderVintages();renderLineage();renderBasis();renderLessonsTab();renderScore();
+renderTool();renderFind();renderPaper();renderCtx();renderDispTbl();renderQueue();renderAn();renderCost();
+document.addEventListener('click',e=>{const a=e.target.closest('a[data-toast]');if(a)e.preventDefault()});
+route();
+})();
+</script>
+</body>
+</html>

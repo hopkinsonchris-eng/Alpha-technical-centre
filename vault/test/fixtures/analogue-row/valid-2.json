@@ -1,0 +1,21 @@
+{
+  "id": "00000000-0000-4000-8000-000000000032",
+  "source_ref": "doc:00000000-0000-4000-8000-000000000012",
+  "asset_id": "field:maracaibo:boscan",
+  "basin_id": "basin:maracaibo",
+  "country": "VE",
+  "as_of": "2025-11-01",
+  "legal_tag": "lt-public",
+  "provenance": "paper",
+  "api_gravity": {
+    "value": 10.5,
+    "provenance": "reported"
+  },
+  "evidence": [
+    {
+      "property": "api_gravity",
+      "quote": "Boscán crude of 10.5° API",
+      "location": "p. 3"
+    }
+  ]
+}

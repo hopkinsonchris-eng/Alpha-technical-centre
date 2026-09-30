@@ -1,0 +1,30 @@
+{
+  "id": "financial-model",
+  "name": "Upstream Quick-Look Financial Model",
+  "description": "Generic-contract upstream quick-look economics: NPV, IRR, payback, cash flow and sensitivities.",
+  "owner": "chris",
+  "lifecycle": "production",
+  "kind": "browser-tool",
+  "entry": "financial-modelling.html",
+  "changelog": "tools/financial-model/CHANGELOG.md",
+  "produces": [
+    "npv10",
+    "irr",
+    "payback_year"
+  ],
+  "consumes": [
+    "price_deck",
+    "fiscal_terms"
+  ],
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released_at": "2026-07-31",
+      "commit": "7bdfb35",
+      "status": "approved"
+    }
+  ],
+  "aliases": {
+    "current": "1.0.0"
+  }
+}

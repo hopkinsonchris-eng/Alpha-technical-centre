@@ -108,13 +108,56 @@ svg text{font-family:'Barlow',sans-serif}
 .tabbar{display:flex;gap:4px;margin-bottom:18px;border-bottom:2px solid var(--line)}
 .tabbar button{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-size:14px;background:none;border:0;padding:10px 16px;cursor:pointer;color:var(--steel);border-bottom:3px solid transparent;margin-bottom:-2px}
 .tabbar button.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+/* ---- Vault: project picker, version badge, Runs drawer ---- */
+header{gap:12px}
+header .logo{white-space:nowrap}
+header .scen-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+header .btn{padding:9px 12px}
+header .toolver{display:inline-block;flex:none;padding:2px 8px;border:1px solid #2c425f;border-radius:20px;font-size:11px;letter-spacing:.05em;color:var(--gold)}
+header .toolver[hidden]{display:none}
+#projectPicker select{max-width:150px;border-radius:5px!important;border:1px solid #2c425f!important;background:var(--navy2)!important;color:#cdd6e0!important;font-family:'Barlow',sans-serif!important;font-size:13px!important;padding:8px 10px!important}
+.drawer{position:fixed;inset:0;z-index:55;pointer-events:none}
+.drawer.open{pointer-events:auto}
+.drawer .scrim{position:absolute;inset:0;background:rgba(11,31,58,.5);opacity:0;transition:opacity .2s}
+.drawer.open .scrim{opacity:1}
+.drawer .sheet{position:absolute;right:0;top:0;height:100%;width:min(560px,100%);background:#fff;border-left:3px solid var(--gold);box-shadow:-20px 0 60px rgba(11,31,58,.28);transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column}
+.drawer.open .sheet{transform:none}
+.sheet-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.sheet-head p{font-size:12px;color:var(--steel)}
+.sheet-head h2{font-size:24px;color:var(--navy);margin-top:3px;line-height:1.15}
+.sheet-body{padding:18px 22px 40px;overflow:auto}
+.xbtn{background:none;border:0;font-size:26px;line-height:1;color:var(--steel);cursor:pointer;padding:0 4px}
+.xbtn:hover{color:var(--red)}
+.runs-note{margin:0 0 14px;padding:9px 12px;border:1px solid #e9d9a3;border-left:4px solid var(--gold);background:#fbf6e7;color:#6b5a2a;border-radius:6px;font-size:12.5px}
+.run-empty{color:var(--steel);font-size:13px;margin:0 0 12px}
+.run-list{list-style:none;display:grid;gap:8px}
+.run{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:11px 13px}
+.run-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.run-top strong{font-weight:600;color:var(--navy)}
+.run-meta{font-size:11.5px;color:var(--steel);margin-top:3px}
+.run-out{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}
+.run-out div{background:var(--navy);color:#fff;border-radius:5px;padding:6px 9px}
+.run-out span{display:block;color:#9fb0c4;font-size:11px}
+.run-out b{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--gold)}
+.run-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.run-actions .btn{padding:6px 11px;font-size:12px}
+.run-actions .btn.ghost{color:var(--navy);border-color:var(--line)} .run-actions .btn.ghost:hover{border-color:var(--gold);color:var(--navy)}
+.badge{border-radius:3px;padding:2px 7px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;font-size:10.5px;font-weight:700;white-space:nowrap}
+.badge.green{background:#e7f0e9;color:var(--ok)} .badge.amber{background:#fbf0d6;color:#8a6414} .badge.steel{background:#eef1f4;color:var(--steel)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,30px);opacity:0;background:var(--gold);color:var(--navy);padding:10px 16px;border-radius:5px;font-weight:600;font-size:13px;z-index:70;transition:.25s;pointer-events:none;max-width:calc(100% - 30px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.drawer .sheet,.drawer .scrim,.toast{transition:none}}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">C<span class="a">í</span> ALPHA <span style="font-weight:400;opacity:.7">×</span> SUMMA</div>
   <div class="scen-name">SCENARIO: <b id="curScen">Base · $70 · 95% PUD</b></div>
+  <span class="toolver" id="toolVer" hidden></span>
   <div class="spacer"></div>
+  <span id="projectPicker" title="Project the saved runs belong to"></span>
+  <button class="btn ghost" id="runsBtn" type="button" data-vact="open-runs" data-en="Runs" data-es="Ejecuciones">Runs</button>
   <button class="btn ghost" id="btnScenarios">⊞ Scenarios</button>
   <button class="btn ghost" id="btnSave">💾 Save</button>
   <button class="btn ghost" id="btnImport">↥ Import data</button>
@@ -174,11 +217,32 @@ svg text{font-family:'Barlow',sans-serif}
   </div>
 </div>
 
+
+<!-- ═══ RUNS DRAWER (Vault) ═══ -->
+<div class="drawer" id="runsDrawer" aria-hidden="true">
+  <div class="scrim" data-vact="close-runs"></div>
+  <aside class="sheet" role="dialog" aria-modal="true" aria-labelledby="runsTitle">
+    <div class="sheet-head">
+      <div><p id="runsMeta" data-en="Saved calculations for this project" data-es="Cálculos guardados de este proyecto">Saved calculations for this project</p>
+        <h2 id="runsTitle" data-en="Runs" data-es="Ejecuciones">Runs</h2></div>
+      <button class="xbtn" type="button" data-vact="close-runs" aria-label="Close">×</button>
+    </div>
+    <div class="sheet-body">
+      <p class="runs-note" id="runsQueuedNote" hidden data-en="Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns." data-es="En cola local: el Vault no está disponible, así que las ejecuciones se guardan en este dispositivo y se sincronizan al volver.">Queued locally: the Vault is not reachable, so runs are kept on this device and sync when it returns.</p>
+      <p class="run-empty" id="runsEmpty" hidden data-en="No runs saved for this project yet. Save a scenario to capture one." data-es="Aún no hay ejecuciones guardadas para este proyecto. Guarde un escenario para capturar una.">No runs saved for this project yet. Save a scenario to capture one.</p>
+      <ul class="run-list" id="runsList"></ul>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="field_econ.js"></script>
 <script src="econ.js"></script>
 <script src="api.js"></script>
 <script src="engine.js"></script>
 <script src="app.js"></script>
+<!-- The ?v token is the tool version this page was built for (tools/ela-studio/tool.json aliases.current); the badge shows it when the Vault cannot say otherwise. -->
+<script type="module" src="vault-bridge.js?v=1.0.1"></script>
 </body>
 </html>

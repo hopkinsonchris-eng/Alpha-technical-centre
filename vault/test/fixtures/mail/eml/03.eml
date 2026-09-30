@@ -1,0 +1,33 @@
+Message-ID: <m03@mail.fixture>
+Date: Wed, 04 Mar 2026 15:02:00 GMT
+From: Dr. Luis Paredes <lparedes@petroleradelorinoco.com>
+To: info@alpha-technical-centre.com
+Cc: mfernandez@petroleradelorinoco.com
+Subject: =?UTF-8?B?Qm9ycmFkb3IgZGUgTkRBIOKAlCByZXZpc2nDs24=?=
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_atc_3"
+
+------=_atc_3
+Content-Type: multipart/alternative; boundary="----=_atc_3-alt"
+
+------=_atc_3-alt
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Estimados,
+
+Adjunto el borrador del acuerdo de confidencialidad para su revisión.
+------=_atc_3-alt
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+<html><body><p>Estimados,</p><p>Adjunto el borrador del acuerdo de confidencialidad para su revisión.</p></body></html>
+------=_atc_3-alt--
+------=_atc_3
+Content-Type: text/plain; name="nda-draft.txt"
+Content-Disposition: attachment; filename="nda-draft.txt"
+Content-Transfer-Encoding: base64
+
+TVVUVUFMIE5PTi1ESVNDTE9TVVJFIEFHUkVFTUVOVCBiZXR3ZWVuIEFscGhhIFRlY2huaWNhbCBD
+ZW50cmUgYW5kIFBldHJvbGVyYSBkZWwgT3Jpbm9jbyBTLkEuCg==
+------=_atc_3--

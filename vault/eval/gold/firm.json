@@ -1,0 +1,22 @@
+[
+  {
+    "id": "G25",
+    "question": "What voidage replacement range gave the best waterflood results in the literature review?",
+    "scope": "firm",
+    "expected_refs": [
+      "doc:2915f215-6ae9-51d9-8c08-d41aad088228"
+    ],
+    "expected_answer": "Voidage replacement between 0.9 and 1.2 gave the best waterflood results in the review of 62 waterfloods.",
+    "kind": "fact"
+  },
+  {
+    "id": "G26",
+    "question": "Which oil price should be used in screening economics?",
+    "scope": "firm",
+    "expected_refs": [
+      "doc:25650f22-f4b6-53f9-b699-d191ca29d0a2"
+    ],
+    "expected_answer": "The screening price deck is Brent flat real 68 USD/bbl.",
+    "kind": "fact"
+  }
+]

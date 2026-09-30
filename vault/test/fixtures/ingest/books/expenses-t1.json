@@ -1,0 +1,33 @@
+{
+  "code": 0,
+  "message": "success",
+  "expenses": [
+    {
+      "expense_id": "8001",
+      "date": "2026-08-20",
+      "account_name": "Travel",
+      "vendor_name": "Avianca",
+      "description": "Flight BOG-CCS",
+      "currency_code": "USD",
+      "total": 640.0,
+      "status": "unbilled",
+      "last_modified_time": "2026-08-20T18:00:00-0500"
+    },
+    {
+      "expense_id": "8002",
+      "date": "2026-08-22",
+      "account_name": "Software",
+      "vendor_name": "Voyage AI",
+      "description": "API credits",
+      "currency_code": "USD",
+      "total": 50.0,
+      "status": "reimbursed",
+      "last_modified_time": "2026-08-22T18:00:00-0500"
+    }
+  ],
+  "page_context": {
+    "page": 1,
+    "per_page": 200,
+    "has_more_page": false
+  }
+}

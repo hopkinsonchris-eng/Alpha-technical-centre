@@ -1,0 +1,18 @@
+{
+  "id": "00000000-0000-4000-8000-000000000042",
+  "item_id": "00000000-0000-4000-8000-000000000052",
+  "direction": "in",
+  "organisation_id": "petrolera-del-orinoco",
+  "contact_ids": [
+    "maria-fernandez"
+  ],
+  "channel": "email",
+  "occurred_at": "2026-02-10T09:05:00Z",
+  "reference_no": null,
+  "their_reference": "PDO-GC-2026-014",
+  "in_reply_to": null,
+  "signed_by": null,
+  "acknowledged_at": null,
+  "recorded_by": "mail-capture",
+  "notes": "Draft mutual NDA"
+}

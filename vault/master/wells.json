@@ -1,0 +1,3 @@
+[
+  {"id":"well:llanos:cubiro:cub-1","kind":"well","name":"Cubiro-1 (example placeholder; replace with regulator well list)","parent_id":"field:llanos:cubiro","country":"CO","source_url":"https://www.datos.gov.co/resource/4dai-7crq.json","props":{"note":"Well master data is populated by the M11 ANH miner from the BIP wells layer; this file holds only hand-entered exceptions."}}
+]

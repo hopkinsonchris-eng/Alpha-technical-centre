@@ -1,0 +1,18 @@
+{
+  "id": "situation-room",
+  "name": "Situation Room",
+  "owner": "chris",
+  "lifecycle": "experimental",
+  "kind": "browser-tool",
+  "entry": "situation-room/index.html",
+  "versions": [
+    {
+      "version": "0.9.0",
+      "released_at": "2026-08-27",
+      "commit": "1c54095"
+    }
+  ],
+  "aliases": {
+    "current": "0.9.0"
+  }
+}

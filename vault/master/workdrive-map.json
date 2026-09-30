@@ -1,0 +1,20 @@
+{
+  "_readme": "Zoho WorkDrive team folder -> Vault project map (M09). Each entry syncs the folder's files into Items in project_id. folder_id is the WorkDrive resource id shown in the folder URL. Entries whose folder_id starts with EXAMPLE, or with enabled=false, are skipped. type forces a Vault item type for the whole folder (e.g. contract for Legal/); omit it to infer from file names. legal_tag is optional (default: the project's default tag). books maps Zoho Books customers to projects for src/ingest/zoho-books.ts.",
+  "folders": [
+    {
+      "folder_id": "EXAMPLE_TEAM_FOLDER_ID",
+      "name": "Petrolera del Orinoco / Deliverables",
+      "project_id": "orinoco-partnership",
+      "type": null,
+      "legal_tag": null,
+      "recursive": true,
+      "enabled": false
+    }
+  ],
+  "books": {
+    "project_id": "firm",
+    "customer_projects": {
+      "Petrolera del Orinoco S.A.": "orinoco-partnership"
+    }
+  }
+}

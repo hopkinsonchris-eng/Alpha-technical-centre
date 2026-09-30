@@ -1,0 +1,151 @@
+{
+  "state": {
+    "arr": {
+      "fields": [
+        {
+          "id": 1,
+          "name": "Bozoi Dry Gas",
+          "country": "Kazakhstan",
+          "basin": "Pre-Caspian",
+          "operator": "APEX Energy Corp.",
+          "license": "Block G-7",
+          "exampleVersion": 4
+        },
+        {
+          "id": 2,
+          "name": "APEX Field",
+          "country": "Kazakhstan",
+          "basin": "Pre-Caspian",
+          "operator": "APEX Energy Corp.",
+          "license": "Block 12-AX"
+        }
+      ],
+      "formations": [
+        {
+          "id": 1,
+          "fieldId": 1,
+          "name": "Cenomanian Gas",
+          "type": "gas",
+          "autoForecast": true,
+          "pvt": {
+            "API": 55,
+            "SG_gas": 0.62,
+            "Bg": 0.00615,
+            "Pr_init": 180,
+            "T_res": 95,
+            "z": 0.92,
+            "k": 18,
+            "phi": 0.2,
+            "h": 35,
+            "Swc": 0.2
+          },
+          "geometry": {
+            "method": "map_area",
+            "area": 4.2,
+            "netPay": 35,
+            "NTG": 0.75,
+            "bulkVol": 0,
+            "STOIIP": 0,
+            "GIIP": 1850000000,
+            "RF": 0.7,
+            "reserves": 1295000000
+          },
+          "mbCalc": {
+            "mb_Pi": "180",
+            "mb_yrs": "20",
+            "_N_m3": null,
+            "_when": "2026-09-12T09:30:00.000Z"
+          },
+          "savedForecast": {
+            "isGas": true,
+            "when": "2026-09-12T09:30:00.000Z",
+            "params": {
+              "yrs": "20",
+              "offtake": "12000"
+            },
+            "results": [
+              {
+                "year": 1,
+                "cum": 41200000
+              },
+              {
+                "year": 2,
+                "cum": 79800000
+              }
+            ]
+          }
+        },
+        {
+          "id": 2,
+          "fieldId": 2,
+          "name": "J1 Sandstone",
+          "type": "oil",
+          "pvt": {
+            "API": 34,
+            "SG_gas": 0.7,
+            "Bo": 1.25,
+            "Pr_init": 310,
+            "Pb": 140,
+            "T_res": 105,
+            "k": 120,
+            "phi": 0.18,
+            "h": 22,
+            "Swc": 0.25
+          },
+          "geometry": {
+            "method": "map_area",
+            "area": 6.8,
+            "netPay": 22,
+            "NTG": 0.8,
+            "bulkVol": 0,
+            "STOIIP": 48200000,
+            "GIIP": 0,
+            "RF": 0.32,
+            "reserves": 15424000
+          },
+          "mbCalc": {
+            "mb_Pi": "310",
+            "_N_m3": 47600000,
+            "_when": "2026-09-20T14:05:00.000Z"
+          }
+        },
+        {
+          "id": 3,
+          "fieldId": 2,
+          "name": "J2 Carbonate",
+          "type": "oil",
+          "pvt": {
+            "API": 29,
+            "Bo": 1.18,
+            "Pr_init": 285,
+            "Pb": 120,
+            "T_res": 101,
+            "k": 35,
+            "phi": 0.12,
+            "h": 40
+          },
+          "geometry": {
+            "method": "volumetric",
+            "area": 3.1,
+            "netPay": 40,
+            "NTG": 0.6,
+            "STOIIP": 21900000,
+            "GIIP": 0,
+            "RF": 0,
+            "reserves": 0
+          }
+        },
+        "formation:legacy-import-4"
+      ]
+    },
+    "obj": {
+      "hmResults": {},
+      "fcWellParams": {}
+    },
+    "num": {
+      "activeFieldId": 2,
+      "fieldIdCounter": 3,
+      "formationIdCounter": 4
+    }
+  }
+}

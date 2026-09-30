@@ -1,0 +1,312 @@
+{
+  "organisation": {
+    "id": "petrolera-del-orinoco",
+    "name": "Petrolera del Orinoco S.A.",
+    "kind": "partner",
+    "country": "VE",
+    "jurisdiction": "Venezuela",
+    "registered_address": "Av. Francisco de Miranda, Torre Orinoco, Piso 12, Caracas 1060, Venezuela",
+    "identifiers": {
+      "domains": [
+        "petroleradelorinoco.com"
+      ]
+    }
+  },
+  "contacts": [
+    {
+      "id": "maria-fernandez",
+      "organisation_id": "petrolera-del-orinoco",
+      "name": "Ing. María Fernández",
+      "role": "Gerente de Nuevos Negocios",
+      "emails": [
+        "mfernandez@petroleradelorinoco.com"
+      ],
+      "postal_address": "Av. Francisco de Miranda, Torre Orinoco, Piso 12, Caracas 1060",
+      "language": "es"
+    },
+    {
+      "id": "luis-paredes",
+      "organisation_id": "petrolera-del-orinoco",
+      "name": "Dr. Luis Paredes",
+      "role": "Consultor Jurídico",
+      "emails": [
+        "lparedes@petroleradelorinoco.com"
+      ],
+      "language": "es"
+    }
+  ],
+  "legal_tag": {
+    "id": "lt-orinoco-nda-2026",
+    "classification": "client-nda",
+    "data_type": "second-party",
+    "client_id": "petrolera-del-orinoco",
+    "contract_id": "NDA-PDO-ATC-2026",
+    "originator": "Petrolera del Orinoco S.A.",
+    "expires_at": "2028-02-13",
+    "country_of_origin": [
+      "VE"
+    ]
+  },
+  "project": {
+    "id": "orinoco-partnership",
+    "client_id": "petrolera-del-orinoco",
+    "name": "Petrolera del Orinoco: partnership and Carabobo screening",
+    "status": "prospect",
+    "default_legal_tag": "lt-orinoco-nda-2026"
+  },
+  "nda_item": {
+    "id": "00000000-0000-4000-8000-000000000053",
+    "type": "nda",
+    "title": "Mutual NDA ATC / Petrolera del Orinoco",
+    "created_at": "2026-02-14T00:00:00Z",
+    "authored_at": "2026-02-14T00:00:00Z",
+    "project_id": "orinoco-partnership",
+    "client_id": "petrolera-del-orinoco",
+    "organisation_ids": [
+      "petrolera-del-orinoco"
+    ],
+    "legal_tag": "lt-firm",
+    "origin": {
+      "source": "upload"
+    },
+    "content_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "version": 1,
+    "reference_no": "ATC-2026-0103",
+    "extracted": {
+      "parties": [
+        "Alpha Technical Centre Ltd",
+        "Petrolera del Orinoco S.A."
+      ],
+      "effective_date": "2026-02-14",
+      "expiry": "2028-02-13",
+      "governing_law": "England and Wales",
+      "confidentiality_term_months": 24
+    }
+  },
+  "items": [
+    {
+      "id": "00000000-0000-4000-8000-000000000051",
+      "type": "email",
+      "title": "Introduction and capability statement",
+      "created_at": "2026-02-03T14:20:00Z",
+      "authored_at": "2026-02-03T14:20:00Z",
+      "project_id": "orinoco-partnership",
+      "client_id": "petrolera-del-orinoco",
+      "organisation_ids": [
+        "petrolera-del-orinoco"
+      ],
+      "legal_tag": "lt-orinoco-nda-2026",
+      "origin": {
+        "source": "zoho-mail"
+      },
+      "content_hash": "sha256:4141414141414141414141414141414141414141414141414141414141414141",
+      "version": 1,
+      "reference_no": "ATC-2026-0098"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000052",
+      "type": "email",
+      "title": "Draft mutual NDA",
+      "created_at": "2026-02-10T09:05:00Z",
+      "authored_at": "2026-02-10T09:05:00Z",
+      "project_id": "orinoco-partnership",
+      "client_id": "petrolera-del-orinoco",
+      "organisation_ids": [
+        "petrolera-del-orinoco"
+      ],
+      "legal_tag": "lt-orinoco-nda-2026",
+      "origin": {
+        "source": "zoho-mail"
+      },
+      "content_hash": "sha256:4242424242424242424242424242424242424242424242424242424242424242",
+      "version": 1,
+      "reference_no": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000053",
+      "type": "letter",
+      "title": "Signed mutual NDA",
+      "created_at": "2026-02-14T00:00:00Z",
+      "authored_at": "2026-02-14T00:00:00Z",
+      "project_id": "orinoco-partnership",
+      "client_id": "petrolera-del-orinoco",
+      "organisation_ids": [
+        "petrolera-del-orinoco"
+      ],
+      "legal_tag": "lt-orinoco-nda-2026",
+      "origin": {
+        "source": "upload"
+      },
+      "content_hash": "sha256:4343434343434343434343434343434343434343434343434343434343434343",
+      "version": 1,
+      "reference_no": "ATC-2026-0103"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000054",
+      "type": "email",
+      "title": "Technical proposal: Carabobo heavy-oil screening",
+      "created_at": "2026-04-22T16:40:00Z",
+      "authored_at": "2026-04-22T16:40:00Z",
+      "project_id": "orinoco-partnership",
+      "client_id": "petrolera-del-orinoco",
+      "organisation_ids": [
+        "petrolera-del-orinoco"
+      ],
+      "legal_tag": "lt-orinoco-nda-2026",
+      "origin": {
+        "source": "zoho-mail"
+      },
+      "content_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "version": 1,
+      "reference_no": "ATC-2026-0117"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000055",
+      "type": "email",
+      "title": "Request for clarification on proposal scope",
+      "created_at": "2026-06-30T11:00:00Z",
+      "authored_at": "2026-06-30T11:00:00Z",
+      "project_id": "orinoco-partnership",
+      "client_id": "petrolera-del-orinoco",
+      "organisation_ids": [
+        "petrolera-del-orinoco"
+      ],
+      "legal_tag": "lt-orinoco-nda-2026",
+      "origin": {
+        "source": "upload"
+      },
+      "content_hash": "sha256:4545454545454545454545454545454545454545454545454545454545454545",
+      "version": 1,
+      "reference_no": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000056",
+      "type": "letter",
+      "title": "Clarification letter on proposal scope",
+      "created_at": "2026-07-08T00:00:00Z",
+      "authored_at": "2026-07-08T00:00:00Z",
+      "project_id": "orinoco-partnership",
+      "client_id": "petrolera-del-orinoco",
+      "organisation_ids": [
+        "petrolera-del-orinoco"
+      ],
+      "legal_tag": "lt-orinoco-nda-2026",
+      "origin": {
+        "source": "upload"
+      },
+      "content_hash": "sha256:4646464646464646464646464646464646464646464646464646464646464646",
+      "version": 1,
+      "reference_no": "ATC-2026-0131"
+    }
+  ],
+  "dispatches": [
+    {
+      "id": "00000000-0000-4000-8000-000000000041",
+      "item_id": "00000000-0000-4000-8000-000000000051",
+      "direction": "out",
+      "organisation_id": "petrolera-del-orinoco",
+      "contact_ids": [
+        "maria-fernandez"
+      ],
+      "channel": "email",
+      "occurred_at": "2026-02-03T14:20:00Z",
+      "reference_no": "ATC-2026-0098",
+      "their_reference": null,
+      "in_reply_to": null,
+      "signed_by": "chris",
+      "acknowledged_at": "2026-02-03T14:20:00Z",
+      "recorded_by": "mail-capture",
+      "notes": "Introduction and capability statement"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000042",
+      "item_id": "00000000-0000-4000-8000-000000000052",
+      "direction": "in",
+      "organisation_id": "petrolera-del-orinoco",
+      "contact_ids": [
+        "maria-fernandez"
+      ],
+      "channel": "email",
+      "occurred_at": "2026-02-10T09:05:00Z",
+      "reference_no": null,
+      "their_reference": "PDO-GC-2026-014",
+      "in_reply_to": null,
+      "signed_by": null,
+      "acknowledged_at": null,
+      "recorded_by": "mail-capture",
+      "notes": "Draft mutual NDA"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000043",
+      "item_id": "00000000-0000-4000-8000-000000000053",
+      "direction": "out",
+      "organisation_id": "petrolera-del-orinoco",
+      "contact_ids": [
+        "maria-fernandez"
+      ],
+      "channel": "courier",
+      "occurred_at": "2026-02-14T00:00:00Z",
+      "reference_no": "ATC-2026-0103",
+      "their_reference": null,
+      "in_reply_to": "00000000-0000-4000-8000-000000000042",
+      "signed_by": "chris",
+      "acknowledged_at": "2026-02-14T00:00:00Z",
+      "recorded_by": "chris",
+      "notes": "Signed mutual NDA"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000044",
+      "item_id": "00000000-0000-4000-8000-000000000054",
+      "direction": "out",
+      "organisation_id": "petrolera-del-orinoco",
+      "contact_ids": [
+        "maria-fernandez"
+      ],
+      "channel": "email",
+      "occurred_at": "2026-04-22T16:40:00Z",
+      "reference_no": "ATC-2026-0117",
+      "their_reference": null,
+      "in_reply_to": null,
+      "signed_by": "chris",
+      "acknowledged_at": "2026-04-22T16:40:00Z",
+      "recorded_by": "mail-capture",
+      "notes": "Technical proposal: Carabobo heavy-oil screening"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000045",
+      "item_id": "00000000-0000-4000-8000-000000000055",
+      "direction": "in",
+      "organisation_id": "petrolera-del-orinoco",
+      "contact_ids": [
+        "maria-fernandez"
+      ],
+      "channel": "portal",
+      "occurred_at": "2026-06-30T11:00:00Z",
+      "reference_no": null,
+      "their_reference": "PDO-PR-2026-088",
+      "in_reply_to": null,
+      "signed_by": null,
+      "acknowledged_at": null,
+      "recorded_by": "chris",
+      "notes": "Request for clarification on proposal scope"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000046",
+      "item_id": "00000000-0000-4000-8000-000000000056",
+      "direction": "out",
+      "organisation_id": "petrolera-del-orinoco",
+      "contact_ids": [
+        "maria-fernandez"
+      ],
+      "channel": "post",
+      "occurred_at": "2026-07-08T00:00:00Z",
+      "reference_no": "ATC-2026-0131",
+      "their_reference": null,
+      "in_reply_to": "00000000-0000-4000-8000-000000000045",
+      "signed_by": "chris",
+      "acknowledged_at": "2026-07-08T00:00:00Z",
+      "recorded_by": "chris",
+      "notes": "Clarification letter on proposal scope"
+    }
+  ]
+}
