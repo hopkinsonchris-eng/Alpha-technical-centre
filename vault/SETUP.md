@@ -22,8 +22,15 @@ variable, never written into the repository.
    and the vault must not pause.
 3. When the project is ready: **Project Settings → Database → Connection
    string → URI**. Choose **Session pooler** (port 5432) and copy the URI.
-   Replace `[YOUR-PASSWORD]` with the password from step 1 and append
-   `?sslmode=require`. This is `DATABASE_URL`.
+   Replace `[YOUR-PASSWORD]` with the password from step 1. This is
+   `DATABASE_URL`. The API always encrypts the connection to a hosted
+   database; `?sslmode=require` on the end is accepted but not needed.
+5. Optional, recommended once the API is live: on the same Database page,
+   under **SSL configuration**, download the Supabase root certificate.
+   In Render, add it to `atc-vault-api` as a **Secret File** named
+   `supabase-ca.crt` and set `DATABASE_SSL_CA=/etc/secrets/supabase-ca.crt`.
+   The API then verifies the database's certificate instead of only
+   encrypting the connection (its log says which it is doing).
 4. Nothing else to configure: the API runs its own migrations on boot and
    enables the `vector` extension itself.
 
