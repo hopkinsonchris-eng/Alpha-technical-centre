@@ -895,3 +895,62 @@ test('screenshots: project page and tool page', async ({ page }) => {
   await expect(page.locator('[data-run-link]')).toHaveCount(RUNS.length);
   await page.screenshot({ path: path.join(EVIDENCE, 'm07-tool.png'), fullPage: true });
 });
+
+/* ── Add documents (M09 upload from the project file) ─────────────────── */
+
+test('add documents: files chosen on the project page go to POST /api/ingest/upload as multipart with the project id; each result is shown', async ({ page }) => {
+  let ctype = '', body = '';
+  await openProject(page, {
+    '/api/ingest/upload': (u_, r) => {
+      ctype = r.request().headers()['content-type'] || '';
+      body = r.request().postDataBuffer().toString('latin1');
+      return json(r, { project_id: PID, results: [
+        { filename: 'cubiro-basis.md', type: 'note', item_id: u(901), version: 1, status: 'ingested', ingest: 'ok', chunks: 3 },
+        { filename: 'big-scan.pdf', type: 'document', item_id: u(902), version: 1, status: 'queued', error: 'larger than 5242880 bytes' },
+        { filename: 'old.xlsx', type: 'spreadsheet', item_id: u(903), version: 2, status: 'unchanged', deduplicated: true, chunks: 12 },
+      ] });
+    },
+  });
+  const panel = page.locator('#p-upload');
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText('Add documents');
+  await expect(panel.locator('[data-upload-file]')).toHaveCount(0);
+
+  await page.locator('#up-files').setInputFiles([
+    { name: 'cubiro-basis.md', mimeType: 'text/markdown', buffer: Buffer.from('# Basis\n\nOOIP 120 MMbbl') },
+    { name: 'big-scan.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 fake') },
+    { name: 'old.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from('PK fake') },
+  ]);
+  const rows = panel.locator('[data-upload-file]');
+  await expect(rows).toHaveCount(3);
+
+  // What went over the wire: multipart, the project id, every file under "files".
+  expect(ctype).toMatch(/^multipart\/form-data/);
+  expect(body).toContain('name="project_id"\r\n\r\n' + PID);
+  expect(body).toContain('name="files"; filename="cubiro-basis.md"');
+  expect(body).toContain('name="files"; filename="big-scan.pdf"');
+  expect(body).toContain('name="files"; filename="old.xlsx"');
+
+  // What the person sees: one row per file with its outcome.
+  await expect(rows.nth(0)).toContainText('cubiro-basis.md');
+  await expect(rows.nth(0).locator('[data-status]')).toHaveAttribute('data-status', 'ingested');
+  await expect(rows.nth(0)).toContainText('3 chunks');
+  await expect(rows.nth(1).locator('[data-status]')).toHaveAttribute('data-status', 'queued');
+  await expect(rows.nth(1)).toContainText('larger than 5242880 bytes');
+  await expect(rows.nth(2).locator('[data-status]')).toHaveAttribute('data-status', 'unchanged');
+  await expect(rows.nth(2)).toContainText('version 2');
+  await expect(panel.getByRole('button', { name: 'Reload the project file' })).toBeVisible();
+});
+
+test('add documents: a refused upload (403) and a Vault outage each say so without breaking the page', async ({ page }) => {
+  await openProject(page, { '/api/ingest/upload': (u_, r) => err(r, 403, 'forbidden', 'you are not a member of project "llanos-waterflood"') });
+  const panel = page.locator('#p-upload');
+  await page.locator('#up-files').setInputFiles([{ name: 'note.md', mimeType: 'text/markdown', buffer: Buffer.from('x') }]);
+  await expect(panel.locator('.hub-notice.bad')).toContainText('you are not a member of project "llanos-waterflood"');
+  await expect(panel.locator('[data-upload-file]')).toHaveCount(0);
+  await expect(page.locator('#tl')).toBeVisible();   // the rest of the page is untouched
+
+  await page.route('**/api/ingest/upload', (route) => route.abort('failed'));
+  await page.locator('#up-files').setInputFiles([{ name: 'note2.md', mimeType: 'text/markdown', buffer: Buffer.from('y') }]);
+  await expect(panel.locator('.hub-notice.bad').last()).toContainText('The Vault is unreachable');
+});

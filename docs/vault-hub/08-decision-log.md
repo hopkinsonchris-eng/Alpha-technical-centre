@@ -50,6 +50,7 @@
 | F6 | Two scorecard rule sets | `hub/project.js` (M07) computes the six rules named in the mockup; the server (M17) implements the six rules in the module spec. **Decision: the server rules are canonical.** | Wire the project page and the Today dot to `GET /api/projects/:id/scorecard`; retire the client-side rules |
 | F7 | Evaluation numbers are structural until a real reranker runs | The eval reranker promotes gold refs, so precision measures scoping and citation hygiene; faithfulness is 1.00 because the fake model is extractive | Run `eval/runner.ts` once with `VOYAGE_API_KEY` and a recorded provider to establish the real baseline; keep the gate |
 | F8 | Settings entry for infrastructure costs and budgets | `hub/settings.html` has no form for `infra_costs` and `budgets` | Add the two forms; until then PUT `/api/settings/<key>` |
+| F9 | No route creates a client NDA legal tag | `POST /api/projects` needs an existing `client-nda` tag id for a client project, but tags are only created by `resolveTag` (unions) and the seeds; the Hub's New project form asks for the tag id and shows the API's refusal when it does not exist | Add `POST /api/legal-tags` (partners; classification, client, contract, expiry) and a small form on the organisation file; until then client projects are opened as internal and re-tagged when the NDA record is filed |
 
 ## Build complete (29 Sep 2026)
 

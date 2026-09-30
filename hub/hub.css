@@ -490,3 +490,27 @@ a.hub-proj:hover { border-color: #CDBB85; }
 .hub-vintages td:nth-last-child(3) { min-width: 130px; }
 .hub-vintages th, .hub-vintages td { padding-left: 8px; padding-right: 8px; }
 .hub-basis h3 .hub-tl-title { font-weight: 600; font-size: 1rem; }
+
+/* ---------- new project (Today) and add documents (project file) ---------- */
+.hub-newproj { margin-bottom: 16px; }
+.hub-newproj .hub-form-grid { padding-top: 12px; }
+.hub-newproj #np-notices, .hub-upload #up-notices { padding: 0 20px; }
+.hub-newproj #np-notices .hub-notice, .hub-upload #up-notices .hub-notice { margin: 12px 0 0; }
+.hub-field select {
+  width: 100%; border: 1px solid var(--rule); border-radius: var(--r); padding: 8px 11px; background: var(--white);
+  font: inherit; font-size: 15px; color: var(--navy);
+}
+.hub-field select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.18); }
+.hub-upload { margin-top: 16px; }
+.hub-drop {
+  margin: 12px 20px 16px; padding: 18px 20px; border: 1.5px dashed var(--rule); border-radius: var(--r-lg);
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--cream); font-size: 13.5px;
+}
+.hub-drop.over { border-color: var(--gold); background: #FBF7EA; }
+.hub-drop.busy { opacity: .6; pointer-events: none; }
+.hub-file-btn { cursor: pointer; }
+.hub-upload-list { list-style: none; margin: 0; padding: 0 20px; display: grid; gap: 8px; }
+.hub-upload-list:not(:empty) { padding-bottom: 16px; }
+.hub-upload-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13.5px; }
+.hub-upload-row b { font-weight: 500; color: var(--navy); overflow-wrap: anywhere; }
+#up-reload { margin: 0 20px 18px; }
