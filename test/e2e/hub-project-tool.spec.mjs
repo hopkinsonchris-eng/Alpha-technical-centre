@@ -901,9 +901,10 @@ test('screenshots: project page and tool page', async ({ page }) => {
 test('add documents: files chosen on the project page go to POST /api/ingest/upload as multipart with the project id; each result is shown', async ({ page }) => {
   let ctype = '', body = '';
   await openProject(page, {
-    '/api/ingest/upload': (u_, r) => {
+    '/api/ingest/upload': async (u_, r) => {
       ctype = r.request().headers()['content-type'] || '';
       body = r.request().postDataBuffer().toString('latin1');
+      await new Promise((res) => setTimeout(res, 1200));   // indexing takes time: the page must say so meanwhile
       return json(r, { project_id: PID, results: [
         { filename: 'cubiro-basis.md', type: 'note', item_id: u(901), version: 1, status: 'ingested', ingest: 'ok', chunks: 3 },
         { filename: 'big-scan.pdf', type: 'document', item_id: u(902), version: 1, status: 'queued', error: 'larger than 5242880 bytes' },
@@ -921,8 +922,14 @@ test('add documents: files chosen on the project page go to POST /api/ingest/upl
     { name: 'big-scan.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 fake') },
     { name: 'old.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from('PK fake') },
   ]);
+  // While the request is in flight the panel says so, names the count, and the chooser is disabled.
+  await expect(panel.locator('#up-progress')).toBeVisible();
+  await expect(panel.locator('#up-progress')).toContainText('Uploading 3 files');
+  await expect(panel.locator('#up-drop')).toHaveClass(/busy/);
   const rows = panel.locator('[data-upload-file]');
   await expect(rows).toHaveCount(3);
+  await expect(panel.locator('#up-progress')).toBeHidden();
+  await expect(panel.locator('#up-drop')).not.toHaveClass(/busy/);
 
   // What went over the wire: multipart, the project id, every file under "files".
   expect(ctype).toMatch(/^multipart\/form-data/);
