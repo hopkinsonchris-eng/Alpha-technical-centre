@@ -18,7 +18,8 @@ before(async () => {
     ('field:ve:guafita','field','Guafita','VE',7.98,-69.12,'gem','operating','PDVSA','{"gem":{"unit_id":"G100","release":"March 2026","status":"operating"}}','gem'),
     ('field:ve:la-victoria','field','La Victoria','VE',NULL,NULL,NULL,NULL,NULL,'{}','gem'),
     ('field:ve:barinas','field','Barinas','VE',8.62,-70.21,'gem',NULL,NULL,'{"gem":{"unit_id":"G1","release":"March 2026"}}','gem'),
-    ('field:co:guafita','field','Guafita Norte','CO',7.2,-70.9,'gem',NULL,NULL,'{}','gem')`);
+    ('field:co:guafita','field','Guafita Norte','CO',7.2,-70.9,'gem',NULL,NULL,'{}','gem'),
+    ('field:ve:bare','field','Bare','VE',8.9,-64.1,'gem',NULL,NULL,'{}','gem')`);
   await h.db.query("INSERT INTO people (id,email,name,role) VALUES ('ana','ana@alpha-technical-centre.com','Ana','associate'), ('ben','ben@alpha-technical-centre.com','Ben','associate')");
   await h.db.query("UPDATE projects SET members = members || '{ana}' WHERE id = $1", [PID]);
 });
@@ -83,6 +84,11 @@ test('W3-AC4: with a model, a candidate whose quote is not verbatim in the text 
   // Without a provider the dictionary pass alone runs.
   const plain = await extractAssets(h.db, text, [], project, null);
   assert.deepEqual(plain.map(c => c.name).sort(), ['Guafita', 'La Victoria']);
+  // A short name that is also an ordinary word is proposed only as written and next to a field word.
+  const bareWord = await extractAssets(h.db, 'The hillside was bare and the road was closed. Bare rock everywhere.', [], project, null);
+  assert.deepEqual(bareWord, []);
+  const bareField = await extractAssets(h.db, 'Workover candidates in the Bare field are listed below.', [], project, null);
+  assert.deepEqual(bareField.map(c => c.name), ['Bare']);
 });
 
 test('W3-AC5: accepting with a chosen candidate attaches it and files the dossier; accepting with nothing chosen attaches by name without a location; a member may decide; a non-member may not; rejecting resolves', async () => {

@@ -22,6 +22,8 @@ export interface MentionItem { id: string; version: number; title: string | null
 const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const MIN_NAME = 4;
+const SHORT_NAME = 5;
+const FIELD_WORD = /\b(?:field|fields|block|blocks|basin|well|wells|campo|campos|bloque|cuenca|pozo|yacimiento|discovery|licence|license|concession)\b/i;
 const MAX_MENTIONS = 20;
 
 function anchorAt(anchors: Anchor[], offset: number): string | null {
@@ -60,9 +62,12 @@ async function dictionaryPass(db: Db, text: string, anchors: Anchor[], project: 
   for (const r of rows) {
     const key = r.name.toLowerCase();
     if (seen.has(key)) continue;
-    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(r.name)}(?![\\p{L}\\p{N}])`, 'iu');
+    // A short name ("Bare", "Boca") is an ordinary word too: it must appear as written and next to a field word.
+    const short = r.name.length <= SHORT_NAME;
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(r.name)}(?![\\p{L}\\p{N}])`, short ? 'u' : 'iu');
     const m = re.exec(text);
     if (!m) continue;
+    if (short && !FIELD_WORD.test(text.slice(Math.max(0, m.index - 40), m.index + m[0].length + 40))) continue;
     seen.add(key);
     out.push({ name: r.name, kind: r.kind, quote: sentenceAround(text, m.index, m[0].length), anchor: anchorAt(anchors, m.index), source: 'dictionary', asset_id: r.id });
     if (out.length >= MAX_MENTIONS) break;

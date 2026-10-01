@@ -107,9 +107,11 @@ each one in Render → `atc-vault-api` → **Environment** (and the same
 
 The Global Oil and Gas Extraction Tracker sits behind a download form, so it is imported by hand:
 download the .xlsx from https://globalenergymonitor.org/projects/global-oil-gas-extraction-tracker/download-data/,
-then in `vault/` run `npx tsx scripts/import-gem.ts <the .xlsx> --release "March 2026"`. That writes
-`vault/master/gem-fields.json` (commit it); the next deploy seeds the units into `assets` and Add field
-finds them first. The licence is CC BY 4.0 and the attribution travels on every dossier filed from it.
+then in `vault/` run `npx tsx scripts/import-gem.ts <the .xlsx>` (the release month is read from the
+workbook's About sheet; add `--release "March 2026"` to override). That writes `vault/master/gem-fields.json`
+(commit it); the next deploy seeds the units into `assets` at boot and Add field finds them first. The
+licence is CC BY 4.0 and the attribution travels on every dossier filed from it. The March 2026 release
+is committed; repeat for each new release.
 
 **Optional**
 
