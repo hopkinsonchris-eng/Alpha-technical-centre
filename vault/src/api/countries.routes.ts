@@ -14,6 +14,7 @@ import { countryName, isCountryCode } from '../opportunities.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
 import { assembleCountryContext, withLiveRisk, writeBrief, type LiveRisk } from '../llm/brief.ts';
 import { countryRisk, worldMonitorConfigured, NOT_CONNECTED } from '../intel/worldmonitor.ts';
+import { locationCheck } from '../assets/geo.ts';
 
 /* ── the country brief: provider injection (tests) ───────────────────── */
 interface BriefDeps { provider?: LlmProvider | null }
@@ -24,13 +25,13 @@ const briefProvider = () => (briefDeps.provider === undefined ? openProvider() :
 const DAY = 864e5;
 
 export interface Attention { stale: number; filing: number; expiring_days: number | null }
-export interface CountryAsset { id: string; name: string; kind: string; lat: number | null; lon: number | null; location_source: string | null }
+export interface CountryAsset { id: string; name: string; kind: string; lat: number | null; lon: number | null; location_source: string | null; outside: string | null }
 export interface CountryProject {
   id: string; name: string; status: string; stage: string; client_id: string | null; client_name: string | null;
   lat: number | null; lon: number | null; last_run_at: string | null; attention: Attention; assets: CountryAsset[];
 }
 /** Wave 3: World Monitor's composite risk for the country; null without a key or when the feed refuses. */
-export interface CountryRiskLine { score: number | null; level: string | null; computed_at: string | null; fetched_at: string }
+export interface CountryRiskLine { score: number | null; level: string | null; trend: string | null; computed_at: string | null; fetched_at: string; sanctions_active: boolean | null; sanctions_count: number | null }
 export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; risk: CountryRiskLine | null }
 
 function expiringDays(acc: Access, p: ProjectRow): number | null {
@@ -43,7 +44,8 @@ function expiringDays(acc: Access, p: ProjectRow): number | null {
 export function register(app: Hono<Env>, _deps: RouteDeps): void {
   route(app, 'GET', '/api/countries', 'country.summary', async (x) => {
     const acc = await loadAccess(x.db, x.person, x.now);
-    const visible = [...acc.projects.values()].filter(p => canSee(acc, p.default_legal_tag, p.id));
+    // Archived projects are hidden from the globe, the panel and the counts (never deleted: the file still opens by id).
+    const visible = [...acc.projects.values()].filter(p => p.status !== 'archived' && canSee(acc, p.default_legal_tag, p.id));
     const ids = visible.map(p => p.id);
     const orgs = new Map((await x.db.query<{ id: string; name: string }>('SELECT id, name FROM organisations')).rows.map(o => [o.id, o.name]));
 
@@ -74,13 +76,13 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
 
     // Wave 3: the fields attached to each project, for the globe and the country panel.
     const allAssetIds = [...new Set(visible.flatMap(p => p.asset_ids))];
-    const assetRows = allAssetIds.length ? (await x.db.query<any>('SELECT id, name, kind, lat, lon, location_source FROM assets WHERE id = ANY($1::text[])', [allAssetIds])).rows : [];
+    const assetRows = allAssetIds.length ? (await x.db.query<any>('SELECT id, name, kind, country, lat, lon, location_source FROM assets WHERE id = ANY($1::text[])', [allAssetIds])).rows : [];
     const assetById = new Map(assetRows.map((a: any) => [a.id, a]));
     const view = (p: ProjectRow): CountryProject => ({
       id: p.id, name: p.name, status: p.status, stage: p.stage, client_id: p.client_id, client_name: p.client_id ? orgs.get(p.client_id) ?? null : null,
       lat: p.lat, lon: p.lon, last_run_at: lastRun.get(p.id) ?? null,
       attention: { stale: stale.get(p.id) ?? 0, filing: filing.get(p.id) ?? 0, expiring_days: expiringDays(acc, p) },
-      assets: p.asset_ids.filter(id => assetById.has(id)).map(id => { const a = assetById.get(id); return { id: a.id, name: a.name, kind: a.kind, lat: a.lat ?? null, lon: a.lon ?? null, location_source: a.location_source ?? null }; }),
+      assets: p.asset_ids.filter(id => assetById.has(id)).map(id => { const a = assetById.get(id); const chk = locationCheck(p.country ?? null, { lat: a.lat, lon: a.lon, country: a.country }); return { id: a.id, name: a.name, kind: a.kind, lat: a.lat ?? null, lon: a.lon ?? null, location_source: a.location_source ?? null, outside: chk?.outside ? chk.found : null }; }),
     });
 
     const byCode = new Map<string, CountryProject[]>();
@@ -96,7 +98,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const risks = new Map<string, CountryRiskLine | null>();
     if (connected) await Promise.all([...byCode.keys()].map(async code => {
       const r = await countryRisk(code);
-      if (r.ok) risks.set(code, { score: r.data.score, level: r.data.level, computed_at: r.data.computed_at, fetched_at: r.fetched_at });
+      if (r.ok) risks.set(code, { score: r.data.score, level: r.data.level, trend: r.data.trend, computed_at: r.data.computed_at, fetched_at: r.fetched_at, sanctions_active: r.data.sanctions_active, sanctions_count: r.data.sanctions_count });
       else { risks.set(code, null); if (!riskNotes.includes(r.reason)) riskNotes.push(r.reason); }
     }));
     const countries: CountrySummary[] = [...byCode.entries()].map(([code, projects]) => ({
@@ -130,7 +132,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const language: 'en' | 'es' = b.language === 'es' ? 'es' : 'en';
     const name = countryName(code);
     const acc = await loadAccess(x.db, x.person, x.now);
-    const projects = [...acc.projects.values()].filter(p => p.country === code && canSee(acc, p.default_legal_tag, p.id)).sort((a, c) => a.name.localeCompare(c.name));
+    const projects = [...acc.projects.values()].filter(p => p.country === code && p.status !== 'archived' && canSee(acc, p.default_legal_tag, p.id)).sort((a, c) => a.name.localeCompare(c.name));
     x.a.scope = 'firm'; x.a.refs = projects.map(p => `project:${p.id}`);
     if (!projects.length) throw notFound(`no projects in ${name.en} (${code}) in your scope`);
     const ctx = await withLiveRisk(await assembleCountryContext(x.db, acc, code, projects));

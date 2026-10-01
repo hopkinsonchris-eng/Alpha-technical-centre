@@ -471,3 +471,101 @@ test('W3-AC9: the brief shows live risk citations as chips, lists the World Moni
   await expect(brief.locator('#brief-wm')).toHaveAttribute('data-status', 'not_connected');
   await expect(brief.locator('#brief-wm')).toContainText('World Monitor: not connected (set WORLD_MONITOR_API_KEY on the Vault service)');
 });
+
+/* ── wave 3 PR 4: the country intelligence card, fields outside the country ── */
+
+const INTEL = {
+  country: 'VE', name: { en: 'Venezuela', es: 'Venezuela' },
+  world_monitor: { status: 'live', fetched_at: '2026-10-01T09:00:00.000Z', answered: ['risk', 'events', 'headlines', 'energy', 'facts', 'humanitarian', 'advisories', 'ucdp', 'outages'], pro_gated: ['brief', 'coverage', 'sanctions', 'resilience', 'timeline'], failed: ['ports: World Monitor answered HTTP 500'] },
+  sections: {
+    risk: { ok: true, data: { score: 50.4, level: 'reconsider', trend: 'rising', static_baseline: 58, dynamic_score: 46, components: { newsActivity: 12.5, ciiContribution: 30, geoConvergence: 4, militaryActivity: 3.9 }, computed_at: '2026-10-01T08:00:00.000Z', methodology: 'cii-3', advisory_provenance: 'state-dept', sanctions_active: true, sanctions_count: 212, region: 'South America' }, fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    brief: { ok: false, reason: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)', pro: true },
+    coverage: { ok: false, reason: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)', pro: true },
+    headlines: { ok: true, data: [{ n: 1, title: 'PDVSA restarts Apure field', source: 'Reuters', url: 'https://example.com/a', published_at: '2026-09-30T10:00:00.000Z' }], fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    events: { ok: true, data: [{ id: 'VEN1', type: 'Protests', sub_type: null, admin1: 'Apure', location: null, lat: 7.2, lon: -70.7, actors: 'Protesters (Venezuela)', fatalities: 0, date: '2026-09-28T00:00:00.000Z', notes: null, source: 'ACLED' }], fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    ucdp: { ok: true, data: [], fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    humanitarian: { ok: true, data: { events_total: 420, political_violence: 120, fatalities: 35, demonstrations: 300, period: '2026-07/2026-09', updated_at: null }, fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    energy: { ok: true, data: { mix_year: 2023, mix: { hydro: 0.71, gas: 0.21, oil: 0.08, coal: 0, nuclear: 0, renewables: 0.71, wind: 0, solar: 0 }, import_share: 0.02, oil: { data_month: '2026-07', crude_imports_kbd: 0, gasoline_demand_kbd: 110, gasoline_imports_kbd: 35, diesel_demand_kbd: 90, diesel_imports_kbd: 10, jet_demand_kbd: null, jet_imports_kbd: null, lpg_demand_kbd: null, lpg_imports_kbd: null }, gas: null, stocks: null, raw: {} }, fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    ports: { ok: false, reason: 'World Monitor answered HTTP 500' },
+    facts: { ok: true, data: { name: 'Venezuela', capital: 'Caracas', population: 28000000, area_km2: 916445, head_of_state: null, head_of_state_title: null, languages: ['Spanish'], currencies: ['VES'], summary: null }, fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    advisories: { ok: true, data: [{ title: 'Venezuela: reconsider travel', url: 'https://example.com/adv', date: '2026-09-01T00:00:00.000Z', source: 'US State Department', source_country: 'US', level: '3' }], fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    sanctions: { ok: false, reason: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)', pro: true },
+    resilience: { ok: false, reason: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)', pro: true },
+    outages: { ok: true, data: [], fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    timeline: { ok: false, reason: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)', pro: true },
+  },
+};
+
+test('W3-PR4: choosing a country reads its intelligence from the Vault and shows every section: live ones with data, Pro-gated ones named, failed ones named; no browser request goes to worldmonitor.app', async ({ page }) => {
+  const leaks = [];
+  await page.route('**/*worldmonitor.app/**', (route) => { leaks.push(route.request().url()); return route.abort(); });
+  let intelCalls = 0;
+  await stubApi(page, { '/api/countries/VE/intel': (u, r) => { intelCalls++; return json(r, INTEL); } });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const card = page.locator('#country-intel');
+  await expect(card).toBeVisible();
+  await expect(card).toHaveAttribute('data-state', 'live');
+  await expect(card.locator('h3')).toHaveText('Country intelligence: Venezuela');
+  await expect(card.locator('#intel-meta')).toContainText('5 sections need Pro');
+  await expect(card.locator('#intel-meta')).toContainText('1 did not answer');
+  const risk = card.locator('[data-intel="risk"]');
+  await expect(risk).toHaveAttribute('data-state', 'live');
+  await expect(risk).toContainText('risk 50');
+  await expect(risk).toContainText('trend rising');
+  await expect(risk).toContainText('sanctions active (212 designations)');
+  await expect(risk.locator('.hub-ibar')).toHaveCount(4);
+  await expect(risk.locator('.hub-ibar').first()).toContainText('news activity');
+  await expect(card.locator('[data-intel="brief"]')).toHaveAttribute('data-state', 'pro');
+  await expect(card.locator('[data-intel="brief"]')).toContainText('Needs World Monitor Pro');
+  await expect(card.locator('[data-intel="energy"]')).toContainText('Gasoline demand');
+  await expect(card.locator('[data-intel="energy"]')).toContainText('110 kb/d (imports 35 kb/d)');
+  await expect(card.locator('[data-intel="energy"]')).toContainText('hydro 71%');
+  await expect(card.locator('[data-intel="events"]')).toContainText('HAPI 2026-07/2026-09: 420 events, 35 fatalities, 300 demonstrations');
+  await expect(card.locator('[data-intel="events"] li[data-event="VEN1"]')).toContainText('Protests in Apure');
+  await expect(card.locator('[data-intel="headlines"] a')).toHaveAttribute('href', 'https://example.com/a');
+  await expect(card.locator('[data-intel="ports"]')).toHaveAttribute('data-state', 'off');
+  await expect(card.locator('[data-intel="ports"]')).toContainText('Not available: World Monitor answered HTTP 500');
+  await expect(card.locator('[data-intel="advisories"]')).toContainText('level 3');
+  await expect(card.locator('[data-intel="outages"]')).toContainText('Nothing reported for this country');
+  await expect(card.locator('[data-intel="facts"]')).toContainText('Caracas');
+  expect(leaks).toEqual([]);
+  mkdirSync(EVIDENCE, { recursive: true });
+  await card.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(EVIDENCE, 'w3-country-intel.png') });
+  // Leaving the country clears the card; a country without a reading says not connected.
+  await page.locator('#country-back').click();
+  await expect(card).toBeHidden();
+  await page.locator('#country-list [data-country="KZ"]').click();
+  await expect(card).toHaveAttribute('data-state', 'failed');     // the stub has no KZ route: a 404 is reported, never hidden
+  expect(intelCalls).toBe(1);
+  // Spanish follows.
+  await page.locator('#country-back').click();
+  await page.locator('#country-list [data-country="VE"]').click();
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await expect(card.locator('h3')).toHaveText('Inteligencia del país: Venezuela');
+});
+
+test('W3-PR4: a field whose coordinates fall outside the country is flagged in the panel; an archived project is not on the globe (the summary omits it)', async ({ page }) => {
+  const flagged = JSON.parse(JSON.stringify(COUNTRIES));
+  flagged.countries[2].projects[0].assets = [...BARINAS_FIELDS, { id: 'field:ve:trico', name: 'Trico Gas Field', kind: 'field', lat: 35.85, lon: -119.52, location_source: 'wikidata', outside: 'US' }];
+  await stubApi(page, { '/api/countries': (u, r) => json(r, flagged), '/api/countries/VE/intel': (u, r) => json(r, { country: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, world_monitor: { status: 'not_connected', reason: 'not connected (set WORLD_MONITOR_API_KEY on the Vault service)' }, sections: {} }) });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const pill = page.locator('[data-project-fields="ven-barinas"] .hub-field-pt[data-field="field:ve:trico"]');
+  await expect(pill).toHaveClass(/outside/);
+  await expect(pill).toHaveAttribute('data-outside', 'US');
+  await expect(pill).toContainText('outside: in United States');
+  await expect(page.locator('[data-project-fields="ven-barinas"] .hub-field-pt[data-field="field:ve:barinas"]')).not.toHaveClass(/outside/);
+  await expect(page.locator('#country-intel')).toHaveAttribute('data-state', 'not_connected');
+  await expect(page.locator('#country-intel')).toContainText('World Monitor is not connected.');
+});
+
+test('W3-PR4: an archived project is left out of the register and My projects', async ({ page }) => {
+  const withArchived = { projects: [...PROJECTS.projects, { ...PROJECTS.projects[2], id: 'old-venezuela', name: 'Venezuela', status: 'archived' }] };
+  await stubApi(page, { '/api/projects': (u, r, posted) => (r.request().method() === 'POST' ? json(r, {}, 201) : json(r, withArchived)) });
+  await page.goto('/hub/index.html');
+  await ready(page);
+  await expect(page.locator('#register-body tr[data-register-row]')).toHaveCount(5);
+  await expect(page.locator('tr[data-register-row="old-venezuela"]')).toHaveCount(0);
+});

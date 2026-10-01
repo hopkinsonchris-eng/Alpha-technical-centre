@@ -34,9 +34,10 @@ const PROPOSALS = [
   { id: '10000000-0000-4000-8000-000000000002', kind: 'asset', status: 'open', created_at: '2026-10-01T09:10:00.000Z', payload: { project_id: PID, item_id: '00000000-0000-4000-8000-000000000301', item_version: 1, item_title: 'Data room index', name: 'La Victoria', kind: 'field', quote: 'Current production comes from the Guafita and La Victoria fields in Apure state.', anchor: 'page 3', source: 'model', proposal: 'Field named in "Data room index": La Victoria', candidates: [] } },
   { id: '10000000-0000-4000-8000-000000000003', kind: 'asset', status: 'open', created_at: '2026-10-01T09:10:00.000Z', payload: { project_id: 'other-project', item_id: 'x', item_version: 1, item_title: 'Elsewhere', name: 'Not here', kind: 'field', quote: 'Not here.', anchor: null, source: 'dictionary', proposal: 'x', candidates: [] } },
 ];
-async function stubApi(page, { attach, proposals, decide, upload } = {}) {
+const TRICO = { id: 'field:ve:trico-earlier', kind: 'field', name: 'Trico Gas Field', parent_id: null, country: 'VE', operator: null, source_url: 'https://www.wikidata.org/wiki/Q7840', lat: 35.85, lon: -119.52, location_source: 'wikidata', status: null, created_by: 'chris', created_at: '2026-10-01T00:00:00.000Z', props: { wikidata: { id: 'Q7840' } }, location_check: { expected: 'VE', found: 'US', method: 'polygon', outside: true } };
+async function stubApi(page, { attach, proposals, decide, upload, extraAssets } = {}) {
   const calls = { posted: [], deleted: [], locate: [], decided: [] };
-  let assets = [{ ...BARINAS, dossier: [DOSSIER] }, { ...APURE, dossier: [] }];
+  let assets = [{ ...BARINAS, dossier: [DOSSIER] }, { ...APURE, dossier: [] }, ...(extraAssets || [])];
   let queue = proposals ? proposals.map((q) => ({ ...q })) : [];
   await page.route('**/api/**', (route) => {
     const u = new URL(route.request().url()); const p = u.pathname; const m = route.request().method();
@@ -48,6 +49,8 @@ async function stubApi(page, { attach, proposals, decide, upload } = {}) {
       const b = JSON.parse(route.request().postData()); calls.posted.push(b);
       if (attach) return attach(route, b);
       const c = b.create;
+      // The Vault refuses a record outside the project's country until the caller confirms.
+      if (c && typeof c.lat === 'number' && c.lat > 30 && !b.confirm_outside) return json(route, { error: { code: 'outside_country', message: 'this record sits in US, not VE; send confirm_outside: true to attach it anyway', path: '/create', location_check: { expected: 'VE', found: 'US', method: 'polygon', outside: true } } }, 409);
       const asset = b.asset_id ? { ...BARINAS, id: b.asset_id, name: 'Guafita', lat: 7.98, lon: -69.12, props: { gem: { unit_id: 'G100', release: 'March 2026' } } }
         : { id: 'field:ve:' + c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), kind: c.kind, name: c.name, parent_id: null, country: c.country || null, operator: (c.detail && c.detail.operator) || null, source_url: c.source_url || null, lat: c.lat ?? null, lon: c.lon ?? null, location_source: c.lat != null ? c.location_source || 'manual' : null, status: null, created_by: 'chris', created_at: '2026-10-01T10:00:00.000Z', props: c.location_source === 'wikidata' ? { wikidata: { id: c.source_id } } : {} };
       const dossier = asset.location_source === 'wikidata' || asset.location_source === 'gem' ? ['00000000-0000-4000-8000-00000000090' + (calls.posted.length + 1)] : [];
@@ -298,4 +301,75 @@ test('W3-AC4 (Hub): an upload whose document names fields says so and links to t
   await expect(row.locator('[data-fields-named] a')).toHaveAttribute('href', '#p-fields');
   await expect(page.locator('#fld-proposed')).toBeVisible();
   await expect(page.locator('#fld-proposed li[data-proposal]')).toHaveCount(2);
+});
+
+/* ── wave 3 PR 4: fields outside the project's country ── */
+
+const TRICO_WD = { name: 'Trico Gas Field', kind: 'field', country: 'US', lat: 35.85, lon: -119.52, source: 'wikidata', source_id: 'Q7840', source_url: 'https://www.wikidata.org/wiki/Q7840', confidence: 0.5, detail: { operator: null } };
+
+test('W3-PR4: an attached field outside the project country is flagged in the card; a candidate from another country says so; attaching it asks first and resends with confirm_outside', async ({ page }) => {
+  const calls = await stubApi(page, { extraAssets: [{ ...TRICO, dossier: [] }] });
+  await page.route('**/api/assets/locate**', (route) => json(route, { candidates: [TRICO_WD], unavailable: [] }));
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const card = page.locator('#p-fields');
+  const trico = card.locator('li[data-field="field:ve:trico-earlier"]');
+  await expect(trico).toHaveClass(/outside/);
+  await expect(trico.locator('[data-outside="US"]')).toContainText('outside Venezuela: this location is in United States of America');
+  await expect(card.locator('li[data-field="field:ve:barinas"] [data-outside]')).toHaveCount(0);
+  // Add field: the candidate's own country is shown; Attach is refused, explained, and offered anyway.
+  await card.locator('#fld-add-btn').click();
+  await card.locator('#fld-q').fill('Trico');
+  await card.getByRole('button', { name: 'Search' }).click();
+  const cand = card.locator('#fld-candidates li[data-candidate="wikidata:Q7840"]');
+  await expect(cand.locator('[data-outside="US"]')).toContainText("in United States of America, not this project's country");
+  await cand.locator('[data-attach]').click();
+  const ask = card.locator('#fld-notices [data-outside-ask="US"]');
+  await expect(ask).toBeVisible();
+  await expect(ask).toContainText('This location is in United States of America, not Venezuela.');
+  await expect(card.locator('li[data-field]')).toHaveCount(3);
+  expect(calls.posted.length).toBe(1);
+  expect(calls.posted[0].confirm_outside).toBeUndefined();
+  await ask.locator('[data-attach-anyway]').click();
+  await expect(card.locator('li[data-field]')).toHaveCount(4);
+  expect(calls.posted[1].confirm_outside).toBe(true);
+  expect(calls.posted[1].create.name).toBe('Trico Gas Field');
+  await expect(card.locator('#fld-notices .hub-notice.ok')).toContainText('Trico Gas Field attached.');
+});
+
+test('W3-PR4: a partner can archive a project (hide, never delete) after confirming, and restore it; the page says so', async ({ page }) => {
+  const calls = await stubApi(page);
+  const patched = [];
+  await page.route('**/api/projects/' + PID, (route) => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    const b = JSON.parse(route.request().postData()); patched.push(b);
+    return json(route, { ...PROJECT, ...b });
+  });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const btn = page.locator('#p-archive');
+  await expect(btn).toHaveText('Archive project');
+  await expect(page.locator('#p-archived')).toBeHidden();
+  await btn.click();
+  await expect(btn).toHaveText('Confirm: archive this project');
+  await expect(page.locator('#p-notices .hub-notice.warn')).toContainText('Nothing is deleted');
+  expect(patched).toEqual([]);
+  await btn.click();
+  expect(patched).toEqual([{ status: 'archived' }]);
+  await expect(page.locator('#p-archived')).toBeVisible();
+  await expect(page.locator('#p-sub [data-status="archived"]')).toHaveText('Archived');
+  await expect(page.locator('#p-archive')).toHaveText('Restore project');
+  await page.locator('#p-archive').click();
+  expect(patched[1]).toEqual({ status: 'prospect' });
+  await expect(page.locator('#p-archived')).toBeHidden();
+  await expect(page.locator('#p-archive')).toHaveText('Archive project');
+  void calls;
+});
+
+test('W3-PR4: associates see no archive button', async ({ page }) => {
+  await stubApi(page);
+  await page.route('**/api/me', (route) => json(route, { ...PARTNER, role: 'associate' }));   // registered last, so it wins
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await expect(page.locator('#p-archive')).toHaveCount(0);
 });

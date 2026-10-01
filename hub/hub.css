@@ -687,3 +687,27 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-risk-line .hub-rag { margin-right: 2px; }
 .hub-risk-n { white-space: nowrap; }
 .hub-cite.wm { border-bottom-style: dashed; }
+/* ---------- wave 3 PR 4: country intelligence, fields outside the country, archived projects ---------- */
+.hub-intel { padding: 16px 20px !important; margin-top: 14px; }
+.hub-intel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 22px; margin-top: 10px; }
+.hub-intel-sec { min-width: 0; border-top: 1px solid var(--rule); padding-top: 10px; }
+.hub-intel-sec h4 { font-family: var(--font-label); font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.hub-intel-sec h5 { font-size: 12.5px; margin: 10px 0 4px; color: var(--navy); }
+.hub-intel-sec[data-state="pro"] h4::after { content: " · Pro"; color: var(--gold-ink); }
+.hub-intel-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 5px; font-size: 13px; }
+.hub-intel-list li { overflow-wrap: anywhere; }
+.hub-intel-list b { font-weight: 600; }
+.hub-intel-brief p { font-size: 13.5px; margin: 0 0 8px; }
+.hub-intel .hub-kv { grid-template-columns: 150px 1fr; font-size: 13px; }
+.hub-bars { display: grid; gap: 4px; margin-top: 8px; }
+.hub-ibar { display: grid; grid-template-columns: 120px 1fr 36px; align-items: center; gap: 8px; font-size: 12px; }
+.hub-ibar .k { color: var(--muted); text-transform: capitalize; }
+.hub-ibar .track { display: block; height: 6px; background: var(--cream); border-radius: 3px; overflow: hidden; border: 1px solid var(--rule); }
+.hub-ibar .fill { display: block; height: 100%; background: var(--gold); }
+.hub-ibar .v { text-align: right; font-variant-numeric: tabular-nums; }
+.hub-outside { color: var(--bad); font-weight: 600; }
+.hub-field-pt.outside { border-color: var(--bad-line); background: var(--bad-bg); }
+.hub-field-pt .hub-outside { margin-left: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.hub-field-row.outside { border-color: var(--bad-line); }
+.hub-archived { margin: 12px 0 0; }
+@media (max-width: 640px) { .hub-intel-grid { grid-template-columns: 1fr; } .hub-ibar { grid-template-columns: 90px 1fr 36px; } }

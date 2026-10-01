@@ -13,13 +13,13 @@ import type { Access, ProjectRow } from '../api/common.ts';
 import { canSee, iso } from '../api/common.ts';
 import type { LlmProvider } from './provider.ts';
 import { checkCitations, ymd } from './draft.ts';
-import { acledEvents, countryRisk, headlines, worldMonitorConfigured, NOT_CONNECTED, type AcledEvent, type CountryRisk, type Headline } from '../intel/worldmonitor.ts';
+import { acledEvents, countryRisk, energyProfile, headlines, intelBrief, worldMonitorConfigured, NOT_CONNECTED, type AcledEvent, type CountryRisk, type EnergyProfile, type Headline, type IntelBrief } from '../intel/worldmonitor.ts';
 
 export interface BriefSource { ref: string; title: string; kind: 'run' | 'doc' | 'lesson' | 'wm'; project_id: string | null; date: string | null; legal_tag: string; detail?: string; url?: string | null }
 /** What World Monitor gave for the country (wave 3, §1.5): live risk, events and headlines, or why not. */
 export interface LiveRisk {
   status: 'live' | 'not_connected'; reason?: string; fetched_at: string | null;
-  risk: CountryRisk | null; events: AcledEvent[]; headlines: Headline[]; notes: string[];
+  risk: CountryRisk | null; events: AcledEvent[]; headlines: Headline[]; energy: EnergyProfile | null; intel: IntelBrief | null; notes: string[];
 }
 export interface BriefContext {
   country: string; projects: ProjectRow[]; sources: BriefSource[]; dispatches: any[];
@@ -89,18 +89,33 @@ export async function assembleCountryContext(db: Db, acc: Access, country: strin
  */
 export async function withLiveRisk(ctx: BriefContext): Promise<BriefContext> {
   const code = ctx.country;
-  const live: LiveRisk = { status: 'not_connected', reason: NOT_CONNECTED, fetched_at: null, risk: null, events: [], headlines: [], notes: [] };
+  const live: LiveRisk = { status: 'not_connected', reason: NOT_CONNECTED, fetched_at: null, risk: null, events: [], headlines: [], energy: null, intel: null, notes: [] };
   if (!worldMonitorConfigured()) return { ...ctx, live };
-  const [r, e, h] = await Promise.all([countryRisk(code), acledEvents(code), headlines(code)]);
+  const [r, e, h, en, ib] = await Promise.all([countryRisk(code), acledEvents(code), headlines(code), energyProfile(code), intelBrief(code)]);
   const sources = [...ctx.sources];
   const key: string[] = [];
   if (r.ok) {
     live.status = 'live'; live.reason = undefined; live.fetched_at = r.fetched_at; live.risk = r.data;
     const d = r.data;
     sources.push({ ref: `wm:risk:${code}`, title: `World Monitor country risk ${code}`, kind: 'wm', project_id: null, date: ymd(d.computed_at ?? r.fetched_at), legal_tag: 'lt-public',
-      detail: `score ${d.score ?? '—'}${d.level ? ', ' + d.level : ''}`, url: null });
+      detail: `score ${d.score ?? '—'}${d.level ? ', ' + d.level : ''}${d.trend ? ', ' + d.trend : ''}${d.sanctions_active ? ', sanctions active' : ''}`, url: null });
     key.push(`wm:risk:${code}|${d.computed_at ?? r.fetched_at}|${d.score}`);
   } else live.reason = r.reason;
+  if (en.ok && (en.data.oil || en.data.gas || en.data.mix)) {
+    if (live.status !== 'live') { live.status = 'live'; live.reason = undefined; live.fetched_at = en.fetched_at; }
+    live.energy = en.data;
+    sources.push({ ref: `wm:energy:${code}`, title: `World Monitor energy profile ${code}`, kind: 'wm', project_id: null, date: ymd(en.fetched_at), legal_tag: 'lt-public', detail: `JODI oil ${en.data.oil?.data_month ?? 'n/a'}, gas ${en.data.gas?.data_month ?? 'n/a'}`, url: null });
+    key.push(`wm:energy:${code}|${en.data.oil?.data_month ?? ''}|${en.data.gas?.data_month ?? ''}`);
+  } else if (!en.ok && !en.pro) live.notes.push(`energy profile: ${en.reason}`);
+  if (ib.ok && ib.data.brief) {
+    if (live.status !== 'live') { live.status = 'live'; live.reason = undefined; live.fetched_at = ib.fetched_at; }
+    live.intel = ib.data;
+    for (const ev of ib.data.evidence) {
+      sources.push({ ref: `wm:evidence:${ev.id}`, title: ev.label || ev.fact || ev.id, kind: 'wm', project_id: null, date: ev.as_of ? ymd(ev.as_of) : null, legal_tag: 'lt-public', detail: `World Monitor evidence${ev.kind ? ', ' + ev.kind : ''}${ev.value ? ': ' + ev.value : ''}`, url: ev.url });
+      key.push(`wm:evidence:${ev.id}|${ev.value ?? ''}`);
+    }
+  } else if (!ib.ok && ib.pro) live.notes.push('World Monitor intel brief: needs Pro');
+  else if (!ib.ok) live.notes.push(`intel brief: ${ib.reason}`);
   if (e.ok) {
     if (live.status !== 'live') { live.status = 'live'; live.reason = undefined; live.fetched_at = e.fetched_at; }
     live.events = e.data;
@@ -127,9 +142,9 @@ export function briefSystemPrompt(language: 'en' | 'es'): string {
   const lang = language === 'es' ? 'Spanish (Latin American, formal usted)' : 'British English';
   return `You write the country brief for the partners of Alpha Technical Centre, an oil and gas technical consultancy. Language: ${lang}.
 Write five short paragraphs, each opening with its heading word followed by a full stop: Situation (what the firm holds in this country and at what stage), Record (the runs and documents that matter and when they were made), Numbers (the headline figures, with their units), Contradictions (where a run, a letter or a lesson disagrees with another, or a figure quoted in a document no longer matches the latest run; say "none found" if none), Open questions (what a partner should ask or do next).
-When the context carries a LIVE RISK block, add a sixth paragraph opening "Live risk." with the country risk score and advisory level, the conflict events and headlines that matter to the firm's work there, each cited; when it says the feed is not connected, write nothing about risk.
+When the context carries a LIVE RISK block, add a sixth paragraph opening "Live risk." with the country risk score, trend and advisory level, sanctions if active, the energy figures that bear on oil and gas work, the conflict events and headlines that matter to the firm's work there, and what World Monitor's own brief adds, each cited ([wm:risk:…], [wm:energy:…], [wm:acled:…], [wm:news:…], [wm:evidence:…]); when it says the feed is not connected, write nothing about risk.
 Rules that are checked mechanically after you answer:
-1. Every sentence that states a figure, a date or a fact from the record must end with a citation in square brackets taken ONLY from the CONTEXT: [run:<id>], [doc:<id>], [lesson:<id>], [wm:risk:<country>], [wm:acled:<id>], [wm:news:<n>]. Never invent an id. A sentence you cannot cite must be written as a question in the form [QUESTION FOR YOU: ...].
+1. Every sentence that states a figure, a date or a fact from the record must end with a citation in square brackets taken ONLY from the CONTEXT: [run:<id>], [doc:<id>], [lesson:<id>], [wm:risk:<country>], [wm:energy:<country>], [wm:acled:<id>], [wm:news:<n>], [wm:evidence:<id>]. Never invent an id. A sentence you cannot cite must be written as a question in the form [QUESTION FOR YOU: ...].
 2. Use only the context. Do not add knowledge from outside it, and do not speculate about the country.
 3. Name projects by their names. Be concrete and brief; a partner reads this on a Monday morning.
 Return plain text paragraphs separated by blank lines. No preamble, no explanation.`;
@@ -147,7 +162,16 @@ export function briefUserPrompt(ctx: BriefContext, name: string): string {
   const live = ctx.live;
   if (live && live.status === 'live') {
     const parts: string[] = [];
-    if (live.risk) parts.push(`risk score ${live.risk.score ?? 'n/a'} of 100, advisory level ${live.risk.level ?? 'n/a'}${live.risk.components ? ', components ' + Object.entries(live.risk.components).map(([k, v]) => `${k} ${typeof v === 'object' && v && 'score' in (v as any) ? (v as any).score : v}`).join(', ') : ''}${live.risk.computed_at ? ', computed ' + live.risk.computed_at : ''} [wm:risk:${ctx.country}]`);
+    if (live.risk) parts.push(`risk score ${live.risk.score ?? 'n/a'} of 100${live.risk.trend ? ' (' + live.risk.trend + ')' : ''}, advisory level ${live.risk.level ?? 'n/a'}${live.risk.components ? ', components ' + Object.entries(live.risk.components).map(([k, v]) => `${k} ${v}`).join(', ') : ''}${live.risk.sanctions_active ? `, sanctions active (${live.risk.sanctions_count ?? '?'} designations)` : ''}${live.risk.computed_at ? ', computed ' + live.risk.computed_at : ''} [wm:risk:${ctx.country}]`);
+    if (live.energy) {
+      const o = live.energy.oil, g = live.energy.gas, m = live.energy.mix;
+      const bits: string[] = [];
+      if (m) bits.push(`electricity mix ${live.energy.mix_year ?? ''}: ${Object.entries(m).filter(([, v]) => v > 0).map(([k, v]) => `${k} ${Math.round(v * 100) / 100}`).join(', ')}`);
+      if (o) bits.push(`JODI oil ${o.data_month ?? ''}: crude imports ${o.crude_imports_kbd ?? 'n/a'} kb/d, gasoline demand ${o.gasoline_demand_kbd ?? 'n/a'} kb/d, diesel demand ${o.diesel_demand_kbd ?? 'n/a'} kb/d`);
+      if (g) bits.push(`JODI gas ${g.data_month ?? ''}: demand ${g.total_demand_tj ?? 'n/a'} TJ, LNG imports ${g.lng_imports_tj ?? 'n/a'} TJ, pipeline imports ${g.pipe_imports_tj ?? 'n/a'} TJ`);
+      if (bits.length) parts.push(`ENERGY: ${bits.join('; ')} [wm:energy:${ctx.country}]`);
+    }
+    if (live.intel) parts.push(`WORLD MONITOR BRIEF (${live.intel.generated_at ?? 'undated'}; quote only through its evidence items): ${live.intel.brief.slice(0, 3000)} | EVIDENCE: ${live.intel.evidence.map(ev => `${ev.label}${ev.value ? ' = ' + ev.value : ''}${ev.fact ? ' (' + ev.fact + ')' : ''}${ev.as_of ? ', as of ' + ymd(ev.as_of) : ''} [wm:evidence:${ev.id}]`).join(' | ') || 'none'}`);
     parts.push(`CONFLICT EVENTS, last 30 days: ${live.events.map(e => `${e.date ?? ''} ${e.type ?? 'event'}${e.sub_type ? ' (' + e.sub_type + ')' : ''}${e.admin1 ? ' in ' + e.admin1 : ''}${e.location ? ', ' + e.location : ''}${e.actors ? '; ' + e.actors : ''}${e.fatalities != null ? '; ' + e.fatalities + ' fatalities' : ''} [wm:acled:${e.id}]`).join(' | ') || 'none reported'}`);
     parts.push(`HEADLINES: ${live.headlines.map(n => `"${n.title}"${n.source ? ' (' + n.source + (n.published_at ? ', ' + ymd(n.published_at) : '') + ')' : ''} [wm:news:${n.n}]`).join(' | ') || 'none'}`);
     lines.push(`LIVE RISK (World Monitor, fetched ${live.fetched_at ?? 'now'}): ${parts.join(' | ')}`);

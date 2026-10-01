@@ -14,7 +14,8 @@ import type { RouteDeps } from './index.ts';
 import { bad, canSee, jsonBody, loadAccess, notFound, requireWritableProject, route, scopeLabel, type Access, type Ctx } from './common.ts';
 import { ASSET_KINDS, configureLocate, locate, slugAssetId, type AssetKind, type LocateOptions } from '../assets/gazetteers.ts';
 import { fileDossier, type AssetRow } from '../assets/dossier.ts';
-import type { ProjectRow } from './common.ts';
+import { locationCheck, type LocationCheck } from '../assets/geo.ts';
+import { ApiError, type ProjectRow } from './common.ts';
 
 /** Tests inject fetch and the GeoNames user; production reads the environment. */
 export function configureGazetteers(o: LocateOptions) { configureLocate(o); }
@@ -59,11 +60,17 @@ async function createAsset(x: Ctx, c: any, country: string | null): Promise<Asse
   return (await readAsset(x, id))!;
 }
 
-export interface AttachResult { asset: AssetRow; created: boolean; already: boolean; dossier: string[] }
+export interface AttachResult { asset: AssetRow & { location_check: LocationCheck | null }; created: boolean; already: boolean; dossier: string[] }
+
+/** The asset with where it sits against the project's country (wave 3 PR 4). */
+export const withCheck = (a: AssetRow, projectCountry: string | null) => ({ ...a, location_check: locationCheck(projectCountry, { lat: a.lat, lon: a.lon, country: a.country }) });
 
 /**
  * Attaches an asset to a writable project from `{asset_id}` or `{create:{…}}` and files its
  * dossier. Shared with the review queue, where accepting a proposal attaches the same way.
+ * A record that sits outside the project's country (by its coordinates, or by the gazetteer's
+ * country code when it has none) is refused with 409 outside_country until the caller sends
+ * `confirm_outside: true`; the Hub asks the person first.
  */
 export async function attachAsset(x: Ctx, p: ProjectRow, b: any): Promise<AttachResult> {
   let asset: AssetRow | null = null;
@@ -72,13 +79,19 @@ export async function attachAsset(x: Ctx, p: ProjectRow, b: any): Promise<Attach
     asset = await readAsset(x, b.asset_id);
     if (!asset) throw bad(`asset "${b.asset_id}" does not exist`, '/asset_id', 'unknown_asset');
   } else if (b.create !== undefined) {
-    asset = await createAsset(x, b.create, p.country ?? null);
+    if (!b.create || typeof b.create !== 'object') throw bad('create must be an object', '/create');
+    const c = b.create;
+    const check = locationCheck(p.country ?? null, { lat: typeof c.lat === 'number' ? c.lat : null, lon: typeof c.lon === 'number' ? c.lon : null, country: typeof c.country === 'string' && COUNTRY_RE.test(c.country) ? c.country : null });
+    if (check?.outside && b.confirm_outside !== true) throw new ApiError(409, 'outside_country', `this record sits in ${check.found}, not ${check.expected}; send confirm_outside: true to attach it anyway`, '/create', { location_check: check });
+    asset = await createAsset(x, c, p.country ?? null);
     created = true;
   } else throw bad('send asset_id or create', '/');
+  const check = locationCheck(p.country ?? null, { lat: asset.lat, lon: asset.lon, country: asset.country });
+  if (check?.outside && b.confirm_outside !== true && !p.asset_ids.includes(asset.id)) throw new ApiError(409, 'outside_country', `${asset.name} sits in ${check.found}, not ${check.expected}; send confirm_outside: true to attach it anyway`, '/asset_id', { location_check: check });
   const already = p.asset_ids.includes(asset.id);
   if (!already) { await x.db.query('UPDATE projects SET asset_ids = array_append(asset_ids, $2) WHERE id = $1', [p.id, asset.id]); p.asset_ids.push(asset.id); }
   const dossier = await fileDossier(x.db, p.id, asset, x.person.id, x.now);
-  return { asset, created, already, dossier };
+  return { asset: withCheck(asset, p.country ?? null), created, already, dossier };
 }
 
 export function register(app: Hono<Env>, _deps: RouteDeps): void {
@@ -106,7 +119,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const rows = p.asset_ids.length ? (await x.db.query<any>(`SELECT ${ASSET_COLS} FROM assets WHERE id = ANY($1::text[])`, [p.asset_ids])).rows : [];
     const dossier = p.asset_ids.length ? (await x.db.query<any>(`SELECT id, asset_ids FROM items WHERE project_id = $1 AND NOT hidden AND extracted->>'kind' = 'dossier' ORDER BY created_at`, [p.id])).rows : [];
     const byId = new Map(rows.map((r: any) => [r.id, r]));
-    const assets = p.asset_ids.filter(id => byId.has(id)).map(id => ({ ...byId.get(id), dossier: dossier.filter((d: any) => (d.asset_ids ?? []).includes(id)).map((d: any) => d.id) }));
+    const assets = p.asset_ids.filter(id => byId.has(id)).map(id => ({ ...withCheck(byId.get(id), p.country ?? null), dossier: dossier.filter((d: any) => (d.asset_ids ?? []).includes(id)).map((d: any) => d.id) }));
     return { body: { project_id: p.id, assets } };
   });
 
@@ -118,7 +131,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const b = await jsonBody(x.c);
     const { asset, created, already, dossier } = await attachAsset(x, p, b);
     x.a.refs = [`project:${p.id}`, `asset:${asset.id}`, ...dossier.map(d => `doc:${d}`)];
-    x.a.detail = { asset_id: asset.id, created, already, dossier: dossier.length, location_source: asset.location_source };
+    x.a.detail = { asset_id: asset.id, created, already, dossier: dossier.length, location_source: asset.location_source, outside: !!asset.location_check?.outside };
     return { status: created ? 201 : 200, body: { asset, attached: true, already, created, dossier } };
   });
 
