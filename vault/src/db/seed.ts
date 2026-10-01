@@ -65,7 +65,9 @@ function* jsonFiles(dir: string): Generator<string> {
 
 export interface MasterSummary { people: number; assets: number; firm_assets: number; reference_sets: number; reference_versions_added: number }
 
-export async function seedMaster(db: Db): Promise<MasterSummary> {
+export interface SeedOptions { gemFile?: string }
+
+export async function seedMaster(db: Db, opts: SeedOptions = {}): Promise<MasterSummary> {
   await ensureBase(db);
   const summary: MasterSummary = { people: 0, assets: 0, firm_assets: 0, reference_sets: 0, reference_versions_added: 0 };
 
@@ -85,6 +87,32 @@ export async function seedMaster(db: Db): Promise<MasterSummary> {
          ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, name = excluded.name, parent_id = excluded.parent_id, country = excluded.country,
            operator = excluded.operator, source_url = excluded.source_url, props = excluded.props`,
         [a.id, a.kind, a.name, a.parent_id ?? null, a.country ?? null, a.operator ?? null, a.source_url ?? null, JSON.stringify(a.props ?? {})]);
+      summary.assets++;
+    }
+  }
+
+  // Wave 3: Global Energy Monitor units (master/gem-fields.json, written by scripts/import-gem.ts).
+  // A unit whose name already exists in the country (master fields.json) gains the GEM facts on that
+  // record; otherwise it is inserted. A location a person confirmed is never overwritten.
+  const gemFile = opts.gemFile ?? path.join(VAULT_DIR, 'master/gem-fields.json');
+  if (existsSync(gemFile)) {
+    const { gemToAsset } = await import('../../scripts/import-gem.ts');
+    const gem = readJson(gemFile);
+    for (const u of gem.units ?? []) {
+      const a = gemToAsset(u, gem.release ?? 'unknown release');
+      const existing = (await db.query<{ id: string }>('SELECT id FROM assets WHERE country = $1 AND lower(name) = lower($2) LIMIT 1', [a.country, a.name])).rows[0];
+      if (existing) {
+        await db.query(
+          `UPDATE assets SET props = props || $2::jsonb, operator = coalesce(operator, $3), source_url = coalesce(source_url, $4), status = coalesce(status, $5),
+             lat = CASE WHEN lat IS NULL THEN $6 ELSE lat END, lon = CASE WHEN lon IS NULL THEN $7 ELSE lon END,
+             location_source = CASE WHEN lat IS NULL AND $6::double precision IS NOT NULL THEN 'gem' ELSE location_source END WHERE id = $1`,
+          [existing.id, JSON.stringify(a.props), a.operator, a.source_url, a.status, a.lat, a.lon]);
+      } else {
+        await db.query(
+          `INSERT INTO assets (id, kind, name, country, operator, source_url, props, lat, lon, location_source, status, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,'gem')
+           ON CONFLICT (id) DO UPDATE SET props = assets.props || excluded.props, operator = coalesce(assets.operator, excluded.operator), source_url = coalesce(assets.source_url, excluded.source_url), status = coalesce(assets.status, excluded.status)`,
+          [a.id, a.kind, a.name, a.country, a.operator, a.source_url, JSON.stringify(a.props), a.lat, a.lon, a.location_source, a.status]);
+      }
       summary.assets++;
     }
   }

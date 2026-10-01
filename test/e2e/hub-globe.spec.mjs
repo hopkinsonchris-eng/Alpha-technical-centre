@@ -13,14 +13,20 @@ const PARTNER = { id: 'chris', name: 'Chris Hopkinson', email: 'chris@alpha-tech
 
 const proj = (id, name, extra = {}) => ({
   id, name, status: 'prospect', stage: 'Qualified', client_id: null, client_name: null, lat: null, lon: null, last_run_at: null,
-  attention: { stale: 0, filing: 0, expiring_days: null }, ...extra,
+  attention: { stale: 0, filing: 0, expiring_days: null }, assets: [], ...extra,
 });
+// Wave 3: the fields attached to a project ride along in the country summary.
+const BARINAS_FIELDS = [
+  { id: 'field:ve:barinas', name: 'Barinas', kind: 'field', lat: 8.62, lon: -70.21, location_source: 'gem' },
+  { id: 'field:ve:apure', name: 'Apure', kind: 'field', lat: 7.9, lon: -67.5, location_source: 'geonames' },
+  { id: 'field:ve:unplaced', name: 'Unplaced block', kind: 'block', lat: null, lon: null, location_source: null },
+];
 const COUNTRIES = {
   countries: [
     { code: 'EG', name: { en: 'Egypt', es: 'Egipto' }, projects: [proj('egy-onshore', 'Egypt Onshore Gas Hub', { client_id: 'frontera', client_name: 'Frontera Energy', lat: 30.5, lon: 30.2, stage: 'Negotiation', attention: { stale: 0, filing: 0, expiring_days: 12 } })], counts: { projects: 1, stale: 0, filing: 0, expiring: 1 } },
     { code: 'KZ', name: { en: 'Kazakhstan', es: 'Kazajistán' }, projects: [proj('kaz-brownfield', 'Western Kazakhstan Brownfield', { lat: 47.1, lon: 51.9, last_run_at: '2026-09-28T14:12:00.000Z' })], counts: { projects: 1, stale: 0, filing: 0, expiring: 0 } },
     { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, projects: [
-      proj('ven-barinas', 'Barinas–Apure Cluster', { lat: 8.1, lon: -69.3, stage: 'Technical review', status: 'active', attention: { stale: 2, filing: 1, expiring_days: null } }),
+      proj('ven-barinas', 'Barinas–Apure Cluster', { lat: 8.1, lon: -69.3, stage: 'Technical review', status: 'active', attention: { stale: 2, filing: 1, expiring_days: null }, assets: BARINAS_FIELDS }),
       proj('ven-maracaibo', 'Lake Maracaibo Redevelopment', { lat: 10.4, lon: -71.6 }),
     ], counts: { projects: 2, stale: 2, filing: 1, expiring: 0 } },
   ],
@@ -299,4 +305,107 @@ test('AC16: without a provider the button explains what is missing; a refusal is
   await expect(page.locator('#country-brief .hub-notice.warn')).toContainText('ANTHROPIC_API_KEY');
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(page.locator('#country-brief-btn')).toHaveText('Resumen del país');
+});
+
+/* ── wave 3, PR 1: field points, fields under projects, create a project here (W3-AC7, W3-AC8) ── */
+
+/** The geographic centre of a country's polygon, computed in the page with the vendored d3-geo (what the globe flies to). */
+async function centroidOf(page, code) {
+  return page.evaluate(async (c) => {
+    const g = await (await fetch('/hub/geo/countries-110m.json')).json();
+    const f = g.features.find((x) => x.properties.iso2 === c);
+    const [lon, lat] = window.d3.geoCentroid(f);
+    return { lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 };
+  }, code);
+}
+
+test('W3-AC7: the country panel lists each project\'s fields with their source, and the globe draws a field point whose hover shows its name', async ({ page }) => {
+  await stubApi(page);
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const panel = page.locator('#country-panel');
+  const fields = panel.locator('[data-project-fields="ven-barinas"] .hub-field-pt');
+  await expect(fields).toHaveCount(3);
+  await expect(fields.nth(0)).toContainText('Barinas');
+  await expect(fields.nth(0)).toContainText('8.62, -70.21');
+  await expect(fields.nth(0)).toHaveAttribute('title', 'GEM');
+  await expect(fields.nth(1)).toHaveAttribute('title', 'GeoNames');
+  await expect(fields.nth(2)).toContainText('Unplaced block');
+  await expect(fields.nth(2)).toHaveAttribute('title', 'no location');
+  await expect(panel.locator('[data-project-fields="ven-maracaibo"]')).toHaveCount(0);
+  await page.waitForTimeout(1200);
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE, 'w3-globe-fields.png') });
+
+  // A field placed at Kazakhstan's centre sits at the canvas centre after the flight there; hovering it names it.
+  const kz = await centroidOf(page, 'KZ');
+  const withField = JSON.parse(JSON.stringify(COUNTRIES));
+  withField.countries[1].projects[0].assets = [{ id: 'field:kz:tengiz', name: 'Tengiz', kind: 'field', lat: kz.lat, lon: kz.lon, location_source: 'gem' }];
+  await stubApi(page, { '/api/countries': (u, r) => json(r, withField) });
+  await page.goto('/hub/index.html?country=KZ');
+  await ready(page); await globeReady(page);
+  await page.waitForTimeout(1200);
+  const box = await page.locator('#globe').boundingBox();
+  const tip = page.locator('#globe-tip');
+  await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 60);
+  await page.waitForTimeout(80);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForTimeout(80);
+  await page.mouse.move(box.x + box.width / 2 + 1, box.y + box.height / 2);
+  await expect(tip).toBeVisible();
+  await expect(tip).toHaveText('Tengiz');
+  // Away from the point (due west, still inside Kazakhstan) the tip names the country again.
+  await page.mouse.move(box.x + box.width / 2 - 40, box.y + box.height / 2 + 6);
+  await page.waitForTimeout(80);
+  await page.mouse.move(box.x + box.width / 2 - 41, box.y + box.height / 2 + 6);
+  await expect(tip).not.toHaveText('Tengiz');
+  await expect(tip).toHaveText('Kazakhstan');
+});
+
+test('W3-AC8: Create a project here appears for partners, opens the form with the country and the tapped point filled, and the posted body carries them', async ({ page }) => {
+  const posted = await stubApi(page);
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  // From the list: the country's centre stands in for the tap.
+  await page.locator('#country-list [data-country="BR"], #country-list [data-country="VE"]').first().click();
+  const row = page.locator('#country-create-row');
+  await expect(row).toBeVisible();
+  await expect(row.locator('#country-create')).toHaveText('Create a project here');
+  await row.locator('#country-create').click();
+  const form = page.locator('#new-project');
+  await expect(form).toBeVisible();
+  await expect(form.locator('#np-country')).toHaveValue('VE');
+  const ve = await centroidOf(page, 'VE');
+  await expect(form.locator('#np-lat')).toHaveValue(String(ve.lat));
+  await expect(form.locator('#np-lon')).toHaveValue(String(ve.lon));
+  await expect(form.locator('#np-opp')).toHaveAttribute('open', '');
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.waitForTimeout(700);                          // the smooth scroll to the form
+  await form.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(EVIDENCE, 'w3-create-here.png') });
+  await form.locator('#np-name').fill('Orinoco Belt Screen');
+  await form.getByRole('button', { name: 'Create opportunity' }).click();
+  await page.waitForURL(/project\.html\?id=orinoco-belt-screen$/);
+  expect(posted).toEqual([{ id: 'orinoco-belt-screen', name: 'Orinoco Belt Screen', client_id: null, status: 'prospect', country: 'VE', lat: ve.lat, lon: ve.lon }]);
+
+  // From a tap on the globe: the point under the tap. Kazakhstan is centred after the deep link, so the centre is its centroid.
+  await page.goto('/hub/index.html?country=KZ');
+  await ready(page); await globeReady(page);
+  await page.waitForTimeout(1200);
+  const box = await page.locator('#globe').boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.locator('#country-name')).toHaveText('Kazakhstan');
+  await page.locator('#country-create').click();
+  const kz = await centroidOf(page, 'KZ');
+  await expect(form.locator('#np-country')).toHaveValue('KZ');
+  expect(Math.abs(Number(await form.locator('#np-lat').inputValue()) - kz.lat)).toBeLessThan(0.2);
+  expect(Math.abs(Number(await form.locator('#np-lon').inputValue()) - kz.lon)).toBeLessThan(0.2);
+});
+
+test('W3-AC8: associates do not see Create a project here', async ({ page }) => {
+  await stubApi(page, { '/api/me': (u, r) => json(r, { ...PARTNER, role: 'associate' }) });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  await expect(page.locator('#country-panel')).toBeVisible();
+  await expect(page.locator('#country-create-row')).toBeHidden();
 });

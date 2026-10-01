@@ -14,9 +14,12 @@
      GET /api/runs?project=              assumptions for scorecard rule 2
      GET /api/organisations/:id[/file]   client name, contacts, NDA expiry, dispatches
      GET /api/lessons?scope=project:<id> hidden on 404 / 501
+     GET /api/projects/:id/assets        wave 3: the fields attached, with their dossiers
+     GET /api/assets/locate              wave 3: candidates for a field name (Vault, GEM, GeoNames, Wikidata)
+     POST/DELETE /api/projects/:id/assets  wave 3: attach (filing the dossier) and detach
    Every string a person reads carries data-en and data-es.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord } from './hub.js';
 import './components/stale-badge.js';
 import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
@@ -121,7 +124,8 @@ function renderHeader(ctx) {
   add(tagDd, note);
   add(dl, mk('dt', null, 'Legal tag', 'Etiqueta legal'), tagDd);
   const assets = mk('dd', 'chips');
-  if ((p.asset_ids || []).length) for (const a of p.asset_ids) add(assets, dv('span', 'hub-asset', a));
+  const fieldName = (id) => { const f = (ctx.fields || []).find((x) => x.id === id); return f ? f.name : id; };
+  if ((p.asset_ids || []).length) for (const a of p.asset_ids) add(assets, dv('span', 'hub-asset', fieldName(a), { 'data-asset': a }));
   else add(assets, mk('span', 'hub-muted', 'None recorded', 'Ninguno registrado'));
   add(dl, mk('dt', null, 'Assets', 'Activos'), assets);
   add(dl, mk('dt', null, 'Default tag', 'Etiqueta por defecto'), mk('dd', null, 'inherited by every run and document', 'heredada por cada ejecución y documento'));
@@ -300,6 +304,194 @@ function renderOpportunity(ctx) {
     }
     const msg = errMessage(res);
     add(fn, notice('bad', 'Not saved.', 'No se guardó.', msg || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), msg || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.')));
+  });
+}
+
+/* ── wave 3: the Fields card ─────────────────────────────────────────── */
+
+const KIND_WORD = { field: ['field', 'campo'], block: ['block', 'bloque'], basin: ['basin', 'cuenca'], well: ['well', 'pozo'] };
+const kindWord = (k) => { const w = KIND_WORD[k] || [k, k]; return mk('span', 'hub-kind', w[0], w[1], { 'data-kind': k }); };
+const coordText = (o) => (Number.isFinite(o.lat) && Number.isFinite(o.lon) ? o.lat + ', ' + o.lon : null);
+const srcPill = (src) => { const w = sourceWord(src); return mk('span', 'hub-pill ghost hub-src', w.en, w.es, { 'data-source': src || '' }); };
+
+/** What a field row says after its name: kind, basin, coordinates, source and release, status and operator. */
+function fieldFacts(f) {
+  const facts = mk('div', 'hub-note-s');
+  add(facts, kindWord(f.kind));
+  const gem = f.props && f.props.gem;
+  const c = coordText(f);
+  if (c) add(facts, document.createTextNode(' · '), dv('span', 'mono', c, { 'data-coords': c }));
+  else add(facts, document.createTextNode(' · '), mk('span', null, 'no location yet', 'sin ubicación todavía'));
+  add(facts, document.createTextNode(' · '), srcPill(f.location_source));
+  if (gem && gem.release) add(facts, dv('span', 'hub-muted', ' ' + gem.release));
+  const bits = [];
+  if (f.status) bits.push(f.status);
+  if (f.operator) bits.push(f.operator);
+  if (bits.length) add(facts, document.createTextNode(' · '), dv('span', null, bits.join(', ')));
+  return facts;
+}
+
+/** A candidate from GET /api/assets/locate as a row with an Attach button. */
+function candidateRow(ctx, c, onAttach) {
+  const li = mk('li', 'hub-candidate', null, null, { 'data-candidate': c.source + ':' + c.source_id });
+  const main = mk('div');
+  add(main, dv('b', null, c.name), document.createTextNode(' '), kindWord(c.kind));
+  if (c.country) add(main, document.createTextNode(' · '), dv('span', null, c.country));
+  const meta = mk('div', 'hub-note-s');
+  const cc = coordText(c);
+  if (cc) add(meta, dv('span', 'mono', cc)); else add(meta, mk('span', null, 'no coordinates on this record', 'sin coordenadas en este registro'));
+  add(meta, document.createTextNode(' · '), srcPill(c.source));
+  if (c.asset_id) add(meta, document.createTextNode(' · '), mk('span', null, 'already in the Vault', 'ya en el Vault'));
+  if (c.detail && c.detail.operator) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.operator));
+  if (c.detail && c.detail.status) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.status));
+  if (c.source_url) add(meta, document.createTextNode(' · '), dv('a', 'hub-inline-link', 'record', { href: c.source_url, target: '_blank', rel: 'noopener noreferrer' }));
+  add(main, meta);
+  const btn = mk('button', 'btn btn-primary btn-sm', 'Attach', 'Adjuntar', { type: 'button', 'data-attach': c.source + ':' + c.source_id });
+  btn.addEventListener('click', () => onAttach(c, btn));
+  add(li, main, btn);
+  return li;
+}
+
+/** The body posted to attach a candidate: the existing asset by id, or a new one carrying its source. */
+export function attachBody(c, projectCountry) {
+  if (c.asset_id) return { asset_id: c.asset_id };
+  const create = { name: c.name, kind: c.kind || 'field' };
+  if (Number.isFinite(c.lat) && Number.isFinite(c.lon)) { create.lat = c.lat; create.lon = c.lon; create.location_source = c.source; }
+  if (c.source_id) create.source_id = c.source_id;
+  if (c.source_url) create.source_url = c.source_url;
+  if (c.detail) create.detail = c.detail;
+  if (c.country || projectCountry) create.country = c.country || projectCountry;
+  return create.name ? { create } : null;
+}
+
+/**
+ * The Fields card: the fields attached to the project with their source and coordinates,
+ * a dossier button per gazetteer record, detach, and Add field (search → candidates → attach).
+ * Writes go to POST/DELETE /api/projects/:id/assets; a refusal is shown in the card.
+ */
+async function renderFields(ctx) {
+  const host = $('#p-fields');
+  if (!host) return;
+  const p = ctx.project;
+  host.textContent = '';
+  const head = mk('div', 'hub-card-head');
+  add(head, add(mk('div'), mk('h3', null, 'Fields', 'Campos', { id: 'h-fields' }),
+    mk('span', 'hub-muted', 'The fields, blocks and basins this project is about, each located from a named source. Attaching one files its public dossier into the project.', 'Los campos, bloques y cuencas de este proyecto, cada uno ubicado desde una fuente nombrada. Adjuntar uno archiva su dosier público en el proyecto.')));
+  const addBtn = mk('button', 'btn btn-outline btn-sm', 'Add field', 'Añadir campo', { type: 'button', id: 'fld-add-btn', 'aria-expanded': 'false', 'aria-controls': 'fld-add' });
+  add(head, addBtn);
+  add(host, head);
+  const notices = mk('div', null, null, null, { id: 'fld-notices', role: 'status' });
+  add(host, notices);
+  const list = mk('ul', 'hub-fields-list', null, null, { id: 'fld-list' });
+  add(host, list);
+
+  const res = await api('/api/projects/' + encodeURIComponent(p.id) + '/assets');
+  ctx.fields = res.ok ? listOf(res.body, 'assets') : [];
+  if (!res.ok) add(notices, notice('warn', 'The fields could not be loaded.', 'No se pudieron cargar los campos.', res.status ? 'HTTP ' + res.status + (errMessage(res) ? ': ' + errMessage(res) : '') : 'The Vault is unreachable.', res.status ? 'HTTP ' + res.status + (errMessage(res) ? ': ' + errMessage(res) : '') : 'El Vault no es accesible.'));
+
+  const paint = () => {
+    list.textContent = '';
+    if (!ctx.fields.length) { add(list, mk('li', 'hub-empty', 'No fields attached yet. Add field searches the Vault, Global Energy Monitor, GeoNames and Wikidata.', 'Aún no hay campos adjuntos. Añadir campo busca en el Vault, Global Energy Monitor, GeoNames y Wikidata.')); return; }
+    for (const f of ctx.fields) {
+      const li = mk('li', 'hub-field-row', null, null, { 'data-field': f.id });
+      const main = mk('div');
+      add(main, mk('span', 'dot', null, null, { 'aria-hidden': 'true' }), dv('b', null, f.name), fieldFacts(f));
+      const actions = mk('div', 'hub-actions-row');
+      const dossier = Array.isArray(f.dossier) ? f.dossier : [];
+      if (dossier.length) {
+        const b = mk('button', 'btn btn-outline btn-sm', dossier.length === 1 ? 'Dossier' : 'Dossier (' + dossier.length + ')', dossier.length === 1 ? 'Dosier' : 'Dosier (' + dossier.length + ')', { type: 'button', 'data-dossier': f.id });
+        b.addEventListener('click', () => openRecord({ ref: 'doc:' + dossier[0], title: 'Field dossier: ' + f.name, trigger: b }));
+        add(actions, b);
+      } else add(actions, mk('span', 'hub-muted', 'no dossier', 'sin dosier'));
+      const det = mk('button', 'btn btn-outline btn-sm', 'Detach', 'Desvincular', { type: 'button', 'data-detach': f.id });
+      det.addEventListener('click', async () => {
+        notices.textContent = ''; det.disabled = true;
+        const r = await api('/api/projects/' + encodeURIComponent(p.id) + '/assets/' + encodeURIComponent(f.id), { method: 'DELETE', headers: { accept: 'application/json' } });
+        det.disabled = false;
+        if (r.ok) {
+          ctx.fields = ctx.fields.filter((x) => x.id !== f.id);
+          p.asset_ids = (p.asset_ids || []).filter((x) => x !== f.id);
+          add(notices, notice('ok', f.name + ' detached.', f.name + ' desvinculado.', 'Its dossier records stay in the project.', 'Sus registros de dosier permanecen en el proyecto.'));
+          paint(); renderHeader(ctx);
+        } else add(notices, notice('bad', 'Not detached.', 'No se desvinculó.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.')));
+      });
+      add(actions, det);
+      add(li, main, actions);
+      add(list, li);
+    }
+  };
+  paint();
+
+  // Add field: a search box over the gazetteers, candidates with a source pill each, Attach.
+  const form = mk('form', 'hub-fld-add', null, null, { id: 'fld-add', novalidate: '', hidden: '' });
+  const row = mk('div', 'hub-fld-search');
+  const q = mk('input', null, null, null, { id: 'fld-q', type: 'search', autocomplete: 'off', placeholder: 'Field, block or basin name', 'data-en-ph': 'Field, block or basin name', 'data-es-ph': 'Nombre del campo, bloque o cuenca', 'aria-label': 'Field name' });
+  const go = mk('button', 'btn btn-primary btn-sm', 'Search', 'Buscar', { type: 'submit' });
+  add(row, mk('label', 'sr-only', 'Field name', 'Nombre del campo', { for: 'fld-q' }), q, go);
+  add(form, row);
+  const where = mk('p', 'hub-note-s');
+  if (p.country) add(where, mk('span', null, 'Searching in ' + ((ctx.names && ctx.names.get(p.country)) || { en: p.country }).en + ': the Vault and Global Energy Monitor first, then GeoNames and Wikidata.', 'Buscando en ' + ((ctx.names && ctx.names.get(p.country)) || { es: p.country }).es + ': primero el Vault y Global Energy Monitor, luego GeoNames y Wikidata.'));
+  else add(where, mk('span', null, 'The project has no country yet, so the search is worldwide.', 'El proyecto aún no tiene país, así que la búsqueda es mundial.'));
+  add(form, where);
+  const out = mk('div', null, null, null, { id: 'fld-results', 'aria-live': 'polite' });
+  add(form, out);
+  add(host, form);
+  const toggle = (open) => { if (open) { form.removeAttribute('hidden'); addBtn.setAttribute('aria-expanded', 'true'); q.focus(); } else { form.setAttribute('hidden', ''); addBtn.setAttribute('aria-expanded', 'false'); } };
+  addBtn.addEventListener('click', () => toggle(form.hasAttribute('hidden')));
+
+  const attach = async (c, btn) => {
+    notices.textContent = '';
+    const body = attachBody(c, p.country || null);
+    if (!body) return;
+    if (btn) btn.disabled = true;
+    const r = await api('/api/projects/' + encodeURIComponent(p.id) + '/assets', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    if (btn) btn.disabled = false;
+    if (r.ok && r.body && r.body.asset) {
+      const a = r.body.asset;
+      const filed = Array.isArray(r.body.dossier) ? r.body.dossier : [];
+      const i = ctx.fields.findIndex((x) => x.id === a.id);
+      const rowData = { ...a, dossier: i >= 0 ? [...(ctx.fields[i].dossier || []), ...filed] : filed };
+      if (i >= 0) ctx.fields[i] = rowData; else ctx.fields.push(rowData);
+      if (!(p.asset_ids || []).includes(a.id)) p.asset_ids = [...(p.asset_ids || []), a.id];
+      const n = filed.length;
+      add(notices, notice('ok', (r.body.already ? a.name + ' was already attached.' : a.name + ' attached.'), (r.body.already ? a.name + ' ya estaba adjunto.' : a.name + ' adjuntado.'),
+        n ? n + (n === 1 ? ' dossier record filed from ' : ' dossier records filed from ') + sourceWord(a.location_source).en + '.' : 'No gazetteer record to file: no dossier.',
+        n ? n + (n === 1 ? ' registro de dosier archivado desde ' : ' registros de dosier archivados desde ') + sourceWord(a.location_source).es + '.' : 'Sin registro de gacetero que archivar: sin dosier.'));
+      paint(); renderHeader(ctx); toggle(false); out.textContent = ''; q.value = '';
+      return;
+    }
+    add(notices, notice('bad', 'Not attached.', 'No se adjuntó.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.')));
+  };
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const name = q.value.trim();
+    out.textContent = '';
+    if (name.length < 2) { add(out, mk('p', 'hub-muted', 'Type at least two characters.', 'Escriba al menos dos caracteres.')); return; }
+    go.disabled = true;
+    add(out, mk('p', 'hub-muted', 'Searching…', 'Buscando…'));
+    const r = await api('/api/assets/locate?name=' + encodeURIComponent(name) + (p.country ? '&country=' + encodeURIComponent(p.country) : ''));
+    go.disabled = false;
+    out.textContent = '';
+    if (!r.ok) { add(out, notice('bad', 'The search failed.', 'La búsqueda falló.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.'))); return; }
+    const cands = listOf(r.body, 'candidates');
+    const unavailable = (r.body && Array.isArray(r.body.unavailable)) ? r.body.unavailable : [];
+    const ul = mk('ul', 'hub-candidates', null, null, { id: 'fld-candidates' });
+    for (const c of cands) add(ul, candidateRow(ctx, c, attach));
+    if (!cands.length) add(out, mk('p', 'hub-muted', 'No record named "' + name + '" in the sources that answered.', 'Ningún registro llamado "' + name + '" en las fuentes que respondieron.'));
+    add(out, ul);
+    if (unavailable.length) {
+      const un = mk('ul', 'hub-unavailable', null, null, { id: 'fld-unavailable' });
+      for (const u of unavailable) add(un, add(mk('li', null, null, null, { 'data-unavailable': u.source }), mk('span', null, sourceWord(u.source).en + ' not available: ', sourceWord(u.source).es + ' no disponible: '), dv('span', null, u.reason)));
+      add(out, un);
+    }
+    // The name alone, without a location, is always possible: a field from a document or a client's own naming.
+    const manual = mk('div', 'hub-candidate hub-candidate-manual');
+    add(manual, add(mk('div'), dv('b', null, name), document.createTextNode(' '), mk('span', 'hub-note-s', 'Attach by name only; its location can come later from a document or a gazetteer.', 'Adjuntar solo por nombre; su ubicación puede llegar después desde un documento o un gacetero.')));
+    const mb = mk('button', 'btn btn-outline btn-sm', 'Attach without a location', 'Adjuntar sin ubicación', { type: 'button', id: 'fld-manual' });
+    mb.addEventListener('click', () => attach({ name, kind: 'field', source: 'manual', country: p.country || null }, mb));
+    add(manual, mb);
+    add(out, manual);
   });
 }
 
@@ -759,6 +951,8 @@ async function init() {
   renderHeader(ctx);
   renderToolbar(ctx, cat);
   renderOpportunity(ctx);
+  await renderFields(ctx);
+  renderHeader(ctx);                                       // the asset chips now carry names
   setupUpload(project);
 
   const rules = computeScorecard(ctx);

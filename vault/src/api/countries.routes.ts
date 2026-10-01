@@ -23,9 +23,10 @@ const briefProvider = () => (briefDeps.provider === undefined ? openProvider() :
 const DAY = 864e5;
 
 export interface Attention { stale: number; filing: number; expiring_days: number | null }
+export interface CountryAsset { id: string; name: string; kind: string; lat: number | null; lon: number | null; location_source: string | null }
 export interface CountryProject {
   id: string; name: string; status: string; stage: string; client_id: string | null; client_name: string | null;
-  lat: number | null; lon: number | null; last_run_at: string | null; attention: Attention;
+  lat: number | null; lon: number | null; last_run_at: string | null; attention: Attention; assets: CountryAsset[];
 }
 export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number } }
 
@@ -68,10 +69,15 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       if (top && ids.includes(top)) filing.set(top, (filing.get(top) ?? 0) + 1);
     }
 
+    // Wave 3: the fields attached to each project, for the globe and the country panel.
+    const allAssetIds = [...new Set(visible.flatMap(p => p.asset_ids))];
+    const assetRows = allAssetIds.length ? (await x.db.query<any>('SELECT id, name, kind, lat, lon, location_source FROM assets WHERE id = ANY($1::text[])', [allAssetIds])).rows : [];
+    const assetById = new Map(assetRows.map((a: any) => [a.id, a]));
     const view = (p: ProjectRow): CountryProject => ({
       id: p.id, name: p.name, status: p.status, stage: p.stage, client_id: p.client_id, client_name: p.client_id ? orgs.get(p.client_id) ?? null : null,
       lat: p.lat, lon: p.lon, last_run_at: lastRun.get(p.id) ?? null,
       attention: { stale: stale.get(p.id) ?? 0, filing: filing.get(p.id) ?? 0, expiring_days: expiringDays(acc, p) },
+      assets: p.asset_ids.filter(id => assetById.has(id)).map(id => { const a = assetById.get(id); return { id: a.id, name: a.name, kind: a.kind, lat: a.lat ?? null, lon: a.lon ?? null, location_source: a.location_source ?? null }; }),
     });
 
     const byCode = new Map<string, CountryProject[]>();

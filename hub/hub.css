@@ -642,3 +642,36 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-brief-sources li { margin-bottom: 3px; }
 .hub-brief #brief-meta { padding: 8px 20px 14px; margin: 0; }
 .hub-brief-wait { padding: 14px 20px; display: flex; align-items: center; gap: 8px; }
+
+/* ---------- wave 3: fields on the project file, field points and create-here on the globe ---------- */
+.hub-fields { padding: 16px 20px !important; margin-top: 14px; }
+.hub-fields-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.hub-fields-list .hub-empty { padding: 14px 0; text-align: left; }
+.hub-field-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; border: 1px solid var(--rule); border-radius: var(--r-lg); padding: 10px 14px; background: var(--white); }
+.hub-field-row > div:first-child { min-width: 0; }
+.hub-field-row b { font-weight: 600; }
+.hub-field-row .hub-note-s, .hub-candidate .hub-note-s { margin-top: 3px; line-height: 1.8; }
+.hub-field-row .hub-src, .hub-candidate .hub-src, .hub-field-row .hub-kind, .hub-candidate .hub-kind { vertical-align: middle; }
+.hub-field-row .dot, .hub-field-pt .dot { width: 9px; height: 9px; border-radius: 50%; background: #F3E9C9; border: 1px solid var(--navy); display: inline-block; margin-right: 8px; vertical-align: middle; }
+.hub-kind { font-family: var(--font-label); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.hub-src { font-size: 11px; }
+.hub-src[data-source="gem"] { background: #F6EED6; color: var(--gold-ink); border-color: #E3D08F; }
+.hub-src[data-source="geonames"], .hub-src[data-source="wikidata"] { background: var(--info-bg); color: var(--info); border-color: var(--info-line); }
+.hub-src[data-source="vault"] { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-line); }
+.hub-src[data-source=""], .hub-src[data-source="manual"], .hub-src[data-source="document"] { background: var(--cream); color: var(--muted); }
+.hub-fld-add { margin-top: 12px; border-top: 1px solid var(--rule); padding-top: 12px; }
+.hub-fld-search { display: flex; gap: 8px; align-items: center; }
+.hub-fld-search input { flex: 1; min-width: 0; border: 1px solid var(--rule); border-radius: var(--r); padding: 8px 11px; font: inherit; font-size: 14px; color: var(--navy); }
+.hub-fld-search input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.18); }
+.hub-fld-add .hub-note-s { margin-top: 8px; }
+.hub-candidates, .hub-unavailable { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.hub-candidate { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 8px 12px; border: 1px dashed var(--rule); border-radius: var(--r-lg); }
+.hub-candidate-manual { margin-top: 10px; border-style: solid; background: var(--cream); }
+.hub-unavailable li { font-size: 12.5px; color: var(--muted); }
+.hub-country-fields { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.hub-field-pt { font-size: 12.5px; display: inline-flex; align-items: center; background: var(--cream); border: 1px solid var(--rule); border-radius: 4px; padding: 1px 8px; color: var(--navy); }
+.hub-field-pt .dot { width: 7px; height: 7px; margin-right: 6px; }
+.hub-field-pt .coord { margin-left: 5px; }
+.hub-create-here { margin-top: 10px; }
+#fld-notices .hub-notice { margin: 10px 0 0; }
+@media (max-width: 640px) { .hub-field-row, .hub-candidate { grid-template-columns: 1fr; } }
