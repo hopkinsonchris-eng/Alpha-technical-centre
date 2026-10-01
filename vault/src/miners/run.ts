@@ -162,6 +162,13 @@ export function screenPaper(rec: FeedRecord, cfg: MinersConfig): Verdict {
   const negatives = [...(cfg.negative ?? []), ...(topic ? topic.negative : cfg.topics.flatMap(t => t.negative))];
   const body = `${rec.title} ${rec.text ?? ''}`;
   if (mentionsAny(body, negatives)) return 'negative';
+  if (topic?.strict) {
+    // A research topic is a field or company name: the name must appear as a phrase, title only or not, and the
+    // paper must be about oil and gas (or the country). "A field study in dairy farms" never passes.
+    if (!topic.keywords.length || !mentionsAny(body, topic.keywords)) return 'off-topic';
+    if (topic.context?.length && !mentionsAny(body, topic.context)) return 'off-topic';
+    return 'keep';
+  }
   if (topic && topic.keywords.length && rec.text && !containsAny(body, topic.keywords)) return 'off-topic';
   return 'keep';
 }
