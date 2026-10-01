@@ -291,6 +291,8 @@ export interface RunOptions {
   queryOf?: (topicId: string | null) => string | null;
   /** Wave 4: stop fetching when the clock passes this instant; the summary names where it stopped. */
   budgetUntil?: Date;
+  /** Wave 4: called after every record is filed (or skipped), with the running summary, so a caller can show progress. */
+  onProgress?: (summary: RunSummary, adapterId: string) => void | Promise<void>;
 }
 
 const DAY = 86_400_000;
@@ -342,6 +344,7 @@ export async function runMiners(db: Db, opts: RunOptions = {}): Promise<RunSumma
         counts[r.status === 'created' ? 'created' : r.status === 'updated' ? 'updated' : 'unchanged']++;
         if (r.status !== 'unchanged') touched.push(`doc:${r.id}`);
         if (kind.type === 'paper' && r.status === 'created') index.add({ id: r.id, source: kind.source, external_id: rec.external_id, doi: normDoi(rec.meta.doi), title: rec.title });
+        if (opts.onProgress) await opts.onProgress({ ...summary, created: summary.created + counts.created, updated: summary.updated + counts.updated, unchanged: summary.unchanged + counts.unchanged }, id);
       }
     } catch (e) {
       counts.error = (e as Error).message;

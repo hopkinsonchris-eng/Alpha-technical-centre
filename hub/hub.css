@@ -734,3 +734,6 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-facts { margin-top: 14px; }
 .hub-fact .hub-proposal-head b { color: var(--navy); }
 @media (max-width: 640px) { .hub-research-ctl { margin-left: 0; } .hub-finding-head .d { min-width: 0; } }
+.hub-research-sources { list-style: none; margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--cream); font-size: 12.5px; display: grid; gap: 4px; }
+.hub-research-sources b { font-weight: 600; color: var(--navy); }
+.hub-research-sources .hub-pill { font-size: 11px; vertical-align: middle; }
