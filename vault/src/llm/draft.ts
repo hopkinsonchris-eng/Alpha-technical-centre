@@ -21,7 +21,7 @@ export interface DraftContext {
 }
 export interface DraftResult { draft: string; paragraphs: string[]; citations: string[]; sources: Source[]; who_to_ask: DraftContext['who_to_ask']; warnings: string[]; questions: string[]; usage?: { input: number; cached: number; output: number }; model?: string; context: DraftContext }
 
-const CITE_RE = /\[(run|doc|lesson|ref):[^\]]+\]/g;
+const CITE_RE = /\[(run|doc|lesson|ref|wm):[^\]]+\]/g;   // wm: World Monitor live risk, conflict events and headlines (wave 3)
 export const ymd = (d: unknown): string => (d instanceof Date ? d.toISOString() : String(d)).slice(0, 10);
 const NUMBER_RE = /\d/;
 

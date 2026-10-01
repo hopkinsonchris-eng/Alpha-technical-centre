@@ -13,11 +13,17 @@ import type { Access, ProjectRow } from '../api/common.ts';
 import { canSee, iso } from '../api/common.ts';
 import type { LlmProvider } from './provider.ts';
 import { checkCitations, ymd } from './draft.ts';
+import { acledEvents, countryRisk, headlines, worldMonitorConfigured, NOT_CONNECTED, type AcledEvent, type CountryRisk, type Headline } from '../intel/worldmonitor.ts';
 
-export interface BriefSource { ref: string; title: string; kind: 'run' | 'doc' | 'lesson'; project_id: string | null; date: string | null; legal_tag: string; detail?: string }
+export interface BriefSource { ref: string; title: string; kind: 'run' | 'doc' | 'lesson' | 'wm'; project_id: string | null; date: string | null; legal_tag: string; detail?: string; url?: string | null }
+/** What World Monitor gave for the country (wave 3, §1.5): live risk, events and headlines, or why not. */
+export interface LiveRisk {
+  status: 'live' | 'not_connected'; reason?: string; fetched_at: string | null;
+  risk: CountryRisk | null; events: AcledEvent[]; headlines: Headline[]; notes: string[];
+}
 export interface BriefContext {
   country: string; projects: ProjectRow[]; sources: BriefSource[]; dispatches: any[];
-  tags: string[]; source_hash: string; scope_hash: string;
+  tags: string[]; source_hash: string; scope_hash: string; live?: LiveRisk;
 }
 export interface BriefResult { paragraphs: string[]; citations: string[]; warnings: string[]; questions: string[]; usage?: { input: number; cached: number; output: number }; model?: string }
 
@@ -75,12 +81,55 @@ export async function assembleCountryContext(db: Db, acc: Access, country: strin
   return { country, projects, sources, dispatches, tags: tagList, source_hash: sha(key.sort().join('\n')), scope_hash: sha(tagList.join('\n')) };
 }
 
+/**
+ * Reads World Monitor for the country and adds it to the context as citable sources
+ * ([wm:risk:XX], [wm:acled:<id>], [wm:news:<n>]); the source hash takes the feed's
+ * timestamps so a cached brief is regenerated when the live picture changes. Without a
+ * key, or when the feed refuses, the context says so and nothing is simulated.
+ */
+export async function withLiveRisk(ctx: BriefContext): Promise<BriefContext> {
+  const code = ctx.country;
+  const live: LiveRisk = { status: 'not_connected', reason: NOT_CONNECTED, fetched_at: null, risk: null, events: [], headlines: [], notes: [] };
+  if (!worldMonitorConfigured()) return { ...ctx, live };
+  const [r, e, h] = await Promise.all([countryRisk(code), acledEvents(code), headlines(code)]);
+  const sources = [...ctx.sources];
+  const key: string[] = [];
+  if (r.ok) {
+    live.status = 'live'; live.reason = undefined; live.fetched_at = r.fetched_at; live.risk = r.data;
+    const d = r.data;
+    sources.push({ ref: `wm:risk:${code}`, title: `World Monitor country risk ${code}`, kind: 'wm', project_id: null, date: ymd(d.computed_at ?? r.fetched_at), legal_tag: 'lt-public',
+      detail: `score ${d.score ?? '—'}${d.level ? ', ' + d.level : ''}`, url: null });
+    key.push(`wm:risk:${code}|${d.computed_at ?? r.fetched_at}|${d.score}`);
+  } else live.reason = r.reason;
+  if (e.ok) {
+    if (live.status !== 'live') { live.status = 'live'; live.reason = undefined; live.fetched_at = e.fetched_at; }
+    live.events = e.data;
+    for (const ev of e.data) {
+      sources.push({ ref: `wm:acled:${ev.id}`, title: `${ev.type ?? 'event'}${ev.admin1 ? ' in ' + ev.admin1 : ''}${ev.date ? ', ' + ev.date : ''}`, kind: 'wm', project_id: null, date: ev.date, legal_tag: 'lt-public',
+        detail: `ACLED via World Monitor${ev.actors ? '; ' + ev.actors : ''}${ev.fatalities != null ? '; ' + ev.fatalities + ' fatalities' : ''}`, url: null });
+      key.push(`wm:acled:${ev.id}`);
+    }
+  } else live.notes.push(`conflict events: ${e.reason}`);
+  if (h.ok) {
+    if (live.status !== 'live') { live.status = 'live'; live.reason = undefined; live.fetched_at = h.fetched_at; }
+    live.headlines = h.data;
+    for (const n of h.data) {
+      sources.push({ ref: `wm:news:${n.n}`, title: n.title, kind: 'wm', project_id: null, date: n.published_at ? ymd(n.published_at) : null, legal_tag: 'lt-public', detail: `headline via World Monitor${n.source ? ', ' + n.source : ''}`, url: n.url });
+      key.push(`wm:news:${n.n}|${n.title}`);
+    }
+  } else live.notes.push(`headlines: ${h.reason}`);
+  if (live.status === 'live' && r.ok === false) live.notes.unshift(`risk score: ${r.reason}`);
+  const source_hash = key.length ? sha(ctx.source_hash + '\n' + key.join('\n')) : ctx.source_hash;
+  return { ...ctx, sources, source_hash, live };
+}
+
 export function briefSystemPrompt(language: 'en' | 'es'): string {
   const lang = language === 'es' ? 'Spanish (Latin American, formal usted)' : 'British English';
   return `You write the country brief for the partners of Alpha Technical Centre, an oil and gas technical consultancy. Language: ${lang}.
 Write five short paragraphs, each opening with its heading word followed by a full stop: Situation (what the firm holds in this country and at what stage), Record (the runs and documents that matter and when they were made), Numbers (the headline figures, with their units), Contradictions (where a run, a letter or a lesson disagrees with another, or a figure quoted in a document no longer matches the latest run; say "none found" if none), Open questions (what a partner should ask or do next).
+When the context carries a LIVE RISK block, add a sixth paragraph opening "Live risk." with the country risk score and advisory level, the conflict events and headlines that matter to the firm's work there, each cited; when it says the feed is not connected, write nothing about risk.
 Rules that are checked mechanically after you answer:
-1. Every sentence that states a figure, a date or a fact from the record must end with a citation in square brackets taken ONLY from the CONTEXT: [run:<id>], [doc:<id>], [lesson:<id>]. Never invent an id. A sentence you cannot cite must be written as a question in the form [QUESTION FOR YOU: ...].
+1. Every sentence that states a figure, a date or a fact from the record must end with a citation in square brackets taken ONLY from the CONTEXT: [run:<id>], [doc:<id>], [lesson:<id>], [wm:risk:<country>], [wm:acled:<id>], [wm:news:<n>]. Never invent an id. A sentence you cannot cite must be written as a question in the form [QUESTION FOR YOU: ...].
 2. Use only the context. Do not add knowledge from outside it, and do not speculate about the country.
 3. Name projects by their names. Be concrete and brief; a partner reads this on a Monday morning.
 Return plain text paragraphs separated by blank lines. No preamble, no explanation.`;
@@ -95,6 +144,14 @@ export function briefUserPrompt(ctx: BriefContext, name: string): string {
   lines.push(`DOCUMENTS (newest first): ${docs.map(s => `${s.date} "${s.title}" in ${s.project_id} (${s.detail}) [${s.ref}]`).join(' | ') || 'none'}`);
   lines.push(`LESSONS: ${lessons.map(s => `${s.title} [${s.ref}]`).join(' | ') || 'none'}`);
   lines.push(`CORRESPONDENCE (newest first): ${ctx.dispatches.map(d => `${ymd(d.occurred_at)} ${d.direction} ${d.channel} ${d.reference_no ?? ''} "${d.title}" [doc:${d.item_id}]`).join(' | ') || 'none'}`);
+  const live = ctx.live;
+  if (live && live.status === 'live') {
+    const parts: string[] = [];
+    if (live.risk) parts.push(`risk score ${live.risk.score ?? 'n/a'} of 100, advisory level ${live.risk.level ?? 'n/a'}${live.risk.components ? ', components ' + Object.entries(live.risk.components).map(([k, v]) => `${k} ${typeof v === 'object' && v && 'score' in (v as any) ? (v as any).score : v}`).join(', ') : ''}${live.risk.computed_at ? ', computed ' + live.risk.computed_at : ''} [wm:risk:${ctx.country}]`);
+    parts.push(`CONFLICT EVENTS, last 30 days: ${live.events.map(e => `${e.date ?? ''} ${e.type ?? 'event'}${e.sub_type ? ' (' + e.sub_type + ')' : ''}${e.admin1 ? ' in ' + e.admin1 : ''}${e.location ? ', ' + e.location : ''}${e.actors ? '; ' + e.actors : ''}${e.fatalities != null ? '; ' + e.fatalities + ' fatalities' : ''} [wm:acled:${e.id}]`).join(' | ') || 'none reported'}`);
+    parts.push(`HEADLINES: ${live.headlines.map(n => `"${n.title}"${n.source ? ' (' + n.source + (n.published_at ? ', ' + ymd(n.published_at) : '') + ')' : ''} [wm:news:${n.n}]`).join(' | ') || 'none'}`);
+    lines.push(`LIVE RISK (World Monitor, fetched ${live.fetched_at ?? 'now'}): ${parts.join(' | ')}`);
+  } else lines.push(`LIVE RISK: feed not connected${live?.reason ? ' (' + live.reason + ')' : ''}; write nothing about country risk.`);
   return lines.join('\n');
 }
 

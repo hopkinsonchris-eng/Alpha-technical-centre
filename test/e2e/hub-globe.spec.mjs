@@ -25,13 +25,14 @@ const COUNTRIES = {
   countries: [
     { code: 'EG', name: { en: 'Egypt', es: 'Egipto' }, projects: [proj('egy-onshore', 'Egypt Onshore Gas Hub', { client_id: 'frontera', client_name: 'Frontera Energy', lat: 30.5, lon: 30.2, stage: 'Negotiation', attention: { stale: 0, filing: 0, expiring_days: 12 } })], counts: { projects: 1, stale: 0, filing: 0, expiring: 1 } },
     { code: 'KZ', name: { en: 'Kazakhstan', es: 'Kazajistán' }, projects: [proj('kaz-brownfield', 'Western Kazakhstan Brownfield', { lat: 47.1, lon: 51.9, last_run_at: '2026-09-28T14:12:00.000Z' })], counts: { projects: 1, stale: 0, filing: 0, expiring: 0 } },
-    { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, projects: [
+    { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, risk: { score: 71.4, level: 'reconsider travel', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: '2026-10-01T09:00:00.000Z' }, projects: [
       proj('ven-barinas', 'Barinas–Apure Cluster', { lat: 8.1, lon: -69.3, stage: 'Technical review', status: 'active', attention: { stale: 2, filing: 1, expiring_days: null }, assets: BARINAS_FIELDS }),
       proj('ven-maracaibo', 'Lake Maracaibo Redevelopment', { lat: 10.4, lon: -71.6 }),
     ], counts: { projects: 2, stale: 2, filing: 1, expiring: 0 } },
   ],
   unplaced: [proj('plain-project', 'Plain internal project', { status: 'active', stage: 'Initial screen' })],
   generated_at: '2026-10-01T08:00:00.000Z',
+  world_monitor: { status: 'live', notes: [] },
 };
 const PROJECTS = { projects: [
   { id: 'egy-onshore', name: 'Egypt Onshore Gas Hub', status: 'prospect', client_id: 'frontera', default_legal_tag: 'lt-frontera-nda-2026', country: 'EG', lat: 30.5, lon: 30.2, stage: 'Negotiation', stage_history: [{ stage: 'Negotiation', at: '2026-09-20T12:00:00.000Z', by: 'chris' }], register: { source: 'Government', current: 31, plan: 46, risk: 'amber', risk_score: 59, owner: 'Tom / Lars' }, members: ['chris'], contacts: [], created_at: '2026-09-01T00:00:00.000Z' },
@@ -408,4 +409,65 @@ test('W3-AC8: associates do not see Create a project here', async ({ page }) => 
   await ready(page); await globeReady(page);
   await expect(page.locator('#country-panel')).toBeVisible();
   await expect(page.locator('#country-create-row')).toBeHidden();
+});
+
+/* ── wave 3, PR 3: live risk from World Monitor (W3-AC9 Hub side, W3-AC10) ── */
+
+test('W3-AC9: a country with a World Monitor reading shows the score and level with the time fetched; one without shows nothing; no browser request goes to worldmonitor.app', async ({ page }) => {
+  const leaks = [];
+  await page.route('**/*worldmonitor.app/**', (route) => { leaks.push(route.request().url()); return route.abort(); });
+  await stubApi(page);
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const risk = page.locator('#country-risk');
+  await expect(risk).toBeVisible();
+  await expect(risk).toContainText('risk 71');
+  await expect(risk).toContainText('advisory: reconsider travel');
+  await expect(risk).toContainText('World Monitor');
+  await expect(risk.locator('.hub-rag')).toHaveAttribute('data-risk', 'red');
+  await expect(risk.locator('[data-risk-score="71.4"]')).toHaveCount(1);
+  await page.locator('#country-back').click();
+  await expect(page.locator('#country-list [data-country="VE"] .hub-risk-n')).toHaveText('risk 71');
+  await expect(page.locator('#country-list [data-country="KZ"] .hub-risk-n')).toHaveCount(0);
+  await page.locator('#country-list [data-country="KZ"]').click();
+  await expect(risk).toBeHidden();
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await page.locator('#country-back').click();
+  await expect(page.locator('#country-list [data-country="VE"] .hub-risk-n')).toHaveText('riesgo 71');
+  expect(leaks).toEqual([]);
+});
+
+test('W3-AC9: the brief shows live risk citations as chips, lists the World Monitor records in its sources, and says whether the feed was live', async ({ page }) => {
+  const WM_BRIEF = { ...BRIEF, world_monitor: { status: 'live', reason: null, fetched_at: '2026-10-01T09:00:00.000Z', notes: [] },
+    paragraphs: [...BRIEF.paragraphs, 'Live risk. World Monitor scores Venezuela 71 of 100, reconsider travel [wm:risk:VE]. Residents protested fuel shortages in Apure on 28 September [wm:acled:VEN12345]. The press reports a field restart [wm:news:1].'],
+    citations: [...BRIEF.citations, 'wm:risk:VE', 'wm:acled:VEN12345', 'wm:news:1'],
+    sources: [...BRIEF.sources,
+      { ref: 'wm:risk:VE', title: 'World Monitor country risk VE', kind: 'wm', project_id: null, date: '2026-10-01', legal_tag: 'lt-public', detail: 'score 71.4, reconsider travel', url: null },
+      { ref: 'wm:acled:VEN12345', title: 'Protests in Apure, 2026-09-28', kind: 'wm', project_id: null, date: '2026-09-28', legal_tag: 'lt-public', detail: 'ACLED via World Monitor; Protesters (Venezuela); 0 fatalities', url: null },
+      { ref: 'wm:news:1', title: 'PDVSA restarts Apure field', kind: 'wm', project_id: null, date: '2026-09-30', legal_tag: 'lt-public', detail: 'headline via World Monitor, Reuters', url: 'https://example.com/a' }] };
+  await stubApi(page, { '/api/countries/VE/brief': (u, r) => json(r, WM_BRIEF) });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  await page.locator('#country-brief-btn').click();
+  const brief = page.locator('#country-brief');
+  const live = brief.locator('[data-brief-paragraph]').nth(3);
+  await expect(live).toContainText('Live risk. World Monitor scores Venezuela 71 of 100');
+  await expect(live).not.toContainText('[wm:');
+  const chips = live.locator('[data-cite]');
+  await expect(chips).toHaveCount(3);
+  await expect(chips.nth(0)).toHaveText('World Monitor country risk VE');
+  await expect(chips.nth(0)).toHaveClass(/wm/);
+  await expect(chips.nth(2)).toHaveAttribute('href', 'https://example.com/a');
+  await expect(chips.nth(2)).toHaveAttribute('target', '_blank');
+  await expect(brief.locator('#brief-sources li[data-source-kind="wm"]')).toHaveCount(3);
+  await expect(brief.locator('#brief-wm')).toHaveAttribute('data-status', 'live');
+  await expect(brief.locator('#brief-wm')).toContainText('World Monitor: live, fetched');
+  mkdirSync(EVIDENCE, { recursive: true });
+  await brief.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(EVIDENCE, 'w3-live-risk.png') });
+  // Not connected: the meta says what to set.
+  await stubApi(page, { '/api/countries/VE/brief': (u, r) => json(r, { ...BRIEF, world_monitor: { status: 'not_connected', reason: 'not connected (set WORLD_MONITOR_API_KEY on the Vault service)', fetched_at: null, notes: [] } }) });
+  await page.locator('#country-brief-btn').click();
+  await expect(brief.locator('#brief-wm')).toHaveAttribute('data-status', 'not_connected');
+  await expect(brief.locator('#brief-wm')).toContainText('World Monitor: not connected (set WORLD_MONITOR_API_KEY on the Vault service)');
 });

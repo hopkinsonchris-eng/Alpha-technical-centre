@@ -12,7 +12,8 @@ import type { RouteDeps } from './index.ts';
 import { ApiError, bad, canSee, iso, loadAccess, notFound, route, type Access, type ProjectRow } from './common.ts';
 import { countryName, isCountryCode } from '../opportunities.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
-import { assembleCountryContext, writeBrief } from '../llm/brief.ts';
+import { assembleCountryContext, withLiveRisk, writeBrief, type LiveRisk } from '../llm/brief.ts';
+import { countryRisk, worldMonitorConfigured, NOT_CONNECTED } from '../intel/worldmonitor.ts';
 
 /* ── the country brief: provider injection (tests) ───────────────────── */
 interface BriefDeps { provider?: LlmProvider | null }
@@ -28,7 +29,9 @@ export interface CountryProject {
   id: string; name: string; status: string; stage: string; client_id: string | null; client_name: string | null;
   lat: number | null; lon: number | null; last_run_at: string | null; attention: Attention; assets: CountryAsset[];
 }
-export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number } }
+/** Wave 3: World Monitor's composite risk for the country; null without a key or when the feed refuses. */
+export interface CountryRiskLine { score: number | null; level: string | null; computed_at: string | null; fetched_at: string }
+export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; risk: CountryRiskLine | null }
 
 function expiringDays(acc: Access, p: ProjectRow): number | null {
   const tag = acc.tags.get(p.default_legal_tag);
@@ -87,6 +90,15 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       if (!byCode.has(p.country)) byCode.set(p.country, []);
       byCode.get(p.country)!.push(view(p));
     }
+    // Wave 3: live risk per country from World Monitor (server-side, cached an hour); null without a key.
+    const connected = worldMonitorConfigured();
+    const riskNotes: string[] = [];
+    const risks = new Map<string, CountryRiskLine | null>();
+    if (connected) await Promise.all([...byCode.keys()].map(async code => {
+      const r = await countryRisk(code);
+      if (r.ok) risks.set(code, { score: r.data.score, level: r.data.level, computed_at: r.data.computed_at, fetched_at: r.fetched_at });
+      else { risks.set(code, null); if (!riskNotes.includes(r.reason)) riskNotes.push(r.reason); }
+    }));
     const countries: CountrySummary[] = [...byCode.entries()].map(([code, projects]) => ({
       code, name: countryName(code), projects,
       counts: {
@@ -95,10 +107,11 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
         filing: projects.reduce((n, p) => n + p.attention.filing, 0),
         expiring: projects.filter(p => p.attention.expiring_days !== null).length,
       },
+      risk: risks.get(code) ?? null,
     })).sort((a, b) => a.name.en.localeCompare(b.name.en));
 
-    x.a.scope = 'firm'; x.a.refs = visible.map(p => `project:${p.id}`); x.a.detail = { countries: countries.length, projects: visible.length };
-    return { body: { countries, unplaced, generated_at: x.now.toISOString() } };
+    x.a.scope = 'firm'; x.a.refs = visible.map(p => `project:${p.id}`); x.a.detail = { countries: countries.length, projects: visible.length, world_monitor: connected ? 'live' : 'not_connected' };
+    return { body: { countries, unplaced, generated_at: x.now.toISOString(), world_monitor: connected ? { status: 'live', notes: riskNotes } : { status: 'not_connected', reason: NOT_CONNECTED, notes: [] } } };
   });
 
   /**
@@ -120,10 +133,12 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const projects = [...acc.projects.values()].filter(p => p.country === code && canSee(acc, p.default_legal_tag, p.id)).sort((a, c) => a.name.localeCompare(c.name));
     x.a.scope = 'firm'; x.a.refs = projects.map(p => `project:${p.id}`);
     if (!projects.length) throw notFound(`no projects in ${name.en} (${code}) in your scope`);
-    const ctx = await assembleCountryContext(x.db, acc, code, projects);
+    const ctx = await withLiveRisk(await assembleCountryContext(x.db, acc, code, projects));
+    const liveMeta = (l: LiveRisk | undefined) => (l ? { status: l.status, reason: l.reason ?? null, fetched_at: l.fetched_at, notes: l.notes } : { status: 'not_connected', reason: NOT_CONNECTED, fetched_at: null, notes: [] });
     const view = (body: any, cached: boolean, created_at: string, model: string | null) => ({
       country: code, name, language, cached, generated_at: created_at, model,
       projects: projects.map(p => ({ id: p.id, name: p.name, stage: p.stage, status: p.status, client_id: p.client_id })),
+      world_monitor: liveMeta(ctx.live),
       ...body,
     });
     const hit = (await x.db.query<any>('SELECT body, model, created_at FROM country_briefs WHERE country = $1 AND language = $2 AND scope_hash = $3 AND source_hash = $4 ORDER BY id DESC LIMIT 1',
@@ -140,7 +155,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       [code, language, ctx.scope_hash, ctx.source_hash, ctx.tags, JSON.stringify(body), r.model ?? null, x.person.id, x.now.toISOString()]);
     if (r.usage) await x.db.query("INSERT INTO audit_events (person_id, action, scope, refs, detail, tokens_in, tokens_cached, tokens_out) VALUES ($1,'llm.brief',$2,$3::text[],$4::jsonb,$5,$6,$7)",
       [x.person.id, 'firm', x.a.refs, JSON.stringify({ country: code, model: r.model, language }), r.usage.input, r.usage.cached, r.usage.output]);
-    x.a.detail = { country: code, cached: false, language, citations: r.citations.length, questions: r.questions.length, model: r.model ?? null };
+    x.a.detail = { country: code, cached: false, language, citations: r.citations.length, questions: r.questions.length, model: r.model ?? null, world_monitor: ctx.live?.status ?? 'not_connected' };
     x.a.refs = [...x.a.refs, ...r.citations];
     return { body: view(body, false, x.now.toISOString(), r.model ?? null) };
   });
