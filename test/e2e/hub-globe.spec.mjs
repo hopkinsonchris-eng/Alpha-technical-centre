@@ -234,3 +234,69 @@ test('AC18: evidence screenshots of the globe front page and a selected country'
   await page.waitForTimeout(1200);
   await page.screenshot({ path: path.join(EVIDENCE, 'w2-globe-country.png') });
 });
+
+/* ── wave 2, PR 4: the country brief (AC16, Hub side) ─────────────────── */
+
+const BRIEF = {
+  country: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, language: 'en', cached: false, generated_at: '2026-10-01T09:00:00.000Z', model: 'claude-sonnet-5-5',
+  projects: [{ id: 'ven-barinas', name: 'Barinas–Apure Cluster', stage: 'Technical review', status: 'active', client_id: null }],
+  paragraphs: [
+    'Situation. Alpha holds two opportunities in Venezuela, the larger at Technical review [run:00000000-0000-4000-8000-000000000401].',
+    'Numbers. The base case gives 12,400 bopd of technical potential [run:00000000-0000-4000-8000-000000000401] and the data room index lists 140 producers [doc:00000000-0000-4000-8000-000000000301].',
+    '[QUESTION FOR YOU: this sentence carries a figure with no record in scope to cite: "Lake Maracaibo power reliability is rated 60 percent."]',
+  ],
+  citations: ['run:00000000-0000-4000-8000-000000000401', 'doc:00000000-0000-4000-8000-000000000301'],
+  sources: [
+    { ref: 'run:00000000-0000-4000-8000-000000000401', title: 'Waterflood screen, base case', kind: 'run', project_id: 'ven-barinas', date: '2026-09-28', legal_tag: 'lt-firm' },
+    { ref: 'doc:00000000-0000-4000-8000-000000000301', title: 'Data room index', kind: 'doc', project_id: 'ven-barinas', date: '2026-09-30', legal_tag: 'lt-firm' },
+  ],
+  warnings: ['1 sentence(s) had no citation and were turned into questions for you'],
+  questions: ['Lake Maracaibo power reliability is rated 60 percent.'],
+};
+
+test('AC16: Brief this country asks the Vault and shows the cited paragraphs, the sources and the questions; a cached brief says so', async ({ page }) => {
+  let posts = 0;
+  await stubApi(page, { '/api/countries/VE/brief': (u, r) => { posts++; return json(r, { ...BRIEF, cached: posts > 1 }); } });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const btn = page.locator('#country-brief-btn');
+  await expect(btn).toBeVisible();
+  await expect(page.locator('#country-brief')).toBeHidden();
+  await btn.click();
+  const brief = page.locator('#country-brief');
+  await expect(brief).toBeVisible();
+  await expect(brief.locator('[data-brief-paragraph]')).toHaveCount(3);
+  await expect(brief.locator('[data-brief-paragraph]').first()).toContainText('Situation. Alpha holds two opportunities');
+  // Citations become chips that open the record in its project, not raw brackets.
+  await expect(brief.locator('[data-brief-paragraph]').first()).not.toContainText('[run:');
+  const cites = brief.locator('[data-brief-paragraph]').nth(1).locator('a[data-cite]');
+  await expect(cites).toHaveCount(2);
+  await expect(cites.nth(0)).toHaveAttribute('href', 'project.html?id=ven-barinas&run=00000000-0000-4000-8000-000000000401');
+  await expect(cites.nth(0)).toHaveText('Waterflood screen, base case');
+  await expect(cites.nth(1)).toHaveText('Data room index');
+  await expect(brief.locator('[data-brief-paragraph]').nth(2)).toHaveClass(/question/);
+  await expect(brief.locator('#brief-questions li')).toHaveCount(1);
+  await expect(brief.locator('#brief-sources li')).toHaveCount(2);
+  await expect(brief.locator('#brief-meta')).toContainText('1 Oct 2026');
+  await expect(brief.locator('#brief-meta')).toContainText('claude-sonnet-5-5');
+  await btn.click();
+  await expect.poll(() => posts).toBe(2);
+  await expect(brief.locator('#brief-meta')).toContainText('from the cache');
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE, 'w2-country-brief.png'), fullPage: false });
+  // Changing country hides the brief.
+  await page.locator('#country-back').click();
+  await page.locator('#country-list [data-country="KZ"]').click();
+  await expect(brief).toBeHidden();
+});
+
+test('AC16: without a provider the button explains what is missing; a refusal is shown', async ({ page }) => {
+  await stubApi(page, { '/api/countries/VE/brief': (u, r) => json(r, { error: { code: 'not_implemented', message: 'the Vault assistant is not connected (no LLM provider configured)' } }, 501) });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  await page.locator('#country-brief-btn').click();
+  await expect(page.locator('#country-brief .hub-notice.warn')).toContainText('no LLM provider configured');
+  await expect(page.locator('#country-brief .hub-notice.warn')).toContainText('ANTHROPIC_API_KEY');
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await expect(page.locator('#country-brief-btn')).toHaveText('Resumen del país');
+});

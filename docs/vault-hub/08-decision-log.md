@@ -6,6 +6,11 @@
 | 2026-09-29 | Gate 2 | Markup `06-architecture.md` approved: "Approved. Start building. I would like to see mockups of the system". |
 | 2026-09-29 | Build start | Mockups of every Hub screen first, then wave 0 (M00, M01), then wave 1 (M02–M06). Evidence of done per module is recorded below as it lands. |
 
+| 2026-09-30 | Wave 2, Gate 1 | W2-D1–D5 decided (`wave2/02-choice-sheet.md`): one table for opportunities and projects; the 3D globe; sidecar-declared toolbar context; record page, catalog defaults and Cmd+K in scope; rank-and-compare deferred. |
+| 2026-09-30 | Wave 2, Gate 2 | Markup `wave2/05-markup.md` approved: "Approved, build it as written (Recommended)"; PRs opened and merged when green. |
+| 2026-10-01 | Wave 2, deviation | The Opportunity Register tool is not marked deprecated (the markup's last step): its manifest's `aliases.current` must name a version or another tool, and the Hub is neither, and the tool remains the potential-model calculator the toolbar opens. The register *list* moved to the Hub; the tool's changelog says so. |
+| 2026-10-01 | Wave 2, deviation | `vault/ADAPTERS.md` named in the markup does not exist; the `version.json` instruction went into `vault/src/adapters/README.md` (the file handed to the APEX developer) and `vault/SETUP.md` §5. |
+
 ## Shipped (append as modules land)
 
 | Module | Commit | Tests | Visual proof |
@@ -69,3 +74,20 @@ All eighteen modules of `07-build-plan.md` are on `claude/busy-carson-y75611`. E
 Acceptance criteria AC1–AC16 each have a passing test named in their module's spec, with two honest exceptions recorded above: AC-latency (F1) and the evaluation's structural precision (F7).
 
 Steps only Chris can do before staff use it: create the Supabase project and set `DATABASE_URL`; create the Cloudflare Access application for `/hub/*`, `/api/*` and `/mcp` and set the Access variables; set the provider keys (Anthropic, Voyage) and the Zoho, Gmail and APEX variables listed in `vault/.env.example`; choose the Docker runtime for `vault-api` if server-side re-runs and PDFs are wanted (F5); hand `vault/src/adapters/README.md` to the APEX apps' developer; open the pull request from this branch.
+
+## Wave 2 shipped (1 Oct 2026)
+
+| PR | What | Tests | Visual proof |
+|---|---|---|---|
+| #24 | Project fields (migration 002), `PATCH /api/projects/:id`, `GET /api/countries`, catalog sidecar and live versions, catalog lifecycle chips, record panel as highlights, related cards and a bottom sheet | projects.wave2 (8), catalog.sidecar (5), hub-record-panel (5), hub-today (+2) | `evidence/w2-record-sheet-ipad.png` |
+| #25 | The globe, country drill-down, opportunity register and Add opportunity | geo (3), hub-globe (6) | `evidence/w2-globe-front.png`, `w2-globe-country.png` |
+| #26 | Project toolbar carrying `?project=`, stage in place with history on the timeline, opportunity card, Cmd+K | hub-project-toolbar (5), hub-palette (3), vault-client (+3) | `evidence/w2-project-toolbar.png`, `w2-palette.png` |
+| #27 | Country brief (`POST /api/countries/:code/brief`, migration 003, cached per legal scope and source set) and its panel | countries.brief (4), hub-globe (+2) | `evidence/w2-country-brief.png` |
+
+Follow-ups opened by wave 2:
+
+| # | Item | Why | Plan |
+|---|---|---|---|
+| F10 | Rank and compare across the portfolio (P22, W2-D5 deferred) | A partner still opens a tool to answer "which two should we push" | `/api/projects/rank` over latest run outputs and analogue rows; a two-project compare view |
+| F11 | Opportunity triage on entry (Option B) | Needs analogue rows to exist in volume | After the first ten evaluations carry analogue rows |
+| F12 | The APEX apps' `version.json` | Until published the cards say "Version unverified" | The two-line instruction is in `vault/src/adapters/README.md` |

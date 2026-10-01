@@ -9,7 +9,7 @@ test('001_init applies to an empty database and is idempotent', async () => {
   const db = await openDb(undefined);
   try {
     const first = await migrate(db);
-    assert.deepEqual(first, ['001_init.sql', '002_opportunities.sql']);
+    assert.deepEqual(first, ['001_init.sql', '002_opportunities.sql', '003_country_briefs.sql']);
     const second = await migrate(db);
     assert.deepEqual(second, []);
     const { rows } = await db.query<{ table_name: string }>("SELECT table_name FROM information_schema.tables WHERE table_schema='public'");

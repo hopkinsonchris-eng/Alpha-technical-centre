@@ -262,6 +262,19 @@ documents, correspondence, legal and billing records, research, lessons),
 deploy and connect it. The tools save runs to the Vault when it is
 reachable and queue them in the browser when it is not.
 
+Wave 2 (October 2026) put the Opportunity Register at the centre of the
+Hub: the Today page opens on a globe of where the firm works
+(`hub/globe.js`, drawn from `hub/geo/countries-110m.json`, a pruned copy
+of Natural Earth that `scripts/build-geo.mjs` regenerates; d3-geo is
+vendored under `hub/vendor/`). Opportunities are Vault projects with a
+country, coordinates, stage and register fields. Each tool declares the
+context it accepts in `tools/<id>/hub.json` (see
+`docs/vault-hub/wave2/hub-sidecar.md`); the project file's toolbar opens
+tools with `?project=<id>`. External APEX apps publish `/version.json`
+so the Hub shows their real version. "Brief this country" asks the
+drafting provider for a cited summary and needs `ANTHROPIC_API_KEY` on
+the Vault service. The design record is `docs/vault-hub/wave2/`.
+
 ## 10. AI automation (`.claude/skills/`)
 
 The repo ships two Claude Code skills:

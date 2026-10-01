@@ -516,6 +516,7 @@ async function renderGlobe() {
   function select(code, write) {
     const c = data && data.countries.find((x) => x.code === code);
     sec.setAttribute('data-country', code || '');
+    const brief = $('#country-brief'); if (brief) { brief.setAttribute('hidden', ''); brief.textContent = ''; }
     if (write) history.replaceState(null, '', countryHref(code));
     if (!code) {
       panel.setAttribute('hidden', ''); list.removeAttribute('hidden'); unplaced.style.display = '';
@@ -541,12 +542,89 @@ async function renderGlobe() {
     if (globe) globe.select(code, { fly: true });
   }
   $('#country-back').addEventListener('click', () => select(null, true));
+  setupBrief(() => sec.getAttribute('data-country'), names);
   const want = new URLSearchParams(location.search).get('country');
   if (want && /^[A-Z]{2}$/.test(want)) select(want, false);
   // The tooltip and the canvas label follow the language.
   new MutationObserver(() => { if (globe) globe.setLang(lang()); const l = lang(); canvas.setAttribute('aria-label', canvas.getAttribute('data-' + l + '-aria') || canvas.getAttribute('aria-label')); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   sec.setAttribute('data-globe', globe ? 'ready' : 'no-geo');
   return { data, names };
+}
+
+/* ── Today: the country brief (wave 2, Option A) ─────────────────────── */
+
+const CITE_RE = /\[(run|doc|lesson):([^\]]+)\]/g;
+
+/** A paragraph with its [run:…] / [doc:…] citations turned into chips that open the record in its project. */
+function briefParagraph(text, sources) {
+  const byRef = new Map((sources || []).map((s) => [s.ref, s]));
+  const question = /^\[QUESTION FOR YOU:/.test(text);
+  const p = mk('p', 'hub-brief-p' + (question ? ' question' : ''), null, null, { 'data-brief-paragraph': '' });
+  if (question) { add(p, mk('b', null, 'Question for you: ', 'Pregunta para usted: '), dv('span', null, text.replace(/^\[QUESTION FOR YOU:\s*/, '').replace(/\]$/, ''))); return p; }
+  let last = 0;
+  for (const m of text.matchAll(CITE_RE)) {
+    if (m.index > last) add(p, document.createTextNode(text.slice(last, m.index).replace(/\s+$/, ' ')));
+    const ref = m[1] + ':' + m[2], src = byRef.get(ref);
+    const label = src ? src.title : ref;
+    const href = src && src.project_id ? 'project.html?id=' + encodeURIComponent(src.project_id) + (m[1] === 'run' ? '&run=' + encodeURIComponent(m[2]) : '') : null;
+    add(p, href ? dv('a', 'hub-cite', label, { href, 'data-cite': ref, title: ref }) : dv('span', 'hub-cite', label, { 'data-cite': ref, title: ref }));
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) add(p, document.createTextNode(text.slice(last)));
+  return p;
+}
+
+function setupBrief(currentCode, names) {
+  const btn = $('#country-brief-btn'), host = $('#country-brief');
+  if (!btn || !host) return;
+  btn.addEventListener('click', async () => {
+    const code = currentCode();
+    if (!code) return;
+    host.textContent = '';
+    host.removeAttribute('hidden');
+    add(host, add(mk('p', 'hub-muted hub-brief-wait'), mk('span', 'hub-spin', null, null, { 'aria-hidden': 'true' }), mk('span', null, ' Reading the Vault and writing the brief…', ' Leyendo el Vault y escribiendo el resumen…')));
+    btn.disabled = true;
+    const res = await api('/api/countries/' + encodeURIComponent(code) + '/brief', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ language: lang() }) });
+    btn.disabled = false;
+    if (currentCode() !== code) return;
+    host.textContent = '';
+    if (!res.ok || !res.body || !Array.isArray(res.body.paragraphs)) {
+      const msg = (res.body && res.body.error && res.body.error.message) || '';
+      if (res.status === 501) add(host, notice('warn', 'The brief needs the drafting provider.', 'El resumen necesita el proveedor de redacción.', (msg ? msg + '. ' : '') + 'Set ANTHROPIC_API_KEY on the Vault service (SETUP.md §3).', (msg ? msg + '. ' : '') + 'Configure ANTHROPIC_API_KEY en el servicio del Vault (SETUP.md §3).'));
+      else if (res.status === 0) add(host, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The brief was not written.', 'No se escribió el resumen.'));
+      else add(host, notice('bad', 'The brief was not written.', 'No se escribió el resumen.', msg || 'HTTP ' + res.status, msg || 'HTTP ' + res.status));
+      return;
+    }
+    const b = res.body;
+    const n = (names && names.get(code)) || b.name || { en: code, es: code };
+    add(host, add(mk('div', 'hub-card-head'), add(mk('div'), mk('h3', null, 'Country brief: ' + n.en, 'Resumen del país: ' + n.es))));
+    const body = mk('div', 'hub-brief-body');
+    for (const p of b.paragraphs) add(body, briefParagraph(p, b.sources));
+    add(host, body);
+    if (b.questions && b.questions.length) {
+      const q = mk('div', 'hub-brief-block');
+      add(q, mk('h4', null, 'Questions the brief could not answer from the record', 'Preguntas que el resumen no pudo responder con el registro'));
+      const ul = mk('ul', null, null, null, { id: 'brief-questions' });
+      for (const x of b.questions) add(ul, dv('li', null, x));
+      add(q, ul); add(host, q);
+    }
+    const srcBlock = mk('div', 'hub-brief-block');
+    add(srcBlock, mk('h4', null, 'Sources in scope', 'Fuentes en alcance'));
+    const sl = mk('ul', 'hub-brief-sources', null, null, { id: 'brief-sources' });
+    for (const sct of b.sources || []) {
+      const li = mk('li');
+      const href = sct.project_id ? 'project.html?id=' + encodeURIComponent(sct.project_id) + (sct.kind === 'run' ? '&run=' + encodeURIComponent(sct.ref.slice(4)) : '') : null;
+      add(li, href ? dv('a', 'hub-inline-link', sct.title, { href }) : dv('span', null, sct.title), sct.date ? dv('span', 'hub-muted', ' · ' + sct.date) : null, sct.detail ? dv('span', 'hub-muted', ' · ' + sct.detail) : null);
+      add(sl, li);
+    }
+    add(srcBlock, sl); add(host, srcBlock);
+    const meta = mk('p', 'hub-muted hub-note-s', null, null, { id: 'brief-meta' });
+    const d = b.generated_at ? fmtShortDate(b.generated_at) : null;
+    add(meta, b.cached ? mk('span', null, 'Served from the cache: nothing in this country changed since it was written', 'Servido desde la caché: nada cambió en este país desde que se escribió') : mk('span', null, 'Written now from the Vault', 'Escrito ahora a partir del Vault'),
+      d ? mk('span', null, ' · ' + d.en, ' · ' + d.es) : null, b.model ? dv('span', null, ' · ' + b.model) : null);
+    for (const w of b.warnings || []) if (!/turned into questions/.test(w)) add(meta, document.createTextNode(' · '), dv('span', null, w));
+    add(host, meta);
+  });
 }
 
 /** The register table: every project the caller may see, with the opportunity fields, filters and Add opportunity (partners). */
