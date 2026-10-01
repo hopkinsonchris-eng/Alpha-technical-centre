@@ -16,7 +16,7 @@ const PROJECT = {
   id: PID, client_id: null, name: 'Western Kazakhstan Brownfield', status: 'prospect', default_legal_tag: 'lt-firm', asset_ids: [], members: ['chris'],
   created_at: '2026-09-01T09:00:00.000Z', closed_at: null, contacts: [], country: 'KZ', lat: 47.1, lon: 51.9, stage: 'Qualified',
   stage_history: [{ stage: 'Initial screen', at: '2026-09-01T09:00:00.000Z', by: 'chris' }, { stage: 'Qualified', at: '2026-09-19T12:00:00.000Z', by: 'tom' }],
-  register: { source: 'Intermediary', current: 16, plan: 22, risk: 'amber', risk_score: 54, attractiveness: 76, owner: 'Tom', thesis: 'Producing onshore asset where waterflood optimisation may close a material gap.', next: 'Validate ownership and sale status' },
+  register: { source: 'Intermediary', current: 16, plan: 22, risk: 'amber', risk_score: 54, attractiveness: 76, owner: 'Tom', thesis: 'Producing onshore asset where waterflood optimisation may close a material gap.', next: 'Validate ownership and sale status', holder: 'KazMunayGas', government: 'Ministry of Energy', licence_type: 'psc', partners: ['Chevron', 'Lukoil'] },
 };
 const tool = (id, name, lifecycle, kind, entry, hub) => ({
   id, name, owner: 'chris', lifecycle, kind, entry, versions: [{ version: '1.0.0', released_at: '2026-09-01', commit: 'abc1234' }], aliases: { current: '1.0.0' }, releases: [], hub,
@@ -124,6 +124,12 @@ test('AC10: the opportunity card shows the register fields and edits them in pla
   await expect(card.locator('[data-opp="thesis"]')).toContainText('waterflood optimisation');
   await expect(card.locator('[data-opp="next"]')).toContainText('Validate ownership');
   await expect(card.locator('[data-opp="where"]')).toContainText('Kazakhstan · 47.1, 51.9');
+  // W4-AC14: the counterparties, and the firm's lead labelled as such.
+  await expect(card.locator('[data-opp="holder"]')).toHaveText('KazMunayGas');
+  await expect(card.locator('[data-opp="government"]')).toHaveText('Ministry of Energy');
+  await expect(card.locator('[data-opp="licence"]')).toHaveText('Production sharing');
+  await expect(card.locator('[data-opp="partners"]')).toHaveText('Chevron, Lukoil');
+  await expect(card).toContainText('Lead at the firm');
   await card.getByRole('button', { name: 'Edit' }).click();
   const form = card.locator('form');
   await expect(form).toBeVisible();
@@ -132,10 +138,19 @@ test('AC10: the opportunity card shows the register fields and edits them in pla
   await form.locator('#op-risk').selectOption('red');
   await form.locator('#op-next').fill('Request the data room index');
   await form.locator('#op-lat').fill('47.2');
+  await expect(form.locator('#op-holder')).toHaveValue('KazMunayGas');
+  await form.locator('#op-government').fill('');
+  await form.locator('#op-licence').selectOption('jv');
+  await form.locator('#op-licence-note').fill('Empresa mixta, 60/40');
+  await form.locator('#op-partners').fill('Chevron, Lukoil; Eni');
   await form.getByRole('button', { name: 'Save' }).click();
   await expect.poll(() => patched.length).toBe(1);
-  expect(patched[0]).toEqual({ country: 'KZ', lat: 47.2, lon: 51.9, register: { source: 'Intermediary', current: 16, plan: 25, risk: 'red', risk_score: 54, attractiveness: 76, owner: 'Tom', thesis: PROJECT.register.thesis, next: 'Request the data room index' } });
+  expect(patched[0]).toEqual({ country: 'KZ', lat: 47.2, lon: 51.9, register: { source: 'Intermediary', current: 16, plan: 25, risk: 'red', risk_score: 54, attractiveness: 76, owner: 'Tom', thesis: PROJECT.register.thesis, next: 'Request the data room index',
+    holder: 'KazMunayGas', government: null, licence_type: 'jv', licence_note: 'Empresa mixta, 60/40', partners: ['Chevron', 'Lukoil', 'Eni'] } });
   await expect(card.locator('[data-opp="plan"]')).toHaveText('16 → 25 kboe/d');
+  await expect(card.locator('[data-opp="government"]')).toHaveText('—');
+  await expect(card.locator('[data-opp="licence"]')).toHaveText('Joint venture / empresa mixta · Empresa mixta, 60/40');
+  await expect(card.locator('[data-opp="partners"]')).toHaveText('Chevron, Lukoil, Eni');
   await expect(card.locator('[data-opp="risk"]')).toContainText('High 54');
   await expect(form).toBeHidden();
   mkdirSync(EVIDENCE, { recursive: true });

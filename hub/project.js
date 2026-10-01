@@ -249,6 +249,16 @@ function renderToolbar(ctx, cat) {
   add(host, list.length ? mk('span', 'hub-muted', 'open in this project', 'se abren en este proyecto') : mk('span', 'hub-muted', 'No tool declares a project context yet.', 'Ninguna herramienta declara aún un contexto de proyecto.'));
 }
 
+/** Wave 4: licence types on the register, bilingual (value, English, Spanish). */
+const LICENCE_OPTS = [
+  ['concession', 'Concession', 'Concesión'],
+  ['psc', 'Production sharing', 'Producción compartida'],
+  ['service', 'Service contract', 'Contrato de servicios'],
+  ['jv', 'Joint venture / empresa mixta', 'Empresa mixta'],
+  ['licence', 'Licence', 'Licencia'],
+  ['other', 'Other', 'Otro'],
+];
+const LICENCE_LABEL = Object.fromEntries(LICENCE_OPTS.map(([v, en, es]) => [v, [en, es]]));
 const RISK_OPTS = [['', 'Not assessed', 'Sin evaluar'], ['green', 'Managed', 'Gestionado'], ['amber', 'Elevated', 'Elevado'], ['red', 'High', 'Alto']];
 const numOrNull = (el) => (el && el.value.trim() !== '' ? Number(el.value) : null);
 
@@ -275,7 +285,15 @@ function renderOpportunity(ctx) {
   if (reg.risk) { const rl = RISK_LABEL[reg.risk] || [reg.risk, reg.risk]; add(risk, mk('span', 'hub-rag', null, null, { 'data-risk': reg.risk, 'aria-hidden': 'true' }), mk('span', null, rl[0] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''), rl[1] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''))); }
   else add(risk, mk('span', 'hub-muted', 'not assessed', 'sin evaluar'));
   field('risk', 'Execution risk', 'Riesgo de ejecución', risk);
-  field('owner', 'Owner', 'Responsable', reg.owner ? dv('span', null, reg.owner) : mk('span', 'hub-muted', '—', '—'));
+  // Wave 4: the counterparties, so research has names to look up; the firm's lead is labelled as such.
+  const partners = Array.isArray(reg.partners) ? reg.partners.filter(Boolean) : [];
+  field('holder', 'Current owner', 'Titular actual', reg.holder ? dv('span', null, reg.holder) : mk('span', 'hub-muted', '—', '—'));
+  field('government', 'Government', 'Gobierno', reg.government ? dv('span', null, reg.government) : mk('span', 'hub-muted', '—', '—'));
+  const lic = LICENCE_LABEL[reg.licence_type];
+  const licNode = lic ? add(mk('span'), mk('span', null, lic[0], lic[1]), ...(reg.licence_note ? [dv('span', null, ' · ' + reg.licence_note)] : [])) : reg.licence_note ? dv('span', null, reg.licence_note) : mk('span', 'hub-muted', '—', '—');
+  field('licence', 'Licence type', 'Tipo de licencia', licNode);
+  field('partners', 'JV partners', 'Socios', partners.length ? dv('span', null, partners.join(', ')) : mk('span', 'hub-muted', '—', '—'));
+  field('owner', 'Lead at the firm', 'Responsable en la firma', reg.owner ? dv('span', null, reg.owner) : mk('span', 'hub-muted', '—', '—'));
   field('thesis', 'Thesis', 'Tesis', reg.thesis ? dv('span', null, reg.thesis) : mk('span', 'hub-muted', 'none yet', 'ninguna todavía'), 'hub-opp-text');
   field('next', 'Next step', 'Siguiente paso', reg.next ? dv('span', null, reg.next) : mk('span', 'hub-muted', 'none yet', 'ninguno todavía'), 'hub-opp-text');
   add(host, grid);
@@ -293,7 +311,16 @@ function renderOpportunity(ctx) {
   fld('op-lat', 'Latitude', 'Latitud', inp('op-lat', 'number', p.lat, { min: '-90', max: '90', step: '0.01', inputmode: 'decimal' }));
   fld('op-lon', 'Longitude', 'Longitud', inp('op-lon', 'number', p.lon, { min: '-180', max: '180', step: '0.01', inputmode: 'decimal' }));
   fld('op-source', 'Source', 'Origen', inp('op-source', 'text', reg.source));
-  fld('op-owner', 'Owner', 'Responsable', inp('op-owner', 'text', reg.owner));
+  fld('op-holder', 'Current owner', 'Titular actual', inp('op-holder', 'text', reg.holder));
+  fld('op-government', 'Government', 'Gobierno', inp('op-government', 'text', reg.government));
+  const licSel = mk('select', null, null, null, { id: 'op-licence' });
+  add(licSel, mk('option', null, '—', '—', { value: '' }));
+  for (const [v, en, es] of LICENCE_OPTS) add(licSel, mk('option', null, en, es, { value: v }));
+  licSel.value = reg.licence_type || '';
+  fld('op-licence', 'Licence type', 'Tipo de licencia', licSel);
+  fld('op-licence-note', 'Licence note', 'Nota de la licencia', inp('op-licence-note', 'text', reg.licence_note));
+  fld('op-partners', 'JV partners, comma separated', 'Socios, separados por comas', inp('op-partners', 'text', partners.join(', ')));
+  fld('op-owner', 'Lead at the firm', 'Responsable en la firma', inp('op-owner', 'text', reg.owner));
   fld('op-current', 'Fact today, kboe/d', 'Hecho hoy, kboe/d', inp('op-current', 'number', reg.current, { min: '0', step: '0.1', inputmode: 'decimal' }));
   fld('op-plan', "Operator's plan, kboe/d", 'Plan del operador, kboe/d', inp('op-plan', 'number', reg.plan, { min: '0', step: '0.1', inputmode: 'decimal' }));
   const riskSel = mk('select', null, null, null, { id: 'op-risk' });
@@ -321,9 +348,16 @@ function renderOpportunity(ctx) {
     ev.preventDefault();
     fn.textContent = '';
     const register = { ...reg };
-    const setOrDrop = (k, v) => { if (v === null || v === '' || v === undefined) delete register[k]; else register[k] = v; };
+    // A blank box is sent as null so the Vault clears the key (the register merges field by field).
+    const setOrDrop = (k, v) => { register[k] = v === null || v === '' || v === undefined ? null : v; };
     setOrDrop('source', $('#op-source').value.trim());
     setOrDrop('owner', $('#op-owner').value.trim());
+    setOrDrop('holder', $('#op-holder').value.trim());
+    setOrDrop('government', $('#op-government').value.trim());
+    setOrDrop('licence_type', licSel.value);
+    setOrDrop('licence_note', $('#op-licence-note').value.trim());
+    const pl = $('#op-partners').value.split(/[,;]/).map((x) => x.trim()).filter(Boolean);
+    setOrDrop('partners', pl.length ? pl : null);
     setOrDrop('current', numOrNull($('#op-current')));
     setOrDrop('plan', numOrNull($('#op-plan')));
     setOrDrop('risk', riskSel.value);

@@ -27,6 +27,13 @@ export function operatorNames(raw: string | null | undefined): string[] {
   return uniq(String(raw).split(/[;|]/).map(s => clean(s.replace(/\[[^\]]*\]/g, '').replace(/\([^)]*\)/g, '')).replace(/\s*\d+(\.\d+)?%$/, '')).filter(s => s.length >= 3));
 }
 
+/** Register counterparties ("MinPetróleo / PDVSA", ["Chevron [30%]", "Eni"]) as company names; the lead at the firm and free text are never read. */
+export function counterpartyNames(register: Record<string, unknown> | null | undefined): string[] {
+  if (!register) return [];
+  const raw = [register.holder, register.government, ...(Array.isArray(register.partners) ? register.partners : [])];
+  return uniq(raw.flatMap(v => typeof v === 'string' ? v.split(/\s*[\/,]\s*/).flatMap(operatorNames) : []));
+}
+
 /** Words that make a paper about oil and gas; a strict topic needs one beside the field's name. */
 export const OIL_GAS_WORDS = ['oil', 'oilfield', 'oilfields', 'gas', 'petroleum', 'petróleo', 'petrolero', 'petrolera', 'reservoir', 'reservoirs', 'yacimiento', 'yacimientos', 'basin', 'cuenca', 'hydrocarbon', 'hydrocarbons', 'hidrocarburos', 'crude', 'crudo', 'waterflood', 'waterflooding', 'EOR', 'well log', 'drilling', 'perforación', 'formation', 'formación', 'heavy oil', 'bitumen', 'condensate', 'production', 'producción', 'exploration', 'exploración', 'upstream', 'E&P', 'PDVSA'];
 /** The field's names as whole phrases, plus each distinctive part of a compound name ("Trico — Oficina" → Trico, Oficina). */
@@ -56,6 +63,7 @@ export function buildQueries(project: ResearchProject, fields: ResearchField[], 
   const companies = uniq([
     ...fields.flatMap(f => [...operatorNames(f.operator), ...operatorNames(f.props?.gem?.operator), ...operatorNames(f.props?.gem?.owners)]),
     ...(project.client_name ? [clean(project.client_name)] : []),
+    ...counterpartyNames(project.register),
   ]);
   // Literature topics are strict (see screenPaper): the paper must name the field (or a distinctive part of its
   // name) as a phrase and be about oil and gas or the country. The firm's weekly topics are not affected.

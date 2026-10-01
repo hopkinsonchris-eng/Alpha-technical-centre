@@ -73,7 +73,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       `INSERT INTO projects (id, client_id, name, status, default_legal_tag, asset_ids, members, country, lat, lon, stage, stage_history, register)
        VALUES ($1,$2,$3,$4,$5,$6::text[],$7::text[],$8,$9,$10,$11,$12::jsonb,$13::jsonb)`,
       [b.id, clientId, b.name.trim(), status, tagId, b.asset_ids ?? [], members, opp.country ?? null, opp.lat ?? null, opp.lon ?? null, stage,
-       JSON.stringify([stageEntry(stage, x.person.id, x.now)]), JSON.stringify(opp.register ?? {})]);
+       JSON.stringify([stageEntry(stage, x.person.id, x.now)]), JSON.stringify(Object.fromEntries(Object.entries(opp.register ?? {}).filter(([, v]) => v !== null)))]);
     for (const cid of b.contacts ?? []) {
       const ok = (await x.db.query('SELECT 1 FROM contacts WHERE id = $1', [cid])).rows[0];
       if (!ok) throw bad(`contact "${cid}" does not exist`, '/contacts', 'unknown_contact');

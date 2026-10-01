@@ -36,7 +36,7 @@ const COUNTRIES = {
 };
 const PROJECTS = { projects: [
   { id: 'egy-onshore', name: 'Egypt Onshore Gas Hub', status: 'prospect', client_id: 'frontera', default_legal_tag: 'lt-frontera-nda-2026', country: 'EG', lat: 30.5, lon: 30.2, stage: 'Negotiation', stage_history: [{ stage: 'Negotiation', at: '2026-09-20T12:00:00.000Z', by: 'chris' }], register: { source: 'Government', current: 31, plan: 46, risk: 'amber', risk_score: 59, owner: 'Tom / Lars' }, members: ['chris'], contacts: [], created_at: '2026-09-01T00:00:00.000Z' },
-  { id: 'kaz-brownfield', name: 'Western Kazakhstan Brownfield', status: 'prospect', client_id: null, default_legal_tag: 'lt-firm', country: 'KZ', lat: 47.1, lon: 51.9, stage: 'Qualified', stage_history: [{ stage: 'Qualified', at: '2026-09-19T12:00:00.000Z', by: 'chris' }], register: { source: 'Intermediary', current: 16, plan: 22, risk: 'amber', risk_score: 54, owner: 'Tom' }, members: ['chris'], contacts: [], created_at: '2026-09-01T00:00:00.000Z' },
+  { id: 'kaz-brownfield', name: 'Western Kazakhstan Brownfield', status: 'prospect', client_id: null, default_legal_tag: 'lt-firm', country: 'KZ', lat: 47.1, lon: 51.9, stage: 'Qualified', stage_history: [{ stage: 'Qualified', at: '2026-09-19T12:00:00.000Z', by: 'chris' }], register: { source: 'Intermediary', current: 16, plan: 22, risk: 'amber', risk_score: 54, owner: 'Tom', holder: 'KazMunayGas', partners: ['Chevron'] }, members: ['chris'], contacts: [], created_at: '2026-09-01T00:00:00.000Z' },
   { id: 'ven-barinas', name: 'Barinas–Apure Cluster', status: 'active', client_id: null, default_legal_tag: 'lt-firm', country: 'VE', lat: 8.1, lon: -69.3, stage: 'Technical review', stage_history: [{ stage: 'Technical review', at: '2026-09-22T12:00:00.000Z', by: 'chris' }], register: { source: 'Tennor', current: 42, plan: 58, risk: 'red', risk_score: 78, owner: 'Lars / Chris' }, members: ['chris'], contacts: [], created_at: '2026-09-01T00:00:00.000Z' },
   { id: 'ven-maracaibo', name: 'Lake Maracaibo Redevelopment', status: 'prospect', client_id: null, default_legal_tag: 'lt-firm', country: 'VE', lat: 10.4, lon: -71.6, stage: 'Qualified', stage_history: [{ stage: 'Qualified', at: '2026-09-21T12:00:00.000Z', by: 'chris' }], register: { source: 'Tennor', current: 27, plan: 39, risk: 'red', risk_score: 81, owner: 'Chris' }, members: ['chris'], contacts: [], created_at: '2026-09-01T00:00:00.000Z' },
   { id: 'plain-project', name: 'Plain internal project', status: 'active', client_id: null, default_legal_tag: 'lt-firm', country: null, lat: null, lon: null, stage: 'Initial screen', stage_history: [], register: {}, members: ['chris'], contacts: [], created_at: '2026-08-01T00:00:00.000Z' },
@@ -177,6 +177,9 @@ test('AC6: the register lists the projects with their opportunity fields; filter
   await expect(kaz.locator('[data-col="risk"] .hub-rag')).toHaveAttribute('data-risk', 'amber');
   await expect(kaz.locator('[data-col="risk"]')).toContainText('54');
   await expect(kaz.locator('[data-col="owner"]')).toHaveText('Tom');
+  await expect(kaz.locator('[data-col="holder"]')).toHaveText('KazMunayGas + Chevron');
+  await expect(page.locator('tr[data-register-row="egy-onshore"] [data-col="holder"]')).toHaveText('—');
+  await expect(page.locator('.hub-register thead')).toContainText('Lead');
   await expect(kaz.locator('a')).toHaveAttribute('href', 'project.html?id=kaz-brownfield');
   await expect(page.locator('tr[data-register-row="egy-onshore"] [data-col="client"]')).toHaveText('Frontera Energy');
   await expect(page.locator('tr[data-register-row="plain-project"] [data-col="plan"]')).toHaveText('—');
