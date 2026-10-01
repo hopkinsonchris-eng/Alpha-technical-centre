@@ -100,8 +100,14 @@
             <span class="label" data-en="Tools" data-es="Herramientas">Tools</span>
             <h2 id="h-tools" data-en="Catalog" data-es="Catálogo">Catalog</h2>
           </div>
+          <div class="hub-chips" id="tools-filter" role="group" aria-label="Show tools by lifecycle"></div>
         </div>
         <div class="hub-tools" id="tools-grid"></div>
+        <p class="hub-empty" id="tools-empty" hidden data-en="No tools match the chips above. Switch one on to see the catalog." data-es="Ninguna herramienta coincide con los filtros. Active uno para ver el catálogo.">No tools match the chips above. Switch one on to see the catalog.</p>
+        <details class="hub-older" id="tools-older" hidden>
+          <summary id="tools-older-sum" data-en="Older tools" data-es="Herramientas antiguas">Older tools</summary>
+          <div class="hub-tools" id="tools-older-grid"></div>
+        </details>
       </section>
 
       <!-- MY PROJECTS -->

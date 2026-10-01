@@ -127,13 +127,16 @@ export function route(app: Hono<Env>, method: string | string[], path: string, a
 export interface ProjectRow {
   id: string; client_id: string | null; name: string; status: string; default_legal_tag: string;
   asset_ids: string[]; members: string[]; created_at: string; closed_at: string | null;
+  // wave 2: opportunity fields (db/002_opportunities.sql)
+  country: string | null; lat: number | null; lon: number | null; stage: string;
+  stage_history: { stage: string; at: string; by: string }[]; register: Record<string, unknown>;
 }
 export interface Access { person: Person; now: Date; tags: Map<string, LegalTag>; projects: Map<string, ProjectRow> }
 
 export async function loadAccess(db: Db, person: Person, now = new Date()): Promise<Access> {
   const tagRows = (await db.query<any>(`SELECT id, classification, data_type, client_id, contract_id, country_of_origin, originator,
       to_char(expires_at,'YYYY-MM-DD') AS expires_at, personal_data, export_restricted, partners_only, notes FROM legal_tags`)).rows;
-  const projRows = (await db.query<any>('SELECT id, client_id, name, status, default_legal_tag, asset_ids, members, created_at, closed_at FROM projects')).rows;
+  const projRows = (await db.query<any>('SELECT id, client_id, name, status, default_legal_tag, asset_ids, members, created_at, closed_at, country, lat, lon, stage, stage_history, register FROM projects')).rows;
   return {
     person, now,
     tags: new Map(tagRows.map((t: LegalTag) => [t.id, t])),

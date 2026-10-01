@@ -39,7 +39,13 @@ for (const d of readdirSync(toolsDir, { withFileTypes: true }).filter(d => d.isD
   let m;
   try { m = JSON.parse(readFileSync(f, 'utf8')); } catch (e) { console.error(`tools/${d}/tool.json: ${e.message}`); process.exit(1); }
   const cf = m.changelog && path.join(root, m.changelog);
-  tools.push({ ...m, releases: cf && existsSync(cf) ? parseChangelog(readFileSync(cf, 'utf8')) : [] });
+  // Wave 2: the Hub sidecar (tools/<id>/hub.json) rides along as `hub`; the Vault validates it, this script only aggregates.
+  const hf = path.join(toolsDir, d, 'hub.json');
+  let hub = null;
+  if (existsSync(hf)) {
+    try { hub = { ...JSON.parse(readFileSync(hf, 'utf8')), live_version: null }; } catch (e) { console.error(`tools/${d}/hub.json: ${e.message}`); process.exit(1); }
+  }
+  tools.push({ ...m, releases: cf && existsSync(cf) ? parseChangelog(readFileSync(cf, 'utf8')) : [], hub });
 }
 let commit = 'unknown';
 try { commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {}

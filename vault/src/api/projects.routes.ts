@@ -11,6 +11,7 @@ import {
   assertVisible, bad, canSee, forbidden, intParam, iso, jsonBody, loadAccess, notFound, requirePartner, route, scopeLabel,
   type Access, type Ctx, type ProjectRow,
 } from './common.ts';
+import { DEFAULT_STAGE, readOpportunityFields, stageEntry } from '../opportunities.ts';
 
 const SLUG = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const STATUSES = ['prospect', 'active', 'closed', 'archived'];
@@ -64,9 +65,14 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     for (const k of ['asset_ids', 'members', 'contacts']) if (b[k] !== undefined && !(Array.isArray(b[k]) && b[k].every((s: unknown) => typeof s === 'string'))) throw bad(`${k} must be an array of strings`, `/${k}`);
     const members: string[] = b.members ?? [x.person.id];
     for (const m of members) if (!(await x.db.query('SELECT 1 FROM people WHERE id = $1', [m])).rows[0]) throw bad(`member "${m}" is not a known person`, '/members', 'unknown_person');
+    // Wave 2: opportunity fields. The first stage opens the history.
+    const opp = readOpportunityFields(b);
+    const stage = opp.stage ?? DEFAULT_STAGE;
     await x.db.query(
-      `INSERT INTO projects (id, client_id, name, status, default_legal_tag, asset_ids, members) VALUES ($1,$2,$3,$4,$5,$6::text[],$7::text[])`,
-      [b.id, clientId, b.name.trim(), status, tagId, b.asset_ids ?? [], members]);
+      `INSERT INTO projects (id, client_id, name, status, default_legal_tag, asset_ids, members, country, lat, lon, stage, stage_history, register)
+       VALUES ($1,$2,$3,$4,$5,$6::text[],$7::text[],$8,$9,$10,$11,$12::jsonb,$13::jsonb)`,
+      [b.id, clientId, b.name.trim(), status, tagId, b.asset_ids ?? [], members, opp.country ?? null, opp.lat ?? null, opp.lon ?? null, stage,
+       JSON.stringify([stageEntry(stage, x.person.id, x.now)]), JSON.stringify(opp.register ?? {})]);
     for (const cid of b.contacts ?? []) {
       const ok = (await x.db.query('SELECT 1 FROM contacts WHERE id = $1', [cid])).rows[0];
       if (!ok) throw bad(`contact "${cid}" does not exist`, '/contacts', 'unknown_contact');

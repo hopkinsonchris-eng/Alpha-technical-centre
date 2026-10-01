@@ -5,6 +5,6 @@ import { createApp } from './app.ts';
 
 const db = await openDb();
 await boot(db, line => console.log(line));
-const app = await createApp({ db });
+const app = await createApp({ db, fetch });   // fetch: lets the catalog read external apps' version.json
 const port = Number(process.env.PORT ?? 8787);
 serve({ fetch: app.fetch, port }, () => console.log(`vault-api listening on :${port} (${db.backend})`));

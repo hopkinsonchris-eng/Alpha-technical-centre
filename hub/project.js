@@ -20,6 +20,7 @@ import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog,
 import './components/stale-badge.js';
 import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
+import { renderRecord, detailsNode } from './record.js';
 import './components/timeline-list.js';
 import { annotate, fmtPct } from './components/vintage-table.js';
 import './components/vintage-table.js';
@@ -385,32 +386,35 @@ const routeTab = () => {
 /* ── record panel ────────────────────────────────────────────────────── */
 
 let panelTrigger = null;
-const jsonText = (o) => JSON.stringify(o, null, 2).replace(/</g, '\\u003c');   // "<" escaped so the text is safe as a data value
+let panelCtx = { project: null, entryById: new Map(), lineage: null };
+const versionsCache = new Map();
 
 function closePanel() {
   const p = $('#record-panel');
   p.setAttribute('hidden', '');
+  const scrim = $('#record-scrim'); if (scrim) scrim.setAttribute('hidden', '');
   document.body.classList.remove('has-panel');
   for (const g of document.querySelectorAll('.ln-node.sel')) g.classList.remove('sel');
   if (panelTrigger && panelTrigger.isConnected) panelTrigger.focus();
   panelTrigger = null;
 }
 
-function kv(dl, en, es, value) {
-  if (value === undefined || value === null || value === '') return;
-  add(dl, mk('dt', null, en, es), dv('dd', null, value));
-}
-
-/** Opens the side panel for a record ref (run:<uuid>, doc:<uuid>, ref:...) with its JSON summary. */
+/**
+ * Opens the side panel (a bottom sheet below 1200 px) for a record ref
+ * (run:<uuid>, doc:<uuid>, ref:...): a highlights strip, related cards you can
+ * pivot through, and the raw record behind a closed disclosure (hub/record.js).
+ */
 async function openRecord({ ref, title, node, entry, trigger }) {
   const panel = $('#record-panel'), body = $('#rp-body');
-  panelTrigger = trigger || document.activeElement;
+  const first = panel.hasAttribute('hidden');
+  if (first) panelTrigger = trigger || document.activeElement;        // a pivot keeps the trigger that opened the panel
   const kind = ref.startsWith('run:') ? 'run' : ref.startsWith('doc:') ? 'doc' : 'ref';
   const kindLabel = { run: ['Run', 'Ejecución'], doc: ['Document', 'Documento'], ref: ['Reference set', 'Conjunto de referencia'] }[kind];
   setText($('#rp-kind'), kindLabel[0], kindLabel[1]);
   setText($('#rp-title'), title || (node && node.label) || ref);
   panel.setAttribute('data-ref', ref);
   panel.removeAttribute('hidden');
+  const scrim = $('#record-scrim'); if (scrim) scrim.removeAttribute('hidden');
   document.body.classList.add('has-panel');
   body.textContent = '';
   add(body, mk('p', 'hub-muted', 'Loading the record…', 'Cargando el registro…'));
@@ -423,25 +427,26 @@ async function openRecord({ ref, title, node, entry, trigger }) {
   if (panel.getAttribute('data-ref') !== ref) return;         // another record was opened meanwhile
   if (res && res.ok && res.body) rec = res.body;
   if (rec && rec.title) setText($('#rp-title'), rec.title);        // the full record title beats the graph's short label
+  if (!entry && panelCtx.entryById.has(uuid)) entry = panelCtx.entryById.get(uuid);
 
+  const ctx = {
+    ...panelCtx,
+    versionsOf: async (id) => {
+      if (!versionsCache.has(id)) {
+        const r = await api('/api/items/' + encodeURIComponent(id) + '/versions');
+        versionsCache.set(id, r.ok ? listOf(r.body, 'versions') : null);
+      }
+      return versionsCache.get(id);
+    },
+    open: (r, t, b) => openRecord({ ref: r, title: t, entry: panelCtx.entryById.get(r.slice(r.indexOf(':') + 1)), node: panelCtx.lineage && (panelCtx.lineage.nodes || []).find((n) => n.id === r), trigger: b }),
+  };
+  const content = await renderRecord({ kind, ref, rec, node, entry, ctx });
+  if (panel.getAttribute('data-ref') !== ref) return;
   body.textContent = '';
-  const src = rec || {};
-  const dl = mk('dl', 'hub-kv');
-  kv(dl, 'Ref', 'Ref', ref);
-  kv(dl, 'Job', 'Trabajo', src.job || (node && node.job) || (entry && entry.job));
-  kv(dl, 'Tool version', 'Versión', src.tool_version || (entry && entry.tool_version));
-  kv(dl, 'Type', 'Tipo', src.type || (node && node.type) || (entry && entry.type));
-  kv(dl, 'Status', 'Estado', src.status || (node && node.status) || (entry && entry.status));
-  kv(dl, 'Legal tag', 'Etiqueta legal', src.legal_tag || (entry && entry.legal_tag));
-  kv(dl, 'Reference no.', 'N.º de referencia', src.reference_no || (entry && entry.reference_no));
-  const stale = (entry && entry.stale) || (node && node.stale) || src.stale;
-  add(dl, mk('dt', null, 'Stale', 'Obsoleto'), stale ? add(mk('dd'), mk('span', 'hub-stale', 'Stale', 'Obsoleta'), document.createTextNode(' '), dv('span', null, firstReason(entry && entry.stale_reasons))) : mk('dd', null, 'No', 'No'));
-  add(body, dl);
+  add(body, content);
   if (node && node.restricted) add(body, notice('warn', 'Restricted.', 'Restringido.', 'This record is outside your scope; only its id is shown.', 'Este registro está fuera de su alcance; solo se muestra su id.'));
   if (!rec && kind !== 'ref' && !(node && node.restricted)) add(body, notice('warn', 'Full record unavailable.', 'Registro completo no disponible.', 'Showing what the graph knows' + (res && errMessage(res) ? ' (' + errMessage(res) + ')' : '') + '.', 'Se muestra lo que conoce el grafo' + (res && errMessage(res) ? ' (' + errMessage(res) + ')' : '') + '.'));
-  add(body, mk('h3', null, 'JSON summary', 'Resumen JSON'));
-  const summary = rec || { node: node || null, entry: entry || null };
-  add(body, dv('pre', 'hub-json', jsonText(summary), { 'data-json': '' }));
+  add(body, detailsNode(rec || { node: node || null, entry: entry || null }));
 }
 
 /* ── tab contents ────────────────────────────────────────────────────── */
@@ -579,6 +584,7 @@ async function init() {
   const orgFile = fileR && fileR.ok ? fileR.body : null;
   const runs = runsR.ok ? listOf(runsR.body, 'runs', 'items') : null;
   const entryById = new Map(entries.map((e) => [e.id, e]));
+  panelCtx = { project, entryById, lineage };
   let basis;
   if (noteR.ok) basis = listOf(noteR.body, 'items').filter(isBasisItem);
   else basis = entries.filter((e) => e.kind === 'item' && e.type === 'note' && /^basis/i.test(e.title || ''));
@@ -638,6 +644,7 @@ async function init() {
 
   $('#p-body').removeAttribute('hidden');
   $('#rp-close').addEventListener('click', closePanel);
+  const scrim = $('#record-scrim'); if (scrim) scrim.addEventListener('click', closePanel);
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !$('#record-panel').hasAttribute('hidden')) closePanel(); });
 
   // ?run=<id>: highlight the run in the timeline and open its record (linked from the tool page).
