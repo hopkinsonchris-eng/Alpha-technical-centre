@@ -6,15 +6,16 @@
  */
 import type { Db } from './client.ts';
 import { migrate } from './migrate.ts';
-import { seedMaster, type MasterSummary } from './seed.ts';
+import { GEM_FILE, seedMaster, type MasterSummary } from './seed.ts';
 
 export interface BootSummary { migrations: string[]; master: MasterSummary }
 
 export async function boot(db: Db, log: (line: string) => void = () => {}): Promise<BootSummary> {
   const migrations = await migrate(db);
   if (migrations.length) log(`migrations applied: ${migrations.join(', ')}`);
-  const master = await seedMaster(db);
+  const master = await seedMaster(db, { gemFile: GEM_FILE });
   log(`master data loaded: ${master.people} people, ${master.assets} assets, ${master.firm_assets} firm assets, ${master.reference_sets} reference sets` +
-    (master.reference_versions_added ? ` (${master.reference_versions_added} reference versions added)` : ''));
+    (master.reference_versions_added ? ` (${master.reference_versions_added} reference versions added)` : '') +
+    (master.gem_units ? `, ${master.gem_units} Global Energy Monitor units` : ''));
   return { migrations, master };
 }

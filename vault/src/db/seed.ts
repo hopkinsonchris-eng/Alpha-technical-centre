@@ -63,13 +63,15 @@ function* jsonFiles(dir: string): Generator<string> {
   }
 }
 
-export interface MasterSummary { people: number; assets: number; firm_assets: number; reference_sets: number; reference_versions_added: number }
+export interface MasterSummary { people: number; assets: number; firm_assets: number; reference_sets: number; reference_versions_added: number; gem_units: number }
 
+/** The committed Global Energy Monitor import (wave 3); boot passes it, tests pass their own or none. */
+export const GEM_FILE = path.join(VAULT_DIR, 'master/gem-fields.json');
 export interface SeedOptions { gemFile?: string }
 
 export async function seedMaster(db: Db, opts: SeedOptions = {}): Promise<MasterSummary> {
   await ensureBase(db);
-  const summary: MasterSummary = { people: 0, assets: 0, firm_assets: 0, reference_sets: 0, reference_versions_added: 0 };
+  const summary: MasterSummary = { people: 0, assets: 0, firm_assets: 0, reference_sets: 0, reference_versions_added: 0, gem_units: 0 };
 
   for (const p of readJson(path.join(VAULT_DIR, 'master/people.json'))) {
     await db.query(
@@ -91,29 +93,51 @@ export async function seedMaster(db: Db, opts: SeedOptions = {}): Promise<Master
     }
   }
 
-  // Wave 3: Global Energy Monitor units (master/gem-fields.json, written by scripts/import-gem.ts).
-  // A unit whose name already exists in the country (master fields.json) gains the GEM facts on that
-  // record; otherwise it is inserted. A location a person confirmed is never overwritten.
-  const gemFile = opts.gemFile ?? path.join(VAULT_DIR, 'master/gem-fields.json');
-  if (existsSync(gemFile)) {
+  // Wave 3: Global Energy Monitor units (master/gem-fields.json, written by scripts/import-gem.ts), loaded only
+  // when a file is named (boot names the committed one). A unit whose name already exists in the country (master
+  // fields.json or a person's own record) gains the GEM facts on that record; otherwise it is inserted in batches.
+  // A location a person confirmed is never overwritten.
+  if (opts.gemFile && existsSync(opts.gemFile)) {
     const { gemToAsset } = await import('../../scripts/import-gem.ts');
-    const gem = readJson(gemFile);
+    const gem = readJson(opts.gemFile);
+    const release = gem.release ?? 'unknown release';
+    const existing = new Map<string, string>();
+    const ids = new Set<string>();
+    for (const r of (await db.query<{ id: string; country: string | null; name: string }>('SELECT id, country, name FROM assets')).rows) {
+      ids.add(r.id);
+      const k = `${r.country}|${r.name.toLowerCase()}`;
+      if (r.country && !existing.has(k)) existing.set(k, r.id);
+    }
+    const fresh: ReturnType<typeof gemToAsset>[] = [];
     for (const u of gem.units ?? []) {
-      const a = gemToAsset(u, gem.release ?? 'unknown release');
-      const existing = (await db.query<{ id: string }>('SELECT id FROM assets WHERE country = $1 AND lower(name) = lower($2) LIMIT 1', [a.country, a.name])).rows[0];
-      if (existing) {
+      const a = gemToAsset(u, release);
+      // Two different names can slug to one id ("B 3" and "B-3"): the second gets a numbered id, never a clash.
+      if (!existing.has(`${a.country}|${a.name.toLowerCase()}`) && ids.has(a.id)) { let n = 2; while (ids.has(`${a.id}-${n}`)) n++; a.id = `${a.id}-${n}`; }
+      ids.add(a.id);
+      const hit = existing.get(`${a.country}|${a.name.toLowerCase()}`);
+      if (hit) {
         await db.query(
           `UPDATE assets SET props = props || $2::jsonb, operator = coalesce(operator, $3), source_url = coalesce(source_url, $4), status = coalesce(status, $5),
              lat = CASE WHEN lat IS NULL THEN $6 ELSE lat END, lon = CASE WHEN lon IS NULL THEN $7 ELSE lon END,
              location_source = CASE WHEN lat IS NULL AND $6::double precision IS NOT NULL THEN 'gem' ELSE location_source END WHERE id = $1`,
-          [existing.id, JSON.stringify(a.props), a.operator, a.source_url, a.status, a.lat, a.lon]);
-      } else {
-        await db.query(
-          `INSERT INTO assets (id, kind, name, country, operator, source_url, props, lat, lon, location_source, status, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,'gem')
-           ON CONFLICT (id) DO UPDATE SET props = assets.props || excluded.props, operator = coalesce(assets.operator, excluded.operator), source_url = coalesce(assets.source_url, excluded.source_url), status = coalesce(assets.status, excluded.status)`,
-          [a.id, a.kind, a.name, a.country, a.operator, a.source_url, JSON.stringify(a.props), a.lat, a.lon, a.location_source, a.status]);
-      }
-      summary.assets++;
+          [hit, JSON.stringify(a.props), a.operator, a.source_url, a.status, a.lat, a.lon]);
+      } else { fresh.push(a); existing.set(`${a.country}|${a.name.toLowerCase()}`, a.id); }
+      summary.gem_units++;
+    }
+    const BATCH = 200;
+    for (let i = 0; i < fresh.length; i += BATCH) {
+      const rows = fresh.slice(i, i + BATCH);
+      const params: unknown[] = [];
+      const values = rows.map(a => {
+        const k = params.length;
+        params.push(a.id, a.kind, a.name, a.country, a.operator, a.source_url, JSON.stringify(a.props), a.lat, a.lon, a.location_source, a.status);
+        return `($${k + 1},$${k + 2},$${k + 3},$${k + 4},$${k + 5},$${k + 6},$${k + 7}::jsonb,$${k + 8},$${k + 9},$${k + 10},$${k + 11},'gem')`;
+      });
+      await db.query(
+        `INSERT INTO assets (id, kind, name, country, operator, source_url, props, lat, lon, location_source, status, created_by) VALUES ${values.join(',')}
+         ON CONFLICT (id) DO UPDATE SET props = assets.props || excluded.props, operator = coalesce(assets.operator, excluded.operator), source_url = coalesce(assets.source_url, excluded.source_url), status = coalesce(assets.status, excluded.status),
+           lat = CASE WHEN assets.lat IS NULL THEN excluded.lat ELSE assets.lat END, lon = CASE WHEN assets.lon IS NULL THEN excluded.lon ELSE assets.lon END,
+           location_source = CASE WHEN assets.lat IS NULL AND excluded.lat IS NOT NULL THEN 'gem' ELSE assets.location_source END`, params);
     }
   }
 
