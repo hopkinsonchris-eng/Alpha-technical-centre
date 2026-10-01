@@ -453,13 +453,19 @@ function flags(att) {
   return out;
 }
 const stagePill = (stage) => mk('span', 'hub-pill muted hub-stage', stage, STAGE_ES[stage] || stage, { 'data-stage': stage });
+/** Where a field's location came from, for pills and tooltips (wave 3). */
+export const SOURCE_WORD = {
+  gem: ['GEM', 'GEM'], geonames: ['GeoNames', 'GeoNames'], wikidata: ['Wikidata', 'Wikidata'], vault: ['Vault', 'Vault'],
+  document: ['from a document', 'de un documento'], manual: ['entered by hand', 'introducido a mano'],
+};
+export const sourceWord = (src) => { const w = SOURCE_WORD[src] || (src ? [src, src] : ['no location', 'sin ubicación']); return { en: w[0], es: w[1] }; };
 
 /**
  * The globe and the country list. Countries come from GET /api/countries (only what the
  * caller may see); the polygons from hub/geo. The list is the keyboard and screen-reader path;
  * ?country=XX in the URL selects a country, and selecting one writes it back so the state is linkable.
  */
-async function renderGlobe() {
+async function renderGlobe(person) {
   const sec = $('#sec-globe'), canvas = $('#globe');
   if (!sec || !canvas) return null;
   const [geo, res] = await Promise.all([loadGeo(), api('/api/countries')]);
@@ -472,7 +478,7 @@ async function renderGlobe() {
     try {
       globe = createGlobe(canvas, {
         geo, lang: lang(), reducedMotion: reduced,
-        onSelect: (code) => select(code, true),
+        onSelect: (code, f, point) => select(code, true, point),
         onHover: (h) => {
           if (!h) { tip.setAttribute('hidden', ''); return; }
           tip.textContent = h.name; tip.style.left = h.x + 'px'; tip.style.top = h.y + 'px'; tip.removeAttribute('hidden');
@@ -495,7 +501,11 @@ async function renderGlobe() {
     const held = new Map(), points = [];
     for (const c of data.countries) {
       held.set(c.code, { projects: c.projects.length, stale: c.counts.stale, expiring: c.counts.expiring });
-      for (const p of c.projects) if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) points.push({ id: p.id, name: p.name, lat: p.lat, lon: p.lon });
+      for (const p of c.projects) {
+        if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) points.push({ id: p.id, name: p.name, lat: p.lat, lon: p.lon });
+        // Wave 3: the project's fields with a located record, drawn smaller beside it.
+        for (const a of p.assets || []) if (Number.isFinite(a.lat) && Number.isFinite(a.lon)) points.push({ id: a.id, name: a.name, lat: a.lat, lon: a.lon, kind: 'field' });
+      }
       const name = names.get(c.code) || c.name;
       const b = mk('button', 'hub-country', null, null, { type: 'button', 'data-country': c.code, role: 'listitem' });
       add(b, mk('span', 'name', name.en, name.es),
@@ -513,9 +523,12 @@ async function renderGlobe() {
     }
   }
 
-  function select(code, write) {
+  // Wave 3: the point under the last tap (or the country's centre when chosen from the list) feeds "Create a project here".
+  let tapped = null;
+  function select(code, write, point) {
     const c = data && data.countries.find((x) => x.code === code);
     sec.setAttribute('data-country', code || '');
+    tapped = point || (globe && code ? globe.centroidOf(code) : null);
     const brief = $('#country-brief'); if (brief) { brief.setAttribute('hidden', ''); brief.textContent = ''; }
     if (write) history.replaceState(null, '', countryHref(code));
     if (!code) {
@@ -536,12 +549,31 @@ async function renderGlobe() {
       if (p.last_run_at) { const d = fmtShortDate(p.last_run_at); add(meta, mk('span', null, 'last run ' + d.en, 'última ejecución ' + d.es)); }
       else add(meta, mk('span', null, 'no runs yet', 'aún sin ejecuciones'));
       add(a, meta, add(mk('div', 'flags'), ...flags(p.attention)));
+      // Wave 3: the fields attached to the project, each with its source.
+      const fields = (p.assets || []).filter((x) => x && x.name);
+      if (fields.length) {
+        const fl = mk('div', 'hub-country-fields', null, null, { 'data-project-fields': p.id });
+        for (const f of fields) {
+          const pill = mk('span', 'hub-field-pt', null, null, { 'data-field': f.id, title: sourceWord(f.location_source).en });
+          add(pill, mk('span', 'dot', null, null, { 'aria-hidden': 'true' }), dv('span', null, f.name));
+          if (Number.isFinite(f.lat) && Number.isFinite(f.lon)) add(pill, dv('span', 'hub-muted coord', f.lat + ', ' + f.lon));
+          add(fl, pill);
+        }
+        add(a, fl);
+      }
       add(ul, a);
     }
+    const createRow = $('#country-create-row');
+    if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
     list.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
     if (globe) globe.select(code, { fly: true });
   }
   $('#country-back').addEventListener('click', () => select(null, true));
+  const createBtn = $('#country-create');
+  if (createBtn) createBtn.addEventListener('click', () => {
+    const code = sec.getAttribute('data-country');
+    if (code && openProjectForm) openProjectForm('opportunity', { country: code, lat: tapped ? tapped.lat : null, lon: tapped ? tapped.lon : null });
+  });
   setupBrief(() => sec.getAttribute('data-country'), names);
   const want = new URLSearchParams(location.search).get('country');
   if (want && /^[A-Z]{2}$/.test(want)) select(want, false);
@@ -717,7 +749,17 @@ function setupNewProject(person) {
     if (opp) opp.open = m === 'opportunity';
     if (submit) setText(submit, m === 'opportunity' ? 'Create opportunity' : 'Create project', m === 'opportunity' ? 'Crear oportunidad' : 'Crear proyecto');
   };
-  openProjectForm = (m) => { setMode(m); open(); };
+  openProjectForm = (m, prefill) => {
+    setMode(m); open();
+    // Wave 3: "Create a project here" arrives with the country and the tapped coordinates.
+    if (prefill) {
+      if (country && prefill.country) country.value = prefill.country;
+      const la = $('#np-lat'), lo = $('#np-lon');
+      if (la) la.value = Number.isFinite(prefill.lat) ? String(prefill.lat) : '';
+      if (lo) lo.value = Number.isFinite(prefill.lon) ? String(prefill.lon) : '';
+      form.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  };
   name.addEventListener('input', () => { if (!idTouched) id.value = slugify(name.value); });
   id.addEventListener('input', () => { idTouched = id.value.trim() !== ''; });
   client.addEventListener('change', () => { if (client.value) tagField.removeAttribute('hidden'); else tagField.setAttribute('hidden', ''); });
@@ -918,7 +960,7 @@ async function initToday() {
   await renderTools(person);
   setupNewProject(person);
   let globe = null;
-  try { globe = await renderGlobe(); } catch (e) { const sec = $('#sec-globe'); if (sec) sec.setAttribute('data-globe', 'failed'); }
+  try { globe = await renderGlobe(person); } catch (e) { const sec = $('#sec-globe'); if (sec) sec.setAttribute('data-globe', 'failed'); }
   try { await renderRegister(person, globe && globe.names); } catch (e) { /* the register is optional; the rest of Today still renders */ }
   const projects = await renderProjects(person);
   await Promise.all([renderAttention(projects), renderRuns(projects)]);

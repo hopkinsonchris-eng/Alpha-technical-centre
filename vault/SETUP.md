@@ -96,6 +96,21 @@ each one in Render → `atc-vault-api` → **Environment** (and the same
 | `APP_TOKENS` | Generate two secrets with `openssl rand -hex 24` and enter `apex-asset-intelligence:<secret1>,apex-3d-model:<secret2>`. Give each app its own secret (step 5). |
 | `APEX_AI_BASE_URL`, `APEX_AI_TOKEN`, `APEX_3D_BASE_URL`, `APEX_3D_TOKEN` | `https://apex-app2.onrender.com` and `https://apex-3d-model.uk`; the tokens are two more `openssl rand -hex 24` secrets that the apps must check on their `/rerun` endpoint. |
 
+**Fields and live risk (wave 3)**
+
+| Variable | Where it comes from |
+|---|---|
+| `GEONAMES_USERNAME` | Free account at https://www.geonames.org/login → enable the free web services on the account page. Add field then searches GeoNames for oil and gas fields; without it the Hub says "GeoNames not available". |
+| `WORLD_MONITOR_API_KEY` | World Monitor → API keys (a `wm_` key). Server-side only: country risk and conflict events in the brief and the globe. Without it the risk line is simply absent. |
+
+**The Global Energy Monitor field tracker (once per release, about 10 minutes)**
+
+The Global Oil and Gas Extraction Tracker sits behind a download form, so it is imported by hand:
+download the .xlsx from https://globalenergymonitor.org/projects/global-oil-gas-extraction-tracker/download-data/,
+then in `vault/` run `npx tsx scripts/import-gem.ts <the .xlsx> --release "March 2026"`. That writes
+`vault/master/gem-fields.json` (commit it); the next deploy seeds the units into `assets` and Add field
+finds them first. The licence is CC BY 4.0 and the attribution travels on every dossier filed from it.
+
 **Optional**
 
 `EIA_API_KEY` (https://www.eia.gov/opendata/register.php) and

@@ -6,7 +6,10 @@
    behind Cloudflare Access.
 
    createGlobe(canvas, { geo, lang, onSelect, onHover, reducedMotion })
-     .setData({ held: Map<iso2, {projects, stale, expiring}>, points: [{lat, lon, id, name}] })
+     .setData({ held: Map<iso2, {projects, stale, expiring}>, points: [{lat, lon, id, name, kind?: 'field'}] })
+     // wave 3: a point with kind 'field' is drawn smaller and cream beside the gold project
+     // points; hovering it reports its name. onSelect(code, feature, {lat, lon}) carries the
+     // geographic point under the tap so "Create a project here" can prefill coordinates.
      .select(code, { fly: true })      // fly to a country and highlight it; null clears
      .setLang('en' | 'es')
      .destroy()
@@ -27,7 +30,10 @@ const COLOURS = {
   hover: '#E8C96A', selected: '#F2DFA0', selectedLine: '#FFFFFF',
   stale: '#E8A33D', expiring: '#E25B4A',
   point: '#FFFFFF', pointRing: 'rgba(201,168,76,0.9)',
+  field: '#F3E9C9', fieldLine: 'rgba(11,31,58,0.9)', fieldHover: '#FFFFFF',
 };
+const FIELD_R = 2.6;                    // field points: smaller, no pulse
+const POINT_HIT_PX = 8;                 // hover radius for a point
 const FULL_TURN_MS = 90_000;            // one revolution
 const HOVER_FACTOR = 0.25;              // slower under the pointer
 const FLY_MS = 900;
@@ -62,6 +68,8 @@ export function createGlobe(canvas, opts) {
   let zoom = 1;
   let held = new Map(), points = [];
   let hovered = null, selected = null;
+  let hoveredPoint = null;              // wave 3: the field point under the pointer
+  let visible = [];                     // [{p, x, y}] drawn this frame, for hit testing
   let speed = 360 / FULL_TURN_MS;       // degrees per ms
   let raf = 0, last = 0, destroyed = false;
   let flight = null;                    // {from:[l,p,z], to:[l,p,z], start}
@@ -124,17 +132,30 @@ export function createGlobe(canvas, opts) {
       ctx.strokeStyle = line; ctx.lineWidth = lw; ctx.stroke();
     }
 
-    // Project points on the visible hemisphere, pulsing unless motion is reduced.
+    // Points on the visible hemisphere: fields first (small, cream, still), then project
+    // points on top, pulsing unless motion is reduced.
     const centre = [-rotation[0], -rotation[1]];
     const pulse = reduced ? 0.5 : (Math.sin(now / 600) + 1) / 2;
+    visible = [];
     for (const p of points) {
       if (!(Number.isFinite(p.lat) && Number.isFinite(p.lon))) continue;
       if (d3.geoDistance([p.lon, p.lat], centre) > Math.PI / 2 - 0.02) continue;
       const xy = projection([p.lon, p.lat]);
       if (!xy) continue;
-      ctx.beginPath(); ctx.arc(xy[0], xy[1], 4 + 6 * pulse, 0, Math.PI * 2);
+      visible.push({ p, x: xy[0], y: xy[1] });
+    }
+    for (const v of visible) {
+      if (v.p.kind !== 'field') continue;
+      const hot = hoveredPoint === v.p;
+      ctx.beginPath(); ctx.arc(v.x, v.y, hot ? FIELD_R + 1.5 : FIELD_R, 0, Math.PI * 2);
+      ctx.fillStyle = hot ? COLOURS.fieldHover : COLOURS.field; ctx.fill();
+      ctx.strokeStyle = COLOURS.fieldLine; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    for (const v of visible) {
+      if (v.p.kind === 'field') continue;
+      ctx.beginPath(); ctx.arc(v.x, v.y, 4 + 6 * pulse, 0, Math.PI * 2);
       ctx.strokeStyle = COLOURS.pointRing; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.9 - 0.6 * pulse; ctx.stroke(); ctx.globalAlpha = 1;
-      ctx.beginPath(); ctx.arc(xy[0], xy[1], 3, 0, Math.PI * 2); ctx.fillStyle = COLOURS.point; ctx.fill();
+      ctx.beginPath(); ctx.arc(v.x, v.y, 3, 0, Math.PI * 2); ctx.fillStyle = COLOURS.point; ctx.fill();
       ctx.strokeStyle = COLOURS.held; ctx.lineWidth = 1.5; ctx.stroke();
     }
 
@@ -176,6 +197,20 @@ export function createGlobe(canvas, opts) {
     for (const f of features) if (d3.geoContains(f, ll)) return f;
     return null;
   }
+  /** The point (field or project) within POINT_HIT_PX of a canvas position, nearest first. */
+  function pointAt(x, y) {
+    let best = null, bd = POINT_HIT_PX;
+    for (const v of visible) { const d = Math.hypot(v.x - x, v.y - y); if (d <= bd) { bd = d; best = v.p; } }
+    return best;
+  }
+  /** The geographic point under a canvas position on the front hemisphere, or null. */
+  function geoAt(x, y) {
+    applyProjection();
+    const ll = projection.invert([x, y]);
+    if (!ll || !Number.isFinite(ll[0]) || !Number.isFinite(ll[1])) return null;
+    if (d3.geoDistance(ll, [-rotation[0], -rotation[1]]) > Math.PI / 2) return null;
+    return { lat: Math.round(ll[1] * 100) / 100, lon: Math.round((((ll[0] + 540) % 360) - 180) * 100) / 100 };
+  }
   const local = (ev) => { const rect = canvas.getBoundingClientRect(); return [ev.clientX - rect.left, ev.clientY - rect.top]; };
 
   /* ── pointer, wheel, keyboard ───────────────────────────────────────── */
@@ -213,13 +248,17 @@ export function createGlobe(canvas, opts) {
     const now = performance.now();
     if (now - lastHit < 40) return;
     lastHit = now;
+    const pt = pointAt(x, y);
     const f = hit(x, y);
     const code = f ? f.properties.iso2 : null;
-    if (code !== hovered) {
-      hovered = code;
-      canvas.style.cursor = f ? 'pointer' : 'grab';
-      if (opts.onHover) opts.onHover(f ? { code, name: f.properties[lang] || f.properties.en, x, y } : null);
-      if (reduced) draw();
+    if (code !== hovered || pt !== hoveredPoint) {
+      hovered = code; hoveredPoint = pt;
+      canvas.style.cursor = f || pt ? 'pointer' : 'grab';
+      if (opts.onHover) {
+        if (pt) opts.onHover({ code, name: pt.name, x, y, point: pt });
+        else opts.onHover(f ? { code, name: f.properties[lang] || f.properties.en, x, y } : null);
+      }
+      if (reduced || pt || !code) draw();
     }
   }
   function onPointerUp(ev) {
@@ -228,13 +267,14 @@ export function createGlobe(canvas, opts) {
     if (!drag) return;
     const d = drag; drag = null;
     if (!d.moved) {
-      const f = hit(...local(ev));
-      if (f && opts.onSelect) opts.onSelect(f.properties.iso2, f);
+      const [x, y] = local(ev);
+      const f = hit(x, y);
+      if (f && opts.onSelect) opts.onSelect(f.properties.iso2, f, geoAt(x, y));
     } else if (!reduced) inertia = clamp(d.vx, -0.5, 0.5);
     schedule();
   }
   function onPointerLeave() {
-    if (hovered) { hovered = null; canvas.style.cursor = 'grab'; if (opts.onHover) opts.onHover(null); if (reduced) draw(); }
+    if (hovered || hoveredPoint) { hovered = null; hoveredPoint = null; canvas.style.cursor = 'grab'; if (opts.onHover) opts.onHover(null); draw(); }
   }
   function onWheel(ev) {
     ev.preventDefault();
@@ -271,6 +311,10 @@ export function createGlobe(canvas, opts) {
     },
     setLang(l) { lang = l; },
     nameOf(code) { const f = byCode.get(code); return f ? { en: f.properties.en, es: f.properties.es } : null; },
+    /** The country's geographic centre from its polygon (a computed point, never a guess). */
+    centroidOf(code) { const f = byCode.get(code); if (!f) return null; const [lon, lat] = centroid.get(f); return { lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 }; },
+    /** Canvas position of a geographic point when it is on the front hemisphere (used by tests and callers that place markers). */
+    screenOf(lat, lon) { applyProjection(); if (d3.geoDistance([lon, lat], [-rotation[0], -rotation[1]]) > Math.PI / 2) return null; const xy = projection([lon, lat]); return xy ? { x: xy[0], y: xy[1] } : null; },
     has(code) { return byCode.has(code); },
     get rotation() { return rotation.slice(); },
     destroy() { destroyed = true; if (raf) cancelAnimationFrame(raf); ro.disconnect(); canvas.removeEventListener('wheel', onWheel); },
