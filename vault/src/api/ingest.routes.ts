@@ -30,6 +30,8 @@ const MIME_BY_EXT: Record<string, string> = {
 export interface UploadResult {
   filename: string; status: 'ingested' | 'queued' | 'unchanged' | 'stored' | 'failed';
   item_id?: string; version?: number; deduplicated?: boolean; type?: string; chunks?: number; ingest?: IngestResult['status']; error?: string;
+  /** wave 3: fields the document names, opened as review proposals */
+  asset_proposals?: number;
 }
 
 export function register(app: Hono<Env>, _deps: RouteDeps): void {
@@ -98,7 +100,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
         if (file.size < SYNC_LIMIT_BYTES && deps) {
           try {
             const out = await ingestItem(db, store(), id, deps);
-            r.ingest = out.status; r.chunks = out.chunks;
+            r.ingest = out.status; r.chunks = out.chunks; r.asset_proposals = out.asset_proposals ?? 0;
             r.status = out.status === 'ok' || out.status === 'skipped' ? 'ingested' : 'stored';
           } catch (e) { r.error = `stored, not indexed: ${(e as Error).message}`; await queue(id, version, r.error); r.status = 'queued'; }
         } else {

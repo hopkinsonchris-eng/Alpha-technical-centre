@@ -8,7 +8,7 @@
                     POST /api/queue/filing/:id/dismiss                 ("not a project email": stays in the firm inbox)
      Lessons        GET  /api/lessons?status=proposed
                     POST /api/lessons/:id/confirm | /reject
-     Review queue   GET  /api/queue/review           (NDA expiries and organisation proposals; ?kind= adds one more kind)
+     Review queue   GET  /api/queue/review           (NDA expiries, organisation proposals and fields named in documents; ?kind= adds one more kind)
                     POST /api/organisations          (accepting an organisation proposal adds it to the registry first)
                     POST /api/queue/review/:id/accept | /reject
    Projects for the assign list: GET /api/projects. Every string a person reads carries data-en and data-es.
@@ -213,6 +213,18 @@ function reviewRow(q, list) {
       if (!created.ok && created.status !== 409) return created;          // 409: already in the registry, which is what accepting asks for
       return post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept');
     };
+  } else if (q.kind === 'asset') {
+    // Wave 3: a field named in a document. Accept attaches the first gazetteer candidate, or the name alone when there is none;
+    // the Fields card on the project file offers the full choice.
+    add(row, icon(DOC_ICON, 'gold'));
+    add(body, add(mk('span', 't', null, null, { id: tid }), mk('span', null, 'Field named in a document: ', 'Campo nombrado en un documento: '), dv('b', null, p.name), document.createTextNode(' '), dv('span', 'hub-muted', '(' + (p.kind || 'field') + ')')));
+    const proj = projects.find((x) => x.id === p.project_id);
+    add(body, add(mk('span', 'm'), dv('a', 'hub-inline-link', (proj && proj.name) || p.project_id || '—', { href: 'project.html?id=' + encodeURIComponent(p.project_id || '') + '#p-fields', 'data-proposal-project': p.project_id || '' }), dv('span', null, [p.item_title, p.anchor].filter(Boolean).map((x) => ' · ' + x).join(''))));
+    if (p.quote) add(body, dv('span', 'm q-quote', '“' + p.quote + '”'));
+    const first = Array.isArray(p.candidates) && p.candidates[0];
+    if (first) add(body, add(mk('span', 'm', null, null, { 'data-first-candidate': first.source + ':' + first.source_id }), mk('span', null, 'Accept attaches ', 'Aceptar adjunta '), dv('b', null, first.name), dv('span', null, ' (' + first.source + (Number.isFinite(first.lat) && Number.isFinite(first.lon) ? ', ' + first.lat + ', ' + first.lon : '') + ')')));
+    else add(body, mk('span', 'm', 'No gazetteer match: Accept attaches the name without a location.', 'Sin coincidencia en gaceteros: Aceptar adjunta el nombre sin ubicación.'));
+    accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept', first ? (first.asset_id ? { asset_id: first.asset_id } : { create: { name: first.name, kind: first.kind || p.kind || 'field', ...(Number.isFinite(first.lat) && Number.isFinite(first.lon) ? { lat: first.lat, lon: first.lon, location_source: first.source } : {}), source_id: first.source_id, source_url: first.source_url, detail: first.detail || undefined, country: first.country || undefined } }) : {});
   } else if (q.kind === 'nda-expiry') {
     add(row, icon(DOC_ICON, 'gold'));
     add(body, dv('span', 't', p.proposal || ('Set the expiry of ' + (p.legal_tag || 'the legal tag') + ' to ' + (p.proposed_expires_at || '—')), { id: tid }));
@@ -228,10 +240,10 @@ function reviewRow(q, list) {
     accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept');
   }
 
-  const okLabel = q.kind === 'organisation' ? ['Add to registry', 'Añadir al registro'] : ['Accept', 'Aceptar'];
+  const okLabel = q.kind === 'organisation' ? ['Add to registry', 'Añadir al registro'] : q.kind === 'asset' ? ['Attach', 'Adjuntar'] : ['Accept', 'Aceptar'];
   const ok = mk('button', 'btn btn-primary btn-sm', okLabel[0], okLabel[1], { type: 'button', 'data-action': 'accept', 'aria-describedby': tid });
-  const no = mk('button', 'btn btn-outline btn-sm', 'Reject', 'Rechazar', { type: 'button', 'data-action': 'reject', 'aria-describedby': tid });
-  ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : 'Aceptado.')));
+  const no = mk('button', 'btn btn-outline btn-sm', q.kind === 'asset' ? 'Not a field' : 'Reject', q.kind === 'asset' ? 'No es un campo' : 'Rechazar', { type: 'button', 'data-action': 'reject', 'aria-describedby': tid });
+  ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : q.kind === 'asset' ? 'Field attached to the project; its dossier is filed.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : q.kind === 'asset' ? 'Campo adjuntado al proyecto; su dosier queda archivado.' : 'Aceptado.')));
   no.addEventListener('click', () => act(row, list, '#n-review', () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/reject'), () => announce('Rejected.', 'Rechazado.')));
   add(controls, ok, no);
   add(body, controls);
@@ -243,7 +255,7 @@ async function renderReview() {
   const sec = $('#sec-review'), list = $('#review-list');
   const r = await api('/api/queue/review');
   if (!r.ok) return;
-  const want = new Set(['nda-expiry', 'organisation']);
+  const want = new Set(['nda-expiry', 'organisation', 'asset']);
   if (kindParam && kindParam !== 'lesson' && kindParam !== 'filing') want.add(kindParam);
   const items = listOf(r.body, 'items', 'queue').filter((q) => q && want.has(q.kind));
   sec.removeAttribute('hidden');

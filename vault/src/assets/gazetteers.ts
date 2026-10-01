@@ -116,8 +116,13 @@ async function fromWikidata(fetchImpl: typeof fetch, name: string, country: stri
   return out;
 }
 
+let defaults: LocateOptions = {};
+/** Process-wide defaults for every lookup (tests inject fetch; production reads the environment). */
+export function configureLocate(o: LocateOptions): void { defaults = { ...defaults, ...o }; }
+
 /** Candidates for a name in a country, Vault first, each with its source; unavailable sources named. */
-export async function locate(db: Db, name: string, country: string | null, opts: LocateOptions = {}): Promise<LocateResult> {
+export async function locate(db: Db, name: string, country: string | null, o: LocateOptions = {}): Promise<LocateResult> {
+  const opts = { ...defaults, ...o };
   const fetchImpl = opts.fetch ?? fetch;
   const timeoutMs = opts.timeoutMs ?? 6000;
   const geonamesUser = opts.geonamesUser ?? process.env.GEONAMES_USERNAME;

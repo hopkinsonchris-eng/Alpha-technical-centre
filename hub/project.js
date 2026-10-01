@@ -17,6 +17,8 @@
      GET /api/projects/:id/assets        wave 3: the fields attached, with their dossiers
      GET /api/assets/locate              wave 3: candidates for a field name (Vault, GEM, GeoNames, Wikidata)
      POST/DELETE /api/projects/:id/assets  wave 3: attach (filing the dossier) and detach
+     GET /api/queue/review?kind=asset    wave 3: fields named in documents, proposed for this project
+     POST /api/queue/review/:id/accept|reject  wave 3: attach the proposal (with a chosen candidate or by name) or dismiss it
    Every string a person reads carries data-en and data-es.
    ============================================================ */
 import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord } from './hub.js';
@@ -422,6 +424,89 @@ async function renderFields(ctx) {
   };
   paint();
 
+  // Proposed from documents: the fields that ingest found named in this project's documents (review queue, kind asset).
+  const proposed = mk('div', 'hub-proposed', null, null, { id: 'fld-proposed', hidden: '' });
+  add(host, proposed);
+  const paintProposals = async () => {
+    const r = await api('/api/queue/review?kind=asset');
+    const rows = r.ok ? listOf(r.body, 'items').filter((q) => q && q.kind === 'asset' && q.payload && q.payload.project_id === p.id) : [];
+    proposed.textContent = '';
+    if (!rows.length) { proposed.setAttribute('hidden', ''); return; }
+    proposed.removeAttribute('hidden');
+    add(proposed, mk('span', 'label', 'Proposed from documents', 'Propuestos desde documentos'),
+      mk('span', 'hub-muted', ' · ' + rows.length + (rows.length === 1 ? ' field named in a document, waiting for a decision' : ' fields named in documents, waiting for a decision'), ' · ' + rows.length + (rows.length === 1 ? ' campo nombrado en un documento, a la espera de una decisión' : ' campos nombrados en documentos, a la espera de una decisión')));
+    const ul = mk('ul', 'hub-proposals');
+    for (const q of rows) add(ul, proposalRow(q));
+    add(proposed, ul);
+  };
+  const decide = async (q, body, btn, row) => {
+    notices.textContent = '';
+    if (btn) btn.disabled = true;
+    const verb = body === null ? 'reject' : 'accept';
+    const r = await api('/api/queue/review/' + encodeURIComponent(q.id) + '/' + verb, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+    if (btn) btn.disabled = false;
+    if (!r.ok) {
+      if (r.status === 409) { row.remove(); add(notices, notice('warn', 'Already decided.', 'Ya decidido.', 'Someone else resolved this proposal.', 'Otra persona resolvió esta propuesta.')); return; }
+      add(notices, notice('bad', verb === 'accept' ? 'Not attached.' : 'Not dismissed.', verb === 'accept' ? 'No se adjuntó.' : 'No se descartó.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.')));
+      return;
+    }
+    row.remove();
+    if (!proposed.querySelector('li[data-proposal]')) proposed.setAttribute('hidden', '');
+    if (verb === 'reject') { add(notices, notice('ok', q.payload.name + ' is not a field of this project.', q.payload.name + ' no es un campo de este proyecto.', 'The proposal is closed.', 'La propuesta queda cerrada.')); return; }
+    const a = r.body && r.body.asset;
+    const filed = Array.isArray(r.body && r.body.dossier) ? r.body.dossier : [];
+    if (a) {
+      const i = ctx.fields.findIndex((x) => x.id === a.id);
+      const rowData = { ...a, dossier: i >= 0 ? [...(ctx.fields[i].dossier || []), ...filed] : filed };
+      if (i >= 0) ctx.fields[i] = rowData; else ctx.fields.push(rowData);
+      if (!(p.asset_ids || []).includes(a.id)) p.asset_ids = [...(p.asset_ids || []), a.id];
+      paint(); renderHeader(ctx);
+      add(notices, notice('ok', a.name + ' attached.', a.name + ' adjuntado.',
+        filed.length ? filed.length + (filed.length === 1 ? ' dossier record filed from ' : ' dossier records filed from ') + sourceWord(a.location_source).en + '.' : (a.lat == null ? 'Attached by name, without a location.' : 'No gazetteer record to file: no dossier.'),
+        filed.length ? filed.length + (filed.length === 1 ? ' registro de dosier archivado desde ' : ' registros de dosier archivados desde ') + sourceWord(a.location_source).es + '.' : (a.lat == null ? 'Adjuntado por nombre, sin ubicación.' : 'Sin registro de gacetero que archivar: sin dosier.')));
+    }
+  };
+  const proposalRow = (q) => {
+    const pl = q.payload || {};
+    const li = mk('li', 'hub-proposal', null, null, { 'data-proposal': q.id });
+    const head = mk('div', 'hub-proposal-head');
+    add(head, dv('b', null, pl.name), document.createTextNode(' '), kindWord(pl.kind || 'field'));
+    if (pl.source === 'model') add(head, document.createTextNode(' · '), mk('span', 'hub-muted', 'found by the assistant', 'hallado por el asistente'));
+    const where = [pl.item_title, pl.anchor].filter(Boolean).join(', ');
+    if (pl.quote) add(head, dv('blockquote', 'hub-proposal-quote', '“' + pl.quote + '”' + (where ? ' (' + where + ')' : ''), { 'data-quote': '' }));
+    add(li, head);
+    const cands = Array.isArray(pl.candidates) ? pl.candidates : [];
+    const ul = mk('ul', 'hub-candidates');
+    for (const c of cands) {
+      const row = mk('li', 'hub-candidate', null, null, { 'data-candidate': c.source + ':' + c.source_id });
+      const main = mk('div');
+      add(main, mk('span', null, pl.name + ' → ', pl.name + ' → '), dv('b', null, c.name));
+      const meta = mk('div', 'hub-note-s');
+      const cc = coordText(c);
+      if (cc) add(meta, dv('span', 'mono', cc)); else add(meta, mk('span', null, 'no coordinates on this record', 'sin coordenadas en este registro'));
+      add(meta, document.createTextNode(' · '), srcPill(c.source));
+      if (c.detail && c.detail.status) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.status));
+      if (c.detail && c.detail.operator) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.operator));
+      add(main, meta);
+      const b = mk('button', 'btn btn-primary btn-sm', 'Attach', 'Adjuntar', { type: 'button', 'data-attach': c.source + ':' + c.source_id });
+      b.addEventListener('click', () => decide(q, attachBody(c, p.country || null), b, li));
+      add(row, main, b);
+      add(ul, row);
+    }
+    if (!cands.length) add(ul, add(mk('li', 'hub-candidate'), mk('span', 'hub-muted', 'No gazetteer match: the Vault, Global Energy Monitor, GeoNames and Wikidata know no record by this name here.', 'Sin coincidencia en gaceteros: el Vault, Global Energy Monitor, GeoNames y Wikidata no conocen ningún registro con este nombre aquí.')));
+    add(li, ul);
+    const actions = mk('div', 'hub-actions-row');
+    const bare = mk('button', 'btn btn-outline btn-sm', 'Attach without a location', 'Adjuntar sin ubicación', { type: 'button', 'data-attach-bare': '' });
+    bare.addEventListener('click', () => decide(q, {}, bare, li));
+    const no = mk('button', 'btn btn-outline btn-sm', 'Not a field', 'No es un campo', { type: 'button', 'data-reject': '' });
+    no.addEventListener('click', () => decide(q, null, no, li));
+    add(actions, bare, no);
+    add(li, actions);
+    return li;
+  };
+  await paintProposals();
+  host.refreshProposals = paintProposals;
+
   // Add field: a search box over the gazetteers, candidates with a source pill each, Attach.
   const form = mk('form', 'hub-fld-add', null, null, { id: 'fld-add', novalidate: '', hidden: '' });
   const row = mk('div', 'hub-fld-search');
@@ -535,6 +620,7 @@ function setupUpload(project) {
       return;
     }
     const results = listOf(res.body, 'results');
+    let anyFields = false;
     for (const r of results) {
       const li = mk('li', 'hub-upload-row', null, null, { 'data-upload-file': r.filename || '' });
       const st = UP_STATUS[r.status] || [r.status || '?', r.status || '?', 'muted'];
@@ -547,8 +633,15 @@ function setupUpload(project) {
       if (r.error) bits.push(dv('span', null, r.error));
       bits.forEach((b, i) => { if (i) add(meta, document.createTextNode(' · ')); add(meta, b); });
       add(li, meta);
+      // Wave 3: fields the document names wait in the Fields card.
+      if (typeof r.asset_proposals === 'number' && r.asset_proposals > 0) {
+        const n = r.asset_proposals;
+        add(li, add(mk('span', 'hub-upload-fields', null, null, { 'data-fields-named': String(n) }), mk('a', 'hub-inline-link', n + (n === 1 ? ' field named: review it in the Fields card' : ' fields named: review them in the Fields card'), n + (n === 1 ? ' campo nombrado: revíselo en la tarjeta Campos' : ' campos nombrados: revíselos en la tarjeta Campos'), { href: '#p-fields' })));
+        anyFields = true;
+      }
       add(list, li);
     }
+    if (anyFields) { const host = $('#p-fields'); if (host && host.refreshProposals) host.refreshProposals(); }
     if (results.length && !$('#up-reload')) {
       const b = mk('button', 'btn btn-outline btn-sm', 'Reload the project file', 'Recargar la ficha del proyecto', { type: 'button', id: 'up-reload' });
       b.addEventListener('click', () => location.reload());

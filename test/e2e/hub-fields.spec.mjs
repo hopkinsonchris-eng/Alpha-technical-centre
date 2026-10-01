@@ -1,7 +1,7 @@
 // Wave 3, PR 1 (docs/vault-hub/wave3/05-markup.md §1.2): the project file carries a Fields card
 // listing the attached fields with their source and coordinates, a dossier per gazetteer record,
 // detach, and Add field (search the gazetteers → candidates with a source pill → Attach).
-// W3-AC6, Hub side. The API is stubbed with page.route.
+// W3-AC6, Hub side; PR 2 adds the proposals block (W3-AC5, W3-AC6) and the upload note. The API is stubbed with page.route.
 import { test, expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -28,9 +28,16 @@ const ITEM = { id: DOSSIER, type: 'note', title: 'Field dossier: Barinas', creat
 const CATALOG = { tools: [], built_at: '2026-09-29T09:00:00.000Z', commit: 'abc1234' };
 
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-async function stubApi(page, { attach } = {}) {
-  const calls = { posted: [], deleted: [], locate: [] };
+const PROPOSALS = [
+  { id: '10000000-0000-4000-8000-000000000001', kind: 'asset', status: 'open', created_at: '2026-10-01T09:10:00.000Z', payload: { project_id: PID, item_id: '00000000-0000-4000-8000-000000000301', item_version: 1, item_title: 'Data room index', name: 'Guafita', kind: 'field', quote: 'Current production comes from the Guafita and La Victoria fields in Apure state.', anchor: 'page 3', source: 'dictionary', proposal: 'Field named in "Data room index": Guafita',
+    candidates: [{ ...GUAFITA_GEM, asset_id: 'field:ve:guafita', detail: { unit_id: 'G100', status: 'operating', operator: 'PDVSA', release: 'March 2026' } }, { ...GUAFITA_WD, asset_id: null }] } },
+  { id: '10000000-0000-4000-8000-000000000002', kind: 'asset', status: 'open', created_at: '2026-10-01T09:10:00.000Z', payload: { project_id: PID, item_id: '00000000-0000-4000-8000-000000000301', item_version: 1, item_title: 'Data room index', name: 'La Victoria', kind: 'field', quote: 'Current production comes from the Guafita and La Victoria fields in Apure state.', anchor: 'page 3', source: 'model', proposal: 'Field named in "Data room index": La Victoria', candidates: [] } },
+  { id: '10000000-0000-4000-8000-000000000003', kind: 'asset', status: 'open', created_at: '2026-10-01T09:10:00.000Z', payload: { project_id: 'other-project', item_id: 'x', item_version: 1, item_title: 'Elsewhere', name: 'Not here', kind: 'field', quote: 'Not here.', anchor: null, source: 'dictionary', proposal: 'x', candidates: [] } },
+];
+async function stubApi(page, { attach, proposals, decide, upload } = {}) {
+  const calls = { posted: [], deleted: [], locate: [], decided: [] };
   let assets = [{ ...BARINAS, dossier: [DOSSIER] }, { ...APURE, dossier: [] }];
+  let queue = proposals ? proposals.map((q) => ({ ...q })) : [];
   await page.route('**/api/**', (route) => {
     const u = new URL(route.request().url()); const p = u.pathname; const m = route.request().method();
     if (p === '/api/me') return json(route, PARTNER);
@@ -53,6 +60,21 @@ async function stubApi(page, { attach } = {}) {
       return json(route, { project_id: PID, asset_id: id, detached: true });
     }
     if (p === '/api/assets/locate') { calls.locate.push(u.search); return json(route, u.searchParams.get('name') === 'Guafita' ? LOCATE : { candidates: [], unavailable: LOCATE.unavailable }); }
+    if (p === '/api/queue/review') return json(route, { items: queue });
+    const dm = /^\/api\/queue\/review\/([^/]+)\/(accept|reject)$/.exec(p);
+    if (dm && m === 'POST') {
+      const b = route.request().postData() ? JSON.parse(route.request().postData()) : {}; calls.decided.push({ id: dm[1], verb: dm[2], body: b });
+      if (decide) return decide(route, dm[1], dm[2], b);
+      const q = queue.find((x) => x.id === dm[1]);
+      queue = queue.filter((x) => x.id !== dm[1]);
+      if (dm[2] === 'reject') return json(route, { id: dm[1], status: 'rejected' });
+      const c = b.create, name = c ? c.name : b.asset_id ? 'Guafita' : q.payload.name;
+      const asset = { id: b.asset_id || 'field:ve:' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), kind: 'field', name, parent_id: null, country: 'VE', operator: null, source_url: null, lat: c && c.lat != null ? c.lat : b.asset_id ? 7.98 : null, lon: c && c.lon != null ? c.lon : b.asset_id ? -69.12 : null, location_source: b.asset_id ? 'gem' : c && c.location_source ? c.location_source : null, status: null, created_by: 'chris', created_at: '2026-10-01T10:00:00.000Z', props: {} };
+      const dossier = asset.location_source ? ['00000000-0000-4000-8000-0000000009' + String(10 + calls.decided.length)] : [];
+      assets = [...assets.filter((a) => a.id !== asset.id), { ...asset, dossier }];
+      return json(route, { id: dm[1], status: 'accepted', asset, created: !b.asset_id, already: false, dossier });
+    }
+    if (p === '/api/ingest/upload' && m === 'POST') { if (upload) { queue = [...queue, ...(upload.queue || [])]; return json(route, { results: upload.results }, 201); } }
     if (p === '/api/items/' + DOSSIER) return json(route, ITEM);
     if (p === '/api/items/' + DOSSIER + '/versions') return json(route, { item_id: DOSSIER, versions: [] });
     if (p === '/api/projects/' + PID + '/timeline') return json(route, { project_id: PID, count: 0, entries: [] });
@@ -196,4 +218,84 @@ test('W3-AC12: evidence screenshot of the Fields card with candidates', async ({
   mkdirSync(EVIDENCE, { recursive: true });
   await page.locator('#p-fields').scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(EVIDENCE, 'w3-fields-card.png') });
+});
+
+/* ── wave 3, PR 2: proposals from documents (W3-AC5, W3-AC6 Hub side) ── */
+
+test('W3-AC6: the Fields card shows the fields named in documents for this project only, with the quote, where it was found and the gazetteer candidates; Attach accepts with the candidate, Attach without a location accepts by name, Not a field rejects', async ({ page }) => {
+  const calls = await stubApi(page, { proposals: PROPOSALS });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const card = page.locator('#p-fields');
+  const block = card.locator('#fld-proposed');
+  await expect(block).toBeVisible();
+  await expect(block).toContainText('Proposed from documents');
+  await expect(block).toContainText('2 fields named in documents');
+  const rows = block.locator('li[data-proposal]');
+  await expect(rows).toHaveCount(2);                                   // the other project's proposal is not shown
+  const guafita = block.locator('li[data-proposal="10000000-0000-4000-8000-000000000001"]');
+  await expect(guafita.locator('.hub-proposal-head b')).toHaveText('Guafita');
+  await expect(guafita.locator('[data-quote]')).toContainText('“Current production comes from the Guafita and La Victoria fields in Apure state.” (Data room index, page 3)');
+  const cands = guafita.locator('li[data-candidate]');
+  await expect(cands).toHaveCount(2);
+  await expect(cands.nth(0)).toContainText('Guafita → Guafita');
+  await expect(cands.nth(0).locator('.hub-src')).toHaveText('GEM');
+  await expect(cands.nth(0)).toContainText('7.98, -69.12');
+  await expect(cands.nth(0)).toContainText('operating');
+  await expect(cands.nth(1).locator('.hub-src')).toHaveText('Wikidata');
+  const victoria = block.locator('li[data-proposal="10000000-0000-4000-8000-000000000002"]');
+  await expect(victoria).toContainText('found by the assistant');
+  await expect(victoria).toContainText('No gazetteer match');
+  await expect(victoria.locator('li[data-candidate]')).toHaveCount(0);
+
+  // Attach the GEM candidate: accept carries the asset id; the field joins the list with its dossier.
+  await cands.nth(0).locator('[data-attach]').click();
+  await expect(rows).toHaveCount(1);
+  expect(calls.decided).toEqual([{ id: '10000000-0000-4000-8000-000000000001', verb: 'accept', body: { asset_id: 'field:ve:guafita' } }]);
+  await expect(card.locator('li[data-field]')).toHaveCount(3);
+  await expect(card.locator('li[data-field="field:ve:guafita"] [data-dossier]')).toHaveText('Dossier');
+  await expect(card.locator('#fld-notices .hub-notice.ok')).toContainText('Guafita attached.');
+  await expect(card.locator('#fld-notices .hub-notice.ok')).toContainText('1 dossier record filed from GEM');
+  await expect(page.locator('#p-file .hub-asset[data-asset="field:ve:guafita"]')).toHaveText('Guafita');
+
+  // Attach without a location: an empty accept; the Vault attaches the name alone.
+  await victoria.locator('[data-attach-bare]').click();
+  await expect(rows).toHaveCount(0);
+  await expect(block).toBeHidden();
+  expect(calls.decided[1]).toEqual({ id: '10000000-0000-4000-8000-000000000002', verb: 'accept', body: {} });
+  await expect(card.locator('li[data-field="field:ve:la-victoria"]')).toContainText('no location yet');
+  await expect(card.locator('#fld-notices .hub-notice.ok')).toContainText('Attached by name, without a location.');
+  mkdirSync(EVIDENCE, { recursive: true });
+});
+
+test('W3-AC6: Not a field rejects the proposal and attaches nothing; a proposal someone else resolved just goes; evidence screenshot', async ({ page }) => {
+  let n = 0;
+  const calls = await stubApi(page, { proposals: PROPOSALS, decide: (route, id, verb) => { n++; return n === 1 ? json(route, { id, status: 'rejected' }) : json(route, { error: { code: 'conflict', message: 'review item is already accepted' } }, 409); } });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const block = page.locator('#fld-proposed');
+  await page.locator('#p-fields').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(EVIDENCE, 'w3-proposals.png') });
+  await block.locator('li[data-proposal="10000000-0000-4000-8000-000000000002"] [data-reject]').click();
+  await expect(block.locator('li[data-proposal]')).toHaveCount(1);
+  expect(calls.decided[0]).toEqual({ id: '10000000-0000-4000-8000-000000000002', verb: 'reject', body: {} });
+  await expect(page.locator('#fld-notices .hub-notice.ok')).toContainText('La Victoria is not a field of this project.');
+  await expect(page.locator('#p-fields li[data-field]')).toHaveCount(2);
+  await block.locator('li[data-proposal="10000000-0000-4000-8000-000000000001"] [data-reject]').click();
+  await expect(block.locator('li[data-proposal]')).toHaveCount(0);
+  await expect(page.locator('#fld-notices .hub-notice.warn')).toContainText('Already decided.');
+});
+
+test('W3-AC4 (Hub): an upload whose document names fields says so and links to the Fields card, which then shows the new proposals', async ({ page }) => {
+  await stubApi(page, { proposals: [], upload: { results: [{ filename: 'data-room-index.pdf', status: 'ingested', item_id: '00000000-0000-4000-8000-000000000301', version: 1, type: 'report', chunks: 12, asset_proposals: 2 }], queue: PROPOSALS } });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await expect(page.locator('#fld-proposed')).toBeHidden();
+  await page.locator('#up-files').setInputFiles({ name: 'data-room-index.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 fake') });
+  const row = page.locator('li[data-upload-file="data-room-index.pdf"]');
+  await expect(row).toContainText('Indexed');
+  await expect(row.locator('[data-fields-named="2"] a')).toHaveText('2 fields named: review them in the Fields card');
+  await expect(row.locator('[data-fields-named] a')).toHaveAttribute('href', '#p-fields');
+  await expect(page.locator('#fld-proposed')).toBeVisible();
+  await expect(page.locator('#fld-proposed li[data-proposal]')).toHaveCount(2);
 });

@@ -297,3 +297,38 @@ test('screenshot of the seeded queue page', async ({ page }) => {
   mkdirSync(path.dirname(EVIDENCE), { recursive: true });
   await page.screenshot({ path: EVIDENCE, fullPage: true });
 });
+
+/* ── wave 3, PR 2: fields named in documents (W3-AC5, queue side) ── */
+
+const ASSET_ROW = { id: 'a1', kind: 'asset', status: 'open', payload: { project_id: 'llanos-waterflood', item_id: 'i9', item_version: 1, item_title: 'Data room index', name: 'Guafita', kind: 'field', quote: 'Current production comes from the Guafita and La Victoria fields.', anchor: 'page 3', source: 'dictionary',
+  candidates: [{ name: 'Guafita', kind: 'field', country: 'VE', lat: 7.98, lon: -69.12, source: 'gem', source_id: 'G100', source_url: 'https://www.gem.wiki/Guafita_Oil_Field', confidence: 1, asset_id: 'field:ve:guafita', detail: null }] } };
+const BARE_ROW = { id: 'a2', kind: 'asset', status: 'open', payload: { project_id: 'llanos-waterflood', item_id: 'i9', item_version: 1, item_title: 'Data room index', name: 'Nowhere', kind: 'field', quote: 'Nowhere Field is a name no gazetteer knows.', anchor: 'page 3', source: 'model', candidates: [] } };
+
+test('a field named in a document is a review row with its quote and project; Attach accepts with the first candidate (or the name alone); Not a field rejects', async ({ page }) => {
+  const h = full().filter((x) => !(x[0] === 'GET' && String(x[1]).includes('review')));
+  h.push(['GET', /^\/api\/queue\/review$/, (u, r) => json(r, { items: [...REVIEW, ASSET_ROW, BARE_ROW] })]);
+  h.push(['POST', /^\/api\/queue\/review\/([^/]+)\/(accept|reject)$/, (u, r, m) => json(r, { id: m[1], status: m[2] === 'accept' ? 'accepted' : 'rejected' })]);
+  const calls = await open(page, h);
+  await expect(page.locator('#review-list .q-row')).toHaveCount(4);
+  const row = page.locator('[data-review-id="a1"]');
+  await expect(row).toHaveAttribute('data-kind', 'asset');
+  await expect(row).toContainText('Field named in a document: Guafita');
+  await expect(row.locator('[data-proposal-project]')).toHaveText('Llanos Basin waterflood screening');
+  await expect(row.locator('[data-proposal-project]')).toHaveAttribute('href', 'project.html?id=llanos-waterflood#p-fields');
+  await expect(row).toContainText('Data room index · page 3');
+  await expect(row.locator('.q-quote')).toContainText('Current production comes from the Guafita and La Victoria fields.');
+  await expect(row.locator('[data-first-candidate="gem:G100"]')).toContainText('Accept attaches Guafita (gem, 7.98, -69.12)');
+  await row.getByRole('button', { name: 'Attach' }).click();
+  await expect(row).toHaveCount(0);
+  await expect(page.locator('#live')).toContainText('Field attached to the project; its dossier is filed.');
+  const bare = page.locator('[data-review-id="a2"]');
+  await expect(bare).toContainText('No gazetteer match: Accept attaches the name without a location.');
+  await bare.getByRole('button', { name: 'Not a field' }).click();
+  await expect(bare).toHaveCount(0);
+  await expect(page.locator('#live')).toContainText('Rejected.');
+  expect(calls.filter((c) => c.method === 'POST').map((c) => [c.path, c.body])).toEqual([
+    ['/api/queue/review/a1/accept', { asset_id: 'field:ve:guafita' }],
+    ['/api/queue/review/a2/reject', {}],
+  ]);
+  await expect(page.locator('#n-review')).toHaveText('2');
+});

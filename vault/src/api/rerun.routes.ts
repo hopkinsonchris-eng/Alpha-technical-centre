@@ -11,7 +11,8 @@ import { fileURLToPath } from 'node:url';
 import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
 import type { RouteDeps } from './index.ts';
-import { ApiError, assertVisible, canSee, conflict, loadAccess, notFound, route, scopeLabel, uuidParam, requirePartner, type Ctx } from './common.ts';
+import { ApiError, assertVisible, canSee, conflict, loadAccess, notFound, route, scopeLabel, uuidParam, requirePartner, requireWritableProject, type Ctx } from './common.ts';
+import { attachAsset } from './assets.routes.ts';
 import { createRun, runRecord } from './runs.routes.ts';
 import { buildCatalog, resolve as resolveTool, type Catalog } from '../catalog.ts';
 import { headlessRun } from '../rerun/runner.ts';
@@ -147,14 +148,32 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       const row = (await x.db.query<any>('SELECT id, kind, payload, status FROM review_queue WHERE id = $1', [id])).rows[0];
       if (!row) throw notFound(`review item ${id} not found`);
       if (row.status !== 'open') throw conflict(`review item ${id} is already ${row.status}`);
-      if (row.kind !== 'rerun-delta') requirePartner(x.person, `${verb} a ${row.kind} review item`);
+      // Wave 3: a field proposal is decided by anyone who may write to its project (members as well as partners);
+      // accepting attaches the chosen candidate, or the name alone when none is chosen, and files the dossier.
+      let attached: Awaited<ReturnType<typeof attachAsset>> | null = null;
+      if (row.kind === 'asset') {
+        const acc = await loadAccess(x.db, x.person, x.now);
+        const pid = String(row.payload?.project_id ?? '');
+        const p = acc.projects.get(pid);
+        if (!p || !canSee(acc, p.default_legal_tag, p.id)) throw notFound(`review item ${id} not found`);
+        requireWritableProject(acc, p.id);
+        x.a.scope = scopeLabel(p.id);
+        if (verb === 'accept') {
+          let b: any = {};
+          const raw = await x.c.req.text();
+          if (raw.trim()) { try { b = JSON.parse(raw); } catch { throw new ApiError(400, 'invalid_json', 'request body must be valid JSON'); } }
+          if (!b || typeof b !== 'object' || Array.isArray(b)) throw new ApiError(400, 'invalid_json', 'request body must be a JSON object');
+          const choice = typeof b.asset_id === 'string' || b.create !== undefined ? b : { create: { name: String(row.payload.name), kind: row.payload.kind ?? 'field' } };
+          attached = await attachAsset(x, p, choice);
+        }
+      } else if (row.kind !== 'rerun-delta') requirePartner(x.person, `${verb} a ${row.kind} review item`);
       await x.db.query('UPDATE review_queue SET status=$2, resolved_by=$3, resolved_at=$4 WHERE id=$1', [id, verb === 'accept' ? 'accepted' : 'rejected', x.person.id, x.now.toISOString()]);
       if (verb === 'accept' && row.kind === 'rerun-delta' && row.payload?.rerun) {
         await x.db.query("UPDATE runs SET status='reviewed', record = jsonb_set(record, '{reviewed_by}', to_jsonb($2::text)) WHERE id=$1 AND status='draft'", [row.payload.rerun, x.person.id]);
         try { await emitIfEvaluation(x.db, row.payload.rerun); } catch { /* analogue row is best effort */ }
       }
-      x.a.refs = [`review:${id}`]; x.a.detail = { kind: row.kind };
-      return { body: { id, status: verb === 'accept' ? 'accepted' : 'rejected' } };
+      x.a.refs = [`review:${id}`, ...(attached ? [`asset:${attached.asset.id}`, ...attached.dossier.map(d => `doc:${d}`)] : [])]; x.a.detail = { kind: row.kind, ...(attached ? { asset_id: attached.asset.id, created: attached.created, dossier: attached.dossier.length } : {}) };
+      return { body: { id, status: verb === 'accept' ? 'accepted' : 'rejected', ...(attached ? { asset: attached.asset, created: attached.created, already: attached.already, dossier: attached.dossier } : {}) } };
     });
   }
 }
