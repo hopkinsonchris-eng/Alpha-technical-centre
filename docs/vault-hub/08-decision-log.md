@@ -124,7 +124,7 @@ Design record: `wave4/` (practice scan P30–P37, choice sheet W4-D1–D4, gap s
 | #38 | Runs report phase, live counts and per-source outcomes; one log line per run | research (+1), hub-research (+1) | — |
 | #39 | Strict literature screen (name as a phrase plus an oil-and-gas word); a re-run hides papers filed wrongly | research (+1) | — |
 | #40 | W4-D1 revised: GEM wiki pages and their cited sources; web search with API citations (`web_search_20260209`), `RESEARCH_WEB=false` | research.sources (5), research (+2), hub-research (+1) | `evidence/w4-research-tab.png` |
-| #41 | A run locates fields attached by name from the gazetteers: exact match set with dossier, area match proposed (Set location / Not it), unknown named | research (+1), hub-research (+1) | — |
+| #40 | A run locates fields attached by name from the gazetteers: exact match set with dossier, area match proposed (Set location / Not it), unknown named | research (+1), hub-research (+1) | — |
 
 Follow-ups opened by wave 4:
 

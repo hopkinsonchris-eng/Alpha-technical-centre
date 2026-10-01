@@ -30,7 +30,7 @@ The first run on High Tech Electronica (seven small Oficina-area fields in Venez
 | #38 | A run reports where it is (phase, live counts during the literature pass) and what each source answered; a "nothing found" says so; one log line per run | W4-AC7 widened |
 | #39 | The literature screen keeps only papers that name the field as a phrase and are about oil and gas; a re-run hides what an earlier run filed wrongly (the 450 papers of the first run) | W4-AC2 corrected |
 | #40 | W4-D1 revised: GEM wiki pages per field with every cited source as a finding; web search through the API's server-side tool, only API-cited sentences filed with URL and verbatim cited text; `RESEARCH_WEB=false` | W4-AC9, AC10, AC11 |
-| #41 | Fields attached by name get their coordinates from the gazetteers at the start of a run (never the model): an exact match sets the location and files the dossier, an area match ("Oficina" for "Oficina Norte") is a `location` proposal with Set location / Not it, a field nobody knows is named in the summary | W4-AC12 (below) |
+| #40 (second commit) | Fields attached by name get their coordinates from the gazetteers at the start of a run (never the model): an exact match sets the location and files the dossier, an area match ("Oficina" for "Oficina Norte") is a `location` proposal with Set location / Not it, a field nobody knows is named in the summary | W4-AC12 (below) |
 
 W4-AC8 (every suite green, typecheck clean, public pages byte-identical, no secret in served files) held on every PR; the evidence is `../evidence/w4-research-tab.png` and `../evidence/w4-research-proposals.png`.
 
@@ -44,7 +44,7 @@ For one project it builds its queries from the project's own names (its name, cl
 2. **"Running · 6 min · 0 findings" is not an answer.** The literature pass filed nothing until it finished and a source that answered nothing left no trace; the Hub now shows the phase, the live count and what each source answered (#38).
 3. **A title-only paper must still be screened.** Most Crossref answers have no abstract; the screen kept them whatever they were, and "field" matched dairy farms. Research topics are strict and a re-run tidies the project (#39).
 4. **The chosen sources did not reach what Google reaches.** W4-D1 revised adds the GEM wiki pages and web search with citations (#40).
-5. **Fields that came in from documents had no coordinates, and nothing went looking.** Chris: "What the hub should do is find their locations." A run now asks the gazetteers for every unlocated field first (#41). Acceptance (W4-AC12): with a stubbed GeoNames, a run on three unlocated fields sets the exact match with its dossier, proposes the area match without touching the field, names the unknown one, asks again only for what is still unlocated, and accepting the proposal through the review route sets the coordinates and files the dossier; the Hub decides it in the Fields card.
+5. **Fields that came in from documents had no coordinates, and nothing went looking.** Chris: "What the hub should do is find their locations." A run now asks the gazetteers for every unlocated field first (#40, second commit). Acceptance (W4-AC12): with a stubbed GeoNames, a run on three unlocated fields sets the exact match with its dossier, proposes the area match without touching the field, names the unknown one, asks again only for what is still unlocated, and accepting the proposal through the review route sets the coordinates and files the dossier; the Hub decides it in the Fields card.
 
 ## Deviations from the Markup, stated
 
