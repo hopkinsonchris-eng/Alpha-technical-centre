@@ -13,8 +13,8 @@ import { openProvider } from '../llm/provider.ts';
 import { openStorage, type Storage } from '../storage.ts';
 import { audit } from '../audit.ts';
 import { countryName } from '../opportunities.ts';
-import { runMiners, type RunSummary as MinerSummary } from '../miners/run.ts';
-import type { FeedAdapter } from '../miners/types.ts';
+import { runMiners, screenPaper, type RunSummary as MinerSummary } from '../miners/run.ts';
+import type { FeedAdapter, TopicSpec } from '../miners/types.ts';
 import type { Clock } from '../miners/util.ts';
 import { companyEnrichment, companySignals, gdeltDocuments, intelTimeline, secFilings, worldMonitorConfigured } from '../intel/worldmonitor.ts';
 import { buildQueries, type ResearchField, type ResearchProject, type ResearchQueries } from './queries.ts';
@@ -36,6 +36,8 @@ export interface ResearchSummary {
   project_id: string; status: 'ok' | 'failed' | 'stopped'; started_at: string; finished_at: string | null; duration_ms: number;
   sources: Record<string, SourceCount>; findings: number; proposals: { asset: number; research: number }; fact_reads: number;
   spend_gbp: number; budget: { ms: number; gbp: number }; not_reached: NotReached[]; stopped_by: 'time' | 'spend' | null; warnings: string[]; queued?: boolean; names?: string[];
+  /** Papers an earlier run filed that fail today's screen, hidden by this run (never deleted). */
+  pruned?: number;
   /** Where a running job is: the Hub's status line says so. */
   phase?: 'world-monitor' | 'literature' | 'done';
 }
@@ -179,12 +181,16 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
     //    counts while this goes, so a long pass does not look like nothing happening.
     summary.phase = 'literature';
     await progress();
+    // Papers an earlier run filed under this project are re-screened with today's rules; the ones that fail are
+    // hidden (rule 9: never deleted), so a mistake in the screen does not stay on the timeline.
+    summary.pruned = await pruneLiterature(db, projectId, q.literature, touched);
     if (!opts.skipMiners && q.literature.length) {
       const s = stop();
       if (s) summary.not_reached.push({ source: 'literature', query: q.literature.map(t => t.query).join(' | '), reason: s });
       else {
         count('literature').queries += q.literature.length;
-        const since = new Date(started.getTime() - 5 * 365 * 86_400_000);
+        // Old technical papers are what a field's literature mostly is: no date floor worth the name.
+        const since = new Date(started.getTime() - 60 * 365 * 86_400_000);
         const before = summary.findings;
         let lastProgress = 0;
         try {
@@ -218,9 +224,29 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   await db.query('UPDATE jobs SET finished_at = $2, status = $3, summary = $4::jsonb WHERE id = $1', [job, summary.finished_at, summary.status === 'failed' ? 'failed' : 'ok', JSON.stringify({ ...summary, queued: false })]);
   log(`research run ${job} ${projectId}: ${summary.status}, ${summary.findings} findings, ${summary.proposals.asset + summary.proposals.research} proposals, £${summary.spend_gbp}, ${Math.round(summary.duration_ms / 1000)} s; `
     + Object.entries(summary.sources).map(([k, c]) => `${k} ${c.queries}q/${c.findings}f${c.error ? ' error: ' + c.error : ''}${c.skipped ? ' skipped: ' + c.skipped : ''}`).join(', ')
-    + (summary.not_reached.length ? `; not reached ${summary.not_reached.length}` : '') + (summary.warnings.length ? `; warnings: ${summary.warnings.join(' | ')}` : ''));
-  await audit(db, by, 'research.run', `project:${projectId}`, [`project:${projectId}`, ...touched.slice(0, 200)], { findings: summary.findings, proposals: summary.proposals, status: summary.status, stopped_by: summary.stopped_by, spend_gbp: summary.spend_gbp, duration_ms: summary.duration_ms });
+    + (summary.pruned ? `; pruned ${summary.pruned}` : '') + (summary.not_reached.length ? `; not reached ${summary.not_reached.length}` : '') + (summary.warnings.length ? `; warnings: ${summary.warnings.join(' | ')}` : ''));
+  await audit(db, by, 'research.run', `project:${projectId}`, [`project:${projectId}`, ...touched.slice(0, 200)], { findings: summary.findings, proposals: summary.proposals, status: summary.status, stopped_by: summary.stopped_by, spend_gbp: summary.spend_gbp, duration_ms: summary.duration_ms, pruned: summary.pruned ?? 0 });
   return summary;
+}
+
+/**
+ * Re-screens the papers research filed under a project (origin.query set) against the topics as they are now
+ * and hides the ones that fail. Returns how many were hidden; their ids join the audit refs.
+ */
+export async function pruneLiterature(db: Db, projectId: string, topics: TopicSpec[], touched: string[] = []): Promise<number> {
+  const rows = (await db.query<any>("SELECT id, title, extracted, origin FROM items WHERE project_id = $1 AND type = 'paper' AND NOT hidden AND origin ? 'query'", [projectId])).rows;
+  if (!rows.length) return 0;
+  const cfg = { topics, negative: ['retracted', 'erratum'] } as any;
+  const bad: string[] = [];
+  for (const r of rows) {
+    const rec = { external_id: r.id, url: '', title: String(r.title ?? ''), authored_at: null, authors: [], text: typeof r.extracted?.abstract === 'string' ? r.extracted.abstract : undefined, meta: {} as Record<string, unknown> };
+    const own = topics.find(t => t.query === r.origin?.query);
+    const kept = own ? screenPaper({ ...rec, meta: { topic_id: own.id } }, cfg) === 'keep'
+      : topics.some(t => screenPaper({ ...rec, meta: { topic_id: t.id } }, cfg) === 'keep');
+    if (!kept) bad.push(r.id);
+  }
+  if (bad.length) { await db.query('UPDATE items SET hidden = true WHERE id = ANY($1::uuid[])', [bad]); for (const id of bad) touched.push(`doc:${id}`); }
+  return bad.length;
 }
 
 /** The last runs and the findings for a project, for GET /api/projects/:id/research. */

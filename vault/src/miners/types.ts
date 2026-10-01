@@ -12,6 +12,10 @@ export interface TopicSpec {
   keywords: string[];
   /** A record mentioning any of these (title or text) is dropped. */
   negative: string[];
+  /** Wave 4 research topics: a record is kept only when a keyword appears as a whole phrase in the title or text
+   *  (abstract or not) and, when `context` is given, one of those words appears too. Firm topics leave this unset. */
+  strict?: boolean;
+  context?: string[];
 }
 
 export interface FeedRecord {

@@ -6,6 +6,7 @@
 // the production figure (W4-AC4). No network: fetch, adapters, the provider and the clock are injected.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,7 +20,7 @@ const { createApp } = await import('../src/app.ts');
 const { FakeProvider } = await import('../src/llm/provider.ts');
 const { configureLocate } = await import('../src/assets/gazetteers.ts');
 const { configureWorldMonitor, resetWorldMonitorCache } = await import('../src/intel/worldmonitor.ts');
-const { buildQueries, operatorNames } = await import('../src/research/queries.ts');
+const { buildQueries, operatorNames, nameKeywords } = await import('../src/research/queries.ts');
 const { costGbp, runResearch: runResearchRaw, researchView } = await import('../src/research/run.ts');
 const logLines: string[] = [];
 const runResearch: typeof runResearchRaw = (db, pid, opts = {}, jobId) => runResearchRaw(db, pid, { log: (l) => logLines.push(l), progressEveryMs: 0, ...opts }, jobId);
@@ -110,7 +111,12 @@ test('W4-AC1: the queries come from the project, its fields and their operators;
   assert.equal(q.gdelt.find(g => g.label === 'Guafita')!.field_id, 'field:ve:guafita');
   assert.deepEqual(q.companies, ['PDVSA', 'Petróleos de Venezuela', 'High Tech Electronica']);
   assert.deepEqual(operatorNames('Ecopetrol [50%]; Frontera Energy [50%]'), ['Ecopetrol', 'Frontera Energy']);
-  assert.equal(q.literature.find(x => x.id === 'research:hte-apure:field:ve:guafita')!.query, 'Guafita field Venezuela reservoir');
+  const lit = q.literature.find(x => x.id === 'research:hte-apure:field:ve:guafita')!;
+  assert.equal(lit.query, 'Guafita field Venezuela reservoir');
+  assert.equal(lit.strict, true, 'research literature topics are strict: the name as a phrase and an oil and gas word');
+  assert.ok(lit.context!.includes('Venezuela') && lit.context!.includes('reservoir') && lit.context!.includes('PDVSA'));
+  assert.deepEqual(lit.keywords, ['Guafita', 'Guafita Oil Field']);
+  assert.deepEqual(nameKeywords(['Trico — Oficina', 'OFICINA NORTE —TRICO', 'B-3']), ['Trico — Oficina', 'Trico', 'Oficina', 'OFICINA NORTE —TRICO', 'OFICINA NORTE', 'TRICO', 'B-3'].filter((v, i, a) => a.findIndex(x => x.toLowerCase() === v.toLowerCase()) === i));
   assert.ok(q.literature.some(x => x.id === 'research:hte-apure:co:pdvsa'));
   const all = JSON.stringify(q);
   assert.ok(!/ZEBRAWORD|call the ministry/.test(all), 'the register free text is never a query');
@@ -255,6 +261,37 @@ test('a run on a project the caller cannot write is refused at the queue; an ass
   const no = await ana.request('/api/queue/review/11111111-1111-4111-8111-111111111111/accept', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
   assert.equal(no.status, 403, await no.text());
   assert.equal((await db.query<any>("SELECT status FROM review_queue WHERE id = '11111111-1111-4111-8111-111111111111'")).rows[0].status, 'open');
+});
+
+test('the literature screen keeps only papers that name the field and are about oil and gas, abstract or not; a re-run hides what an earlier run filed wrongly', async () => {
+  await db.query("INSERT INTO projects (id,client_id,name,status,default_legal_tag,country,members,asset_ids) VALUES ('hte-screen','hte','High Tech Electronica','prospect','lt-firm','VE','{chris}','{field:ve:guafita}')");
+  // What the first live run did: title-only Crossref answers with "field" or "block" in them, nothing to do with the field.
+  const junkId = randomUUID();
+  await db.query(
+    `INSERT INTO items (id, type, title, created_at, authored_at, authors, project_id, legal_tag, origin, external_id, content_hash, version, extracted, tags)
+     VALUES ($1,'paper','A field study in dairy farms: thermal condition of feet','2026-10-01T10:00:00Z','2001-06-01T00:00:00Z','{}','hte-screen','lt-public',$2::jsonb,'10.1/junk','sha256:junk',1,'{}'::jsonb,'{}')`,
+    [junkId, JSON.stringify({ source: 'crossref', external_id: '10.1/junk', query: 'Guafita field Venezuela reservoir' })]);
+  const titlesOnly: FeedAdapter = { id: 'crossref', schedule: 'weekly', rateLimit: { perSecond: 10 }, async *fetch(_s, topics) {
+    const topic = topics.find(x => x.id.endsWith(':field:ve:guafita'))!;
+    yield { external_id: '10.2/dairy', url: 'https://doi.org/10.2/dairy', title: 'A field study in dairy farms: thermal condition of feet', authored_at: '2001-06-01T00:00:00Z', authors: [], meta: { topic_id: topic.id } };
+    yield { external_id: '10.2/capsular', url: 'https://doi.org/10.2/capsular', title: 'Early postoperative capsular block syndrome', authored_at: '2001-04-01T00:00:00Z', authors: [], meta: { topic_id: topic.id } };
+    yield { external_id: '10.2/magnet', url: 'https://doi.org/10.2/magnet', title: 'Numerical study of plasma-wall transition in an oblique magnetic field', authored_at: '2001-03-01T00:00:00Z', authors: [], meta: { topic_id: topic.id } };
+    yield { external_id: '10.2/guafita-1995', url: 'https://doi.org/10.2/guafita-1995', title: 'Waterflood performance of the Guafita field, Apure, Venezuela', authored_at: '1995-03-01T00:00:00Z', authors: ['J. Pérez'], meta: { topic_id: topic.id } };
+    yield { external_id: '10.2/guafita-street', url: 'https://doi.org/10.2/guafita-street', title: 'Urban growth along Calle Guafita: a planning study', authored_at: '2010-03-01T00:00:00Z', authors: [], meta: { topic_id: topic.id } };
+  } };
+  configureWorldMonitor({ fetch: wmFetch, apiKey: null, now: () => new Date(t) });
+  const r = await runResearch(db, 'hte-screen', { now, storage, provider: null, minerAdapters: [titlesOnly], budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(r.status, 'ok');
+  assert.equal(r.sources.literature.findings, 5); assert.equal(r.sources.literature.created, 1, 'one of five title-only answers names the field and is about oil');
+  const filed = (await db.query<any>("SELECT title, hidden FROM items WHERE project_id = 'hte-screen' AND type = 'paper' ORDER BY title")).rows;
+  assert.deepEqual(filed, [{ title: 'A field study in dairy farms: thermal condition of feet', hidden: true }, { title: 'Waterflood performance of the Guafita field, Apure, Venezuela', hidden: false }]);
+  assert.equal(r.pruned, 1, 'the junk an earlier run filed is hidden, never deleted');
+  const audit = (await db.query<any>("SELECT refs, detail FROM audit_events WHERE action = 'research.run' AND scope = 'project:hte-screen' ORDER BY id DESC LIMIT 1")).rows[0];
+  assert.equal(audit.detail.pruned, 1); assert.ok(audit.refs.includes('doc:' + junkId));
+  assert.match(logLines.at(-1) ?? '', /pruned 1/);
+  const view = await researchView(db, 'hte-screen');
+  assert.deepEqual(view.findings.map(f => f.title), ['Waterflood performance of the Guafita field, Apure, Venezuela']);
+  configureWorldMonitor({ fetch: wmFetch, apiKey: KEY, now: () => new Date(t) });
 });
 
 test('while the literature pass runs, the job row carries the phase and the running count so the Hub can show progress', async () => {

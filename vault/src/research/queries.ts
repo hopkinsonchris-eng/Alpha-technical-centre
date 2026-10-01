@@ -27,6 +27,20 @@ export function operatorNames(raw: string | null | undefined): string[] {
   return uniq(String(raw).split(/[;|]/).map(s => clean(s.replace(/\[[^\]]*\]/g, '').replace(/\([^)]*\)/g, '')).replace(/\s*\d+(\.\d+)?%$/, '')).filter(s => s.length >= 3));
 }
 
+/** Words that make a paper about oil and gas; a strict topic needs one beside the field's name. */
+export const OIL_GAS_WORDS = ['oil', 'oilfield', 'oilfields', 'gas', 'petroleum', 'petróleo', 'petrolero', 'petrolera', 'reservoir', 'reservoirs', 'yacimiento', 'yacimientos', 'basin', 'cuenca', 'hydrocarbon', 'hydrocarbons', 'hidrocarburos', 'crude', 'crudo', 'waterflood', 'waterflooding', 'EOR', 'well log', 'drilling', 'perforación', 'formation', 'formación', 'heavy oil', 'bitumen', 'condensate', 'production', 'producción', 'exploration', 'exploración', 'upstream', 'E&P', 'PDVSA'];
+/** The field's names as whole phrases, plus each distinctive part of a compound name ("Trico — Oficina" → Trico, Oficina). */
+export function nameKeywords(names: unknown[]): string[] {
+  const out: string[] = [];
+  for (const raw of names) {
+    const n = clean(raw);
+    if (n.length < 3) continue;
+    out.push(n);
+    for (const part of n.split(/\s*[—–\-\/,]\s*|\s+(?:y|and|&)\s+/i)) if (part.trim().length >= 4 && !/^\d+$/.test(part.trim())) out.push(part.trim());
+  }
+  return uniq(out);
+}
+
 export function buildQueries(project: ResearchProject, fields: ResearchField[], countryName: string | null): ResearchQueries {
   const country = project.country ?? null;
   const cn = countryName ?? country ?? '';
@@ -43,12 +57,16 @@ export function buildQueries(project: ResearchProject, fields: ResearchField[], 
     ...fields.flatMap(f => [...operatorNames(f.operator), ...operatorNames(f.props?.gem?.operator), ...operatorNames(f.props?.gem?.owners)]),
     ...(project.client_name ? [clean(project.client_name)] : []),
   ]);
+  // Literature topics are strict (see screenPaper): the paper must name the field (or a distinctive part of its
+  // name) as a phrase and be about oil and gas or the country. The firm's weekly topics are not affected.
+  const context = uniq([...OIL_GAS_WORDS, ...(cn ? [cn] : []), ...companies]);
   const literature: TopicSpec[] = [];
   for (const f of fields) {
     const n = clean(f.name);
     if (n.length < 3) continue;
-    literature.push({ id: `research:${project.id}:${f.id}`, query: `${n} field ${cn} ${f.kind === 'block' ? 'block' : 'reservoir'}`.replace(/\s+/g, ' ').trim(), keywords: uniq([n, ...(f.props?.gem?.name ? [clean(f.props.gem.name)] : []), ...operatorNames(f.operator)]), negative: [] });
+    literature.push({ id: `research:${project.id}:${f.id}`, query: `${n} field ${cn} ${f.kind === 'block' ? 'block' : 'reservoir'}`.replace(/\s+/g, ' ').trim(),
+      keywords: nameKeywords([n, f.props?.gem?.name, f.props?.gem?.name_other]), negative: [], strict: true, context });
   }
-  for (const c of companies) literature.push({ id: `research:${project.id}:co:${c.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, query: `${c} ${cn} oil gas`.replace(/\s+/g, ' ').trim(), keywords: [c], negative: [] });
+  for (const c of companies) literature.push({ id: `research:${project.id}:co:${c.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, query: `${c} ${cn} oil gas`.replace(/\s+/g, ' ').trim(), keywords: [c], negative: [], strict: true, context: uniq([...OIL_GAS_WORDS, ...(cn ? [cn] : [])]) });
   return { gdelt, companies, literature, country };
 }
