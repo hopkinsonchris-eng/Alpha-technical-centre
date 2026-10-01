@@ -111,3 +111,20 @@ Follow-ups opened by wave 3:
 | F13 | Per-field miners | Not chosen in W3-D2; the dossier is the gazetteer record only | A `field` scope on the miner run with the asset's names and operator as queries |
 | F14 | Model web search per field | Not chosen in W3-D2 | Only behind a provider that returns the URLs it fetched; every fact quoted from its page |
 | F15 | Asset-aware staleness (Option C) | A dossier can outlive the GEM release it came from | The nightly job marks dossiers older than the imported release stale |
+
+## Wave 4 shipped (1 Oct 2026)
+
+Design record: `wave4/` (practice scan P30–P37, choice sheet W4-D1–D4, gap statement, options A–D, markup, decision log).
+
+| PR | What | Tests | Evidence |
+|---|---|---|---|
+| #34 | Research runs per project: migration 005, four World Monitor research readers, query builder, the run with time and spend budgets, findings filed as cited public notes (deduplicated on re-run), `asset` and `research` proposals with verbatim quotes, `POST`/`GET /api/projects/:id/research`, triggers on project create and field attach, accept of kind `research`, the `atc-vault-research` cron, `RESEARCH_ENABLED` | research (8), research.routes (4), worldmonitor (+1), auth/db/boot migration counts | — |
+| #35 | The Hub: "Research this project" with its status line and 10 s polling, the Research tab grouped by source with queries, quotes and open-into-record, research proposals in the Fields card and the queue page | hub-research (6) | `evidence/w4-research-tab.png`, `evidence/w4-research-proposals.png` |
+
+Follow-ups opened by wave 4:
+
+| # | Item | Why | Plan |
+|---|---|---|---|
+| F16 | Standing watch per project (Option B) | Not chosen at Gate 2; a project's picture goes stale between presses | A weekly cron queuing one run per active project with a shared budget |
+| F17 | Research findings cited in briefs and drafts | Findings are indexed but the brief does not yet prefer them | Add the `research` tag to the brief's retrieval scope |
+| F18 | Regulator feeds filtered per field | The run uses the literature adapters only (the regulator feeds take no query) | A post-filter on snapshot rows by the project's field names |

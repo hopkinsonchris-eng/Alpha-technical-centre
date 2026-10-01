@@ -296,6 +296,21 @@ partner archives from the project file and can restore. The GEM tracker is impor
 by hand once per release (`vault/SETUP.md` §3). The design record is
 `docs/vault-hub/wave3/`.
 
+Wave 4 (October 2026) made the Vault research a project by itself.
+Creating a project with a country, attaching a field, or pressing
+"Research this project" on the project file queues a run that asks
+World Monitor (GDELT news, company profiles and signals, SEC filings,
+the intelligence timeline) and the Vault's literature miners about the
+project's fields and operators. Every finding is an ordinary public note
+with its source, URL, date, the query and a verbatim excerpt (the
+Research tab lists them; Find indexes them); fields a finding names and
+the operator, licence and production figures it states become proposals
+a member or partner decides ("Set as operator", "File as fact"). A run
+stops at 15 minutes or about £3 of model spend (`RESEARCH_BUDGET_*`)
+and says what it did not reach; `RESEARCH_ENABLED=false` switches it
+off; the `atc-vault-research` cron finishes a run a restart interrupted.
+The design record is `docs/vault-hub/wave4/`.
+
 ## 10. AI automation (`.claude/skills/`)
 
 The repo ships two Claude Code skills:

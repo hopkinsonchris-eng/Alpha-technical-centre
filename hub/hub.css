@@ -711,3 +711,26 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-field-row.outside { border-color: var(--bad-line); }
 .hub-archived { margin: 12px 0 0; }
 @media (max-width: 640px) { .hub-intel-grid { grid-template-columns: 1fr; } .hub-ibar { grid-template-columns: 90px 1fr 36px; } }
+
+/* Wave 4: research runs. The toolbar button, its status line and the Research tab. */
+.hub-research-ctl { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.hub-toolbar .hub-research-btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 13px; }
+.hub-toolbar .hub-research-btn .hub-ic { width: 14px; height: 14px; }
+.hub-research-status { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.hub-research-status .hub-pill { font-size: 11px; }
+.hub-research { padding: 16px 20px !important; }
+.hub-research-group { margin-top: 16px; border-top: 1px solid var(--rule); padding-top: 12px; }
+.hub-research-group h4 { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--navy); display: flex; align-items: center; gap: 8px; }
+.hub-research-group h4 .n { font-size: 11px; background: var(--cream); border: 1px solid var(--rule); border-radius: 999px; padding: 0 7px; line-height: 17px; color: var(--muted); font-weight: 500; }
+.hub-findings { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
+.hub-finding { border: 1px solid var(--rule); border-radius: var(--r-lg); padding: 10px 14px; background: #FFFDF8; }
+.hub-finding-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 13.5px; }
+.hub-finding-head .d { color: var(--muted); font-size: 12px; min-width: 86px; }
+.hub-finding-head b { font-weight: 600; }
+.hub-finding-head .hub-query { font-size: 12px; color: var(--muted); }
+.hub-finding-head button { margin-left: auto; }
+.hub-finding .hub-proposal-quote { margin-top: 6px; }
+.hub-not-reached { margin: 14px 0 0; font-size: 12.5px; }
+.hub-facts { margin-top: 14px; }
+.hub-fact .hub-proposal-head b { color: var(--navy); }
+@media (max-width: 640px) { .hub-research-ctl { margin-left: 0; } .hub-finding-head .d { min-width: 0; } }

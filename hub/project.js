@@ -21,7 +21,7 @@
      POST /api/queue/review/:id/accept|reject  wave 3: attach the proposal (with a chosen candidate or by name) or dismiss it
    Every string a person reads carries data-en and data-es.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, fmtStamp, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord } from './hub.js';
 import './components/stale-badge.js';
 import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
@@ -482,16 +482,74 @@ async function renderFields(ctx) {
   const proposed = mk('div', 'hub-proposed', null, null, { id: 'fld-proposed', hidden: '' });
   add(host, proposed);
   const paintProposals = async () => {
-    const r = await api('/api/queue/review?kind=asset');
-    const rows = r.ok ? listOf(r.body, 'items').filter((q) => q && q.kind === 'asset' && q.payload && q.payload.project_id === p.id) : [];
+    // Wave 3: fields named in documents (kind asset). Wave 4: the same for research findings, plus the
+    // operator, licence and production facts a finding states (kind research), each decided here.
+    const [ra, rr] = await Promise.all([api('/api/queue/review?kind=asset'), api('/api/queue/review?kind=research')]);
+    const mine = (r, kind) => (r.ok ? listOf(r.body, 'items').filter((q) => q && q.kind === kind && q.status !== 'accepted' && q.status !== 'rejected' && q.payload && q.payload.project_id === p.id) : []);
+    const rows = mine(ra, 'asset'), facts = mine(rr, 'research');
     proposed.textContent = '';
-    if (!rows.length) { proposed.setAttribute('hidden', ''); return; }
+    if (!rows.length && !facts.length) { proposed.setAttribute('hidden', ''); return; }
     proposed.removeAttribute('hidden');
-    add(proposed, mk('span', 'label', 'Proposed from documents', 'Propuestos desde documentos'),
-      mk('span', 'hub-muted', ' · ' + rows.length + (rows.length === 1 ? ' field named in a document, waiting for a decision' : ' fields named in documents, waiting for a decision'), ' · ' + rows.length + (rows.length === 1 ? ' campo nombrado en un documento, a la espera de una decisión' : ' campos nombrados en documentos, a la espera de una decisión')));
-    const ul = mk('ul', 'hub-proposals');
-    for (const q of rows) add(ul, proposalRow(q));
-    add(proposed, ul);
+    if (rows.length) {
+      add(proposed, mk('span', 'label', 'Proposed from documents and research', 'Propuestos desde documentos e investigación'),
+        mk('span', 'hub-muted', ' · ' + rows.length + (rows.length === 1 ? ' field named in documents, waiting for a decision' : ' fields named in documents, waiting for a decision'), ' · ' + rows.length + (rows.length === 1 ? ' campo nombrado en documentos, a la espera de una decisión' : ' campos nombrados en documentos, a la espera de una decisión')));
+      const ul = mk('ul', 'hub-proposals');
+      for (const q of rows) add(ul, proposalRow(q));
+      add(proposed, ul);
+    }
+    if (facts.length) {
+      const wrap = mk('div', 'hub-facts', null, null, { id: 'fld-facts' });
+      add(wrap, mk('span', 'label', 'Facts proposed from research', 'Hechos propuestos desde la investigación'),
+        mk('span', 'hub-muted', ' · ' + facts.length + (facts.length === 1 ? ' fact with a verbatim quote, waiting for a decision' : ' facts with verbatim quotes, waiting for a decision'), ' · ' + facts.length + (facts.length === 1 ? ' hecho con cita textual, a la espera de una decisión' : ' hechos con citas textuales, a la espera de una decisión')));
+      const ul = mk('ul', 'hub-proposals');
+      for (const q of facts) add(ul, factRow(q));
+      add(wrap, ul);
+      add(proposed, wrap);
+    }
+  };
+  ctx.repaintProposals = paintProposals;
+  /** Wave 4: an operator, licence or production figure from a research finding. Accept records it (operator on the field, production on the register); Not a fact closes it. */
+  const factRow = (q) => {
+    const pl = q.payload || {};
+    const li = mk('li', 'hub-proposal hub-fact', null, null, { 'data-proposal': q.id, 'data-fact-kind': pl.fact_kind || '' });
+    const head = mk('div', 'hub-proposal-head');
+    add(head, dv('b', null, pl.proposal || pl.value));
+    if (pl.asset_name) add(head, document.createTextNode(' · '), mk('span', 'hub-muted', 'about ' + pl.asset_name, 'sobre ' + pl.asset_name));
+    const quote = pl.quote ? dv('blockquote', 'hub-proposal-quote', '“' + pl.quote + '”' + (pl.item_title ? ' (' + pl.item_title + ')' : ''), { 'data-quote': '' }) : null;
+    if (quote) add(head, quote);
+    add(li, head);
+    const actions = mk('div', 'hub-actions-row');
+    const yesEn = pl.fact_kind === 'operator' ? 'Set as operator' : 'File as fact', yesEs = pl.fact_kind === 'operator' ? 'Fijar como operador' : 'Archivar como hecho';
+    const yes = mk('button', 'btn btn-primary btn-sm', yesEn, yesEs, { type: 'button', 'data-accept-fact': '' });
+    const no = mk('button', 'btn btn-outline btn-sm', 'Not a fact', 'No es un hecho', { type: 'button', 'data-reject': '' });
+    const decideFact = async (verb) => {
+      notices.textContent = ''; yes.disabled = no.disabled = true;
+      const r = await api('/api/queue/review/' + encodeURIComponent(q.id) + '/' + verb, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(verb === 'accept' ? { apply: true } : {}) });
+      yes.disabled = no.disabled = false;
+      if (!r.ok) {
+        if (r.status === 409) { li.remove(); add(notices, notice('warn', 'Already decided.', 'Ya decidido.', 'Someone else resolved this proposal.', 'Otra persona resolvió esta propuesta.')); return; }
+        add(notices, notice('bad', verb === 'accept' ? 'Not recorded.' : 'Not dismissed.', verb === 'accept' ? 'No se registró.' : 'No se descartó.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.')));
+        return;
+      }
+      li.remove();
+      const fw = proposed.querySelector('#fld-facts'); if (fw && !fw.querySelector('li[data-proposal]')) fw.remove();
+      if (!proposed.querySelector('li[data-proposal]')) proposed.setAttribute('hidden', '');
+      if (verb === 'reject') { add(notices, notice('ok', 'Not a fact: the proposal is closed.', 'No es un hecho: la propuesta queda cerrada.', 'Nothing was written.', 'No se escribió nada.')); return; }
+      if (pl.fact_kind === 'operator' && pl.asset_id) {
+        const f = ctx.fields.find((x) => x.id === pl.asset_id);
+        if (f) { f.operator = pl.value; paint(); }
+        add(notices, notice('ok', 'Operator set: ' + pl.value + '.', 'Operador fijado: ' + pl.value + '.', 'Recorded on the field with its quote.', 'Registrado en el campo con su cita.'));
+      } else if (pl.fact_kind === 'production') {
+        p.register = { ...(p.register || {}), current: (pl.value || '') + (pl.unit ? ' ' + pl.unit : '') + (pl.year ? ' (' + pl.year + ')' : '') };
+        renderOpportunity(ctx);
+        add(notices, notice('ok', 'Filed as fact.', 'Archivado como hecho.', 'The figure is on the register as current production, with its source.', 'La cifra está en el registro como producción actual, con su fuente.'));
+      } else add(notices, notice('ok', 'Filed as fact.', 'Archivado como hecho.', 'Recorded on the finding with its quote.', 'Registrado en el hallazgo con su cita.'));
+    };
+    yes.addEventListener('click', () => decideFact('accept'));
+    no.addEventListener('click', () => decideFact('reject'));
+    add(actions, yes, no);
+    add(li, actions);
+    return li;
   };
   const decide = async (q, body, btn, row) => {
     notices.textContent = '';
@@ -839,8 +897,155 @@ function renderScorecard(rules) {
 
 /* ── tabs ────────────────────────────────────────────────────────────── */
 
+/* ── wave 4: research runs (docs/vault-hub/wave4/05-markup.md §1.1) ──── */
+
+const RS_SOURCE = {
+  gdelt: ['World Monitor · GDELT news', 'World Monitor · noticias GDELT'], 'company-enrichment': ['World Monitor · company profiles', 'World Monitor · perfiles de empresa'],
+  'company-signals': ['World Monitor · company signals', 'World Monitor · señales de empresa'], 'sec-filings': ['World Monitor · SEC filings', 'World Monitor · presentaciones SEC'],
+  'intel-timeline': ['World Monitor · intelligence timeline', 'World Monitor · cronología de inteligencia'], literature: ['Literature', 'Literatura'],
+};
+const RS_ORDER = ['gdelt', 'company-enrichment', 'company-signals', 'sec-filings', 'intel-timeline', 'literature'];
+const rsGroupOf = (src) => (RS_SOURCE[src] ? src : 'literature');
+const canWriteProject = (ctx) => !!ctx.person && (ctx.person.role === 'partner' || !ctx.project.client_id || (ctx.project.members || []).includes(ctx.person.id));
+const pollMs = () => Number(window.HUB_RESEARCH_POLL_MS) || 10000;
+const gbp = (n) => '£' + (Math.round(Number(n || 0) * 100) / 100).toFixed(2);
+
+/** The toolbar button and status line, and the Research tab; polls every 10 s while a run is queued or running. */
+function renderResearch(ctx, first) {
+  const host = $('#p-toolbar'), panel = $('#research'), tab = () => $('#tab-research');
+  const state = { view: first && first.ok ? first.body : null, available: !!(first && first.ok), timer: null, lastStatus: null };
+  ctx.research = state;
+  const latest = () => (state.view && state.view.runs && state.view.runs[0]) || null;
+  const active = () => { const r = latest(); return !!r && (r.status === 'queued' || r.status === 'running'); };
+  const wrap = mk('span', 'hub-research-ctl', null, null, { id: 'p-research' });
+  add(host, wrap);
+  const status = mk('span', 'hub-research-status', null, null, { id: 'p-research-status', role: 'status' });
+  let btn = null;
+  if (state.available && state.view.enabled !== false && canWriteProject(ctx)) {
+    btn = mk('button', 'btn btn-outline btn-sm hub-research-btn', null, null, { type: 'button', id: 'p-research-btn' });
+    btn.insertAdjacentHTML('afterbegin', svgIcon('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'));
+    add(btn, mk('span', null, 'Research this project', 'Investigar este proyecto'));
+    btn.addEventListener('click', start);
+    add(wrap, btn);
+  }
+  add(wrap, status);
+
+  function paintStatus() {
+    status.textContent = '';
+    const r = latest();
+    if (!state.available) { setText(status, 'research is not available on this Vault', 'la investigación no está disponible en este Vault'); return; }
+    if (state.view.enabled === false) { setText(status, 'research runs are switched off', 'las ejecuciones de investigación están desactivadas'); return; }
+    if (!r) { setText(status, 'no research yet', 'aún sin investigación'); return; }
+    const sm = r.summary || {};
+    const busy = (en, es) => { add(status, mk('span', 'hub-spin', null, null, { 'aria-hidden': 'true' }), mk('span', null, en, es, { 'data-run-status': r.status })); if (btn) { btn.disabled = true; setText(btn.querySelector('span'), 'Researching…', 'Investigando…'); } };
+    if (r.status === 'queued') { busy('queued · waiting to start', 'en cola · a la espera de empezar'); return; }
+    if (r.status === 'running') {
+      const mins = Math.max(0, Math.round((Date.now() - Date.parse(r.started_at)) / 60000));
+      busy('running · ' + mins + ' min · ' + (sm.findings || 0) + ' findings', 'en curso · ' + mins + ' min · ' + (sm.findings || 0) + ' hallazgos');
+      return;
+    }
+    const when = fmtStamp(r.finished_at || r.started_at);
+    const pr = sm.proposals ? (sm.proposals.asset || 0) + (sm.proposals.research || 0) : 0;
+    if (btn) { btn.disabled = false; setText(btn.querySelector('span'), 'Research this project', 'Investigar este proyecto'); }
+    if (r.status === 'failed') { add(status, mk('span', 'hub-pill bad', 'failed', 'falló'), mk('span', null, ' last run ' + when.en + (sm.warnings && sm.warnings[0] ? ': ' + sm.warnings[0] : ''), ' última ejecución ' + when.es + (sm.warnings && sm.warnings[0] ? ': ' + sm.warnings[0] : ''), { 'data-run-status': 'failed' })); return; }
+    const stopped = sm.stopped_by === 'time' ? { en: ' · stopped at ' + Math.round((sm.budget && sm.budget.ms || 0) / 60000) + ' min', es: ' · detenida a los ' + Math.round((sm.budget && sm.budget.ms || 0) / 60000) + ' min' } : sm.stopped_by === 'spend' ? { en: ' · stopped at the ' + gbp(sm.budget && sm.budget.gbp) + ' cap', es: ' · detenida en el tope de ' + gbp(sm.budget && sm.budget.gbp) } : { en: '', es: '' };
+    add(status, mk('span', null, 'last run ' + when.en + ' · ' + (sm.findings || 0) + ' findings · ' + pr + ' proposals' + stopped.en, 'última ejecución ' + when.es + ' · ' + (sm.findings || 0) + ' hallazgos · ' + pr + ' propuestas' + stopped.es, { 'data-run-status': r.status }));
+  }
+
+  function paintPanel() {
+    if (!panel) return;
+    panel.textContent = '';
+    const head = mk('div', 'hub-card-head');
+    const hd = mk('div');
+    add(hd, mk('h3', null, 'Research', 'Investigación'));
+    const r = latest(), sm = (r && r.summary) || {};
+    if (r && (r.status === 'ok' || r.status === 'stopped' || r.status === 'failed')) {
+      const when = fmtStamp(r.finished_at || r.started_at);
+      const parts = [];
+      for (const [src, c] of Object.entries(sm.sources || {})) parts.push((RS_SOURCE[src] ? RS_SOURCE[src][0].replace('World Monitor · ', '') : src) + ' ' + (c.findings || 0));
+      add(hd, mk('span', 'hub-muted', 'run of ' + when.en + ', ' + Math.round((sm.duration_ms || 0) / 60000) + ' min, ' + gbp(sm.spend_gbp) + (parts.length ? ' · ' + parts.join(' · ') : ''), 'ejecución del ' + when.es + ', ' + Math.round((sm.duration_ms || 0) / 60000) + ' min, ' + gbp(sm.spend_gbp) + (parts.length ? ' · ' + parts.join(' · ') : ''), { id: 'rs-summary' }));
+    } else add(hd, mk('span', 'hub-muted', 'What the Vault found by itself about this project: World Monitor news, company profiles and filings, and the literature, each filed as a cited note.', 'Lo que el Vault encontró por sí mismo sobre este proyecto: noticias de World Monitor, perfiles y presentaciones de empresas, y la literatura, cada uno archivado como nota citada.', { id: 'rs-summary' }));
+    add(head, hd);
+    add(panel, head);
+    const findings = (state.view && state.view.findings) || [];
+    if (!findings.length) { add(panel, mk('p', 'hub-empty', active() ? 'The run is in progress; findings appear here as they land.' : 'No findings yet. Research this project asks World Monitor and the literature about its fields and operators.', active() ? 'La ejecución está en curso; los hallazgos aparecen aquí a medida que llegan.' : 'Aún sin hallazgos. Investigar este proyecto pregunta a World Monitor y a la literatura por sus campos y operadores.', { id: 'rs-empty' })); }
+    const groups = new Map();
+    for (const f of findings) { const g = rsGroupOf(f.source); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(f); }
+    for (const g of [...RS_ORDER, ...[...groups.keys()].filter((k) => !RS_ORDER.includes(k))]) {
+      const list = groups.get(g);
+      if (!list || !list.length) continue;
+      list.sort((a, b) => Date.parse(b.date || 0) - Date.parse(a.date || 0));
+      const sec = mk('section', 'hub-research-group', null, null, { 'data-source': g });
+      const h = mk('h4');
+      const lab = RS_SOURCE[g] || [g, g];
+      add(h, mk('span', null, lab[0], lab[1]), dv('span', 'n', String(list.length)));
+      add(sec, h);
+      const ul = mk('ul', 'hub-findings');
+      for (const f of list) {
+        const li = mk('li', 'hub-finding', null, null, { 'data-finding': f.id, 'data-source': f.source || '' });
+        const line = mk('div', 'hub-finding-head');
+        const d = f.date ? fmtShortDate(f.date) : null;
+        if (d) add(line, mk('span', 'd', d.en, d.es));
+        add(line, dv('b', null, f.title));
+        if (f.url) { const a = dv('a', 'hub-inline-link', (() => { try { return new URL(f.url).hostname.replace(/^www\./, ''); } catch { return 'source'; } })(), { href: f.url, target: '_blank', rel: 'noopener noreferrer', 'data-url': '' }); add(line, document.createTextNode(' — '), a); }
+        if (f.query) add(line, document.createTextNode(' · '), mk('span', 'hub-muted', 'query ', 'consulta '), dv('span', 'hub-query mono', f.query, { 'data-query': '' }));
+        const open = mk('button', 'btn btn-outline btn-sm', 'open', 'abrir', { type: 'button', 'data-open': f.id });
+        open.addEventListener('click', () => openRecord({ ref: 'doc:' + f.id, title: f.title, trigger: open }));
+        add(line, open);
+        add(li, line);
+        if (f.quote) add(li, dv('blockquote', 'hub-proposal-quote', '“' + f.quote + '”', { 'data-quote': '' }));
+        add(ul, li);
+      }
+      add(sec, ul);
+      add(panel, sec);
+    }
+    const nr = sm.not_reached || [];
+    if (nr.length) {
+      const q = nr.slice(0, 6).map((n) => (RS_SOURCE[n.source] ? RS_SOURCE[n.source][0].replace('World Monitor · ', '') : n.source) + ' for ' + n.query + ' (' + (n.reason === 'time' ? 'time' : n.reason === 'spend' ? 'spend cap' : n.reason) + ')');
+      add(panel, mk('p', 'hub-muted hub-not-reached', 'Not reached: ' + q.join('; ') + (nr.length > 6 ? ' and ' + (nr.length - 6) + ' more' : '') + '.', 'No alcanzado: ' + q.join('; ') + (nr.length > 6 ? ' y ' + (nr.length - 6) + ' más' : '') + '.', { id: 'rs-not-reached' }));
+    }
+    const t = tab();
+    if (t) { let n = t.querySelector('.n'); if (!n) { n = dv('span', 'n', '0'); add(t, n); } n.textContent = String(findings.length); }
+  }
+
+  async function refresh() {
+    const r = await api('/api/projects/' + encodeURIComponent(ctx.project.id) + '/research');
+    if (!r.ok) return;
+    const before = state.lastStatus;
+    state.view = r.body; state.available = true;
+    const now = latest() ? latest().status : null;
+    state.lastStatus = now;
+    paintStatus(); paintPanel();
+    if (before && (before === 'queued' || before === 'running') && now && now !== 'queued' && now !== 'running' && ctx.repaintProposals) ctx.repaintProposals();
+    schedule();
+  }
+  function schedule() {
+    if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+    if (active()) state.timer = setTimeout(refresh, pollMs());
+  }
+  async function start() {
+    pnotices().textContent = '';
+    btn.disabled = true;
+    const r = await api('/api/projects/' + encodeURIComponent(ctx.project.id) + '/research', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: '{}' });
+    if (r.status === 202 && r.body) {
+      state.view = { ...(state.view || { findings: [] }), runs: [{ id: r.body.job_id, status: r.body.state === 'running' ? 'running' : 'queued', started_at: new Date().toISOString(), finished_at: null, summary: { findings: 0 } }, ...((state.view && state.view.runs) || [])] };
+      state.lastStatus = 'queued';
+      paintStatus(); paintPanel(); schedule();
+      return;
+    }
+    btn.disabled = false;
+    if (r.status === 409) { add(pnotices(), notice('warn', 'A run is already in progress.', 'Ya hay una ejecución en curso.', 'Its findings land in the Research tab as they arrive.', 'Sus hallazgos llegan a la pestaña Investigación a medida que aparecen.')); state.lastStatus = 'running'; refresh(); return; }
+    if (r.status === 501) { add(pnotices(), notice('warn', 'Research runs are switched off.', 'Las ejecuciones de investigación están desactivadas.', errMessage(r) || 'RESEARCH_ENABLED=false on the Vault service.', errMessage(r) || 'RESEARCH_ENABLED=false en el servicio Vault.')); return; }
+    add(pnotices(), notice('bad', 'The run could not be started.', 'No se pudo iniciar la ejecución.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.')));
+  }
+
+  state.lastStatus = latest() ? latest().status : null;
+  paintStatus(); paintPanel(); schedule();
+  return state;
+}
+
 const TABS = [
-  ['timeline', 'Timeline', 'Cronología'], ['vintages', 'Headline numbers', 'Cifras principales'], ['lineage', 'Lineage', 'Linaje'],
+  ['timeline', 'Timeline', 'Cronología'], ['vintages', 'Headline numbers', 'Cifras principales'], ['research', 'Research', 'Investigación'], ['lineage', 'Lineage', 'Linaje'],
   ['basis', 'Basis notes', 'Notas de bases'], ['lessons', 'Lessons in scope', 'Lecciones en alcance'], ['scorecard', 'Scorecard', 'Ficha de evaluación'],
 ];
 let activeTabs = [];
@@ -1067,7 +1272,7 @@ async function init() {
   showVault(true);
   const project = pr.body;
 
-  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo] = await Promise.all([
+  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo, rsR] = await Promise.all([
     api('/api/projects/' + enc + '/timeline'),
     api('/api/projects/' + enc + '/vintages'),
     api('/api/projects/' + enc + '/lineage'),
@@ -1078,6 +1283,7 @@ async function init() {
     project.client_id ? api('/api/organisations/' + encodeURIComponent(project.client_id) + '/file') : Promise.resolve(null),
     loadCatalog(),
     loadGeo(),
+    api('/api/projects/' + enc + '/research'),
   ]);
   const names = new Map();
   if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
@@ -1100,6 +1306,7 @@ async function init() {
 
   renderHeader(ctx);
   renderToolbar(ctx, cat);
+  const researchOk = rsR.ok && rsR.status !== 404 && rsR.status !== 501;
   renderOpportunity(ctx);
   await renderFields(ctx);
   renderHeader(ctx);                                       // the asset chips now carry names
@@ -1145,9 +1352,11 @@ async function init() {
 
   buildTabs({
     timeline: entries.length, vintages: vintages.length, basis: basis.length,
+    research: researchOk ? listOf(rsR.body, 'findings').length : null,
     lessons: lessonsOk ? lessons.length : null,
     scorecard: card.fail + card.na ? bi(card.fail + card.na + ' fail', card.fail + card.na + ' fallan') : null,
-  }, new Set(lessonsOk ? [] : ['lessons']));
+  }, new Set([...(lessonsOk ? [] : ['lessons']), ...(researchOk ? [] : ['research'])]));
+  renderResearch(ctx, researchOk ? rsR : null);              // after the tabs exist: the status line, the Research tab and its count
   routeTab();
   window.addEventListener('hashchange', routeTab);
 
