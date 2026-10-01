@@ -96,10 +96,13 @@
           <p class="hub-sub" id="p-sub"></p>
         </div>
       </div>
+      <div id="p-notices" role="status"></div>
 
       <div id="p-body" hidden>
+        <div class="hub-toolbar" id="p-toolbar" aria-label="Tools for this project"></div>
         <div class="card hub-pfile" id="p-file"></div>
         <div class="hub-kpis" id="p-kpis"></div>
+        <section class="card hub-opp-card" id="p-opportunity" aria-labelledby="h-opp"></section>
 
         <section class="card hub-upload" id="p-upload" aria-labelledby="h-upload">
           <div class="hub-card-head">
@@ -171,6 +174,7 @@
 </div>
 
 <script src="/main.js"></script>
+<script type="module" src="/hub/palette.js"></script>
 <script type="module" src="/hub/project.js"></script>
 </body>
 </html>

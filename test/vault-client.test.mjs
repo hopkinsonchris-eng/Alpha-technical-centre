@@ -35,6 +35,7 @@ const net = {
   resolveVersion: '1.2.3',
   resolveStatus: 200,
   runsPosted: [],
+  projects: [],         // what GET /api/projects answers
 };
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 globalThis.fetch = async (url, init = {}) => {
@@ -49,6 +50,7 @@ globalThis.fetch = async (url, init = {}) => {
       : json(net.resolveStatus, { error: { code: 'x', message: 'down' } });
   }
   if (method === 'POST' && path === '/api/runs') { net.runsPosted.push(body); return json(200, { id: body.id, deduplicated: false }); }
+  if (path === '/api/projects') return json(200, { projects: net.projects });
   return json(404, { error: { code: 'not_found', message: 'nope' } });
 };
 
@@ -229,5 +231,48 @@ describe('resolve', () => {
     await assert.rejects(vault.resolve('never-seen'));
     net.resolveStatus = 200;
     assert.equal((await vault.resolve('never-seen')).version, '1.2.3');
+  });
+});
+
+/* ── wave 2: the project in the URL (?project=) is the context the Hub toolbar passes ── */
+
+describe('pickProject reads ?project= from the URL (wave 2, AC9)', () => {
+  const fakeElement = () => {
+    const el = { children: [], textContent: '', style: {}, attrs: {}, listeners: {}, value: '', disabled: false,
+      appendChild(c) { this.children.push(c); return c; }, setAttribute(k, v) { this.attrs[k] = v; },
+      addEventListener(t, fn) { (this.listeners[t] ||= []).push(fn); }, dispatchEvent() { return true; } };
+    return el;
+  };
+  beforeEach(() => {
+    net.meStatus = 200;
+    net.projects = [{ id: 'kaz-brownfield', name: 'Western Kazakhstan Brownfield' }, { id: 'firm', name: 'ATC internal' }];
+    fakeDocument.createElement = () => fakeElement();
+    Object.defineProperty(globalThis, 'location', { configurable: true, writable: true, value: { pathname: '/nodal-analysis-tool.html', search: '' } });
+  });
+
+  test('without an element: the URL project wins over the remembered one and is remembered', async () => {
+    globalThis.localStorage.setItem('vault_project_v1:/nodal-analysis-tool.html', 'firm');
+    globalThis.location.search = '?project=kaz-brownfield';
+    assert.equal(await vault.pickProject(null), 'kaz-brownfield');
+    assert.equal(globalThis.localStorage.getItem('vault_project_v1:/nodal-analysis-tool.html'), 'kaz-brownfield');
+    globalThis.location.search = '';
+    assert.equal(await vault.pickProject(null), 'kaz-brownfield');      // now remembered
+  });
+
+  test('with an element: the select lands on the URL project when it is one the caller may see; an unknown id is ignored', async () => {
+    globalThis.location.search = '?project=kaz-brownfield';
+    const el = fakeElement();
+    assert.equal(await vault.pickProject(el), 'kaz-brownfield');
+    assert.equal(el.children[0].value, 'kaz-brownfield');
+    globalThis.localStorage.clear();
+    globalThis.location.search = '?project=no-such-project';
+    const el2 = fakeElement();
+    assert.equal(await vault.pickProject(el2), null);
+    assert.equal(el2.children[0].value, '');
+  });
+
+  test('a malformed project parameter is ignored', async () => {
+    globalThis.location.search = '?project=../x';
+    assert.equal(await vault.pickProject(null), null);
   });
 });

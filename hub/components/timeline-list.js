@@ -15,6 +15,7 @@ import './stale-badge.js';
 
 const svg = (d) => '<svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
 export const ICONS = {
+  stage: svg('<path d="M5 21V4h11l-2 4 2 4H5"/>'),
   run: svg('<path d="M3 12h4l3-8 4 16 3-8h4"/>'),
   letter: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
   email: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
@@ -34,13 +35,14 @@ export const TYPE_FILTERS = [
   ['other', 'Other', 'Otros'], ['stale', 'Stale only', 'Solo obsoletos'],
 ];
 const TYPE_LABEL = {
-  run: ['Run', 'Ejecución'], letter: ['Letter', 'Carta'], email: ['Email', 'Correo'], spreadsheet: ['Spreadsheet', 'Hoja de cálculo'],
+  stage: ['Stage', 'Etapa'], run: ['Run', 'Ejecución'], letter: ['Letter', 'Carta'], email: ['Email', 'Correo'], spreadsheet: ['Spreadsheet', 'Hoja de cálculo'],
   paper: ['Paper', 'Artículo'], invoice: ['Invoice', 'Factura'], note: ['Note', 'Nota'], reference: ['Reference set', 'Conjunto de referencia'],
 };
 
 /** Icon / label kind of a timeline entry. */
 export function iconKind(e) {
   if (e.kind === 'run') return 'run';
+  if (e.kind === 'stage') return 'stage';          // wave 2: a stage change of the opportunity
   const t = e.type;
   if (t === 'letter' || t === 'email' || t === 'paper' || t === 'invoice' || t === 'note') return t;
   if (t === 'spreadsheet') return 'spreadsheet';
@@ -50,7 +52,7 @@ export function iconKind(e) {
 /** Which filter chip an entry belongs to. */
 export function filterKind(e) {
   const k = iconKind(e);
-  return k === 'note' || k === 'reference' ? 'other' : k;
+  return k === 'note' || k === 'reference' || k === 'stage' ? 'other' : k;
 }
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -129,6 +131,14 @@ export class TimelineList extends HTMLElement {
     add(li, date, icon(kind, stale));
 
     const body = mk('div', 'hub-tl-body');
+    if (e.kind === 'stage') {
+      // A stage change has no record to open: the row states it.
+      add(body, add(mk('span', 'hub-tl-title hub-tl-stage'), mk('span', null, 'Stage: ', 'Etapa: '), dv('b', null, e.title),
+        e.from ? add(mk('span', 'hub-muted'), mk('span', null, ' · from ' + e.from, ' · desde ' + e.from)) : null));
+      if (e.by) add(body, add(mk('div', 'hub-tl-meta'), mk('span', null, 'by ' + e.by, 'por ' + e.by)));
+      add(li, body, mk('div', 'hub-tl-side'));
+      return li;
+    }
     const title = dv('button', 'hub-tl-title', e.title || e.job || e.id, { type: 'button' });
     title.addEventListener('click', () => this.dispatchEvent(new CustomEvent('record-select', { bubbles: true, detail: { entry: e, ref: li.getAttribute('data-ref'), trigger: title } })));
     add(body, title);
