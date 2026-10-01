@@ -10,9 +10,9 @@ import { ensureAppPerson, verifyAppToken } from './app-tokens.ts';
 
 export type Env = { Variables: { person: Person; db: Db } };
 
-export interface AppDeps { db: Db; auth?: AuthConfig; version?: string }
+export interface AppDeps { db: Db; auth?: AuthConfig; version?: string; fetch?: typeof fetch }
 
-export async function createApp({ db, auth = configFromEnv(), version = process.env.RENDER_GIT_COMMIT ?? 'dev' }: AppDeps) {
+export async function createApp({ db, auth = configFromEnv(), version = process.env.RENDER_GIT_COMMIT ?? 'dev', fetch: fetchImpl }: AppDeps) {
   const app = new Hono<Env>();
 
   app.get('/api/health', async (c) => {
@@ -46,7 +46,7 @@ export async function createApp({ db, auth = configFromEnv(), version = process.
   });
 
   app.get('/api/me', (c) => c.json(c.get('person')));
-  await mountRoutes(app, { db });
+  await mountRoutes(app, { db, fetch: fetchImpl });
 
   app.notFound((c) => c.json({ error: { code: 'not_found', message: `no route for ${c.req.method} ${c.req.path}` } }, 404));
   app.onError((err, c) => {

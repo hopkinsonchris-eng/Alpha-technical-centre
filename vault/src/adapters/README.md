@@ -119,3 +119,16 @@ Snapshot runs go to project `firm` under `lt-firm` by default (`APEX_AI_PROJECT`
 - `src/adapters/common.ts`, `apex-asset-intelligence.ts`, `apex-3d-model.ts`, `index.ts` (`adapterFor(toolId)`, `adapterEnvVars`).
 - `src/jobs/apex-snapshot.ts`: the snapshot job.
 - `src/api/rerun.routes.ts`: calls the adapter for external-app tools.
+
+## Publish your version (one static file)
+
+Serve `GET /version.json` from the app's origin, without authentication:
+
+```json
+{ "version": "4.2.0", "released_at": "2026-09-12" }
+```
+
+`version` is required; `released_at` (`YYYY-MM-DD`) is optional. The Vault
+fetches it every hour (3 s timeout) and the Hub shows that version on the
+app's card. Until it exists the card says "Version unverified". Details:
+`docs/vault-hub/wave2/hub-sidecar.md`.

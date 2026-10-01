@@ -13,7 +13,7 @@ import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
 import type { Db } from '../db/client.ts';
 
-export interface RouteDeps { db: Db }
+export interface RouteDeps { db: Db; fetch?: typeof fetch }
 export interface RouteModule { register(app: Hono<Env>, deps: RouteDeps): void }
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));

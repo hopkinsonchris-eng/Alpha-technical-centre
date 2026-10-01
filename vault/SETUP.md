@@ -154,6 +154,12 @@ app's own `APP_TOKENS` secret), through the password manager, not email.
 The README contains the ten-line push snippet, the `/rerun` endpoint, and
 the snapshot fallback for Asset Intelligence if it cannot change yet.
 
+Also ask for one static file per app: `GET /version.json` returning
+`{"version": "4.2.0", "released_at": "2026-09-12"}` (no auth, no CORS
+needed). The Vault reads it hourly and the Hub then shows the app's real
+version instead of "Version unverified"; see
+`docs/vault-hub/wave2/hub-sidecar.md`.
+
 ## 6. The pull request
 
 Pull request #15 is open. Review it on GitHub, then **Merge**. Render

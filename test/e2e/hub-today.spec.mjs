@@ -418,3 +418,93 @@ test('new project: a client project asks for its legal tag; an API refusal is sh
   await expect(page.getByRole('button', { name: 'New project' })).toHaveCount(0);
   await expect(page.locator('#projects-grid .hub-empty')).not.toContainText('New project');
 });
+
+/* ── wave 2, PR 1: catalog lifecycle defaults (AC7) and live versions (AC8) ── */
+
+/** The seeded catalog plus a retired tool and one external app with a live version. */
+function lifecycleCatalog() {
+  const cat = seededCatalog();
+  cat.tools.push({
+    id: 'well-logger', name: 'Well Logger', owner: 'chris', lifecycle: 'retired', kind: 'browser-tool', entry: 'well-logger.html',
+    versions: [{ version: '0.3.0', released_at: '2025-01-01', commit: 'dead000' }], aliases: { current: '0.3.0' }, releases: [], hub: null,
+  });
+  const ai = cat.tools.find((t) => t.id === 'apex-asset-intelligence');
+  ai.hub = { context: ['project'], param: 'project', toolbar: 90, version_url: 'https://apex-app2.onrender.com/version.json', live_version: { version: '4.2.0', released_at: '2026-09-12', checked_at: '2026-10-01T08:00:00.000Z' } };
+  const m3 = cat.tools.find((t) => t.id === 'apex-3d-model');
+  m3.hub = { context: ['project'], param: 'project', toolbar: 80, version_url: 'https://apex-3d-model.uk/version.json', live_version: null };
+  return cat;
+}
+const visibleIds = (page) => page.locator('[data-tool-id]:visible').evaluateAll((els) => els.map((e) => e.getAttribute('data-tool-id')).sort());
+
+test('AC7: production tools by default; Experimental and Older chips reveal the rest; retired never; the choice persists', async ({ page }) => {
+  const cat = lifecycleCatalog();
+  await stubApi(page, baseHandlers(cat));
+  await page.goto('/hub/index.html');
+  await ready(page);
+  const prod = cat.tools.filter((t) => t.lifecycle === 'production').map((t) => t.id).sort();
+  const exp = cat.tools.filter((t) => t.lifecycle === 'experimental').map((t) => t.id);
+  const dep = cat.tools.filter((t) => t.lifecycle === 'deprecated').map((t) => t.id);
+  expect(exp.length).toBeGreaterThan(0); expect(dep.length).toBeGreaterThan(0);
+
+  expect(await visibleIds(page)).toEqual(prod);
+  await expect(page.locator('[data-tool-id="well-logger"]')).toHaveCount(0);          // retired: never rendered
+  const chips = page.locator('#tools-filter [data-lifecycle-chip]');
+  await expect(chips).toHaveCount(3);
+  await expect(chips.nth(0)).toHaveText('Production ' + prod.length);
+  await expect(chips.nth(0)).toHaveAttribute('aria-pressed', 'true');
+  await expect(chips.nth(1)).toHaveText('Experimental ' + exp.length);
+  await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'false');
+  await expect(chips.nth(2)).toHaveText('Older ' + dep.length);
+  await expect(page.locator('#today-sub')).toContainText(prod.length + ' in production');
+
+  await chips.nth(1).click();
+  expect(await visibleIds(page)).toEqual([...prod, ...exp].sort());
+  await chips.nth(2).click();
+  // Older tools sit in their own collapsed group under the grid.
+  const older = page.locator('#tools-older');
+  await expect(older).toBeVisible();
+  expect(await older.evaluate((d) => d.open)).toBe(false);
+  await expect(older.locator('summary')).toContainText('Older tools');
+  for (const id of dep) await expect(page.locator(`[data-tool-id="${id}"]`)).toBeHidden();
+  await older.locator('summary').click();
+  for (const id of dep) await expect(page.locator(`[data-tool-id="${id}"]`)).toBeVisible();
+  await chips.nth(0).click();                                                           // production off
+  expect(await visibleIds(page)).toEqual([...exp, ...dep].sort());
+
+  await page.reload();
+  await ready(page);
+  await expect(chips.nth(0)).toHaveAttribute('aria-pressed', 'false');
+  await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(chips.nth(2)).toHaveAttribute('aria-pressed', 'true');
+  expect(await visibleIds(page)).toEqual([...exp].sort());                             // the older group starts collapsed again
+  await older.locator('summary').click();
+  expect(await visibleIds(page)).toEqual([...exp, ...dep].sort());
+  // Every chip off: the grid says so instead of going blank.
+  await chips.nth(1).click(); await chips.nth(2).click();
+  await expect(page.locator('#tools-empty')).toBeVisible();
+  await expect(page.locator('#tools-empty')).toContainText('No tools match');
+});
+
+test('AC8: an external app shows the version it publishes; one that publishes nothing yet says so; a browser tool shows its manifest version', async ({ page }) => {
+  const cat = lifecycleCatalog();
+  await stubApi(page, baseHandlers(cat));
+  await page.goto('/hub/index.html');
+  await ready(page);
+  const ai = page.locator('[data-tool-id="apex-asset-intelligence"]');
+  await expect(ai.locator('[data-version]')).toHaveText('4.2.0');
+  await expect(ai.locator('[data-version-source]')).toHaveAttribute('data-version-source', 'live');
+  await expect(ai.locator('.hub-ver')).toContainText('published by the app');
+  await expect(ai.locator('.hub-ver')).toContainText('12 Sept 2026');
+  const m3 = page.locator('[data-tool-id="apex-3d-model"]');
+  await expect(m3.locator('[data-version]')).toHaveText('1.0.0');
+  await expect(m3.locator('[data-version-source]')).toHaveAttribute('data-version-source', 'unverified');
+  await expect(m3.locator('.hub-pill.warn')).toHaveText('Version unverified');
+  await expect(m3).toContainText('publishes no version.json yet');
+  const reg = page.locator('[data-tool-id="opportunity-register"]');
+  await expect(reg.locator('[data-version-source]')).toHaveAttribute('data-version-source', 'manifest');
+  await expect(reg.locator('.hub-ver')).toContainText('current');
+  // Spanish follows.
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await expect(ai.locator('.hub-ver')).toContainText('publicada por la app');
+  await expect(m3.locator('.hub-pill.warn')).toHaveText('Versión sin verificar');
+});

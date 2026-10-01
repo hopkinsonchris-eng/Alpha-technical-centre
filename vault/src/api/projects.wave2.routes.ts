@@ -1,0 +1,58 @@
+/**
+ * Project updates (wave 2, docs/vault-hub/wave2/05-markup.md §1.3):
+ *   PATCH /api/projects/:id  {stage?, status?, country?, lat?, lon?, register?}
+ * Members and partners move an opportunity through its stages; every stage
+ * change is appended to stage_history and named in the audit event. A project
+ * the caller cannot see answers 404 so its existence is not leaked. The
+ * register block merges field by field (a partial edit keeps the rest).
+ */
+import type { Hono } from 'hono';
+import type { Env } from '../app.ts';
+import type { RouteDeps } from './index.ts';
+import { bad, canSee, jsonBody, loadAccess, notFound, requireWritableProject, route, scopeLabel } from './common.ts';
+import { readOpportunityFields, stageEntry } from '../opportunities.ts';
+
+const STATUSES = ['prospect', 'active', 'closed', 'archived'];
+const FIELDS = new Set(['stage', 'status', 'country', 'lat', 'lon', 'register']);
+
+export function register(app: Hono<Env>, _deps: RouteDeps): void {
+  route(app, 'PATCH', '/api/projects/:id', 'project.update', async (x) => {
+    const id = x.c.req.param('id')!;
+    const acc = await loadAccess(x.db, x.person, x.now);
+    const p = acc.projects.get(id);
+    if (!p || !canSee(acc, p.default_legal_tag, p.id)) throw notFound(`project "${id}" not found`);
+    x.a.scope = scopeLabel(id); x.a.refs = [`project:${id}`];
+    requireWritableProject(acc, id);
+    const b = await jsonBody(x.c);
+    const keys = Object.keys(b);
+    if (!keys.length) throw bad('nothing to change: send stage, status, country, lat, lon or register', '/');
+    for (const k of keys) if (!FIELDS.has(k)) throw bad(`"${k}" cannot be changed here`, `/${k}`);
+    const opp = readOpportunityFields(b);
+    if (b.status !== undefined && !STATUSES.includes(b.status)) throw bad(`status must be one of ${STATUSES.join(', ')}`, '/status');
+
+    const sets: string[] = []; const params: unknown[] = [id];
+    const set = (col: string, v: unknown, cast = '') => { params.push(v); sets.push(`${col} = $${params.length}${cast}`); };
+    if (opp.country !== undefined) set('country', opp.country);
+    if (opp.lat !== undefined) set('lat', opp.lat);
+    if (opp.lon !== undefined) set('lon', opp.lon);
+    if (b.status !== undefined) {
+      set('status', b.status);
+      if (b.status === 'closed' && p.status !== 'closed') set('closed_at', x.now.toISOString());
+    }
+    if (opp.register !== undefined) set('register', JSON.stringify(opp.register), '::jsonb');
+    const stageChange = opp.stage !== undefined && opp.stage !== p.stage ? { from: p.stage, to: opp.stage } : null;
+    if (stageChange) {
+      set('stage', stageChange.to);
+      set('stage_history', JSON.stringify([...p.stage_history, stageEntry(stageChange.to, x.person.id, x.now)]), '::jsonb');
+    }
+    if (sets.length) {
+      // register merges: existing fields survive unless the patch names them.
+      const sql = `UPDATE projects SET ${sets.map(s => s.startsWith('register =') ? s.replace('register = ', 'register = register || ') : s).join(', ')} WHERE id = $1`;
+      await x.db.query(sql, params);
+    }
+    x.a.detail = { fields: keys, ...(stageChange ? { stage: stageChange } : {}) };
+    const fresh = (await loadAccess(x.db, x.person, x.now)).projects.get(id)!;
+    const contacts = (await x.db.query<{ contact_id: string }>('SELECT contact_id FROM project_contacts WHERE project_id = $1 ORDER BY contact_id', [id])).rows.map(r => r.contact_id);
+    return { body: { ...fresh, contacts } };
+  });
+}

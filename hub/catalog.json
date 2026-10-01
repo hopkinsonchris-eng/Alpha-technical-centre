@@ -36,7 +36,16 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 80,
+        "version_url": "https://apex-3d-model.uk/version.json",
+        "live_version": null
+      }
     },
     {
       "id": "apex-asset-intelligence",
@@ -74,7 +83,16 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 90,
+        "version_url": "https://apex-app2.onrender.com/version.json",
+        "live_version": null
+      }
     },
     {
       "id": "apex-reservoir-3d",
@@ -223,7 +241,15 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 40,
+        "live_version": null
+      }
     },
     {
       "id": "ela-model-suite",
@@ -331,7 +357,15 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 50,
+        "live_version": null
+      }
     },
     {
       "id": "ela-studio",
@@ -392,7 +426,15 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 70,
+        "live_version": null
+      }
     },
     {
       "id": "financial-model",
@@ -447,7 +489,15 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 30,
+        "live_version": null
+      }
     },
     {
       "id": "insight-radar",
@@ -534,7 +584,8 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": null
     },
     {
       "id": "nodal-analysis",
@@ -611,7 +662,15 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 20,
+        "live_version": null
+      }
     },
     {
       "id": "opportunity-register",
@@ -787,7 +846,15 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 10,
+        "live_version": null
+      }
     },
     {
       "id": "plan-your-job",
@@ -840,7 +907,15 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": {
+        "context": [
+          "project"
+        ],
+        "param": "project",
+        "toolbar": 60,
+        "live_version": null
+      }
     },
     {
       "id": "situation-room",
@@ -877,9 +952,10 @@
             ]
           }
         }
-      ]
+      ],
+      "hub": null
     }
   ],
-  "built_at": "2026-09-29T23:15:53.552Z",
-  "commit": "ae040f4"
+  "built_at": "2026-10-01T00:05:19.726Z",
+  "commit": "4406e88"
 }

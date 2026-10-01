@@ -222,9 +222,23 @@ function toolCard(tool, byId, siteRoot, now) {
   if (tool.description) add(card, dv('p', 'hub-desc', tool.description));
 
   const version = dep ? ((tool.versions && tool.versions[0] && tool.versions[0].version) || (tool.aliases && tool.aliases.current)) : (tool.aliases && tool.aliases.current);
-  add(card, add(mk('div', 'hub-ver'),
-    dv('b', null, version, { 'data-version': '' }),
-    dep ? mk('span', null, 'last version', 'última versión') : mk('span', null, 'current', 'actual')));
+  // Wave 2: an external app's real version comes from the version.json it publishes (sidecar version_url, read by the Vault);
+  // until it publishes one, the manifest version is a placeholder and the card says so.
+  const live = tool.hub && tool.hub.live_version && tool.hub.live_version.version ? tool.hub.live_version : null;
+  const unverified = !live && tool.hub && tool.hub.version_url;
+  const ver = mk('div', 'hub-ver', null, null, { 'data-version-source': live ? 'live' : unverified ? 'unverified' : 'manifest' });
+  add(ver, dv('b', null, live ? live.version : version, { 'data-version': '' }));
+  if (live) {
+    const rd = live.released_at ? fmtShortDate(live.released_at) : null;
+    add(ver, add(mk('span'), mk('span', null, 'published by the app', 'publicada por la app'), rd ? mk('span', null, ' · ' + rd.en, ' · ' + rd.es) : null));
+  } else if (dep) add(ver, mk('span', null, 'last version', 'última versión'));
+  else add(ver, mk('span', null, 'current', 'actual'));
+  add(card, ver);
+  if (unverified) {
+    add(card, add(mk('div', 'hub-tool-meta'),
+      mk('span', 'hub-pill warn', 'Version unverified', 'Versión sin verificar'),
+      mk('span', null, 'the app publishes no version.json yet', 'la app aún no publica version.json')));
+  }
 
   if (dep) {
     add(card, add(mk('div', 'hub-replaced', null, null, { 'data-replaced-by': dep.id }),
@@ -267,6 +281,55 @@ function fillChangelog(panel, tool) {
   }
 }
 
+/* ── Today: catalog filter (wave 2, P17) ─────────────────────────────── */
+
+const FILTER_KEY = 'hub.tools.filter';
+const FILTER_DEFAULT = { production: true, experimental: false, deprecated: false };
+const CHIP_LABEL = { production: ['Production', 'Producción'], experimental: ['Experimental', 'Experimental'], deprecated: ['Older', 'Antiguas'] };
+
+function readFilter() {
+  try { const v = JSON.parse(localStorage.getItem(FILTER_KEY) || ''); if (v && typeof v === 'object') return { ...FILTER_DEFAULT, ...v }; } catch (e) { /* no storage */ }
+  return { ...FILTER_DEFAULT };
+}
+
+/**
+ * Production tools show by default; experimental ones sit behind their chip; deprecated
+ * ("older") tools live in a collapsed group under the grid. The choice is remembered per browser.
+ */
+function setupLifecycleFilter(tools) {
+  const host = $('#tools-filter');
+  if (!host) return;
+  host.textContent = '';
+  const state = readFilter();
+  const counts = { production: 0, experimental: 0, deprecated: 0 };
+  for (const t of tools) if (counts[t.lifecycle] !== undefined) counts[t.lifecycle]++;
+  const apply = () => {
+    let shown = 0;
+    for (const t of tools) {
+      const card = document.querySelector('[data-tool-id="' + CSS.escape(t.id) + '"]');
+      if (!card) continue;
+      const on = !!state[t.lifecycle];
+      if (on) card.removeAttribute('hidden'); else card.setAttribute('hidden', '');
+      if (on) shown++;
+    }
+    const older = $('#tools-older');
+    if (older) { if (state.deprecated && counts.deprecated) older.removeAttribute('hidden'); else older.setAttribute('hidden', ''); }
+    const empty = $('#tools-empty');
+    if (empty) { if (shown) empty.setAttribute('hidden', ''); else empty.removeAttribute('hidden'); }
+    for (const b of host.querySelectorAll('[data-lifecycle-chip]')) b.setAttribute('aria-pressed', String(!!state[b.getAttribute('data-lifecycle-chip')]));
+    try { localStorage.setItem(FILTER_KEY, JSON.stringify(state)); } catch (e) { /* no storage */ }
+  };
+  for (const key of ['production', 'experimental', 'deprecated']) {
+    const b = mk('button', 'hub-chip', null, null, { type: 'button', 'data-lifecycle-chip': key, 'aria-pressed': String(!!state[key]) });
+    add(b, mk('span', null, CHIP_LABEL[key][0], CHIP_LABEL[key][1]), document.createTextNode(' '), dv('span', 'n', String(counts[key])));
+    b.addEventListener('click', () => { state[key] = !state[key]; apply(); });
+    add(host, b);
+  }
+  const sum = $('#tools-older-sum');
+  if (sum) setText(sum, 'Older tools (' + counts.deprecated + '): replaced or deprecated, kept for the runs that used them', 'Herramientas antiguas (' + counts.deprecated + '): reemplazadas u obsoletas, conservadas por las ejecuciones que las usaron');
+  apply();
+}
+
 /* ── Today: sections ─────────────────────────────────────────────────── */
 
 function notice(kind, boldEn, boldEs, en, es) {
@@ -286,11 +349,14 @@ async function renderTools(person) {
     setText($('#today-sub'), 'The catalog is not available.', 'El catálogo no está disponible.');
     return { tools: [], source };
   }
-  const tools = catalog.tools;
-  const byId = new Map(tools.map((t) => [t.id, t]));
+  const tools = catalog.tools.filter((t) => t.lifecycle !== 'retired');     // retired tools never appear
+  const byId = new Map(catalog.tools.map((t) => [t.id, t]));
   const siteRoot = new URL('../', location.href);
   grid.textContent = '';
-  for (const t of tools) add(grid, toolCard(t, byId, siteRoot, now));
+  const older = $('#tools-older-grid');
+  if (older) older.textContent = '';
+  for (const t of tools) add(t.lifecycle === 'deprecated' && older ? older : grid, toolCard(t, byId, siteRoot, now));
+  setupLifecycleFilter(tools);
 
   const prod = tools.filter((t) => t.lifecycle === 'production').length;
   setText($('#today-sub'),
