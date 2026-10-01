@@ -41,11 +41,15 @@ const PROPOSALS = [
   { id: '20000000-0000-4000-8000-000000000003', kind: 'research', status: 'open', created_at: '2026-10-01T12:31:00.000Z', payload: { project_id: PID, item_id: F3, item_title: 'PDVSA signs service contract for Guafita', fact_kind: 'production', value: '12,400', unit: 'bopd', year: 2026, quote: 'PDVSA signs service contract for Guafita (news) — Argus', asset_id: 'field:ve:guafita', asset_name: 'Guafita', proposal: 'Production: 12,400 bopd (2026)' } },
   { id: '20000000-0000-4000-8000-000000000004', kind: 'research', status: 'open', created_at: '2026-10-01T12:31:00.000Z', payload: { project_id: 'other', item_id: 'x', item_title: 'Elsewhere', fact_kind: 'operator', value: 'Nobody', quote: 'x', asset_id: null, asset_name: null, proposal: 'Operator: Nobody' } },
 ];
+const LOCATION = { id: '20000000-0000-4000-8000-000000000005', kind: 'research', status: 'open', created_at: '2026-10-01T12:31:00.000Z', payload: { project_id: PID, item_id: null, item_title: null, fact_kind: 'location', value: '8.8778, -64.3669', unit: null, year: null, quote: 'Oficina (gem, VE) at 8.8778, -64.3669', asset_id: 'field:ve:oficina-norte', asset_name: 'OFICINA NORTE',
+  candidate: { name: 'Oficina', kind: 'field', country: 'VE', lat: 8.8778, lon: -64.3669, source: 'gem', source_id: 'L100000305199', source_url: 'https://www.gem.wiki/Oficina_Oil_Field_(Venezuela)', detail: { unit_id: 'L100000305199', release: 'March 2026' } },
+  proposal: 'Location for OFICINA NORTE: Oficina (gem) at 8.8778, -64.3669, an area match' } };
+const OFICINA_NORTE = { id: 'field:ve:oficina-norte', kind: 'field', name: 'OFICINA NORTE', parent_id: null, country: 'VE', operator: null, source_url: null, lat: null, lon: null, location_source: null, status: null, created_by: 'chris', created_at: '2026-10-01T10:00:00.000Z', props: {}, dossier: [] };
 const CATALOG = { tools: [], built_at: '2026-09-29T09:00:00.000Z', commit: 'abc1234' };
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
 /** Stubs the API. `research` is the view GET answers; `onStart` answers the POST and may change what later GETs say. */
-async function stubApi(page, { me = PARTNER, research, proposals = PROPOSALS, onStart } = {}) {
+async function stubApi(page, { me = PARTNER, research, proposals = PROPOSALS, onStart, assets = [GUAFITA] } = {}) {
   const calls = { started: 0, decided: [], views: 0 };
   let view = research === undefined ? { project_id: PID, runs: [RUN_OK], findings: FINDINGS, enabled: true } : research;
   let queue = proposals.map((q) => ({ ...q }));
@@ -54,14 +58,16 @@ async function stubApi(page, { me = PARTNER, research, proposals = PROPOSALS, on
     if (p === '/api/me') return json(route, me);
     if (p === '/api/catalog') return json(route, CATALOG);
     if (p === '/api/projects/' + PID) return json(route, PROJECT);
-    if (p === '/api/projects/' + PID + '/assets' && m === 'GET') return json(route, { project_id: PID, assets: [GUAFITA] });
+    if (p === '/api/projects/' + PID + '/assets' && m === 'GET') return json(route, { project_id: PID, assets });
     if (p === '/api/projects/' + PID + '/research' && m === 'GET') { calls.views++; if (typeof view === 'function') return view(route, calls); return view ? json(route, view) : json(route, { error: { code: 'not_found', message: 'no route' } }, 404); }
     if (p === '/api/projects/' + PID + '/research' && m === 'POST') { calls.started++; if (onStart) return onStart(route, calls, (v) => { view = v; }); return json(route, { project_id: PID, job_id: 8, state: 'queued' }, 202); }
     if (p === '/api/queue/review') return json(route, { items: queue });
     const dm = /^\/api\/queue\/review\/([^/]+)\/(accept|reject)$/.exec(p);
     if (dm && m === 'POST') {
       const b = route.request().postData() ? JSON.parse(route.request().postData()) : {}; calls.decided.push({ id: dm[1], verb: dm[2], body: b });
+      const q = queue.find((x) => x.id === dm[1]);
       queue = queue.filter((x) => x.id !== dm[1]);
+      if (dm[2] === 'accept' && q && q.payload.fact_kind === 'location') return json(route, { id: dm[1], status: 'accepted', asset: { ...OFICINA_NORTE, lat: q.payload.candidate.lat, lon: q.payload.candidate.lon, location_source: 'gem', props: { gem: q.payload.candidate.detail } }, dossier: ['00000000-0000-4000-8000-000000000b01'] });
       return json(route, { id: dm[1], status: dm[2] === 'accept' ? 'accepted' : 'rejected' });
     }
     for (const f of FINDINGS) { if (p === '/api/items/' + f.id) return json(route, ITEM(f)); if (p === '/api/items/' + f.id + '/versions') return json(route, { item_id: f.id, versions: [] }); }
@@ -227,6 +233,27 @@ test('W4-AC7: the Fields card shows research proposals; Set as operator and File
   expect(calls.decided[1]).toEqual({ id: '20000000-0000-4000-8000-000000000003', verb: 'reject', body: {} });
   await expect(page.locator('#fld-notices .hub-notice.ok')).toContainText('Not a fact');
   await expect(facts).toHaveCount(0);
+});
+
+test('a location the gazetteers proposed for a field attached by name is decided in the Fields card: Set location gives the field its coordinates and dossier', async ({ page }) => {
+  const calls = await stubApi(page, { proposals: [LOCATION], assets: [GUAFITA, OFICINA_NORTE] });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const row = page.locator('#fld-facts li[data-fact-kind="location"]');
+  await expect(row.locator('b')).toHaveText('Location for OFICINA NORTE: Oficina (gem) at 8.8778, -64.3669, an area match');
+  await expect(row.locator('.hub-src')).toHaveAttribute('data-source', 'gem');
+  await expect(row.locator('[data-coords]')).toHaveText('8.8778, -64.3669');
+  await expect(row.locator('[data-accept-fact]')).toHaveText('Set location');
+  await expect(row.locator('[data-reject]')).toHaveText('Not it');
+  await expect(page.locator('li[data-field="field:ve:oficina-norte"]')).toContainText('no location');
+  await row.locator('[data-accept-fact]').click();
+  await expect(row).toHaveCount(0);
+  expect(calls.decided[0]).toEqual({ id: LOCATION.id, verb: 'accept', body: { apply: true } });
+  await expect(page.locator('#fld-notices .hub-notice.ok')).toContainText('Location set for OFICINA NORTE.');
+  const field = page.locator('li[data-field="field:ve:oficina-norte"]');
+  await expect(field.locator('[data-coords]')).toHaveText('8.8778, -64.3669');
+  await expect(field.locator('.hub-src')).toHaveAttribute('data-source', 'gem');
+  await expect(field.locator('[data-dossier]')).toHaveText('Dossier');
 });
 
 test('W4-AC7: the queue page lists research facts with their quote and project; Set as operator accepts with apply; Not a fact rejects', async ({ page }) => {

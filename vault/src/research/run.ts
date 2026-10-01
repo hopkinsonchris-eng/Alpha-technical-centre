@@ -19,6 +19,8 @@ import type { Clock } from '../miners/util.ts';
 import { companyEnrichment, companySignals, gdeltDocuments, intelTimeline, secFilings, worldMonitorConfigured } from '../intel/worldmonitor.ts';
 import { buildQueries, type ResearchField, type ResearchProject, type ResearchQueries } from './queries.ts';
 import { fetchGemWiki, gemWikiFindings } from './gemwiki.ts';
+import { locateFields } from './locate.ts';
+import type { LocateOptions } from '../assets/gazetteers.ts';
 import { researchWebEnabled, searchWeb, webFindings, RESEARCH_WEB_OFF } from './web.ts';
 import { fileFinding, proposeFromFinding, readFacts, type Finding } from './findings.ts';
 
@@ -31,6 +33,8 @@ export interface ResearchOptions {
   log?: (line: string) => void;
   /** Wave 4, W4-D1 revised: skip the Global Energy Monitor wiki pass or the web search pass (tests). */
   skipGemWiki?: boolean; skipWeb?: boolean;
+  /** Skip the gazetteer pass that locates fields attached by name (tests); options for that pass. */
+  skipLocate?: boolean; locate?: LocateOptions;
   /** Searches per web call (default 3) and the price of one search in USD (default 0.01). */
   webMaxUses?: number; usdPerSearch?: number;
   /** How often the running counts are written while the literature pass goes (ms). */
@@ -45,7 +49,9 @@ export interface ResearchSummary {
   /** Papers an earlier run filed that fail today's screen, hidden by this run (never deleted). */
   pruned?: number;
   /** Where a running job is: the Hub's status line says so. */
-  phase?: 'gem-wiki' | 'world-monitor' | 'web' | 'literature' | 'done';
+  phase?: 'locate' | 'gem-wiki' | 'world-monitor' | 'web' | 'literature' | 'done';
+  /** Fields the gazetteers could not place, named so a person can place them by hand. */
+  unlocated?: string[];
 }
 
 export const RESEARCH_DISABLED = 'research runs are switched off (RESEARCH_ENABLED=false on the Vault service)';
@@ -108,7 +114,7 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   const started = now();
   const budget = { ms: opts.budgetMs ?? budgetMsOf(), gbp: opts.budgetGbp ?? budgetGbpOf() };
   const by = opts.by ?? 'research';
-  const summary: ResearchSummary = { project_id: projectId, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sources: {}, findings: 0, proposals: { asset: 0, research: 0 }, fact_reads: 0, spend_gbp: 0, budget, not_reached: [], stopped_by: null, warnings: [], phase: 'gem-wiki' };
+  const summary: ResearchSummary = { project_id: projectId, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sources: {}, findings: 0, proposals: { asset: 0, research: 0 }, fact_reads: 0, spend_gbp: 0, budget, not_reached: [], stopped_by: null, warnings: [], phase: 'locate' };
   const log = opts.log ?? ((line: string) => console.log(line));
   const job = jobId ?? (await db.query<{ id: number }>("INSERT INTO jobs (name, status, summary) VALUES ('research', 'running', $1::jsonb) RETURNING id", [JSON.stringify({ project_id: projectId, queued: false })])).rows[0].id;
   await db.query('UPDATE jobs SET started_at = $2, summary = $3::jsonb WHERE id = $1', [job, started.toISOString(), JSON.stringify({ ...summary, queued: false })]);
@@ -123,7 +129,7 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   try {
     const p = (await db.query<any>('SELECT p.id, p.name, p.country, p.asset_ids, p.register, o.name AS client_name FROM projects p LEFT JOIN organisations o ON o.id = p.client_id WHERE p.id = $1', [projectId])).rows[0];
     if (!p) throw new Error(`project "${projectId}" not found`);
-    const fields: ResearchField[] = p.asset_ids?.length ? (await db.query<any>('SELECT id, name, kind, country, operator, props FROM assets WHERE id = ANY($1::text[])', [p.asset_ids])).rows : [];
+    const fields: (ResearchField & { lat: number | null; lon: number | null })[] = p.asset_ids?.length ? (await db.query<any>('SELECT id, name, kind, country, operator, props, lat, lon FROM assets WHERE id = ANY($1::text[])', [p.asset_ids])).rows : [];
     const project: ResearchProject = { id: p.id, name: p.name, country: p.country ?? null, client_name: p.client_name ?? null, register: p.register ?? null };
     const q: ResearchQueries = buildQueries(project, fields, p.country ? countryName(p.country).en : null);
     const provider = opts.provider === undefined ? openProvider() : opts.provider;
@@ -149,6 +155,24 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
       const pr = await proposeFromFinding(db, scope, { id: r.id, title: f.title }, `${f.title}\n\n${f.text}`, facts);
       summary.proposals.asset += pr.asset.length; summary.proposals.research += pr.research.length;
     };
+
+    // -1. Fields attached by name get their coordinates from the gazetteers (never the model): an exact match sets
+    //     the location and files the dossier; an area match is a proposal; a field nobody knows is named.
+    if (!opts.skipLocate && fields.some(f => f.lat == null)) {
+      const c = count('locate');
+      const outcomes = await locateFields(db, { id: p.id, country: p.country ?? null }, fields.map(f => ({ id: f.id, name: f.name, kind: f.kind, country: f.country, lat: f.lat, lon: f.lon })), by, now(), opts.locate ?? {});
+      c.queries = outcomes.length;
+      for (const o of outcomes) {
+        if (o.outcome === 'located') { c.created++; touched.push(`asset:${o.field_id}`); for (const d of o.dossier ?? []) touched.push(`doc:${d}`); const f = fields.find(x => x.id === o.field_id); if (f && o.candidate) { f.lat = o.candidate.lat; f.lon = o.candidate.lon; } }
+        else if (o.outcome === 'proposed') { c.findings++; summary.proposals.research++; }
+        else if (o.outcome === 'error') c.error = o.reason;
+      }
+      const none = outcomes.filter(o => o.outcome === 'none' || o.outcome === 'outside').map(o => o.name + (o.outcome === 'outside' ? ` (${o.reason})` : ''));
+      if (none.length) { summary.unlocated = none; c.skipped = `no gazetteer record for ${none.join(', ')}`; }
+      await progress();
+    }
+    summary.phase = 'gem-wiki';
+    await progress();
 
     // 0. Global Energy Monitor wiki pages (W4-D1 revised): the page and every source it cites, no model.
     if (!opts.skipGemWiki) {

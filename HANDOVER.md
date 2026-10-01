@@ -298,7 +298,9 @@ by hand once per release (`vault/SETUP.md` §3). The design record is
 
 Wave 4 (October 2026) made the Vault research a project by itself.
 Creating a project with a country, attaching a field, or pressing
-"Research this project" on the project file queues a run that asks
+"Research this project" on the project file queues a run that first asks
+the gazetteers for the coordinates of any field attached by name (an exact
+match is set, an area match is proposed, never the model's guess), then asks
 the Global Energy Monitor wiki page of each field (and every source it
 cites), World Monitor (GDELT news, company profiles and signals, SEC
 filings, the intelligence timeline), the web through the model's
