@@ -6,7 +6,7 @@
 export interface LlmMessage { role: 'user' | 'assistant'; content: string }
 export interface LlmUsage { input: number; cached: number; output: number }
 export interface LlmResult { text: string; usage: LlmUsage; model: string; provider: string }
-export interface LlmRequest { system: string; messages: LlmMessage[]; maxTokens?: number; temperature?: number }
+export interface LlmRequest { system: string; messages: LlmMessage[]; maxTokens?: number; temperature?: number; effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max' }
 export interface LlmProvider { name: string; model: string; complete(req: LlmRequest): Promise<LlmResult> }
 
 /** Deterministic provider for tests: echoes a compact summary of the last user message. */
@@ -28,7 +28,11 @@ export class AnthropicProvider implements LlmProvider {
     const res = await this.fetchImpl('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: this.model, max_tokens: req.maxTokens ?? 1024, temperature: req.temperature ?? 0.2,
+      // No sampling parameters: the current models (Sonnet 5.5, Opus 5.5 and later) reject `temperature` with a 400.
+      // Thinking is on by default on those models and its tokens count against max_tokens, so short extractive calls
+      // run at low effort and longer drafting calls at medium; `effort` on the request overrides either.
+      body: JSON.stringify({ model: this.model, max_tokens: req.maxTokens ?? 1024,
+        output_config: { effort: req.effort ?? ((req.maxTokens ?? 1024) <= 500 ? 'low' : 'medium') },
         system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }], messages: req.messages }),
     });
     if (!res.ok) throw new Error(`anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
