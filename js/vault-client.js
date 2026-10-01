@@ -522,7 +522,11 @@ function projectKey() {
  * Resolves to the chosen project id (or null). Without an element it just returns the remembered id.
  */
 async function pickProject(el) {
-  const remembered = lsGet(projectKey());
+  // Wave 2: the Hub opens a tool inside a project with ?project=<id>; that context beats the remembered one and is remembered.
+  let fromUrl = null;
+  try { const v = new URLSearchParams(globalThis.location.search || '').get('project'); if (v && /^[a-z0-9][a-z0-9-]{1,63}$/.test(v)) fromUrl = v; } catch (e) { /* no location */ }
+  if (fromUrl) lsSet(projectKey(), fromUrl);
+  const remembered = fromUrl || lsGet(projectKey());
   const doc = globalThis.document;
   if (!el || !doc) return remembered;
   el.textContent = '';
@@ -552,6 +556,7 @@ async function pickProject(el) {
   for (const p of projects) option(String(p.id), String(p.name || p.title || p.id));
   const known = projects.some((p) => String(p.id) === remembered);
   select.value = known ? remembered : '';
+  if (!known && fromUrl) lsSet(projectKey(), '');          // an id the caller cannot see is not kept
   select.addEventListener('change', () => {
     lsSet(projectKey(), select.value);
     if (typeof globalThis.CustomEvent === 'function') el.dispatchEvent(new globalThis.CustomEvent('vault:project', { detail: { projectId: select.value || null }, bubbles: true }));

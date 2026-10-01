@@ -16,7 +16,7 @@
      GET /api/lessons?scope=project:<id> hidden on 404 / 501
    Every string a person reads carries data-en and data-es.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, num, RUN_STATUS } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget } from './hub.js';
 import './components/stale-badge.js';
 import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
@@ -89,6 +89,16 @@ function renderHeader(ctx) {
   if (opened) add(sub, document.createTextNode(' · '), mk('span', null, 'opened', 'abierto'), document.createTextNode(' '), mk('span', null, opened.en, opened.es));
   const sp = STATUS_PILL[p.status] || [p.status, p.status, 'muted'];
   add(sub, document.createTextNode(' · '), mk('span', null, 'status', 'estado'), document.createTextNode(' '), mk('span', 'hub-pill ' + sp[2], sp[0], sp[1], { 'data-status': p.status }));
+  // Wave 2: where it is and what stage it is at; the stage changes in place (PATCH /api/projects/:id).
+  const cn = p.country && ctx.names && ctx.names.get(p.country);
+  if (p.country) add(sub, document.createTextNode(' · '), cn ? mk('b', null, cn.en, cn.es, { 'data-country': p.country }) : dv('b', null, p.country, { 'data-country': p.country }));
+  const stageCtl = mk('span', 'hub-stage-ctl');
+  const sel = mk('select', null, null, null, { id: 'p-stage', 'aria-label': 'Stage' });
+  for (const st of STAGES) add(sel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
+  sel.value = p.stage || 'Initial screen';
+  add(stageCtl, mk('label', null, 'stage', 'etapa', { for: 'p-stage' }), sel);
+  add(sub, document.createTextNode(' · '), stageCtl);
+  sel.addEventListener('change', () => changeStage(ctx, sel));
 
   const card = $('#p-file');
   card.textContent = '';
@@ -141,6 +151,156 @@ function renderHeader(ctx) {
   if ((p.members || []).length) for (const m of p.members) add(twrap, dv('div', null, m, { 'data-member': m }));
   else add(twrap, mk('span', 'hub-muted', 'Open to every partner and associate with access', 'Abierto a todos los socios y asociados con acceso'));
   add(card, twrap);
+}
+
+/* ── wave 2: stage, toolbar, opportunity card ────────────────────────── */
+
+const pnotices = () => $('#p-notices');
+const stageEntries = (p) => {
+  const hist = Array.isArray(p.stage_history) ? p.stage_history : [];
+  return hist.map((h, i) => ({ kind: 'stage', id: 'stage-' + i, ref: 'stage:' + i, at: h.at, title: h.stage, from: i ? hist[i - 1].stage : null, by: h.by, stale: false }));
+};
+function refreshTimeline(ctx) {
+  const tl = $('#tl');
+  if (tl && ctx.entries) tl.entries = [...ctx.entries, ...stageEntries(ctx.project)];
+}
+
+async function changeStage(ctx, sel) {
+  const p = ctx.project, was = p.stage;
+  const notices = pnotices(); notices.textContent = '';
+  sel.disabled = true;
+  const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ stage: sel.value }) });
+  sel.disabled = false;
+  if (res.ok && res.body) {
+    Object.assign(p, res.body);
+    sel.value = p.stage;
+    add(notices, notice('ok', 'Stage is now ' + p.stage + '.', 'La etapa ahora es ' + (STAGE_ES[p.stage] || p.stage) + '.', 'Recorded on the timeline.', 'Registrado en la cronología.'));
+    refreshTimeline(ctx);
+  } else {
+    sel.value = was;
+    const msg = errMessage(res);
+    if (res.status === 0) add(notices, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The stage was not changed.', 'No se cambió la etapa.'));
+    else add(notices, notice('bad', 'The stage was not changed.', 'No se cambió la etapa.', msg || 'HTTP ' + res.status, msg || 'HTTP ' + res.status));
+  }
+}
+
+/** The production tools whose sidecar accepts a project, in toolbar order, each opening inside this project. */
+function renderToolbar(ctx, cat) {
+  const host = $('#p-toolbar');
+  host.textContent = '';
+  add(host, mk('span', 'label', 'Tools', 'Herramientas'));
+  if (!cat || !cat.catalog) { add(host, mk('span', 'hub-muted', 'The tool catalog is not available.', 'El catálogo de herramientas no está disponible.')); return; }
+  const tools = cat.catalog.tools || [];
+  const byId = new Map(tools.map((t) => [t.id, t]));
+  const siteRoot = new URL('../', location.href);
+  const list = tools.filter((t) => t.lifecycle === 'production' && t.hub && (t.hub.context || []).includes('project')).sort((a, b) => (a.hub.toolbar ?? 999) - (b.hub.toolbar ?? 999));
+  for (const t of list) {
+    const target = openTarget(t, byId, siteRoot);
+    const u = new URL(target.href);
+    u.searchParams.set(t.hub.param || 'project', ctx.project.id);
+    const a = mk('a', null, null, null, { href: u.href, 'data-toolbar-tool': t.id });
+    a.insertAdjacentHTML('afterbegin', svgIcon('<path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>'));
+    add(a, dv('span', null, t.name));
+    if (target.external) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
+    add(host, a);
+  }
+  add(host, list.length ? mk('span', 'hub-muted', 'open in this project', 'se abren en este proyecto') : mk('span', 'hub-muted', 'No tool declares a project context yet.', 'Ninguna herramienta declara aún un contexto de proyecto.'));
+}
+
+const RISK_OPTS = [['', 'Not assessed', 'Sin evaluar'], ['green', 'Managed', 'Gestionado'], ['amber', 'Elevated', 'Elevado'], ['red', 'High', 'Alto']];
+const numOrNull = (el) => (el && el.value.trim() !== '' ? Number(el.value) : null);
+
+/** The opportunity card: the register fields and where it is, editable in place. */
+function renderOpportunity(ctx) {
+  const host = $('#p-opportunity');
+  host.textContent = '';
+  const p = ctx.project, reg = p.register || {};
+  const head = mk('div', 'hub-card-head');
+  add(head, add(mk('div'), mk('h3', null, 'Opportunity', 'Oportunidad', { id: 'h-opp' }), mk('span', 'hub-muted', 'The register fields: who brought it, what it produces, what Alpha thinks and what comes next.', 'Los campos del registro: quién la trajo, qué produce, qué piensa Alpha y qué sigue.')));
+  const edit = mk('button', 'btn btn-outline btn-sm', 'Edit', 'Editar', { type: 'button', 'aria-expanded': 'false' });
+  add(head, edit);
+  add(host, head);
+  const grid = mk('div', 'hub-opp-grid');
+  const field = (key, en, es, node, cls) => add(grid, add(mk('div', cls || ''), mk('span', 'k', en, es), add(mk('span', 'v' + (cls === 'big' ? ' big' : ''), null, null, { 'data-opp': key }), node)));
+  const cn = p.country && ctx.names && ctx.names.get(p.country);
+  const where = p.country ? (cn ? cn.en : p.country) + (Number.isFinite(p.lat) && Number.isFinite(p.lon) ? ' · ' + p.lat + ', ' + p.lon : '') : null;
+  const whereEs = p.country ? (cn ? cn.es : p.country) + (Number.isFinite(p.lat) && Number.isFinite(p.lon) ? ' · ' + p.lat + ', ' + p.lon : '') : null;
+  field('where', 'Where', 'Dónde', where ? mk('span', null, where, whereEs) : mk('span', 'hub-muted', 'not placed yet', 'sin ubicar todavía'));
+  field('source', 'Source', 'Origen', reg.source ? dv('span', null, reg.source) : mk('span', 'hub-muted', '—', '—'));
+  const hasProd = typeof reg.current === 'number' || typeof reg.plan === 'number';
+  field('plan', 'Fact → plan', 'Hecho → plan', hasProd ? dv('span', null, (reg.current ?? '—') + ' → ' + (reg.plan ?? '—') + ' kboe/d') : mk('span', 'hub-muted', '—', '—'), 'big');
+  const risk = mk('span');
+  if (reg.risk) { const rl = RISK_LABEL[reg.risk] || [reg.risk, reg.risk]; add(risk, mk('span', 'hub-rag', null, null, { 'data-risk': reg.risk, 'aria-hidden': 'true' }), mk('span', null, rl[0] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''), rl[1] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''))); }
+  else add(risk, mk('span', 'hub-muted', 'not assessed', 'sin evaluar'));
+  field('risk', 'Execution risk', 'Riesgo de ejecución', risk);
+  field('owner', 'Owner', 'Responsable', reg.owner ? dv('span', null, reg.owner) : mk('span', 'hub-muted', '—', '—'));
+  field('thesis', 'Thesis', 'Tesis', reg.thesis ? dv('span', null, reg.thesis) : mk('span', 'hub-muted', 'none yet', 'ninguna todavía'), 'hub-opp-text');
+  field('next', 'Next step', 'Siguiente paso', reg.next ? dv('span', null, reg.next) : mk('span', 'hub-muted', 'none yet', 'ninguno todavía'), 'hub-opp-text');
+  add(host, grid);
+
+  // The edit form, hidden until asked for; posts country, coordinates and the merged register.
+  const form = mk('form', null, null, null, { novalidate: '', hidden: '' });
+  const fg = mk('div', 'hub-form-grid');
+  const fld = (id, en, es, input) => add(fg, add(mk('div', 'hub-field'), mk('label', null, en, es, { for: id }), input));
+  const country = mk('select', null, null, null, { id: 'op-country' });
+  add(country, mk('option', null, 'Not placed yet', 'Sin ubicar todavía', { value: '' }));
+  if (ctx.names) for (const [code, n] of [...ctx.names.entries()].sort((a, b) => a[1].en.localeCompare(b[1].en))) add(country, mk('option', null, n.en, n.es, { value: code }));
+  country.value = p.country || '';
+  fld('op-country', 'Country', 'País', country);
+  const inp = (id, type, value, extra) => mk('input', null, null, null, { id, type, autocomplete: 'off', value: value == null ? '' : String(value), ...(extra || {}) });
+  fld('op-lat', 'Latitude', 'Latitud', inp('op-lat', 'number', p.lat, { min: '-90', max: '90', step: '0.01', inputmode: 'decimal' }));
+  fld('op-lon', 'Longitude', 'Longitud', inp('op-lon', 'number', p.lon, { min: '-180', max: '180', step: '0.01', inputmode: 'decimal' }));
+  fld('op-source', 'Source', 'Origen', inp('op-source', 'text', reg.source));
+  fld('op-owner', 'Owner', 'Responsable', inp('op-owner', 'text', reg.owner));
+  fld('op-current', 'Fact today, kboe/d', 'Hecho hoy, kboe/d', inp('op-current', 'number', reg.current, { min: '0', step: '0.1', inputmode: 'decimal' }));
+  fld('op-plan', "Operator's plan, kboe/d", 'Plan del operador, kboe/d', inp('op-plan', 'number', reg.plan, { min: '0', step: '0.1', inputmode: 'decimal' }));
+  const riskSel = mk('select', null, null, null, { id: 'op-risk' });
+  for (const [v, en, es] of RISK_OPTS) add(riskSel, mk('option', null, en, es, { value: v }));
+  riskSel.value = reg.risk || '';
+  fld('op-risk', 'Execution risk', 'Riesgo de ejecución', riskSel);
+  fld('op-risk-score', 'Risk score (0–100)', 'Puntuación de riesgo (0–100)', inp('op-risk-score', 'number', reg.risk_score, { min: '0', max: '100', step: '1' }));
+  const thesis = mk('textarea', null, null, null, { id: 'op-thesis' }); thesis.value = reg.thesis || '';
+  const next = mk('textarea', null, null, null, { id: 'op-next' }); next.value = reg.next || '';
+  const wide = (id, en, es, ta) => add(fg, add(mk('div', 'hub-field hub-opp-text'), mk('label', null, en, es, { for: id }), ta));
+  wide('op-thesis', 'Thesis', 'Tesis', thesis);
+  wide('op-next', 'Next step', 'Siguiente paso', next);
+  add(form, fg);
+  const fn = mk('div', null, null, null, { id: 'op-notices', role: 'status' });
+  const actions = mk('div', 'hub-actions');
+  const save = mk('button', 'btn btn-primary btn-sm', 'Save', 'Guardar', { type: 'submit' });
+  const cancel = mk('button', 'btn btn-outline btn-sm', 'Cancel', 'Cancelar', { type: 'button' });
+  add(actions, save, cancel);
+  add(form, fn, actions);
+  add(host, form);
+  const close = () => { form.setAttribute('hidden', ''); edit.setAttribute('aria-expanded', 'false'); edit.focus(); };
+  edit.addEventListener('click', () => { if (form.hasAttribute('hidden')) { form.removeAttribute('hidden'); edit.setAttribute('aria-expanded', 'true'); country.focus(); } else close(); });
+  cancel.addEventListener('click', close);
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    fn.textContent = '';
+    const register = { ...reg };
+    const setOrDrop = (k, v) => { if (v === null || v === '' || v === undefined) delete register[k]; else register[k] = v; };
+    setOrDrop('source', $('#op-source').value.trim());
+    setOrDrop('owner', $('#op-owner').value.trim());
+    setOrDrop('current', numOrNull($('#op-current')));
+    setOrDrop('plan', numOrNull($('#op-plan')));
+    setOrDrop('risk', riskSel.value);
+    setOrDrop('risk_score', numOrNull($('#op-risk-score')));
+    setOrDrop('thesis', thesis.value.trim());
+    setOrDrop('next', next.value.trim());
+    const body = { country: country.value || null, lat: numOrNull($('#op-lat')), lon: numOrNull($('#op-lon')), register };
+    save.disabled = true;
+    const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    save.disabled = false;
+    if (res.ok && res.body) {
+      // The API answers with the merged register; a cleared field stays until a reload, so keep the client's view authoritative for what it just sent.
+      Object.assign(p, res.body, { register });
+      renderHeader(ctx); renderOpportunity(ctx);
+      return;
+    }
+    const msg = errMessage(res);
+    add(fn, notice('bad', 'Not saved.', 'No se guardó.', msg || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), msg || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.')));
+  });
 }
 
 /* ── add documents (M09 upload) ──────────────────────────────────────── */
@@ -565,7 +725,7 @@ async function init() {
   showVault(true);
   const project = pr.body;
 
-  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat] = await Promise.all([
+  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo] = await Promise.all([
     api('/api/projects/' + enc + '/timeline'),
     api('/api/projects/' + enc + '/vintages'),
     api('/api/projects/' + enc + '/lineage'),
@@ -575,7 +735,10 @@ async function init() {
     project.client_id ? api('/api/organisations/' + encodeURIComponent(project.client_id)) : Promise.resolve(null),
     project.client_id ? api('/api/organisations/' + encodeURIComponent(project.client_id) + '/file') : Promise.resolve(null),
     loadCatalog(),
+    loadGeo(),
   ]);
+  const names = new Map();
+  if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
 
   const entries = tlR.ok ? listOf(tlR.body, 'entries') : [];
   const vintages = vR.ok ? listOf(vR.body, 'vintages') : [];
@@ -591,9 +754,11 @@ async function init() {
   const lessonsOk = lessonR.ok && lessonR.status !== 404 && lessonR.status !== 501;
   const lessons = lessonsOk ? listOf(lessonR.body, 'lessons', 'items') : [];
   const now = Date.now();
-  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now };
+  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names };
 
   renderHeader(ctx);
+  renderToolbar(ctx, cat);
+  renderOpportunity(ctx);
   setupUpload(project);
 
   const rules = computeScorecard(ctx);
@@ -604,7 +769,7 @@ async function init() {
   const tl = $('#tl');
   if (!tlR.ok) tabError($('#panel-timeline'), tlR, 'The timeline could not be loaded.', 'No se pudo cargar la cronología.');
   else {
-    tl.entries = entries;
+    tl.entries = [...entries, ...stageEntries(project)];
     tl.addEventListener('record-select', (ev) => openRecord({ ref: ev.detail.ref, title: ev.detail.entry.title, entry: ev.detail.entry, trigger: ev.detail.trigger }));
   }
 
