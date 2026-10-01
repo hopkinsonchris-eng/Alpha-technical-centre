@@ -675,3 +675,11 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-create-here { margin-top: 10px; }
 #fld-notices .hub-notice { margin: 10px 0 0; }
 @media (max-width: 640px) { .hub-field-row, .hub-candidate { grid-template-columns: 1fr; } }
+.hub-proposed { margin-top: 14px; border-top: 1px solid var(--rule); padding-top: 12px; }
+.hub-proposals { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.hub-proposal { border: 1px solid var(--rule); border-radius: var(--r-lg); padding: 10px 14px; background: #FFFDF8; }
+.hub-proposal-head b { font-weight: 600; }
+.hub-proposal-quote { margin: 4px 0 0; padding: 0 0 0 10px; border-left: 2px solid var(--gold); font-size: 13px; color: var(--muted); font-style: italic; }
+.hub-proposal .hub-candidates { margin-top: 8px; }
+.hub-proposal .hub-actions-row { margin-top: 8px; }
+.hub-upload-fields { flex-basis: 100%; font-size: 13px; }

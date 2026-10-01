@@ -12,12 +12,12 @@ import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
 import type { RouteDeps } from './index.ts';
 import { bad, canSee, jsonBody, loadAccess, notFound, requireWritableProject, route, scopeLabel, type Access, type Ctx } from './common.ts';
-import { ASSET_KINDS, locate, slugAssetId, type AssetKind, type LocateOptions } from '../assets/gazetteers.ts';
+import { ASSET_KINDS, configureLocate, locate, slugAssetId, type AssetKind, type LocateOptions } from '../assets/gazetteers.ts';
 import { fileDossier, type AssetRow } from '../assets/dossier.ts';
+import type { ProjectRow } from './common.ts';
 
-let gazOpts: LocateOptions = {};
 /** Tests inject fetch and the GeoNames user; production reads the environment. */
-export function configureGazetteers(o: LocateOptions) { gazOpts = { ...gazOpts, ...o }; }
+export function configureGazetteers(o: LocateOptions) { configureLocate(o); }
 
 const ASSET_COLS = 'id, kind, name, parent_id, country, operator, source_url, props, lat, lon, location_source, status, created_by, created_at';
 const COUNTRY_RE = /^[A-Z]{2}$/;
@@ -59,13 +59,35 @@ async function createAsset(x: Ctx, c: any, country: string | null): Promise<Asse
   return (await readAsset(x, id))!;
 }
 
+export interface AttachResult { asset: AssetRow; created: boolean; already: boolean; dossier: string[] }
+
+/**
+ * Attaches an asset to a writable project from `{asset_id}` or `{create:{…}}` and files its
+ * dossier. Shared with the review queue, where accepting a proposal attaches the same way.
+ */
+export async function attachAsset(x: Ctx, p: ProjectRow, b: any): Promise<AttachResult> {
+  let asset: AssetRow | null = null;
+  let created = false;
+  if (typeof b.asset_id === 'string') {
+    asset = await readAsset(x, b.asset_id);
+    if (!asset) throw bad(`asset "${b.asset_id}" does not exist`, '/asset_id', 'unknown_asset');
+  } else if (b.create !== undefined) {
+    asset = await createAsset(x, b.create, p.country ?? null);
+    created = true;
+  } else throw bad('send asset_id or create', '/');
+  const already = p.asset_ids.includes(asset.id);
+  if (!already) { await x.db.query('UPDATE projects SET asset_ids = array_append(asset_ids, $2) WHERE id = $1', [p.id, asset.id]); p.asset_ids.push(asset.id); }
+  const dossier = await fileDossier(x.db, p.id, asset, x.person.id, x.now);
+  return { asset, created, already, dossier };
+}
+
 export function register(app: Hono<Env>, _deps: RouteDeps): void {
   route(app, 'GET', '/api/assets/locate', 'asset.locate', async (x) => {
     const name = (x.c.req.query('name') ?? '').trim();
     const country = x.c.req.query('country') || null;
     if (name.length < 2) throw bad('name is required (two characters or more)', '?name');
     if (country && !COUNTRY_RE.test(country)) throw bad('country must be an ISO 3166-1 alpha-2 code in capitals', '?country');
-    const r = await locate(x.db, name, country, gazOpts);
+    const r = await locate(x.db, name, country);
     x.a.scope = 'public'; x.a.detail = { name, country, candidates: r.candidates.length, unavailable: r.unavailable.map(u => u.source) };
     return { body: r };
   });
@@ -94,18 +116,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     x.a.scope = scopeLabel(p.id);
     requireWritableProject(acc, p.id);
     const b = await jsonBody(x.c);
-    let asset: AssetRow | null = null;
-    let created = false;
-    if (typeof b.asset_id === 'string') {
-      asset = await readAsset(x, b.asset_id);
-      if (!asset) throw bad(`asset "${b.asset_id}" does not exist`, '/asset_id', 'unknown_asset');
-    } else if (b.create !== undefined) {
-      asset = await createAsset(x, b.create, p.country ?? null);
-      created = true;
-    } else throw bad('send asset_id or create', '/');
-    const already = p.asset_ids.includes(asset.id);
-    if (!already) await x.db.query('UPDATE projects SET asset_ids = array_append(asset_ids, $2) WHERE id = $1', [p.id, asset.id]);
-    const dossier = await fileDossier(x.db, p.id, asset, x.person.id, x.now);
+    const { asset, created, already, dossier } = await attachAsset(x, p, b);
     x.a.refs = [`project:${p.id}`, `asset:${asset.id}`, ...dossier.map(d => `doc:${d}`)];
     x.a.detail = { asset_id: asset.id, created, already, dossier: dossier.length, location_source: asset.location_source };
     return { status: created ? 201 : 200, body: { asset, attached: true, already, created, dossier } };

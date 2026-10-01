@@ -15,6 +15,7 @@ import { chunkText, contextualise } from './chunk.ts';
 import { vectorLiteral, type Embedder } from './embed.ts';
 import { extractText, UnsupportedFormat } from './extract.ts';
 import { extractLegalFinance, flatten, isLegalFinanceType, proposeNdaExpiry } from './legal-finance.ts';
+import { extractAssets, proposeAssets } from './entities.ts';
 
 export interface IngestDeps { provider: LlmProvider | null; embedder: Embedder }
 export interface IngestOptions { force?: boolean; now?: () => Date }
@@ -22,6 +23,8 @@ export type IngestStatus = 'ok' | 'skipped' | 'unsupported' | 'empty' | 'needs_o
 export interface IngestResult {
   item_id: string; version: number; status: IngestStatus; chunks: number; text_chars: number;
   needs_ocr?: boolean; ocr?: boolean; partners_only?: boolean; nda_expiry_review?: string | null;
+  /** wave 3: review-queue proposals opened for fields the document names */
+  asset_proposals?: number;
 }
 
 const inflight = new Map<string, Promise<IngestResult>>();
@@ -112,5 +115,16 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
 
   let review: string | null = null;
   if (lf) review = await proposeNdaExpiry(db, { id: item.id, version, client_id: item.client_id ?? null, project_id: item.project_id, legal_tag: item.legal_tag, title: item.title }, lf);
-  return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}) };
+  // Wave 3: fields the document names become proposals in the review queue (never attachments).
+  let assetProposals = 0;
+  if (item.project_id) {
+    try {
+      const project = (await db.query<any>('SELECT id, country, asset_ids FROM projects WHERE id = $1', [item.project_id])).rows[0];
+      if (project) {
+        const mentions = await extractAssets(db, ex.text, ex.anchors, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, deps.provider);
+        assetProposals = (await proposeAssets(db, { id: item.id, version, title: item.title ?? null, project_id: item.project_id }, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, mentions)).length;
+      }
+    } catch { /* proposals are best effort; the document is indexed either way */ }
+  }
+  return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}), asset_proposals: assetProposals };
 }
