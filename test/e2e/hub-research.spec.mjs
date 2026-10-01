@@ -23,7 +23,7 @@ const PROJECT = {
 const GUAFITA = { id: 'field:ve:guafita', kind: 'field', name: 'Guafita', parent_id: null, country: 'VE', operator: null, source_url: 'https://www.gem.wiki/Guafita_Oil_Field', lat: 7.6, lon: -70.9, location_source: 'gem', status: 'operating', created_by: 'chris', created_at: '2026-09-30T10:00:00.000Z', props: { gem: { unit_id: 'G100', release: 'March 2026' } }, dossier: [] };
 const RUN_OK = { id: 7, status: 'stopped', started_at: '2026-10-01T12:25:00.000Z', finished_at: '2026-10-01T12:40:00.000Z', summary: {
   project_id: PID, status: 'stopped', findings: 4, proposals: { asset: 1, research: 2 }, fact_reads: 3, spend_gbp: 1.8, duration_ms: 15 * 60000, budget: { ms: 15 * 60000, gbp: 3 }, stopped_by: 'time',
-  sources: { gdelt: { queries: 3, findings: 2, created: 2, updated: 0, unchanged: 0 }, company: { queries: 2, findings: 0, created: 0, updated: 0, unchanged: 0 }, 'company-signals': { queries: 0, findings: 1, created: 1, updated: 0, unchanged: 0 }, literature: { queries: 2, findings: 1, created: 1, updated: 0, unchanged: 0 } },
+  sources: { gdelt: { queries: 3, findings: 2, created: 2, updated: 0, unchanged: 0 }, company: { queries: 2, findings: 0, created: 0, updated: 0, unchanged: 0, error: 'World Monitor timed out', skipped: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)' }, 'company-signals': { queries: 0, findings: 1, created: 1, updated: 0, unchanged: 0 }, literature: { queries: 2, findings: 1, created: 1, updated: 0, unchanged: 0 } },
   not_reached: [{ source: 'gdelt', query: '"La Victoria" Venezuela', reason: 'time' }, { source: 'literature', query: 'Guafita field Venezuela reservoir', reason: 'time' }], warnings: [] } };
 const FINDINGS = [
   { id: F1, type: 'note', title: 'PDVSA restarts Apure production after pipeline repair', date: '2026-09-30T10:00:00.000Z', source: 'gdelt', url: 'https://www.reuters.com/x/apure', query: '"Guafita" Venezuela', quote: 'PDVSA restarts Apure production after pipeline repair (Reuters)', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
@@ -98,6 +98,13 @@ test('W4-AC7: the toolbar shows the last run line; the Research tab lists findin
   await expect(panel.locator('#rs-summary')).toContainText('run of 1 Oct');
   await expect(panel.locator('#rs-summary')).toContainText('15 min, £1.80');
   await expect(panel.locator('#rs-summary')).toContainText('GDELT news 2');
+  // What each source was asked and answered, errors and Pro gates included.
+  const sources = panel.locator('#rs-sources li');
+  await expect(sources).toHaveCount(4);
+  await expect(sources.nth(0)).toContainText('World Monitor · GDELT news: 3 queries · 2 findings');
+  await expect(sources.nth(1)).toContainText('World Monitor · company lookups: 2 queries · 0 findings');
+  await expect(sources.nth(1).locator('[data-error]')).toHaveText('World Monitor timed out');
+  await expect(sources.nth(1).locator('[data-skipped]')).toContainText('needs World Monitor Pro');
   const groups = panel.locator('.hub-research-group');
   await expect(groups).toHaveCount(3);
   await expect(groups.nth(0)).toHaveAttribute('data-source', 'gdelt');
@@ -134,7 +141,7 @@ test('W4-AC7: the button queues a run, shows progress while polling, and when th
   const calls = await stubApi(page, {
     research: (route, c) => {
       if (phase === 0) return json(route, { project_id: PID, runs: [], findings: [], enabled: true });
-      if (phase === 1) { phase = 2; return json(route, { project_id: PID, runs: [{ id: 8, status: 'running', started_at: new Date(Date.now() - 2 * 60000).toISOString(), finished_at: null, summary: { findings: 1 } }], findings: [FINDINGS[0]], enabled: true }); }
+      if (phase === 1) { phase = 2; return json(route, { project_id: PID, runs: [{ id: 8, status: 'running', started_at: new Date(Date.now() - 2 * 60000).toISOString(), finished_at: null, summary: { findings: 1, phase: 'literature' } }], findings: [FINDINGS[0]], enabled: true }); }
       return json(route, { project_id: PID, runs: [RUN_OK], findings: FINDINGS, enabled: true });
     },
     proposals: [],
@@ -153,7 +160,7 @@ test('W4-AC7: the button queues a run, shows progress while polling, and when th
   await expect(status).toContainText('queued · waiting to start');
   await expect(status.locator('.hub-spin')).toHaveCount(1);
   // The poll sees the run going, then finished.
-  await expect(status).toContainText('running · 2 min · 1 findings');
+  await expect(status).toContainText('running · 2 min · 1 findings · searching the literature');
   await expect(status).toContainText('last run 1 Oct', { timeout: 5000 });
   await expect(status).toContainText('4 findings · 3 proposals');
   await expect(btn).toBeEnabled();
@@ -162,6 +169,16 @@ test('W4-AC7: the button queues a run, shows progress while polling, and when th
   await page.locator('#tab-research').click();
   await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(4);
   expect(calls.views).toBeGreaterThanOrEqual(3);
+});
+
+test('W4-AC7: a finished run with nothing found says so and lists what each source answered', async ({ page }) => {
+  await stubApi(page, { research: { project_id: PID, runs: [{ ...RUN_OK, status: 'ok', summary: { ...RUN_OK.summary, status: 'ok', findings: 0, proposals: { asset: 0, research: 0 }, stopped_by: null, not_reached: [], sources: { gdelt: { queries: 9, findings: 0, created: 0, updated: 0, unchanged: 0 }, literature: { queries: 9, findings: 0, created: 0, updated: 0, unchanged: 0 } } } }], findings: [], enabled: true }, proposals: [] });
+  await page.goto('/hub/project.html?id=' + PID + '#research');
+  await ready(page);
+  await expect(page.locator('#p-research-status')).toContainText('0 findings · 0 proposals');
+  await expect(page.locator('#rs-empty')).toContainText('Nothing found this run. The sources below say what was asked and what each answered.');
+  await expect(page.locator('#rs-sources li')).toHaveCount(2);
+  await expect(page.locator('#rs-sources li[data-source="literature"]')).toContainText('Literature: 9 queries · 0 findings');
 });
 
 test('W4-AC7: the Fields card shows research proposals; Set as operator and File as fact accept with apply, Not a fact rejects; a field named in a finding is an ordinary field proposal', async ({ page }) => {

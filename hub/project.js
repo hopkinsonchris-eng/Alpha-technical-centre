@@ -941,7 +941,8 @@ function renderResearch(ctx, first) {
     if (r.status === 'queued') { busy('queued · waiting to start', 'en cola · a la espera de empezar'); return; }
     if (r.status === 'running') {
       const mins = Math.max(0, Math.round((Date.now() - Date.parse(r.started_at)) / 60000));
-      busy('running · ' + mins + ' min · ' + (sm.findings || 0) + ' findings', 'en curso · ' + mins + ' min · ' + (sm.findings || 0) + ' hallazgos');
+      const ph = sm.phase === 'literature' ? [' · searching the literature', ' · buscando en la literatura'] : sm.phase === 'world-monitor' ? [' · asking World Monitor', ' · consultando World Monitor'] : ['', ''];
+      busy('running · ' + mins + ' min · ' + (sm.findings || 0) + ' findings' + ph[0], 'en curso · ' + mins + ' min · ' + (sm.findings || 0) + ' hallazgos' + ph[1]);
       return;
     }
     const when = fmtStamp(r.finished_at || r.started_at);
@@ -968,7 +969,24 @@ function renderResearch(ctx, first) {
     add(head, hd);
     add(panel, head);
     const findings = (state.view && state.view.findings) || [];
-    if (!findings.length) { add(panel, mk('p', 'hub-empty', active() ? 'The run is in progress; findings appear here as they land.' : 'No findings yet. Research this project asks World Monitor and the literature about its fields and operators.', active() ? 'La ejecución está en curso; los hallazgos aparecen aquí a medida que llegan.' : 'Aún sin hallazgos. Investigar este proyecto pregunta a World Monitor y a la literatura por sus campos y operadores.', { id: 'rs-empty' })); }
+    const finished = !!r && (r.status === 'ok' || r.status === 'stopped' || r.status === 'failed');
+    if (!findings.length) {
+      add(panel, mk('p', 'hub-empty', active() ? 'The run is in progress; findings appear here as they land.' : finished ? 'Nothing found this run. The sources below say what was asked and what each answered.' : 'No findings yet. Research this project asks World Monitor and the literature about its fields and operators.',
+        active() ? 'La ejecución está en curso; los hallazgos aparecen aquí a medida que llegan.' : finished ? 'Nada encontrado en esta ejecución. Las fuentes de abajo dicen qué se preguntó y qué respondió cada una.' : 'Aún sin hallazgos. Investigar este proyecto pregunta a World Monitor y a la literatura por sus campos y operadores.', { id: 'rs-empty' }));
+    }
+    // What each source was asked and what it answered: the only way a "0 findings" is an answer rather than a mystery.
+    if (finished && sm.sources && Object.keys(sm.sources).length) {
+      const ul = mk('ul', 'hub-research-sources', null, null, { id: 'rs-sources' });
+      for (const [src, c] of Object.entries(sm.sources)) {
+        const li = mk('li', null, null, null, { 'data-source': src });
+        const lab = RS_SOURCE[src] || (src === 'company' ? ['World Monitor · company lookups', 'World Monitor · búsquedas de empresa'] : [src, src]);
+        add(li, mk('b', null, lab[0], lab[1]), document.createTextNode(': '), mk('span', null, (c.queries || 0) + (c.queries === 1 ? ' query · ' : ' queries · ') + (c.findings || 0) + (c.findings === 1 ? ' finding' : ' findings'), (c.queries || 0) + (c.queries === 1 ? ' consulta · ' : ' consultas · ') + (c.findings || 0) + (c.findings === 1 ? ' hallazgo' : ' hallazgos')));
+        if (c.error) add(li, document.createTextNode(' · '), dv('span', 'hub-pill bad', c.error, { 'data-error': '' }));
+        if (c.skipped) add(li, document.createTextNode(' · '), dv('span', 'hub-pill muted', c.skipped, { 'data-skipped': '' }));
+        add(ul, li);
+      }
+      add(panel, ul);
+    }
     const groups = new Map();
     for (const f of findings) { const g = rsGroupOf(f.source); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(f); }
     for (const g of [...RS_ORDER, ...[...groups.keys()].filter((k) => !RS_ORDER.includes(k))]) {

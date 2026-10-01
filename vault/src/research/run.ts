@@ -25,6 +25,10 @@ export interface ResearchOptions {
   budgetMs?: number; budgetGbp?: number; minerAdapters?: FeedAdapter[]; skipMiners?: boolean; skipWorldMonitor?: boolean; by?: string;
   /** Ask the model for facts on at most this many findings per run (the spend cap applies too). */
   maxFactReads?: number;
+  /** Where the end-of-run line goes (the server log by default; tests pass a sink). */
+  log?: (line: string) => void;
+  /** How often the running counts are written while the literature pass goes (ms). */
+  progressEveryMs?: number;
 }
 export interface SourceCount { queries: number; findings: number; created: number; updated: number; unchanged: number; error?: string; skipped?: string }
 export interface NotReached { source: string; query: string; reason: string }
@@ -32,6 +36,8 @@ export interface ResearchSummary {
   project_id: string; status: 'ok' | 'failed' | 'stopped'; started_at: string; finished_at: string | null; duration_ms: number;
   sources: Record<string, SourceCount>; findings: number; proposals: { asset: number; research: number }; fact_reads: number;
   spend_gbp: number; budget: { ms: number; gbp: number }; not_reached: NotReached[]; stopped_by: 'time' | 'spend' | null; warnings: string[]; queued?: boolean; names?: string[];
+  /** Where a running job is: the Hub's status line says so. */
+  phase?: 'world-monitor' | 'literature' | 'done';
 }
 
 export const RESEARCH_DISABLED = 'research runs are switched off (RESEARCH_ENABLED=false on the Vault service)';
@@ -94,7 +100,8 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   const started = now();
   const budget = { ms: opts.budgetMs ?? budgetMsOf(), gbp: opts.budgetGbp ?? budgetGbpOf() };
   const by = opts.by ?? 'research';
-  const summary: ResearchSummary = { project_id: projectId, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sources: {}, findings: 0, proposals: { asset: 0, research: 0 }, fact_reads: 0, spend_gbp: 0, budget, not_reached: [], stopped_by: null, warnings: [] };
+  const summary: ResearchSummary = { project_id: projectId, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sources: {}, findings: 0, proposals: { asset: 0, research: 0 }, fact_reads: 0, spend_gbp: 0, budget, not_reached: [], stopped_by: null, warnings: [], phase: 'world-monitor' };
+  const log = opts.log ?? ((line: string) => console.log(line));
   const job = jobId ?? (await db.query<{ id: number }>("INSERT INTO jobs (name, status, summary) VALUES ('research', 'running', $1::jsonb) RETURNING id", [JSON.stringify({ project_id: projectId, queued: false })])).rows[0].id;
   await db.query('UPDATE jobs SET started_at = $2, summary = $3::jsonb WHERE id = $1', [job, started.toISOString(), JSON.stringify({ ...summary, queued: false })]);
   const touched: string[] = [];
@@ -168,20 +175,33 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
       }
     } else if (!opts.skipWorldMonitor) summary.warnings.push('World Monitor not connected: GDELT, company and filing searches skipped');
 
-    // 2. The miners: literature per field and operator, scoped to the project.
+    // 2. The miners: literature per field and operator, scoped to the project. The Hub reads the running
+    //    counts while this goes, so a long pass does not look like nothing happening.
+    summary.phase = 'literature';
+    await progress();
     if (!opts.skipMiners && q.literature.length) {
       const s = stop();
       if (s) summary.not_reached.push({ source: 'literature', query: q.literature.map(t => t.query).join(' | '), reason: s });
       else {
         count('literature').queries += q.literature.length;
         const since = new Date(started.getTime() - 5 * 365 * 86_400_000);
+        const before = summary.findings;
+        let lastProgress = 0;
         try {
           const m: MinerSummary = await runMiners(db, { now: started, since, only: ['openalex', 'crossref', 'semantic-scholar'], force: true, storage: opts.storage, fetch: opts.fetch, adapters: opts.minerAdapters, clock: opts.clock ?? (opts.now ? { now: () => now().getTime(), sleep: async () => {} } : undefined),
             config: { topics: q.literature, negative: ['retracted', 'erratum'], sec_issuers: [], lookback_days: { weekly: 8, monthly: 40 }, sources: { openalex: { enabled: true }, crossref: { enabled: true }, 'semantic-scholar': { enabled: true } } } as any,
-            projectId, queryOf: (topicId) => q.literature.find(t => t.id === topicId)?.query ?? null, budgetUntil: new Date(started.getTime() + budget.ms) });
+            projectId, queryOf: (topicId) => q.literature.find(t => t.id === topicId)?.query ?? null, budgetUntil: new Date(started.getTime() + budget.ms),
+            onProgress: async (ms) => {
+              summary.findings = before + ms.created + ms.updated;
+              const c = count('literature'); c.findings = Object.values(ms.adapters).reduce((n, a) => n + a.fetched, 0); c.created = ms.created; c.updated = ms.updated; c.unchanged = ms.unchanged;
+              const t = now().getTime();
+              if (t - lastProgress >= (opts.progressEveryMs ?? 3000)) { lastProgress = t; await progress(); }
+            } });
           const c = count('literature');
-          c.findings += Object.values(m.adapters).reduce((n, a) => n + a.fetched, 0); c.created += m.created; c.updated += m.updated; c.unchanged += m.unchanged;
-          summary.findings += m.created + m.updated;
+          c.findings = Object.values(m.adapters).reduce((n, a) => n + a.fetched, 0); c.created = m.created; c.updated = m.updated; c.unchanged = m.unchanged;
+          summary.findings = before + m.created + m.updated;
+          const errs = Object.entries(m.adapters).filter(([, a]) => a.error).map(([id, a]) => `${id}: ${a.error}`);
+          if (errs.length) c.error = errs.join('; ');
           for (const w of m.warnings) summary.warnings.push(`literature: ${w}`);
           if (m.stopped) summary.not_reached.push({ source: 'literature', query: m.stopped, reason: 'time' });
         } catch (e) { count('literature').error = (e as Error).message; }
@@ -193,8 +213,12 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   } catch (e) {
     summary.status = 'failed'; summary.warnings.push((e as Error).message);
   }
+  summary.phase = 'done';
   summary.finished_at = now().toISOString(); summary.duration_ms = elapsed();
   await db.query('UPDATE jobs SET finished_at = $2, status = $3, summary = $4::jsonb WHERE id = $1', [job, summary.finished_at, summary.status === 'failed' ? 'failed' : 'ok', JSON.stringify({ ...summary, queued: false })]);
+  log(`research run ${job} ${projectId}: ${summary.status}, ${summary.findings} findings, ${summary.proposals.asset + summary.proposals.research} proposals, £${summary.spend_gbp}, ${Math.round(summary.duration_ms / 1000)} s; `
+    + Object.entries(summary.sources).map(([k, c]) => `${k} ${c.queries}q/${c.findings}f${c.error ? ' error: ' + c.error : ''}${c.skipped ? ' skipped: ' + c.skipped : ''}`).join(', ')
+    + (summary.not_reached.length ? `; not reached ${summary.not_reached.length}` : '') + (summary.warnings.length ? `; warnings: ${summary.warnings.join(' | ')}` : ''));
   await audit(db, by, 'research.run', `project:${projectId}`, [`project:${projectId}`, ...touched.slice(0, 200)], { findings: summary.findings, proposals: summary.proposals, status: summary.status, stopped_by: summary.stopped_by, spend_gbp: summary.spend_gbp, duration_ms: summary.duration_ms });
   return summary;
 }

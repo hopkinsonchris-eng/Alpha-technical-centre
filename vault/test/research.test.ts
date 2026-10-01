@@ -20,7 +20,9 @@ const { FakeProvider } = await import('../src/llm/provider.ts');
 const { configureLocate } = await import('../src/assets/gazetteers.ts');
 const { configureWorldMonitor, resetWorldMonitorCache } = await import('../src/intel/worldmonitor.ts');
 const { buildQueries, operatorNames } = await import('../src/research/queries.ts');
-const { costGbp, runResearch, researchView } = await import('../src/research/run.ts');
+const { costGbp, runResearch: runResearchRaw, researchView } = await import('../src/research/run.ts');
+const logLines: string[] = [];
+const runResearch: typeof runResearchRaw = (db, pid, opts = {}, jobId) => runResearchRaw(db, pid, { log: (l) => logLines.push(l), progressEveryMs: 0, ...opts }, jobId);
 const { toKboed } = await import('../src/research/findings.ts');
 const { configureResearch } = await import('../src/api/research.routes.ts');
 import type { FeedAdapter } from '../src/miners/types.ts';
@@ -170,6 +172,8 @@ test('W4-AC2: a run files every World Monitor and literature finding as a cited 
   // The run is a job row with its summary, and an audit event names the notes it filed.
   const job = (await db.query<any>("SELECT status, finished_at, summary FROM jobs WHERE name = 'research' ORDER BY id DESC LIMIT 1")).rows[0];
   assert.equal(job.status, 'ok'); assert.ok(job.finished_at); assert.equal(job.summary.project_id, 'hte-apure'); assert.equal(job.summary.findings, firstRun.findings);
+  assert.equal(job.summary.phase, 'done');
+  assert.match(logLines.at(-1)!, /^research run \d+ hte-apure: ok, \d+ findings, 3 proposals, £[0-9.]+, \d+ s; gdelt 4q\/4f, company 3q\/0f, company-enrichment 0q\/3f, company-signals 0q\/\d+f, intel-timeline 1q\/1f, literature \d+q\/2f$/, logLines.at(-1) ?? '');
   const audit = (await db.query<any>("SELECT refs, detail FROM audit_events WHERE action = 'research.run' ORDER BY id DESC LIMIT 1")).rows[0];
   assert.ok(audit.refs.includes('project:hte-apure') && audit.refs.some((r: string) => r.startsWith('doc:')));
   assert.equal(audit.detail.findings, firstRun.findings);
@@ -251,6 +255,23 @@ test('a run on a project the caller cannot write is refused at the queue; an ass
   const no = await ana.request('/api/queue/review/11111111-1111-4111-8111-111111111111/accept', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
   assert.equal(no.status, 403, await no.text());
   assert.equal((await db.query<any>("SELECT status FROM review_queue WHERE id = '11111111-1111-4111-8111-111111111111'")).rows[0].status, 'open');
+});
+
+test('while the literature pass runs, the job row carries the phase and the running count so the Hub can show progress', async () => {
+  await db.query("INSERT INTO projects (id,client_id,name,status,default_legal_tag,country,members,asset_ids) VALUES ('hte-live','hte','High Tech Electronica','prospect','lt-firm','VE','{chris}','{field:ve:guafita}')");
+  const seen: { phase: string | undefined; findings: number }[] = [];
+  const spy: FeedAdapter = { ...openalex, async *fetch(since, topics) {
+    const row = (await db.query<any>("SELECT summary FROM jobs WHERE name = 'research' AND summary->>'project_id' = 'hte-live' ORDER BY id DESC LIMIT 1")).rows[0];
+    seen.push({ phase: row.summary.phase, findings: row.summary.findings });
+    yield* openalex.fetch(since, topics);
+  } };
+  configureWorldMonitor({ fetch: wmFetch, apiKey: null, now: () => new Date(t) });
+  const r = await runResearch(db, 'hte-live', { now, storage, provider: null, minerAdapters: [spy], budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(r.status, 'ok');
+  assert.deepEqual(seen, [{ phase: 'literature', findings: 0 }], 'the row said "literature" before the first paper was fetched');
+  const row = (await db.query<any>("SELECT summary FROM jobs WHERE name = 'research' AND summary->>'project_id' = 'hte-live' ORDER BY id DESC LIMIT 1")).rows[0];
+  assert.equal(row.summary.phase, 'done'); assert.equal(row.summary.findings, 1); assert.equal(row.summary.sources.literature.created, 1);
+  configureWorldMonitor({ fetch: wmFetch, apiKey: KEY, now: () => new Date(t) });
 });
 
 test('without World Monitor the run says so and the literature still files', async () => {
