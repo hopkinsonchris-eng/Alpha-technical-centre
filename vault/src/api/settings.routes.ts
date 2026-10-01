@@ -21,7 +21,7 @@ const assetView = (r: any) => ({ id: r.id, family: family(r.id), kind: r.kind, l
 /* ── purge (not a route) ────────────────────────────────────────────── */
 
 /** Everything that still depends on a run or an item, as refs. Empty means it may be purged. */
-async function citedBy(db: Db, kind: 'run' | 'item', id: string): Promise<string[]> {
+export async function citedBy(db: Db, kind: 'run' | 'item', id: string): Promise<string[]> {
   const ref = kind === 'run' ? `run:${id}` : `doc:${id}`;
   const refs = [ref];
   if (kind === 'item') {

@@ -20,6 +20,7 @@ import { companyEnrichment, companySignals, gdeltDocuments, intelTimeline, secFi
 import { buildQueries, type ResearchField, type ResearchProject, type ResearchQueries } from './queries.ts';
 import { fetchGemWiki, gemWikiFindings } from './gemwiki.ts';
 import { locateFields } from './locate.ts';
+import { citedBy } from '../api/settings.routes.ts';
 import type { LocateOptions } from '../assets/gazetteers.ts';
 import { researchWebEnabled, searchWeb, webFindings, RESEARCH_WEB_OFF } from './web.ts';
 import { fileFinding, proposeFromFinding, readFacts, type Finding } from './findings.ts';
@@ -46,8 +47,8 @@ export interface ResearchSummary {
   project_id: string; status: 'ok' | 'failed' | 'stopped'; started_at: string; finished_at: string | null; duration_ms: number;
   sources: Record<string, SourceCount>; findings: number; proposals: { asset: number; research: number }; fact_reads: number;
   spend_gbp: number; budget: { ms: number; gbp: number }; not_reached: NotReached[]; stopped_by: 'time' | 'spend' | null; warnings: string[]; queued?: boolean; names?: string[];
-  /** Papers an earlier run filed that fail today's screen, hidden by this run (never deleted). */
-  pruned?: number;
+  /** Papers an earlier run filed that fail today's screen: purged when nothing cites them, hidden when something does. */
+  pruned?: number; purged?: number;
   /** Where a running job is: the Hub's status line says so. */
   phase?: 'locate' | 'gem-wiki' | 'world-monitor' | 'web' | 'literature' | 'done';
   /** Fields the gazetteers could not place, named so a person can place them by hand. */
@@ -256,9 +257,11 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
     //    counts while this goes, so a long pass does not look like nothing happening.
     summary.phase = 'literature';
     await progress();
-    // Papers an earlier run filed under this project are re-screened with today's rules; the ones that fail are
-    // hidden (rule 9: never deleted), so a mistake in the screen does not stay on the timeline.
-    summary.pruned = await pruneLiterature(db, projectId, q.literature, touched);
+    // Papers an earlier run filed under this project are re-screened with today's rules. A paper that fails and
+    // that nothing cites is purged (the same rule as the partner purge route: a record of nobody's work); one
+    // that something cites is hidden. Either way a mistake in the screen does not stay on the timeline.
+    const pr = await pruneLiterature(db, projectId, q.literature, touched, by);
+    summary.pruned = pr.hidden + pr.purged; summary.purged = pr.purged;
     if (!opts.skipMiners && q.literature.length) {
       const s = stop();
       if (s) summary.not_reached.push({ source: 'literature', query: q.literature.map(t => t.query).join(' | '), reason: s });
@@ -299,29 +302,44 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   await db.query('UPDATE jobs SET finished_at = $2, status = $3, summary = $4::jsonb WHERE id = $1', [job, summary.finished_at, summary.status === 'failed' ? 'failed' : 'ok', JSON.stringify({ ...summary, queued: false })]);
   log(`research run ${job} ${projectId}: ${summary.status}, ${summary.findings} findings, ${summary.proposals.asset + summary.proposals.research} proposals, £${summary.spend_gbp}, ${Math.round(summary.duration_ms / 1000)} s; `
     + Object.entries(summary.sources).map(([k, c]) => `${k} ${c.queries}q/${c.findings}f${c.error ? ' error: ' + c.error : ''}${c.skipped ? ' skipped: ' + c.skipped : ''}`).join(', ')
-    + (summary.pruned ? `; pruned ${summary.pruned}` : '') + (summary.not_reached.length ? `; not reached ${summary.not_reached.length}` : '') + (summary.warnings.length ? `; warnings: ${summary.warnings.join(' | ')}` : ''));
+    + (summary.pruned ? `; pruned ${summary.pruned} (${summary.purged ?? 0} purged)` : '') + (summary.not_reached.length ? `; not reached ${summary.not_reached.length}` : '') + (summary.warnings.length ? `; warnings: ${summary.warnings.join(' | ')}` : ''));
   await audit(db, by, 'research.run', `project:${projectId}`, [`project:${projectId}`, ...touched.slice(0, 200)], { findings: summary.findings, proposals: summary.proposals, status: summary.status, stopped_by: summary.stopped_by, spend_gbp: summary.spend_gbp, duration_ms: summary.duration_ms, pruned: summary.pruned ?? 0 });
   return summary;
 }
 
 /**
- * Re-screens the papers research filed under a project (origin.query set) against the topics as they are now
- * and hides the ones that fail. Returns how many were hidden; their ids join the audit refs.
+ * Re-screens the papers research filed under a project (origin.query set), hidden or not, against the topics
+ * as they are now. A paper that fails and that no run, document, lesson or analogue cites is purged with its
+ * chunks and versions, as the partner purge route does for a record nobody's work depends on; a cited one is
+ * hidden. One audit event names what went. Returns the counts; purged ids still join the run's refs.
  */
-export async function pruneLiterature(db: Db, projectId: string, topics: TopicSpec[], touched: string[] = []): Promise<number> {
-  const rows = (await db.query<any>("SELECT id, title, extracted, origin FROM items WHERE project_id = $1 AND type = 'paper' AND NOT hidden AND origin ? 'query'", [projectId])).rows;
-  if (!rows.length) return 0;
+export async function pruneLiterature(db: Db, projectId: string, topics: TopicSpec[], touched: string[] = [], by = 'research'): Promise<{ purged: number; hidden: number }> {
+  const rows = (await db.query<any>("SELECT id, title, extracted, origin, hidden FROM items WHERE project_id = $1 AND type = 'paper' AND origin ? 'query'", [projectId])).rows;
+  const out = { purged: 0, hidden: 0 };
+  if (!rows.length) return out;
   const cfg = { topics, negative: ['retracted', 'erratum'] } as any;
-  const bad: string[] = [];
+  const purged: string[] = [], hidden: string[] = [];
   for (const r of rows) {
     const rec = { external_id: r.id, url: '', title: String(r.title ?? ''), authored_at: null, authors: [], text: typeof r.extracted?.abstract === 'string' ? r.extracted.abstract : undefined, meta: {} as Record<string, unknown> };
     const own = topics.find(t => t.query === r.origin?.query);
     const kept = own ? screenPaper({ ...rec, meta: { topic_id: own.id } }, cfg) === 'keep'
       : topics.some(t => screenPaper({ ...rec, meta: { topic_id: t.id } }, cfg) === 'keep');
-    if (!kept) bad.push(r.id);
+    if (kept) continue;
+    if ((await citedBy(db, 'item', r.id)).length) { if (!r.hidden) hidden.push(r.id); continue; }
+    purged.push(r.id);
   }
-  if (bad.length) { await db.query('UPDATE items SET hidden = true WHERE id = ANY($1::uuid[])', [bad]); for (const id of bad) touched.push(`doc:${id}`); }
-  return bad.length;
+  if (hidden.length) await db.query('UPDATE items SET hidden = true WHERE id = ANY($1::uuid[])', [hidden]);
+  if (purged.length) {
+    await db.query('DELETE FROM chunks WHERE item_id = ANY($1::uuid[])', [purged]);
+    await db.query('DELETE FROM filing_queue WHERE item_id = ANY($1::uuid[])', [purged]);
+    await db.query('DELETE FROM item_cites WHERE item_id = ANY($1::uuid[])', [purged]);
+    await db.query('DELETE FROM item_versions WHERE item_id = ANY($1::uuid[])', [purged]);
+    await db.query('DELETE FROM items WHERE id = ANY($1::uuid[])', [purged]);
+  }
+  for (const id of [...purged, ...hidden]) touched.push(`doc:${id}`);
+  if (purged.length || hidden.length) await audit(db, by, 'research.prune', `project:${projectId}`, [`project:${projectId}`, ...[...purged, ...hidden].slice(0, 200).map(id => `doc:${id}`)], { purged: purged.length, hidden: hidden.length, reason: 'failed the literature screen' });
+  out.purged = purged.length; out.hidden = hidden.length;
+  return out;
 }
 
 /** The last runs and the findings for a project, for GET /api/projects/:id/research. */
