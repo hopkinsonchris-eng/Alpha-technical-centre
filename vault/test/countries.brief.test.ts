@@ -158,14 +158,17 @@ test('AC16: a cached brief is served only to a caller whose scope covers every t
 /* ── wave 3, PR 3: World Monitor in the countries summary and the brief (W3-AC9, W3-AC10) ── */
 
 const WM_KEY = 'wm_' + 'b'.repeat(40);
-const WM_RISK = { cii: { combinedScore: 64, advisoryLevel: 'exercise increased caution', components: { conflict: 50 }, computedAt: '2026-10-01T08:00:00Z' } };
-const WM_EVENTS = { events: [{ event_id_cnty: 'KAZ777', event_type: 'Protests', admin1: 'Mangystau', actor1: 'Oil workers (Kazakhstan)', fatalities: 0, event_date: '2026-09-25', notes: 'Strike at a field.' }] };
-const WM_NEWS = { headlines: [{ title: 'Kazakhstan raises output target', source: 'Reuters', url: 'https://example.com/kz', published_at: '2026-09-29T07:00:00Z' }] };
+const WM_RISK = { countryCode: 'KZ', cii: { combinedScore: 64, trend: 'TREND_DIRECTION_STABLE', components: { newsActivity: 20, ciiContribution: 30, geoConvergence: 10, militaryActivity: 4 }, computedAt: Date.parse('2026-10-01T08:00:00Z') }, advisoryLevel: 'exercise increased caution', sanctionsActive: false, sanctionsCount: 0 };
+const WM_EVENTS = { events: [{ id: 'KAZ777', eventType: 'Protests', admin1: 'Mangystau', actors: ['Oil workers (Kazakhstan)'], fatalities: 0, occurredAt: Date.parse('2026-09-25T00:00:00Z'), source: 'ACLED' }] };
+const WM_NEWS = { countries: { KZ: { items: [{ title: 'Kazakhstan raises output target', source: 'Reuters', link: 'https://example.com/kz', publishedAt: Date.parse('2026-09-29T07:00:00Z') }] } } };
+const WM_ENERGY = { mixAvailable: false, jodiOilAvailable: true, jodiOilDataMonth: '2026-07', crudeImportsKbd: 0, gasolineDemandKbd: 95, dieselDemandKbd: 120, jodiGasAvailable: false };
 let wmCalls: string[] = [];
 const wmFetch = (async (url: string) => {
   wmCalls.push(url);
   const u = new URL(url);
-  const body = u.pathname.includes('get-country-risk') ? WM_RISK : u.pathname.includes('list-acled-events') ? WM_EVENTS : WM_NEWS;
+  const ep = u.pathname.split('/').pop();
+  if (ep === 'get-country-intel-brief') return new Response('{"code":"pro_required"}', { status: 403 });
+  const body = ep === 'get-country-risk' ? WM_RISK : ep === 'list-acled-events' ? WM_EVENTS : ep === 'get-country-energy-profile' ? WM_ENERGY : WM_NEWS;
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 }) as unknown as typeof fetch;
 /** Cites the live risk and the ACLED event it is given, plus one run. */
@@ -176,7 +179,7 @@ const wmProvider = new FakeProvider((req) => {
   const acled = /\[wm:acled:([^\]]+)\]/.exec(u)?.[1];
   return [
     `Situation. Alpha holds one opportunity in this country [run:${runRef}].`,
-    `Live risk. World Monitor scores the country 64 of 100, exercise increased caution [wm:risk:KZ]. Oil workers protested in Mangystau on 2026-09-25 [wm:acled:${acled}]. The press reports a higher output target [wm:news:1].`,
+    `Live risk. World Monitor scores the country 64 of 100, exercise increased caution [wm:risk:KZ]. Oil workers protested in Mangystau on 2026-09-25 [wm:acled:${acled}]. The press reports a higher output target [wm:news:1]. Diesel demand runs at 120 kb/d [wm:energy:KZ].`,
   ].join('\n\n');
 });
 
@@ -201,7 +204,7 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
   wmCalls = []; calls = 0;
   const r = await (await partner.request('/api/countries')).json() as any;
   const kz = r.countries.find((c: any) => c.code === 'KZ');
-  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', computed_at: '2026-10-01T08:00:00Z', fetched_at: kz.risk.fetched_at });
+  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: kz.risk.fetched_at, sanctions_active: false, sanctions_count: 0 });
   assert.match(kz.risk.fetched_at, /^\d{4}-/);
   assert.equal(r.world_monitor.status, 'live');
   assert.ok(!JSON.stringify(r).includes(WM_KEY), 'the key is never in a response');
@@ -216,8 +219,10 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
   assert.ok(b.body.citations.includes('wm:risk:KZ'));
   assert.ok(b.body.citations.includes('wm:acled:KAZ777'));
   assert.ok(b.body.citations.includes('wm:news:1'));
+  assert.ok(b.body.citations.includes('wm:energy:KZ'));
   const wmSources = b.body.sources.filter((s: any) => s.kind === 'wm');
-  assert.deepEqual(wmSources.map((s: any) => s.ref).sort(), ['wm:acled:KAZ777', 'wm:news:1', 'wm:risk:KZ']);
+  assert.deepEqual(wmSources.map((s: any) => s.ref).sort(), ['wm:acled:KAZ777', 'wm:energy:KZ', 'wm:news:1', 'wm:risk:KZ']);
+  assert.ok(b.body.world_monitor.notes.includes('World Monitor intel brief: needs Pro'), 'a Pro-gated section is named, never silent');
   assert.equal(wmSources.find((s: any) => s.ref === 'wm:news:1').url, 'https://example.com/kz');
   assert.equal(wmSources.find((s: any) => s.ref === 'wm:risk:KZ').legal_tag, 'lt-public');
   assert.ok(!JSON.stringify(b.body).includes(WM_KEY));
@@ -226,7 +231,7 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
   const again = await post(partner, '/api/countries/KZ/brief');
   assert.equal(again.body.cached, true);
   assert.equal(calls, 1);
-  WM_RISK.cii.combinedScore = 80; WM_RISK.cii.computedAt = '2026-10-01T10:00:00Z';
+  WM_RISK.cii.combinedScore = 80; WM_RISK.cii.computedAt = Date.parse('2026-10-01T10:00:00Z');
   configureWorldMonitor({ apiKey: WM_KEY, fetch: wmFetch });          // clears the adapter cache, as an hour passing would
   const fresh = await post(partner, '/api/countries/KZ/brief');
   assert.equal(fresh.body.cached, false);

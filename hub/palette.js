@@ -59,7 +59,7 @@ async function loadItems() {
     }
     const names = new Map();
     if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
-    for (const p of pr.ok ? listOf(pr.body, 'projects', 'items') : []) {
+    for (const p of pr.ok ? listOf(pr.body, 'projects', 'items').filter((p) => p && p.status !== 'archived') : []) {
       const cn = p.country && names.get(p.country);
       const sub = [cn ? cn.en : p.country, p.client_name || p.client_id, p.stage].filter(Boolean).join(' · ');
       const subEs = [cn ? cn.es : p.country, p.client_name || p.client_id, p.stage].filter(Boolean).join(' · ');

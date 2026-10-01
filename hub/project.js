@@ -104,6 +104,15 @@ function renderHeader(ctx) {
   add(stageCtl, mk('label', null, 'stage', 'etapa', { for: 'p-stage' }), sel);
   add(sub, document.createTextNode(' · '), stageCtl);
   sel.addEventListener('change', () => changeStage(ctx, sel));
+  // Wave 3 PR 4: archive (hide, never delete) and restore; partners only, like creating.
+  if (ctx.person && ctx.person.role === 'partner') {
+    const archived = p.status === 'archived';
+    const btn = mk('button', 'btn btn-outline btn-sm hub-archive-btn', archived ? 'Restore project' : 'Archive project', archived ? 'Restaurar proyecto' : 'Archivar proyecto', { type: 'button', id: 'p-archive', 'data-archived': archived ? '1' : '0' });
+    btn.addEventListener('click', () => archiveProject(ctx, btn));
+    add(sub, document.createTextNode(' · '), btn);
+  }
+  const banner = $('#p-archived');
+  if (banner) { if (p.status === 'archived') banner.removeAttribute('hidden'); else banner.setAttribute('hidden', ''); }
 
   const card = $('#p-file');
   card.textContent = '';
@@ -169,6 +178,33 @@ const stageEntries = (p) => {
 function refreshTimeline(ctx) {
   const tl = $('#tl');
   if (tl && ctx.entries) tl.entries = [...ctx.entries, ...stageEntries(ctx.project)];
+}
+
+/** Archive hides the project from Today, the globe, the register and Cmd+K; its records stay and the file still opens by id. Restore puts it back. */
+async function archiveProject(ctx, btn) {
+  const p = ctx.project;
+  const notices = pnotices(); notices.textContent = '';
+  const archiving = p.status !== 'archived';
+  if (archiving && !btn.hasAttribute('data-confirm')) {
+    btn.setAttribute('data-confirm', '1');
+    setText(btn, 'Confirm: archive this project', 'Confirmar: archivar este proyecto');
+    add(notices, notice('warn', 'Archive this project?', '¿Archivar este proyecto?', 'It leaves Today, the globe and the register. Nothing is deleted: every run and document stays, and the file still opens from its address. Press the button again to confirm.', 'Sale de Hoy, del globo y del registro. No se borra nada: cada ejecución y documento se conserva, y la ficha sigue abriéndose desde su dirección. Pulse el botón otra vez para confirmar.'));
+    return;
+  }
+  btn.disabled = true;
+  const next = archiving ? 'archived' : (p.closed_at ? 'closed' : 'prospect');
+  const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ status: next }) });
+  btn.disabled = false;
+  btn.removeAttribute('data-confirm');
+  if (res.ok && res.body) {
+    Object.assign(p, res.body);
+    renderHeader(ctx);
+    add(notices, archiving ? notice('ok', 'Archived.', 'Archivado.', 'Hidden from Today, the globe and the register; nothing was deleted.', 'Oculto de Hoy, del globo y del registro; no se borró nada.') : notice('ok', 'Restored.', 'Restaurado.', 'Back on Today, the globe and the register.', 'De vuelta en Hoy, el globo y el registro.'));
+    return;
+  }
+  setText(btn, archiving ? 'Archive project' : 'Restore project', archiving ? 'Archivar proyecto' : 'Restaurar proyecto');
+  const msg = errMessage(res);
+  add(notices, notice('bad', archiving ? 'Not archived.' : 'Not restored.', archiving ? 'No se archivó.' : 'No se restauró.', msg || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), msg || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.')));
 }
 
 async function changeStage(ctx, sel) {
@@ -317,9 +353,11 @@ const coordText = (o) => (Number.isFinite(o.lat) && Number.isFinite(o.lon) ? o.l
 const srcPill = (src) => { const w = sourceWord(src); return mk('span', 'hub-pill ghost hub-src', w.en, w.es, { 'data-source': src || '' }); };
 
 /** What a field row says after its name: kind, basin, coordinates, source and release, status and operator. */
-function fieldFacts(f) {
+function fieldFacts(f, names) {
   const facts = mk('div', 'hub-note-s');
   add(facts, kindWord(f.kind));
+  const chk = f.location_check;
+  if (chk && chk.outside) { const on = (names && names.get(chk.found)) || { en: chk.found, es: chk.found }, ex = (names && names.get(chk.expected)) || { en: chk.expected, es: chk.expected }; add(facts, document.createTextNode(' · '), mk('span', 'hub-outside', 'outside ' + ex.en + ': this location is in ' + on.en, 'fuera de ' + ex.es + ': esta ubicación está en ' + on.es, { 'data-outside': chk.found })); }
   const gem = f.props && f.props.gem;
   const c = coordText(f);
   if (c) add(facts, document.createTextNode(' · '), dv('span', 'mono', c, { 'data-coords': c }));
@@ -343,6 +381,7 @@ function candidateRow(ctx, c, onAttach) {
   const cc = coordText(c);
   if (cc) add(meta, dv('span', 'mono', cc)); else add(meta, mk('span', null, 'no coordinates on this record', 'sin coordenadas en este registro'));
   add(meta, document.createTextNode(' · '), srcPill(c.source));
+  if (c.country && ctx.project.country && c.country !== ctx.project.country) { const on = (ctx.names && ctx.names.get(c.country)) || { en: c.country, es: c.country }; add(meta, document.createTextNode(' · '), mk('span', 'hub-outside', 'in ' + on.en + ', not this project\'s country', 'en ' + on.es + ', no el país de este proyecto', { 'data-outside': c.country })); }
   if (c.asset_id) add(meta, document.createTextNode(' · '), mk('span', null, 'already in the Vault', 'ya en el Vault'));
   if (c.detail && c.detail.operator) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.operator));
   if (c.detail && c.detail.status) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.status));
@@ -395,9 +434,9 @@ async function renderFields(ctx) {
     list.textContent = '';
     if (!ctx.fields.length) { add(list, mk('li', 'hub-empty', 'No fields attached yet. Add field searches the Vault, Global Energy Monitor, GeoNames and Wikidata.', 'Aún no hay campos adjuntos. Añadir campo busca en el Vault, Global Energy Monitor, GeoNames y Wikidata.')); return; }
     for (const f of ctx.fields) {
-      const li = mk('li', 'hub-field-row', null, null, { 'data-field': f.id });
+      const li = mk('li', 'hub-field-row' + (f.location_check && f.location_check.outside ? ' outside' : ''), null, null, { 'data-field': f.id });
       const main = mk('div');
-      add(main, mk('span', 'dot', null, null, { 'aria-hidden': 'true' }), dv('b', null, f.name), fieldFacts(f));
+      add(main, mk('span', 'dot', null, null, { 'aria-hidden': 'true' }), dv('b', null, f.name), fieldFacts(f, ctx.names));
       const actions = mk('div', 'hub-actions-row');
       const dossier = Array.isArray(f.dossier) ? f.dossier : [];
       if (dossier.length) {
@@ -424,6 +463,21 @@ async function renderFields(ctx) {
   };
   paint();
 
+  /** The Vault refused because the record sits in another country: say where, and offer to attach anyway. */
+  const askOutsideImpl = (r, resend) => {
+    const chk = (r.body && r.body.error && r.body.error.location_check) || {};
+    const on = (ctx.names && ctx.names.get(chk.found)) || { en: chk.found || '?', es: chk.found || '?' }, ex = (ctx.names && ctx.names.get(chk.expected)) || { en: chk.expected || p.country, es: chk.expected || p.country };
+    const n = notice('warn', 'This location is in ' + on.en + ', not ' + ex.en + '.', 'Esta ubicación está en ' + on.es + ', no en ' + ex.es + '.', 'The field was not attached. If the project really spans it, attach it anyway; otherwise pick another candidate or attach by name without a location.', 'El campo no se adjuntó. Si el proyecto realmente lo abarca, adjúntelo igualmente; si no, elija otro candidato o adjunte por nombre sin ubicación.');
+    n.setAttribute('data-outside-ask', chk.found || '');
+    const row = mk('div', 'hub-actions-row');
+    const yes = mk('button', 'btn btn-outline btn-sm', 'Attach anyway', 'Adjuntar igualmente', { type: 'button', 'data-attach-anyway': '' });
+    yes.addEventListener('click', () => { n.remove(); resend(); });
+    const noBtn = mk('button', 'btn btn-outline btn-sm', 'Cancel', 'Cancelar', { type: 'button' });
+    noBtn.addEventListener('click', () => n.remove());
+    add(row, yes, noBtn); add(n, row); add(notices, n);
+  };
+  const askOutside = (r, resend) => askOutsideImpl(r, resend);
+
   // Proposed from documents: the fields that ingest found named in this project's documents (review queue, kind asset).
   const proposed = mk('div', 'hub-proposed', null, null, { id: 'fld-proposed', hidden: '' });
   add(host, proposed);
@@ -445,6 +499,7 @@ async function renderFields(ctx) {
     const verb = body === null ? 'reject' : 'accept';
     const r = await api('/api/queue/review/' + encodeURIComponent(q.id) + '/' + verb, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
     if (btn) btn.disabled = false;
+    if (r.status === 409 && r.body && r.body.error && r.body.error.code === 'outside_country') { askOutside(r, () => decide(q, { ...(body || {}), confirm_outside: true }, btn, row)); return; }
     if (!r.ok) {
       if (r.status === 409) { row.remove(); add(notices, notice('warn', 'Already decided.', 'Ya decidido.', 'Someone else resolved this proposal.', 'Otra persona resolvió esta propuesta.')); return; }
       add(notices, notice('bad', verb === 'accept' ? 'Not attached.' : 'Not dismissed.', verb === 'accept' ? 'No se adjuntó.' : 'No se descartó.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.')));
@@ -524,13 +579,15 @@ async function renderFields(ctx) {
   const toggle = (open) => { if (open) { form.removeAttribute('hidden'); addBtn.setAttribute('aria-expanded', 'true'); q.focus(); } else { form.setAttribute('hidden', ''); addBtn.setAttribute('aria-expanded', 'false'); } };
   addBtn.addEventListener('click', () => toggle(form.hasAttribute('hidden')));
 
-  const attach = async (c, btn) => {
+  const attach = async (c, btn, confirmOutside) => {
     notices.textContent = '';
     const body = attachBody(c, p.country || null);
     if (!body) return;
+    if (confirmOutside) body.confirm_outside = true;
     if (btn) btn.disabled = true;
     const r = await api('/api/projects/' + encodeURIComponent(p.id) + '/assets', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
     if (btn) btn.disabled = false;
+    if (r.status === 409 && r.body && r.body.error && r.body.error.code === 'outside_country') { askOutside(r, () => attach(c, btn, true)); return; }
     if (r.ok && r.body && r.body.asset) {
       const a = r.body.asset;
       const filed = Array.isArray(r.body.dossier) ? r.body.dossier : [];
@@ -1002,7 +1059,7 @@ function renderKpis(ctx, card) {
 /* ── load ────────────────────────────────────────────────────────────── */
 
 async function init() {
-  await showSession();
+  const me = await showSession();
   if (!projectId) return failPage(null);
   const enc = encodeURIComponent(projectId);
   const pr = await api('/api/projects/' + enc);
@@ -1039,7 +1096,7 @@ async function init() {
   const lessonsOk = lessonR.ok && lessonR.status !== 404 && lessonR.status !== 501;
   const lessons = lessonsOk ? listOf(lessonR.body, 'lessons', 'items') : [];
   const now = Date.now();
-  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names };
+  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names, person: me };
 
   renderHeader(ctx);
   renderToolbar(ctx, cat);

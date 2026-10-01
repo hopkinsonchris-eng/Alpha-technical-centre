@@ -285,8 +285,14 @@ become proposals in the review queue that a member attaches or
 dismisses; the model may point at a sentence but never invent a field.
 "Create a project here" on the globe opens the form with the tapped
 point. World Monitor (`WORLD_MONITOR_API_KEY`, server-side only) adds
-live country risk to the globe and a cited "Live risk" paragraph to the
-brief; without the key nothing is simulated. The GEM tracker is imported
+live country risk to the globe, a Country intelligence card in the
+country panel (instability index, World Monitor's own brief, energy,
+ports, events, headlines, advisories, sanctions, resilience, outages;
+Pro-gated sections say so) and a cited "Live risk" paragraph to the
+brief; without the key nothing is simulated. A field whose coordinates
+fall outside the project's country is flagged and must be confirmed
+before it attaches. Projects are archived, never deleted (rule 9): a
+partner archives from the project file and can restore. The GEM tracker is imported
 by hand once per release (`vault/SETUP.md` §3). The design record is
 `docs/vault-hub/wave3/`.
 

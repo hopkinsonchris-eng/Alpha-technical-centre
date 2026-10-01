@@ -400,7 +400,7 @@ function pick(p, ...keys) { for (const k of keys) { const v = k.split('.').reduc
 async function renderProjects(person) {
   const res = await api('/api/projects?mine=1');
   if (!res.ok) return [];
-  const list = listOf(res.body, 'projects', 'items');
+  const list = listOf(res.body, 'projects', 'items').filter((p) => p && p.status !== 'archived');
   const sec = $('#sec-projects'), grid = $('#projects-grid');
   sec.removeAttribute('hidden');
   const now = Date.now();
@@ -548,6 +548,7 @@ async function renderGlobe(person) {
     if (write) history.replaceState(null, '', countryHref(code));
     if (!code) {
       panel.setAttribute('hidden', ''); list.removeAttribute('hidden'); unplaced.style.display = '';
+      const intel = $('#country-intel'); if (intel) { intel.setAttribute('hidden', ''); intel.textContent = ''; intelFor = null; }
       if (globe) globe.select(null);
       return;
     }
@@ -572,9 +573,10 @@ async function renderGlobe(person) {
       if (fields.length) {
         const fl = mk('div', 'hub-country-fields', null, null, { 'data-project-fields': p.id });
         for (const f of fields) {
-          const pill = mk('span', 'hub-field-pt', null, null, { 'data-field': f.id, title: sourceWord(f.location_source).en });
+          const pill = mk('span', 'hub-field-pt' + (f.outside ? ' outside' : ''), null, null, { 'data-field': f.id, title: sourceWord(f.location_source).en, ...(f.outside ? { 'data-outside': f.outside } : {}) });
           add(pill, mk('span', 'dot', null, null, { 'aria-hidden': 'true' }), dv('span', null, f.name));
           if (Number.isFinite(f.lat) && Number.isFinite(f.lon)) add(pill, dv('span', 'hub-muted coord', f.lat + ', ' + f.lon));
+          if (f.outside) { const on = (names && names.get(f.outside)) || { en: f.outside, es: f.outside }; add(pill, mk('span', 'hub-outside', 'outside: in ' + on.en, 'fuera: en ' + on.es)); }
           add(fl, pill);
         }
         add(a, fl);
@@ -584,6 +586,7 @@ async function renderGlobe(person) {
     const createRow = $('#country-create-row');
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
     list.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
+    renderIntel(code, names);
     if (globe) globe.select(code, { fly: true });
   }
   $('#country-back').addEventListener('click', () => select(null, true));
@@ -599,6 +602,174 @@ async function renderGlobe(person) {
   new MutationObserver(() => { if (globe) globe.setLang(lang()); const l = lang(); canvas.setAttribute('aria-label', canvas.getAttribute('data-' + l + '-aria') || canvas.getAttribute('aria-label')); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   sec.setAttribute('data-globe', globe ? 'ready' : 'no-geo');
   return { data, names };
+}
+
+/* ── Today: country intelligence from World Monitor (wave 3 PR 4) ───── */
+
+const fmtWhen = (iso) => { if (!iso) return null; const d = new Date(iso); if (isNaN(d)) return null; const s = fmtShortDate(iso); const hm = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); return { en: s.en + ' ' + hm, es: s.es + ' ' + hm }; };
+const fmtDay = (iso) => (iso ? fmtShortDate(iso) : null);
+const pct = (v) => (typeof v === 'number' ? Math.round(v * 1000) / 10 + '%' : '—');
+const kbd = (v) => (typeof v === 'number' ? num(v) + ' kb/d' : '—');
+let intelFor = null;
+
+/** One section of the card: a heading and either its rows or why it did not answer (Pro-gated, failed), never silence. */
+function intelSection(id, en, es, r, body) {
+  const sec = mk('section', 'hub-intel-sec', null, null, { 'data-intel': id, 'data-state': r && r.ok ? 'live' : r && r.pro ? 'pro' : 'off' });
+  add(sec, mk('h4', null, en, es));
+  if (r && r.ok) { const inner = body(r.data); if (inner) add(sec, inner); else add(sec, mk('p', 'hub-muted', 'Nothing reported for this country.', 'Nada registrado para este país.')); }
+  else if (r && r.pro) add(sec, mk('p', 'hub-muted hub-intel-pro', 'Needs World Monitor Pro: this endpoint is gated on the current plan.', 'Requiere World Monitor Pro: este punto está limitado en el plan actual.'));
+  else add(sec, add(mk('p', 'hub-muted'), mk('span', null, 'Not available: ', 'No disponible: '), dv('span', null, (r && r.reason) || 'no answer')));
+  return sec;
+}
+const bar = (label, value, max) => { const row = mk('div', 'hub-ibar'); add(row, dv('span', 'k', label), add(mk('span', 'track', null, null, { 'aria-hidden': 'true' }), mk('span', 'fill', null, null, { style: 'width:' + Math.max(0, Math.min(100, (value / max) * 100)) + '%' })), dv('span', 'v', typeof value === 'number' ? String(Math.round(value * 10) / 10) : '—')); return row; };
+const li = (...kids) => add(mk('li'), ...kids);
+const link = (title, url) => (url ? dv('a', 'hub-inline-link', title, { href: url, target: '_blank', rel: 'noopener noreferrer' }) : dv('span', null, title));
+
+/**
+ * The World Monitor card for the selected country: instability index, World Monitor's own brief,
+ * energy, ports, events, headlines, advisories, sanctions, resilience, outages, timeline, facts.
+ * Read once per selection from GET /api/countries/:code/intel: the Vault holds the key and
+ * nothing is fetched from the browser.
+ */
+async function renderIntel(code, names) {
+  const host = $('#country-intel');
+  if (!host) return;
+  intelFor = code;
+  host.textContent = '';
+  host.removeAttribute('hidden');
+  host.setAttribute('data-state', 'loading');
+  add(host, add(mk('p', 'hub-muted hub-brief-wait'), mk('span', 'hub-spin', null, null, { 'aria-hidden': 'true' }), mk('span', null, ' Reading World Monitor…', ' Leyendo World Monitor…')));
+  const res = await api('/api/countries/' + encodeURIComponent(code) + '/intel');
+  if (intelFor !== code) return;
+  host.textContent = '';
+  const n = (names && names.get(code)) || { en: code, es: code };
+  if (!res.ok || !res.body || !res.body.sections) {
+    host.setAttribute('data-state', 'failed');
+    const msg = (res.body && res.body.error && res.body.error.message) || '';
+    add(host, notice('warn', 'Country intelligence not available.', 'Inteligencia del país no disponible.', msg || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), msg || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.')));
+    return;
+  }
+  const S = res.body.sections, wm = res.body.world_monitor || {};
+  host.setAttribute('data-state', wm.status === 'live' ? 'live' : 'not_connected');
+  add(host, add(mk('div', 'hub-card-head'), add(mk('div'), mk('span', 'label', 'World Monitor', 'World Monitor'), mk('h3', null, 'Country intelligence: ' + n.en, 'Inteligencia del país: ' + n.es))));
+  if (wm.status !== 'live') {
+    add(host, notice('warn', 'World Monitor is not connected.', 'World Monitor no está conectado.', wm.reason || 'Set WORLD_MONITOR_API_KEY on the Vault service.', wm.reason || 'Configure WORLD_MONITOR_API_KEY en el servicio del Vault.'));
+    return;
+  }
+  const meta = mk('p', 'hub-muted hub-note-s', null, null, { id: 'intel-meta' });
+  const w = fmtWhen(wm.fetched_at);
+  add(meta, mk('span', null, 'Live' + (w ? ', fetched ' + w.en : ''), 'En vivo' + (w ? ', obtenido ' + w.es : '')));
+  if (wm.pro_gated && wm.pro_gated.length) add(meta, document.createTextNode(' · '), mk('span', null, wm.pro_gated.length + ' sections need Pro', wm.pro_gated.length + ' secciones requieren Pro'));
+  if (wm.failed && wm.failed.length) add(meta, document.createTextNode(' · '), mk('span', null, wm.failed.length + ' did not answer', wm.failed.length + ' no respondieron'));
+  add(host, meta);
+  const grid = mk('div', 'hub-intel-grid');
+
+  add(grid, intelSection('risk', 'Instability index', 'Índice de inestabilidad', S.risk, (d) => {
+    const box = mk('div');
+    const line = riskLine({ score: d.score, level: d.level, fetched_at: null });
+    if (line) add(box, line);
+    const facts = mk('div', 'hub-note-s');
+    if (d.trend) add(facts, mk('span', null, 'trend ' + d.trend, 'tendencia ' + d.trend));
+    if (typeof d.static_baseline === 'number') add(facts, document.createTextNode(' · '), mk('span', null, 'baseline ' + Math.round(d.static_baseline) + ', dynamic ' + Math.round(d.dynamic_score || 0), 'base ' + Math.round(d.static_baseline) + ', dinámico ' + Math.round(d.dynamic_score || 0)));
+    if (d.sanctions_active) add(facts, document.createTextNode(' · '), mk('b', 'hub-outside', 'sanctions active' + (d.sanctions_count ? ' (' + d.sanctions_count + ' designations)' : ''), 'sanciones activas' + (d.sanctions_count ? ' (' + d.sanctions_count + ' designaciones)' : '')));
+    const cd = fmtWhen(d.computed_at); if (cd) add(facts, document.createTextNode(' · '), mk('span', null, 'computed ' + cd.en, 'calculado ' + cd.es));
+    add(box, facts);
+    if (d.components) { const bars = mk('div', 'hub-bars'); const max = Math.max(1, ...Object.values(d.components)); for (const [k, v] of Object.entries(d.components)) add(bars, bar(k.replace(/([A-Z])/g, ' $1').toLowerCase(), v, max)); add(box, bars); }
+    return box;
+  }));
+
+  add(grid, intelSection('brief', 'World Monitor brief', 'Resumen de World Monitor', S.brief, (d) => {
+    if (!d.brief) return null;
+    const box = mk('div', 'hub-intel-brief');
+    for (const para of String(d.brief).split(/\n\s*\n/).filter(Boolean)) add(box, dv('p', null, para));
+    if (d.evidence && d.evidence.length) { const ul = mk('ul', 'hub-intel-list'); for (const e of d.evidence.slice(0, 12)) add(ul, li(dv('b', null, e.label), e.value ? dv('span', null, ' ' + e.value) : null, e.fact ? dv('span', 'hub-muted', ' · ' + e.fact) : null, e.url ? dv('a', 'hub-inline-link', ' source', { href: e.url, target: '_blank', rel: 'noopener noreferrer' }) : null)); add(box, ul); }
+    const g = fmtWhen(d.generated_at); if (g || d.model) add(box, add(mk('p', 'hub-muted hub-note-s'), g ? mk('span', null, 'generated ' + g.en, 'generado ' + g.es) : null, d.model ? dv('span', null, (g ? ' · ' : '') + d.model) : null));
+    return box;
+  }));
+
+  add(grid, intelSection('energy', 'Energy profile', 'Perfil energético', S.energy, (d) => {
+    const dl = mk('dl', 'hub-kv');
+    const row = (en, es, v) => add(dl, mk('dt', null, en, es), dv('dd', null, v));
+    if (d.oil) { row('JODI oil month', 'Mes JODI petróleo', d.oil.data_month || '—'); row('Crude imports', 'Importaciones de crudo', kbd(d.oil.crude_imports_kbd)); row('Gasoline demand', 'Demanda de gasolina', kbd(d.oil.gasoline_demand_kbd) + (typeof d.oil.gasoline_imports_kbd === 'number' ? ' (imports ' + kbd(d.oil.gasoline_imports_kbd) + ')' : '')); row('Diesel demand', 'Demanda de diésel', kbd(d.oil.diesel_demand_kbd) + (typeof d.oil.diesel_imports_kbd === 'number' ? ' (imports ' + kbd(d.oil.diesel_imports_kbd) + ')' : '')); row('Jet demand', 'Demanda de jet', kbd(d.oil.jet_demand_kbd)); row('LPG demand', 'Demanda de GLP', kbd(d.oil.lpg_demand_kbd)); }
+    if (d.gas) { row('JODI gas month', 'Mes JODI gas', d.gas.data_month || '—'); row('Gas demand', 'Demanda de gas', typeof d.gas.total_demand_tj === 'number' ? num(d.gas.total_demand_tj) + ' TJ' : '—'); row('LNG imports', 'Importaciones de GNL', typeof d.gas.lng_imports_tj === 'number' ? num(d.gas.lng_imports_tj) + ' TJ' : '—'); row('Pipeline imports', 'Importaciones por gasoducto', typeof d.gas.pipe_imports_tj === 'number' ? num(d.gas.pipe_imports_tj) + ' TJ' : '—'); if (typeof d.gas.storage_fill_pct === 'number') row('Gas storage', 'Almacenamiento de gas', d.gas.storage_fill_pct + '%' + (d.gas.storage_trend ? ' ' + d.gas.storage_trend : '')); }
+    if (d.mix) { const parts = Object.entries(d.mix).filter(([k, v]) => v > 0 && k !== 'renewables').sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + pct(v)); row('Electricity mix' + (d.mix_year ? ' ' + d.mix_year : ''), 'Mezcla eléctrica' + (d.mix_year ? ' ' + d.mix_year : ''), parts.join(', ') || '—'); }
+    if (typeof d.import_share === 'number') row('Import share', 'Cuota de importación', pct(d.import_share));
+    return dl.childNodes.length ? dl : null;
+  }));
+
+  add(grid, intelSection('ports', 'Tanker traffic by port', 'Tráfico de buques tanque por puerto', S.ports, (d) => {
+    if (!d.length) return null;
+    const ul = mk('ul', 'hub-intel-list');
+    for (const p of d.slice(0, 10)) add(ul, add(mk('li', null, null, null, { 'data-port': p.id }), dv('b', null, p.name), mk('span', null, ' · ' + (p.tanker_calls_30d == null ? '—' : p.tanker_calls_30d) + ' tanker calls in 30 days', ' · ' + (p.tanker_calls_30d == null ? '—' : p.tanker_calls_30d) + ' escalas de tanques en 30 días'), typeof p.trend_pct === 'number' ? dv('span', 'hub-muted', ' · ' + (p.trend_pct > 0 ? '+' : '') + Math.round(p.trend_pct) + '%') : null, p.anomaly ? mk('span', 'hub-outside', ' anomaly', ' anomalía') : null));
+    return ul;
+  }));
+
+  add(grid, intelSection('events', 'Conflict events, last 30 days', 'Eventos de conflicto, últimos 30 días', S.events, (d) => {
+    const box = mk('div');
+    if (S.humanitarian && S.humanitarian.ok && S.humanitarian.data && S.humanitarian.data.events_total != null) { const h = S.humanitarian.data; add(box, add(mk('p', 'hub-note-s'), mk('span', null, 'HAPI ' + (h.period || '') + ': ' + num(h.events_total) + ' events, ' + num(h.fatalities || 0) + ' fatalities, ' + num(h.demonstrations || 0) + ' demonstrations', 'HAPI ' + (h.period || '') + ': ' + num(h.events_total) + ' eventos, ' + num(h.fatalities || 0) + ' muertes, ' + num(h.demonstrations || 0) + ' manifestaciones'))); }
+    if (!d.length) { add(box, mk('p', 'hub-muted', 'No ACLED events reported in the window.', 'Sin eventos ACLED en el periodo.')); return box; }
+    const ul = mk('ul', 'hub-intel-list');
+    for (const e of d.slice(0, 15)) { const dd = fmtDay(e.date); add(ul, add(mk('li', null, null, null, { 'data-event': e.id }), dd ? mk('span', 'hub-muted', dd.en + ' · ', dd.es + ' · ') : null, dv('b', null, e.type || 'event'), e.admin1 ? dv('span', null, ' in ' + e.admin1) : null, e.actors ? dv('span', 'hub-muted', ' · ' + e.actors) : null, typeof e.fatalities === 'number' && e.fatalities > 0 ? mk('span', 'hub-outside', ' · ' + e.fatalities + ' fatalities', ' · ' + e.fatalities + ' muertes') : null)); }
+    add(box, ul);
+    return box;
+  }));
+
+  add(grid, intelSection('headlines', 'Headlines', 'Titulares', S.headlines, (d) => {
+    const cov = S.coverage && S.coverage.ok ? S.coverage.data : null;
+    const rows = d.length ? d : (cov ? cov.headlines : []);
+    if (!rows.length && !(cov && cov.events.length)) return null;
+    const box = mk('div');
+    if (rows.length) { const ul = mk('ul', 'hub-intel-list'); for (const h of rows.slice(0, 12)) { const dd = fmtDay(h.published_at); add(ul, li(link(h.title, h.url), h.source ? dv('span', 'hub-muted', ' · ' + h.source) : null, dd ? mk('span', 'hub-muted', ' · ' + dd.en, ' · ' + dd.es) : null)); } add(box, ul); }
+    if (cov && cov.events.length) { add(box, mk('h5', null, 'Coverage timeline, ' + (cov.window_hours || 72) + ' h', 'Cronología de cobertura, ' + (cov.window_hours || 72) + ' h')); const ul = mk('ul', 'hub-intel-list'); for (const e of cov.events.slice(0, 12)) { const dd = fmtWhen(e.at); add(ul, li(dd ? mk('span', 'hub-muted', dd.en + ' · ', dd.es + ' · ') : null, dv('b', null, e.label), e.lane ? dv('span', 'hub-muted', ' · ' + e.lane) : null, e.severity ? dv('span', null, ' · ' + e.severity) : null)); } add(box, ul); }
+    return box;
+  }));
+
+  add(grid, intelSection('advisories', 'Travel and security advisories', 'Avisos de viaje y seguridad', S.advisories, (d) => {
+    if (!d.length) return null;
+    const ul = mk('ul', 'hub-intel-list');
+    for (const a of d) { const dd = fmtDay(a.date); add(ul, li(link(a.title, a.url), a.level ? dv('span', null, ' · level ' + a.level) : null, a.source ? dv('span', 'hub-muted', ' · ' + a.source) : null, dd ? mk('span', 'hub-muted', ' · ' + dd.en, ' · ' + dd.es) : null)); }
+    return ul;
+  }));
+
+  add(grid, intelSection('sanctions', 'Sanctions pressure', 'Presión de sanciones', S.sanctions, (d) => {
+    if (d.entries == null && !d.recent.length) return null;
+    const box = mk('div');
+    add(box, add(mk('p', 'hub-note-s'), mk('span', null, num(d.entries || 0) + ' designations' + (d.new_entries ? ', ' + d.new_entries + ' new' : '') + (d.vessels ? ', ' + d.vessels + ' vessels' : '') + (d.dataset_date ? ' · dataset ' + d.dataset_date : ''), num(d.entries || 0) + ' designaciones' + (d.new_entries ? ', ' + d.new_entries + ' nuevas' : '') + (d.vessels ? ', ' + d.vessels + ' buques' : '') + (d.dataset_date ? ' · datos ' + d.dataset_date : ''))));
+    if (d.recent.length) { const ul = mk('ul', 'hub-intel-list'); for (const e of d.recent) add(ul, li(dv('b', null, e.name), e.type ? dv('span', 'hub-muted', ' · ' + e.type) : null, e.programs.length ? dv('span', 'hub-muted', ' · ' + e.programs.join(', ')) : null, e.is_new ? mk('span', 'hub-outside', ' new', ' nueva') : null)); add(box, ul); }
+    return box;
+  }));
+
+  add(grid, intelSection('resilience', 'Resilience index', 'Índice de resiliencia', S.resilience, (d) => {
+    if (d.score == null) return null;
+    const box = mk('div');
+    add(box, add(mk('p'), dv('b', null, Math.round(d.score) + ' / 100'), d.level ? dv('span', null, ' · ' + d.level) : null, d.trend ? dv('span', 'hub-muted', ' · ' + d.trend) : null, typeof d.change_30d === 'number' ? dv('span', 'hub-muted', ' · 30 d ' + (d.change_30d > 0 ? '+' : '') + Math.round(d.change_30d * 10) / 10) : null));
+    if (d.domains.length) { const bars = mk('div', 'hub-bars'); for (const x of d.domains) add(bars, bar(x.id, x.score || 0, 100)); add(box, bars); }
+    return box;
+  }));
+
+  add(grid, intelSection('outages', 'Internet outages, last 30 days', 'Cortes de internet, últimos 30 días', S.outages, (d) => {
+    if (!d.length) return null;
+    const ul = mk('ul', 'hub-intel-list');
+    for (const o of d) { const dd = fmtDay(o.detected_at); add(ul, li(dd ? mk('span', 'hub-muted', dd.en + ' · ', dd.es + ' · ') : null, dv('b', null, o.title || o.region || o.id), o.severity ? dv('span', null, ' · ' + o.severity) : null, o.cause ? dv('span', 'hub-muted', ' · ' + o.cause) : null)); }
+    return ul;
+  }));
+
+  add(grid, intelSection('timeline', 'Intelligence timeline', 'Cronología de inteligencia', S.timeline, (d) => {
+    if (!d.length) return null;
+    const ul = mk('ul', 'hub-intel-list');
+    for (const r of d.slice(0, 15)) { const dd = fmtDay(r.occurred_at); add(ul, li(dd ? mk('span', 'hub-muted', dd.en + ' · ', dd.es + ' · ') : null, link(r.title, r.url), r.domain ? dv('span', 'hub-muted', ' · ' + r.domain) : null, r.summary ? dv('span', 'hub-muted', ' · ' + r.summary) : null)); }
+    return ul;
+  }));
+
+  add(grid, intelSection('facts', 'Country facts', 'Datos del país', S.facts, (d) => {
+    const dl = mk('dl', 'hub-kv');
+    const row = (en, es, v) => { if (v) add(dl, mk('dt', null, en, es), dv('dd', null, v)); };
+    row('Capital', 'Capital', d.capital); row('Population', 'Población', typeof d.population === 'number' ? num(d.population) : null); row('Area', 'Superficie', typeof d.area_km2 === 'number' ? num(d.area_km2) + ' km²' : null);
+    row('Head of state', 'Jefe de Estado', d.head_of_state ? d.head_of_state + (d.head_of_state_title ? ' (' + d.head_of_state_title + ')' : '') : null); row('Languages', 'Idiomas', d.languages.join(', ')); row('Currency', 'Moneda', d.currencies.join(', '));
+    if (!dl.childNodes.length) return null;
+    const box = mk('div'); add(box, dl); if (d.summary) add(box, dv('p', 'hub-muted hub-note-s', d.summary.slice(0, 400))); return box;
+  }));
+  add(host, grid);
 }
 
 /* ── Today: the country brief (wave 2, Option A) ─────────────────────── */
@@ -695,7 +866,7 @@ async function renderRegister(person, names) {
   if (!sec) return [];
   const [res, orgR] = await Promise.all([api('/api/projects'), api('/api/organisations')]);
   if (!res.ok) return [];
-  const list = listOf(res.body, 'projects', 'items');
+  const list = listOf(res.body, 'projects', 'items').filter((p) => p && p.status !== 'archived');   // archived: hidden, never deleted
   const orgName = new Map(orgR.ok ? listOf(orgR.body, 'organisations').map((o) => [o.id, o.name || o.id]) : []);
   for (const p of list) if (!p.client_name && p.client_id) p.client_name = orgName.get(p.client_id) || p.client_id;
   sec.removeAttribute('hidden');

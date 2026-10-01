@@ -143,3 +143,52 @@ test('W3-AC1: GET /api/assets/locate validates and reports unavailable sources; 
   assert.equal(proj.assets[0].lat, 7.6);
   assert.equal(proj.assets[0].location_source, 'gem');
 });
+
+/* ── wave 3 PR 4: a field outside the project's country is flagged and needs confirming; archived projects leave the globe ── */
+
+test('W3-PR4: a record whose coordinates fall outside the project country is refused with 409 outside_country until confirmed, then carries location_check; the countries summary flags it', async () => {
+  const trico = { create: { name: 'Trico Gas Field', kind: 'field', lat: 35.85, lon: -119.52, location_source: 'wikidata', source_id: 'Q7840', detail: { operator: 'Chevron' } } };
+  const no = await call(partner, 'POST', '/api/projects/ven-barinas/assets', trico);
+  assert.equal(no.status, 409, JSON.stringify(no.body));
+  assert.equal(no.body.error.code, 'outside_country');
+  assert.deepEqual(no.body.error.location_check, { expected: 'VE', found: 'US', method: 'polygon', outside: true });
+  assert.equal((await db.query<any>("SELECT count(*)::int AS n FROM assets WHERE lower(name) = 'trico gas field'")).rows[0].n, 0, 'nothing was created');
+  const yes = await call(partner, 'POST', '/api/projects/ven-barinas/assets', { ...trico, confirm_outside: true });
+  assert.equal(yes.status, 201, JSON.stringify(yes.body));
+  assert.deepEqual(yes.body.asset.location_check, { expected: 'VE', found: 'US', method: 'polygon', outside: true });
+  const list = await call(partner, 'GET', '/api/projects/ven-barinas/assets');
+  const t = list.body.assets.find((a: any) => a.name === 'Trico Gas Field');
+  assert.equal(t.location_check.outside, true);
+  const ok = list.body.assets.find((a: any) => a.name === 'Guafita');
+  assert.ok(!ok || ok.location_check === null || ok.location_check.outside === false);
+  // A gazetteer record without coordinates but from another country is flagged by its code.
+  const named = await call(partner, 'POST', '/api/projects/ven-barinas/assets', { create: { name: 'Elsewhere Block', kind: 'block', country: 'CO' } });
+  assert.equal(named.status, 409);
+  assert.equal(named.body.error.location_check.method, 'gazetteer');
+  // The countries summary says which country the stray point is in.
+  const c = await call(partner, 'GET', '/api/countries');
+  const ve = c.body.countries.find((x: any) => x.code === 'VE');
+  const pr = ve.projects.find((p: any) => p.id === 'ven-barinas');
+  assert.equal(pr.assets.find((a: any) => a.name === 'Trico Gas Field').outside, 'US');
+  assert.ok(pr.assets.filter((a: any) => a.name !== 'Trico Gas Field').every((a: any) => a.outside === null));
+  // Re-attaching an already attached stray field needs no second confirmation.
+  const again = await call(partner, 'POST', '/api/projects/ven-barinas/assets', { asset_id: yes.body.asset.id });
+  assert.equal(again.status, 200);
+  assert.equal(again.body.already, true);
+});
+
+test('W3-PR4: an archived project is hidden from the countries summary (never deleted: its file still answers)', async () => {
+  const before = await call(partner, 'GET', '/api/countries');
+  assert.ok(before.body.countries.find((c: any) => c.code === 'VE').projects.some((p: any) => p.id === 'ven-barinas'));
+  const arch = await call(partner, 'PATCH', '/api/projects/ven-barinas', { status: 'archived' });
+  assert.equal(arch.status, 200, JSON.stringify(arch.body));
+  const after = await call(partner, 'GET', '/api/countries');
+  const ve = after.body.countries.find((c: any) => c.code === 'VE');
+  assert.ok(!ve || !ve.projects.some((p: any) => p.id === 'ven-barinas'));
+  assert.equal((await call(partner, 'GET', '/api/projects/ven-barinas')).status, 200);
+  assert.equal((await call(partner, 'GET', '/api/projects/ven-barinas')).body.status, 'archived');
+  const restored = await call(partner, 'PATCH', '/api/projects/ven-barinas', { status: 'prospect' });
+  assert.equal(restored.status, 200);
+  const back = await call(partner, 'GET', '/api/countries');
+  assert.ok(back.body.countries.find((c: any) => c.code === 'VE').projects.some((p: any) => p.id === 'ven-barinas'));
+});

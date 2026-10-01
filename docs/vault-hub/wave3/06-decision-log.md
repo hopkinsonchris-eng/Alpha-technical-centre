@@ -23,7 +23,19 @@ Markup `05-markup.md` approved 1 October 2026: "Approved, build it as written (R
 | [#30](https://github.com/hopkinsonchris-eng/Alpha-technical-centre/pull/30) | Contextualisation: `extractAssets` (dictionary and verbatim-quote model pass), `asset` proposals in the review queue, accept and reject, proposals in the Fields card and the queue page, the upload note | W3-AC4, AC5, AC6 (proposals part) |
 | #31 | World Monitor: the adapter (hourly cache, 429 honoured), risk per country on the globe and in the panel, the brief's LIVE RISK block cited as `[wm:…]`, the decision log | W3-AC9, AC10 |
 
-W3-AC12 (every suite green, typecheck clean, public pages byte-identical) held on every PR; the evidence is in `../evidence/w3-*.png` (`w3-fields-card`, `w3-globe-fields`, `w3-create-here`, `w3-proposals`, `w3-live-risk`).
+| #32 | The first real GEM import (March 2026, 7,673 units) and the reader for the workbook's real three-sheet layout | W3-AC11 |
+| #33 | First-use fixes: World Monitor read on its published OpenAPI shapes with every country section in a Country intelligence card; fields outside the project's country flagged and attach asks first; archive a project (hide, never delete) | W3-AC9, AC10 widened; AC2, AC7 corrected |
+
+W3-AC12 (every suite green, typecheck clean, public pages byte-identical) held on every PR; the evidence is in `../evidence/w3-*.png` (`w3-fields-card`, `w3-globe-fields`, `w3-create-here`, `w3-proposals`, `w3-live-risk`, `w3-country-intel`).
+
+## First live use, 1 October 2026 (PR #33)
+
+Chris's first session with wave 3 turned up four things:
+
+1. **"All I have from World Monitor is one line."** The adapter had been written to the endpoint names without the published schemas (deviation 5 above), so events and headlines came back empty and the panel showed only the score. PR #33 reads `api.worldmonitor.app/openapi.json` shapes exactly (epoch-millisecond timestamps, `country_codes`, the headline bucket keyed by country, enum names) and adds every country-level reader the plan exposes: instability index with components and sanctions, World Monitor's own intel brief with its evidence, energy profile (JODI oil and gas, electricity mix), tanker traffic by port, ACLED and UCDP events, HAPI totals, headlines and the coverage timeline, travel advisories, sanctions pressure, the resilience index, internet outages and the intelligence timeline. `GET /api/countries/:code/intel` serves them as independent sections so a Pro-gated one says "needs Pro" rather than hiding the rest. The brief's LIVE RISK block gained energy and evidence citations (`[wm:energy:XX]`, `[wm:evidence:<id>]`).
+2. **A field attached with coordinates in California on a Venezuelan project.** The Vault now checks every field's point against the same polygons the globe draws (`vault/src/assets/geo.ts`): the Fields card and the country panel flag "outside Venezuela: in United States", and attaching such a record answers 409 `outside_country` until the person confirms ("Attach anyway"). Coarse polygons mean a coastal miss is never evidence; a record without coordinates is judged by its gazetteer country.
+3. **"I need to delete a project."** Rule 9 (hide, never delete): partners archive a project from its file after a confirmation; it leaves Today, the globe, the register and Cmd+K, every record stays, and Restore puts it back.
+4. **"The system should spend the next hour populating its Vault about the project and its fields."** This is the per-field research that W3-D2 did not choose (F13 per-field miners, F14 web search). It is a new wave with its own Gate 1 and is not in PR #33.
 
 ## Deviations from the Markup, stated
 
