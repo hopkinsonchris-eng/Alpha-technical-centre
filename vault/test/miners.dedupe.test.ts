@@ -64,6 +64,10 @@ test('screen: negative keywords (topic and global) drop a record, keywords keep 
   assert.equal(screenPaper(rec('Polymers for mobility control', 'Polymers are injected'), c), 'keep', 'keyword matches inside longer words');
   assert.equal(screenPaper(rec('Something with no abstract'), c), 'keep');
   assert.equal(screenPaper(rec('Recommendation without topic', 'hydrogel wound', undefined as any), c), 'negative');
+  // A research run's topics are strict: a record that names no topic (a Semantic Scholar recommendation) is kept only when a strict topic would keep it.
+  const strict: MinersConfig = { ...cfg(), topics: [{ id: 'r:guafita', query: 'Guafita field', keywords: ['guafita'], negative: [], strict: true, context: ['oil', 'venezuela'] }] };
+  assert.equal(screenPaper(rec('Leptin and obesity: a review', 'Serum leptin in adults', undefined as any), strict), 'off-topic');
+  assert.equal(screenPaper(rec('Waterflood performance of the Guafita field, Venezuela', undefined, undefined as any), strict), 'keep');
 });
 
 test('run: three literature sources, one paper found by DOI in all three becomes one item; negative and off-topic records are dropped', async () => {
@@ -116,4 +120,16 @@ test('acceptance 2: re-running with no upstream change creates and updates nothi
   assert.equal(s.updated, 0);
   assert.equal(await scalar('SELECT count(*)::int AS n FROM items'), items);
   assert.equal(await scalar('SELECT count(*)::int AS n FROM item_versions'), versions);
+});
+
+test('run: a research run (project set) searches by topic only and never asks for recommendations seeded from the whole Vault', async () => {
+  await db.query("INSERT INTO organisations (id,name,kind,country) VALUES ('hte','High Tech Electronica','client','VE') ON CONFLICT DO NOTHING");
+  await db.query("INSERT INTO projects (id,client_id,name,status,default_legal_tag,country,members) VALUES ('p-research','hte','P','active','lt-firm','VE','{chris}') ON CONFLICT DO NOTHING");
+  await db.query("INSERT INTO items (id, type, title, created_at, authors, project_id, legal_tag, origin, external_id, content_hash, version, extracted, tags) VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','paper','Seed paper','2026-09-01T00:00:00Z','{}','p-research','lt-public','{\"source\":\"semantic-scholar\",\"external_id\":\"s2seed\"}'::jsonb,'s2seed','sha256:seed',1,'{}'::jsonb,'{}')");
+  const { clock, f } = routes();
+  await runMiners(db, { config: cfg(), fetch: f.fetch, clock, storage, now: NOW, since: new Date('2026-08-01T00:00:00Z'), env: {}, only: ['semantic-scholar'], force: true, projectId: 'p-research', queryOf: () => 'polymer flooding heavy oil' });
+  assert.ok(f.calls.length >= 1 && f.calls.every(c => !/recommendations/.test(c.url)), 'no recommendation call: ' + f.calls.map(c => c.url).join(' '));
+  const { clock: c2, f: f2 } = routes();
+  await runMiners(db, { config: cfg(), fetch: f2.fetch, clock: c2, storage, now: NOW, since: new Date('2026-08-01T00:00:00Z'), env: {}, only: ['semantic-scholar'], force: true });
+  assert.ok(f2.calls.some(c => /recommendations/.test(c.url)), 'the firm-wide weekly run still asks for recommendations');
 });
