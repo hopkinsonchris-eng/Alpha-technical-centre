@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import {
   acledEvents, advisories, configureWorldMonitor, countryFacts, countryRisk, coverage, energyProfile, enumWord, headlines, humanitarian, intelBrief, intelTimeline,
   outages, portActivity, resetWorldMonitorCache, resilience, sanctions, ucdpEvents, whenIso, worldMonitorConfigured, NEEDS_PRO, NOT_CONNECTED,
+  companyEnrichment, companySignals, gdeltDocuments, secFilings,
 } from '../src/intel/worldmonitor.ts';
 
 const KEY = 'wm_' + 'a'.repeat(40);
@@ -29,6 +30,10 @@ const FIX: Record<string, unknown> = {
   'list-sanctions-pressure': { entries: [{ id: 's1', name: 'Some Shipping Co', entityType: 'SANCTIONS_ENTITY_TYPE_ENTITY', countryCodes: ['VE'], countryNames: ['Venezuela'], programs: ['VENEZUELA'], sourceLists: ['SDN'], effectiveAt: '2026-09-15', isNew: true, note: '' }], countries: [{ countryCode: 'VE', countryName: 'Venezuela', entryCount: 212, newEntryCount: 4, vesselCount: 30, aircraftCount: 2 }], programs: [], fetchedAt: '2026-10-01', datasetDate: '2026-09-30', totalCount: 9000 },
   'get-resilience-score': { countryCode: 'VE', overallScore: 31.2, level: 'low', trend: 'stable', change30d: -0.4, lowConfidence: false, domains: [{ id: 'energy', score: 44, weight: 0.2 }] },
   'list-internet-outages': { outages: [{ id: 'o1', title: 'Partial outage in Zulia', link: 'https://example.com/o', detectedAt: Date.parse('2026-09-27T03:00:00Z'), country: 'VE', region: 'Zulia', severity: 'OUTAGE_SEVERITY_PARTIAL', cause: 'power', endedAt: 0 }] },
+  'search-gdelt-documents': { articles: [{ url: 'https://news.example.com/a1', title: 'PDVSA restarts Guafita', source: 'Reuters', seendate: '20260930T100000Z', language: 'English', tone: 1.5 }, { url: '', title: '' }], total: 1 },
+  'get-company-enrichment': { company: { name: 'Petróleos de Venezuela', domain: 'pdvsa.com', description: 'State oil company.', location: 'Caracas', website: 'https://www.pdvsa.com', founded: 1976, cik: '0000001', ticker: null }, market: { industry: 'Oil & Gas', country: 'VE', marketCapMusd: 12.5 }, secFilings: { recentFilings: [{ form: '20-F', filedAt: T0, url: 'https://sec.example.com/f1' }] }, sources: ['wikipedia', 'sec'] },
+  'list-company-signals': { signals: [{ type: '8-K', title: 'Item 8.01 Other events', url: 'https://sec.example.com/8k', source: 'SEC', sourceTier: 1, timestampMs: T0, strength: 'high' }] },
+  'search-sec-filings': { results: [{ company: 'Chevron Corp', cik: '93410', form: '10-K', fileDate: '2026-02-20', items: ['Item 1A', 'Item 7'], url: 'https://sec.example.com/10k', accession: '0000093410-26-000012' }] },
   'get-intel-timeline': { records: [{ id: 'r1', domain: 'energy', resource: 'x', country: 'VE', category: 'production', title: 'Output recovers in Orinoco belt', summary: 'Chevron ramps Petropiar.', sourceUrl: 'https://example.com/r', occurredAt: Date.parse('2026-09-20T00:00:00Z'), ingestedAt: T0, score: 0.8 }], partial: false },
 };
 let mode: 'ok' | '429' | '401' | '403' | '500' = 'ok';
@@ -137,4 +142,35 @@ test('W3-AC9: a 429 is honoured for its Retry-After and reported, never retried 
   const bad = await headlines('KZ');
   assert.ok(!bad.ok && /HTTP 500/.test(bad.reason));
   mode = 'ok';
+});
+
+test('wave 4 research readers: GDELT articles, company enrichment and signals, SEC filings on their OpenAPI shapes', async () => {
+  configureWorldMonitor({ fetch: fakeFetch, apiKey: KEY, now }); calls.length = 0;
+  const g = await gdeltDocuments('"Guafita" Venezuela', { maxRecords: 5 });
+  assert.ok(g.ok);
+  assert.deepEqual(g.data, [{ title: 'PDVSA restarts Guafita', url: 'https://news.example.com/a1', source: 'Reuters', date: '2026-09-30T10:00:00.000Z', language: 'English', tone: 1.5 }], 'the compact GDELT date becomes ISO; an empty row is dropped');
+  const gu = new URL(calls.at(-1)!.url);
+  assert.equal(gu.searchParams.get('query'), '"Guafita" Venezuela'); assert.equal(gu.searchParams.get('max_records'), '5'); assert.equal(gu.searchParams.get('timespan'), '1y');
+  const e = await companyEnrichment('Petróleos de Venezuela');
+  assert.ok(e.ok);
+  assert.equal(e.data.name, 'Petróleos de Venezuela'); assert.equal(e.data.industry, 'Oil & Gas'); assert.equal(e.data.market_cap_musd, 12.5); assert.equal(e.data.cik, '0000001');
+  assert.deepEqual(e.data.recent_filings, [{ form: '20-F', date: '2026-10-01T08:00:00.000Z', url: 'https://sec.example.com/f1' }]); assert.deepEqual(e.data.sources, ['wikipedia', 'sec']);
+  assert.equal(new URL(calls.at(-1)!.url).searchParams.get('name'), 'Petróleos de Venezuela');
+  const sg = await companySignals('PDVSA');
+  assert.ok(sg.ok);
+  assert.deepEqual(sg.data, [{ type: '8-K', title: 'Item 8.01 Other events', url: 'https://sec.example.com/8k', source: 'SEC', tier: 1, at: '2026-10-01T08:00:00.000Z', strength: 'high' }]);
+  const sf = await secFilings('Chevron', { limit: 3 });
+  assert.ok(sf.ok);
+  assert.deepEqual(sf.data, [{ company: 'Chevron Corp', cik: '93410', form: '10-K', file_date: '2026-02-20', items: ['Item 1A', 'Item 7'], url: 'https://sec.example.com/10k', accession: '0000093410-26-000012' }]);
+  const su = new URL(calls.at(-1)!.url);
+  assert.equal(su.searchParams.get('limit'), '3'); assert.equal(su.searchParams.get('end_date'), '2026-10-01'); assert.match(su.searchParams.get('forms')!, /10-K/);
+  // Each is cached like the rest, and a Pro gate on one never fails the others.
+  calls.length = 0; await gdeltDocuments('"Guafita" Venezuela', { maxRecords: 5 }); assert.equal(calls.length, 0, 'served from the hourly cache');
+  proGated.add('search-sec-filings'); resetWorldMonitorCache();
+  const gated = await secFilings('Chevron');
+  assert.ok(!gated.ok && gated.pro === true);
+  assert.ok((await companySignals('PDVSA')).ok);
+  proGated.clear();
+  configureWorldMonitor({ fetch: fakeFetch, apiKey: null, now });
+  assert.deepEqual(await gdeltDocuments('x'), { ok: false, reason: NOT_CONNECTED });
 });

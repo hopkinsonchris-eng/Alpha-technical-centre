@@ -16,6 +16,7 @@ import { ASSET_KINDS, configureLocate, locate, slugAssetId, type AssetKind, type
 import { fileDossier, type AssetRow } from '../assets/dossier.ts';
 import { locationCheck, type LocationCheck } from '../assets/geo.ts';
 import { ApiError, type ProjectRow } from './common.ts';
+import { triggerResearch } from './research.routes.ts';
 
 /** Tests inject fetch and the GeoNames user; production reads the environment. */
 export function configureGazetteers(o: LocateOptions) { configureLocate(o); }
@@ -91,6 +92,8 @@ export async function attachAsset(x: Ctx, p: ProjectRow, b: any): Promise<Attach
   const already = p.asset_ids.includes(asset.id);
   if (!already) { await x.db.query('UPDATE projects SET asset_ids = array_append(asset_ids, $2) WHERE id = $1', [p.id, asset.id]); p.asset_ids.push(asset.id); }
   const dossier = await fileDossier(x.db, p.id, asset, x.person.id, x.now);
+  // Wave 4: a newly attached field queues (or extends) the project's research run (§1.3).
+  if (!already) await triggerResearch(x.db, p.id, x.person.id, [asset.name]);
   return { asset: withCheck(asset, p.country ?? null), created, already, dossier };
 }
 

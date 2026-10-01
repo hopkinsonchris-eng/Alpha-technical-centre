@@ -12,6 +12,7 @@ import {
   type Access, type Ctx, type ProjectRow,
 } from './common.ts';
 import { DEFAULT_STAGE, readOpportunityFields, stageEntry } from '../opportunities.ts';
+import { triggerResearch } from './research.routes.ts';
 
 const SLUG = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const STATUSES = ['prospect', 'active', 'closed', 'archived'];
@@ -79,6 +80,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       await x.db.query('INSERT INTO project_contacts (project_id, contact_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [b.id, cid]);
     }
     x.a.scope = scopeLabel(b.id); x.a.refs = [`project:${b.id}`];
+    // Wave 4: a new project with a country or a real name queues a research run (§1.3).
+    if (opp.country || !/^(new project|untitled|test|project)$/i.test(b.name.trim())) await triggerResearch(x.db, b.id, x.person.id, [b.name.trim()]);
     const created = (await loadAccess(x.db, x.person, x.now)).projects.get(b.id)!;
     return { status: 201, body: await projectView(x, created) };
   });
