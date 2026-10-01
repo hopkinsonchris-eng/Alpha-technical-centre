@@ -114,6 +114,7 @@ services:
         sync: false
 
   # Research sync (wave 4): finishes research runs the API server queued but a restart left behind.
+  # Needs the same World Monitor and model keys as the web service; Render asks for them on sync.
   - type: cron
     name: atc-vault-research
     runtime: node
@@ -123,6 +124,10 @@ services:
     startCommand: npx tsx src/jobs/research.ts
     envVars:
       - key: DATABASE_URL
+        sync: false
+      - key: WORLD_MONITOR_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
         sync: false
 
   # Miners (M11): papers weekly; regulator feeds in the first week of the month.

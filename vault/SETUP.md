@@ -111,7 +111,8 @@ each finding filed as a public note under the project with its source, URL and a
 operator, licence and production figures opened as proposals in the review queue. A run stops at
 `RESEARCH_BUDGET_MINUTES` (default 15) or `RESEARCH_BUDGET_GBP` of model spend (default 3), whichever
 comes first. `RESEARCH_ENABLED=false` switches it off. The `atc-vault-research` cron (every 15 minutes,
-added by a Blueprint sync) finishes any run a restart interrupted. Nothing is deleted by a run; a re-run
+added by a Blueprint sync, which asks for its `DATABASE_URL`, `WORLD_MONITOR_API_KEY` and `ANTHROPIC_API_KEY`;
+enter the same values the web service has) finishes any run a restart interrupted. Nothing is deleted by a run; a re-run
 updates its own notes in place.
 
 **The Global Energy Monitor field tracker (once per release, about 10 minutes)**
