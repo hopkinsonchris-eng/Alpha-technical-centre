@@ -7,9 +7,10 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 process.env.VAULT_STORAGE_DIR = mkdtempSync(path.join(os.tmpdir(), 'vault-research-'));
 const { openDb } = await import('../src/db/client.ts');
@@ -23,7 +24,7 @@ const { configureWorldMonitor, resetWorldMonitorCache } = await import('../src/i
 const { buildQueries, operatorNames, nameKeywords } = await import('../src/research/queries.ts');
 const { costGbp, runResearch: runResearchRaw, researchView } = await import('../src/research/run.ts');
 const logLines: string[] = [];
-const runResearch: typeof runResearchRaw = (db, pid, opts = {}, jobId) => runResearchRaw(db, pid, { log: (l) => logLines.push(l), progressEveryMs: 0, ...opts }, jobId);
+const runResearch: typeof runResearchRaw = (db, pid, opts = {}, jobId) => runResearchRaw(db, pid, { log: (l) => logLines.push(l), progressEveryMs: 0, skipGemWiki: true, skipWeb: true, ...opts }, jobId);
 const { toKboed } = await import('../src/research/findings.ts');
 const { configureResearch } = await import('../src/api/research.routes.ts');
 import type { FeedAdapter } from '../src/miners/types.ts';
@@ -292,6 +293,66 @@ test('the literature screen keeps only papers that name the field and are about 
   const view = await researchView(db, 'hte-screen');
   assert.deepEqual(view.findings.map(f => f.title), ['Waterflood performance of the Guafita field, Apure, Venezuela']);
   configureWorldMonitor({ fetch: wmFetch, apiKey: KEY, now: () => new Date(t) });
+});
+
+/* ── W4-D1 revised: Global Energy Monitor wiki pages and web search ── */
+
+const GEM_HTML = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'research', 'gem-guafita.html'), 'utf8');
+const WIKI = 'https://www.gem.wiki/Guafita_Oil_Field_(Venezuela)';
+const wikiFetch = (async (url: string) => (String(url) === WIKI ? new Response(GEM_HTML, { status: 200 }) : new Response('nope', { status: 404 }))) as unknown as typeof fetch;
+
+test('W4-AC9: the run files the GEM wiki page of a field that has one, and each source it cites, with no model; nothing for a field without a record; a re-run leaves them unchanged', async () => {
+  await db.query("UPDATE assets SET props = jsonb_set(props, '{gem,wiki_url}', to_jsonb($2::text)) WHERE id = $1", ['field:ve:guafita', WIKI]);
+  await db.query("INSERT INTO projects (id,client_id,name,status,default_legal_tag,country,members,asset_ids) VALUES ('hte-gem','hte','High Tech Electronica','prospect','lt-firm','VE','{chris}','{field:ve:guafita,field:ve:bare}')");
+  const noModel = new FakeProvider(() => { throw new Error('the GEM pass must not call the model'); });
+  const r = await runResearch(db, 'hte-gem', { now, storage, provider: noModel, fetch: wikiFetch, skipGemWiki: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris', maxFactReads: 0 });
+  assert.equal(r.status, 'ok', JSON.stringify(r.warnings));
+  assert.equal(r.sources['gem-wiki'].queries, 1); assert.equal(r.sources['gem-wiki'].created, 1); assert.equal(r.sources['gem-wiki'].skipped, '1 field without a Global Energy Monitor record');
+  assert.equal(r.sources['gem-wiki-ref'].created, 3);
+  assert.equal(r.findings, 4); assert.equal(r.fact_reads, 0); assert.equal(r.spend_gbp, 0);
+  const page = (await db.query<any>("SELECT title, extracted, origin, asset_ids FROM items WHERE project_id = 'hte-gem' AND external_id = $1", [WIKI])).rows[0];
+  assert.equal(page.title, 'Global Energy Monitor: Guafita'); assert.equal(page.extracted.source, 'gem-wiki'); assert.match(page.extracted.quote, /^Guafita Oil Field is an operating oil field in Venezuela\./);
+  assert.match(page.extracted.attribution, /Global Energy Monitor.*CC BY 4\.0/); assert.equal(page.extracted.references.length, 3); assert.deepEqual(page.asset_ids, ['field:ve:guafita']);
+  const refs = (await db.query<any>("SELECT title, origin FROM items WHERE project_id = 'hte-gem' AND extracted->>'source' = 'gem-wiki-ref' ORDER BY title")).rows;
+  assert.deepEqual(refs.map(x => x.title), ['PDVSA restarts Guafita field with Chinese partner. Reuters. 30 September 2026', 'Source cited by Global Energy Monitor for Guafita (eprinc.org)', 'Source cited by Global Energy Monitor for Guafita (web.archive.org)']);
+  assert.equal(refs[1].origin.url, 'https://eprinc.org/wp-content/uploads/2021/09/The-Future-of-Venezuela%E2%80%99s-Oil-Industry.pdf');
+  const again = await runResearch(db, 'hte-gem', { now, storage, provider: noModel, fetch: wikiFetch, skipGemWiki: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(again.sources['gem-wiki'].unchanged, 1); assert.equal(again.sources['gem-wiki-ref'].unchanged, 3); assert.equal(again.findings, 0);
+  // A page that cannot be read is an error on the source, not a failed run.
+  const dead = await runResearch(db, 'hte-gem', { now, storage, provider: null, fetch: (async () => new Response('x', { status: 503 })) as unknown as typeof fetch, skipGemWiki: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(dead.status, 'ok'); assert.equal(dead.sources['gem-wiki'].error, 'gem.wiki answered HTTP 503'); assert.ok(dead.not_reached.some(n => n.source === 'gem-wiki'));
+});
+
+test('W4-AC10: web search files one finding per cited page with the verbatim cited text, counts searches into spend, reports a switched-off organisation and stops asking, and is off with RESEARCH_WEB=false', async () => {
+  await db.query("INSERT INTO projects (id,client_id,name,status,default_legal_tag,country,members,asset_ids) VALUES ('hte-web','hte','High Tech Electronica','prospect','lt-firm','VE','{chris}','{field:ve:guafita}')");
+  const asked: string[] = [];
+  const searcher = new FakeProvider(() => '{"facts":[]}', (req) => {
+    asked.push(req.prompt);
+    if (/Guafita/.test(req.prompt)) return { searches: 2, results: [{ url: 'https://eprinc.org/future.pdf', title: 'The Future of Venezuela\'s Oil Industry', page_age: 'September 2021' }, { url: 'https://example.org/uncited', title: 'Uncited', page_age: null }],
+      citations: [{ url: 'https://eprinc.org/future.pdf', title: 'The Future of Venezuela\'s Oil Industry', cited_text: 'the Guafita field in Apure produced 12,400 barrels per day in 2024', sentence: 'Guafita produced about 12,400 bopd in 2024.' }] };
+    return { searches: 1, citations: [], results: [] };
+  });
+  const r = await runResearch(db, 'hte-web', { now, storage, provider: searcher, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris', webMaxUses: 3 });
+  assert.equal(r.status, 'ok', JSON.stringify(r.warnings));
+  assert.equal(r.sources.web.queries, 3, 'one call per name: Guafita, Guafita Oil Field, the project name'); assert.equal(r.sources.web.created, 1);
+  assert.ok(asked[0].includes('Research "Guafita" in Venezuela') && asked[0].includes('"Guafita" Venezuela'), asked[0]);
+  const f = (await db.query<any>("SELECT title, extracted, origin, asset_ids FROM items WHERE project_id = 'hte-web' AND extracted->>'source' = 'web'")).rows;
+  assert.equal(f.length, 1, 'the uncited result files nothing');
+  assert.equal(f[0].title, 'The Future of Venezuela\'s Oil Industry'); assert.equal(f[0].origin.url, 'https://eprinc.org/future.pdf'); assert.equal(f[0].extracted.quote, 'the Guafita field in Apure produced 12,400 barrels per day in 2024');
+  assert.equal(f[0].extracted.summary, 'Guafita produced about 12,400 bopd in 2024.'); assert.equal(f[0].extracted.page_age, 'September 2021'); assert.deepEqual(f[0].asset_ids, ['field:ve:guafita']);
+  // Spend: tokens plus 4 searches at $0.01 → about £0.03 over the token cost.
+  assert.ok(r.spend_gbp >= 4 * 0.01 / 1.28 && r.spend_gbp < 0.1, String(r.spend_gbp));
+  // The organisation has web search switched off: the source says so once and the run goes on.
+  const off = new FakeProvider(() => '{"facts":[]}', () => new Error('anthropic 400: {"type":"error","error":{"type":"invalid_request_error","message":"Web search is not enabled for this organization."}}'));
+  const r2 = await runResearch(db, 'hte-web', { now, storage, provider: off, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(r2.status, 'ok'); assert.equal(r2.sources.web.queries, 1, 'the same 400 every time: asked once, then stopped');
+  assert.match(r2.sources.web.error!, /web search is not enabled for this organisation/);
+  process.env.RESEARCH_WEB = 'false';
+  const r3 = await runResearch(db, 'hte-web', { now, storage, provider: searcher, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  delete process.env.RESEARCH_WEB;
+  assert.equal(r3.sources.web.queries, 0); assert.match(r3.sources.web.skipped!, /RESEARCH_WEB=false/);
+  const r4 = await runResearch(db, 'hte-web', { now, storage, provider: null, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.match(r4.sources.web.skipped!, /no assistant configured/);
 });
 
 test('while the literature pass runs, the job row carries the phase and the running count so the Hub can show progress', async () => {

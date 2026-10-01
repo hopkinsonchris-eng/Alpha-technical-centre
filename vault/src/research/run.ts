@@ -18,6 +18,8 @@ import type { FeedAdapter, TopicSpec } from '../miners/types.ts';
 import type { Clock } from '../miners/util.ts';
 import { companyEnrichment, companySignals, gdeltDocuments, intelTimeline, secFilings, worldMonitorConfigured } from '../intel/worldmonitor.ts';
 import { buildQueries, type ResearchField, type ResearchProject, type ResearchQueries } from './queries.ts';
+import { fetchGemWiki, gemWikiFindings } from './gemwiki.ts';
+import { researchWebEnabled, searchWeb, webFindings, RESEARCH_WEB_OFF } from './web.ts';
 import { fileFinding, proposeFromFinding, readFacts, type Finding } from './findings.ts';
 
 export interface ResearchOptions {
@@ -27,6 +29,10 @@ export interface ResearchOptions {
   maxFactReads?: number;
   /** Where the end-of-run line goes (the server log by default; tests pass a sink). */
   log?: (line: string) => void;
+  /** Wave 4, W4-D1 revised: skip the Global Energy Monitor wiki pass or the web search pass (tests). */
+  skipGemWiki?: boolean; skipWeb?: boolean;
+  /** Searches per web call (default 3) and the price of one search in USD (default 0.01). */
+  webMaxUses?: number; usdPerSearch?: number;
   /** How often the running counts are written while the literature pass goes (ms). */
   progressEveryMs?: number;
 }
@@ -39,7 +45,7 @@ export interface ResearchSummary {
   /** Papers an earlier run filed that fail today's screen, hidden by this run (never deleted). */
   pruned?: number;
   /** Where a running job is: the Hub's status line says so. */
-  phase?: 'world-monitor' | 'literature' | 'done';
+  phase?: 'gem-wiki' | 'world-monitor' | 'web' | 'literature' | 'done';
 }
 
 export const RESEARCH_DISABLED = 'research runs are switched off (RESEARCH_ENABLED=false on the Vault service)';
@@ -102,7 +108,7 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   const started = now();
   const budget = { ms: opts.budgetMs ?? budgetMsOf(), gbp: opts.budgetGbp ?? budgetGbpOf() };
   const by = opts.by ?? 'research';
-  const summary: ResearchSummary = { project_id: projectId, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sources: {}, findings: 0, proposals: { asset: 0, research: 0 }, fact_reads: 0, spend_gbp: 0, budget, not_reached: [], stopped_by: null, warnings: [], phase: 'world-monitor' };
+  const summary: ResearchSummary = { project_id: projectId, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sources: {}, findings: 0, proposals: { asset: 0, research: 0 }, fact_reads: 0, spend_gbp: 0, budget, not_reached: [], stopped_by: null, warnings: [], phase: 'gem-wiki' };
   const log = opts.log ?? ((line: string) => console.log(line));
   const job = jobId ?? (await db.query<{ id: number }>("INSERT INTO jobs (name, status, summary) VALUES ('research', 'running', $1::jsonb) RETURNING id", [JSON.stringify({ project_id: projectId, queued: false })])).rows[0].id;
   await db.query('UPDATE jobs SET started_at = $2, summary = $3::jsonb WHERE id = $1', [job, started.toISOString(), JSON.stringify({ ...summary, queued: false })]);
@@ -144,7 +150,23 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
       summary.proposals.asset += pr.asset.length; summary.proposals.research += pr.research.length;
     };
 
+    // 0. Global Energy Monitor wiki pages (W4-D1 revised): the page and every source it cites, no model.
+    if (!opts.skipGemWiki) {
+      const withPage = fields.filter(f => typeof f.props?.gem?.wiki_url === 'string' && /^https?:\/\//.test(f.props.gem.wiki_url));
+      const c = count('gem-wiki');
+      if (fields.length > withPage.length) c.skipped = `${fields.length - withPage.length} field${fields.length - withPage.length === 1 ? '' : 's'} without a Global Energy Monitor record`;
+      for (const f of withPage) {
+        const s = stop(); if (s) { summary.not_reached.push({ source: 'gem-wiki', query: f.name, reason: s }); continue; }
+        c.queries++;
+        const r = await fetchGemWiki(f.props!.gem.wiki_url, opts.fetch);
+        if (!r.ok) { c.error = r.reason; summary.not_reached.push({ source: 'gem-wiki', query: f.name, reason: r.reason }); continue; }
+        for (const fd of gemWikiFindings({ id: f.id, name: f.name }, r.page)) await file(fd.source === 'gem-wiki' ? 'gem-wiki' : 'gem-wiki-ref', fd);
+        await progress();
+      }
+    }
+
     // 1. World Monitor.
+    summary.phase = 'world-monitor';
     if (!opts.skipWorldMonitor && worldMonitorConfigured()) {
       for (const g of q.gdelt) {
         const s = stop(); if (s) { summary.not_reached.push({ source: 'gdelt', query: g.query, reason: s }); continue; }
@@ -176,6 +198,35 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
         }
       }
     } else if (!opts.skipWorldMonitor) summary.warnings.push('World Monitor not connected: GDELT, company and filing searches skipped');
+
+    // 1b. Web search (W4-D1 revised): the model searches through the API's server-side tool; only what the API
+    //     cites is filed, with the page URL and the verbatim cited text. One call per name, the same names as GDELT.
+    summary.phase = 'web';
+    await progress();
+    if (!opts.skipWeb) {
+      const c = count('web');
+      if (!researchWebEnabled()) c.skipped = RESEARCH_WEB_OFF;
+      else if (!provider || !provider.search) c.skipped = provider ? 'the provider has no web search' : 'no assistant configured (ANTHROPIC_API_KEY)';
+      else {
+        const usdPerSearch = opts.usdPerSearch ?? 0.01;
+        for (const g of q.gdelt) {
+          const s = stop(); if (s) { summary.not_reached.push({ source: 'web', query: g.query, reason: s }); continue; }
+          c.queries++;
+          try {
+            const r = await searchWeb(provider, { label: g.label, query: g.query, field_id: g.field_id }, p.country ? countryName(p.country).en : null, opts.webMaxUses ?? 3);
+            summary.spend_gbp = Math.round((summary.spend_gbp + costGbp(r.model, r.usage) + (r.searches * usdPerSearch) / USD_PER_GBP) * 10000) / 10000;
+            if (r.error) c.error = r.error;
+            for (const fd of webFindings({ label: g.label, query: g.query, field_id: g.field_id }, r)) await file('web', fd);
+          } catch (e) {
+            const msg = (e as Error).message;
+            c.error = /not enabled/i.test(msg) ? 'web search is not enabled for this organisation (Claude Console → Capabilities)' : msg;
+            summary.not_reached.push({ source: 'web', query: g.query, reason: c.error });
+            if (/not enabled|401|403/.test(msg)) break;                     // the same answer every time: do not spend the budget on it
+          }
+          await progress();
+        }
+      }
+    }
 
     // 2. The miners: literature per field and operator, scoped to the project. The Hub reads the running
     //    counts while this goes, so a long pass does not look like nothing happening.

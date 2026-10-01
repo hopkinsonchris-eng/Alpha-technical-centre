@@ -7,12 +7,42 @@ export interface LlmMessage { role: 'user' | 'assistant'; content: string }
 export interface LlmUsage { input: number; cached: number; output: number }
 export interface LlmResult { text: string; usage: LlmUsage; model: string; provider: string }
 export interface LlmRequest { system: string; messages: LlmMessage[]; maxTokens?: number; temperature?: number; effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max' }
-export interface LlmProvider { name: string; model: string; complete(req: LlmRequest): Promise<LlmResult> }
+export interface LlmProvider { name: string; model: string; complete(req: LlmRequest): Promise<LlmResult>; search?(req: WebSearchRequest): Promise<WebSearchResult> }
+
+/* ── wave 4: web search through the Messages API's server-side tool ─── */
+export interface WebSearchRequest { system: string; prompt: string; maxUses: number; maxTokens?: number }
+export interface WebCitation { url: string; title: string | null; cited_text: string; sentence: string }
+export interface WebSearchHit { url: string; title: string | null; page_age: string | null }
+export interface WebSearchResult { text: string; usage: LlmUsage; model: string; searches: number; citations: WebCitation[]; results: WebSearchHit[]; error?: string }
+
+/** Reads the search results, the cited sentences and the search count out of a Messages API response. */
+export function readWebSearch(j: any, model: string): WebSearchResult {
+  const citations: WebCitation[] = [], results: WebSearchHit[] = [];
+  let text = '', error: string | undefined;
+  for (const c of j?.content ?? []) {
+    if (c?.type === 'text') {
+      text += c.text ?? '';
+      for (const ci of c.citations ?? []) if (ci?.type === 'web_search_result_location' && ci.url) citations.push({ url: String(ci.url), title: ci.title ? String(ci.title) : null, cited_text: String(ci.cited_text ?? ''), sentence: String(c.text ?? '').trim() });
+    } else if (c?.type === 'web_search_tool_result') {
+      if (Array.isArray(c.content)) {
+        for (const r of c.content) if (r?.type === 'web_search_result' && r.url) results.push({ url: String(r.url), title: r.title ? String(r.title) : null, page_age: r.page_age ? String(r.page_age) : null });
+      } else if (c.content?.type === 'web_search_tool_result_error') error = `web search error: ${c.content.error_code ?? 'unknown'}`;
+    }
+  }
+  const u = j?.usage ?? {};
+  return { text, usage: { input: u.input_tokens ?? 0, cached: u.cache_read_input_tokens ?? 0, output: u.output_tokens ?? 0 }, model: j?.model ?? model, searches: Number(u.server_tool_use?.web_search_requests ?? 0), citations, results, ...(error ? { error } : {}) };
+}
 
 /** Deterministic provider for tests: echoes a compact summary of the last user message. */
 export class FakeProvider implements LlmProvider {
   name = 'fake'; model = 'fake-1';
-  constructor(private readonly reply?: (req: LlmRequest) => string) {}
+  constructor(private readonly reply?: (req: LlmRequest) => string, private readonly searchReply?: (req: WebSearchRequest) => Partial<WebSearchResult> | Error) {}
+  async search(req: WebSearchRequest): Promise<WebSearchResult> {
+    if (!this.searchReply) return { text: 'Nothing found.', usage: { input: 50, cached: 0, output: 5 }, model: this.model, searches: 1, citations: [], results: [] };
+    const r = this.searchReply(req);
+    if (r instanceof Error) throw r;
+    return { text: '', usage: { input: 500, cached: 0, output: 120 }, model: this.model, searches: 1, citations: [], results: [], ...r };
+  }
   async complete(req: LlmRequest): Promise<LlmResult> {
     const last = req.messages.at(-1)?.content ?? '';
     const text = this.reply ? this.reply(req) : `FAKE: ${last.slice(0, 200)}`;
@@ -40,6 +70,31 @@ export class AnthropicProvider implements LlmProvider {
     const text = (j.content ?? []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join('');
     const u = j.usage ?? {};
     return { text, usage: { input: u.input_tokens ?? 0, cached: u.cache_read_input_tokens ?? 0, output: u.output_tokens ?? 0 }, model: j.model ?? this.model, provider: this.name };
+  }
+
+  /**
+   * Wave 4: one search turn through the server-side web search tool (web_search_20260209, dynamic filtering).
+   * The API cites what it found; `readWebSearch` keeps the citations and the search count. A `pause_turn` is
+   * resumed once with the assistant content sent back unchanged. An organisation with web search switched off
+   * answers 400: that is reported as an error on the source, not thrown as a crash of the run.
+   */
+  async search(req: WebSearchRequest): Promise<WebSearchResult> {
+    const tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: req.maxUses }];
+    const messages: any[] = [{ role: 'user', content: req.prompt }];
+    const body = (msgs: any[]) => JSON.stringify({ model: this.model, max_tokens: req.maxTokens ?? 2000, output_config: { effort: 'low' }, system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }], messages: msgs, tools });
+    const call = async (msgs: any[]) => {
+      const res = await this.fetchImpl('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01' }, body: body(msgs) });
+      if (!res.ok) throw new Error(`anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      return res.json() as Promise<any>;
+    };
+    let j = await call(messages);
+    let out = readWebSearch(j, this.model);
+    if (j?.stop_reason === 'pause_turn') {
+      const j2 = await call([...messages, { role: 'assistant', content: j.content }]);
+      const more = readWebSearch(j2, this.model);
+      out = { ...more, text: out.text + more.text, usage: { input: out.usage.input + more.usage.input, cached: out.usage.cached + more.usage.cached, output: out.usage.output + more.usage.output }, searches: out.searches + more.searches, citations: [...out.citations, ...more.citations], results: [...out.results, ...more.results], ...(out.error && !more.error ? { error: out.error } : {}) };
+    }
+    return out;
   }
 }
 

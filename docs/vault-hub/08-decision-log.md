@@ -120,6 +120,10 @@ Design record: `wave4/` (practice scan P30–P37, choice sheet W4-D1–D4, gap s
 |---|---|---|---|
 | #34 | Research runs per project: migration 005, four World Monitor research readers, query builder, the run with time and spend budgets, findings filed as cited public notes (deduplicated on re-run), `asset` and `research` proposals with verbatim quotes, `POST`/`GET /api/projects/:id/research`, triggers on project create and field attach, accept of kind `research`, the `atc-vault-research` cron, `RESEARCH_ENABLED` | research (8), research.routes (4), worldmonitor (+1), auth/db/boot migration counts | — |
 | #35 | The Hub: "Research this project" with its status line and 10 s polling, the Research tab grouped by source with queries, quotes and open-into-record, research proposals in the Fields card and the queue page | hub-research (6) | `evidence/w4-research-tab.png`, `evidence/w4-research-proposals.png` |
+| #37 | Boot skips the GEM re-seed once a release is loaded (Render deploy had timed out) | import-gem (+1) | — |
+| #38 | Runs report phase, live counts and per-source outcomes; one log line per run | research (+1), hub-research (+1) | — |
+| #39 | Strict literature screen (name as a phrase plus an oil-and-gas word); a re-run hides papers filed wrongly | research (+1) | — |
+| #40 | W4-D1 revised: GEM wiki pages and their cited sources; web search with API citations (`web_search_20260209`), `RESEARCH_WEB=false` | research.sources (5), research (+2), hub-research (+1) | `evidence/w4-research-tab.png` |
 
 Follow-ups opened by wave 4:
 
@@ -127,4 +131,5 @@ Follow-ups opened by wave 4:
 |---|---|---|---|
 | F16 | Standing watch per project (Option B) | Not chosen at Gate 2; a project's picture goes stale between presses | A weekly cron queuing one run per active project with a shared budget |
 | F17 | Research findings cited in briefs and drafts | Findings are indexed but the brief does not yet prefer them | Add the `research` tag to the brief's retrieval scope |
+| F14 | Model web search per field | Closed by W4-D1 revised (#40) | — |
 | F18 | Regulator feeds filtered per field | The run uses the literature adapters only (the regulator feeds take no query) | A post-filter on snapshot rows by the project's field names |

@@ -22,10 +22,13 @@ const PROJECT = {
 };
 const GUAFITA = { id: 'field:ve:guafita', kind: 'field', name: 'Guafita', parent_id: null, country: 'VE', operator: null, source_url: 'https://www.gem.wiki/Guafita_Oil_Field', lat: 7.6, lon: -70.9, location_source: 'gem', status: 'operating', created_by: 'chris', created_at: '2026-09-30T10:00:00.000Z', props: { gem: { unit_id: 'G100', release: 'March 2026' } }, dossier: [] };
 const RUN_OK = { id: 7, status: 'stopped', started_at: '2026-10-01T12:25:00.000Z', finished_at: '2026-10-01T12:40:00.000Z', summary: {
-  project_id: PID, status: 'stopped', findings: 4, proposals: { asset: 1, research: 2 }, fact_reads: 3, spend_gbp: 1.8, duration_ms: 15 * 60000, budget: { ms: 15 * 60000, gbp: 3 }, stopped_by: 'time',
-  sources: { gdelt: { queries: 3, findings: 2, created: 2, updated: 0, unchanged: 0 }, company: { queries: 2, findings: 0, created: 0, updated: 0, unchanged: 0, error: 'World Monitor timed out', skipped: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)' }, 'company-signals': { queries: 0, findings: 1, created: 1, updated: 0, unchanged: 0 }, literature: { queries: 2, findings: 1, created: 1, updated: 0, unchanged: 0 } },
+  project_id: PID, status: 'stopped', findings: 6, proposals: { asset: 1, research: 2 }, fact_reads: 3, spend_gbp: 1.8, duration_ms: 15 * 60000, budget: { ms: 15 * 60000, gbp: 3 }, stopped_by: 'time',
+  sources: { 'gem-wiki': { queries: 1, findings: 1, created: 1, updated: 0, unchanged: 0, skipped: '1 field without a Global Energy Monitor record' }, web: { queries: 3, findings: 1, created: 1, updated: 0, unchanged: 0 }, gdelt: { queries: 3, findings: 2, created: 2, updated: 0, unchanged: 0 }, company: { queries: 2, findings: 0, created: 0, updated: 0, unchanged: 0, error: 'World Monitor timed out', skipped: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)' }, 'company-signals': { queries: 0, findings: 1, created: 1, updated: 0, unchanged: 0 }, literature: { queries: 2, findings: 1, created: 1, updated: 0, unchanged: 0 } },
   not_reached: [{ source: 'gdelt', query: '"La Victoria" Venezuela', reason: 'time' }, { source: 'literature', query: 'Guafita field Venezuela reservoir', reason: 'time' }], warnings: [] } };
+const F5 = '00000000-0000-4000-8000-000000000a05', F6 = '00000000-0000-4000-8000-000000000a06';
 const FINDINGS = [
+  { id: F5, type: 'note', title: 'Global Energy Monitor: Guafita', date: '2026-10-01T12:30:00.000Z', source: 'gem-wiki', url: 'https://www.gem.wiki/Guafita_Oil_Field_(Venezuela)', query: 'Guafita', quote: 'Guafita Oil Field is an operating oil field in Venezuela. | Project Details | Unit name Status Operator Guafita operating PDVSA 1984', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
+  { id: F6, type: 'note', title: 'The Future of Venezuela\'s Oil Industry', date: '2026-10-01T12:30:00.000Z', source: 'web', url: 'https://eprinc.org/wp-content/uploads/2021/09/The-Future-of-Venezuelas-Oil-Industry.pdf', query: '"Guafita" Venezuela', quote: 'the Guafita field in Apure produced 12,400 barrels per day in 2024', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
   { id: F1, type: 'note', title: 'PDVSA restarts Apure production after pipeline repair', date: '2026-09-30T10:00:00.000Z', source: 'gdelt', url: 'https://www.reuters.com/x/apure', query: '"Guafita" Venezuela', quote: 'PDVSA restarts Apure production after pipeline repair (Reuters)', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
   { id: F2, type: 'note', title: 'The Guafita and La Victoria fields resume output', date: '2026-09-28T12:00:00.000Z', source: 'gdelt', url: 'https://www.elnacional.com/x/guafita', query: '"Guafita" Venezuela', quote: 'The Guafita and La Victoria fields in Apure state resumed production this week.', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
   { id: F3, type: 'note', title: 'PDVSA signs service contract for Guafita', date: '2026-09-29T08:00:00.000Z', source: 'company-signals', url: 'https://www.argusmedia.com/x/pdvsa', query: 'PDVSA', quote: 'PDVSA signs service contract for Guafita (news) — Argus', asset_ids: [], legal_tag: 'lt-public', version: 1 },
@@ -86,12 +89,12 @@ test('W4-AC7: the toolbar shows the last run line; the Research tab lists findin
   await expect(btn).toBeEnabled();
   const status = page.locator('#p-research-status');
   await expect(status).toContainText('last run');
-  await expect(status).toContainText('4 findings · 3 proposals · stopped at 15 min');
+  await expect(status).toContainText('6 findings · 3 proposals · stopped at 15 min');
   await expect(status.locator('[data-run-status="stopped"]')).toHaveCount(1);
   // The tab carries the count and the panel groups the findings by source, newest first.
   const tab = page.locator('#tab-research');
   await expect(tab).toContainText('Research');
-  await expect(tab.locator('.n')).toHaveText('4');
+  await expect(tab.locator('.n')).toHaveText('6');
   await tab.click();
   const panel = page.locator('#panel-research');
   await expect(panel).toBeVisible();
@@ -100,19 +103,30 @@ test('W4-AC7: the toolbar shows the last run line; the Research tab lists findin
   await expect(panel.locator('#rs-summary')).toContainText('GDELT news 2');
   // What each source was asked and answered, errors and Pro gates included.
   const sources = panel.locator('#rs-sources li');
-  await expect(sources).toHaveCount(4);
-  await expect(sources.nth(0)).toContainText('World Monitor · GDELT news: 3 queries · 2 findings');
-  await expect(sources.nth(1)).toContainText('World Monitor · company lookups: 2 queries · 0 findings');
-  await expect(sources.nth(1).locator('[data-error]')).toHaveText('World Monitor timed out');
-  await expect(sources.nth(1).locator('[data-skipped]')).toContainText('needs World Monitor Pro');
+  await expect(sources).toHaveCount(6);
+  await expect(sources.nth(0)).toContainText('Global Energy Monitor wiki: 1 query · 1 finding');
+  await expect(sources.nth(0).locator('[data-skipped]')).toHaveText('1 field without a Global Energy Monitor record');
+  await expect(sources.nth(1)).toContainText('Web search: 3 queries · 1 finding');
+  await expect(sources.nth(2)).toContainText('World Monitor · GDELT news: 3 queries · 2 findings');
+  await expect(sources.nth(3)).toContainText('World Monitor · company lookups: 2 queries · 0 findings');
+  await expect(sources.nth(3).locator('[data-error]')).toHaveText('World Monitor timed out');
+  await expect(sources.nth(3).locator('[data-skipped]')).toContainText('needs World Monitor Pro');
   const groups = panel.locator('.hub-research-group');
-  await expect(groups).toHaveCount(3);
-  await expect(groups.nth(0)).toHaveAttribute('data-source', 'gdelt');
-  await expect(groups.nth(0).locator('h4')).toContainText('World Monitor · GDELT news');
-  await expect(groups.nth(0).locator('h4 .n')).toHaveText('2');
-  await expect(groups.nth(1)).toHaveAttribute('data-source', 'company-signals');
-  await expect(groups.nth(2)).toHaveAttribute('data-source', 'literature');
-  const first = groups.nth(0).locator('li[data-finding]').first();
+  await expect(groups).toHaveCount(5);
+  // W4-AC11: the two added sources lead, in the order the run asks them.
+  await expect(groups.nth(0)).toHaveAttribute('data-source', 'gem-wiki');
+  await expect(groups.nth(0).locator('h4')).toContainText('Global Energy Monitor wiki');
+  await expect(groups.nth(0).locator('li[data-finding="' + F5 + '"] [data-url]')).toHaveText('gem.wiki');
+  await expect(groups.nth(1)).toHaveAttribute('data-source', 'web');
+  await expect(groups.nth(1).locator('h4')).toContainText('Web search');
+  await expect(groups.nth(1).locator('li[data-finding="' + F6 + '"] [data-quote]')).toContainText('12,400 barrels per day');
+  await expect(groups.nth(1).locator('li[data-finding="' + F6 + '"] [data-url]')).toHaveText('eprinc.org');
+  await expect(groups.nth(2)).toHaveAttribute('data-source', 'gdelt');
+  await expect(groups.nth(2).locator('h4')).toContainText('World Monitor · GDELT news');
+  await expect(groups.nth(2).locator('h4 .n')).toHaveText('2');
+  await expect(groups.nth(3)).toHaveAttribute('data-source', 'company-signals');
+  await expect(groups.nth(4)).toHaveAttribute('data-source', 'literature');
+  const first = groups.nth(2).locator('li[data-finding]').first();
   await expect(first).toHaveAttribute('data-finding', F1);
   await expect(first.locator('.d')).toHaveText('30 Sept 2026');
   await expect(first.locator('b')).toHaveText('PDVSA restarts Apure production after pipeline repair');
@@ -131,7 +145,8 @@ test('W4-AC7: the toolbar shows the last run line; the Research tab lists findin
   // Spanish follows.
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(page.locator('#tab-research')).toContainText('Investigación');
-  await expect(groups.nth(0).locator('h4')).toContainText('World Monitor · noticias GDELT');
+  await expect(groups.nth(2).locator('h4')).toContainText('World Monitor · noticias GDELT');
+  await expect(groups.nth(0).locator('h4')).toContainText('Wiki de Global Energy Monitor');
   await expect(btn).toHaveText('Investigar este proyecto');
 });
 
@@ -162,12 +177,12 @@ test('W4-AC7: the button queues a run, shows progress while polling, and when th
   // The poll sees the run going, then finished.
   await expect(status).toContainText('running · 2 min · 1 findings · searching the literature');
   await expect(status).toContainText('last run 1 Oct', { timeout: 5000 });
-  await expect(status).toContainText('4 findings · 3 proposals');
+  await expect(status).toContainText('6 findings · 3 proposals');
   await expect(btn).toBeEnabled();
   await expect(btn).toHaveText('Research this project');
-  await expect(page.locator('#tab-research .n')).toHaveText('4');
+  await expect(page.locator('#tab-research .n')).toHaveText('6');
   await page.locator('#tab-research').click();
-  await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(4);
+  await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(6);
   expect(calls.views).toBeGreaterThanOrEqual(3);
 });
 
@@ -263,7 +278,7 @@ test('W4-AC8: evidence screenshots of the Research tab and the research proposal
   await stubApi(page);
   await page.goto('/hub/project.html?id=' + PID + '#research');
   await ready(page);
-  await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(4);
+  await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(6);
   mkdirSync(EVIDENCE, { recursive: true });
   await page.locator('#panel-research').scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(EVIDENCE, 'w4-research-tab.png') });
