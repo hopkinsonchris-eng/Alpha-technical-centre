@@ -162,6 +162,10 @@ export function screenPaper(rec: FeedRecord, cfg: MinersConfig): Verdict {
   const negatives = [...(cfg.negative ?? []), ...(topic ? topic.negative : cfg.topics.flatMap(t => t.negative))];
   const body = `${rec.title} ${rec.text ?? ''}`;
   if (mentionsAny(body, negatives)) return 'negative';
+  if (!topic && cfg.topics.some(t => t.strict)) {
+    // A record that names no topic (a recommendation) under strict topics is kept only when one of them would keep it.
+    return cfg.topics.some(t => t.strict && screenPaper({ ...rec, meta: { ...rec.meta, topic_id: t.id } }, cfg) === 'keep') ? 'keep' : 'off-topic';
+  }
   if (topic?.strict) {
     // A research topic is a field or company name: the name must appear as a phrase, title only or not, and the
     // paper must be about oil and gas (or the country). "A field study in dairy farms" never passes.
@@ -313,7 +317,8 @@ export async function runMiners(db: Db, opts: RunOptions = {}): Promise<RunSumma
   const schedules = opts.schedules ?? ['weekly'];
   await ensureMinerBase(db);
 
-  const seedIds = async () => (await db.query<{ external_id: string }>(
+  // Recommendations seeded from the whole Vault serve the firm-wide weekly run; a project's research run searches by its own topics only.
+  const seedIds = async () => opts.projectId ? [] : (await db.query<{ external_id: string }>(
     `SELECT external_id FROM items WHERE type='paper' AND origin->>'source'='semantic-scholar' AND external_id IS NOT NULL AND NOT hidden ORDER BY created_at DESC LIMIT 100`)).rows.map(r => r.external_id);
   const built = buildAdapters(cfg, { fetch: opts.fetch, clock: opts.clock, env, seedIds, onWarn: m => warnings.push(m) });
   const adapters = opts.adapters ? new Map(opts.adapters.map(a => [a.id, a])) : built;

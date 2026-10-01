@@ -272,6 +272,12 @@ test('the literature screen keeps only papers that name the field and are about 
     `INSERT INTO items (id, type, title, created_at, authored_at, authors, project_id, legal_tag, origin, external_id, content_hash, version, extracted, tags)
      VALUES ($1,'paper','A field study in dairy farms: thermal condition of feet','2026-10-01T10:00:00Z','2001-06-01T00:00:00Z','{}','hte-screen','lt-public',$2::jsonb,'10.1/junk','sha256:junk',1,'{}'::jsonb,'{}')`,
     [junkId, JSON.stringify({ source: 'crossref', external_id: '10.1/junk', query: 'Guafita field Venezuela reservoir' })]);
+  // What the first live runs also did: Semantic Scholar recommendations seeded from the whole Vault, filed with no query at all.
+  const recId = randomUUID();
+  await db.query(
+    `INSERT INTO items (id, type, title, created_at, authored_at, authors, project_id, legal_tag, origin, external_id, content_hash, version, extracted, tags)
+     VALUES ($1,'paper','Glaucoma surgery: visual field progression','2026-10-01T10:00:00Z','2002-06-01T00:00:00Z','{}','hte-screen','lt-public',$2::jsonb,'s2rec1','sha256:rec',1,'{}'::jsonb,'{}')`,
+    [recId, JSON.stringify({ source: 'semantic-scholar', external_id: 's2rec1', url: 'https://www.semanticscholar.org/paper/s2rec1' })]);
   const titlesOnly: FeedAdapter = { id: 'crossref', schedule: 'weekly', rateLimit: { perSecond: 10 }, async *fetch(_s, topics) {
     const topic = topics.find(x => x.id.endsWith(':field:ve:guafita'))!;
     yield { external_id: '10.2/dairy', url: 'https://doi.org/10.2/dairy', title: 'A field study in dairy farms: thermal condition of feet', authored_at: '2001-06-01T00:00:00Z', authors: [], meta: { topic_id: topic.id } };
@@ -279,19 +285,20 @@ test('the literature screen keeps only papers that name the field and are about 
     yield { external_id: '10.2/magnet', url: 'https://doi.org/10.2/magnet', title: 'Numerical study of plasma-wall transition in an oblique magnetic field', authored_at: '2001-03-01T00:00:00Z', authors: [], meta: { topic_id: topic.id } };
     yield { external_id: '10.2/guafita-1995', url: 'https://doi.org/10.2/guafita-1995', title: 'Waterflood performance of the Guafita field, Apure, Venezuela', authored_at: '1995-03-01T00:00:00Z', authors: ['J. Pérez'], meta: { topic_id: topic.id } };
     yield { external_id: '10.2/guafita-street', url: 'https://doi.org/10.2/guafita-street', title: 'Urban growth along Calle Guafita: a planning study', authored_at: '2010-03-01T00:00:00Z', authors: [], meta: { topic_id: topic.id } };
+    yield { external_id: 's2rec2', url: 'https://www.semanticscholar.org/paper/s2rec2', title: 'Serum leptin and obesity in adults', authored_at: '2003-03-01T00:00:00Z', authors: [], text: 'Leptin levels were measured.', meta: { via: 'recommendation' } };
   } };
   configureWorldMonitor({ fetch: wmFetch, apiKey: null, now: () => new Date(t) });
   const r = await runResearch(db, 'hte-screen', { now, storage, provider: null, minerAdapters: [titlesOnly], budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
   assert.equal(r.status, 'ok');
-  assert.equal(r.sources.literature.findings, 5); assert.equal(r.sources.literature.created, 1, 'one of five title-only answers names the field and is about oil');
+  assert.equal(r.sources.literature.findings, 6); assert.equal(r.sources.literature.created, 1, 'one of six answers names the field and is about oil; a recommendation with no topic never passes');
   const filed = (await db.query<any>("SELECT title, hidden FROM items WHERE project_id = 'hte-screen' AND type = 'paper' ORDER BY title")).rows;
-  assert.deepEqual(filed, [{ title: 'Waterflood performance of the Guafita field, Apure, Venezuela', hidden: false }], 'the junk an earlier run filed is gone: nothing cited it');
-  assert.equal(r.pruned, 1); assert.equal(r.purged, 1);
+  assert.deepEqual(filed, [{ title: 'Waterflood performance of the Guafita field, Apure, Venezuela', hidden: false }], 'the junk earlier runs filed is gone, query stamp or not: nothing cited it');
+  assert.equal(r.pruned, 2); assert.equal(r.purged, 2);
   const audit = (await db.query<any>("SELECT refs, detail FROM audit_events WHERE action = 'research.run' AND scope = 'project:hte-screen' ORDER BY id DESC LIMIT 1")).rows[0];
-  assert.equal(audit.detail.pruned, 1); assert.ok(audit.refs.includes('doc:' + junkId));
+  assert.equal(audit.detail.pruned, 2); assert.ok(audit.refs.includes('doc:' + junkId)); assert.ok(audit.refs.includes('doc:' + recId));
   const pruneAudit = (await db.query<any>("SELECT refs, detail FROM audit_events WHERE action = 'research.prune' AND scope = 'project:hte-screen' ORDER BY id DESC LIMIT 1")).rows[0];
-  assert.deepEqual(pruneAudit.detail, { purged: 1, hidden: 0, reason: 'failed the literature screen' }); assert.ok(pruneAudit.refs.includes('doc:' + junkId));
-  assert.match(logLines.at(-1) ?? '', /pruned 1 \(1 purged\)/);
+  assert.deepEqual(pruneAudit.detail, { purged: 2, hidden: 0, reason: 'failed the literature screen' }); assert.ok(pruneAudit.refs.includes('doc:' + junkId));
+  assert.match(logLines.at(-1) ?? '', /pruned 2 \(2 purged\)/);
   // A junk paper that something cites is hidden, not purged; one already hidden by an earlier build is purged too.
   const citedId = randomUUID(), oldHiddenId = randomUUID();
   for (const [id, title, hid] of [[citedId, 'Early postoperative capsular block syndrome', false], [oldHiddenId, 'Glaucoma surgery: visual field progression', true]] as const) {

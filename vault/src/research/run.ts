@@ -307,14 +307,17 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   return summary;
 }
 
+/** The literature sources a research run files from; what it filed is what it re-screens. */
+export const LITERATURE_SOURCES = ['openalex', 'crossref', 'semantic-scholar'];
+
 /**
- * Re-screens the papers research filed under a project (origin.query set), hidden or not, against the topics
- * as they are now. A paper that fails and that no run, document, lesson or analogue cites is purged with its
+ * Re-screens the papers research filed under a project (from a literature source, query stamp or not), hidden or
+ * not, against the topics as they are now. A paper that fails and that no run, document, lesson or analogue cites is purged with its
  * chunks and versions, as the partner purge route does for a record nobody's work depends on; a cited one is
  * hidden. One audit event names what went. Returns the counts; purged ids still join the run's refs.
  */
 export async function pruneLiterature(db: Db, projectId: string, topics: TopicSpec[], touched: string[] = [], by = 'research'): Promise<{ purged: number; hidden: number }> {
-  const rows = (await db.query<any>("SELECT id, title, extracted, origin, hidden FROM items WHERE project_id = $1 AND type = 'paper' AND origin ? 'query'", [projectId])).rows;
+  const rows = (await db.query<any>("SELECT id, title, extracted, origin, hidden FROM items WHERE project_id = $1 AND type = 'paper' AND (origin ? 'query' OR origin->>'source' = ANY($2::text[]))", [projectId, LITERATURE_SOURCES])).rows;
   const out = { purged: 0, hidden: 0 };
   if (!rows.length) return out;
   const cfg = { topics, negative: ['retracted', 'erratum'] } as any;
@@ -348,8 +351,8 @@ export async function researchView(db: Db, projectId: string, limit = 5) {
     .map(r => ({ id: r.id, status: r.summary?.queued ? 'queued' : r.status === 'running' ? 'running' : r.summary?.status ?? r.status, started_at: r.started_at, finished_at: r.finished_at, summary: r.summary }));
   const items = (await db.query<any>(
     `SELECT id, type, title, authored_at, created_at, legal_tag, origin, extracted, asset_ids, version FROM items
-      WHERE project_id = $1 AND NOT hidden AND (extracted->>'kind' = 'research' OR (origin ? 'query' AND type = 'paper'))
-      ORDER BY coalesce(authored_at, created_at) DESC LIMIT 500`, [projectId])).rows;
+      WHERE project_id = $1 AND NOT hidden AND (extracted->>'kind' = 'research' OR (type = 'paper' AND (origin ? 'query' OR origin->>'source' = ANY($2::text[]))))
+      ORDER BY coalesce(authored_at, created_at) DESC LIMIT 500`, [projectId, LITERATURE_SOURCES])).rows;
   const findings = items.map(i => ({
     id: i.id, type: i.type, title: i.title, date: i.authored_at ?? i.created_at, source: i.extracted?.source ?? i.origin?.source ?? 'literature', url: i.extracted?.url ?? i.origin?.url ?? null,
     query: i.extracted?.query ?? i.origin?.query ?? null, quote: i.extracted?.quote ?? i.extracted?.abstract ?? null, asset_ids: i.asset_ids ?? [], legal_tag: i.legal_tag, version: i.version,
