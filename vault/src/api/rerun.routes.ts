@@ -13,6 +13,7 @@ import type { Env } from '../app.ts';
 import type { RouteDeps } from './index.ts';
 import { ApiError, assertVisible, canSee, conflict, loadAccess, notFound, route, scopeLabel, uuidParam, requirePartner, requireWritableProject, type Ctx } from './common.ts';
 import { attachAsset } from './assets.routes.ts';
+import { toKboed } from '../research/findings.ts';
 import { createRun, runRecord } from './runs.routes.ts';
 import { buildCatalog, resolve as resolveTool, type Catalog } from '../catalog.ts';
 import { headlessRun } from '../rerun/runner.ts';
@@ -166,13 +167,35 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
           const choice = typeof b.asset_id === 'string' || b.create !== undefined ? b : { create: { name: String(row.payload.name), kind: row.payload.kind ?? 'field' } };
           attached = await attachAsset(x, p, choice);
         }
+      } else if (row.kind === 'research') {
+        // Wave 4: an operator, licence or production fact from a research finding. Accepting records it on the
+        // finding; an operator lands on the field, a production figure on the register's `current` (§1.5).
+        const acc = await loadAccess(x.db, x.person, x.now);
+        const pid = String(row.payload?.project_id ?? '');
+        const p = acc.projects.get(pid);
+        if (!p || !canSee(acc, p.default_legal_tag, p.id)) throw notFound(`review item ${id} not found`);
+        requireWritableProject(acc, p.id);
+        x.a.scope = scopeLabel(p.id);
+        if (verb === 'accept') {
+          const pl = row.payload ?? {};
+          const fact = { kind: pl.fact_kind, value: pl.value, unit: pl.unit ?? null, year: pl.year ?? null, quote: pl.quote, asset_id: pl.asset_id ?? null, accepted_by: x.person.id, accepted_at: x.now.toISOString() };
+          if (pl.item_id) await x.db.query("UPDATE items SET extracted = jsonb_set(coalesce(extracted, '{}'::jsonb), '{accepted_facts}', coalesce(extracted->'accepted_facts', '[]'::jsonb) || $2::jsonb) WHERE id = $1", [pl.item_id, JSON.stringify([fact])]);
+          if (pl.fact_kind === 'operator' && pl.asset_id && p.asset_ids.includes(pl.asset_id)) await x.db.query('UPDATE assets SET operator = $2 WHERE id = $1', [pl.asset_id, String(pl.value)]);
+          if (pl.fact_kind === 'production') {
+            const kboed = toKboed(String(pl.value), pl.unit);
+            const current = `${pl.value}${pl.unit ? ' ' + pl.unit : ''}${pl.year ? ' (' + pl.year + ')' : ''}`;
+            await x.db.query("UPDATE projects SET register = coalesce(register, '{}'::jsonb) || $2::jsonb WHERE id = $1",
+              [p.id, JSON.stringify({ current, current_kboed: kboed, current_source: { item_id: pl.item_id ?? null, quote: pl.quote ?? null, accepted_by: x.person.id, accepted_at: x.now.toISOString() } })]);
+          }
+          x.a.detail = { fact_kind: pl.fact_kind, value: pl.value, asset_id: pl.asset_id ?? null };
+        }
       } else if (row.kind !== 'rerun-delta') requirePartner(x.person, `${verb} a ${row.kind} review item`);
       await x.db.query('UPDATE review_queue SET status=$2, resolved_by=$3, resolved_at=$4 WHERE id=$1', [id, verb === 'accept' ? 'accepted' : 'rejected', x.person.id, x.now.toISOString()]);
       if (verb === 'accept' && row.kind === 'rerun-delta' && row.payload?.rerun) {
         await x.db.query("UPDATE runs SET status='reviewed', record = jsonb_set(record, '{reviewed_by}', to_jsonb($2::text)) WHERE id=$1 AND status='draft'", [row.payload.rerun, x.person.id]);
         try { await emitIfEvaluation(x.db, row.payload.rerun); } catch { /* analogue row is best effort */ }
       }
-      x.a.refs = [`review:${id}`, ...(attached ? [`asset:${attached.asset.id}`, ...attached.dossier.map(d => `doc:${d}`)] : [])]; x.a.detail = { kind: row.kind, ...(attached ? { asset_id: attached.asset.id, created: attached.created, dossier: attached.dossier.length } : {}) };
+      x.a.refs = [`review:${id}`, ...(attached ? [`asset:${attached.asset.id}`, ...attached.dossier.map(d => `doc:${d}`)] : []), ...(row.kind === 'research' && row.payload?.item_id ? [`item:${row.payload.item_id}`] : [])]; x.a.detail = { ...(x.a.detail ?? {}), kind: row.kind, ...(attached ? { asset_id: attached.asset.id, created: attached.created, dossier: attached.dossier.length } : {}) };
       return { body: { id, status: verb === 'accept' ? 'accepted' : 'rejected', ...(attached ? { asset: attached.asset, created: attached.created, already: attached.already, dossier: attached.dossier } : {}) } };
     });
   }

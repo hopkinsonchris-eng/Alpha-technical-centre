@@ -103,6 +103,17 @@ each one in Render → `atc-vault-api` → **Environment** (and the same
 | `GEONAMES_USERNAME` | Free account at https://www.geonames.org/login → enable the free web services on the account page. Add field then searches GeoNames for oil and gas fields; without it the Hub says "GeoNames not available". |
 | `WORLD_MONITOR_API_KEY` | World Monitor → API keys (a `wm_` key). Server-side only: country risk and conflict events in the brief and the globe. Without it the risk line is simply absent. |
 
+**Research runs (wave 4)**
+
+Creating a project with a country, attaching a field, or pressing Research on the project file queues a
+research run: World Monitor's GDELT, company and SEC readers plus the Vault's own literature miners,
+each finding filed as a public note under the project with its source, URL and a verbatim excerpt, and
+operator, licence and production figures opened as proposals in the review queue. A run stops at
+`RESEARCH_BUDGET_MINUTES` (default 15) or `RESEARCH_BUDGET_GBP` of model spend (default 3), whichever
+comes first. `RESEARCH_ENABLED=false` switches it off. The `atc-vault-research` cron (every 15 minutes,
+added by a Blueprint sync) finishes any run a restart interrupted. Nothing is deleted by a run; a re-run
+updates its own notes in place.
+
 **The Global Energy Monitor field tracker (once per release, about 10 minutes)**
 
 The Global Oil and Gas Extraction Tracker sits behind a download form, so it is imported by hand:

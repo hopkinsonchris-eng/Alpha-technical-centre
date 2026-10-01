@@ -176,7 +176,7 @@ export interface NewItem {
   authored_at: string | null;
   authors: string[];
   legal_tag: string;
-  origin: { source: string; external_id?: string; url?: string; fetched_at?: string };
+  origin: { source: string; external_id?: string; url?: string; fetched_at?: string; query?: string };
   bytes: Buffer;
   mime: string;
   extracted?: Record<string, unknown>;
@@ -268,7 +268,7 @@ export function itemFromRecord(adapterId: string, rec: FeedRecord, fetchedAt: Da
 /* ── the run ────────────────────────────────────────────────────────── */
 
 export interface AdapterCounts { fetched: number; created: number; updated: number; unchanged: number; duplicates: number; negative: number; off_topic: number; skipped?: string; error?: string }
-export interface RunSummary { started_at: string; since: Record<string, string>; adapters: Record<string, AdapterCounts>; created: number; updated: number; unchanged: number; warnings: string[] }
+export interface RunSummary { started_at: string; since: Record<string, string>; adapters: Record<string, AdapterCounts>; created: number; updated: number; unchanged: number; warnings: string[]; stopped?: string }
 
 export interface RunOptions {
   config?: MinersConfig;
@@ -286,6 +286,11 @@ export interface RunOptions {
   clock?: AdapterOptions['clock'];
   /** Replace adapters (tests). */
   adapters?: FeedAdapter[];
+  /** Wave 4: file under this project instead of 'firm', and stamp each item with the query that found it. */
+  projectId?: string;
+  queryOf?: (topicId: string | null) => string | null;
+  /** Wave 4: stop fetching when the clock passes this instant; the summary names where it stopped. */
+  budgetUntil?: Date;
 }
 
 const DAY = 86_400_000;
@@ -305,7 +310,7 @@ export async function runMiners(db: Db, opts: RunOptions = {}): Promise<RunSumma
   const adapters = opts.adapters ? new Map(opts.adapters.map(a => [a.id, a])) : built;
 
   const summary: RunSummary = { started_at: now.toISOString(), since: {}, adapters: {}, created: 0, updated: 0, unchanged: 0, warnings };
-  const job = (await db.query<{ id: number }>(`INSERT INTO jobs (name, started_at) VALUES ('miners', $1) RETURNING id`, [now.toISOString()])).rows[0];
+  const job = (await db.query<{ id: number }>(`INSERT INTO jobs (name, started_at, summary) VALUES ($1, $2, $3::jsonb) RETURNING id`, [opts.projectId ? 'miners-research' : 'miners', now.toISOString(), JSON.stringify(opts.projectId ? { project_id: opts.projectId } : {})])).rows[0];
   const index = await PaperIndex.load(db);
   const touched: string[] = [];
 
@@ -322,6 +327,7 @@ export async function runMiners(db: Db, opts: RunOptions = {}): Promise<RunSumma
     summary.since[id] = since.toISOString();
     try {
       for await (const rec of adapter.fetch(since, cfg.topics)) {
+        if (opts.budgetUntil && (opts.clock?.now?.() ?? Date.now()) >= opts.budgetUntil.getTime()) { summary.stopped = `${id}: ${String(rec.meta.topic_id ?? rec.title)}`; break; }
         counts.fetched++;
         if (kind.type === 'paper') {
           const v = screenPaper(rec, cfg);
@@ -330,7 +336,9 @@ export async function runMiners(db: Db, opts: RunOptions = {}): Promise<RunSumma
           const dup = index.find(kind.source, { external_id: rec.external_id, title: rec.title, doi: rec.meta.doi as string | undefined });
           if (dup) { counts.duplicates++; continue; }
         }
-        const r = await upsertItem(db, storage, itemFromRecord(id, rec, now), now);
+        const it = itemFromRecord(id, rec, now);
+        if (opts.projectId) { it.project_id = opts.projectId; const qq = opts.queryOf?.(typeof rec.meta.topic_id === 'string' ? rec.meta.topic_id : null); if (qq) it.origin = { ...it.origin, query: qq } as NewItem['origin']; }
+        const r = await upsertItem(db, storage, it, now);
         counts[r.status === 'created' ? 'created' : r.status === 'updated' ? 'updated' : 'unchanged']++;
         if (r.status !== 'unchanged') touched.push(`doc:${r.id}`);
         if (kind.type === 'paper' && r.status === 'created') index.add({ id: r.id, source: kind.source, external_id: rec.external_id, doi: normDoi(rec.meta.doi), title: rec.title });

@@ -263,3 +263,53 @@ export async function intelTimeline(code: string, limit = 40): Promise<WmResult<
   if (!r.ok) return r;
   return { ...r, data: list(r.data, 'records').map((x: any, i: number): IntelRecord => ({ id: str(x.id) ?? `r${i + 1}`, domain: str(x.domain), category: str(x.category), title: String(x.title ?? ''), summary: str(x.summary), url: str(x.sourceUrl), occurred_at: whenIso(x.occurredAt), score: num(x.score) })) };
 }
+
+/* ── research readers (wave 4) ───────────────────────────────────────── */
+
+export interface GdeltArticle { title: string; url: string; source: string | null; date: string | null; language: string | null; tone: number | null }
+export interface CompanyProfile { name: string | null; domain: string | null; description: string | null; location: string | null; website: string | null; founded: number | null; cik: string | null; ticker: string | null; industry: string | null; country: string | null; market_cap_musd: number | null; recent_filings: { form: string | null; date: string | null; url: string | null }[]; sources: string[] }
+export interface CompanySignal { type: string | null; title: string; url: string | null; source: string | null; tier: number | null; at: string | null; strength: string | null }
+export interface SecFiling { company: string; cik: string | null; form: string; file_date: string | null; items: string[]; url: string | null; accession: string | null }
+
+/** GDELT writes its dates as 20260930T100000Z; anything else goes through whenIso. */
+const gdeltDate = (v: unknown): string | null => {
+  const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(String(v ?? ''));
+  return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.000Z` : whenIso(v);
+};
+/** GET /api/intelligence/v1/search-gdelt-documents: GDELT GKG articles for a query. */
+export async function gdeltDocuments(query: string, o: { maxRecords?: number; timespan?: string; sort?: string } = {}): Promise<WmResult<GdeltArticle[]>> {
+  const r = await get('/api/intelligence/v1/search-gdelt-documents', { query, max_records: String(o.maxRecords ?? 25), timespan: o.timespan ?? '1y', sort: o.sort ?? 'DateDesc' });
+  if (!r.ok) return r;
+  if (r.data?.error && !list(r.data, 'articles').length) return { ok: false, reason: `GDELT: ${String(r.data.error)}` };
+  const rows = list(r.data, 'articles').filter((a: any) => a && (a.url || a.title)).map((a: any): GdeltArticle => ({ title: String(a.title ?? a.url ?? '').trim(), url: String(a.url ?? ''), source: str(a.source), date: gdeltDate(a.seendate ?? a.date), language: str(a.language), tone: num(a.tone) }));
+  return { ...r, data: rows };
+}
+
+/** GET /api/intelligence/v1/get-company-enrichment by name (or domain). */
+export async function companyEnrichment(name: string, domain?: string): Promise<WmResult<CompanyProfile>> {
+  const r = await get('/api/intelligence/v1/get-company-enrichment', domain ? { domain } : { name });
+  if (!r.ok) return r;
+  const d = r.data ?? {}, c = d.company ?? {}, m = d.market ?? {};
+  return { ...r, data: {
+    name: str(c.name), domain: str(c.domain), description: str(c.description), location: str(c.location), website: str(c.website), founded: num(c.founded), cik: str(c.cik), ticker: str(c.ticker),
+    industry: str(m.industry), country: str(m.country), market_cap_musd: num(m.marketCapMusd),
+    recent_filings: list(d.secFilings, 'recentFilings').slice(0, 10).map((f: any) => ({ form: str(f.form ?? f.formType), date: whenIso(f.filedAt ?? f.fileDate ?? f.date), url: str(f.url ?? f.link) })),
+    sources: list(d, 'sources').map(String),
+  } };
+}
+
+/** GET /api/intelligence/v1/list-company-signals: SEC 8-K material events and news mentions for a company. */
+export async function companySignals(company: string): Promise<WmResult<CompanySignal[]>> {
+  const r = await get('/api/intelligence/v1/list-company-signals', { company });
+  if (!r.ok) return r;
+  return { ...r, data: list(r.data, 'signals').slice(0, 30).map((x: any): CompanySignal => ({ type: str(x.type), title: String(x.title ?? '').trim(), url: str(x.url), source: str(x.source), tier: num(x.sourceTier), at: whenIso(x.timestampMs), strength: str(x.strength) })) };
+}
+
+/** GET /api/intelligence/v1/search-sec-filings: full-text search over EDGAR. */
+export async function secFilings(query: string, o: { forms?: string; years?: number; limit?: number } = {}): Promise<WmResult<SecFiling[]>> {
+  const now = nowMs();
+  const start = new Date(now - (o.years ?? 2) * 365 * 86_400_000).toISOString().slice(0, 10);
+  const r = await get('/api/intelligence/v1/search-sec-filings', { query, forms: o.forms ?? '10-K,20-F,6-K,8-K', start_date: start, end_date: new Date(now).toISOString().slice(0, 10), limit: String(o.limit ?? 10) });
+  if (!r.ok) return r;
+  return { ...r, data: list(r.data, 'results').map((x: any): SecFiling => ({ company: String(x.company ?? ''), cik: str(x.cik), form: String(x.form ?? ''), file_date: whenIso(x.fileDate)?.slice(0, 10) ?? null, items: list(x, 'items').map(String), url: str(x.url), accession: str(x.accession) })) };
+}

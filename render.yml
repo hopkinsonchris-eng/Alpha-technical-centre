@@ -113,6 +113,18 @@ services:
       - key: DATABASE_URL
         sync: false
 
+  # Research sync (wave 4): finishes research runs the API server queued but a restart left behind.
+  - type: cron
+    name: atc-vault-research
+    runtime: node
+    rootDir: vault
+    schedule: "*/15 * * * *"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/research.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+
   # Miners (M11): papers weekly; regulator feeds in the first week of the month.
   - type: cron
     name: atc-vault-miners
