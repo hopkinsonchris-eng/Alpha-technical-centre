@@ -3,6 +3,8 @@
 All notable changes to Opportunity Register are recorded here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic versioning. Versions before the registry existed were derived from git history.
 
 ## [Unreleased]
+### Changed
+- The register list itself now lives in the Hub (Today page: globe, country drill-down and register table backed by the Vault's projects). This page remains the calculator: it opens from the project toolbar with the project id in the address (?project=) and saves its potential-model runs to that project. Its own list and localStorage store are kept for use outside the Hub.
 
 ## [2.2.0] - 2026-09-29
 ### Added

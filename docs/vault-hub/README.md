@@ -2,6 +2,8 @@
 
 **Status: Gate 1 decided (29 Sep 2026, all eleven decisions recorded in `03-choice-sheet.md`). Gate 2 approved by Chris Hopkinson on 29 Sep 2026 ("Approved. Start building."). Build complete: all eighteen modules shipped with tests and evidence; see `08-decision-log.md` for the record, the follow-ups and the steps only Chris can do.**
 
+**Wave 2 (30 Sep – 1 Oct 2026): the opportunity-centred Hub. Practice scan, choice sheet, gap statement, options, markup and decision log in `wave2/`; shipped as PRs 24–27.**
+
 This folder is the complete design for the Alpha Technical Centre internal
 platform: a **Vault** (every run, version, evaluation, client file, letter,
 email, spreadsheet, mined paper and regulator feed, with provenance and legal
