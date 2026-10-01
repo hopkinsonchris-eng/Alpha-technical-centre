@@ -453,6 +453,19 @@ function flags(att) {
   return out;
 }
 const stagePill = (stage) => mk('span', 'hub-pill muted hub-stage', stage, STAGE_ES[stage] || stage, { 'data-stage': stage });
+/** "risk 71 · advisory: reconsider travel (World Monitor, 09:00)" from the countries summary (wave 3); null without a reading. */
+function riskLine(risk) {
+  if (!risk || (risk.score === null && !risk.level)) return null;
+  const el = mk('span', 'hub-risk-line', null, null, { 'data-risk-score': risk.score === null ? '' : String(risk.score) });
+  const tone = risk.score === null ? '' : risk.score >= 70 ? 'red' : risk.score >= 40 ? 'amber' : 'green';
+  if (tone) add(el, mk('span', 'hub-rag', null, null, { 'data-risk': tone, 'aria-hidden': 'true' }));
+  if (risk.score !== null) add(el, mk('span', null, 'risk ' + Math.round(risk.score), 'riesgo ' + Math.round(risk.score)));
+  if (risk.level) add(el, document.createTextNode(risk.score !== null ? ' · ' : ''), mk('span', null, 'advisory: ', 'aviso: '), dv('span', null, risk.level));
+  const t = risk.fetched_at ? new Date(risk.fetched_at) : null;
+  const hm = t && !isNaN(t) ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+  add(el, mk('span', 'hub-muted', ' (World Monitor' + (hm ? ', ' + hm : '') + ')', ' (World Monitor' + (hm ? ', ' + hm : '') + ')'));
+  return el;
+}
 /** Where a field's location came from, for pills and tooltips (wave 3). */
 export const SOURCE_WORD = {
   gem: ['GEM', 'GEM'], geonames: ['GeoNames', 'GeoNames'], wikidata: ['Wikidata', 'Wikidata'], vault: ['Vault', 'Vault'],
@@ -508,8 +521,10 @@ async function renderGlobe(person) {
       }
       const name = names.get(c.code) || c.name;
       const b = mk('button', 'hub-country', null, null, { type: 'button', 'data-country': c.code, role: 'listitem' });
-      add(b, mk('span', 'name', name.en, name.es),
-        mk('span', 'n', c.projects.length + (c.projects.length === 1 ? ' project' : ' projects'), c.projects.length + (c.projects.length === 1 ? ' proyecto' : ' proyectos')),
+      // The count and the risk are sibling spans so a language switch re-renders each without wiping the other.
+      const nSpan = add(mk('span', 'n'), mk('span', null, c.projects.length + (c.projects.length === 1 ? ' project' : ' projects'), c.projects.length + (c.projects.length === 1 ? ' proyecto' : ' proyectos')));
+      if (c.risk && c.risk.score !== null) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'risk ' + Math.round(c.risk.score), 'riesgo ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }));
+      add(b, mk('span', 'name', name.en, name.es), nSpan,
         add(mk('span', 'flags'), ...flags({ stale: c.counts.stale, filing: c.counts.filing, expiring_days: c.counts.expiring ? Math.min(...c.projects.filter((p) => p.attention.expiring_days !== null).map((p) => p.attention.expiring_days)) : null })));
       b.addEventListener('click', () => select(c.code, true));
       add(list, b);
@@ -541,6 +556,9 @@ async function renderGlobe(person) {
     const ul = $('#country-projects'); ul.textContent = '';
     const projects = c ? c.projects : [];
     setText($('#country-sub'), projects.length ? projects.length + (projects.length === 1 ? ' project' : ' projects') : 'No projects here yet', projects.length ? projects.length + (projects.length === 1 ? ' proyecto' : ' proyectos') : 'Aún no hay proyectos aquí');
+    // Wave 3: the live risk line, only when World Monitor answered (nothing is simulated).
+    const riskEl = $('#country-risk');
+    if (riskEl) { riskEl.textContent = ''; const line = riskLine(c && c.risk); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
     for (const p of projects) {
       const a = mk('a', 'hub-country-project', null, null, { href: projectHref(p.id), 'data-country-project': p.id });
       add(a, dv('b', null, p.name), stagePill(p.stage));
@@ -585,7 +603,7 @@ async function renderGlobe(person) {
 
 /* ── Today: the country brief (wave 2, Option A) ─────────────────────── */
 
-const CITE_RE = /\[(run|doc|lesson):([^\]]+)\]/g;
+const CITE_RE = /\[(run|doc|lesson|wm):([^\]]+)\]/g;   // wm: World Monitor live risk, events and headlines (wave 3)
 
 /** A paragraph with its [run:…] / [doc:…] citations turned into chips that open the record in its project. */
 function briefParagraph(text, sources) {
@@ -598,8 +616,9 @@ function briefParagraph(text, sources) {
     if (m.index > last) add(p, document.createTextNode(text.slice(last, m.index).replace(/\s+$/, ' ')));
     const ref = m[1] + ':' + m[2], src = byRef.get(ref);
     const label = src ? src.title : ref;
-    const href = src && src.project_id ? 'project.html?id=' + encodeURIComponent(src.project_id) + (m[1] === 'run' ? '&run=' + encodeURIComponent(m[2]) : '') : null;
-    add(p, href ? dv('a', 'hub-cite', label, { href, 'data-cite': ref, title: ref }) : dv('span', 'hub-cite', label, { 'data-cite': ref, title: ref }));
+    const href = src && src.project_id ? 'project.html?id=' + encodeURIComponent(src.project_id) + (m[1] === 'run' ? '&run=' + encodeURIComponent(m[2]) : '') : (src && src.url ? src.url : null);
+    const ext = !!(src && !src.project_id && src.url);
+    add(p, href ? dv('a', 'hub-cite' + (m[1] === 'wm' ? ' wm' : ''), label, { href, 'data-cite': ref, title: ref, ...(ext ? { target: '_blank', rel: 'noopener noreferrer' } : {}) }) : dv('span', 'hub-cite' + (m[1] === 'wm' ? ' wm' : ''), label, { 'data-cite': ref, title: ref }));
     last = m.index + m[0].length;
   }
   if (last < text.length) add(p, document.createTextNode(text.slice(last)));
@@ -645,8 +664,9 @@ function setupBrief(currentCode, names) {
     const sl = mk('ul', 'hub-brief-sources', null, null, { id: 'brief-sources' });
     for (const sct of b.sources || []) {
       const li = mk('li');
-      const href = sct.project_id ? 'project.html?id=' + encodeURIComponent(sct.project_id) + (sct.kind === 'run' ? '&run=' + encodeURIComponent(sct.ref.slice(4)) : '') : null;
-      add(li, href ? dv('a', 'hub-inline-link', sct.title, { href }) : dv('span', null, sct.title), sct.date ? dv('span', 'hub-muted', ' · ' + sct.date) : null, sct.detail ? dv('span', 'hub-muted', ' · ' + sct.detail) : null);
+      const href = sct.project_id ? 'project.html?id=' + encodeURIComponent(sct.project_id) + (sct.kind === 'run' ? '&run=' + encodeURIComponent(sct.ref.slice(4)) : '') : (sct.url || null);
+      if (sct.kind === 'wm') li.setAttribute('data-source-kind', 'wm');
+      add(li, href ? dv('a', 'hub-inline-link', sct.title, { href, ...(sct.project_id ? {} : { target: '_blank', rel: 'noopener noreferrer' }) }) : dv('span', null, sct.title), sct.date ? dv('span', 'hub-muted', ' · ' + sct.date) : null, sct.detail ? dv('span', 'hub-muted', ' · ' + sct.detail) : null);
       add(sl, li);
     }
     add(srcBlock, sl); add(host, srcBlock);
@@ -656,6 +676,16 @@ function setupBrief(currentCode, names) {
       d ? mk('span', null, ' · ' + d.en, ' · ' + d.es) : null, b.model ? dv('span', null, ' · ' + b.model) : null);
     for (const w of b.warnings || []) if (!/turned into questions/.test(w)) add(meta, document.createTextNode(' · '), dv('span', null, w));
     add(host, meta);
+    // Wave 3: whether the live risk feed was in the context.
+    const wm = b.world_monitor || { status: 'not_connected' };
+    const wmLine = mk('span', null, null, null, { id: 'brief-wm', 'data-status': wm.status });
+    if (wm.status === 'live') {
+      const t = wm.fetched_at ? new Date(wm.fetched_at) : null;
+      const hm = t && !isNaN(t) ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+      add(wmLine, mk('span', null, 'World Monitor: live' + (hm ? ', fetched ' + hm : ''), 'World Monitor: en vivo' + (hm ? ', obtenido a las ' + hm : '')));
+      for (const n of wm.notes || []) add(wmLine, document.createTextNode(' · '), dv('span', null, n));
+    } else add(wmLine, mk('span', null, 'World Monitor: not connected (set WORLD_MONITOR_API_KEY on the Vault service)', 'World Monitor: no conectado (configure WORLD_MONITOR_API_KEY en el servicio del Vault)'), wm.reason && !/WORLD_MONITOR_API_KEY/.test(wm.reason) ? dv('span', null, ' · ' + wm.reason) : null);
+    add(meta, document.createTextNode(' · '), wmLine);
   });
 }
 

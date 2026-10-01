@@ -275,6 +275,21 @@ so the Hub shows their real version. "Brief this country" asks the
 drafting provider for a cited summary and needs `ANTHROPIC_API_KEY` on
 the Vault service. The design record is `docs/vault-hub/wave2/`.
 
+Wave 3 (October 2026) gave the hierarchy its third level: Country →
+Project → Field. Fields are Vault assets with a location and the source
+it came from (never the model's memory). The project file's Fields card
+searches the Vault's own assets and the imported Global Energy Monitor
+units first, then GeoNames (`GEONAMES_USERNAME`) and Wikidata, and files
+a public dossier when a field is attached. Fields a document names
+become proposals in the review queue that a member attaches or
+dismisses; the model may point at a sentence but never invent a field.
+"Create a project here" on the globe opens the form with the tapped
+point. World Monitor (`WORLD_MONITOR_API_KEY`, server-side only) adds
+live country risk to the globe and a cited "Live risk" paragraph to the
+brief; without the key nothing is simulated. The GEM tracker is imported
+by hand once per release (`vault/SETUP.md` §3). The design record is
+`docs/vault-hub/wave3/`.
+
 ## 10. AI automation (`.claude/skills/`)
 
 The repo ships two Claude Code skills:

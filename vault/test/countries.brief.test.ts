@@ -17,6 +17,7 @@ const { seedMaster, seedFixture } = await import('../src/db/seed.ts');
 const { createApp } = await import('../src/app.ts');
 const { configureBrief } = await import('../src/api/countries.routes.ts');
 const { FakeProvider } = await import('../src/llm/provider.ts');
+const { configureWorldMonitor } = await import('../src/intel/worldmonitor.ts');
 type Db = Awaited<ReturnType<typeof openDb>>;
 
 const FIX = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
@@ -51,6 +52,7 @@ const provider = new FakeProvider((req) => {
 });
 
 before(async () => {
+  configureWorldMonitor({ apiKey: null });                  // wave 3: no World Monitor unless a test connects one
   db = await openDb(undefined);
   await migrate(db);
   await seedMaster(db);
@@ -151,4 +153,95 @@ test('AC16: a cached brief is served only to a caller whose scope covers every t
   // Nothing was written to items: a brief never widens a scope.
   const notes = (await db.query<{ n: number }>("SELECT count(*)::int AS n FROM items WHERE origin->>'source' = 'assistant'")).rows[0].n;
   assert.equal(notes, 0);
+});
+
+/* ── wave 3, PR 3: World Monitor in the countries summary and the brief (W3-AC9, W3-AC10) ── */
+
+const WM_KEY = 'wm_' + 'b'.repeat(40);
+const WM_RISK = { cii: { combinedScore: 64, advisoryLevel: 'exercise increased caution', components: { conflict: 50 }, computedAt: '2026-10-01T08:00:00Z' } };
+const WM_EVENTS = { events: [{ event_id_cnty: 'KAZ777', event_type: 'Protests', admin1: 'Mangystau', actor1: 'Oil workers (Kazakhstan)', fatalities: 0, event_date: '2026-09-25', notes: 'Strike at a field.' }] };
+const WM_NEWS = { headlines: [{ title: 'Kazakhstan raises output target', source: 'Reuters', url: 'https://example.com/kz', published_at: '2026-09-29T07:00:00Z' }] };
+let wmCalls: string[] = [];
+const wmFetch = (async (url: string) => {
+  wmCalls.push(url);
+  const u = new URL(url);
+  const body = u.pathname.includes('get-country-risk') ? WM_RISK : u.pathname.includes('list-acled-events') ? WM_EVENTS : WM_NEWS;
+  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+}) as unknown as typeof fetch;
+/** Cites the live risk and the ACLED event it is given, plus one run. */
+const wmProvider = new FakeProvider((req) => {
+  calls++;
+  const u = req.messages[0].content;
+  const runRef = /\[run:([0-9a-f-]{36})\]/.exec(u)?.[1];
+  const acled = /\[wm:acled:([^\]]+)\]/.exec(u)?.[1];
+  return [
+    `Situation. Alpha holds one opportunity in this country [run:${runRef}].`,
+    `Live risk. World Monitor scores the country 64 of 100, exercise increased caution [wm:risk:KZ]. Oil workers protested in Mangystau on 2026-09-25 [wm:acled:${acled}]. The press reports a higher output target [wm:news:1].`,
+  ].join('\n\n');
+});
+
+test('W3-AC9: without a key the countries summary carries risk: null and the brief says the feed is not connected', async () => {
+  configureWorldMonitor({ apiKey: null, fetch: wmFetch });
+  configureBrief({ provider });
+  const r = await (await partner.request('/api/countries')).json() as any;
+  assert.ok(r.countries.length >= 1);
+  assert.ok(r.countries.every((c: any) => c.risk === null));
+  assert.equal(r.world_monitor.status, 'not_connected');
+  assert.match(r.world_monitor.reason, /WORLD_MONITOR_API_KEY/);
+  const b = await post(partner, '/api/countries/KZ/brief');
+  assert.equal(b.status, 200);
+  assert.equal(b.body.world_monitor.status, 'not_connected');
+  assert.match(b.body.world_monitor.reason, /WORLD_MONITOR_API_KEY/);
+  assert.ok(!b.body.sources.some((s: any) => s.kind === 'wm'));
+});
+
+test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the score and level, the brief cites [wm:risk:KZ] and [wm:acled:…] records that appear in its sources, the cache follows the feed, and the key never leaves the server', async () => {
+  configureWorldMonitor({ apiKey: WM_KEY, fetch: wmFetch });
+  configureBrief({ provider: wmProvider });
+  wmCalls = []; calls = 0;
+  const r = await (await partner.request('/api/countries')).json() as any;
+  const kz = r.countries.find((c: any) => c.code === 'KZ');
+  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', computed_at: '2026-10-01T08:00:00Z', fetched_at: kz.risk.fetched_at });
+  assert.match(kz.risk.fetched_at, /^\d{4}-/);
+  assert.equal(r.world_monitor.status, 'live');
+  assert.ok(!JSON.stringify(r).includes(WM_KEY), 'the key is never in a response');
+  assert.ok(wmCalls.every(u => u.startsWith('https://api.worldmonitor.app/')));
+
+  const b = await post(partner, '/api/countries/KZ/brief');
+  assert.equal(b.status, 200, JSON.stringify(b.body));
+  assert.equal(b.body.cached, false);
+  assert.equal(b.body.world_monitor.status, 'live');
+  assert.match(b.body.world_monitor.fetched_at, /^\d{4}-/);
+  assert.match(b.body.paragraphs[1], /^Live risk\. .*\[wm:risk:KZ\]/);
+  assert.ok(b.body.citations.includes('wm:risk:KZ'));
+  assert.ok(b.body.citations.includes('wm:acled:KAZ777'));
+  assert.ok(b.body.citations.includes('wm:news:1'));
+  const wmSources = b.body.sources.filter((s: any) => s.kind === 'wm');
+  assert.deepEqual(wmSources.map((s: any) => s.ref).sort(), ['wm:acled:KAZ777', 'wm:news:1', 'wm:risk:KZ']);
+  assert.equal(wmSources.find((s: any) => s.ref === 'wm:news:1').url, 'https://example.com/kz');
+  assert.equal(wmSources.find((s: any) => s.ref === 'wm:risk:KZ').legal_tag, 'lt-public');
+  assert.ok(!JSON.stringify(b.body).includes(WM_KEY));
+  assert.equal(calls, 1);
+  // The same live picture (cached an hour) serves the cached brief; a changed score regenerates it.
+  const again = await post(partner, '/api/countries/KZ/brief');
+  assert.equal(again.body.cached, true);
+  assert.equal(calls, 1);
+  WM_RISK.cii.combinedScore = 80; WM_RISK.cii.computedAt = '2026-10-01T10:00:00Z';
+  configureWorldMonitor({ apiKey: WM_KEY, fetch: wmFetch });          // clears the adapter cache, as an hour passing would
+  const fresh = await post(partner, '/api/countries/KZ/brief');
+  assert.equal(fresh.body.cached, false);
+  assert.equal(calls, 2);
+  // A 429 is reported in the brief's meta and the summary, never retried in a loop.
+  let hits = 0;
+  configureWorldMonitor({ apiKey: WM_KEY, fetch: (async () => { hits++; return new Response('{}', { status: 429, headers: { 'retry-after': '30' } }); }) as unknown as typeof fetch });
+  const limited = await (await partner.request('/api/countries')).json() as any;
+  assert.equal(limited.countries.find((c: any) => c.code === 'KZ').risk, null);
+  assert.ok(limited.world_monitor.notes.some((n: string) => /rate limited .* 30 s/.test(n)));
+  assert.ok(hits <= limited.countries.length, 'at most one call per country went out before the limit landed');
+  const before = hits;
+  const lb = await post(partner, '/api/countries/KZ/brief');
+  assert.equal(lb.body.world_monitor.status, 'not_connected');
+  assert.match(lb.body.world_monitor.reason, /rate limited/);
+  assert.equal(hits, before, 'the brief made no further call while the limit holds');
+  configureWorldMonitor({ apiKey: null });
 });

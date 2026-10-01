@@ -683,3 +683,7 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-proposal .hub-candidates { margin-top: 8px; }
 .hub-proposal .hub-actions-row { margin-top: 8px; }
 .hub-upload-fields { flex-basis: 100%; font-size: 13px; }
+.hub-risk-line { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--navy); }
+.hub-risk-line .hub-rag { margin-right: 2px; }
+.hub-risk-n { white-space: nowrap; }
+.hub-cite.wm { border-bottom-style: dashed; }

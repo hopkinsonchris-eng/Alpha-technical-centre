@@ -91,3 +91,21 @@ Follow-ups opened by wave 2:
 | F10 | Rank and compare across the portfolio (P22, W2-D5 deferred) | A partner still opens a tool to answer "which two should we push" | `/api/projects/rank` over latest run outputs and analogue rows; a two-project compare view |
 | F11 | Opportunity triage on entry (Option B) | Needs analogue rows to exist in volume | After the first ten evaluations carry analogue rows |
 | F12 | The APEX apps' `version.json` | Until published the cards say "Version unverified" | The two-line instruction is in `vault/src/adapters/README.md` |
+
+## Wave 3 shipped (1 Oct 2026)
+
+Design record: `wave3/` (practice scan P23–P29, choice sheet W3-D1–D4, gap statement, options A–D, markup, decision log).
+
+| PR | What | Tests | Visual proof |
+|---|---|---|---|
+| #29 | Fields on projects: migration 004 (location and its source on assets), gazetteers (Vault and GEM first, then GeoNames and Wikidata, unavailable sources named), `GET /api/assets/locate`, `GET/POST/DELETE /api/projects/:id/assets`, dossiers filed as `lt-public` notes, Fields card, field points on the globe, "Create a project here", GEM import script | gazetteers (3), assets.routes (5), import-gem (2), hub-fields (4), hub-globe (+3) | `evidence/w3-fields-card.png`, `w3-globe-fields.png`, `w3-create-here.png` |
+| #30 | Fields named in documents become `asset` review proposals (dictionary pass; model pass kept only with a verbatim quote), accepted or rejected by members and partners in the Fields card or the queue | ingest.entities (3), hub-fields (+3), hub-queue (+1) | `evidence/w3-proposals.png` |
+| #31 | World Monitor adapter (server-side key, hourly cache, 429 honoured), risk per country on the globe and in the panel, the brief's LIVE RISK block cited as `[wm:risk:XX]`, `[wm:acled:<id>]`, `[wm:news:<n>]` | worldmonitor (3), countries.brief (+2), hub-globe (+2) | `evidence/w3-live-risk.png` |
+
+Follow-ups opened by wave 3:
+
+| # | Item | Why | Plan |
+|---|---|---|---|
+| F13 | Per-field miners | Not chosen in W3-D2; the dossier is the gazetteer record only | A `field` scope on the miner run with the asset's names and operator as queries |
+| F14 | Model web search per field | Not chosen in W3-D2 | Only behind a provider that returns the URLs it fetched; every fact quoted from its page |
+| F15 | Asset-aware staleness (Option C) | A dossier can outlive the GEM release it came from | The nightly job marks dossiers older than the imported release stale |
