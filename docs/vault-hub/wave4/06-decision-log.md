@@ -15,6 +15,10 @@ The Tooler record for research runs per project, 1 October 2026.
 
 Markup `05-markup.md` approved 1 October 2026: "Approved, build it as written (Recommended)". Option A of `04-innovation-options.md` (budgeted research runs with cited findings and proposals); B recorded as F16, C kept as F14, D rejected.
 
+## W4-D1 revised (1 October 2026, after the first live run)
+
+The first run on High Tech Electronica (seven small Oficina-area fields in Venezuela) found nothing: World Monitor's news window and the literature indexes have little on them, while Google reaches the GEM wiki pages, PDVSA and Wikipedia pages, old reports and trade press. Gate 1 reopened with one question; the answer, verbatim: "GEM wiki pages per field (Recommended), Web search with URL citations (Recommended)". The addendum `05-markup.md` §1.4.8 was approved: "Approved, build it as written (Recommended)". F14 closes with it. The same run showed two faults that are fixed first (PR #38, #39 below).
+
 ## What shipped
 
 | PR | Scope | Acceptance criteria |
@@ -22,11 +26,25 @@ Markup `05-markup.md` approved 1 October 2026: "Approved, build it as written (R
 | [#34](https://github.com/hopkinsonchris-eng/Alpha-technical-centre/pull/34) | The run and its routes: migration 005 (`review_queue.kind` gains `research`), the four World Monitor research readers (GDELT documents, company enrichment, company signals, SEC filings), the query builder, the run with its time and spend budget, filing and deduplication, proposals with verbatim quotes, `POST`/`GET /api/projects/:id/research`, the triggers on project create and field attach, accept of kind `research`, the `atc-vault-research` cron, `RESEARCH_ENABLED` | W4-AC1, AC2, AC3, AC4, AC5, AC6 |
 | #35 | The Hub: "Research this project" in the toolbar with the status line (queued, running with progress, last run with findings, proposals and where it stopped; polling every 10 s while a run is going), the Research tab (findings grouped by source, newest first, with date, source, the query, the verbatim excerpt and open into the record panel; the run summary and the not-reached line), research proposals in the Fields card and on the queue page (Set as operator / File as fact / Not a fact), this decision log | W4-AC7, AC8 |
 
-W4-AC8 (every suite green, typecheck clean, public pages byte-identical, no secret in served files) held on both PRs; the evidence is `../evidence/w4-research-tab.png` and `../evidence/w4-research-proposals.png`.
+| #37 | Boot skips the Global Energy Monitor re-seed once a release is loaded: Render's deploy of the API had timed out on 7,673 updates before the port opened | (operations) |
+| #38 | A run reports where it is (phase, live counts during the literature pass) and what each source answered; a "nothing found" says so; one log line per run | W4-AC7 widened |
+| #39 | The literature screen keeps only papers that name the field as a phrase and are about oil and gas; a re-run hides what an earlier run filed wrongly (the 450 papers of the first run) | W4-AC2 corrected |
+| #40 | W4-D1 revised: GEM wiki pages per field with every cited source as a finding; web search through the API's server-side tool, only API-cited sentences filed with URL and verbatim cited text; `RESEARCH_WEB=false` | W4-AC9, AC10, AC11 |
+| #40 (second commit) | Fields attached by name get their coordinates from the gazetteers at the start of a run (never the model): an exact match sets the location and files the dossier, an area match ("Oficina" for "Oficina Norte") is a `location` proposal with Set location / Not it, a field nobody knows is named in the summary | W4-AC12 (below) |
+
+W4-AC8 (every suite green, typecheck clean, public pages byte-identical, no secret in served files) held on every PR; the evidence is `../evidence/w4-research-tab.png` and `../evidence/w4-research-proposals.png`.
 
 ## What a run does, in one paragraph
 
 For one project it builds its queries from the project's own names (its name, client and country), from each attached field (short name, Global Energy Monitor name and "name other") and from the operators those records carry; short names are anchored with the country and "oil field"; the register's free text is never a search term. It asks World Monitor for GDELT documents per name, company enrichment, signals and SEC filings per operator and client, and the country's intelligence timeline, then runs the literature miners (OpenAlex, Crossref, Semantic Scholar) with one topic per field and per operator, scoped to the project. Every finding is filed as a public note under the project with its source, URL, date, the query and a verbatim excerpt, deduplicated on (project, source, external id) so a re-run updates rather than duplicates. Fields a finding names open the wave 3 `asset` proposal (dictionary pass only, no model); with a provider, one low-effort read per new finding extracts the operator, licence and production figure it states, each kept only with a verbatim quote and opened as a `research` proposal. The run stops at `RESEARCH_BUDGET_MINUTES` (15) or `RESEARCH_BUDGET_GBP` (3) and records every query it did not reach and why.
+
+## What the first live run taught (1 October 2026)
+
+1. **A deploy must open its port in Render's window.** Re-seeding 7,673 GEM units on every boot took a minute; the API deployed stale for hours. Boot now skips a loaded release (#37).
+2. **"Running · 6 min · 0 findings" is not an answer.** The literature pass filed nothing until it finished and a source that answered nothing left no trace; the Hub now shows the phase, the live count and what each source answered (#38).
+3. **A title-only paper must still be screened.** Most Crossref answers have no abstract; the screen kept them whatever they were, and "field" matched dairy farms. Research topics are strict and a re-run tidies the project (#39).
+4. **The chosen sources did not reach what Google reaches.** W4-D1 revised adds the GEM wiki pages and web search with citations (#40).
+5. **Fields that came in from documents had no coordinates, and nothing went looking.** Chris: "What the hub should do is find their locations." A run now asks the gazetteers for every unlocated field first (#40, second commit). Acceptance (W4-AC12): with a stubbed GeoNames, a run on three unlocated fields sets the exact match with its dossier, proposes the area match without touching the field, names the unknown one, asks again only for what is still unlocated, and accepting the proposal through the review route sets the coordinates and files the dossier; the Hub decides it in the Fields card.
 
 ## Deviations from the Markup, stated
 
@@ -35,6 +53,8 @@ For one project it builds its queries from the project's own names (its name, cl
 3. **403 versus 404.** A non-member associate on a client project gets 404 from both research routes, as in wave 3 (deviation 3 there): the project is invisible to them, so the run does not exist.
 4. **Field proposals from findings use the dictionary pass only.** The wave 3 model pass (a verbatim quote for a name the dictionary lacks) is not run on findings, to keep the model spend for the fact reads; a field the Vault does not know by name is therefore not proposed from a finding. Attaching it by hand still queues the run that researches it.
 5. **Accept body.** Accept of kind `research` ignores `apply`: accepting always records the fact (the operator on the field, a production figure on the register's `current` with its source and the figure in kboe/d where the unit allows) because that is what the proposal says it will do; the Hub still sends `apply: true` so an older Vault that gains an opt-in later keeps working.
+7. **Web search files citations, not pages.** The addendum's "each citation becomes a finding" is read per page: several citations of one page become one finding whose quote is the first cited text and whose `facts.excerpts` carry the rest, so a page is one record and a re-run updates it.
+8. **GEM wiki reference titles.** Most references on the GEM pages are bare URLs; a finding without a title is named "Source cited by Global Energy Monitor for <field> (<host>)" rather than invented.
 6. **Status while queued.** The Markup showed "running · 2 min · 12 findings"; a queued run that has not started shows "queued · waiting to start" first, since the API server runs jobs one at a time and the cron picks up what a restart left.
 
 ## Evidence

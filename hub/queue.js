@@ -229,7 +229,7 @@ function reviewRow(q, list) {
     // Wave 4: an operator, licence or production figure a research finding states, with its verbatim quote.
     // Accept records it (the operator on the field, a production figure on the register's current); Not a fact closes it.
     add(row, icon(DOC_ICON, 'gold'));
-    add(body, add(mk('span', 't', null, null, { id: tid }), mk('span', null, 'Fact from research: ', 'Hecho desde la investigación: '), dv('b', null, p.proposal || p.value), document.createTextNode(' '), dv('span', 'hub-muted', p.asset_name ? '(' + p.asset_name + ')' : '')));
+    add(body, add(mk('span', 't', null, null, { id: tid }), p.fact_kind === 'location' ? mk('span', null, 'Field location from the gazetteers: ', 'Ubicación de campo desde los gaceteros: ') : mk('span', null, 'Fact from research: ', 'Hecho desde la investigación: '), dv('b', null, p.proposal || p.value), document.createTextNode(' '), dv('span', 'hub-muted', p.asset_name && p.fact_kind !== 'location' ? '(' + p.asset_name + ')' : '')));
     const proj = projects.find((x) => x.id === p.project_id);
     add(body, add(mk('span', 'm'), dv('a', 'hub-inline-link', (proj && proj.name) || p.project_id || '—', { href: 'project.html?id=' + encodeURIComponent(p.project_id || '') + '#p-fields', 'data-proposal-project': p.project_id || '' }), dv('span', null, p.item_title ? ' · ' + p.item_title : '')));
     if (p.quote) add(body, dv('span', 'm q-quote', '“' + p.quote + '”'));
@@ -249,9 +249,9 @@ function reviewRow(q, list) {
     accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept');
   }
 
-  const okLabel = q.kind === 'organisation' ? ['Add to registry', 'Añadir al registro'] : q.kind === 'asset' ? ['Attach', 'Adjuntar'] : q.kind === 'research' ? (p.fact_kind === 'operator' ? ['Set as operator', 'Fijar como operador'] : ['File as fact', 'Archivar como hecho']) : ['Accept', 'Aceptar'];
+  const okLabel = q.kind === 'organisation' ? ['Add to registry', 'Añadir al registro'] : q.kind === 'asset' ? ['Attach', 'Adjuntar'] : q.kind === 'research' ? (p.fact_kind === 'operator' ? ['Set as operator', 'Fijar como operador'] : p.fact_kind === 'location' ? ['Set location', 'Fijar ubicación'] : ['File as fact', 'Archivar como hecho']) : ['Accept', 'Aceptar'];
   const ok = mk('button', 'btn btn-primary btn-sm', okLabel[0], okLabel[1], { type: 'button', 'data-action': 'accept', 'aria-describedby': tid });
-  const no = mk('button', 'btn btn-outline btn-sm', q.kind === 'asset' ? 'Not a field' : q.kind === 'research' ? 'Not a fact' : 'Reject', q.kind === 'asset' ? 'No es un campo' : q.kind === 'research' ? 'No es un hecho' : 'Rechazar', { type: 'button', 'data-action': 'reject', 'aria-describedby': tid });
+  const no = mk('button', 'btn btn-outline btn-sm', q.kind === 'asset' ? 'Not a field' : q.kind === 'research' ? (p.fact_kind === 'location' ? 'Not it' : 'Not a fact') : 'Reject', q.kind === 'asset' ? 'No es un campo' : q.kind === 'research' ? (p.fact_kind === 'location' ? 'No es ese' : 'No es un hecho') : 'Rechazar', { type: 'button', 'data-action': 'reject', 'aria-describedby': tid });
   ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : q.kind === 'asset' ? 'Field attached to the project; its dossier is filed.' : q.kind === 'research' ? 'Fact recorded with its quote.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : q.kind === 'asset' ? 'Campo adjuntado al proyecto; su dosier queda archivado.' : q.kind === 'research' ? 'Hecho registrado con su cita.' : 'Aceptado.')));
   no.addEventListener('click', () => act(row, list, '#n-review', () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/reject'), () => announce('Rejected.', 'Rechazado.')));
   add(controls, ok, no);

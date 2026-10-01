@@ -298,10 +298,15 @@ by hand once per release (`vault/SETUP.md` §3). The design record is
 
 Wave 4 (October 2026) made the Vault research a project by itself.
 Creating a project with a country, attaching a field, or pressing
-"Research this project" on the project file queues a run that asks
-World Monitor (GDELT news, company profiles and signals, SEC filings,
-the intelligence timeline) and the Vault's literature miners about the
-project's fields and operators. Every finding is an ordinary public note
+"Research this project" on the project file queues a run that first asks
+the gazetteers for the coordinates of any field attached by name (an exact
+match is set, an area match is proposed, never the model's guess), then asks
+the Global Energy Monitor wiki page of each field (and every source it
+cites), World Monitor (GDELT news, company profiles and signals, SEC
+filings, the intelligence timeline), the web through the model's
+server-side search tool (only cited sentences are filed, each with its
+URL; `RESEARCH_WEB=false` switches it off) and the Vault's literature
+miners about the project's fields and operators. Every finding is an ordinary public note
 with its source, URL, date, the query and a verbatim excerpt (the
 Research tab lists them; Find indexes them); fields a finding names and
 the operator, licence and production figures it states become proposals

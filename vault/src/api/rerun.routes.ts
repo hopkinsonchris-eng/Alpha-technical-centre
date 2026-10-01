@@ -14,6 +14,7 @@ import type { RouteDeps } from './index.ts';
 import { ApiError, assertVisible, canSee, conflict, loadAccess, notFound, route, scopeLabel, uuidParam, requirePartner, requireWritableProject, type Ctx } from './common.ts';
 import { attachAsset } from './assets.routes.ts';
 import { toKboed } from '../research/findings.ts';
+import { applyLocation } from '../research/locate.ts';
 import { createRun, runRecord } from './runs.routes.ts';
 import { buildCatalog, resolve as resolveTool, type Catalog } from '../catalog.ts';
 import { headlessRun } from '../rerun/runner.ts';
@@ -152,6 +153,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       // Wave 3: a field proposal is decided by anyone who may write to its project (members as well as partners);
       // accepting attaches the chosen candidate, or the name alone when none is chosen, and files the dossier.
       let attached: Awaited<ReturnType<typeof attachAsset>> | null = null;
+      let located: Awaited<ReturnType<typeof applyLocation>> = null;
       if (row.kind === 'asset') {
         const acc = await loadAccess(x.db, x.person, x.now);
         const pid = String(row.payload?.project_id ?? '');
@@ -181,6 +183,10 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
           const fact = { kind: pl.fact_kind, value: pl.value, unit: pl.unit ?? null, year: pl.year ?? null, quote: pl.quote, asset_id: pl.asset_id ?? null, accepted_by: x.person.id, accepted_at: x.now.toISOString() };
           if (pl.item_id) await x.db.query("UPDATE items SET extracted = jsonb_set(coalesce(extracted, '{}'::jsonb), '{accepted_facts}', coalesce(extracted->'accepted_facts', '[]'::jsonb) || $2::jsonb) WHERE id = $1", [pl.item_id, JSON.stringify([fact])]);
           if (pl.fact_kind === 'operator' && pl.asset_id && p.asset_ids.includes(pl.asset_id)) await x.db.query('UPDATE assets SET operator = $2 WHERE id = $1', [pl.asset_id, String(pl.value)]);
+          // A location from the gazetteers (research/locate.ts): the field gets the coordinates and its dossier.
+          if (pl.fact_kind === 'location' && pl.asset_id && p.asset_ids.includes(pl.asset_id) && pl.candidate && Number.isFinite(pl.candidate.lat) && Number.isFinite(pl.candidate.lon)) {
+            located = await applyLocation(x.db, p.id, pl.asset_id, pl.candidate, x.person.id, x.now);
+          }
           if (pl.fact_kind === 'production') {
             const kboed = toKboed(String(pl.value), pl.unit);
             const current = `${pl.value}${pl.unit ? ' ' + pl.unit : ''}${pl.year ? ' (' + pl.year + ')' : ''}`;
@@ -196,7 +202,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
         try { await emitIfEvaluation(x.db, row.payload.rerun); } catch { /* analogue row is best effort */ }
       }
       x.a.refs = [`review:${id}`, ...(attached ? [`asset:${attached.asset.id}`, ...attached.dossier.map(d => `doc:${d}`)] : []), ...(row.kind === 'research' && row.payload?.item_id ? [`item:${row.payload.item_id}`] : [])]; x.a.detail = { ...(x.a.detail ?? {}), kind: row.kind, ...(attached ? { asset_id: attached.asset.id, created: attached.created, dossier: attached.dossier.length } : {}) };
-      return { body: { id, status: verb === 'accept' ? 'accepted' : 'rejected', ...(attached ? { asset: attached.asset, created: attached.created, already: attached.already, dossier: attached.dossier } : {}) } };
+      if (located) { x.a.refs.push(`asset:${located.asset.id}`, ...located.dossier.map(d => `doc:${d}`)); x.a.detail = { ...(x.a.detail ?? {}), located: located.asset.id, dossier: located.dossier.length }; }
+      return { body: { id, status: verb === 'accept' ? 'accepted' : 'rejected', ...(attached ? { asset: attached.asset, created: attached.created, already: attached.already, dossier: attached.dossier } : {}), ...(located ? { asset: located.asset, dossier: located.dossier } : {}) } };
     });
   }
 }

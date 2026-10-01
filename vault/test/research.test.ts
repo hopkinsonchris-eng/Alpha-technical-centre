@@ -7,9 +7,10 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 process.env.VAULT_STORAGE_DIR = mkdtempSync(path.join(os.tmpdir(), 'vault-research-'));
 const { openDb } = await import('../src/db/client.ts');
@@ -23,7 +24,7 @@ const { configureWorldMonitor, resetWorldMonitorCache } = await import('../src/i
 const { buildQueries, operatorNames, nameKeywords } = await import('../src/research/queries.ts');
 const { costGbp, runResearch: runResearchRaw, researchView } = await import('../src/research/run.ts');
 const logLines: string[] = [];
-const runResearch: typeof runResearchRaw = (db, pid, opts = {}, jobId) => runResearchRaw(db, pid, { log: (l) => logLines.push(l), progressEveryMs: 0, ...opts }, jobId);
+const runResearch: typeof runResearchRaw = (db, pid, opts = {}, jobId) => runResearchRaw(db, pid, { log: (l) => logLines.push(l), progressEveryMs: 0, skipGemWiki: true, skipWeb: true, skipLocate: true, ...opts }, jobId);
 const { toKboed } = await import('../src/research/findings.ts');
 const { configureResearch } = await import('../src/api/research.routes.ts');
 import type { FeedAdapter } from '../src/miners/types.ts';
@@ -292,6 +293,106 @@ test('the literature screen keeps only papers that name the field and are about 
   const view = await researchView(db, 'hte-screen');
   assert.deepEqual(view.findings.map(f => f.title), ['Waterflood performance of the Guafita field, Apure, Venezuela']);
   configureWorldMonitor({ fetch: wmFetch, apiKey: KEY, now: () => new Date(t) });
+});
+
+/* ── W4-D1 revised: Global Energy Monitor wiki pages and web search ── */
+
+const GEM_HTML = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'research', 'gem-guafita.html'), 'utf8');
+const WIKI = 'https://www.gem.wiki/Guafita_Oil_Field_(Venezuela)';
+const wikiFetch = (async (url: string) => (String(url) === WIKI ? new Response(GEM_HTML, { status: 200 }) : new Response('nope', { status: 404 }))) as unknown as typeof fetch;
+
+test('W4-AC9: the run files the GEM wiki page of a field that has one, and each source it cites, with no model; nothing for a field without a record; a re-run leaves them unchanged', async () => {
+  await db.query("UPDATE assets SET props = jsonb_set(props, '{gem,wiki_url}', to_jsonb($2::text)) WHERE id = $1", ['field:ve:guafita', WIKI]);
+  await db.query("INSERT INTO projects (id,client_id,name,status,default_legal_tag,country,members,asset_ids) VALUES ('hte-gem','hte','High Tech Electronica','prospect','lt-firm','VE','{chris}','{field:ve:guafita,field:ve:bare}')");
+  const noModel = new FakeProvider(() => { throw new Error('the GEM pass must not call the model'); });
+  const r = await runResearch(db, 'hte-gem', { now, storage, provider: noModel, fetch: wikiFetch, skipGemWiki: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris', maxFactReads: 0 });
+  assert.equal(r.status, 'ok', JSON.stringify(r.warnings));
+  assert.equal(r.sources['gem-wiki'].queries, 1); assert.equal(r.sources['gem-wiki'].created, 1); assert.equal(r.sources['gem-wiki'].skipped, '1 field without a Global Energy Monitor record');
+  assert.equal(r.sources['gem-wiki-ref'].created, 3);
+  assert.equal(r.findings, 4); assert.equal(r.fact_reads, 0); assert.equal(r.spend_gbp, 0);
+  const page = (await db.query<any>("SELECT title, extracted, origin, asset_ids FROM items WHERE project_id = 'hte-gem' AND external_id = $1", [WIKI])).rows[0];
+  assert.equal(page.title, 'Global Energy Monitor: Guafita'); assert.equal(page.extracted.source, 'gem-wiki'); assert.match(page.extracted.quote, /^Guafita Oil Field is an operating oil field in Venezuela\./);
+  assert.match(page.extracted.attribution, /Global Energy Monitor.*CC BY 4\.0/); assert.equal(page.extracted.references.length, 3); assert.deepEqual(page.asset_ids, ['field:ve:guafita']);
+  const refs = (await db.query<any>("SELECT title, origin FROM items WHERE project_id = 'hte-gem' AND extracted->>'source' = 'gem-wiki-ref' ORDER BY title")).rows;
+  assert.deepEqual(refs.map(x => x.title), ['PDVSA restarts Guafita field with Chinese partner. Reuters. 30 September 2026', 'Source cited by Global Energy Monitor for Guafita (eprinc.org)', 'Source cited by Global Energy Monitor for Guafita (web.archive.org)']);
+  assert.equal(refs[1].origin.url, 'https://eprinc.org/wp-content/uploads/2021/09/The-Future-of-Venezuela%E2%80%99s-Oil-Industry.pdf');
+  const again = await runResearch(db, 'hte-gem', { now, storage, provider: noModel, fetch: wikiFetch, skipGemWiki: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(again.sources['gem-wiki'].unchanged, 1); assert.equal(again.sources['gem-wiki-ref'].unchanged, 3); assert.equal(again.findings, 0);
+  // A page that cannot be read is an error on the source, not a failed run.
+  const dead = await runResearch(db, 'hte-gem', { now, storage, provider: null, fetch: (async () => new Response('x', { status: 503 })) as unknown as typeof fetch, skipGemWiki: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(dead.status, 'ok'); assert.equal(dead.sources['gem-wiki'].error, 'gem.wiki answered HTTP 503'); assert.ok(dead.not_reached.some(n => n.source === 'gem-wiki'));
+});
+
+test('W4-AC10: web search files one finding per cited page with the verbatim cited text, counts searches into spend, reports a switched-off organisation and stops asking, and is off with RESEARCH_WEB=false', async () => {
+  await db.query("INSERT INTO projects (id,client_id,name,status,default_legal_tag,country,members,asset_ids) VALUES ('hte-web','hte','High Tech Electronica','prospect','lt-firm','VE','{chris}','{field:ve:guafita}')");
+  const asked: string[] = [];
+  const searcher = new FakeProvider(() => '{"facts":[]}', (req) => {
+    asked.push(req.prompt);
+    if (/Guafita/.test(req.prompt)) return { searches: 2, results: [{ url: 'https://eprinc.org/future.pdf', title: 'The Future of Venezuela\'s Oil Industry', page_age: 'September 2021' }, { url: 'https://example.org/uncited', title: 'Uncited', page_age: null }],
+      citations: [{ url: 'https://eprinc.org/future.pdf', title: 'The Future of Venezuela\'s Oil Industry', cited_text: 'the Guafita field in Apure produced 12,400 barrels per day in 2024', sentence: 'Guafita produced about 12,400 bopd in 2024.' }] };
+    return { searches: 1, citations: [], results: [] };
+  });
+  const r = await runResearch(db, 'hte-web', { now, storage, provider: searcher, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris', webMaxUses: 3 });
+  assert.equal(r.status, 'ok', JSON.stringify(r.warnings));
+  assert.equal(r.sources.web.queries, 3, 'one call per name: Guafita, Guafita Oil Field, the project name'); assert.equal(r.sources.web.created, 1);
+  assert.ok(asked[0].includes('Research "Guafita" in Venezuela') && asked[0].includes('"Guafita" Venezuela'), asked[0]);
+  const f = (await db.query<any>("SELECT title, extracted, origin, asset_ids FROM items WHERE project_id = 'hte-web' AND extracted->>'source' = 'web'")).rows;
+  assert.equal(f.length, 1, 'the uncited result files nothing');
+  assert.equal(f[0].title, 'The Future of Venezuela\'s Oil Industry'); assert.equal(f[0].origin.url, 'https://eprinc.org/future.pdf'); assert.equal(f[0].extracted.quote, 'the Guafita field in Apure produced 12,400 barrels per day in 2024');
+  assert.equal(f[0].extracted.summary, 'Guafita produced about 12,400 bopd in 2024.'); assert.equal(f[0].extracted.page_age, 'September 2021'); assert.deepEqual(f[0].asset_ids, ['field:ve:guafita']);
+  // Spend: tokens plus 4 searches at $0.01 → about £0.03 over the token cost.
+  assert.ok(r.spend_gbp >= 4 * 0.01 / 1.28 && r.spend_gbp < 0.1, String(r.spend_gbp));
+  // The organisation has web search switched off: the source says so once and the run goes on.
+  const off = new FakeProvider(() => '{"facts":[]}', () => new Error('anthropic 400: {"type":"error","error":{"type":"invalid_request_error","message":"Web search is not enabled for this organization."}}'));
+  const r2 = await runResearch(db, 'hte-web', { now, storage, provider: off, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(r2.status, 'ok'); assert.equal(r2.sources.web.queries, 1, 'the same 400 every time: asked once, then stopped');
+  assert.match(r2.sources.web.error!, /web search is not enabled for this organisation/);
+  process.env.RESEARCH_WEB = 'false';
+  const r3 = await runResearch(db, 'hte-web', { now, storage, provider: searcher, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  delete process.env.RESEARCH_WEB;
+  assert.equal(r3.sources.web.queries, 0); assert.match(r3.sources.web.skipped!, /RESEARCH_WEB=false/);
+  const r4 = await runResearch(db, 'hte-web', { now, storage, provider: null, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.match(r4.sources.web.skipped!, /no assistant configured/);
+});
+
+/* ── fields attached by name get their locations from the gazetteers ── */
+
+test('the run locates fields attached by name: an exact gazetteer match sets the location and files the dossier, an area match is a proposal a person decides, an unknown field is named', async () => {
+  await db.query("INSERT INTO assets (id,kind,name,country,operator,props,lat,lon,location_source,created_by) VALUES ('field:ve:oficina','field','Oficina','VE','Petrolera Vencupet',$1::jsonb,8.8778,-64.3669,'gem','chris')", [JSON.stringify({ gem: { unit_id: 'L100000305199', name: 'Oficina Oil Field', release: 'March 2026', wiki_url: 'https://www.gem.wiki/Oficina_Oil_Field_(Venezuela)' } })]);
+  await db.query("INSERT INTO assets (id,kind,name,country,props,created_by) VALUES ('field:ve:yopales-central','field','Yopales Central','VE','{}'::jsonb,'chris'), ('field:ve:oficina-norte','field','OFICINA NORTE','VE','{}'::jsonb,'chris'), ('field:ve:esquina-r','field','ESQUINA R','VE','{}'::jsonb,'chris')");
+  await db.query("INSERT INTO projects (id,client_id,name,status,default_legal_tag,country,members,asset_ids) VALUES ('hte-loc','hte','High Tech Electronica','prospect','lt-firm','VE','{chris}','{field:ve:yopales-central,field:ve:oficina-norte,field:ve:esquina-r}')");
+  const asked: string[] = [];
+  const gaz = (async (url: string) => {
+    const u = new URL(String(url)); asked.push(u.hostname + ' ' + (u.searchParams.get('name') ?? ''));
+    if (u.hostname === 'secure.geonames.org' && u.searchParams.get('name') === 'Yopales Central') return Response.json({ geonames: [{ geonameId: 3625000, name: 'Yopales Central', countryCode: 'VE', lat: '8.6400', lng: '-64.5200', fcode: 'OILF', adminName1: 'Anzoátegui' }] });
+    if (u.hostname === 'secure.geonames.org') return Response.json({ geonames: [] });
+    return new Response('{}', { status: 404 });                               // wikidata: nothing
+  }) as unknown as typeof fetch;
+  const r = await runResearch(db, 'hte-loc', { now, storage, provider: null, skipLocate: false, locate: { fetch: gaz, geonamesUser: 'test' }, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(r.status, 'ok', JSON.stringify(r.warnings));
+  assert.equal(r.sources.locate.queries, 3); assert.equal(r.sources.locate.created, 1, 'Yopales Central: exact GeoNames match, set'); assert.equal(r.sources.locate.findings, 1, 'Oficina Norte: area match on the GEM field Oficina, proposed');
+  assert.deepEqual(r.unlocated, ['ESQUINA R']); assert.match(r.sources.locate.skipped!, /no gazetteer record for ESQUINA R/);
+  const yop = (await db.query<any>("SELECT lat, lon, location_source, props FROM assets WHERE id = 'field:ve:yopales-central'")).rows[0];
+  assert.equal(yop.lat, 8.64); assert.equal(yop.lon, -64.52); assert.equal(yop.location_source, 'geonames'); assert.equal(yop.props.geonames.id, '3625000');
+  assert.equal((await db.query<{ n: number }>("SELECT count(*)::int AS n FROM items WHERE project_id = 'hte-loc' AND external_id = 'geonames:3625000'")).rows[0].n, 1, 'the GeoNames dossier is filed');
+  const on = (await db.query<any>("SELECT lat FROM assets WHERE id = 'field:ve:oficina-norte'")).rows[0];
+  assert.equal(on.lat, null, 'an area match never sets a location by itself');
+  const prop = (await db.query<any>("SELECT id, payload FROM review_queue WHERE kind = 'research' AND status = 'open' AND payload->>'fact_kind' = 'location' AND payload->>'project_id' = 'hte-loc'")).rows;
+  assert.equal(prop.length, 1); assert.equal(prop[0].payload.asset_id, 'field:ve:oficina-norte'); assert.equal(prop[0].payload.candidate.source, 'gem'); assert.equal(prop[0].payload.candidate.lat, 8.8778);
+  assert.match(prop[0].payload.proposal, /Location for OFICINA NORTE: Oficina \(gem\) at 8\.8778, -64\.3669, an area match/);
+  const audit = (await db.query<any>("SELECT refs FROM audit_events WHERE action = 'research.run' AND scope = 'project:hte-loc' ORDER BY id DESC LIMIT 1")).rows[0];
+  assert.ok(audit.refs.includes('asset:field:ve:yopales-central'));
+  // A re-run asks only for what is still unlocated and does not duplicate the open proposal.
+  const again = await runResearch(db, 'hte-loc', { now, storage, provider: null, skipLocate: false, locate: { fetch: gaz, geonamesUser: 'test' }, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(again.sources.locate.queries, 2); assert.equal(again.sources.locate.created, 0);
+  assert.equal((await db.query<{ n: number }>("SELECT count(*)::int AS n FROM review_queue WHERE kind = 'research' AND status = 'open' AND payload->>'fact_kind' = 'location' AND payload->>'project_id' = 'hte-loc'")).rows[0].n, 1);
+  // Set location: the person accepts the area match; the field gets the coordinates and the GEM dossier.
+  const ok = await call('POST', `/api/queue/review/${prop[0].id}/accept`, { apply: true });
+  assert.equal(ok.status, 200, JSON.stringify(ok.body)); assert.equal(ok.body.asset.id, 'field:ve:oficina-norte'); assert.equal(ok.body.asset.lat, 8.8778); assert.equal(ok.body.asset.location_source, 'gem'); assert.equal(ok.body.dossier.length, 1);
+  const after = (await db.query<any>("SELECT lat, lon, location_source, props FROM assets WHERE id = 'field:ve:oficina-norte'")).rows[0];
+  assert.equal(after.lon, -64.3669); assert.equal(after.props.gem.unit_id, 'L100000305199');
+  const last = await runResearch(db, 'hte-loc', { now, storage, provider: null, skipLocate: false, locate: { fetch: gaz, geonamesUser: 'test' }, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(last.sources.locate.queries, 1, 'only Esquina R is left');
 });
 
 test('while the literature pass runs, the job row carries the phase and the running count so the Hub can show progress', async () => {

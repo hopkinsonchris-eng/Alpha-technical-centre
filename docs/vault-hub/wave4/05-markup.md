@@ -49,6 +49,25 @@ The Fields card's "Proposed from documents" block gains findings as a source: "�
 6. Budget (W4-D4): stop at 15 minutes wall clock or when the model spend reaches £3 (tokens priced from the provider's own usage; World Monitor and miners cost nothing marginal); the run writes `jobs.summary` with counts per source, proposals, spend, duration and `not_reached` (source, query, cursor); a re-run starts each source from its cursor.
 7. Audit: `research.run` with refs `project:<id>` and every `doc:` filed.
 
+### 1.4.8 Addendum, W4-D1 revised (1 October 2026): two more sources
+
+BEFORE: a run asks World Monitor and the literature indexes only. For small, mature fields those answered nothing in the first live run, while Google finds the GEM wiki page, PDVSA and Wikipedia pages, old reports and trade press.
+
+AFTER, in this order inside the same time and spend budget: GEM wiki → World Monitor → web search → literature.
+
+1. **GEM wiki pages (`vault/src/research/gemwiki.ts`, source `gem-wiki`).** For each attached field whose record carries `props.gem.wiki_url`, fetch the page server-side (10 s timeout, one fetch per page per run). File one note "Global Energy Monitor: <field>" with the page's lead sentence and tables flattened as the excerpt (≤ 600 characters), `facts.references` the page's References list, the CC BY 4.0 attribution, `external_id` the page URL. Then file every reference the page cites as its own finding (source `gem-wiki-ref`): title from the citation text or the URL's host, the URL, no quote, `external_id` the URL, deduplicated across fields. No model call. A field without a GEM record is skipped and counted.
+2. **Web search (`vault/src/research/web.ts`, source `web`).** One model call per field name (anchored with the country as the GDELT queries are) and one for the project name, through the Messages API server tool `web_search_20260209` with `max_uses: 3`, on the provider's model at low effort. The system prompt asks for the field's operator, licence or block, production, reserves, recent news and technical reports, written as short cited sentences. Every `web_search_result_location` citation the API returns becomes a finding: `url`, `title`, the model's cited sentence as the text, `quote` the API's `cited_text` (verbatim by construction, ≤ 150 characters), `external_id` the URL, deduplicated. Search results the model did not cite are not filed. `stop_reason: pause_turn` is resumed once. Spend: the provider's token usage plus $0.01 per search from `usage.server_tool_use.web_search_requests`, converted at the run's rate. A 400 saying web search is not enabled for the organisation, or any other failure, is recorded as the source's error and the run continues. `RESEARCH_WEB=false` switches the source off. Facts from these findings go through the existing verbatim-quote read for proposals.
+3. **Provider.** `LlmProvider` gains an optional `search(req)` (system, prompt, maxUses) → `{text, usage, searches, citations[], results[]}`; `AnthropicProvider` implements it with the raw Messages API as the rest of the provider does; `FakeProvider` takes a search reply for tests. Keys stay on the server.
+4. **Hub.** Two more groups in the Research tab and the sources list: "Global Energy Monitor wiki" and "Web search"; a web finding shows its page title and host as the others do.
+
+| # | criterion |
+|---|---|
+| W4-AC9 | With a stubbed fetch, a run on a project with one GEM field and one plain field files one `gem-wiki` note for the GEM field with the excerpt and the attribution, and one `gem-wiki-ref` finding per reference URL with the URL; nothing for the plain field; no provider call is made for this source; a re-run leaves them unchanged. |
+| W4-AC10 | With a fake provider answering a search reply, a run files one `web` finding per citation with URL, title and the cited text as the quote, none for uncited results, counts the searches into spend at $0.01 each, resumes one `pause_turn`, records a "not enabled" 400 as the source's error without failing the run, and skips the source when `RESEARCH_WEB=false`. |
+| W4-AC11 | Hub: the Research tab shows "Global Energy Monitor wiki" and "Web search" groups and their rows in the sources list; the end-to-end spec covers both. |
+
+Smoke plan: `research.test.ts` (AC9, AC10 with injected fetch and provider), `hub-research.spec.mjs` (AC11). Risks: web search is an organisation-level switch in the Claude Console (a 400 if an administrator turned it off: reported, not fatal); a search costs money, so `max_uses` is 3 per call and the run's £ cap still applies; the GEM wiki's HTML layout may change (the reader keeps the lead sentence and any `<a href>` under References, nothing more specific). Rollback: `RESEARCH_WEB=false`; the GEM wiki source has no key and no cost. Delivery: one pull request (wave 4 PR 4) after PR 3 (#38) merges.
+
 ### 1.5 Routes (new file `vault/src/api/research.routes.ts`; `projects.routes.ts` and `assets.routes.ts` gain one call each; `rerun.routes.ts` accepts kind `research`)
 
 | route | who | does |

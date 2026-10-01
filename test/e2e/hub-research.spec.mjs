@@ -22,10 +22,13 @@ const PROJECT = {
 };
 const GUAFITA = { id: 'field:ve:guafita', kind: 'field', name: 'Guafita', parent_id: null, country: 'VE', operator: null, source_url: 'https://www.gem.wiki/Guafita_Oil_Field', lat: 7.6, lon: -70.9, location_source: 'gem', status: 'operating', created_by: 'chris', created_at: '2026-09-30T10:00:00.000Z', props: { gem: { unit_id: 'G100', release: 'March 2026' } }, dossier: [] };
 const RUN_OK = { id: 7, status: 'stopped', started_at: '2026-10-01T12:25:00.000Z', finished_at: '2026-10-01T12:40:00.000Z', summary: {
-  project_id: PID, status: 'stopped', findings: 4, proposals: { asset: 1, research: 2 }, fact_reads: 3, spend_gbp: 1.8, duration_ms: 15 * 60000, budget: { ms: 15 * 60000, gbp: 3 }, stopped_by: 'time',
-  sources: { gdelt: { queries: 3, findings: 2, created: 2, updated: 0, unchanged: 0 }, company: { queries: 2, findings: 0, created: 0, updated: 0, unchanged: 0, error: 'World Monitor timed out', skipped: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)' }, 'company-signals': { queries: 0, findings: 1, created: 1, updated: 0, unchanged: 0 }, literature: { queries: 2, findings: 1, created: 1, updated: 0, unchanged: 0 } },
+  project_id: PID, status: 'stopped', findings: 6, proposals: { asset: 1, research: 2 }, fact_reads: 3, spend_gbp: 1.8, duration_ms: 15 * 60000, budget: { ms: 15 * 60000, gbp: 3 }, stopped_by: 'time',
+  sources: { 'gem-wiki': { queries: 1, findings: 1, created: 1, updated: 0, unchanged: 0, skipped: '1 field without a Global Energy Monitor record' }, web: { queries: 3, findings: 1, created: 1, updated: 0, unchanged: 0 }, gdelt: { queries: 3, findings: 2, created: 2, updated: 0, unchanged: 0 }, company: { queries: 2, findings: 0, created: 0, updated: 0, unchanged: 0, error: 'World Monitor timed out', skipped: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)' }, 'company-signals': { queries: 0, findings: 1, created: 1, updated: 0, unchanged: 0 }, literature: { queries: 2, findings: 1, created: 1, updated: 0, unchanged: 0 } },
   not_reached: [{ source: 'gdelt', query: '"La Victoria" Venezuela', reason: 'time' }, { source: 'literature', query: 'Guafita field Venezuela reservoir', reason: 'time' }], warnings: [] } };
+const F5 = '00000000-0000-4000-8000-000000000a05', F6 = '00000000-0000-4000-8000-000000000a06';
 const FINDINGS = [
+  { id: F5, type: 'note', title: 'Global Energy Monitor: Guafita', date: '2026-10-01T12:30:00.000Z', source: 'gem-wiki', url: 'https://www.gem.wiki/Guafita_Oil_Field_(Venezuela)', query: 'Guafita', quote: 'Guafita Oil Field is an operating oil field in Venezuela. | Project Details | Unit name Status Operator Guafita operating PDVSA 1984', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
+  { id: F6, type: 'note', title: 'The Future of Venezuela\'s Oil Industry', date: '2026-10-01T12:30:00.000Z', source: 'web', url: 'https://eprinc.org/wp-content/uploads/2021/09/The-Future-of-Venezuelas-Oil-Industry.pdf', query: '"Guafita" Venezuela', quote: 'the Guafita field in Apure produced 12,400 barrels per day in 2024', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
   { id: F1, type: 'note', title: 'PDVSA restarts Apure production after pipeline repair', date: '2026-09-30T10:00:00.000Z', source: 'gdelt', url: 'https://www.reuters.com/x/apure', query: '"Guafita" Venezuela', quote: 'PDVSA restarts Apure production after pipeline repair (Reuters)', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
   { id: F2, type: 'note', title: 'The Guafita and La Victoria fields resume output', date: '2026-09-28T12:00:00.000Z', source: 'gdelt', url: 'https://www.elnacional.com/x/guafita', query: '"Guafita" Venezuela', quote: 'The Guafita and La Victoria fields in Apure state resumed production this week.', asset_ids: ['field:ve:guafita'], legal_tag: 'lt-public', version: 1 },
   { id: F3, type: 'note', title: 'PDVSA signs service contract for Guafita', date: '2026-09-29T08:00:00.000Z', source: 'company-signals', url: 'https://www.argusmedia.com/x/pdvsa', query: 'PDVSA', quote: 'PDVSA signs service contract for Guafita (news) — Argus', asset_ids: [], legal_tag: 'lt-public', version: 1 },
@@ -38,11 +41,15 @@ const PROPOSALS = [
   { id: '20000000-0000-4000-8000-000000000003', kind: 'research', status: 'open', created_at: '2026-10-01T12:31:00.000Z', payload: { project_id: PID, item_id: F3, item_title: 'PDVSA signs service contract for Guafita', fact_kind: 'production', value: '12,400', unit: 'bopd', year: 2026, quote: 'PDVSA signs service contract for Guafita (news) — Argus', asset_id: 'field:ve:guafita', asset_name: 'Guafita', proposal: 'Production: 12,400 bopd (2026)' } },
   { id: '20000000-0000-4000-8000-000000000004', kind: 'research', status: 'open', created_at: '2026-10-01T12:31:00.000Z', payload: { project_id: 'other', item_id: 'x', item_title: 'Elsewhere', fact_kind: 'operator', value: 'Nobody', quote: 'x', asset_id: null, asset_name: null, proposal: 'Operator: Nobody' } },
 ];
+const LOCATION = { id: '20000000-0000-4000-8000-000000000005', kind: 'research', status: 'open', created_at: '2026-10-01T12:31:00.000Z', payload: { project_id: PID, item_id: null, item_title: null, fact_kind: 'location', value: '8.8778, -64.3669', unit: null, year: null, quote: 'Oficina (gem, VE) at 8.8778, -64.3669', asset_id: 'field:ve:oficina-norte', asset_name: 'OFICINA NORTE',
+  candidate: { name: 'Oficina', kind: 'field', country: 'VE', lat: 8.8778, lon: -64.3669, source: 'gem', source_id: 'L100000305199', source_url: 'https://www.gem.wiki/Oficina_Oil_Field_(Venezuela)', detail: { unit_id: 'L100000305199', release: 'March 2026' } },
+  proposal: 'Location for OFICINA NORTE: Oficina (gem) at 8.8778, -64.3669, an area match' } };
+const OFICINA_NORTE = { id: 'field:ve:oficina-norte', kind: 'field', name: 'OFICINA NORTE', parent_id: null, country: 'VE', operator: null, source_url: null, lat: null, lon: null, location_source: null, status: null, created_by: 'chris', created_at: '2026-10-01T10:00:00.000Z', props: {}, dossier: [] };
 const CATALOG = { tools: [], built_at: '2026-09-29T09:00:00.000Z', commit: 'abc1234' };
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
 /** Stubs the API. `research` is the view GET answers; `onStart` answers the POST and may change what later GETs say. */
-async function stubApi(page, { me = PARTNER, research, proposals = PROPOSALS, onStart } = {}) {
+async function stubApi(page, { me = PARTNER, research, proposals = PROPOSALS, onStart, assets = [GUAFITA] } = {}) {
   const calls = { started: 0, decided: [], views: 0 };
   let view = research === undefined ? { project_id: PID, runs: [RUN_OK], findings: FINDINGS, enabled: true } : research;
   let queue = proposals.map((q) => ({ ...q }));
@@ -51,14 +58,16 @@ async function stubApi(page, { me = PARTNER, research, proposals = PROPOSALS, on
     if (p === '/api/me') return json(route, me);
     if (p === '/api/catalog') return json(route, CATALOG);
     if (p === '/api/projects/' + PID) return json(route, PROJECT);
-    if (p === '/api/projects/' + PID + '/assets' && m === 'GET') return json(route, { project_id: PID, assets: [GUAFITA] });
+    if (p === '/api/projects/' + PID + '/assets' && m === 'GET') return json(route, { project_id: PID, assets });
     if (p === '/api/projects/' + PID + '/research' && m === 'GET') { calls.views++; if (typeof view === 'function') return view(route, calls); return view ? json(route, view) : json(route, { error: { code: 'not_found', message: 'no route' } }, 404); }
     if (p === '/api/projects/' + PID + '/research' && m === 'POST') { calls.started++; if (onStart) return onStart(route, calls, (v) => { view = v; }); return json(route, { project_id: PID, job_id: 8, state: 'queued' }, 202); }
     if (p === '/api/queue/review') return json(route, { items: queue });
     const dm = /^\/api\/queue\/review\/([^/]+)\/(accept|reject)$/.exec(p);
     if (dm && m === 'POST') {
       const b = route.request().postData() ? JSON.parse(route.request().postData()) : {}; calls.decided.push({ id: dm[1], verb: dm[2], body: b });
+      const q = queue.find((x) => x.id === dm[1]);
       queue = queue.filter((x) => x.id !== dm[1]);
+      if (dm[2] === 'accept' && q && q.payload.fact_kind === 'location') return json(route, { id: dm[1], status: 'accepted', asset: { ...OFICINA_NORTE, lat: q.payload.candidate.lat, lon: q.payload.candidate.lon, location_source: 'gem', props: { gem: q.payload.candidate.detail } }, dossier: ['00000000-0000-4000-8000-000000000b01'] });
       return json(route, { id: dm[1], status: dm[2] === 'accept' ? 'accepted' : 'rejected' });
     }
     for (const f of FINDINGS) { if (p === '/api/items/' + f.id) return json(route, ITEM(f)); if (p === '/api/items/' + f.id + '/versions') return json(route, { item_id: f.id, versions: [] }); }
@@ -86,12 +95,12 @@ test('W4-AC7: the toolbar shows the last run line; the Research tab lists findin
   await expect(btn).toBeEnabled();
   const status = page.locator('#p-research-status');
   await expect(status).toContainText('last run');
-  await expect(status).toContainText('4 findings · 3 proposals · stopped at 15 min');
+  await expect(status).toContainText('6 findings · 3 proposals · stopped at 15 min');
   await expect(status.locator('[data-run-status="stopped"]')).toHaveCount(1);
   // The tab carries the count and the panel groups the findings by source, newest first.
   const tab = page.locator('#tab-research');
   await expect(tab).toContainText('Research');
-  await expect(tab.locator('.n')).toHaveText('4');
+  await expect(tab.locator('.n')).toHaveText('6');
   await tab.click();
   const panel = page.locator('#panel-research');
   await expect(panel).toBeVisible();
@@ -100,19 +109,30 @@ test('W4-AC7: the toolbar shows the last run line; the Research tab lists findin
   await expect(panel.locator('#rs-summary')).toContainText('GDELT news 2');
   // What each source was asked and answered, errors and Pro gates included.
   const sources = panel.locator('#rs-sources li');
-  await expect(sources).toHaveCount(4);
-  await expect(sources.nth(0)).toContainText('World Monitor · GDELT news: 3 queries · 2 findings');
-  await expect(sources.nth(1)).toContainText('World Monitor · company lookups: 2 queries · 0 findings');
-  await expect(sources.nth(1).locator('[data-error]')).toHaveText('World Monitor timed out');
-  await expect(sources.nth(1).locator('[data-skipped]')).toContainText('needs World Monitor Pro');
+  await expect(sources).toHaveCount(6);
+  await expect(sources.nth(0)).toContainText('Global Energy Monitor wiki: 1 query · 1 finding');
+  await expect(sources.nth(0).locator('[data-skipped]')).toHaveText('1 field without a Global Energy Monitor record');
+  await expect(sources.nth(1)).toContainText('Web search: 3 queries · 1 finding');
+  await expect(sources.nth(2)).toContainText('World Monitor · GDELT news: 3 queries · 2 findings');
+  await expect(sources.nth(3)).toContainText('World Monitor · company lookups: 2 queries · 0 findings');
+  await expect(sources.nth(3).locator('[data-error]')).toHaveText('World Monitor timed out');
+  await expect(sources.nth(3).locator('[data-skipped]')).toContainText('needs World Monitor Pro');
   const groups = panel.locator('.hub-research-group');
-  await expect(groups).toHaveCount(3);
-  await expect(groups.nth(0)).toHaveAttribute('data-source', 'gdelt');
-  await expect(groups.nth(0).locator('h4')).toContainText('World Monitor · GDELT news');
-  await expect(groups.nth(0).locator('h4 .n')).toHaveText('2');
-  await expect(groups.nth(1)).toHaveAttribute('data-source', 'company-signals');
-  await expect(groups.nth(2)).toHaveAttribute('data-source', 'literature');
-  const first = groups.nth(0).locator('li[data-finding]').first();
+  await expect(groups).toHaveCount(5);
+  // W4-AC11: the two added sources lead, in the order the run asks them.
+  await expect(groups.nth(0)).toHaveAttribute('data-source', 'gem-wiki');
+  await expect(groups.nth(0).locator('h4')).toContainText('Global Energy Monitor wiki');
+  await expect(groups.nth(0).locator('li[data-finding="' + F5 + '"] [data-url]')).toHaveText('gem.wiki');
+  await expect(groups.nth(1)).toHaveAttribute('data-source', 'web');
+  await expect(groups.nth(1).locator('h4')).toContainText('Web search');
+  await expect(groups.nth(1).locator('li[data-finding="' + F6 + '"] [data-quote]')).toContainText('12,400 barrels per day');
+  await expect(groups.nth(1).locator('li[data-finding="' + F6 + '"] [data-url]')).toHaveText('eprinc.org');
+  await expect(groups.nth(2)).toHaveAttribute('data-source', 'gdelt');
+  await expect(groups.nth(2).locator('h4')).toContainText('World Monitor · GDELT news');
+  await expect(groups.nth(2).locator('h4 .n')).toHaveText('2');
+  await expect(groups.nth(3)).toHaveAttribute('data-source', 'company-signals');
+  await expect(groups.nth(4)).toHaveAttribute('data-source', 'literature');
+  const first = groups.nth(2).locator('li[data-finding]').first();
   await expect(first).toHaveAttribute('data-finding', F1);
   await expect(first.locator('.d')).toHaveText('30 Sept 2026');
   await expect(first.locator('b')).toHaveText('PDVSA restarts Apure production after pipeline repair');
@@ -131,7 +151,8 @@ test('W4-AC7: the toolbar shows the last run line; the Research tab lists findin
   // Spanish follows.
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(page.locator('#tab-research')).toContainText('Investigación');
-  await expect(groups.nth(0).locator('h4')).toContainText('World Monitor · noticias GDELT');
+  await expect(groups.nth(2).locator('h4')).toContainText('World Monitor · noticias GDELT');
+  await expect(groups.nth(0).locator('h4')).toContainText('Wiki de Global Energy Monitor');
   await expect(btn).toHaveText('Investigar este proyecto');
 });
 
@@ -162,12 +183,12 @@ test('W4-AC7: the button queues a run, shows progress while polling, and when th
   // The poll sees the run going, then finished.
   await expect(status).toContainText('running · 2 min · 1 findings · searching the literature');
   await expect(status).toContainText('last run 1 Oct', { timeout: 5000 });
-  await expect(status).toContainText('4 findings · 3 proposals');
+  await expect(status).toContainText('6 findings · 3 proposals');
   await expect(btn).toBeEnabled();
   await expect(btn).toHaveText('Research this project');
-  await expect(page.locator('#tab-research .n')).toHaveText('4');
+  await expect(page.locator('#tab-research .n')).toHaveText('6');
   await page.locator('#tab-research').click();
-  await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(4);
+  await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(6);
   expect(calls.views).toBeGreaterThanOrEqual(3);
 });
 
@@ -212,6 +233,27 @@ test('W4-AC7: the Fields card shows research proposals; Set as operator and File
   expect(calls.decided[1]).toEqual({ id: '20000000-0000-4000-8000-000000000003', verb: 'reject', body: {} });
   await expect(page.locator('#fld-notices .hub-notice.ok')).toContainText('Not a fact');
   await expect(facts).toHaveCount(0);
+});
+
+test('a location the gazetteers proposed for a field attached by name is decided in the Fields card: Set location gives the field its coordinates and dossier', async ({ page }) => {
+  const calls = await stubApi(page, { proposals: [LOCATION], assets: [GUAFITA, OFICINA_NORTE] });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const row = page.locator('#fld-facts li[data-fact-kind="location"]');
+  await expect(row.locator('b')).toHaveText('Location for OFICINA NORTE: Oficina (gem) at 8.8778, -64.3669, an area match');
+  await expect(row.locator('.hub-src')).toHaveAttribute('data-source', 'gem');
+  await expect(row.locator('[data-coords]')).toHaveText('8.8778, -64.3669');
+  await expect(row.locator('[data-accept-fact]')).toHaveText('Set location');
+  await expect(row.locator('[data-reject]')).toHaveText('Not it');
+  await expect(page.locator('li[data-field="field:ve:oficina-norte"]')).toContainText('no location');
+  await row.locator('[data-accept-fact]').click();
+  await expect(row).toHaveCount(0);
+  expect(calls.decided[0]).toEqual({ id: LOCATION.id, verb: 'accept', body: { apply: true } });
+  await expect(page.locator('#fld-notices .hub-notice.ok')).toContainText('Location set for OFICINA NORTE.');
+  const field = page.locator('li[data-field="field:ve:oficina-norte"]');
+  await expect(field.locator('[data-coords]')).toHaveText('8.8778, -64.3669');
+  await expect(field.locator('.hub-src')).toHaveAttribute('data-source', 'gem');
+  await expect(field.locator('[data-dossier]')).toHaveText('Dossier');
 });
 
 test('W4-AC7: the queue page lists research facts with their quote and project; Set as operator accepts with apply; Not a fact rejects', async ({ page }) => {
@@ -263,7 +305,7 @@ test('W4-AC8: evidence screenshots of the Research tab and the research proposal
   await stubApi(page);
   await page.goto('/hub/project.html?id=' + PID + '#research');
   await ready(page);
-  await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(4);
+  await expect(page.locator('#panel-research li[data-finding]')).toHaveCount(6);
   mkdirSync(EVIDENCE, { recursive: true });
   await page.locator('#panel-research').scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(EVIDENCE, 'w4-research-tab.png') });

@@ -355,12 +355,12 @@ test('W3-PR4: a partner can archive a project (hide, never delete) after confirm
   await expect(page.locator('#p-notices .hub-notice.warn')).toContainText('Nothing is deleted');
   expect(patched).toEqual([]);
   await btn.click();
-  expect(patched).toEqual([{ status: 'archived' }]);
+  await expect.poll(() => patched).toEqual([{ status: 'archived' }]);
   await expect(page.locator('#p-archived')).toBeVisible();
   await expect(page.locator('#p-sub [data-status="archived"]')).toHaveText('Archived');
   await expect(page.locator('#p-archive')).toHaveText('Restore project');
   await page.locator('#p-archive').click();
-  expect(patched[1]).toEqual({ status: 'prospect' });
+  await expect.poll(() => patched[1]).toEqual({ status: 'prospect' });   // the PATCH lands after the click resolves
   await expect(page.locator('#p-archived')).toBeHidden();
   await expect(page.locator('#p-archive')).toHaveText('Archive project');
   void calls;

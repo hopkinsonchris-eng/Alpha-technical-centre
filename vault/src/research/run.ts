@@ -18,6 +18,10 @@ import type { FeedAdapter, TopicSpec } from '../miners/types.ts';
 import type { Clock } from '../miners/util.ts';
 import { companyEnrichment, companySignals, gdeltDocuments, intelTimeline, secFilings, worldMonitorConfigured } from '../intel/worldmonitor.ts';
 import { buildQueries, type ResearchField, type ResearchProject, type ResearchQueries } from './queries.ts';
+import { fetchGemWiki, gemWikiFindings } from './gemwiki.ts';
+import { locateFields } from './locate.ts';
+import type { LocateOptions } from '../assets/gazetteers.ts';
+import { researchWebEnabled, searchWeb, webFindings, RESEARCH_WEB_OFF } from './web.ts';
 import { fileFinding, proposeFromFinding, readFacts, type Finding } from './findings.ts';
 
 export interface ResearchOptions {
@@ -27,6 +31,12 @@ export interface ResearchOptions {
   maxFactReads?: number;
   /** Where the end-of-run line goes (the server log by default; tests pass a sink). */
   log?: (line: string) => void;
+  /** Wave 4, W4-D1 revised: skip the Global Energy Monitor wiki pass or the web search pass (tests). */
+  skipGemWiki?: boolean; skipWeb?: boolean;
+  /** Skip the gazetteer pass that locates fields attached by name (tests); options for that pass. */
+  skipLocate?: boolean; locate?: LocateOptions;
+  /** Searches per web call (default 3) and the price of one search in USD (default 0.01). */
+  webMaxUses?: number; usdPerSearch?: number;
   /** How often the running counts are written while the literature pass goes (ms). */
   progressEveryMs?: number;
 }
@@ -39,7 +49,9 @@ export interface ResearchSummary {
   /** Papers an earlier run filed that fail today's screen, hidden by this run (never deleted). */
   pruned?: number;
   /** Where a running job is: the Hub's status line says so. */
-  phase?: 'world-monitor' | 'literature' | 'done';
+  phase?: 'locate' | 'gem-wiki' | 'world-monitor' | 'web' | 'literature' | 'done';
+  /** Fields the gazetteers could not place, named so a person can place them by hand. */
+  unlocated?: string[];
 }
 
 export const RESEARCH_DISABLED = 'research runs are switched off (RESEARCH_ENABLED=false on the Vault service)';
@@ -102,7 +114,7 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   const started = now();
   const budget = { ms: opts.budgetMs ?? budgetMsOf(), gbp: opts.budgetGbp ?? budgetGbpOf() };
   const by = opts.by ?? 'research';
-  const summary: ResearchSummary = { project_id: projectId, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sources: {}, findings: 0, proposals: { asset: 0, research: 0 }, fact_reads: 0, spend_gbp: 0, budget, not_reached: [], stopped_by: null, warnings: [], phase: 'world-monitor' };
+  const summary: ResearchSummary = { project_id: projectId, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sources: {}, findings: 0, proposals: { asset: 0, research: 0 }, fact_reads: 0, spend_gbp: 0, budget, not_reached: [], stopped_by: null, warnings: [], phase: 'locate' };
   const log = opts.log ?? ((line: string) => console.log(line));
   const job = jobId ?? (await db.query<{ id: number }>("INSERT INTO jobs (name, status, summary) VALUES ('research', 'running', $1::jsonb) RETURNING id", [JSON.stringify({ project_id: projectId, queued: false })])).rows[0].id;
   await db.query('UPDATE jobs SET started_at = $2, summary = $3::jsonb WHERE id = $1', [job, started.toISOString(), JSON.stringify({ ...summary, queued: false })]);
@@ -117,7 +129,7 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   try {
     const p = (await db.query<any>('SELECT p.id, p.name, p.country, p.asset_ids, p.register, o.name AS client_name FROM projects p LEFT JOIN organisations o ON o.id = p.client_id WHERE p.id = $1', [projectId])).rows[0];
     if (!p) throw new Error(`project "${projectId}" not found`);
-    const fields: ResearchField[] = p.asset_ids?.length ? (await db.query<any>('SELECT id, name, kind, country, operator, props FROM assets WHERE id = ANY($1::text[])', [p.asset_ids])).rows : [];
+    const fields: (ResearchField & { lat: number | null; lon: number | null })[] = p.asset_ids?.length ? (await db.query<any>('SELECT id, name, kind, country, operator, props, lat, lon FROM assets WHERE id = ANY($1::text[])', [p.asset_ids])).rows : [];
     const project: ResearchProject = { id: p.id, name: p.name, country: p.country ?? null, client_name: p.client_name ?? null, register: p.register ?? null };
     const q: ResearchQueries = buildQueries(project, fields, p.country ? countryName(p.country).en : null);
     const provider = opts.provider === undefined ? openProvider() : opts.provider;
@@ -144,7 +156,41 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
       summary.proposals.asset += pr.asset.length; summary.proposals.research += pr.research.length;
     };
 
+    // -1. Fields attached by name get their coordinates from the gazetteers (never the model): an exact match sets
+    //     the location and files the dossier; an area match is a proposal; a field nobody knows is named.
+    if (!opts.skipLocate && fields.some(f => f.lat == null)) {
+      const c = count('locate');
+      const outcomes = await locateFields(db, { id: p.id, country: p.country ?? null }, fields.map(f => ({ id: f.id, name: f.name, kind: f.kind, country: f.country, lat: f.lat, lon: f.lon })), by, now(), opts.locate ?? {});
+      c.queries = outcomes.length;
+      for (const o of outcomes) {
+        if (o.outcome === 'located') { c.created++; touched.push(`asset:${o.field_id}`); for (const d of o.dossier ?? []) touched.push(`doc:${d}`); const f = fields.find(x => x.id === o.field_id); if (f && o.candidate) { f.lat = o.candidate.lat; f.lon = o.candidate.lon; } }
+        else if (o.outcome === 'proposed') { c.findings++; summary.proposals.research++; }
+        else if (o.outcome === 'error') c.error = o.reason;
+      }
+      const none = outcomes.filter(o => o.outcome === 'none' || o.outcome === 'outside').map(o => o.name + (o.outcome === 'outside' ? ` (${o.reason})` : ''));
+      if (none.length) { summary.unlocated = none; c.skipped = `no gazetteer record for ${none.join(', ')}`; }
+      await progress();
+    }
+    summary.phase = 'gem-wiki';
+    await progress();
+
+    // 0. Global Energy Monitor wiki pages (W4-D1 revised): the page and every source it cites, no model.
+    if (!opts.skipGemWiki) {
+      const withPage = fields.filter(f => typeof f.props?.gem?.wiki_url === 'string' && /^https?:\/\//.test(f.props.gem.wiki_url));
+      const c = count('gem-wiki');
+      if (fields.length > withPage.length) c.skipped = `${fields.length - withPage.length} field${fields.length - withPage.length === 1 ? '' : 's'} without a Global Energy Monitor record`;
+      for (const f of withPage) {
+        const s = stop(); if (s) { summary.not_reached.push({ source: 'gem-wiki', query: f.name, reason: s }); continue; }
+        c.queries++;
+        const r = await fetchGemWiki(f.props!.gem.wiki_url, opts.fetch);
+        if (!r.ok) { c.error = r.reason; summary.not_reached.push({ source: 'gem-wiki', query: f.name, reason: r.reason }); continue; }
+        for (const fd of gemWikiFindings({ id: f.id, name: f.name }, r.page)) await file(fd.source === 'gem-wiki' ? 'gem-wiki' : 'gem-wiki-ref', fd);
+        await progress();
+      }
+    }
+
     // 1. World Monitor.
+    summary.phase = 'world-monitor';
     if (!opts.skipWorldMonitor && worldMonitorConfigured()) {
       for (const g of q.gdelt) {
         const s = stop(); if (s) { summary.not_reached.push({ source: 'gdelt', query: g.query, reason: s }); continue; }
@@ -176,6 +222,35 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
         }
       }
     } else if (!opts.skipWorldMonitor) summary.warnings.push('World Monitor not connected: GDELT, company and filing searches skipped');
+
+    // 1b. Web search (W4-D1 revised): the model searches through the API's server-side tool; only what the API
+    //     cites is filed, with the page URL and the verbatim cited text. One call per name, the same names as GDELT.
+    summary.phase = 'web';
+    await progress();
+    if (!opts.skipWeb) {
+      const c = count('web');
+      if (!researchWebEnabled()) c.skipped = RESEARCH_WEB_OFF;
+      else if (!provider || !provider.search) c.skipped = provider ? 'the provider has no web search' : 'no assistant configured (ANTHROPIC_API_KEY)';
+      else {
+        const usdPerSearch = opts.usdPerSearch ?? 0.01;
+        for (const g of q.gdelt) {
+          const s = stop(); if (s) { summary.not_reached.push({ source: 'web', query: g.query, reason: s }); continue; }
+          c.queries++;
+          try {
+            const r = await searchWeb(provider, { label: g.label, query: g.query, field_id: g.field_id }, p.country ? countryName(p.country).en : null, opts.webMaxUses ?? 3);
+            summary.spend_gbp = Math.round((summary.spend_gbp + costGbp(r.model, r.usage) + (r.searches * usdPerSearch) / USD_PER_GBP) * 10000) / 10000;
+            if (r.error) c.error = r.error;
+            for (const fd of webFindings({ label: g.label, query: g.query, field_id: g.field_id }, r)) await file('web', fd);
+          } catch (e) {
+            const msg = (e as Error).message;
+            c.error = /not enabled/i.test(msg) ? 'web search is not enabled for this organisation (Claude Console → Capabilities)' : msg;
+            summary.not_reached.push({ source: 'web', query: g.query, reason: c.error });
+            if (/not enabled|401|403/.test(msg)) break;                     // the same answer every time: do not spend the budget on it
+          }
+          await progress();
+        }
+      }
+    }
 
     // 2. The miners: literature per field and operator, scoped to the project. The Hub reads the running
     //    counts while this goes, so a long pass does not look like nothing happening.

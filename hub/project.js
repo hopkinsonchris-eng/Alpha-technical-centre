@@ -514,14 +514,15 @@ async function renderFields(ctx) {
     const li = mk('li', 'hub-proposal hub-fact', null, null, { 'data-proposal': q.id, 'data-fact-kind': pl.fact_kind || '' });
     const head = mk('div', 'hub-proposal-head');
     add(head, dv('b', null, pl.proposal || pl.value));
-    if (pl.asset_name) add(head, document.createTextNode(' · '), mk('span', 'hub-muted', 'about ' + pl.asset_name, 'sobre ' + pl.asset_name));
+    if (pl.fact_kind === 'location' && pl.candidate) { add(head, document.createTextNode(' '), srcPill(pl.candidate.source)); if (Number.isFinite(pl.candidate.lat)) add(head, document.createTextNode(' '), dv('span', 'mono', pl.candidate.lat + ', ' + pl.candidate.lon, { 'data-coords': '' })); }
+    else if (pl.asset_name) add(head, document.createTextNode(' · '), mk('span', 'hub-muted', 'about ' + pl.asset_name, 'sobre ' + pl.asset_name));
     const quote = pl.quote ? dv('blockquote', 'hub-proposal-quote', '“' + pl.quote + '”' + (pl.item_title ? ' (' + pl.item_title + ')' : ''), { 'data-quote': '' }) : null;
     if (quote) add(head, quote);
     add(li, head);
     const actions = mk('div', 'hub-actions-row');
-    const yesEn = pl.fact_kind === 'operator' ? 'Set as operator' : 'File as fact', yesEs = pl.fact_kind === 'operator' ? 'Fijar como operador' : 'Archivar como hecho';
+    const yesEn = pl.fact_kind === 'operator' ? 'Set as operator' : pl.fact_kind === 'location' ? 'Set location' : 'File as fact', yesEs = pl.fact_kind === 'operator' ? 'Fijar como operador' : pl.fact_kind === 'location' ? 'Fijar ubicación' : 'Archivar como hecho';
     const yes = mk('button', 'btn btn-primary btn-sm', yesEn, yesEs, { type: 'button', 'data-accept-fact': '' });
-    const no = mk('button', 'btn btn-outline btn-sm', 'Not a fact', 'No es un hecho', { type: 'button', 'data-reject': '' });
+    const no = mk('button', 'btn btn-outline btn-sm', pl.fact_kind === 'location' ? 'Not it' : 'Not a fact', pl.fact_kind === 'location' ? 'No es ese' : 'No es un hecho', { type: 'button', 'data-reject': '' });
     const decideFact = async (verb) => {
       notices.textContent = ''; yes.disabled = no.disabled = true;
       const r = await api('/api/queue/review/' + encodeURIComponent(q.id) + '/' + verb, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(verb === 'accept' ? { apply: true } : {}) });
@@ -539,6 +540,13 @@ async function renderFields(ctx) {
         const f = ctx.fields.find((x) => x.id === pl.asset_id);
         if (f) { f.operator = pl.value; paint(); }
         add(notices, notice('ok', 'Operator set: ' + pl.value + '.', 'Operador fijado: ' + pl.value + '.', 'Recorded on the field with its quote.', 'Registrado en el campo con su cita.'));
+      } else if (pl.fact_kind === 'location' && pl.asset_id) {
+        const a = r.body && r.body.asset, filed = Array.isArray(r.body && r.body.dossier) ? r.body.dossier : [];
+        const i = ctx.fields.findIndex((x) => x.id === pl.asset_id);
+        if (i >= 0 && a) ctx.fields[i] = { ...ctx.fields[i], ...a, dossier: [...(ctx.fields[i].dossier || []), ...filed] };
+        else if (i >= 0 && pl.candidate) ctx.fields[i] = { ...ctx.fields[i], lat: pl.candidate.lat, lon: pl.candidate.lon, location_source: pl.candidate.source };
+        paint(); renderHeader(ctx);
+        add(notices, notice('ok', 'Location set for ' + (pl.asset_name || 'the field') + '.', 'Ubicación fijada para ' + (pl.asset_name || 'el campo') + '.', filed.length ? filed.length + ' dossier record' + (filed.length === 1 ? '' : 's') + ' filed.' : 'From ' + (pl.candidate ? sourceWord(pl.candidate.source).en : 'the gazetteer') + '.', filed.length ? filed.length + ' registro' + (filed.length === 1 ? '' : 's') + ' de dosier archivado' + (filed.length === 1 ? '' : 's') + '.' : 'Desde ' + (pl.candidate ? sourceWord(pl.candidate.source).es : 'el gacetero') + '.'));
       } else if (pl.fact_kind === 'production') {
         p.register = { ...(p.register || {}), current: (pl.value || '') + (pl.unit ? ' ' + pl.unit : '') + (pl.year ? ' (' + pl.year + ')' : '') };
         renderOpportunity(ctx);
@@ -900,11 +908,12 @@ function renderScorecard(rules) {
 /* ── wave 4: research runs (docs/vault-hub/wave4/05-markup.md §1.1) ──── */
 
 const RS_SOURCE = {
+  locate: ['Field locations (gazetteers)', 'Ubicaciones de campos (gaceteros)'], 'gem-wiki': ['Global Energy Monitor wiki', 'Wiki de Global Energy Monitor'], 'gem-wiki-ref': ['Sources cited by Global Energy Monitor', 'Fuentes citadas por Global Energy Monitor'], web: ['Web search', 'Búsqueda web'],
   gdelt: ['World Monitor · GDELT news', 'World Monitor · noticias GDELT'], 'company-enrichment': ['World Monitor · company profiles', 'World Monitor · perfiles de empresa'],
   'company-signals': ['World Monitor · company signals', 'World Monitor · señales de empresa'], 'sec-filings': ['World Monitor · SEC filings', 'World Monitor · presentaciones SEC'],
   'intel-timeline': ['World Monitor · intelligence timeline', 'World Monitor · cronología de inteligencia'], literature: ['Literature', 'Literatura'],
 };
-const RS_ORDER = ['gdelt', 'company-enrichment', 'company-signals', 'sec-filings', 'intel-timeline', 'literature'];
+const RS_ORDER = ['locate', 'gem-wiki', 'gem-wiki-ref', 'web', 'gdelt', 'company-enrichment', 'company-signals', 'sec-filings', 'intel-timeline', 'literature'];
 const rsGroupOf = (src) => (RS_SOURCE[src] ? src : 'literature');
 const canWriteProject = (ctx) => !!ctx.person && (ctx.person.role === 'partner' || !ctx.project.client_id || (ctx.project.members || []).includes(ctx.person.id));
 const pollMs = () => Number(window.HUB_RESEARCH_POLL_MS) || 10000;
@@ -941,7 +950,7 @@ function renderResearch(ctx, first) {
     if (r.status === 'queued') { busy('queued · waiting to start', 'en cola · a la espera de empezar'); return; }
     if (r.status === 'running') {
       const mins = Math.max(0, Math.round((Date.now() - Date.parse(r.started_at)) / 60000));
-      const ph = sm.phase === 'literature' ? [' · searching the literature', ' · buscando en la literatura'] : sm.phase === 'world-monitor' ? [' · asking World Monitor', ' · consultando World Monitor'] : ['', ''];
+      const ph = sm.phase === 'literature' ? [' · searching the literature', ' · buscando en la literatura'] : sm.phase === 'world-monitor' ? [' · asking World Monitor', ' · consultando World Monitor'] : sm.phase === 'locate' ? [' · locating the fields', ' · ubicando los campos'] : sm.phase === 'gem-wiki' ? [' · reading Global Energy Monitor', ' · leyendo Global Energy Monitor'] : sm.phase === 'web' ? [' · searching the web', ' · buscando en la web'] : ['', ''];
       busy('running · ' + mins + ' min · ' + (sm.findings || 0) + ' findings' + ph[0], 'en curso · ' + mins + ' min · ' + (sm.findings || 0) + ' hallazgos' + ph[1]);
       return;
     }
