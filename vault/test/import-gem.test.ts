@@ -89,8 +89,27 @@ test('W3-AC11: seeding loads gem-fields.json when present, and re-seeding does n
   assert.equal(rub[0].props.gem.unit_id, 'G200', 'the GEM facts are merged onto the existing record');
   // A person's confirmed location is not overwritten by a re-seed.
   await db.query("UPDATE assets SET lat = 7.61, lon = -70.91, location_source = 'document' WHERE id = 'field:ve:guafita'");
-  await seedMaster(db, { gemFile: path.join(dir, 'gem-fields.json') });
+  // A re-seed of the same release is one count and no unit queries: boot must start in seconds, not minutes (Render's deploy timed out on 7,673 updates).
+  let queries = 0;
+  const counted = new Proxy(db, { get: (t, k) => (k === 'query' ? (...args: any[]) => { queries++; return (t as any).query(...args); } : (t as any)[k]) });
+  await seedMaster(counted);
+  const base = queries;                                   // people, master assets, firm assets, reference sets: the same on every boot
+  queries = 0;
+  const again = await seedMaster(counted, { gemFile: path.join(dir, 'gem-fields.json') });
+  assert.equal(again.gem_skipped, true); assert.equal(again.gem_units, out.units.length);
+  assert.ok(queries - base <= 1, `a re-seed of a loaded release ran ${queries - base} GEM queries`);
   const after = (await db.query<any>("SELECT lat, location_source FROM assets WHERE id = 'field:ve:guafita'")).rows[0];
   assert.equal(after.lat, 7.61); assert.equal(after.location_source, 'document');
+  // A new release runs the full pass once, merging onto the existing records in batches, and still never moves a confirmed location.
+  writeFileSync(path.join(dir, 'gem-fields.json'), JSON.stringify({ release: 'September 2026', units: out.units.map(u => ({ ...u, status: 'shut in' })) }));
+  queries = 0;
+  const next = await seedMaster(counted, { gemFile: path.join(dir, 'gem-fields.json') });
+  assert.equal(next.gem_skipped, undefined); assert.equal(next.gem_units, out.units.length);
+  assert.ok(queries - base <= 4, `a new release ran ${queries - base} GEM queries (count, existing ids, one merge batch, one insert batch)`);
+  const g2 = (await db.query<any>("SELECT lat, location_source, status, props FROM assets WHERE id = 'field:ve:guafita'")).rows[0];
+  assert.equal(g2.props.gem.release, 'September 2026'); assert.equal(g2.props.gem.status, 'shut in');
+  assert.equal(g2.status, 'operating', 'status set by the earlier release is kept (coalesce), as before');
+  assert.equal(g2.lat, 7.61); assert.equal(g2.location_source, 'document');
+  assert.equal((await db.query<{ n: number }>("SELECT count(*)::int AS n FROM assets WHERE props ? 'gem'")).rows[0].n, 2, 'no duplicates across releases');
   await db.close();
 });

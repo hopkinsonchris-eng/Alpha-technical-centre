@@ -63,7 +63,7 @@ function* jsonFiles(dir: string): Generator<string> {
   }
 }
 
-export interface MasterSummary { people: number; assets: number; firm_assets: number; reference_sets: number; reference_versions_added: number; gem_units: number }
+export interface MasterSummary { people: number; assets: number; firm_assets: number; reference_sets: number; reference_versions_added: number; gem_units: number; gem_skipped?: boolean }
 
 /** The committed Global Energy Monitor import (wave 3); boot passes it, tests pass their own or none. */
 export const GEM_FILE = path.join(VAULT_DIR, 'master/gem-fields.json');
@@ -81,13 +81,15 @@ export async function seedMaster(db: Db, opts: SeedOptions = {}): Promise<Master
     summary.people++;
   }
 
-  // Parents before children: basins, fields, wells.
+  // Parents before children: basins, fields, wells. A master record that gained Global Energy Monitor facts
+  // (props.gem, wave 3) keeps them across re-seeds; the file's own props still win for every other key.
   for (const file of ['basins.json', 'fields.json', 'wells.json']) {
     for (const a of readJson(path.join(VAULT_DIR, 'master', file))) {
       await db.query(
         `INSERT INTO assets (id, kind, name, parent_id, country, operator, source_url, props) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb)
          ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, name = excluded.name, parent_id = excluded.parent_id, country = excluded.country,
-           operator = excluded.operator, source_url = excluded.source_url, props = excluded.props`,
+           operator = excluded.operator, source_url = excluded.source_url,
+           props = excluded.props || CASE WHEN assets.props ? 'gem' THEN jsonb_build_object('gem', assets.props->'gem') ELSE '{}'::jsonb END`,
         [a.id, a.kind, a.name, a.parent_id ?? null, a.country ?? null, a.operator ?? null, a.source_url ?? null, JSON.stringify(a.props ?? {})]);
       summary.assets++;
     }
@@ -101,6 +103,13 @@ export async function seedMaster(db: Db, opts: SeedOptions = {}): Promise<Master
     const { gemToAsset } = await import('../../scripts/import-gem.ts');
     const gem = readJson(opts.gemFile);
     const release = gem.release ?? 'unknown release';
+    const units: any[] = gem.units ?? [];
+    // Boot runs this on every start and Render only waits so long for the port: when every unit of this release is
+    // already on a record, the pass is skipped (one count), so a restart is seconds, not minutes. A new release
+    // (a different string in the file) runs the full pass once, in batches.
+    const loaded = Number((await db.query<{ n: number }>("SELECT count(*)::int AS n FROM assets WHERE props->'gem'->>'release' = $1", [release])).rows[0].n);
+    if (units.length && loaded >= units.length) { summary.gem_units = units.length; summary.gem_skipped = true; }
+    else {
     const existing = new Map<string, string>();
     const ids = new Set<string>();
     for (const r of (await db.query<{ id: string; country: string | null; name: string }>('SELECT id, country, name FROM assets')).rows) {
@@ -109,22 +118,34 @@ export async function seedMaster(db: Db, opts: SeedOptions = {}): Promise<Master
       if (r.country && !existing.has(k)) existing.set(k, r.id);
     }
     const fresh: ReturnType<typeof gemToAsset>[] = [];
-    for (const u of gem.units ?? []) {
+    const merged: { id: string; a: ReturnType<typeof gemToAsset> }[] = [];
+    for (const u of units) {
       const a = gemToAsset(u, release);
       // Two different names can slug to one id ("B 3" and "B-3"): the second gets a numbered id, never a clash.
       if (!existing.has(`${a.country}|${a.name.toLowerCase()}`) && ids.has(a.id)) { let n = 2; while (ids.has(`${a.id}-${n}`)) n++; a.id = `${a.id}-${n}`; }
       ids.add(a.id);
       const hit = existing.get(`${a.country}|${a.name.toLowerCase()}`);
-      if (hit) {
-        await db.query(
-          `UPDATE assets SET props = props || $2::jsonb, operator = coalesce(operator, $3), source_url = coalesce(source_url, $4), status = coalesce(status, $5),
-             lat = CASE WHEN lat IS NULL THEN $6 ELSE lat END, lon = CASE WHEN lon IS NULL THEN $7 ELSE lon END,
-             location_source = CASE WHEN lat IS NULL AND $6::double precision IS NOT NULL THEN 'gem' ELSE location_source END WHERE id = $1`,
-          [hit, JSON.stringify(a.props), a.operator, a.source_url, a.status, a.lat, a.lon]);
-      } else { fresh.push(a); existing.set(`${a.country}|${a.name.toLowerCase()}`, a.id); }
+      if (hit) merged.push({ id: hit, a });
+      else { fresh.push(a); existing.set(`${a.country}|${a.name.toLowerCase()}`, a.id); }
       summary.gem_units++;
     }
     const BATCH = 200;
+    // A unit whose name is already a record (master fields.json, a person's own field, or the previous release) gains
+    // the GEM facts on that record, in batches; a location a person confirmed is never overwritten.
+    for (let i = 0; i < merged.length; i += BATCH) {
+      const rows = merged.slice(i, i + BATCH);
+      const params: unknown[] = [];
+      const values = rows.map(({ id, a }) => {
+        const k = params.length;
+        params.push(id, JSON.stringify(a.props), a.operator, a.source_url, a.status, a.lat, a.lon);
+        return `($${k + 1}::text,$${k + 2}::jsonb,$${k + 3}::text,$${k + 4}::text,$${k + 5}::text,$${k + 6}::double precision,$${k + 7}::double precision)`;
+      });
+      await db.query(
+        `UPDATE assets AS t SET props = t.props || v.props, operator = coalesce(t.operator, v.operator), source_url = coalesce(t.source_url, v.source_url), status = coalesce(t.status, v.status),
+           lat = CASE WHEN t.lat IS NULL THEN v.lat ELSE t.lat END, lon = CASE WHEN t.lon IS NULL THEN v.lon ELSE t.lon END,
+           location_source = CASE WHEN t.lat IS NULL AND v.lat IS NOT NULL THEN 'gem' ELSE t.location_source END
+         FROM (VALUES ${values.join(',')}) AS v(id, props, operator, source_url, status, lat, lon) WHERE t.id = v.id`, params);
+    }
     for (let i = 0; i < fresh.length; i += BATCH) {
       const rows = fresh.slice(i, i + BATCH);
       const params: unknown[] = [];
@@ -138,6 +159,7 @@ export async function seedMaster(db: Db, opts: SeedOptions = {}): Promise<Master
          ON CONFLICT (id) DO UPDATE SET props = assets.props || excluded.props, operator = coalesce(assets.operator, excluded.operator), source_url = coalesce(assets.source_url, excluded.source_url), status = coalesce(assets.status, excluded.status),
            lat = CASE WHEN assets.lat IS NULL THEN excluded.lat ELSE assets.lat END, lon = CASE WHEN assets.lon IS NULL THEN excluded.lon ELSE assets.lon END,
            location_source = CASE WHEN assets.lat IS NULL AND excluded.lat IS NOT NULL THEN 'gem' ELSE assets.location_source END`, params);
+    }
     }
   }
 
