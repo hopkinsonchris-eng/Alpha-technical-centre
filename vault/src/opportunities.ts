@@ -14,7 +14,12 @@ export const DEFAULT_STAGE: Stage = 'Initial screen';
 export interface StageChange { stage: string; at: string; by: string }
 
 /** Register summary fields the Hub shows; anything else in the block is kept but not interpreted. */
-export const REGISTER_FIELDS = ['source', 'current', 'plan', 'risk', 'risk_score', 'attractiveness', 'thesis', 'next', 'owner', 'risks'] as const;
+export const REGISTER_FIELDS = ['source', 'current', 'plan', 'risk', 'risk_score', 'attractiveness', 'thesis', 'next', 'owner', 'risks', 'holder', 'government', 'licence_type', 'licence_note', 'partners'] as const;
+
+/** Wave 4: the licence under which the current owner holds the asset. The Hub shows the bilingual label. */
+export const LICENCE_TYPES = ['concession', 'psc', 'service', 'jv', 'licence', 'other'] as const;
+/** Counterparty names on the register: the current owner (licence holder), the government body and the JV partners. */
+export const COUNTERPARTY_TEXT = ['holder', 'government', 'licence_note'] as const;
 
 const COUNTRY_RE = /^[A-Z]{2}$/;
 const displayNames = new Map<string, Intl.DisplayNames>();
@@ -62,7 +67,12 @@ export function readOpportunityFields(b: Record<string, unknown>): OpportunityPa
   }
   if (b.register !== undefined) {
     if (b.register === null || typeof b.register !== 'object' || Array.isArray(b.register)) throw bad('register must be an object of summary fields', '/register');
-    out.register = b.register as Record<string, unknown>;
+    const reg = b.register as Record<string, unknown>;
+    // Wave 4 counterparties: a null clears the key (the update strips it); text is text, partners a list of names.
+    for (const k of COUNTERPARTY_TEXT) if (reg[k] !== undefined && reg[k] !== null && typeof reg[k] !== 'string') throw bad(`${k} must be text`, `/register/${k}`);
+    if (reg.licence_type !== undefined && reg.licence_type !== null && !(LICENCE_TYPES as readonly unknown[]).includes(reg.licence_type)) throw bad(`licence_type must be one of ${LICENCE_TYPES.join(', ')}`, '/register/licence_type');
+    if (reg.partners !== undefined && reg.partners !== null && !(Array.isArray(reg.partners) && reg.partners.every(x => typeof x === 'string'))) throw bad('partners must be a list of names', '/register/partners');
+    out.register = reg;
   }
   return out;
 }

@@ -10,6 +10,7 @@ The Tooler record for research runs per project, 1 October 2026.
 | W4-D2 | "Button and automatic (Recommended)" — a run is queued when a project is created with a country and when a field is attached; a partner or member presses "Research this project" at any time |
 | W4-D3 | "Research notes plus proposals (Recommended)" — every finding is a public note with its citation; operators, licences and production figures become `research` proposals a person decides |
 | W4-D4 | "15 minutes or about £3" — the run stops at the wall clock or the model spend, whichever comes first, and says what it did not reach |
+| W4-D5–D8 (addendum 2) | "Opportunity card, project level (Recommended)", "Yes: holder, partners and government become topics (Recommended)", "Pick-list with Other (Recommended)", "Rename to Lead at the firm (Recommended)" — Gate 2 for the addendum: "Approved, build it as written (Recommended)" |
 
 ## Gate 2
 
@@ -46,6 +47,7 @@ For one project it builds its queries from the project's own names (its name, cl
 4. **The chosen sources did not reach what Google reaches.** W4-D1 revised adds the GEM wiki pages and web search with citations (#40).
 5. **"Shouldn't they be deleted, not filling up the Vault?"** Rule 9 (hide, never delete) protects records of work. A paper the run filed by itself, that no run, document, lesson or analogue cites, is nobody's work: the run purges it with its chunks and versions, exactly as the partner purge route does, and writes one audit event naming what went; a cited one is hidden. Uploaded documents are never touched by this.
 7. **"The rubbish papers are still there."** The purge in #41 re-screened only papers stamped with the query that found them. Semantic Scholar's recommendation feed, seeded from every paper in the Vault, carries no topic: the screen had no topic to test against and kept everything (glaucoma, leptin, brucellosis), and the run filed it under the project with no query stamp, so the purge never saw it. Now a research run never asks for recommendations (they serve the firm-wide weekly run), a record with no topic under strict topics is kept only when one of them would keep it, and the purge re-screens every paper a literature source filed under the project, stamped or not (#42).
+8. **"I've set the owner to be High Tech Electronica. When it does research will it now find information about that company?"** No: the Owner box was the firm's lead, and register text is never a search term. The card now has the counterparties a researcher actually needs (current owner, government, licence type, JV partners), research reads the three name fields as companies, and the lead is labelled as such (#43, W4-D5 to W4-D8).
 6. **Fields that came in from documents had no coordinates, and nothing went looking.** Chris: "What the hub should do is find their locations." A run now asks the gazetteers for every unlocated field first (#40, second commit). Acceptance (W4-AC12): with a stubbed GeoNames, a run on three unlocated fields sets the exact match with its dossier, proposes the area match without touching the field, names the unknown one, asks again only for what is still unlocated, and accepting the proposal through the review route sets the coordinates and files the dossier; the Hub decides it in the Fields card.
 
 ## Deviations from the Markup, stated
@@ -56,10 +58,13 @@ For one project it builds its queries from the project's own names (its name, cl
 4. **Field proposals from findings use the dictionary pass only.** The wave 3 model pass (a verbatim quote for a name the dictionary lacks) is not run on findings, to keep the model spend for the fact reads; a field the Vault does not know by name is therefore not proposed from a finding. Attaching it by hand still queues the run that researches it.
 5. **Accept body.** Accept of kind `research` ignores `apply`: accepting always records the fact (the operator on the field, a production figure on the register's `current` with its source and the figure in kboe/d where the unit allows) because that is what the proposal says it will do; the Hub still sends `apply: true` so an older Vault that gains an opt-in later keeps working.
 7. **Web search files citations, not pages.** The addendum's "each citation becomes a finding" is read per page: several citations of one page become one finding whose quote is the first cited text and whose `facts.excerpts` carry the rest, so a page is one record and a re-run updates it.
+9. **Register names are search terms; register text is not.** W4-AC1 said register text is never a query. Addendum 2 reads the holder, the government body and the partners as company names (W4-D6); the thesis, the next step and the lead at the firm are still never searched, and the test asserts both.
 8. **GEM wiki reference titles.** Most references on the GEM pages are bare URLs; a finding without a title is named "Source cited by Global Energy Monitor for <field> (<host>)" rather than invented.
 6. **Status while queued.** The Markup showed "running · 2 min · 12 findings"; a queued run that has not started shows "queued · waiting to start" first, since the API server runs jobs one at a time and the cron picks up what a restart left.
 
 ## Evidence
+
+Addendum 2: `evidence/w4-counterparties.png` is the opportunity card with the four counterparty boxes and the lead relabelled, captured by the end-to-end spec on the stubbed Kazakhstan project.
 
 Final suites on the last head: Vault 417, Playwright 152, root 82 passing; typecheck clean; retrieval evaluation passing; secret scan clean; public pages byte-identical to `main`.
 

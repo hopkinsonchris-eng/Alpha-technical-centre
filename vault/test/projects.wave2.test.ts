@@ -88,6 +88,25 @@ test('AC11: a partner creates an opportunity with country, coordinates, stage an
   assert.equal(kaz.register.owner, 'Tom');
 });
 
+test('W4-AC13: the counterparty fields are stored and validated; a null key clears it and the rest survives', async () => {
+  const r = await json(await call(partner, 'PATCH', '/api/projects/' + KAZ.id, { register: { holder: 'KazMunayGas', government: 'Ministry of Energy / KMG', licence_type: 'psc', licence_note: 'Subsoil use contract, 1997', partners: ['Chevron', 'Lukoil'] } }));
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.register.holder, 'KazMunayGas'); assert.equal(r.body.register.licence_type, 'psc'); assert.deepEqual(r.body.register.partners, ['Chevron', 'Lukoil']);
+  assert.equal(r.body.register.owner, 'Tom', 'the rest of the register survives a partial edit');
+  const bad = async (register: Record<string, unknown>, where: string) => {
+    const b = await json(await call(partner, 'PATCH', '/api/projects/' + KAZ.id, { register }));
+    assert.equal(b.status, 400, where + ': ' + JSON.stringify(b.body)); assert.equal(b.body.error.path, where);
+  };
+  await bad({ licence_type: 'handshake' }, '/register/licence_type');
+  await bad({ partners: 'Chevron' }, '/register/partners');
+  await bad({ partners: ['Chevron', 7] }, '/register/partners');
+  await bad({ holder: ['x'] }, '/register/holder');
+  const cleared = await json(await call(partner, 'PATCH', '/api/projects/' + KAZ.id, { register: { government: null, licence_note: null } }));
+  assert.equal(cleared.status, 200);
+  assert.ok(!('government' in cleared.body.register) && !('licence_note' in cleared.body.register), 'a null key is removed: ' + JSON.stringify(cleared.body.register));
+  assert.equal(cleared.body.register.holder, 'KazMunayGas');
+});
+
 test('AC11: country must be ISO alpha-2, coordinates in range, stage one of the known stages, register an object', async () => {
   const bad = async (patch: Record<string, unknown>, where: string) => {
     const r = await json(await call(partner, 'POST', '/api/projects', { ...KAZ, id: 'bad-' + randomUUID().slice(0, 8), ...patch }));

@@ -46,8 +46,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       set('stage_history', JSON.stringify([...p.stage_history, stageEntry(stageChange.to, x.person.id, x.now)]), '::jsonb');
     }
     if (sets.length) {
-      // register merges: existing fields survive unless the patch names them.
-      const sql = `UPDATE projects SET ${sets.map(s => s.startsWith('register =') ? s.replace('register = ', 'register = register || ') : s).join(', ')} WHERE id = $1`;
+      // register merges: existing fields survive unless the patch names them; a key sent as null is cleared.
+      const sql = `UPDATE projects SET ${sets.map(s => s.startsWith('register =') ? s.replace(/^register = (\$\d+::jsonb)$/, 'register = jsonb_strip_nulls(register || $1)') : s).join(', ')} WHERE id = $1`;
       await x.db.query(sql, params);
     }
     x.a.detail = { fields: keys, ...(stageChange ? { stage: stageChange } : {}) };

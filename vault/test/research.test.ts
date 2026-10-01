@@ -100,8 +100,9 @@ before(async () => {
 });
 after(async () => { await db.close(); });
 
-test('W4-AC1: the queries come from the project, its fields and their operators; short names are anchored; register text is never a search term', async () => {
-  const p = { id: 'hte-apure', name: 'High Tech Electronica', country: 'VE', client_name: 'High Tech Electronica', register: { thesis: 'ZEBRAWORD never searched' } };
+test('W4-AC1: the queries come from the project, its fields, their operators and the register counterparties; short names are anchored; register text is never a search term', async () => {
+  const p = { id: 'hte-apure', name: 'High Tech Electronica', country: 'VE', client_name: 'High Tech Electronica',
+    register: { thesis: 'ZEBRAWORD never searched', owner: 'Tom / Lars', holder: 'Petrolera Zuata', government: 'MinPetróleo / PDVSA', partners: ['Chevron Venezuela [30%]', 'High Tech Electronica'] } };
   const fields = (await db.query<any>("SELECT id, name, kind, country, operator, props FROM assets WHERE id IN ('field:ve:guafita','field:ve:bare') ORDER BY id")).rows;
   const q = buildQueries(p, fields, 'Venezuela');
   const gdelt = q.gdelt.map(g => g.query);
@@ -110,7 +111,8 @@ test('W4-AC1: the queries come from the project, its fields and their operators;
   assert.ok(gdelt.includes('"Bare" oil field Venezuela'), 'a short name is anchored with the country and "oil field"');
   assert.ok(gdelt.includes('"High Tech Electronica" Venezuela'), 'the project name is searched');
   assert.equal(q.gdelt.find(g => g.label === 'Guafita')!.field_id, 'field:ve:guafita');
-  assert.deepEqual(q.companies, ['PDVSA', 'Petróleos de Venezuela', 'High Tech Electronica']);
+  assert.deepEqual(q.companies, ['PDVSA', 'Petróleos de Venezuela', 'High Tech Electronica', 'Petrolera Zuata', 'MinPetróleo', 'Chevron Venezuela'], 'W4-AC15: holder, government and partners are companies; the lead at the firm is not');
+  assert.ok(q.literature.some(x => x.id === 'research:hte-apure:co:petrolera-zuata'));
   assert.deepEqual(operatorNames('Ecopetrol [50%]; Frontera Energy [50%]'), ['Ecopetrol', 'Frontera Energy']);
   const lit = q.literature.find(x => x.id === 'research:hte-apure:field:ve:guafita')!;
   assert.equal(lit.query, 'Guafita field Venezuela reservoir');
@@ -120,7 +122,7 @@ test('W4-AC1: the queries come from the project, its fields and their operators;
   assert.deepEqual(nameKeywords(['Trico — Oficina', 'OFICINA NORTE —TRICO', 'B-3']), ['Trico — Oficina', 'Trico', 'Oficina', 'OFICINA NORTE —TRICO', 'OFICINA NORTE', 'TRICO', 'B-3'].filter((v, i, a) => a.findIndex(x => x.toLowerCase() === v.toLowerCase()) === i));
   assert.ok(q.literature.some(x => x.id === 'research:hte-apure:co:pdvsa'));
   const all = JSON.stringify(q);
-  assert.ok(!/ZEBRAWORD|call the ministry/.test(all), 'the register free text is never a query');
+  assert.ok(!/ZEBRAWORD|call the ministry|Tom|Lars/.test(all), 'the register free text and the lead at the firm are never a query');
   // A placeholder project name is not searched; a project without fields still searches its own name.
   const bare = buildQueries({ id: 'x', name: 'New project', country: 'CO', client_name: null, register: null }, [], 'Colombia');
   assert.deepEqual(bare.gdelt, []); assert.deepEqual(bare.literature, []); assert.equal(bare.country, 'CO');

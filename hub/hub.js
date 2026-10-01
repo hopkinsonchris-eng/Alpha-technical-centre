@@ -890,6 +890,9 @@ async function renderRegister(person, names) {
     if (reg.risk) { const rl = RISK_LABEL[reg.risk] || [reg.risk, reg.risk]; add(risk, mk('span', 'hub-rag', null, null, { 'data-risk': reg.risk, 'aria-hidden': 'true' }), mk('span', null, rl[0] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''), rl[1] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''))); }
     else add(risk, mk('span', 'hub-muted', '—', '—'));
     add(tr, risk);
+    const partners = Array.isArray(reg.partners) ? reg.partners.filter(Boolean) : [];
+    const holder = [reg.holder, partners.length ? partners.join(', ') : null].filter(Boolean).join(' + ');
+    add(tr, holder ? dv('td', null, holder, { 'data-col': 'holder' }) : mk('td', 'hub-muted', '—', '—', { 'data-col': 'holder' }));
     add(tr, dv('td', null, reg.owner || '—', { 'data-col': 'owner' }));
     const u = updated(p); const ud = u ? fmtShortDate(u) : null;
     add(tr, ud ? mk('td', 'nowrap', ud.en, ud.es, { 'data-col': 'updated' }) : dv('td', null, '—', { 'data-col': 'updated' }));

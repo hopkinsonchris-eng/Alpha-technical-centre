@@ -68,6 +68,22 @@ AFTER, in this order inside the same time and spend budget: GEM wiki → World M
 
 Smoke plan: `research.test.ts` (AC9, AC10 with injected fetch and provider), `hub-research.spec.mjs` (AC11). Risks: web search is an organisation-level switch in the Claude Console (a 400 if an administrator turned it off: reported, not fatal); a search costs money, so `max_uses` is 3 per call and the run's £ cap still applies; the GEM wiki's HTML layout may change (the reader keeps the lead sentence and any `<a href>` under References, nothing more specific). Rollback: `RESEARCH_WEB=false`; the GEM wiki source has no key and no cost. Delivery: one pull request (wave 4 PR 4) after PR 3 (#38) merges.
 
+### 1.4.9 Addendum 2, W4-D5 to W4-D8 (1 October 2026): counterparties on the opportunity card
+
+BEFORE: the opportunity card shows Where · Source · Fact→plan · Risk · Owner · Thesis · Next. "Owner" is the firm's lead (Responsable), and register text is never a search term, so naming the licence holder there changed nothing for research.
+
+AFTER: Where · Source · Fact→plan · Risk · **Current owner** · **Government** · **Licence type** · **JV partners** · **Lead at the firm** · Thesis · Next. The edit form has the same four inputs (licence type a select: concession, psc, service, jv, licence, other, with an optional note; partners comma separated). The register table on Today shows a **Holder** column ("holder + partners") and labels the lead as **Lead**. Research reads holder, government and each partner as company names beside the client and the field operators; the lead, thesis and next step are still never searched. A blanked box is sent as null and the Vault clears the key (the register merges field by field, so a dropped key used to keep its old value).
+
+Register keys (free jsonb, no schema change): `holder`, `government`, `licence_type`, `licence_note`, `partners` (string[]). Validation in `vault/src/opportunities.ts`; null stripped in `PATCH /api/projects/:id`; names read by `counterpartyNames` in `vault/src/research/queries.ts`.
+
+| # | criterion |
+|---|---|
+| W4-AC13 | PATCH with the four keys stores them and the rest of the register survives; a licence type outside the list is 400 at `/register/licence_type`, partners that are not a list of names 400 at `/register/partners`, text fields that are not text 400 at their path; a key sent as null is removed. |
+| W4-AC14 | The card shows the four values with their bilingual labels and "Lead at the firm"; saving the edit form posts them, a blanked box as null, and the card shows the cleared value as "—"; the register table shows the Holder column and the Lead heading. |
+| W4-AC15 | `buildQueries` lists holder, government and each partner as companies (split on "/" and ",", shares and brackets stripped, deduplicated against the operators and the client) with one strict literature topic each; the lead at the firm and the register free text never appear in any query. |
+
+Smoke plan: `projects.wave2.test.ts` (AC13), `hub-project-toolbar.spec.mjs` and `hub-globe.spec.mjs` (AC14), `research.test.ts` W4-AC1 extended (AC15). Risks: each named counterparty adds one GDELT query, one enrichment and signals call and one literature topic inside the same budget, so a run on a project with many partners reaches less of the literature before the clock; rollback is one revert, the keys are plain JSON and survive it.
+
 ### 1.5 Routes (new file `vault/src/api/research.routes.ts`; `projects.routes.ts` and `assets.routes.ts` gain one call each; `rerun.routes.ts` accepts kind `research`)
 
 | route | who | does |
