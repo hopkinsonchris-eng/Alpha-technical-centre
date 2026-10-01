@@ -16,6 +16,6 @@ export async function boot(db: Db, log: (line: string) => void = () => {}): Prom
   const master = await seedMaster(db, { gemFile: GEM_FILE });
   log(`master data loaded: ${master.people} people, ${master.assets} assets, ${master.firm_assets} firm assets, ${master.reference_sets} reference sets` +
     (master.reference_versions_added ? ` (${master.reference_versions_added} reference versions added)` : '') +
-    (master.gem_units ? `, ${master.gem_units} Global Energy Monitor units` : ''));
+    (master.gem_units ? `, ${master.gem_units} Global Energy Monitor units${master.gem_skipped ? ' (already loaded)' : ''}` : ''));
   return { migrations, master };
 }
