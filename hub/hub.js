@@ -8,6 +8,7 @@
    No secrets, no provider calls: this file only talks to /api/* on
    the same origin (behind Cloudflare Access) and to hub/catalog.json.
    ============================================================ */
+import { createGlobe } from './globe.js';
 import { vault } from '../js/vault-client.js';
 
 /* ── language and DOM helpers ────────────────────────────────────────── */
@@ -429,6 +430,179 @@ async function renderProjects(person) {
   return list;
 }
 
+/* ── Today: the globe and the register (wave 2) ──────────────────────── */
+
+
+export const STAGES = ['Initial screen', 'Qualified', 'Technical review', 'Commercial review', 'Negotiation', 'Won', 'Lost', 'Closed'];
+export const STAGE_ES = { 'Initial screen': 'Cribado inicial', Qualified: 'Calificada', 'Technical review': 'Revisión técnica', 'Commercial review': 'Revisión comercial', Negotiation: 'Negociación', Won: 'Ganada', Lost: 'Perdida', Closed: 'Cerrada' };
+export const RISK_LABEL = { green: ['Managed', 'Gestionado'], amber: ['Elevated', 'Elevado'], red: ['High', 'Alto'] };
+const GEO_URL = '/hub/geo/countries-110m.json';
+let geoPromise = null;
+/** The country polygons (hub/geo), fetched once per page. */
+export function loadGeo() {
+  if (!geoPromise) geoPromise = fetch(GEO_URL, { cache: 'force-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  return geoPromise;
+}
+const countryHref = (code) => 'index.html' + (code ? '?country=' + encodeURIComponent(code) : '');
+
+function flags(att) {
+  const out = [];
+  if (att && att.stale) out.push(mk('span', 'hub-flag stale', att.stale + ' stale', att.stale + ' obsoletos'));
+  if (att && att.filing) out.push(mk('span', 'hub-flag filing', att.filing + ' to file', att.filing + ' por archivar'));
+  if (att && att.expiring_days !== null && att.expiring_days !== undefined) out.push(mk('span', 'hub-flag expiring', 'NDA ' + att.expiring_days + ' d', 'NDA ' + att.expiring_days + ' d'));
+  return out;
+}
+const stagePill = (stage) => mk('span', 'hub-pill muted hub-stage', stage, STAGE_ES[stage] || stage, { 'data-stage': stage });
+
+/**
+ * The globe and the country list. Countries come from GET /api/countries (only what the
+ * caller may see); the polygons from hub/geo. The list is the keyboard and screen-reader path;
+ * ?country=XX in the URL selects a country, and selecting one writes it back so the state is linkable.
+ */
+async function renderGlobe() {
+  const sec = $('#sec-globe'), canvas = $('#globe');
+  if (!sec || !canvas) return null;
+  const [geo, res] = await Promise.all([loadGeo(), api('/api/countries')]);
+  const data = res.ok && res.body && Array.isArray(res.body.countries) ? res.body : null;
+  const count = $('#globe-count');
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let globe = null;
+  const tip = $('#globe-tip');
+  if (geo) {
+    try {
+      globe = createGlobe(canvas, {
+        geo, lang: lang(), reducedMotion: reduced,
+        onSelect: (code) => select(code, true),
+        onHover: (h) => {
+          if (!h) { tip.setAttribute('hidden', ''); return; }
+          tip.textContent = h.name; tip.style.left = h.x + 'px'; tip.style.top = h.y + 'px'; tip.removeAttribute('hidden');
+        },
+      });
+    } catch (e) { globe = null; }
+  }
+  const names = new Map();
+  if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
+  const list = $('#country-list'), panel = $('#country-panel'), unplaced = $('#country-unplaced');
+  list.textContent = '';
+
+  if (!data) {
+    setText(count, 'Vault data not available: the globe shows no projects.', 'Datos del Vault no disponibles: el globo no muestra proyectos.');
+  } else {
+    for (const c of data.countries) if (!names.has(c.code)) names.set(c.code, c.name);
+    const nProj = data.countries.reduce((n, c) => n + c.projects.length, 0);
+    setText(count, data.countries.length + (data.countries.length === 1 ? ' country' : ' countries') + ' · ' + nProj + (nProj === 1 ? ' project' : ' projects'),
+      data.countries.length + (data.countries.length === 1 ? ' país' : ' países') + ' · ' + nProj + (nProj === 1 ? ' proyecto' : ' proyectos'));
+    const held = new Map(), points = [];
+    for (const c of data.countries) {
+      held.set(c.code, { projects: c.projects.length, stale: c.counts.stale, expiring: c.counts.expiring });
+      for (const p of c.projects) if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) points.push({ id: p.id, name: p.name, lat: p.lat, lon: p.lon });
+      const name = names.get(c.code) || c.name;
+      const b = mk('button', 'hub-country', null, null, { type: 'button', 'data-country': c.code, role: 'listitem' });
+      add(b, mk('span', 'name', name.en, name.es),
+        mk('span', 'n', c.projects.length + (c.projects.length === 1 ? ' project' : ' projects'), c.projects.length + (c.projects.length === 1 ? ' proyecto' : ' proyectos')),
+        add(mk('span', 'flags'), ...flags({ stale: c.counts.stale, filing: c.counts.filing, expiring_days: c.counts.expiring ? Math.min(...c.projects.filter((p) => p.attention.expiring_days !== null).map((p) => p.attention.expiring_days)) : null })));
+      b.addEventListener('click', () => select(c.code, true));
+      add(list, b);
+    }
+    if (globe) globe.setData({ held, points });
+    if (data.unplaced && data.unplaced.length) {
+      unplaced.removeAttribute('hidden');
+      const n = data.unplaced.length;
+      add(unplaced, mk('span', null, n + (n === 1 ? ' project without a country: ' : ' projects without a country: '), n + (n === 1 ? ' proyecto sin país: ' : ' proyectos sin país: ')));
+      data.unplaced.forEach((p, i) => { if (i) add(unplaced, document.createTextNode(', ')); add(unplaced, dv('a', 'hub-inline-link', p.name, { href: projectHref(p.id), 'data-country-project': p.id })); });
+    }
+  }
+
+  function select(code, write) {
+    const c = data && data.countries.find((x) => x.code === code);
+    sec.setAttribute('data-country', code || '');
+    if (write) history.replaceState(null, '', countryHref(code));
+    if (!code) {
+      panel.setAttribute('hidden', ''); list.removeAttribute('hidden'); unplaced.style.display = '';
+      if (globe) globe.select(null);
+      return;
+    }
+    const name = names.get(code) || (c && c.name) || { en: code, es: code };
+    setText($('#country-name'), name.en, name.es);
+    const ul = $('#country-projects'); ul.textContent = '';
+    const projects = c ? c.projects : [];
+    setText($('#country-sub'), projects.length ? projects.length + (projects.length === 1 ? ' project' : ' projects') : 'No projects here yet', projects.length ? projects.length + (projects.length === 1 ? ' proyecto' : ' proyectos') : 'Aún no hay proyectos aquí');
+    for (const p of projects) {
+      const a = mk('a', 'hub-country-project', null, null, { href: projectHref(p.id), 'data-country-project': p.id });
+      add(a, dv('b', null, p.name), stagePill(p.stage));
+      const meta = mk('div', 'hub-note-s');
+      if (p.client_name) add(meta, dv('span', null, p.client_name), document.createTextNode(' · '));
+      if (p.last_run_at) { const d = fmtShortDate(p.last_run_at); add(meta, mk('span', null, 'last run ' + d.en, 'última ejecución ' + d.es)); }
+      else add(meta, mk('span', null, 'no runs yet', 'aún sin ejecuciones'));
+      add(a, meta, add(mk('div', 'flags'), ...flags(p.attention)));
+      add(ul, a);
+    }
+    list.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
+    if (globe) globe.select(code, { fly: true });
+  }
+  $('#country-back').addEventListener('click', () => select(null, true));
+  const want = new URLSearchParams(location.search).get('country');
+  if (want && /^[A-Z]{2}$/.test(want)) select(want, false);
+  // The tooltip and the canvas label follow the language.
+  new MutationObserver(() => { if (globe) globe.setLang(lang()); const l = lang(); canvas.setAttribute('aria-label', canvas.getAttribute('data-' + l + '-aria') || canvas.getAttribute('aria-label')); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  sec.setAttribute('data-globe', globe ? 'ready' : 'no-geo');
+  return { data, names };
+}
+
+/** The register table: every project the caller may see, with the opportunity fields, filters and Add opportunity (partners). */
+async function renderRegister(person, names) {
+  const sec = $('#sec-register');
+  if (!sec) return [];
+  const [res, orgR] = await Promise.all([api('/api/projects'), api('/api/organisations')]);
+  if (!res.ok) return [];
+  const list = listOf(res.body, 'projects', 'items');
+  const orgName = new Map(orgR.ok ? listOf(orgR.body, 'organisations').map((o) => [o.id, o.name || o.id]) : []);
+  for (const p of list) if (!p.client_name && p.client_id) p.client_name = orgName.get(p.client_id) || p.client_id;
+  sec.removeAttribute('hidden');
+  const body = $('#register-body'); body.textContent = '';
+  const stageSel = $('#reg-stage'), riskSel = $('#reg-risk'), countrySel = $('#reg-country');
+  for (const st of STAGES) add(stageSel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
+  const codes = [...new Set(list.map((p) => p.country).filter(Boolean))].sort();
+  for (const code of codes) { const n = (names && names.get(code)) || { en: code, es: code }; add(countrySel, mk('option', null, n.en, n.es, { value: code })); }
+  const updated = (p) => (p.stage_history && p.stage_history.length ? p.stage_history[p.stage_history.length - 1].at : p.created_at);
+  for (const p of list.slice().sort((a, b) => (updated(a) < updated(b) ? 1 : -1))) {
+    const reg = p.register || {};
+    const tr = mk('tr', null, null, null, { 'data-register-row': p.id, 'data-stage': p.stage || '', 'data-risk': reg.risk || '', 'data-country': p.country || '' });
+    add(tr, add(mk('td', null, null, null, { 'data-col': 'name' }), dv('a', 'hub-inline-link', p.name, { href: projectHref(p.id) })));
+    const cn = p.country ? (names && names.get(p.country)) || { en: p.country, es: p.country } : null;
+    add(tr, cn ? mk('td', null, cn.en, cn.es, { 'data-col': 'country' }) : mk('td', 'hub-muted', '—', '—', { 'data-col': 'country' }));
+    add(tr, dv('td', null, clientName(p) || '—', { 'data-col': 'client' }));
+    add(tr, add(mk('td', null, null, null, { 'data-col': 'stage' }), stagePill(p.stage || 'Initial screen')));
+    const plan = typeof reg.current === 'number' || typeof reg.plan === 'number' ? (reg.current ?? '—') + ' → ' + (reg.plan ?? '—') : '—';
+    add(tr, dv('td', 'right num', plan, { 'data-col': 'plan' }));
+    const risk = mk('td', null, null, null, { 'data-col': 'risk' });
+    if (reg.risk) { const rl = RISK_LABEL[reg.risk] || [reg.risk, reg.risk]; add(risk, mk('span', 'hub-rag', null, null, { 'data-risk': reg.risk, 'aria-hidden': 'true' }), mk('span', null, rl[0] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''), rl[1] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''))); }
+    else add(risk, mk('span', 'hub-muted', '—', '—'));
+    add(tr, risk);
+    add(tr, dv('td', null, reg.owner || '—', { 'data-col': 'owner' }));
+    const u = updated(p); const ud = u ? fmtShortDate(u) : null;
+    add(tr, ud ? mk('td', 'nowrap', ud.en, ud.es, { 'data-col': 'updated' }) : dv('td', null, '—', { 'data-col': 'updated' }));
+    add(body, tr);
+  }
+  const apply = () => {
+    let shown = 0;
+    for (const tr of body.querySelectorAll('tr[data-register-row]')) {
+      const on = (!stageSel.value || tr.getAttribute('data-stage') === stageSel.value) && (!riskSel.value || tr.getAttribute('data-risk') === riskSel.value) && (!countrySel.value || tr.getAttribute('data-country') === countrySel.value);
+      if (on) { tr.removeAttribute('hidden'); shown++; } else tr.setAttribute('hidden', '');
+    }
+    setText($('#register-count'), shown + ' of ' + list.length, shown + ' de ' + list.length);
+    const empty = $('#register-empty'); if (shown) empty.setAttribute('hidden', ''); else empty.removeAttribute('hidden');
+  };
+  for (const sel of [stageSel, riskSel, countrySel]) sel.addEventListener('change', apply);
+  apply();
+  const btn = $('#btn-new-opportunity');
+  if (btn && person && person.role === 'partner') {
+    btn.removeAttribute('hidden');
+    btn.addEventListener('click', () => { if (openProjectForm) openProjectForm('opportunity'); });
+  }
+  return list;
+}
+
 /* ── Today: new project (partners) ───────────────────────────────────── */
 
 /** A project id from a name: ascii, lowercase, hyphens; the API's slug rule. */
@@ -440,12 +614,32 @@ const SLUG = /^[a-z0-9][a-z0-9-]{1,63}$/;
  * the name until edited; a client project also asks for the client's legal tag. On success the
  * new project file opens; a refusal from the API is shown in the form with its message.
  */
+let openProjectForm = null;
+const numOrNull = (el) => (el && el.value.trim() !== '' ? Number(el.value) : null);
+
 function setupNewProject(person) {
   const btn = $('#btn-new-project'), form = $('#new-project');
   if (!btn || !form || !person || person.role !== 'partner') return;
   btn.removeAttribute('hidden');
   const name = $('#np-name'), id = $('#np-id'), client = $('#np-client'), tagField = $('#np-tag-field'), tag = $('#np-tag'), notices = $('#np-notices');
-  let idTouched = false, orgsLoaded = false;
+  let idTouched = false, orgsLoaded = false, mode = 'project';
+  // Wave 2: the opportunity fields (country, stage, production, risk). Countries come from the globe's polygons.
+  const opp = $('#np-opp'), country = $('#np-country'), stage = $('#np-stage'), submit = $('#np-submit');
+  if (stage) for (const st of STAGES.slice(1)) add(stage, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
+  if (country) loadGeo().then((geo) => {
+    if (!geo) return;
+    const seen = new Set();
+    for (const f of geo.features.slice().sort((a, b) => a.properties.en.localeCompare(b.properties.en))) {
+      if (seen.has(f.properties.iso2)) continue; seen.add(f.properties.iso2);
+      add(country, mk('option', null, f.properties.en, f.properties.es, { value: f.properties.iso2 }));
+    }
+  });
+  const setMode = (m) => {
+    mode = m;
+    if (opp) opp.open = m === 'opportunity';
+    if (submit) setText(submit, m === 'opportunity' ? 'Create opportunity' : 'Create project', m === 'opportunity' ? 'Crear oportunidad' : 'Crear proyecto');
+  };
+  openProjectForm = (m) => { setMode(m); open(); };
   name.addEventListener('input', () => { if (!idTouched) id.value = slugify(name.value); });
   id.addEventListener('input', () => { idTouched = id.value.trim() !== ''; });
   client.addEventListener('change', () => { if (client.value) tagField.removeAttribute('hidden'); else tagField.setAttribute('hidden', ''); });
@@ -457,13 +651,29 @@ function setupNewProject(person) {
     for (const o of listOf(r.body, 'organisations')) if (o && o.id) add(client, dv('option', null, o.name || o.id, { value: o.id }));
   };
   const close = () => { form.setAttribute('hidden', ''); btn.setAttribute('aria-expanded', 'false'); btn.focus(); };
-  btn.addEventListener('click', () => (form.hasAttribute('hidden') ? open() : close()));
+  btn.addEventListener('click', () => (form.hasAttribute('hidden') ? (setMode('project'), open()) : close()));
   $('#np-cancel').addEventListener('click', close);
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     notices.textContent = '';
     const body = { id: id.value.trim(), name: name.value.trim(), client_id: client.value || null };
     if (client.value) body.default_legal_tag = tag.value.trim();
+    // Opportunity fields ride along only when given, so a plain project posts exactly what it did before.
+    if (mode === 'opportunity') body.status = 'prospect';
+    if (country && country.value) body.country = country.value;
+    const lat = numOrNull($('#np-lat')), lon = numOrNull($('#np-lon'));
+    if (lat !== null) body.lat = lat;
+    if (lon !== null) body.lon = lon;
+    if (stage && stage.value) body.stage = stage.value;
+    const reg = {};
+    const src = $('#np-source'), owner = $('#np-owner'), risk = $('#np-risk');
+    if (src && src.value.trim()) reg.source = src.value.trim();
+    const cur = numOrNull($('#np-current')), plan = numOrNull($('#np-plan'));
+    if (cur !== null) reg.current = cur;
+    if (plan !== null) reg.plan = plan;
+    if (risk && risk.value) reg.risk = risk.value;
+    if (owner && owner.value.trim()) reg.owner = owner.value.trim();
+    if (Object.keys(reg).length) body.register = reg;
     if (!body.name || !SLUG.test(body.id)) {
       add(notices, notice('bad', 'Check the form.', 'Revise el formulario.', 'A name and a project id of lowercase letters, digits and hyphens are required.', 'Se requieren un nombre y un id del proyecto en minúsculas, dígitos y guiones.'));
       return;
@@ -472,10 +682,10 @@ function setupNewProject(person) {
       add(notices, notice('bad', 'Check the form.', 'Revise el formulario.', 'A client project needs the id of its legal tag.', 'Un proyecto de cliente necesita el id de su etiqueta legal.'));
       return;
     }
-    const submit = form.querySelector('button[type="submit"]');
-    submit.disabled = true;
+    const sb = form.querySelector('button[type="submit"]');
+    sb.disabled = true;
     const res = await api('/api/projects', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
-    submit.disabled = false;
+    sb.disabled = false;
     if (res.ok && res.body && res.body.id) { location.href = projectHref(res.body.id); return; }
     const msg = (res.body && res.body.error && res.body.error.message) || '';
     if (res.status === 0) add(notices, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The project was not created.', 'No se creó el proyecto.'));
@@ -629,6 +839,9 @@ async function initToday() {
   const person = await showSession();
   await renderTools(person);
   setupNewProject(person);
+  let globe = null;
+  try { globe = await renderGlobe(); } catch (e) { const sec = $('#sec-globe'); if (sec) sec.setAttribute('data-globe', 'failed'); }
+  try { await renderRegister(person, globe && globe.names); } catch (e) { /* the register is optional; the rest of Today still renders */ }
   const projects = await renderProjects(person);
   await Promise.all([renderAttention(projects), renderRuns(projects)]);
   document.body.setAttribute('data-ready', '1');

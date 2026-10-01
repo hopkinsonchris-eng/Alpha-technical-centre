@@ -93,21 +93,75 @@
 
       <div id="notices" role="status"></div>
 
-      <!-- TOOLS -->
-      <section id="sec-tools" aria-labelledby="h-tools">
+      <!-- WHERE WE WORK: the globe (wave 2) -->
+      <section id="sec-globe" aria-labelledby="h-globe" data-globe="loading">
+        <div class="hub-globe">
+          <div class="hub-globe-wrap">
+            <canvas id="globe" role="img" aria-label="Globe of where the firm works. Use the country list beside it." data-en-aria="Globe of where the firm works. Use the country list beside it." data-es-aria="Globo de dónde trabaja la firma. Use la lista de países al lado."></canvas>
+            <div class="hub-globe-tip" id="globe-tip" hidden aria-hidden="true"></div>
+            <p class="hub-globe-hint" data-en="Drag to turn · scroll or pinch to zoom · tap a country" data-es="Arrastre para girar · desplace o pellizque para acercar · toque un país">Drag to turn · scroll or pinch to zoom · tap a country</p>
+          </div>
+          <div class="hub-globe-side">
+            <div class="hub-sec-head">
+              <div>
+                <span class="label" data-en="Where we work" data-es="Dónde trabajamos">Where we work</span>
+                <h2 id="h-globe" data-en="Opportunities by country" data-es="Oportunidades por país">Opportunities by country</h2>
+                <p class="hub-muted" id="globe-count" data-en="Loading…" data-es="Cargando…">Loading…</p>
+              </div>
+            </div>
+            <div id="country-list" role="list"></div>
+            <p class="hub-muted hub-unplaced" id="country-unplaced" hidden></p>
+            <div id="country-panel" hidden>
+              <button type="button" class="btn btn-outline btn-sm" id="country-back" data-en="All countries" data-es="Todos los países">All countries</button>
+              <h3 id="country-name"></h3>
+              <p class="hub-muted" id="country-sub"></p>
+              <ul class="hub-country-projects" id="country-projects"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- OPPORTUNITY REGISTER (wave 2) -->
+      <section id="sec-register" aria-labelledby="h-register" hidden>
         <div class="hub-sec-head">
           <div>
-            <span class="label" data-en="Tools" data-es="Herramientas">Tools</span>
-            <h2 id="h-tools" data-en="Catalog" data-es="Catálogo">Catalog</h2>
+            <span class="label" data-en="Opportunity register" data-es="Registro de oportunidades">Opportunity register</span>
+            <h2 id="h-register" data-en="Every opportunity and project in your scope" data-es="Cada oportunidad y proyecto en su alcance">Every opportunity and project in your scope</h2>
           </div>
-          <div class="hub-chips" id="tools-filter" role="group" aria-label="Show tools by lifecycle"></div>
+          <div class="hub-actions-row">
+            <label class="sr-only" for="reg-stage" data-en="Stage" data-es="Etapa">Stage</label>
+            <select id="reg-stage" class="hub-select"><option value="" data-en="All stages" data-es="Todas las etapas">All stages</option></select>
+            <label class="sr-only" for="reg-risk" data-en="Risk" data-es="Riesgo">Risk</label>
+            <select id="reg-risk" class="hub-select">
+              <option value="" data-en="All risk levels" data-es="Todos los niveles de riesgo">All risk levels</option>
+              <option value="green" data-en="Managed" data-es="Gestionado">Managed</option>
+              <option value="amber" data-en="Elevated" data-es="Elevado">Elevated</option>
+              <option value="red" data-en="High" data-es="Alto">High</option>
+            </select>
+            <label class="sr-only" for="reg-country" data-en="Country" data-es="País">Country</label>
+            <select id="reg-country" class="hub-select"><option value="" data-en="All countries" data-es="Todos los países">All countries</option></select>
+            <span class="hub-muted" id="register-count"></span>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-new-opportunity" hidden data-en="Add opportunity" data-es="Añadir oportunidad">Add opportunity</button>
+          </div>
         </div>
-        <div class="hub-tools" id="tools-grid"></div>
-        <p class="hub-empty" id="tools-empty" hidden data-en="No tools match the chips above. Switch one on to see the catalog." data-es="Ninguna herramienta coincide con los filtros. Active uno para ver el catálogo.">No tools match the chips above. Switch one on to see the catalog.</p>
-        <details class="hub-older" id="tools-older" hidden>
-          <summary id="tools-older-sum" data-en="Older tools" data-es="Herramientas antiguas">Older tools</summary>
-          <div class="hub-tools" id="tools-older-grid"></div>
-        </details>
+        <div class="card">
+          <div class="hub-table-wrap">
+            <table class="hub-table hub-register">
+              <thead><tr>
+                <th data-en="Opportunity" data-es="Oportunidad">Opportunity</th>
+                <th data-en="Country" data-es="País">Country</th>
+                <th data-en="Client" data-es="Cliente">Client</th>
+                <th data-en="Stage" data-es="Etapa">Stage</th>
+                <th class="right" data-en="Fact → plan, kboe/d" data-es="Hecho → plan, kboe/d">Fact → plan, kboe/d</th>
+                <th data-en="Risk" data-es="Riesgo">Risk</th>
+                <th data-en="Owner" data-es="Responsable">Owner</th>
+                <th data-en="Updated" data-es="Actualizado">Updated</th>
+              </tr></thead>
+              <tbody id="register-body"></tbody>
+            </table>
+          </div>
+          <p class="hub-empty" id="register-empty" hidden data-en="No opportunities match these filters." data-es="Ninguna oportunidad coincide con estos filtros.">No opportunities match these filters.</p>
+        </div>
       </section>
 
       <!-- MY PROJECTS -->
@@ -151,8 +205,56 @@
               <span class="hint" data-en="The id of the client's NDA tag, for example lt-frontera-nda-2026. Every record in the project inherits it." data-es="El id de la etiqueta del NDA del cliente, por ejemplo lt-frontera-nda-2026. Cada registro del proyecto la hereda.">The id of the client's NDA tag, for example lt-frontera-nda-2026. Every record in the project inherits it.</span>
             </div>
           </div>
+          <details class="hub-opp" id="np-opp">
+            <summary data-en="Opportunity fields: country, stage, production and risk" data-es="Campos de oportunidad: país, etapa, producción y riesgo">Opportunity fields: country, stage, production and risk</summary>
+            <div class="hub-form-grid">
+              <div class="hub-field">
+                <label for="np-country" data-en="Country" data-es="País">Country</label>
+                <select id="np-country"><option value="" data-en="Not placed yet" data-es="Sin ubicar todavía">Not placed yet</option></select>
+                <span class="hint" data-en="Puts the opportunity on the globe" data-es="Sitúa la oportunidad en el globo">Puts the opportunity on the globe</span>
+              </div>
+              <div class="hub-field">
+                <label for="np-stage" data-en="Stage" data-es="Etapa">Stage</label>
+                <select id="np-stage"><option value="" data-en="Initial screen" data-es="Cribado inicial">Initial screen</option></select>
+              </div>
+              <div class="hub-field">
+                <label for="np-lat" data-en="Latitude" data-es="Latitud">Latitude</label>
+                <input id="np-lat" type="number" min="-90" max="90" step="0.01" inputmode="decimal" autocomplete="off">
+              </div>
+              <div class="hub-field">
+                <label for="np-lon" data-en="Longitude" data-es="Longitud">Longitude</label>
+                <input id="np-lon" type="number" min="-180" max="180" step="0.01" inputmode="decimal" autocomplete="off">
+              </div>
+              <div class="hub-field">
+                <label for="np-source" data-en="Source" data-es="Origen">Source</label>
+                <input id="np-source" type="text" autocomplete="off">
+                <span class="hint" data-en="Who brought it: Tennor, intermediary, government, Alpha" data-es="Quién la trajo: Tennor, intermediario, gobierno, Alpha">Who brought it: Tennor, intermediary, government, Alpha</span>
+              </div>
+              <div class="hub-field">
+                <label for="np-owner" data-en="Owner" data-es="Responsable">Owner</label>
+                <input id="np-owner" type="text" autocomplete="off">
+              </div>
+              <div class="hub-field">
+                <label for="np-current" data-en="Fact today, kboe/d" data-es="Hecho hoy, kboe/d">Fact today, kboe/d</label>
+                <input id="np-current" type="number" min="0" step="0.1" inputmode="decimal" autocomplete="off">
+              </div>
+              <div class="hub-field">
+                <label for="np-plan" data-en="Operator's plan, kboe/d" data-es="Plan del operador, kboe/d">Operator's plan, kboe/d</label>
+                <input id="np-plan" type="number" min="0" step="0.1" inputmode="decimal" autocomplete="off">
+              </div>
+              <div class="hub-field">
+                <label for="np-risk" data-en="Execution risk" data-es="Riesgo de ejecución">Execution risk</label>
+                <select id="np-risk">
+                  <option value="" data-en="Not assessed" data-es="Sin evaluar">Not assessed</option>
+                  <option value="green" data-en="Managed" data-es="Gestionado">Managed</option>
+                  <option value="amber" data-en="Elevated" data-es="Elevado">Elevated</option>
+                  <option value="red" data-en="High" data-es="Alto">High</option>
+                </select>
+              </div>
+            </div>
+          </details>
           <div class="hub-actions">
-            <button type="submit" class="btn btn-primary btn-sm" data-en="Create project" data-es="Crear proyecto">Create project</button>
+            <button type="submit" class="btn btn-primary btn-sm" id="np-submit" data-en="Create project" data-es="Crear proyecto">Create project</button>
             <button type="button" class="btn btn-outline btn-sm" id="np-cancel" data-en="Cancel" data-es="Cancelar">Cancel</button>
           </div>
         </form>
@@ -188,12 +290,31 @@
         </div>
       </section>
 
+      <!-- TOOLS -->
+      <section id="sec-tools" aria-labelledby="h-tools">
+        <div class="hub-sec-head">
+          <div>
+            <span class="label" data-en="Tools" data-es="Herramientas">Tools</span>
+            <h2 id="h-tools" data-en="Catalog" data-es="Catálogo">Catalog</h2>
+          </div>
+          <div class="hub-chips" id="tools-filter" role="group" aria-label="Show tools by lifecycle"></div>
+        </div>
+        <div class="hub-tools" id="tools-grid"></div>
+        <p class="hub-empty" id="tools-empty" hidden data-en="No tools match the chips above. Switch one on to see the catalog." data-es="Ninguna herramienta coincide con los filtros. Active uno para ver el catálogo.">No tools match the chips above. Switch one on to see the catalog.</p>
+        <details class="hub-older" id="tools-older" hidden>
+          <summary id="tools-older-sum" data-en="Older tools" data-es="Herramientas antiguas">Older tools</summary>
+          <div class="hub-tools" id="tools-older-grid"></div>
+        </details>
+      </section>
+
       <p class="hub-foot" data-en="Internal · Strictly confidential" data-es="Interno · Estrictamente confidencial">Internal · Strictly confidential</p>
     </main>
   </div>
 </div>
 
 <script src="/main.js"></script>
+<script src="/hub/vendor/d3-array.min.js"></script>
+<script src="/hub/vendor/d3-geo.min.js"></script>
 <script type="module" src="/hub/hub.js"></script>
 </body>
 </html>
