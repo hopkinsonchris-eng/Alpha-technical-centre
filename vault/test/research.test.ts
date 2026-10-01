@@ -285,11 +285,27 @@ test('the literature screen keeps only papers that name the field and are about 
   assert.equal(r.status, 'ok');
   assert.equal(r.sources.literature.findings, 5); assert.equal(r.sources.literature.created, 1, 'one of five title-only answers names the field and is about oil');
   const filed = (await db.query<any>("SELECT title, hidden FROM items WHERE project_id = 'hte-screen' AND type = 'paper' ORDER BY title")).rows;
-  assert.deepEqual(filed, [{ title: 'A field study in dairy farms: thermal condition of feet', hidden: true }, { title: 'Waterflood performance of the Guafita field, Apure, Venezuela', hidden: false }]);
-  assert.equal(r.pruned, 1, 'the junk an earlier run filed is hidden, never deleted');
+  assert.deepEqual(filed, [{ title: 'Waterflood performance of the Guafita field, Apure, Venezuela', hidden: false }], 'the junk an earlier run filed is gone: nothing cited it');
+  assert.equal(r.pruned, 1); assert.equal(r.purged, 1);
   const audit = (await db.query<any>("SELECT refs, detail FROM audit_events WHERE action = 'research.run' AND scope = 'project:hte-screen' ORDER BY id DESC LIMIT 1")).rows[0];
   assert.equal(audit.detail.pruned, 1); assert.ok(audit.refs.includes('doc:' + junkId));
-  assert.match(logLines.at(-1) ?? '', /pruned 1/);
+  const pruneAudit = (await db.query<any>("SELECT refs, detail FROM audit_events WHERE action = 'research.prune' AND scope = 'project:hte-screen' ORDER BY id DESC LIMIT 1")).rows[0];
+  assert.deepEqual(pruneAudit.detail, { purged: 1, hidden: 0, reason: 'failed the literature screen' }); assert.ok(pruneAudit.refs.includes('doc:' + junkId));
+  assert.match(logLines.at(-1) ?? '', /pruned 1 \(1 purged\)/);
+  // A junk paper that something cites is hidden, not purged; one already hidden by an earlier build is purged too.
+  const citedId = randomUUID(), oldHiddenId = randomUUID();
+  for (const [id, title, hid] of [[citedId, 'Early postoperative capsular block syndrome', false], [oldHiddenId, 'Glaucoma surgery: visual field progression', true]] as const) {
+    await db.query(
+      `INSERT INTO items (id, type, title, created_at, authored_at, authors, project_id, legal_tag, origin, external_id, content_hash, version, extracted, tags, hidden)
+       VALUES ($1,'paper',$2,'2026-10-01T10:00:00Z','2001-06-01T00:00:00Z','{}','hte-screen','lt-public',$3::jsonb,$4,'sha256:junk2',1,'{}'::jsonb,'{}',$5)`,
+      [id, title, JSON.stringify({ source: 'crossref', external_id: 'x:' + id, query: 'Guafita field Venezuela reservoir' }), 'x:' + id, hid]);
+  }
+  const citing = (await db.query<any>("SELECT id FROM items WHERE project_id = 'hte-screen' AND type = 'paper'")).rows[0].id;
+  await db.query("INSERT INTO item_cites (item_id, ref) VALUES ($1, $2)", [citing, 'doc:' + citedId]);
+  const r2 = await runResearch(db, 'hte-screen', { now, storage, provider: null, minerAdapters: [titlesOnly], budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });
+  assert.equal(r2.purged, 1); assert.equal(r2.pruned, 2);
+  const left = (await db.query<any>("SELECT id, hidden FROM items WHERE project_id = 'hte-screen' AND type = 'paper' AND id = ANY($1::uuid[])", [[citedId, oldHiddenId]])).rows;
+  assert.deepEqual(left, [{ id: citedId, hidden: true }], 'the cited one is hidden; the old hidden one is purged');
   const view = await researchView(db, 'hte-screen');
   assert.deepEqual(view.findings.map(f => f.title), ['Waterflood performance of the Guafita field, Apure, Venezuela']);
   configureWorldMonitor({ fetch: wmFetch, apiKey: KEY, now: () => new Date(t) });
