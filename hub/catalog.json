@@ -771,7 +771,7 @@
           "date": "",
           "sections": {
             "Changed": [
-              "The register list itself now lives in the Hub (Today page: globe, country drill-down and register table backed by the Vault's projects). This page remains the calculator: it opens from the project toolbar with `?project=<id>` and saves its potential-model runs to that project. Its own list and localStorage store are kept for use outside the Hub."
+              "The register list itself now lives in the Hub (Today page: globe, country drill-down and register table backed by the Vault's projects). This page remains the calculator: it opens from the project toolbar with the project id in the address (?project=) and saves its potential-model runs to that project. Its own list and localStorage store are kept for use outside the Hub."
             ]
           }
         },
@@ -960,6 +960,6 @@
       "hub": null
     }
   ],
-  "built_at": "2026-10-01T00:46:31.451Z",
-  "commit": "d5b9bd5"
+  "built_at": "2026-10-01T00:52:58.914Z",
+  "commit": "81751e1"
 }
