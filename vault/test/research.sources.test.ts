@@ -94,7 +94,7 @@ test('W4-AC10: the Anthropic provider sends the server tool with max_uses, resum
   const r = await p.search({ system: 'S', prompt: 'P', maxUses: 3 });
   assert.equal(calls.length, 2);
   assert.deepEqual(calls[0].tools, [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }]);
-  assert.equal(calls[0].output_config.effort, 'low'); assert.equal(calls[0].messages.length, 1);
+  assert.equal(calls[0].output_config.effort, 'medium', 'low effort consolidates or skips tool calls: the first live run searched nothing'); assert.equal(calls[0].max_tokens, 4000); assert.equal(calls[0].messages.length, 1);
   assert.equal(calls[1].messages.length, 2); assert.equal(calls[1].messages[1].role, 'assistant'); assert.deepEqual(calls[1].messages[1].content, paused.content, 'the paused assistant content goes back unchanged');
   assert.equal(r.searches, 3); assert.equal(r.citations.length, 2); assert.equal(r.usage.input, 1300);
   const off = new AnthropicProvider('k', 'claude-sonnet-5-5', (async () => new Response('{"type":"error","error":{"type":"invalid_request_error","message":"Web search is not enabled for this organization."}}', { status: 400 })) as unknown as typeof fetch);

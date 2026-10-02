@@ -129,6 +129,8 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: S2_API_KEY
+        sync: false
 
   # Miners (M11): papers weekly; regulator feeds in the first week of the month.
   - type: cron
@@ -140,6 +142,8 @@ services:
     startCommand: npx tsx src/jobs/miners.ts
     envVars:
       - key: DATABASE_URL
+        sync: false
+      - key: S2_API_KEY
         sync: false
 
   # Weekly dream (M15): proposes lessons into the review queue.

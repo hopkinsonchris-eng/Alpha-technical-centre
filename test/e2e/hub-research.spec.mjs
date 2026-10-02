@@ -23,7 +23,7 @@ const PROJECT = {
 const GUAFITA = { id: 'field:ve:guafita', kind: 'field', name: 'Guafita', parent_id: null, country: 'VE', operator: null, source_url: 'https://www.gem.wiki/Guafita_Oil_Field', lat: 7.6, lon: -70.9, location_source: 'gem', status: 'operating', created_by: 'chris', created_at: '2026-09-30T10:00:00.000Z', props: { gem: { unit_id: 'G100', release: 'March 2026' } }, dossier: [] };
 const RUN_OK = { id: 7, status: 'stopped', started_at: '2026-10-01T12:25:00.000Z', finished_at: '2026-10-01T12:40:00.000Z', summary: {
   project_id: PID, status: 'stopped', findings: 6, proposals: { asset: 1, research: 2 }, fact_reads: 3, spend_gbp: 1.8, duration_ms: 15 * 60000, budget: { ms: 15 * 60000, gbp: 3 }, stopped_by: 'time',
-  sources: { 'gem-wiki': { queries: 1, findings: 1, created: 1, updated: 0, unchanged: 0, skipped: '1 field without a Global Energy Monitor record' }, web: { queries: 3, findings: 1, created: 1, updated: 0, unchanged: 0 }, gdelt: { queries: 3, findings: 2, created: 2, updated: 0, unchanged: 0 }, company: { queries: 2, findings: 0, created: 0, updated: 0, unchanged: 0, error: 'World Monitor timed out', skipped: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)' }, 'company-signals': { queries: 0, findings: 1, created: 1, updated: 0, unchanged: 0 }, literature: { queries: 2, findings: 1, created: 1, updated: 0, unchanged: 0 } },
+  sources: { 'gem-wiki': { queries: 1, findings: 1, created: 1, updated: 0, unchanged: 0, skipped: '1 field without a Global Energy Monitor record' }, web: { queries: 3, findings: 1, created: 1, updated: 0, unchanged: 0, detail: '4 searches · 2 pages seen · 1 cited' }, gdelt: { queries: 3, findings: 2, created: 2, updated: 0, unchanged: 0 }, company: { queries: 2, findings: 0, created: 0, updated: 0, unchanged: 0, error: 'World Monitor timed out', skipped: 'needs World Monitor Pro (this endpoint is Pro-gated on the current plan)' }, 'company-signals': { queries: 0, findings: 1, created: 1, updated: 0, unchanged: 0 }, literature: { queries: 2, findings: 1, created: 1, updated: 0, unchanged: 0 } },
   not_reached: [{ source: 'gdelt', query: '"La Victoria" Venezuela', reason: 'time' }, { source: 'literature', query: 'Guafita field Venezuela reservoir', reason: 'time' }], warnings: [] } };
 const F5 = '00000000-0000-4000-8000-000000000a05', F6 = '00000000-0000-4000-8000-000000000a06';
 const FINDINGS = [
@@ -113,6 +113,7 @@ test('W4-AC7: the toolbar shows the last run line; the Research tab lists findin
   await expect(sources.nth(0)).toContainText('Global Energy Monitor wiki: 1 query · 1 finding');
   await expect(sources.nth(0).locator('[data-skipped]')).toHaveText('1 field without a Global Energy Monitor record');
   await expect(sources.nth(1)).toContainText('Web search: 3 queries · 1 finding');
+  await expect(sources.nth(1).locator('[data-detail]')).toHaveText('4 searches · 2 pages seen · 1 cited');
   await expect(sources.nth(2)).toContainText('World Monitor · GDELT news: 3 queries · 2 findings');
   await expect(sources.nth(3)).toContainText('World Monitor · company lookups: 2 queries · 0 findings');
   await expect(sources.nth(3).locator('[data-error]')).toHaveText('World Monitor timed out');

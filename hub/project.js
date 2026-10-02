@@ -1026,6 +1026,7 @@ function renderResearch(ctx, first) {
         add(li, mk('b', null, lab[0], lab[1]), document.createTextNode(': '), mk('span', null, (c.queries || 0) + (c.queries === 1 ? ' query · ' : ' queries · ') + (c.findings || 0) + (c.findings === 1 ? ' finding' : ' findings'), (c.queries || 0) + (c.queries === 1 ? ' consulta · ' : ' consultas · ') + (c.findings || 0) + (c.findings === 1 ? ' hallazgo' : ' hallazgos')));
         if (c.error) add(li, document.createTextNode(' · '), dv('span', 'hub-pill bad', c.error, { 'data-error': '' }));
         if (c.skipped) add(li, document.createTextNode(' · '), dv('span', 'hub-pill muted', c.skipped, { 'data-skipped': '' }));
+        if (c.detail) add(li, document.createTextNode(' · '), dv('span', 'hub-pill muted', c.detail, { 'data-detail': '' }));
         add(ul, li);
       }
       add(panel, ul);
