@@ -44,6 +44,16 @@ test('semantic-scholar: bulk search pages by token and recommendations come from
   assertRateLimited(f.calls, 1, clock);
 });
 
+test('semantic-scholar: a 429 is retried four times with a growing back-off before the source gives up', async () => {
+  const clock = mockClock();
+  let n = 0;
+  const f = fakeFetch([[/search\/bulk\?/, () => { n++; return n <= 4 ? new Response('rate limited', { status: 429 }) : fx('s2-bulk-page1.json'); }]], clock);
+  const adapter = createSemanticScholarAdapter({ fetch: f.fetch, clock, maxPagesPerTopic: 1 });
+  const recs = await collect(adapter.fetch(since, [topic]));
+  assert.ok(recs.length >= 1, 'the fifth attempt answers');
+  assert.equal(n, 5);
+});
+
 test('semantic-scholar: without a key no header is sent, and with no seeds no recommendation call is made', async () => {
   const saved = process.env.S2_API_KEY; delete process.env.S2_API_KEY;
   try {

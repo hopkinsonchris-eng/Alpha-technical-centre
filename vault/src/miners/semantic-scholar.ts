@@ -22,7 +22,8 @@ const FIELDS = 'title,abstract,authors,year,publicationDate,externalIds,url,venu
 export function createSemanticScholarAdapter(o: SemanticScholarOptions = {}): FeedAdapter {
   const base = o.base ?? 'https://api.semanticscholar.org';
   const apiKey = o.apiKey ?? process.env.S2_API_KEY;
-  const http = new Http(1, o, { accept: 'application/json', ...(apiKey ? { 'x-api-key': apiKey } : {}) });
+  // The shared unauthenticated pool answers 429 often: four retries with a doubling back-off before the source gives up. S2_API_KEY is the real fix.
+  const http = new Http(1, o, { accept: 'application/json', ...(apiKey ? { 'x-api-key': apiKey } : {}) }, 4);
   const maxPages = o.maxPagesPerTopic ?? 3, pageSize = o.pageSize ?? 100;
 
   const toRecord = (p: any, topic_id: string | undefined, via: string): FeedRecord | null => {

@@ -131,6 +131,9 @@ test('W4-AC1: the queries come from the project, its fields, their operators and
 test('costGbp and toKboed: Sonnet prices by default; barrels per day become thousand barrels per day', () => {
   assert.equal(costGbp('claude-sonnet-4-5', { input: 1_000_000, cached: 0, output: 0 }), Math.round((2 / 1.28) * 10000) / 10000);
   assert.ok(costGbp('fake-1', { input: 1000, cached: 0, output: 200 }) > 0);
+  // input_tokens excludes cache reads in the Messages API: a cached call is cheap, never negative (the first live run showed £-0.14).
+  assert.equal(costGbp('claude-sonnet-4-5', { input: 100, cached: 2000, output: 0 }), Math.round(((100 * 2 + 2000 * 0.2) / 1_000_000 / 1.28) * 10000) / 10000);
+  assert.ok(costGbp('claude-sonnet-5-5', { input: 100, cached: 2000, output: 10 }) > 0);
   assert.equal(toKboed('12,400', 'bopd'), 12.4);
   assert.equal(toKboed('12.4', 'kboe/d'), 12.4);
   assert.equal(toKboed('900', 'mcf/d'), null);
@@ -367,6 +370,10 @@ test('W4-AC10: web search files one finding per cited page with the verbatim cit
   assert.equal(f[0].extracted.summary, 'Guafita produced about 12,400 bopd in 2024.'); assert.equal(f[0].extracted.page_age, 'September 2021'); assert.deepEqual(f[0].asset_ids, ['field:ve:guafita']);
   // Spend: tokens plus 4 searches at $0.01 → about £0.03 over the token cost.
   assert.ok(r.spend_gbp >= 4 * 0.01 / 1.28 && r.spend_gbp < 0.1, String(r.spend_gbp));
+  assert.equal(r.sources.web.detail, '5 searches · 4 pages seen · 2 cited', 'the row says what the model did, so "0 findings" is an answer');
+  const silent = new FakeProvider(() => '{"facts":[]}', () => ({ searches: 0, citations: [], results: [], stop: 'end_turn' }));
+  const r0 = await runResearch(db, 'hte-web', { now, storage, provider: silent, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris', webMaxUses: 3 });
+  assert.equal(r0.sources.web.detail, 'the model made no searches, so nothing was cited');
   // The organisation has web search switched off: the source says so once and the run goes on.
   const off = new FakeProvider(() => '{"facts":[]}', () => new Error('anthropic 400: {"type":"error","error":{"type":"invalid_request_error","message":"Web search is not enabled for this organization."}}'));
   const r2 = await runResearch(db, 'hte-web', { now, storage, provider: off, skipWeb: false, skipWorldMonitor: true, skipMiners: true, budgetMs: 15 * 60_000, budgetGbp: 3, by: 'chris' });

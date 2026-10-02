@@ -13,7 +13,7 @@ export interface LlmProvider { name: string; model: string; complete(req: LlmReq
 export interface WebSearchRequest { system: string; prompt: string; maxUses: number; maxTokens?: number }
 export interface WebCitation { url: string; title: string | null; cited_text: string; sentence: string }
 export interface WebSearchHit { url: string; title: string | null; page_age: string | null }
-export interface WebSearchResult { text: string; usage: LlmUsage; model: string; searches: number; citations: WebCitation[]; results: WebSearchHit[]; error?: string }
+export interface WebSearchResult { text: string; usage: LlmUsage; model: string; searches: number; citations: WebCitation[]; results: WebSearchHit[]; error?: string; /** the API's stop_reason, so a cut-off answer is named */ stop?: string }
 
 /** Reads the search results, the cited sentences and the search count out of a Messages API response. */
 export function readWebSearch(j: any, model: string): WebSearchResult {
@@ -30,7 +30,7 @@ export function readWebSearch(j: any, model: string): WebSearchResult {
     }
   }
   const u = j?.usage ?? {};
-  return { text, usage: { input: u.input_tokens ?? 0, cached: u.cache_read_input_tokens ?? 0, output: u.output_tokens ?? 0 }, model: j?.model ?? model, searches: Number(u.server_tool_use?.web_search_requests ?? 0), citations, results, ...(error ? { error } : {}) };
+  return { text, usage: { input: u.input_tokens ?? 0, cached: u.cache_read_input_tokens ?? 0, output: u.output_tokens ?? 0 }, model: j?.model ?? model, searches: Number(u.server_tool_use?.web_search_requests ?? 0), citations, results, ...(error ? { error } : {}), ...(j?.stop_reason ? { stop: String(j.stop_reason) } : {}) };
 }
 
 /** Deterministic provider for tests: echoes a compact summary of the last user message. */
@@ -81,7 +81,7 @@ export class AnthropicProvider implements LlmProvider {
   async search(req: WebSearchRequest): Promise<WebSearchResult> {
     const tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: req.maxUses }];
     const messages: any[] = [{ role: 'user', content: req.prompt }];
-    const body = (msgs: any[]) => JSON.stringify({ model: this.model, max_tokens: req.maxTokens ?? 2000, output_config: { effort: 'low' }, system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }], messages: msgs, tools });
+    const body = (msgs: any[]) => JSON.stringify({ model: this.model, max_tokens: req.maxTokens ?? 4000, output_config: { effort: 'medium' }, system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }], messages: msgs, tools });
     const call = async (msgs: any[]) => {
       const res = await this.fetchImpl('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01' }, body: body(msgs) });
       if (!res.ok) throw new Error(`anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);

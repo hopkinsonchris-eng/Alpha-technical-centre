@@ -41,7 +41,7 @@ export interface ResearchOptions {
   /** How often the running counts are written while the literature pass goes (ms). */
   progressEveryMs?: number;
 }
-export interface SourceCount { queries: number; findings: number; created: number; updated: number; unchanged: number; error?: string; skipped?: string }
+export interface SourceCount { queries: number; findings: number; created: number; updated: number; unchanged: number; error?: string; skipped?: string; /** what the source did behind the counts, e.g. searches made and pages seen */ detail?: string }
 export interface NotReached { source: string; query: string; reason: string }
 export interface ResearchSummary {
   project_id: string; status: 'ok' | 'failed' | 'stopped'; started_at: string; finished_at: string | null; duration_ms: number;
@@ -64,7 +64,8 @@ const PRICES: [RegExp, [number, number]][] = [[/fable|mythos/i, [10, 50]], [/opu
 const USD_PER_GBP = 1.28;
 export function costGbp(model: string, usage: { input: number; cached: number; output: number }): number {
   const [i, o] = (PRICES.find(([re]) => re.test(model)) ?? [null, [2, 10]])[1];
-  const usd = ((usage.input - usage.cached) * i + usage.cached * i * 0.1 + usage.output * o) / 1_000_000;
+  // input_tokens already excludes cache reads (Messages API usage), so the two are priced side by side.
+  const usd = (usage.input * i + usage.cached * i * 0.1 + usage.output * o) / 1_000_000;
   return Math.round((usd / USD_PER_GBP) * 10000) / 10000;
 }
 
@@ -234,13 +235,16 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
       else if (!provider || !provider.search) c.skipped = provider ? 'the provider has no web search' : 'no assistant configured (ANTHROPIC_API_KEY)';
       else {
         const usdPerSearch = opts.usdPerSearch ?? 0.01;
+        const did = { searches: 0, pages: 0, cited: 0, calls: 0 };
         for (const g of q.gdelt) {
           const s = stop(); if (s) { summary.not_reached.push({ source: 'web', query: g.query, reason: s }); continue; }
           c.queries++;
           try {
             const r = await searchWeb(provider, { label: g.label, query: g.query, field_id: g.field_id }, p.country ? countryName(p.country).en : null, opts.webMaxUses ?? 3);
             summary.spend_gbp = Math.round((summary.spend_gbp + costGbp(r.model, r.usage) + (r.searches * usdPerSearch) / USD_PER_GBP) * 10000) / 10000;
+            did.calls++; did.searches += r.searches; did.pages += r.results.length; did.cited += r.citations.length;
             if (r.error) c.error = r.error;
+            else if (r.stop === 'max_tokens') c.error = 'the answer was cut off at max_tokens';
             for (const fd of webFindings({ label: g.label, query: g.query, field_id: g.field_id }, r)) await file('web', fd);
           } catch (e) {
             const msg = (e as Error).message;
@@ -250,6 +254,7 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
           }
           await progress();
         }
+        if (did.calls) c.detail = did.searches === 0 && !c.error ? 'the model made no searches, so nothing was cited' : `${did.searches} searches · ${did.pages} pages seen · ${did.cited} cited`;
       }
     }
 
