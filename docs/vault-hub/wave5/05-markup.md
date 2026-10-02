@@ -45,7 +45,29 @@ Drafter changes (`vault/src/llm/draft.ts`): sub-queries also get the research ta
 
 ### 1.4 The Vault as a Claude connector (W5-D4, P48–P49)
 
-See §1.4 below, filled from the connector specification check.
+BEFORE: `POST /mcp` answers only to a Cloudflare Access token. The Claude app cannot present one, so the connector cannot be added.
+
+AFTER: the Vault is an OAuth 2.1 authorisation server for its own MCP endpoint, and the connector URL is `https://www.alpha-technical-centre.com/mcp`. Every path below is served by the API (new files `vault/src/oauth/*.ts`, `vault/src/api/oauth.routes.ts`) and reached through the existing Worker; `VAULT_PUBLIC_URL` (default `https://www.alpha-technical-centre.com`) is the issuer.
+
+| path | who may reach it | what it does |
+|---|---|---|
+| `GET /.well-known/oauth-protected-resource/mcp` | anyone | `{resource: "<issuer>/mcp", authorization_servers: ["<issuer>"], bearer_methods_supported: ["header"], scopes_supported: ["vault"]}` |
+| `GET /.well-known/oauth-authorization-server` | anyone | issuer, `authorization_endpoint` `/oauth/authorize`, `token_endpoint` `/oauth/token`, `registration_endpoint` `/oauth/register`, `response_types_supported: ["code"]`, `grant_types_supported: ["authorization_code","refresh_token"]`, `token_endpoint_auth_methods_supported: ["none"]`, `code_challenge_methods_supported: ["S256"]`, `client_id_metadata_document_supported: true`, `scopes_supported: ["vault"]` |
+| `POST /oauth/register` | anyone (rate-limited) | RFC 7591 dynamic registration of a public client: stores `redirect_uris`, `client_name`; answers 201 with `client_id`, no secret; refuses a redirect URI that is not `https://claude.ai/api/mcp/auth_callback` or a loopback (`http://localhost/…`, `http://127.0.0.1/…`, any port) |
+| `GET /oauth/authorize` | **behind Cloudflare Access** (staff only) | validates `client_id` (a registered client, or a Client ID Metadata Document fetched from the `https` URL with the document's `client_id` equal to it and the `redirect_uri` listed; fetch guarded against private addresses and cached), exact `redirect_uri` (loopback ignores the port), `code_challenge` with `S256` (mandatory), `resource` equal to the canonical MCP URL, `state`; shows a bilingual consent page in house style naming the client's host and the signed-in person; **Allow** issues a single-use code (10 minutes) bound to person, client, redirect URI, challenge and resource, then redirects with `code` and `state`; **Cancel** redirects with `error=access_denied` |
+| `POST /oauth/token` | anyone | form-encoded; `authorization_code` + `code_verifier` → `{access_token, token_type: "Bearer", expires_in: 3600, refresh_token, scope}`; `refresh_token` grant rotates the refresh token (30 days, reuse of a rotated token revokes the family); RFC 6749 errors (`invalid_grant`, `invalid_client`, `invalid_request`, `unsupported_grant_type`); `Cache-Control: no-store`; tokens are random, stored hashed, with `aud` = resource |
+| `POST /mcp` | anyone with a token | `Authorization: Bearer <vault token>` → the person; else the Access token as today; else **401** with `WWW-Authenticate: Bearer error="invalid_token", resource_metadata="<issuer>/.well-known/oauth-protected-resource/mcp"` |
+| `GET /api/me/connections`, `DELETE /api/me/connections/:id` | the person | the apps connected to this account (client name, host, first and last use) and revocation; a **Connected apps** card on the Settings page |
+
+Migration `vault/db/006_oauth.sql`: `oauth_clients` (id, name, redirect_uris, metadata_url, created_at), `oauth_codes` (code_hash, client_id, person_id, redirect_uri, code_challenge, resource, scope, expires_at, used_at), `oauth_tokens` (token_hash, kind, family, client_id, person_id, scope, resource, expires_at, revoked_at, created_at, last_used_at). Audit: `oauth.consent`, `oauth.token`, `oauth.revoke`. Rate limits: 30 requests a minute per address on `/oauth/*`, 120 tool calls a minute per person on `/mcp` with `Retry-After`.
+
+MCP tools (`vault/src/mcp/server.ts`): every tool gets a `title`, `readOnlyHint` on reads, `destructiveHint: false` on writes, a description that says when not to use it; new `list_projects` (the projects in scope), `get_project_context` (the existing project-context builder: brief, counterparties, contacts, recent records, open proposals), `get_item` (a record with its extracted text, capped, and a Hub link), `file_item` (file a text note or a pasted document under a project, returns `doc:<id>`; the way a conversation's output stops living only in the conversation). `search_vault` hits carry a Hub link.
+
+Setup for Chris (`vault/SETUP.md` §6):
+1. Cloudflare Zero Trust → Access → Applications: edit **ATC Hub** and remove the `mcp` path. Add **ATC Connector login**, self-hosted, domain `www.alpha-technical-centre.com` path `oauth/authorize`, policy Staff (Allow, emails ending in the company domain). Add **ATC Connector**, same domain, paths `mcp`, `oauth/token`, `oauth/register`, `.well-known/oauth-authorization-server`, `.well-known/oauth-protected-resource`, policy **Bypass** for Everyone (the Vault checks its own tokens there).
+2. Workers & Pages → `atc-api-proxy` → Domains & Routes: add `www.alpha-technical-centre.com/oauth*` and `www.alpha-technical-centre.com/.well-known/oauth*`.
+3. Render → atc-vault-api: `VAULT_PUBLIC_URL=https://www.alpha-technical-centre.com`.
+4. Claude app (iPad or web, Pro, Max, Team or Enterprise; an owner on Team): Settings → Connectors → Add custom connector: name `ATC Vault`, URL `https://www.alpha-technical-centre.com/mcp`, OAuth client **Register automatically**. Connect: the Access login appears (one-time PIN), then the consent page, then the connector is live. The same connector appears in Claude Code under the same account.
 
 ## 2. Files
 
@@ -58,3 +80,60 @@ See §1.4 below, filled from the connector specification check.
 | docs | `docs/vault-hub/wave5/*`, `HANDOVER.md`, `AGENTS.md` (no rule change) |
 
 Not touched: `docs/vault-hub/schemas/*`, any public page.
+
+## 3. Acceptance criteria
+
+| # | criterion |
+|---|---|
+| W5-AC1 | With `VAULT_STORAGE=supabase` and a stubbed fetch, `put` posts to `/storage/v1/object/<bucket>/<key>` with the service key and upsert, `get` returns the bytes and null on the store's not-found answer, `exists` uses the info endpoint; an upload through `POST /api/items` lands in the store and is read back by ingest; boot refuses filesystem storage in production without an explicit directory. |
+| W5-AC2 | `GET /api/items/:id/original` streams the bytes with the record's mime, inline by default and attachment with `?download=1`, `no-store`, one `item.view` audit event; 404 for a hidden record, a record outside the caller's scope (as 404, like the record itself), and a missing key; `?version=N` serves an earlier version. |
+| W5-AC3 | Hub: a PDF record shows the viewer with page count and the first page rendered; an image record shows the image; a spreadsheet shows a table per sheet with tabs and the row cap note; a Word record shows Download and the extracted text; a record without an original says "original missing" and offers nothing broken. Bilingual; the panel stays a bottom sheet below 1200 px. |
+| W5-AC4 | Write to… on a project the caller may write: the set-up strip lists the project's contacts with role, organisation and last contact, and offers the register counterparties; choosing a contact outside the client, holder, partners or government shows the scope warning. |
+| W5-AC5 | Draft: the open questions render first with who to ask; every citation is a chip that opens the record panel with the passage highlighted; an uncited sentence with a figure is amber and Approve is disabled until it is kept with a note, dropped or cited; Keep / Keep with a note / Drop state survives a tone re-draft; Save posts the review and the dropped paragraphs are excluded from Render. |
+| W5-AC6 | The drafter retrieves research findings (a finding that is the only source for a claim is cited), falls back to the register holder as the organisation, and lists the counterparties in the project block; `tone` changes the draft without losing citations (the uncited check runs again). |
+| W5-AC7 | Mark as sent records a dispatch (direction out, organisation, contacts, channel, signed by the caller) linked to the note; the timeline shows it; a second Mark as sent on the same note is refused. Render produces the DOCX with the reference number; when the PDF renderer is unavailable the PDF button says so instead of failing. |
+| W5-AC8 | Discovery: `/.well-known/oauth-protected-resource/mcp` and `/.well-known/oauth-authorization-server` answer as specified; an unauthenticated `POST /mcp` answers 401 with the `resource_metadata` header. |
+| W5-AC9 | Registration: a public client with Claude's callback or a loopback URI registers (201, no secret); any other redirect URI is refused with `invalid_redirect_uri`. |
+| W5-AC10 | Authorize: without an Access identity the page is not served; with one, a wrong redirect URI, a missing or non-S256 challenge, a wrong resource or an unknown client are refused without redirecting; a CIMD client is fetched, validated and shown by host; Allow redirects with a single-use code; Cancel redirects with `access_denied`. |
+| W5-AC11 | Token: the code with the right verifier yields an access token (1 h) and a refresh token; a wrong verifier, a reused code or an expired code answer `invalid_grant`; refresh rotates and a reused refresh token revokes the family; the endpoint accepts form encoding and sets `no-store`. |
+| W5-AC12 | `/mcp` with a Vault token runs tools as that person with the same scope and audit as the Access path; a revoked or expired token answers 401 with the handshake header; the Access path keeps working. |
+| W5-AC13 | Tools: every tool carries a title and hints; `get_project_context`, `get_item`, `list_projects` and `file_item` work under scope; `file_item` returns `doc:<id>` and the record appears on the project timeline; over 120 calls a minute answers a rate-limit error with `Retry-After`. |
+| W5-AC14 | Settings: the Connected apps card lists the connections and revoke works; revocation answers 401 on the next `/mcp` call. |
+
+## 4. Smoke plan
+
+| criterion | tests |
+|---|---|
+| AC1 | `vault/test/storage.supabase.test.ts` (new, stubbed fetch), `api.items.test.ts` (upload with supabase storage) |
+| AC2 | `vault/test/originals.routes.test.ts` (new) |
+| AC3 | `test/e2e/hub-record-panel.spec.mjs` (viewer cases with stubbed originals: a small real PDF, a PNG, an xlsx fixture) |
+| AC4–AC7 | `vault/test/draft.routes.test.ts` (tone, review, dispatch, render exclusions), `vault/test/draft.test.ts` (research findings, holder fallback, counterparties), `test/e2e/hub-draft.spec.mjs` (new: set-up strip, chips, amber gate, keep/drop, save, render, mark as sent) |
+| AC8–AC12 | `vault/test/oauth.test.ts` (new: discovery, register, authorize with a stubbed Access identity and a stubbed CIMD fetch, token, refresh rotation, revocation), `vault/test/mcp.test.ts` (bearer path, 401 handshake) |
+| AC13 | `vault/test/mcp.test.ts` (new tools, hints, rate limit) |
+| AC14 | `test/e2e/hub-settings.spec.mjs` or the existing settings spec (Connected apps card) |
+
+Visual proof: screenshots of the viewer on a PDF and a spreadsheet, the Write to… panel with chips and an amber sentence, the consent page, and the Claude app's connector dialog once Chris adds it.
+
+## 5. Delivery: four pull requests, each green and mergeable
+
+1. **Durable originals** (AC1): storage backend, boot check, blueprint, setup §1.5.
+2. **Open the original** (AC2, AC3): route and viewer.
+3. **Write to…** (AC4–AC7): drafter changes, review and dispatch routes, the panel.
+4. **The connector** (AC8–AC14): migration 006, OAuth, bearer path, tools, Connected apps, setup §6.
+
+Order matters: 2 needs 1 live (or the viewer shows "original missing"); 4 is independent of 2 and 3 and can ship second if Chris wants the connector first.
+
+## 6. Risks and rollback
+
+| risk | mitigation | rollback |
+|---|---|---|
+| Files uploaded before this wave are gone from the container | the panel says so and offers re-upload; text and chunks are intact | none needed |
+| Supabase free tier caps objects at 50 MB | uploads over the bucket limit answer a clear 413 | raise the plan |
+| iPad memory on large scans | lazy page rendering, clamped canvas, whole-file fetch under 20 MB, download above | the Download button |
+| A consent page reachable without Access if the Access path is misconfigured | the authorize handler itself refuses a request without an Access identity (AC10); Access is defence in depth | remove the Bypass application |
+| Token theft | tokens hashed at rest, 1 h access life, rotating refresh with family revocation, audience check, Connected apps revoke | revoke in Settings |
+| The hosted app's own client document URL is not published | DCR is the default in the connector dialog; CIMD is supported for Claude Code and for the day Anthropic publishes it | none needed |
+| PDF render still needs Chromium on Render (F5) | DOCX is the default; the PDF button reports the absence | none needed |
+| Anthropic's egress range must reach the token endpoint within 10 s | Render cold starts are the risk: the API is a web service that stays warm on the starter plan | none needed |
+
+Each PR is one revert; the migration adds tables only.
