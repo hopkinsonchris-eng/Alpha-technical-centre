@@ -13,10 +13,23 @@ import { hybridSearch, type SearchHit, type SearchDeps } from '../gateway/search
 import { resolveScope, type ProjectInfo } from '../gateway/scope.ts';
 
 export type DraftKind = 'email' | 'letter' | 'report-section' | 'calc-note';
-export interface DraftRequest { kind: DraftKind; project_id: string; brief: string; organisation_id?: string; thread_id?: string; language?: 'en' | 'es'; tone?: string; run_id?: string }
+export interface DraftRequest { kind: DraftKind; project_id: string; brief: string; organisation_id?: string; thread_id?: string; language?: 'en' | 'es'; tone?: string; run_id?: string;
+  /** Wave 5: the draft to rewrite under `tone` (shorter, longer, formal, plain), so a re-draft keeps the content. */
+  previous?: string }
+/** Wave 5: the register counterparties (W5-D3); names, not figures, so a sentence naming them needs no citation. */
+export interface Counterparties { holder?: string; government?: string; licence?: string; partners: string[] }
+export const LICENCE_WORDS: Record<string, string> = { concession: 'concession', psc: 'production sharing contract', service: 'service contract', jv: 'joint venture', licence: 'licence', other: 'other' };
+export function counterpartiesOf(register: Record<string, unknown> | null | undefined): Counterparties | null {
+  if (!register) return null;
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+  const lic = str(register.licence_type);
+  const c: Counterparties = { holder: str(register.holder), government: str(register.government), licence: lic ? (LICENCE_WORDS[lic] ?? lic) + (str(register.licence_note) ? ` (${str(register.licence_note)})` : '') : undefined,
+    partners: Array.isArray(register.partners) ? register.partners.filter((p): p is string => typeof p === 'string' && p.trim() !== '') : [] };
+  return c.holder || c.government || c.licence || c.partners.length ? c : null;
+}
 export interface Source { ref: string; title: string; why: string; snippet?: string; date?: string }
 export interface DraftContext {
-  scope: string; project: any; organisation?: any; contacts?: any[]; dispatches?: any[]; contracts?: any[];
+  scope: string; project: any; organisation?: any; contacts?: any[]; dispatches?: any[]; contracts?: any[]; counterparties?: Counterparties | null;
   runs: any[]; sources: Source[]; lessons: any[]; who_to_ask: Array<{ person: string; last: string; on: string }>; sub_queries: string[]; house_style: string; letterhead?: string;
 }
 export interface DraftResult { draft: string; paragraphs: string[]; citations: string[]; sources: Source[]; who_to_ask: DraftContext['who_to_ask']; warnings: string[]; questions: string[]; usage?: { input: number; cached: number; output: number }; model?: string; context: DraftContext }
@@ -67,7 +80,11 @@ export async function assembleContext(db: Db, person: Person, req: DraftRequest,
   const ctx: DraftContext = { scope: scope.label, project, runs: [], sources: [], lessons: [], who_to_ask: [], sub_queries: [], house_style: '' };
   ctx.house_style = (await db.query<any>("SELECT value FROM settings WHERE key = 'house_style'")).rows[0]?.value ?? 'ATC house style: purpose first, one idea per paragraph, every figure cites its run or document, British English or Spanish as the counterparty prefers.';
 
-  const orgId = req.organisation_id ?? project.client_id;
+  ctx.counterparties = counterpartiesOf(project.register);
+  // The organisation: the one named, else the register's current owner when an organisation carries that name, else the client.
+  let orgId: string | null = req.organisation_id ?? null;
+  if (!orgId && ctx.counterparties?.holder) orgId = (await db.query<any>('SELECT id FROM organisations WHERE lower(name) LIKE lower($1) || \'%\' ORDER BY length(name) LIMIT 1', [ctx.counterparties.holder])).rows[0]?.id ?? null;
+  if (!orgId) orgId = project.client_id ?? null;
   if (orgId) {
     ctx.organisation = (await db.query<any>('SELECT * FROM organisations WHERE id = $1', [orgId])).rows[0];
     ctx.contacts = (await db.query<any>('SELECT * FROM contacts WHERE organisation_id = $1 ORDER BY name', [orgId])).rows;
@@ -88,7 +105,13 @@ export async function assembleContext(db: Db, person: Person, req: DraftRequest,
     try { hits = await hybridSearch(db, q, scope, person, projects, search, { k: 7, now }); } catch { hits = []; }
     for (const h of hits) if (!seen.has(h.ref)) seen.set(h.ref, { ref: h.ref, title: h.title ?? h.ref, why: q, snippet: h.snippet });
   }
-  ctx.sources = [...seen.values()].slice(0, 7);
+  // Wave 5 (F17): research findings are notes the runs filed, not chunked; the ones whose title or quote share words
+  // with the brief join the sources, newest first, so a letter can cite what the Vault found by itself.
+  const words = new Set(`${req.brief} ${ctx.sub_queries.join(' ')}`.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 4));
+  const findings = (await db.query<any>(`SELECT id, title, extracted, authored_at, created_at FROM items WHERE project_id = $1 AND NOT hidden AND extracted->>'kind' = 'research' ORDER BY coalesce(authored_at, created_at) DESC LIMIT 200`, [req.project_id])).rows;
+  const scored = findings.map((f: any) => { const text = `${f.title} ${f.extracted?.quote ?? ''}`.toLowerCase(); let n = 0; for (const w of words) if (text.includes(w)) n++; return { f, n }; }).filter(x => x.n >= 2).sort((a, b) => b.n - a.n);
+  for (const { f } of scored.slice(0, 5)) if (!seen.has(`doc:${f.id}`)) seen.set(`doc:${f.id}`, { ref: `doc:${f.id}`, title: f.title, why: 'research finding', snippet: f.extracted?.quote ?? undefined, date: ymd(f.authored_at ?? f.created_at) });
+  ctx.sources = [...seen.values()].slice(0, 12);
   // Colleagues who last worked the topic: authors of the runs and sources.
   const authors = (await db.query<any>(`SELECT author AS person, max(created_at) AS last, max(job) AS on FROM runs WHERE project_id = $1 AND NOT hidden GROUP BY author ORDER BY last DESC LIMIT 3`, [req.project_id])).rows;
   ctx.who_to_ask = authors.filter(a => a.person !== person.id).map(a => ({ person: a.person, last: new Date(a.last).toISOString().slice(0, 10), on: a.on }));
@@ -127,6 +150,12 @@ Return plain text paragraphs separated by blank lines. No preamble, no explanati
 export function userPrompt(req: DraftRequest, ctx: DraftContext): string {
   const lines: string[] = [];
   lines.push(`BRIEF: ${req.brief}`);
+  if (req.tone) lines.push(`REWRITE THE PREVIOUS DRAFT: ${req.tone}. Keep every citation of the previous draft on the sentence it supports; add nothing new.`);
+  if (req.previous) lines.push(`PREVIOUS DRAFT:\n${req.previous}`);
+  if (ctx.counterparties) {
+    const c = ctx.counterparties;
+    lines.push(`COUNTERPARTIES: ${[c.holder ? `current owner ${c.holder}` : null, c.government ? `government ${c.government}` : null, c.licence ? `licence ${c.licence}` : null, c.partners.length ? `partners ${c.partners.join(', ')}` : null].filter(Boolean).join('; ')} (names from the register; cite nothing for a name alone)`);
+  }
   lines.push(`PROJECT: ${ctx.project.name} (${ctx.project.id}); client ${ctx.project.client_id ?? 'none'}; scope ${ctx.scope}`);
   if (ctx.organisation) {
     lines.push(`COUNTERPARTY: ${ctx.organisation.name} (${ctx.organisation.kind}); contacts: ${(ctx.contacts ?? []).map(c => `${c.name}${c.role ? ', ' + c.role : ''}`).join('; ') || 'none'}`);

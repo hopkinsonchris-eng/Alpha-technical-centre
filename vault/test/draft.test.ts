@@ -96,3 +96,26 @@ test('an associate outside the project cannot draft for it', async () => {
   await assert.rejects(draft(db, { id: 'ana', email: 'ana@alpha-technical-centre.com', name: 'Ana', role: 'associate' }, { kind: 'email', project_id: 'orinoco-partnership', brief: 'x' }, null, {}), (e: any) => e.status === 403);
   await db.close();
 });
+
+test('W5-AC6: the drafter reads the register counterparties, falls back to the holder as the organisation, and offers research findings as sources', async () => {
+  const db = await seed();
+  await db.query(`UPDATE projects SET register = '{"holder":"Petrolera del Orinoco","government":"MinPetróleo / PDVSA","licence_type":"jv","partners":["Chevron Venezuela"]}'::jsonb WHERE id = 'orinoco-partnership'`);
+  const fid = '00000000-0000-4000-8000-0000000000f1';
+  await db.query(`INSERT INTO items (id, type, title, created_at, authored_at, authors, project_id, legal_tag, origin, external_id, content_hash, version, extracted, tags)
+                  VALUES ($1,'note','PDVSA restarts Apure production after pipeline repair','2026-10-01T10:00:00Z','2026-09-30T00:00:00Z','{research}','orinoco-partnership','lt-public',
+                          '{"source":"research","external_id":"gdelt:1","url":"https://reuters.example/apure"}'::jsonb,'gdelt:1','sha256:f1',1,
+                          '{"kind":"research","source":"gdelt","query":"\\"Guafita\\" Venezuela","quote":"PDVSA restarted Apure production this week after a pipeline repair.","url":"https://reuters.example/apure"}'::jsonb,'{research,gdelt}')`, [fid]);
+  const { assembleContext: build, userPrompt } = await import('../src/llm/draft.ts');
+  // No organisation named: the register holder is matched to the organisation by name.
+  const req = { kind: 'email' as const, project_id: 'orinoco-partnership', brief: 'Tell them Apure production restarted and ask for the pipeline repair report.' };
+  const ctx = await build(db, PARTNER, req, {});
+  assert.equal(ctx.organisation?.id, 'petrolera-del-orinoco', 'the holder "Petrolera del Orinoco" is the organisation');
+  assert.ok(ctx.sources.some(s => s.ref === `doc:${fid}` && /pipeline repair/.test(s.snippet ?? '')), 'the finding that matches the brief is a source: ' + JSON.stringify(ctx.sources.map(s => s.ref)));
+  const prompt = userPrompt(req, ctx);
+  assert.match(prompt, /COUNTERPARTIES: current owner Petrolera del Orinoco; government MinPetróleo \/ PDVSA; licence joint venture; partners Chevron Venezuela/);
+  assert.ok(!/call the ministry|ZEBRAWORD/.test(prompt));
+  // Tone and a previous draft travel into the prompt so a re-draft keeps the content.
+  const p2 = userPrompt({ ...req, tone: 'shorter', previous: 'Dear María, production restarted [doc:x].' }, ctx);
+  assert.match(p2, /REWRITE THE PREVIOUS DRAFT: shorter/); assert.match(p2, /PREVIOUS DRAFT:\nDear María/);
+  await db.close();
+});

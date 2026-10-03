@@ -28,7 +28,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     if (!KINDS.includes(b.kind)) throw bad(`kind must be one of ${KINDS.join(', ')}`, '/kind');
     if (typeof b.project_id !== 'string' || !b.project_id) throw bad('project_id is required', '/project_id');
     if (typeof b.brief !== 'string' || b.brief.trim().length < 8) throw bad('brief is required', '/brief');
-    const req: DraftRequest = { kind: b.kind, project_id: b.project_id, brief: b.brief.trim(), organisation_id: b.organisation_id, thread_id: b.thread_id, language: b.language === 'es' ? 'es' : 'en', tone: b.tone, run_id: b.run_id };
+    const req: DraftRequest = { kind: b.kind, project_id: b.project_id, brief: b.brief.trim(), organisation_id: b.organisation_id, thread_id: b.thread_id, language: b.language === 'es' ? 'es' : 'en', tone: typeof b.tone === 'string' ? b.tone.slice(0, 40) : undefined, previous: typeof b.previous === 'string' ? b.previous.slice(0, 12000) : undefined, run_id: b.run_id };
     const acc = await loadAccess(x.db, x.person, x.now);
     const project = requireWritableProject(acc, req.project_id);
     x.a.scope = scopeLabel(project.id);
@@ -42,7 +42,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
                       VALUES ($1,'note',$2,$3,$4::text[],$5,$6,$7::text[],$8,$9::jsonb,$10,1,$11::jsonb)`,
       [id, title, x.now.toISOString(), [x.person.id], project.client_id ?? null, project.id, req.organisation_id ? [req.organisation_id] : [], project.default_legal_tag,
        JSON.stringify({ source: 'assistant', external_id: `draft:${id}` }), 'sha256:' + Buffer.from(id.replace(/-/g, '').padEnd(64, '0')).toString('hex').slice(0, 64),
-       JSON.stringify({ kind: 'draft', draft_kind: req.kind, brief: req.brief, language: req.language, organisation_id: req.organisation_id ?? null, draft: result.draft, paragraphs: result.paragraphs, citations: result.citations, sources: result.sources, warnings: result.warnings, questions: result.questions, who_to_ask: result.who_to_ask, model: result.model ?? null, explanation_source: result.model ? 'llm' : 'fallback' })]);
+       JSON.stringify({ kind: 'draft', draft_kind: req.kind, brief: req.brief, language: req.language, tone: req.tone ?? null, organisation_id: req.organisation_id ?? null, draft: result.draft, paragraphs: result.paragraphs, citations: result.citations, sources: result.sources, warnings: result.warnings, questions: result.questions, who_to_ask: result.who_to_ask, model: result.model ?? null, explanation_source: result.model ? 'llm' : 'fallback' })]);
     for (const ref of result.citations) await x.db.query('INSERT INTO item_cites (item_id, ref) VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, ref]);
     if (result.usage) await x.db.query("INSERT INTO audit_events (person_id, action, scope, refs, detail, tokens_in, tokens_cached, tokens_out) VALUES ($1,'llm.draft',$2,$3::text[],$4::jsonb,$5,$6,$7)",
       [x.person.id, x.a.scope, [`doc:${id}`], JSON.stringify({ model: result.model, kind: req.kind }), result.usage.input, result.usage.cached, result.usage.output]);
@@ -76,7 +76,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       }
       input = { language: ex.language ?? 'en', reference_no, their_reference: b.their_reference ?? null, date: x.now, organisation: org ? { name: org.name, registered_address: org.registered_address } : { name: b.organisation_name ?? '—' },
         contact: contact ? { name: contact.name, role: contact.role, postal_address: contact.postal_address } : null, subject: b.subject ?? null, confidentiality_note: b.confidentiality_note ?? null,
-        paragraphs: (ex.paragraphs as string[]).filter(p => !/^\[QUESTION FOR YOU/.test(p)), signatory: { name: signer?.name ?? x.person.name, signature_block: signer?.signature_block ?? null },
+        paragraphs: (ex.paragraphs as string[]).filter((p, i) => !/^\[QUESTION FOR YOU/.test(p) && ex.review?.decisions?.[i] !== 'drop'), signatory: { name: signer?.name ?? x.person.name, signature_block: signer?.signature_block ?? null },
         previous_correspondence: dispatches.map((d: any) => ({ date: (d.occurred_at instanceof Date ? d.occurred_at.toISOString() : String(d.occurred_at)).slice(0, 10), direction: d.direction, reference: d.reference_no ?? d.their_reference ?? null, subject: d.title })), keep_citations: !!b.keep_citations };
       x.a.refs = [`doc:${row.id}`]; x.a.scope = scopeLabel(row.project_id);
     } else if (b.letter) {
