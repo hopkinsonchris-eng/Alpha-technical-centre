@@ -34,6 +34,34 @@ variable, never written into the repository.
 4. Nothing else to configure: the API runs its own migrations on boot and
    enables the `vector` extension itself.
 
+### 1.5 Originals in Supabase Storage (wave 5, about 10 minutes)
+
+Every uploaded file, research finding and mined paper keeps its original bytes
+in a private bucket in this same Supabase project, so the API and the cron jobs
+share one store that survives a deploy. (Before wave 5 the originals sat on
+Render's container disk and were lost at each deploy; the extracted text and the
+search index were never affected. Files uploaded before this step must be
+uploaded again.)
+
+1. Supabase → the `atc-vault` project → **Storage → New bucket**. Name `vault`,
+   leave **Public bucket** off, no file size limit beyond the plan's. Create.
+2. **Project Settings → API**: copy the **Project URL** and, under *Project API
+   keys*, the **service_role** key (click Reveal). The service key bypasses the
+   bucket's policies, which is why it lives only in Render and never in a file
+   served to a browser.
+3. Render: on **each** of `atc-vault-api`, `atc-vault-research`,
+   `atc-vault-miners`, `atc-vault-ingest-sync` and `atc-vault-mail-poll`,
+   **Environment → Add**: `SUPABASE_URL` = the project URL,
+   `SUPABASE_SERVICE_KEY` = the service_role key. The Blueprint sets
+   `VAULT_STORAGE=supabase` and `VAULT_STORAGE_BUCKET=vault` itself on the
+   next sync; add those two by hand as well if the sync does not ask.
+4. Set the variables **before** merging the wave 5 storage pull request: the
+   API refuses to start on a production server without a durable store, and a
+   deploy that fails to start leaves the previous one running.
+5. Check: after the deploy, the API log shows `storage: supabase bucket "vault"
+   at https://…supabase.co`. Upload a file to a project; it appears under
+   Storage → vault → originals in Supabase.
+
 ## 2. Deploy the API (Render, about 15 minutes)
 
 The services are declared in `render.yml`, so Render creates them from the
