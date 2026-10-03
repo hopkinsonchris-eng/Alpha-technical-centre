@@ -27,6 +27,7 @@ import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
 import { renderRecord, detailsNode } from './record.js';
 import './components/timeline-list.js';
+import { mountDraft } from './draft.js';
 import { annotate, fmtPct } from './components/vintage-table.js';
 import './components/vintage-table.js';
 import './components/lineage-graph.js';
@@ -1173,7 +1174,7 @@ function closePanel() {
  * (run:<uuid>, doc:<uuid>, ref:...): a highlights strip, related cards you can
  * pivot through, and the raw record behind a closed disclosure (hub/record.js).
  */
-async function openRecord({ ref, title, node, entry, trigger }) {
+async function openRecord({ ref, title, node, entry, trigger, passage }) {
   const panel = $('#record-panel'), body = $('#rp-body');
   const first = panel.hasAttribute('hidden');
   if (first) panelTrigger = trigger || document.activeElement;        // a pivot keeps the trigger that opened the panel
@@ -1212,6 +1213,8 @@ async function openRecord({ ref, title, node, entry, trigger }) {
   const content = await renderRecord({ kind, ref, rec, node, entry, ctx });
   if (panel.getAttribute('data-ref') !== ref) return;
   body.textContent = '';
+  // Wave 5: a citation chip opens the record with the passage the drafter used at the top.
+  if (passage) add(body, add(mk('blockquote', 'hub-rp-passage', null, null, { 'data-passage': '' }), mk('span', 'hub-muted', 'Passage cited: ', 'Pasaje citado: '), dv('span', null, passage)));
   add(body, content);
   if (node && node.restricted) add(body, notice('warn', 'Restricted.', 'Restringido.', 'This record is outside your scope; only its id is shown.', 'Este registro está fuera de su alcance; solo se muestra su id.'));
   if (!rec && kind !== 'ref' && !(node && node.restricted)) add(body, notice('warn', 'Full record unavailable.', 'Registro completo no disponible.', 'Showing what the graph knows' + (res && errMessage(res) ? ' (' + errMessage(res) + ')' : '') + '.', 'Se muestra lo que conoce el grafo' + (res && errMessage(res) ? ' (' + errMessage(res) + ')' : '') + '.'));
@@ -1419,6 +1422,7 @@ async function init() {
     scorecard: card.fail + card.na ? bi(card.fail + card.na + ' fail', card.fail + card.na + ' fallan') : null,
   }, new Set([...(lessonsOk ? [] : ['lessons']), ...(researchOk ? [] : ['research'])]));
   renderResearch(ctx, researchOk ? rsR : null);              // after the tabs exist: the status line, the Research tab and its count
+  if (canWriteProject(ctx)) mountDraft(ctx, { openRecord });  // wave 5: Write to… beside Research
   routeTab();
   window.addEventListener('hashchange', routeTab);
 

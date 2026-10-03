@@ -153,6 +153,7 @@ export class TimelineList extends HTMLElement {
     } else {
       if (e.reference_no) add(meta, dv('span', 'mono', e.reference_no));
       if (e.version && e.version > 1) add(meta, dv('span', null, 'v' + e.version));
+      if (e.sent) add(meta, mk('span', 'hub-pill ok', 'sent to ' + e.sent.organisation, 'enviado a ' + e.sent.organisation, { 'data-sent': '' }));
     }
     add(body, meta);
 

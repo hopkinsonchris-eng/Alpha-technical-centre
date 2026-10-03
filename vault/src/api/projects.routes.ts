@@ -133,7 +133,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const acc = await loadAccess(x.db, x.person, x.now);
     const p = await loadProject(x, acc);
     const runs = (await x.db.query<any>('SELECT id, job, tool_version, title, status, supersedes, legal_tag, created_at, stale, stale_reasons FROM runs WHERE project_id = $1 AND NOT hidden', [p.id])).rows;
-    const items = (await x.db.query<any>('SELECT id, type, title, version, reference_no, supersedes, legal_tag, created_at, authored_at, stale, stale_reasons FROM items WHERE project_id = $1 AND NOT hidden', [p.id])).rows;
+    const items = (await x.db.query<any>("SELECT id, type, title, version, reference_no, supersedes, legal_tag, created_at, authored_at, stale, stale_reasons, extracted->'sent' AS sent FROM items WHERE project_id = $1 AND NOT hidden", [p.id])).rows;
     const vr = runs.filter(r => canSee(acc, r.legal_tag, p.id)), vi = items.filter(i => canSee(acc, i.legal_tag, p.id));
     const runSuperseded = new Map(vr.filter(r => r.supersedes).map(r => [r.supersedes, r.id]));
     const itemSuperseded = new Map(vi.filter(i => i.supersedes).map(i => [i.supersedes, i.id]));
@@ -141,7 +141,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       ...vr.map(r => ({ kind: 'run', ref: `run:${r.id}`, id: r.id, at: iso(r.created_at)!, title: r.title ?? r.job, job: r.job, tool_version: r.tool_version, status: r.status, legal_tag: r.legal_tag,
         stale: !!r.stale, stale_reasons: r.stale_reasons ?? [], supersedes: r.supersedes ?? null, superseded_by: runSuperseded.get(r.id) ?? null })),
       ...vi.map(i => ({ kind: 'item', ref: `doc:${i.id}`, id: i.id, at: iso(i.authored_at ?? i.created_at)!, title: i.title, type: i.type, version: i.version, reference_no: i.reference_no ?? null, legal_tag: i.legal_tag,
-        stale: !!i.stale, stale_reasons: i.stale_reasons ?? [], supersedes: i.supersedes ?? null, superseded_by: itemSuperseded.get(i.id) ?? null })),
+        stale: !!i.stale, stale_reasons: i.stale_reasons ?? [], supersedes: i.supersedes ?? null, superseded_by: itemSuperseded.get(i.id) ?? null, ...(i.sent ? { sent: i.sent } : {}) })),
     ].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : a.id < b.id ? 1 : -1));
     x.a.refs = [`project:${p.id}`]; x.a.detail = { count: entries.length };
     return { body: { project_id: p.id, count: entries.length, entries } };
