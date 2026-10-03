@@ -3,7 +3,7 @@
 // raw dump; below 1200 px it is a bottom sheet that never squeezes the page.
 // The API is stubbed with page.route; the static server serves the pages.
 import { test, expect } from '@playwright/test';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -63,14 +63,32 @@ const LINEAGE = {
 const VERSIONS = { item_id: DOC, versions: [{ version: 2, content_hash: ITEM.content_hash, storage_key: ITEM.storage_key, created_at: '2026-09-30T18:25:25.436Z' }, { version: 1, content_hash: 'sha256:' + 'b'.repeat(64), storage_key: 'originals/bb/x', created_at: '2026-09-12T10:00:00.000Z' }] };
 const CATALOG = { tools: [{ id: 'opportunity-register', name: 'Opportunity Register', owner: 'chris', lifecycle: 'production', kind: 'browser-tool', entry: 'opportunity-register.html', versions: [{ version: '2.2.0', released_at: '2026-09-22', commit: '3fa9c1e' }], aliases: { current: '2.2.0' }, releases: [], hub: { context: ['project'], param: 'project', toolbar: 10, live_version: null } }], built_at: '2026-09-29T09:00:00.000Z', commit: 'abc1234' };
 
+// Wave 5: three more originals the viewer can show (a one-page PDF, a PNG, a two-sheet workbook) and one it cannot (no original).
+const PDF = u(311), PNG = u(312), XLS = u(313), NONE = u(314);
+const FILES = path.join(ROOT, 'test/e2e/fixtures/files');
+const item = (id, title, type, mime, format, extra = {}) => ({ ...ITEM, id, title, type, mime, storage_key: 'originals/aa/' + id.replace(/-/g, ''), version: 1, supersedes: null, cites: [],
+  extracted: { text_chars: 100, chunks: 1, format, ingest: { version: 2, status: 'ok', at: '2026-10-02T10:00:00.000Z' } }, ...extra });
+const EXTRA = {
+  [PDF]: item(PDF, 'Guafita field report.pdf', 'report', 'application/pdf', 'pdf'),
+  [PNG]: item(PNG, 'Field map.png', 'image', 'image/png', 'png'),
+  [XLS]: item(XLS, 'production.xlsx', 'spreadsheet', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'xlsx'),
+  [NONE]: item(NONE, 'Scan uploaded before durable storage.pdf', 'scan', 'application/pdf', 'pdf', { extracted: { ingest: { version: 2, status: 'no_original' } } }),
+};
+const BYTES = { [PDF]: ['report.pdf', 'application/pdf'], [PNG]: ['map.png', 'image/png'], [XLS]: ['production.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'] };
+const EXTRA_TL = Object.values(EXTRA).map((it, i) => ({ kind: 'item', ref: 'doc:' + it.id, id: it.id, at: '2026-10-0' + (2 + i % 2) + 'T0' + (9 - i) + ':00:00.000Z', title: it.title, type: it.type, version: 1, legal_tag: 'lt-firm', stale: false, stale_reasons: [], supersedes: null }));
+
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 async function stubApi(page) {
   await page.route('**/api/**', (route) => {
     const p = new URL(route.request().url()).pathname;
+    const orig = /^\/api\/items\/([^/]+)\/original$/.exec(p);
+    if (orig) { const b = BYTES[orig[1]]; return b ? route.fulfill({ status: 200, contentType: b[1], body: readFileSync(path.join(FILES, b[0])) }) : json(route, { error: { code: 'no_original', message: 'missing' } }, 404); }
+    if (p.startsWith('/api/items/') && EXTRA[p.split('/')[3]] && p.split('/').length === 4) return json(route, EXTRA[p.split('/')[3]]);
+    if (p.startsWith('/api/items/') && EXTRA[p.split('/')[3]] && p.endsWith('/versions')) return json(route, { item_id: p.split('/')[3], versions: [] });
     if (p === '/api/me') return json(route, PARTNER);
     if (p === '/api/catalog') return json(route, CATALOG);
     if (p === '/api/projects/' + PID) return json(route, PROJECT);
-    if (p === '/api/projects/' + PID + '/timeline') return json(route, { project_id: PID, count: TIMELINE.length, entries: TIMELINE });
+    if (p === '/api/projects/' + PID + '/timeline') return json(route, { project_id: PID, count: TIMELINE.length + EXTRA_TL.length, entries: [...TIMELINE, ...EXTRA_TL] });
     if (p === '/api/projects/' + PID + '/vintages') return json(route, { project_id: PID, vintages: [] });
     if (p === '/api/projects/' + PID + '/lineage') return json(route, LINEAGE);
     if (p === '/api/items/' + DOC) return json(route, ITEM);
@@ -213,4 +231,49 @@ test('AC18: evidence screenshot of the record sheet on an iPad-sized viewport', 
   await expect(page.locator('#record-panel [data-highlights]')).toBeVisible();
   mkdirSync(EVIDENCE, { recursive: true });
   await page.screenshot({ path: path.join(EVIDENCE, 'w2-record-sheet-ipad.png') });
+});
+
+test('W5-AC3: the View card shows a PDF on canvas, an image inline, a workbook as tables with sheet tabs, a Word file as a download, and says when the original is missing', async ({ page }) => {
+  await openProject(page);
+  const panel = page.locator('#record-panel');
+  page.on('console', (m) => { if (m.type() === 'error') console.log('[browser]', m.text()); });
+  const open = async (id) => { await page.locator(`.hub-tl-item[data-ref="doc:${id}"] .hub-tl-title`).click(); await expect(panel.locator('[data-view]')).toBeVisible(); };
+  // PDF: the viewer reports its page count once PDF.js has rendered the first page.
+  await open(PDF);
+  const pdf = panel.locator('.hub-viewer[data-viewer="pdf"]');
+  await expect(pdf).toHaveAttribute('data-pages', '1', { timeout: 15000 });
+  await expect(pdf).toHaveAttribute('data-state', 'ready');
+  await expect(pdf.locator('.hub-viewer-page canvas')).toHaveCount(1);
+  await expect(pdf.locator('[data-page-counter]')).toHaveText('Page 1 of 1');
+  await expect(pdf.locator('.hub-viewer-download')).toHaveAttribute('href', '/api/items/' + PDF + '/original?download=1');
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE, 'w5-viewer-pdf.png') });
+  // Image.
+  await open(PNG);
+  const img = panel.locator('.hub-viewer[data-viewer="image"] img');
+  await expect(img).toBeVisible();
+  await expect(img).toHaveAttribute('src', '/api/items/' + PNG + '/original');
+  await expect(panel.locator('.hub-viewer[data-viewer="image"]')).toHaveAttribute('data-state', 'ready');
+  // Workbook: a tab per sheet, the first sheet as a table with the header row.
+  await open(XLS);
+  const sheet = panel.locator('.hub-viewer[data-viewer="sheet"]');
+  await expect(sheet).toHaveAttribute('data-state', 'ready', { timeout: 15000 });
+  await expect(sheet.locator('.hub-viewer-tab')).toHaveText(['Production', 'Monthly']);
+  await expect(sheet.locator('table[data-sheet="Production"] thead th')).toHaveText(['Well', 'Rate bopd', 'Water cut']);
+  await expect(sheet.locator('table[data-sheet="Production"] tbody tr')).toHaveCount(2);
+  await sheet.locator('.hub-viewer-tab[data-sheet="Monthly"]').click();
+  await expect(sheet.locator('table[data-sheet="Monthly"] tbody tr')).toHaveCount(1);
+  await page.screenshot({ path: path.join(EVIDENCE, 'w5-viewer-sheet.png') });
+  // Word: download only; the text stays as before.
+  await open(DOC);
+  const other = panel.locator('.hub-viewer[data-viewer="other"]');
+  await expect(other).toHaveAttribute('data-state', 'download');
+  await expect(other.locator('.hub-viewer-download')).toHaveAttribute('href', '/api/items/' + DOC + '/original?download=1');
+  // No original.
+  await open(NONE);
+  await expect(panel.locator('[data-view]')).toContainText('Original missing');
+  await expect(panel.locator('.hub-viewer')).toHaveCount(0);
+  // Spanish follows.
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await expect(panel.locator('[data-view] h4')).toHaveText('Ver');
 });
