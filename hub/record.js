@@ -14,6 +14,7 @@
    ============================================================ */
 import { mk, dv, add, fmtShortDate, num, RUN_STATUS } from './hub.js';
 import { firstReason } from './components/stale-badge.js';
+import { buildViewer } from './viewer.js';
 
 const TYPE_LABEL = {
   report: ['Report', 'Informe'], letter: ['Letter', 'Carta'], email: ['Email', 'Correo'], spreadsheet: ['Spreadsheet', 'Hoja de cálculo'],
@@ -121,6 +122,12 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
   add(frag, dl);
 
   if (!rec) return frag;   // nothing more is known without the record
+
+  // View (wave 5): the original itself, when the store has it; a record filed without one, or whose original
+  // predates durable storage, says so instead.
+  const viewBody = rec.storage_key && !(ex.ingest && ex.ingest.status === 'no_original') ? buildViewer(rec)
+    : mk('p', 'hub-muted', rec.storage_key ? 'Original missing: upload it again.' : 'Filed without an original.', rec.storage_key ? 'Falta el original: súbalo de nuevo.' : 'Registrado sin original.');
+  add(frag, add(mk('div', 'hub-rp-card hub-rp-view', null, null, { 'data-view': '' }), mk('h4', null, 'View', 'Ver'), viewBody));
 
   // Related: versions, cites, cited by, original.
   const rel = mk('div', 'hub-rp-related');

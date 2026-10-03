@@ -14,3 +14,10 @@ INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
 OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
+
+
+pdf.js 4.10.38 legacy build (https://mozilla.github.io/pdf.js/), files pdf.min.mjs and pdf.worker.min.mjs, vendored unmodified for the Hub's original viewer (wave 5).
+Released under the Apache License 2.0: http://www.apache.org/licenses/LICENSE-2.0
+
+SheetJS Community Edition 0.18.5 (https://sheetjs.com), file xlsx.full.min.js, vendored unmodified for the Hub's spreadsheet view (wave 5).
+Released under the Apache License 2.0: http://www.apache.org/licenses/LICENSE-2.0
