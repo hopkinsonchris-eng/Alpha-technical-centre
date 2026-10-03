@@ -47,7 +47,7 @@ before(async () => {
 });
 after(async () => { await db.close(); });
 
-test('storage: filesystem round trip, path traversal refused, supabase stub not configured, env picks the backend', async () => {
+test('storage: filesystem round trip, path traversal refused, supabase needs its keys, env picks the backend', async () => {
   const s = filesystemStorage(path.join(STORAGE, 'unit'));
   assert.equal(await s.exists('originals/ab/abc'), false);
   assert.equal(await s.get('originals/ab/abc'), null);
@@ -56,8 +56,9 @@ test('storage: filesystem round trip, path traversal refused, supabase stub not 
   assert.deepEqual([...(await s.get('originals/ab/abc'))!], [1, 2, 3]);
   await assert.rejects(s.put('../escape', new Uint8Array(), 'x'), /invalid storage key/);
   await assert.rejects(s.get('/etc/passwd'), /invalid storage key/);
-  await assert.rejects(supabaseStorage().put('k', new Uint8Array(), 'x'), /storage not configured/);
-  await assert.rejects(openStorage({ VAULT_STORAGE: 'supabase' } as any).exists('k'), /storage not configured/);
+  // Wave 5: the Supabase backend is real (storage.supabase.test.ts); without its keys the environment is refused by name.
+  assert.throws(() => openStorage({ VAULT_STORAGE: 'supabase' } as any), /SUPABASE_URL and SUPABASE_SERVICE_KEY/);
+  assert.equal(typeof supabaseStorage({ url: 'https://x.supabase.co', serviceKey: 'k' }).put, 'function');
   assert.ok(openStorage({ VAULT_STORAGE_DIR: STORAGE } as any));
 });
 

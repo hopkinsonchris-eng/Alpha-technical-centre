@@ -47,6 +47,14 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
+      - key: VAULT_STORAGE
+        value: supabase
+      - key: VAULT_STORAGE_BUCKET
+        value: vault
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
@@ -98,6 +106,14 @@ services:
     buildCommand: npm ci
     startCommand: npx tsx src/jobs/ingest-sync.ts
     envVars:
+      - key: VAULT_STORAGE
+        value: supabase
+      - key: VAULT_STORAGE_BUCKET
+        value: vault
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
       - key: DATABASE_URL
         sync: false
 
@@ -110,6 +126,14 @@ services:
     buildCommand: npm ci
     startCommand: npx tsx src/jobs/mail-poll.ts
     envVars:
+      - key: VAULT_STORAGE
+        value: supabase
+      - key: VAULT_STORAGE_BUCKET
+        value: vault
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
       - key: DATABASE_URL
         sync: false
 
@@ -123,6 +147,14 @@ services:
     buildCommand: npm ci
     startCommand: npx tsx src/jobs/research.ts
     envVars:
+      - key: VAULT_STORAGE
+        value: supabase
+      - key: VAULT_STORAGE_BUCKET
+        value: vault
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: WORLD_MONITOR_API_KEY
@@ -141,6 +173,14 @@ services:
     buildCommand: npm ci
     startCommand: npx tsx src/jobs/miners.ts
     envVars:
+      - key: VAULT_STORAGE
+        value: supabase
+      - key: VAULT_STORAGE_BUCKET
+        value: vault
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: S2_API_KEY
