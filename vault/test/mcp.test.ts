@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+process.env.VAULT_STORAGE_DIR ??= (await import('node:fs')).mkdtempSync((await import('node:path')).join((await import('node:os')).tmpdir(), 'vault-mcp-'));
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -82,7 +83,9 @@ const mcpEvents = async (db: Db) => (await db.query<any>("SELECT action, scope, 
 test('every tool is listed', async () => {
   const db = await seed(); const { client } = await connect(db, 'chris');
   const names = (await client.listTools()).tools.map(t => t.name).sort();
-  assert.deepEqual(names, ['draft', 'get_lessons', 'get_run', 'get_tool_current', 'list_runs', 'record_lesson', 'search_vault']);
+  assert.deepEqual(names, ['draft', 'file_item', 'get_item', 'get_lessons', 'get_project_context', 'get_run', 'get_tool_current', 'list_projects', 'list_runs', 'record_lesson', 'search_vault']);
+  // W5-AC13: every tool carries a title and read/write hints.
+  for (const t of (await client.listTools()).tools) { assert.ok(t.title, t.name + ' has a title'); assert.ok(t.annotations && typeof t.annotations.readOnlyHint === 'boolean', t.name + ' says whether it reads or writes'); }
   await client.close(); await db.close();
 });
 
@@ -274,4 +277,39 @@ test('draft returns the DraftResult without the assembled context, and the draft
   assert.equal(ev.length, 2);
   assert.equal(ev[1].refs[0], `doc:${b.id}`);
   await client.close(); await db.close();
+});
+
+test('W5-AC13: list_projects, get_project_context, get_item and file_item work under scope; the filed note is a record of the project', async () => {
+  const db = await seed();
+  await db.query(`UPDATE projects SET register = '{"holder":"Client A Holdings","partners":["Partner Co"]}'::jsonb WHERE id = 'p-a-1'`);
+  await db.query("INSERT INTO chunks (item_id, run_id, ordinal, text, legal_tag, client_id, project_id, partners_only, current, embedding) VALUES ($1, NULL, 0, 'Kick-off: agreed the data room index by Friday.', 'lt-a-nda', 'a', 'p-a-1', false, true, $2::vector)", [ITEM_A, '[' + Array.from({ length: 1024 }, (_, i) => (i === 7 ? 1 : 0)).join(',') + ']']);
+  const ana = await connect(db, 'ana'), chris = await connect(db, 'chris');
+  const la = await call(ana.client, 'list_projects', {}); const lc = await call(chris.client, 'list_projects', {});
+  assert.deepEqual(la.structuredContent.projects.map((p: any) => p.id), ['p-a-1'], 'an associate sees the project she is a member of');
+  assert.ok(lc.structuredContent.projects.length > la.structuredContent.projects.length);
+  assert.match(lc.structuredContent.projects[0].hub_url, /\/hub\/project\.html\?id=/);
+  const ctx = await call(chris.client, 'get_project_context', { project_id: 'p-a-1' });
+  assert.ok(!ctx.isError, JSON.stringify(ctx));
+  assert.match(ctx.structuredContent.markdown, /# a one \(p-a-1\)/); assert.match(ctx.structuredContent.markdown, /Current owner: Client A Holdings/); assert.match(ctx.structuredContent.markdown, /JV partners: Partner Co/);
+  assert.equal(ctx.structuredContent.counterparties.holder, 'Client A Holdings');
+  const other = await call(ana.client, 'get_project_context', { project_id: 'p-b-1' });
+  assert.ok(other.isError, 'an invisible project is an error, not a summary');
+  const it = await call(chris.client, 'get_item', { id: ITEM_A });
+  assert.ok(!it.isError, JSON.stringify(it));
+  assert.equal(it.structuredContent.title, 'Kick-off note'); assert.match(it.structuredContent.text, /data room index/); assert.equal(it.structuredContent.ref, 'doc:' + ITEM_A);
+  const filed = await call(chris.client, 'file_item', { project_id: 'p-a-1', title: 'Call with Client A, 3 October', text: '# Call\n\nThey will send the index on Monday.', cites: ['doc:' + ITEM_A] });
+  assert.ok(!filed.isError, JSON.stringify(filed));
+  const ref: string = filed.structuredContent.ref;
+  assert.match(ref, /^doc:[0-9a-f-]{36}$/);
+  const row = (await db.query<any>("SELECT type, title, project_id, origin->>'source' AS source, authors FROM items WHERE id = $1", [ref.slice(4)])).rows[0];
+  assert.equal(row.type, 'note'); assert.equal(row.project_id, 'p-a-1'); assert.equal(row.source, 'assistant'); assert.deepEqual(row.authors, ['chris']);
+  const cites = (await db.query<any>('SELECT ref FROM item_cites WHERE item_id = $1', [ref.slice(4)])).rows.map((r: any) => r.ref);
+  assert.deepEqual(cites, ['doc:' + ITEM_A]);
+  const back = await call(chris.client, 'get_item', { id: ref.slice(4) });
+  assert.match(back.structuredContent.title, /Call with Client A/);
+  const denied = await call(ana.client, 'file_item', { project_id: 'p-b-1', title: 'Sneaky note', text: 'x' });
+  assert.ok(denied.isError);
+  const ev = (await db.query<any>("SELECT action, person_id, refs FROM audit_events WHERE action = 'mcp.file_item' AND person_id = 'chris' ORDER BY id DESC LIMIT 1")).rows[0];
+  assert.equal(ev.person_id, 'chris'); assert.ok(ev.refs.includes(ref));
+  await ana.client.close(); await chris.client.close(); await db.close();
 });

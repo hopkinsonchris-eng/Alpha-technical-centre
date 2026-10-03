@@ -93,6 +93,17 @@
 
       <div id="notices" role="status"></div>
 
+      <section class="card hub-connections" id="sec-connections" aria-labelledby="h-connections">
+        <div class="hub-card-head">
+          <div>
+            <h3 id="h-connections" data-en="Connected apps" data-es="Aplicaciones conectadas">Connected apps</h3>
+            <span class="hub-muted" data-en="Apps that use the Vault as you: the Claude app, Claude Code. Each call they make is scoped to what you may see and recorded under your name." data-es="Aplicaciones que usan el Vault como usted: la app de Claude, Claude Code. Cada llamada queda limitada a lo que usted puede ver y registrada a su nombre.">Apps that use the Vault as you: the Claude app, Claude Code. Each call they make is scoped to what you may see and recorded under your name.</span>
+          </div>
+        </div>
+        <ul class="hub-rp-list" id="connections-list"></ul>
+        <p class="hub-muted" id="connections-empty" hidden data-en="No app is connected. In the Claude app: Settings → Connectors → Add custom connector, URL https://www.alpha-technical-centre.com/mcp." data-es="Ninguna aplicación conectada. En la app de Claude: Ajustes → Conectores → Añadir conector personalizado, URL https://www.alpha-technical-centre.com/mcp.">No app is connected. In the Claude app: Settings → Connectors → Add custom connector, URL https://www.alpha-technical-centre.com/mcp.</p>
+      </section>
+
       <form id="rates-form" novalidate>
         <section aria-labelledby="h-rates">
           <div class="card">
@@ -361,6 +372,26 @@ $('reset').addEventListener('click', async () => {
 });
 
 load();
+
+/* Wave 5: the apps connected through the Vault's own OAuth (docs/vault-hub/wave5/05-markup.md §1.4). */
+async function loadConnections() {
+  const list = $('connections-list'), empty = $('connections-empty');
+  const r = await api('/api/me/connections');
+  list.textContent = '';
+  const rows = r.ok && r.body && Array.isArray(r.body.connections) ? r.body.connections.filter((c) => !c.revoked) : [];
+  if (!rows.length) { empty.removeAttribute('hidden'); return; }
+  empty.setAttribute('hidden', '');
+  const when = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); };
+  for (const c of rows) {
+    const li = mk('li', 'hub-connection', null, null, { 'data-connection': c.id });
+    add(li, dv('b', null, c.client + (c.host ? ' · ' + c.host : '')), mk('span', 'hub-muted', ' · connected ' + when(c.first_used) + ' · last used ' + when(c.last_used), ' · conectada el ' + when(c.first_used) + ' · último uso ' + when(c.last_used)));
+    const btn = mk('button', 'btn btn-outline btn-sm', 'Revoke', 'Revocar', { type: 'button', 'data-revoke': c.id });
+    btn.addEventListener('click', async () => { btn.disabled = true; const d = await api('/api/me/connections/' + encodeURIComponent(c.id), { method: 'DELETE' }); if (d.ok) loadConnections(); else btn.disabled = false; });
+    add(li, btn);
+    add(list, li);
+  }
+}
+loadConnections();
 </script>
 </body>
 </html>

@@ -519,6 +519,10 @@ a.hub-proj:hover { border-color: #CDBB85; }
 .hub-rp-pivot:hover { color: var(--gold-ink); }
 .hub-rp-orig { grid-template-columns: 90px 1fr; font-size: 13px; }
 .hub-rp-details { margin-top: 16px; }
+/* Wave 5: connected apps */
+.hub-connections { margin-bottom: 16px; }
+.hub-connection { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hub-connection button { margin-left: auto; }
 /* Wave 5: Write to… */
 .hub-draft-setup { margin-top: 8px; }
 .hub-draft-setup textarea { width: 100%; border: 1px solid var(--rule); border-radius: var(--r); padding: 8px 11px; font: inherit; font-size: 13.5px; }

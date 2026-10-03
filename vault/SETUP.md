@@ -202,6 +202,50 @@ one-time PIN sent to a company mailbox. The public site stays public.
      colleagues are created as associates the first time they log in and can
      be promoted to partner by editing that file).
 
+## 6. The Vault in the Claude app (wave 5, about 20 minutes)
+
+The Vault is an OAuth 2.1 server for its own connector, so each person signs in
+as themselves through the usual Access login and every call is scoped and
+audited under their name. Three Cloudflare changes, one Render variable, then
+the connector in the Claude app. Custom connectors need a Pro, Max, Team or
+Enterprise plan; on Team and Enterprise an Owner adds it and each person then
+connects.
+
+1. **Cloudflare Zero Trust → Access → Applications.** Edit **ATC Hub** and
+   remove the `mcp` path (keep `hub` and `api`). Then **Add an application →
+   Self-hosted** twice:
+   - **ATC Connector login**: domain `www.alpha-technical-centre.com`, path
+     `oauth/authorize`; policy `Staff`, Allow, emails ending in the company
+     domain. (The consent page: the Vault itself also refuses this page to
+     anyone Access did not sign in.)
+   - **ATC Connector**: the same domain with the paths `mcp`, `oauth/token`,
+     `oauth/register`, `.well-known/oauth-authorization-server` and
+     `.well-known/oauth-protected-resource`; one policy, action **Bypass**,
+     Include **Everyone**. The Vault checks its own tokens there, and nothing on
+     those paths answers without one.
+2. **Workers & Pages → `atc-api-proxy` → Settings → Domains & Routes → Add →
+   Route**, twice: `www.alpha-technical-centre.com/oauth*` and
+   `www.alpha-technical-centre.com/.well-known/oauth*`.
+3. **Render → atc-vault-api → Environment**: `VAULT_PUBLIC_URL` =
+   `https://www.alpha-technical-centre.com` (the Blueprint sets it on sync;
+   add it by hand if the sync does not).
+4. **Check**, in a private window: `https://www.alpha-technical-centre.com/.well-known/oauth-authorization-server`
+   answers JSON with `issuer` and `token_endpoint`;
+   `https://www.alpha-technical-centre.com/mcp` opened in the browser answers
+   a JSON error with status 405 (it takes POST only) and no Access login.
+5. **Claude app** (iPad or web): Settings → Connectors → **Add custom
+   connector**. Name `ATC Vault`, URL
+   `https://www.alpha-technical-centre.com/mcp`, OAuth client **Register
+   automatically**, Authentication **Sign in now**. The Access login appears
+   (one-time PIN to your company mailbox), then the Vault's consent page
+   (Allow), then the connector shows as connected. Claude Code picks the same
+   connector up under the same account.
+6. **Use it**: in any conversation, "List my projects", "Give me the context
+   of High Tech Electronica", "Search the Vault for the Guafita restart",
+   "Draft an email to the holder about…", "File this summary into the
+   project". Reads run without a prompt; writes ask first. **Settings →
+   Connected apps** in the Hub lists the connections and revokes them.
+
 ## 5. The APEX apps' developer (an email from you)
 
 Send the developer the file `vault/src/adapters/README.md` (on GitHub once

@@ -65,6 +65,8 @@ services:
         sync: false
       - key: ALLOWED_EMAIL_DOMAIN
         value: alpha-technical-centre.com
+      - key: VAULT_PUBLIC_URL
+        value: https://www.alpha-technical-centre.com
 
   # Nightly staleness (M08): recomputes stale flags on runs and documents.
   - type: cron
