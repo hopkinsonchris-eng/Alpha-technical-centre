@@ -25,6 +25,10 @@ import { ApiError, assertVisible, canSee, forbidden, iso, loadAccess, notFound, 
 import { runRecord } from '../api/runs.routes.ts';
 import { register as registerLessons } from '../api/lessons.routes.ts';
 import { register as registerDraft } from '../api/draft.routes.ts';
+import { register as registerItems } from '../api/items.routes.ts';
+import { counterpartiesOf } from '../llm/draft.ts';
+import { issuerFrom } from '../oauth/server.ts';
+import { randomUUID } from 'node:crypto';
 import { hybridSearch, loadProjects, resolveScope, runsFor, ScopeError, searchDeps, type SearchHit } from '../gateway/index.ts';
 import { firmDir } from '../jobs/lessons-index.ts';
 import { buildCatalog, resolve, type Catalog } from '../catalog.ts';
@@ -62,8 +66,11 @@ function routeApp(db: Db, person: Person): Hono<Env> {
   app.use('*', async (c, next) => { c.set('person', person); c.set('db', db); await next(); });
   registerLessons(app, { db });
   registerDraft(app, { db });
+  registerItems(app, { db });
   return app;
 }
+/** A link into the Hub for a project or a record, so an answer in a conversation can point at the page. */
+export const hubUrl = (project?: string | null, ref?: string | null) => project ? `${issuerFrom()}/hub/project.html?id=${encodeURIComponent(project)}${ref ? '#' + encodeURIComponent(ref) : ''}` : `${issuerFrom()}/hub/`;
 
 async function callRoute(db: Db, person: Person, method: 'GET' | 'POST', url: string, body?: unknown): Promise<any> {
   const res = await routeApp(db, person).request(url, body === undefined ? { method } : { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -240,6 +247,7 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
 
   server.registerTool('record_lesson', {
     title: 'Propose a lesson',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     description: 'Propose a lesson learned. It is stored as `proposed` and reaches the firm index only when a partner confirms it in the Hub queue. Needs at least one piece of evidence (run:<uuid>, doc:<uuid> or transcript:<id>) that exists and is in your scope. Same validation as POST /api/lessons: client-NDA evidence cannot be given firm, discipline or tool scope.',
     inputSchema: {
       lesson: z.object({
@@ -262,6 +270,7 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
 
   server.registerTool('draft', {
     title: 'Draft with the Vault',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     description: 'Draft an email, letter, report section or calc note from the Vault records in the project scope. Every factual sentence carries a [run:<id>] or [doc:<id>] citation; a figure with no record to cite comes back as a [QUESTION FOR YOU: ...] paragraph. The draft is saved as a note (its id is returned) so POST /api/render can put it on letterhead. Returns the draft, paragraphs, citations, sources, who_to_ask, warnings and questions, without the assembled context.',
     inputSchema: {
       kind: z.enum(['email', 'letter', 'report-section', 'calc-note']),
@@ -277,6 +286,71 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     a.refs = [`doc:${result.id}`, ...(result.citations ?? [])].slice(0, 100);
     a.detail = { ...a.detail, kind: args.kind, citations: (result.citations ?? []).length, questions: (result.questions ?? []).length };
     return result;
+  }));
+
+  /* ── wave 5 (W5-D4, P49): the project as the memory behind a conversation ── */
+
+  server.registerTool('list_projects', {
+    title: 'List projects',
+    description: 'The projects and opportunities you may see: id, name, status, stage, client and country, with a Hub link each. Use it to find the project id other tools need; not for searching records (search_vault) or for a project\'s contents (get_project_context).',
+    inputSchema: { status: z.enum(['active', 'prospect', 'closed', 'all']).optional() },
+    annotations: { readOnlyHint: true },
+  }, ({ status }) => tool('list_projects', async (a) => {
+    const acc = await loadAccess(db, person, now());
+    // "firm" is the internal project for firm-wide records, not an opportunity anyone works: left out.
+    const rows = [...acc.projects.values()].filter(p => p.id !== 'firm' && canSee(acc, p.default_legal_tag, p.id)).filter(p => !status || status === 'all' ? p.status !== 'closed' || status === 'all' : p.status === status);
+    const extra = new Map((await db.query<any>('SELECT id, country, stage FROM projects WHERE id = ANY($1::text[])', [rows.map(p => p.id)])).rows.map((r: any) => [r.id, r]));
+    a.scope = 'firm'; a.detail = { count: rows.length };
+    return { projects: rows.map(p => ({ id: p.id, name: p.name, status: p.status, client_id: p.client_id, country: extra.get(p.id)?.country ?? null, stage: extra.get(p.id)?.stage ?? null, hub_url: hubUrl(p.id) })).sort((x, y) => x.name.localeCompare(y.name)) };
+  }));
+
+  server.registerTool('get_project_context', {
+    title: 'Get a project\'s context',
+    description: 'Everything to read before working on a project: the brief (status, client, members, counterparties from the register: current owner, government, licence, partners), the activity, the contacts, and the runs and records that are current or stale. Start here before drafting or filing. Use search_vault for a question across records and get_item for one record\'s text.',
+    inputSchema: { project_id: z.string().min(1).max(64) },
+    annotations: { readOnlyHint: true },
+  }, ({ project_id }) => tool('get_project_context', async (a) => {
+    a.scope = `project:${project_id}`; a.refs = [`project:${project_id}`];
+    const sum = await projectSummary(db, person, project_id, now());
+    const reg = (await db.query<any>('SELECT register FROM projects WHERE id = $1', [project_id])).rows[0]?.register ?? null;
+    const cp = counterpartiesOf(reg);
+    const lines = cp ? ['', '## Counterparties (from the register)', '', ...(cp.holder ? [`- Current owner: ${cp.holder}`] : []), ...(cp.government ? [`- Government: ${cp.government}`] : []), ...(cp.licence ? [`- Licence: ${cp.licence}`] : []), ...(cp.partners.length ? [`- JV partners: ${cp.partners.join(', ')}`] : [])] : [];
+    const open = (await db.query<any>("SELECT count(*)::int AS n FROM review_queue WHERE status = 'open' AND payload->>'project_id' = $1", [project_id])).rows[0]?.n ?? 0;
+    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, markdown: sum.markdown + lines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
+  }));
+
+  server.registerTool('get_item', {
+    title: 'Get a record',
+    description: 'One document, note or finding by its id (the part after doc: in a ref): the record (type, title, date, legal tag, project, source URL when it has one) and its extracted text, capped. Use the ref from search_vault or get_project_context; not for runs (get_run).',
+    inputSchema: { id: z.string().regex(UUID_RE), max_chars: z.number().int().min(200).max(60000).optional() },
+    annotations: { readOnlyHint: true },
+  }, ({ id, max_chars }) => tool('get_item', async (a) => {
+    const rec = await callRoute(db, person, 'GET', `/api/items/${id}`);
+    a.scope = rec.project_id ? `project:${rec.project_id}` : 'firm'; a.refs = [`doc:${id}`];
+    const cap = max_chars ?? 20000;
+    const chunks = (await db.query<any>('SELECT text FROM chunks WHERE item_id = $1 ORDER BY ordinal', [id])).rows.map((r: any) => r.text);
+    const ex = rec.extracted ?? {};
+    const full = chunks.length ? chunks.join('\n\n') : [ex.quote, ex.summary, ex.abstract, ex.text, ex.draft].filter((t: unknown) => typeof t === 'string' && t).join('\n\n');
+    return { id, ref: `doc:${id}`, type: rec.type, title: rec.title, date: rec.authored_at ?? rec.created_at, legal_tag: rec.legal_tag, project_id: rec.project_id, version: rec.version, url: ex.url ?? rec.origin?.url ?? null, hub_url: hubUrl(rec.project_id, `doc:${id}`),
+      text: full.slice(0, cap), truncated: full.length > cap, text_chars: full.length, cites: rec.cites ?? [] };
+  }));
+
+  server.registerTool('file_item', {
+    title: 'File a note into a project',
+    description: 'File text you produced (a note, a summary, minutes, a conversation\'s conclusion) as a record under a project, so it is in the Vault rather than only in this conversation: indexed for Find, versioned, and citable as doc:<id>. Needs write access to the project. Not for documents that already exist (upload them in the Hub) and not for lessons (record_lesson).',
+    inputSchema: { project_id: z.string().min(1).max(64), title: z.string().min(3).max(200), text: z.string().min(1).max(200000), type: z.enum(['note', 'report', 'letter', 'email']).optional(), cites: z.array(z.string().regex(/^(run|doc|lesson):/)).max(50).optional() },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, ({ project_id, title, text, type, cites }) => tool('file_item', async (a) => {
+    a.scope = `project:${project_id}`;
+    const fd = new FormData();
+    const external = `chat:${randomUUID()}`;
+    fd.append('item', JSON.stringify({ type: type ?? 'note', title, project_id, authors: [person.id], origin: { source: 'assistant', external_id: external }, cites: cites ?? [], extracted: { kind: 'filed-from-conversation', filed_by: person.id } }));
+    fd.append('original', new Blob([text], { type: 'text/markdown' }), 'note.md');
+    const res = await routeApp(db, person).request('/api/items', { method: 'POST', body: fd });
+    const json: any = await res.json().catch(() => ({}));
+    if (res.status >= 400) throw new ApiError(res.status, json?.error?.code ?? 'error', json?.error?.message ?? `request failed (${res.status})`, json?.error?.path);
+    a.refs = [`doc:${json.id}`, ...(cites ?? [])]; a.detail = { type: type ?? 'note', chars: text.length, deduplicated: !!json.deduplicated };
+    return { ref: `doc:${json.id}`, id: json.id, version: json.version, deduplicated: !!json.deduplicated, hub_url: hubUrl(project_id, `doc:${json.id}`), note: 'Filed. The text is indexed for Find at the next ingest pass; cite it as the ref.' };
   }));
 
   /* ── resources ────────────────────────────────────────────────────── */
