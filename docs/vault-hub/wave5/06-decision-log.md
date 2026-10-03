@@ -47,5 +47,7 @@ The Tooler record for the project file you work from, 2 and 3 October 2026.
 
 ## Evidence
 
+- PR 4: `evidence/w5-consent.png` (the consent page the Vault serves behind the Access login, captured on the real Vault running on the embedded database with a client registered through `/oauth/register`).
+- Final suites on the last head: Vault 438 passing, typecheck clean, the touched Playwright specs green (record panel, Write to…, settings, research, toolbar), root 82; CI green on #45, #46, #47 and #48; the sitemap pages byte-identical to `main`.
 - PR 3: `evidence/w5-write-to.png` (the panel after a draft: the open question with who to ask, the citation chips, the amber sentence, the per-paragraph decisions), captured by the end-to-end spec.
 - PR 2: `evidence/w5-viewer-pdf.png` (a PDF rendered in the panel with the page counter, zoom and Download), `evidence/w5-viewer-sheet.png` (a workbook as tables with sheet tabs); both captured by the end-to-end spec.
