@@ -530,6 +530,9 @@ a.hub-proj:hover { border-color: #CDBB85; }
 .hub-activity-line { margin: 4px 0 0; font-size: 14px; line-height: 1.6; }
 .hub-activity-line .hub-cite { text-decoration: none; }
 .hub-activity .hub-actions { margin: 0; padding: 10px 14px; border-top: 1px solid var(--rule); align-items: center; gap: 10px; flex-wrap: wrap; }
+.hub-dr-send { margin: 12px 0; padding: 12px 14px; border: 1px solid var(--gold); border-radius: var(--r-lg); background: var(--cream); }
+.hub-dr-send h4 { margin: 0 0 8px; font-family: var(--font-label); font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); }
+.hub-dr-send input, .hub-dr-send select { width: 100%; max-width: 480px; border: 1px solid var(--rule); border-radius: var(--r); padding: 6px 10px; font: inherit; font-size: 13px; background: var(--white); }
 .q-group-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--rule); background: var(--cream); }
 .q-group-head .label { margin: 0; }
 .q-group-head .btn { margin-left: auto; }

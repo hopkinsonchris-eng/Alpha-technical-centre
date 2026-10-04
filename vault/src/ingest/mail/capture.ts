@@ -110,6 +110,20 @@ async function resolveThread(db: Db, msg: RawMessage): Promise<string> {
   return r?.tid ?? r?.ext ?? msg.thread_id;
 }
 
+/** The draft this sent message came from, if the Hub sent it: same mailbox, same subject, same first recipient, within an hour of the send. */
+async function sentFromHub(db: Db, msg: RawMessage): Promise<{ id: string; project_id: string; reference_no: string | null } | null> {
+  const to = msg.to.map(a => a.address.toLowerCase());
+  if (!to.length) return null;
+  const r = (await db.query<{ id: string; project_id: string; reference_no: string | null }>(
+    `SELECT id, project_id, reference_no FROM items
+      WHERE NOT hidden AND extracted->>'kind' = 'draft' AND extracted->'sent'->>'via' = 'zoho-mail' AND (extracted->'sent'->>'captured_item_id') IS NULL
+        AND lower(extracted->'sent'->>'from') = lower($1) AND lower(extracted->'sent'->>'subject') = lower($2)
+        AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(extracted->'sent'->'addresses', '[]'::jsonb)) a WHERE lower(a) = ANY($3::text[]))
+        AND abs(extract(epoch from (($4::timestamptz) - (extracted->'sent'->>'at')::timestamptz))) < 3600
+      ORDER BY (extracted->'sent'->>'at')::timestamptz DESC LIMIT 1`, [msg.mailbox, msg.subject, to, msg.date])).rows[0];
+  return r ?? null;
+}
+
 async function attachmentsOf(db: Db, parentId: string): Promise<number> {
   return Number((await db.query<{ n: number }>('SELECT count(*)::int AS n FROM items WHERE parent_id = $1', [parentId])).rows[0].n);
 }
@@ -187,9 +201,12 @@ export async function captureMessage(db: Db, storage: Storage, incoming: RawMess
     return { ...out, status: 'duplicate', duplicate_of: dup.by as 'message-id' | 'content', item_id: dup.id, project_id: dup.project_id };
   }
 
-  // 3-4. thread and project
+  // 3-4. thread and project. A message the Hub itself sent (wave 6, D63) files to its draft's project and cites the draft.
   const threadId = await resolveThread(db, msg);
-  const cls: Classification = await classify(db, { ...msg, thread_id: threadId }, { provider: deps.provider === undefined ? deps.ingest?.provider ?? null : deps.provider, firmDomains: firm });
+  const fromHub = msg.folder === 'sent' ? await sentFromHub(db, msg) : null;
+  const cls: Classification = fromHub
+    ? { project_id: fromHub.project_id, confidence: 1, evidence: [{ signal: 'memory', detail: `sent from the Hub as ${fromHub.reference_no ?? 'a draft'}`, weight: 1 }], candidates: [{ project_id: fromHub.project_id, score: 1, confidence: 1, evidence: [] }] }
+    : await classify(db, { ...msg, thread_id: threadId }, { provider: deps.provider === undefined ? deps.ingest?.provider ?? null : deps.provider, firmDomains: firm });
   const filed = !!cls.project_id && cls.confidence >= FILE_THRESHOLD && !bulk;
   const projectId = filed ? cls.project_id! : 'firm';
 
@@ -222,13 +239,17 @@ export async function captureMessage(db: Db, storage: Storage, incoming: RawMess
       extracted: {
         filename, contacts, direction, folder: msg.folder, mailbox: msg.mailbox, seen_by: [msg.mailbox.toLowerCase()], thread_id: threadId, in_reply_to: msg.in_reply_to, references: msg.references,
         fingerprint: fp, labels: msg.labels, attachments: msg.attachments.filter(a => !skipAttachment(a)).map(a => ({ filename: a.filename, mime: a.mime, size: a.bytes.length })),
-        status: outcome === 'filed' ? 'filed' : outcome, category: bulk ? 'bulk' : 'human', ...(bulk ? { bulk_reason: bulk } : {}), ...(deps.history ? { history: true } : {}),
+        status: outcome === 'filed' ? 'filed' : outcome, category: bulk ? 'bulk' : 'human', ...(bulk ? { bulk_reason: bulk } : {}), ...(deps.history ? { history: true } : {}), ...(fromHub ? { sent_draft_id: fromHub.id } : {}),
         ...(subjectsOnly ? { privacy: 'subjects' } : {}), ...(deps.context?.connection_id ? { connection_id: deps.context.connection_id } : {}),
         classification: { project_id: cls.project_id, confidence: cls.confidence, evidence: cls.evidence, ...(cls.tie_break ? { tie_break: cls.tie_break } : {}), candidates: cls.candidates.slice(0, 3).map(c => ({ project_id: c.project_id, confidence: c.confidence })) },
       },
     },
   });
   out.item_id = res.id; out.project_id = projectId; out.filed = filed; out.confidence = cls.confidence; out.outcome = outcome;
+  if (fromHub) {
+    await db.query('INSERT INTO item_cites (item_id, ref) VALUES ($1,$2) ON CONFLICT DO NOTHING', [res.id, `doc:${fromHub.id}`]);
+    await db.query(`UPDATE items SET extracted = jsonb_set(extracted, '{sent,captured_item_id}', to_jsonb($2::text)) WHERE id = $1`, [fromHub.id, res.id]);
+  }
   if (hiddenAtCapture) await db.query(`UPDATE items SET hidden = true, extracted = extracted || '{"hidden_reason":"bulk"}'::jsonb WHERE id = $1`, [res.id]);
 
   const att = await storeAttachments(db, deps, msg, { id: res.id, project_id: projectId, filing, organisation_ids, authored_at: authoredAt, from: msg.from.address.toLowerCase() }, !filed);
