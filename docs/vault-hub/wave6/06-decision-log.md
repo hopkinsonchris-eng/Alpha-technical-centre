@@ -17,6 +17,8 @@ D60 "OAuth at first sign-in (Recommended)" · D61 "Everything, with Protected an
 
 - **PR 3: the queue's Ready group with Accept all, What came in on Today with a cited sentence per opportunity, who last spoke in the recipient picker, the WorkDrive changes cursor.** W6-AC5 (ready, Accept all), W6-AC7, W6-AC8 (the picker), W6-AC10. `vault/src/api/activity.routes.ts`, `vault/src/llm/activity-brief.ts`, changes to `queue.routes.ts`, `draft.review.routes.ts`, `ingest/workdrive.ts`, `hub/index.html`, `hub/hub.js`, `hub/queue.js`, `hub/draft.js`, `hub/project.js` (`?doc=`).
 
+- **PR 4: Send from the person's own mailbox.** W6-AC9. `vault/src/ingest/mail/zoho-send.ts`, `vault/src/api/draft.send.routes.ts`, the sent-from-Hub link in `capture.ts`, the confirm sheet in `hub/draft.js`; `HANDOVER.md`; the evidence below.
+
 ## What the build taught
 
 1. **Zoho's message list has no "since".** The source lists newest first and stops at the message the cursor names (or at a date); history walks a folder backwards by page offset from a stored position, so each slice is one list call plus the messages, never a re-read of the top.
@@ -28,3 +30,17 @@ D60 "OAuth at first sign-in (Recommended)" · D61 "Everything, with Protected an
 7. **The overnight sentence keeps only what it cites.** The provider answers one line per project; every sentence without a citation among that project's new records is dropped and counted, and a citation to another project's record is stripped from an otherwise cited sentence. Without a provider the card shows the counts and the records as chips.
 8. **The Changes API decides whether to list.** A folder is listed again only when a change other than a delete arrived; a delete hides the item without a listing; a move keeps the item and its versions and only rewrites the path; an expired token (older than the 31 days the API keeps) falls back to a full listing and a fresh start token.
 9. **Two regexes with one name.** The Today script already held a citation pattern for the country brief; the What came in card's pattern had to carry its own name, or no Hub page loaded. A syntax check of each edited module before the browser suite is cheaper than forty timeouts.
+10. **The send route renders through the Vault's own render route.** Rather than lift the letter assembly out of `draft.routes.ts`, the send route calls `app.request('/api/render?format=docx')` with the caller's Access header, so the attachment is byte-for-byte what Render to letterhead gives, reference number included.
+11. **The sent copy is matched by what the Hub knows it sent.** Zoho's numeric message id is not the RFC Message-Id, so the capture matches a Sent-folder message to a draft by mailbox, subject, first recipient and an hour's window around the send, files it to the draft's project with confidence 1, cites the draft and writes the captured item's id back on the draft.
+
+## Evidence
+
+- `evidence/w6-connect-card.png` (PR 1: the Connect card on Today), `evidence/w6-your-mailbox.png` (PR 1: Settings → Your mailbox), `evidence/w6-what-came-in.png` (PR 3: the card with a cited sentence and chips), `evidence/w6-ready-group.png` (PR 3: the queue's Ready group with Accept all), `evidence/w6-send-confirm.png` (PR 4: the Send confirm sheet). All captured by the end-to-end specs on realistic stubbed data.
+- Suites on the last head of each PR: Vault 446 / 463 / 467 / 470, typecheck clean, Hub 142 / 142 / 145 / 146; CI green on #52, #53, #54 (PR 4's run is on its own pull request); the sitemap pages byte-identical to `main`.
+
+## Deviations from the Markup, stated
+
+1. **Protected and Blocked mail is never stored, not stored hidden.** The Markup's Settings card counted "internal (hidden)" as if the messages were kept; keeping colleagues-only mail hidden would have stored exactly what the rule says the firm should not hold. The count now comes from the audit log of what the capture declined.
+2. **History runs inside the five-minute poll, not as a night job.** A slice of a hundred messages per poll stays within Zoho's thirty requests a minute beside the live read and brings 180 days in over the first day or two; a separate cron would have needed its own token key and storage settings for no gain.
+3. **The Ready bar is 0.6 with a known counterparty, as the Markup said, but a filed message that the memory settled scores 1.0 without a candidate list**: a decided thread is an answer, not a suggestion.
+4. **Send uses the Vault's render route, not a shared module** (lesson 10).

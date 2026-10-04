@@ -9,6 +9,8 @@ reference. It complements — does not replace — `README.md` (architecture) an
 
 ## Wave 5 (3 October 2026) in one paragraph
 
+**Wave 6 (everything in).** Each person connects their own Zoho mailbox from the Hub by OAuth consent (a card on Today; Settings → Your mailbox shows what is held, the privacy level, Blocked lists, a per-contact export and Disconnect); the five-minute poll reads Inbox and Sent through the Zoho Mail API, brings 180 days of history in quietly, keeps colleagues-only and blocked mail out, keeps bulk mail apart, files by a classifier that learns from every Assign, and knows who last spoke to each contact. Today opens with What came in: counts since you last looked and one cited sentence per opportunity. Write to… ends with Send from your own address. WorkDrive syncs by its changes cursor. Setup: `vault/SETUP.md` §7. Design pack: `docs/vault-hub/wave6/`.
+
 Originals live in Supabase Storage (a production server refuses to start without it); the record panel opens PDFs, images and spreadsheets and downloads the rest; Write to… drafts from the file with every figure cited and a review loop before the letterhead render and the dispatch (a saved draft reopens from the timeline with its review, and every decision saves itself); and the Vault is an OAuth 2.1 server for its own MCP endpoint, so the Claude app connects as the signed-in person (setup: `vault/SETUP.md` §1.5 and §6). Design pack: `docs/vault-hub/wave5/`.
 
 ## 0. Ownership & guardrails (read first)

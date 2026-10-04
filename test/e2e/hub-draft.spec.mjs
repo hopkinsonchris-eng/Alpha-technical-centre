@@ -32,8 +32,8 @@ const ITEM = (id, title) => ({ id, type: 'note', title, created_at: '2026-10-01T
 const CATALOG = { tools: [], built_at: '2026-09-29T09:00:00.000Z', commit: 'abc1234' };
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
-async function stubApi(page, { me = PARTNER } = {}) {
-  const calls = { drafts: [], reviews: [], renders: [], sent: [] };
+async function stubApi(page, { me = PARTNER, mailbox = { connected: false } } = {}) {
+  const calls = { drafts: [], reviews: [], renders: [], sent: [], send: [] };
   let timeline = [];
   await page.route('**/api/**', (route) => {
     const u = new URL(route.request().url()); const p = u.pathname; const m = route.request().method();
@@ -45,6 +45,8 @@ async function stubApi(page, { me = PARTNER } = {}) {
     if (p === '/api/draft' && m === 'POST') { const b = body(); calls.drafts.push(b); return json(route, DRAFT(b.tone), 201); }
     if (p === '/api/items/' + DRAFT_ID + '/review' && m === 'PATCH') { calls.reviews.push(body()); return json(route, { id: DRAFT_ID, review: body() }); }
     if (p === '/api/render' && m === 'POST') { calls.renders.push(u.search); if (u.search.includes('pdf')) return json(route, { error: { code: 'error', message: 'Chromium not found' } }, 500); return route.fulfill({ status: 200, headers: { 'content-type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'content-disposition': 'attachment; filename="ATC-2026-0152.docx"' }, body: Buffer.from('PK-docx') }); }
+    if (p === '/api/me/mailbox') return json(route, mailbox);
+    if (p === '/api/items/' + DRAFT_ID + '/send' && m === 'POST') { calls.send.push(body()); return json(route, { id: 'd-9', item_id: DRAFT_ID, direction: 'out', organisation_id: 'zuata', contact_ids: ['maria-fernandez'], channel: 'email', occurred_at: '2026-10-04T15:00:00.000Z', reference_no: 'ATC-2026-0160', from: 'chris@alpha-technical-centre.com', to: ['maria@zuata.example'], subject: body().subject, attachments: body().attachment === 'none' ? [] : ['ATC-2026-0160.' + body().attachment], zoho_message_id: '9988' }, 201); }
     if (p === '/api/items/' + DRAFT_ID + '/sent' && m === 'POST') { calls.sent.push(body()); timeline = [{ kind: 'item', ref: 'doc:' + DRAFT_ID, id: DRAFT_ID, at: '2026-10-03T10:00:00.000Z', title: 'Email draft: restart', type: 'note', version: 1, legal_tag: 'lt-firm', stale: false, stale_reasons: [], supersedes: null, sent: { organisation: 'Petrolera Zuata S.A.', at: '2026-10-03T10:00:00.000Z' } }]; return json(route, { id: 'd-1', item_id: DRAFT_ID, direction: 'out', organisation_id: 'zuata', contact_ids: ['maria-fernandez'], channel: 'email', occurred_at: '2026-10-03T10:00:00.000Z', signed_by: 'chris' }, 201); }
     if (p === '/api/items/' + FINDING) return json(route, ITEM(FINDING, 'PDVSA restarts Apure production after pipeline repair'));
     if (p === '/api/items/' + LETTER) return json(route, { ...ITEM(LETTER, 'Letter ATC-2026-0131: clarification'), type: 'letter', extracted: {} });
@@ -262,4 +264,57 @@ test('a draft never reviewed says so; a sent draft reopens frozen', async ({ pag
   await expect(result.locator('#dr-render')).toBeDisabled();
   await expect(result.locator('#dr-save')).toBeDisabled();
   await expect(result.locator('[data-tone="shorter"]')).toBeDisabled();
+});
+
+test('W6-AC9: with a connected mailbox that may send, Write to… ends with Send: the confirm sheet shows from, to, subject and the attachment; Send now posts once and freezes the draft; without the scope the old Mark as sent stays with a connect line', async ({ page }) => {
+  const calls = await stubApi(page, { mailbox: { configured: true, connected: true, prompt: false, connection: { address: 'chris@alpha-technical-centre.com', can_send: true, status: 'connected', privacy: 'all', history: {} }, counts: null } });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('#p-draft-btn').click();
+  const panel = page.locator('#p-draft');
+  await panel.locator('#dr-to').selectOption('maria-fernandez');
+  await panel.locator('#dr-kind').selectOption('letter');
+  await panel.locator('#dr-brief').fill('Thank her for the data room index and promise the NDA by Friday.');
+  await panel.locator('#dr-go').click();
+  const result = panel.locator('#dr-result');
+  await expect(result).toHaveAttribute('data-can-send', '1');
+  await expect(result.locator('#dr-send')).toBeVisible();
+  await expect(result.locator('#dr-send-hint')).toBeHidden();
+  await expect(result.locator('#dr-send')).toBeDisabled();            // the uncited sentence is undecided
+  const paras = result.locator('.hub-dr-para');
+  await paras.nth(2).locator('[data-decide="drop"]').click();
+  await expect(result.locator('#dr-send')).toBeEnabled();
+  await result.locator('#dr-send').click();
+  const sheet = result.locator('#dr-send-sheet');
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator('[data-send="from"]')).toHaveText('chris@alpha-technical-centre.com');
+  await expect(sheet.locator('[data-send="to"]')).toContainText('Ing. María Fernández <maria@zuata.example>');
+  await expect(sheet.locator('#dr-send-subject')).toHaveValue('Thank her for the data room index and promise the NDA by Friday.');
+  await expect(sheet.locator('#dr-send-attachment')).toHaveValue('docx');
+  await expect(sheet.locator('[data-send="body"]')).toContainText('3 paragraphs kept; the letter goes as the attachment');
+  mkdirSync(EVIDENCE, { recursive: true });
+  await sheet.screenshot({ path: path.join(EVIDENCE, 'w6-send-confirm.png') });
+  await sheet.locator('#dr-send-subject').fill('Data room index');
+  await sheet.locator('#dr-send-go').click();
+  await expect.poll(() => calls.send.length).toBe(1);
+  expect(calls.send[0]).toEqual({ organisation_id: 'zuata', contact_ids: ['maria-fernandez'], subject: 'Data room index', attachment: 'docx' });
+  await expect(sheet).toHaveCount(0);
+  await expect(result).toHaveAttribute('data-sent', 'd-9');
+  await expect(result).toHaveAttribute('data-sent-from', 'chris@alpha-technical-centre.com');
+  await expect(result.locator('#dr-status')).toContainText('Sent from chris@alpha-technical-centre.com to Ing. María Fernández, Petrolera Zuata S.A. on 4 Oct 2026 with ATC-2026-0160.docx. The draft is now frozen.');
+  await expect(result.locator('#dr-send')).toBeDisabled();
+  await expect(result.locator('#dr-save')).toBeDisabled();
+  expect(calls.sent.length).toBe(0);
+  // Without the send scope: Mark as sent, and a line to connect.
+  await stubApi(page, { mailbox: { configured: true, connected: true, prompt: false, connection: { address: 'chris@alpha-technical-centre.com', can_send: false, status: 'connected', privacy: 'all', history: {} }, counts: null } });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('#p-draft-btn').click();
+  await panel.locator('#dr-to').selectOption('maria-fernandez');
+  await panel.locator('#dr-brief').fill('Thank her for the data room index and promise the NDA by Friday.');
+  await panel.locator('#dr-go').click();
+  await expect(result).toHaveAttribute('data-can-send', '0');
+  await expect(result.locator('#dr-send')).toBeHidden();
+  await expect(result.locator('#dr-send-hint')).toContainText('Connect your mailbox to send from here');
+  await expect(result.locator('#dr-sent')).toBeVisible();
 });

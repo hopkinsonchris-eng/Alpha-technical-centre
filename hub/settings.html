@@ -480,7 +480,8 @@ async function loadMailbox() {
   for (const i of document.querySelectorAll('#mailbox-privacy input')) i.checked = i.value === c.privacy;
   const rules = await api('/api/me/mailbox/rules');
   if (rules.ok && rules.body) {
-    $('mailbox-blocked').value = (rules.body.personal || []).map((x) => x.pattern).join('\n');
+    // A list the person is editing is never overwritten by a reload.
+    if (document.activeElement !== $('mailbox-blocked')) $('mailbox-blocked').value = (rules.body.personal || []).map((x) => x.pattern).join('\n');
     const me = await api('/api/me');
     if (me.ok && me.body && me.body.role === 'partner') {
       $('firm-rules').removeAttribute('hidden');
@@ -500,7 +501,7 @@ $('mailbox-privacy').addEventListener('change', async (ev) => {
   const level = ev.target.value;
   if (level !== 'all' && !confirm(document.documentElement.lang === 'es' ? (level === 'none' ? '¿Ocultar todo lo guardado de su buzón? Se eliminan los originales.' : '¿Eliminar cuerpos y adjuntos de todo lo guardado de su buzón?') : (level === 'none' ? 'Hide everything held from your mailbox? The originals are removed.' : 'Remove the bodies and attachments of everything held from your mailbox?'))) { await loadMailbox(); return; }
   const r = await api('/api/me/mailbox', jsonInit('PATCH', { privacy: level }));
-  if (r.ok) { const a = r.body.applied || {}; setText($('mailbox-privacy-status'), 'Saved. ' + (a.hidden || 0) + ' hidden, ' + (a.originals_purged || 0) + ' originals removed.', 'Guardado. ' + (a.hidden || 0) + ' ocultos, ' + (a.originals_purged || 0) + ' originales eliminados.'); await loadMailbox(); }
+  if (r.ok) { const a = r.body.applied || {}; await loadMailbox(); setText($('mailbox-privacy-status'), 'Saved. ' + (a.hidden || 0) + ' hidden, ' + (a.originals_purged || 0) + ' originals removed.', 'Guardado. ' + (a.hidden || 0) + ' ocultos, ' + (a.originals_purged || 0) + ' originales eliminados.'); }
   else setText($('mailbox-privacy-status'), 'Could not save.', 'No se pudo guardar.');
 });
 $('mailbox-rules-save').addEventListener('click', async () => {

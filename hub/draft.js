@@ -21,7 +21,9 @@ function notice(kind, en, es) { return add(mk('div', 'hub-notice ' + kind, null,
 export function mountDraft(ctx, { openRecord }) {
   const host = document.getElementById('p-draft'), toolbar = document.getElementById('p-toolbar');
   if (!host || !toolbar) return null;
-  const state = { contacts: null, draft: null, decisions: [], notes: {}, citationsOpened: 0, startedAt: 0, sent: null, rendered: null };
+  const state = { contacts: null, draft: null, decisions: [], notes: {}, citationsOpened: 0, startedAt: 0, sent: null, rendered: null, mailbox: null };
+  // Wave 6 (D63): whether this person's mailbox is connected with the send scope; asked once.
+  const mailbox = () => state.mailbox || (state.mailbox = api('/api/me/mailbox').then((r) => (r.ok && r.body ? r.body : { connected: false })).catch(() => ({ connected: false })));
 
   const btn = mk('button', 'btn btn-outline btn-sm hub-draft-btn', null, null, { type: 'button', id: 'p-draft-btn', 'aria-expanded': 'false', 'aria-controls': 'p-draft' });
   btn.insertAdjacentHTML('afterbegin', '<svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M12 6l4 4"/></svg>');
@@ -194,6 +196,7 @@ export function mountDraft(ctx, { openRecord }) {
     const uncited = state.draft.paragraphs.filter((p, i) => QUESTION_RE.test(p) && state.decisions[i] === null).length;
     result.setAttribute('data-uncited', String(uncited));
     if (markSent) markSent.disabled = !state.rendered || !!state.sent;
+    const sb = document.getElementById('dr-send'); if (sb) sb.disabled = undecided || !!state.sent;
     if (saveBtn) saveBtn.disabled = !!state.sent;
     for (const b of result.querySelectorAll('[data-tone]')) b.disabled = !!state.sent;
   }
@@ -249,9 +252,20 @@ export function mountDraft(ctx, { openRecord }) {
     renderDocx = mk('button', 'btn btn-primary btn-sm', 'Render to letterhead (DOCX)', 'Generar en membrete (DOCX)', { type: 'button', id: 'dr-render' });
     renderPdf = mk('button', 'btn btn-outline btn-sm', 'PDF', 'PDF', { type: 'button', id: 'dr-pdf' });
     markSent = mk('button', 'btn btn-outline btn-sm', 'Mark as sent', 'Marcar como enviado', { type: 'button', id: 'dr-sent' });
+    const sendBtn = mk('button', 'btn btn-primary btn-sm', 'Send…', 'Enviar…', { type: 'button', id: 'dr-send', hidden: '' });
+    const sendHint = mk('span', 'hub-muted', null, null, { id: 'dr-send-hint', hidden: '' });
+    add(sendHint, mk('a', 'hub-inline-link', 'Connect your mailbox to send from here', 'Conecte su buzón para enviar desde aquí', { href: '/hub/settings.html#sec-mailbox' }));
     const status = mk('span', 'hub-muted', null, null, { id: 'dr-status', role: 'status' });
-    add(act, saveBtn, renderDocx, renderPdf, markSent, status);
+    add(act, saveBtn, renderDocx, renderPdf, sendBtn, markSent, sendHint, status);
     add(result, act);
+    mailbox().then((m) => {
+      const can = !!(m && m.connected && m.connection && m.connection.can_send);
+      result.setAttribute('data-can-send', can ? '1' : '0');
+      if (can) { sendBtn.removeAttribute('hidden'); markSent.classList.replace('btn-outline', 'btn-outline'); }
+      else sendHint.removeAttribute('hidden');
+      gate();
+    });
+    sendBtn.addEventListener('click', () => sendSheet(status));
     if (state.sent && state.sent.occurred_at) { const when = fmtShortDate(state.sent.occurred_at); setText(status, 'Sent' + (state.sent.organisation ? ' to ' + state.sent.organisation : '') + ' on ' + when.en + '. The draft is frozen.', 'Enviado' + (state.sent.organisation ? ' a ' + state.sent.organisation : '') + ' el ' + when.es + '. El borrador está congelado.'); result.setAttribute('data-sent', state.sent.id || 'yes'); }
     else if (state.loadedReview) setText(status, 'Review as saved' + (state.loadedReview.at ? ' ' + fmtShortDate(state.loadedReview.at).en : '') + '.', 'Revisión tal como se guardó' + (state.loadedReview.at ? ' el ' + fmtShortDate(state.loadedReview.at).es : '') + '.');
     saveBtn.addEventListener('click', () => saveReview(status));
@@ -302,6 +316,56 @@ export function mountDraft(ctx, { openRecord }) {
     result.setAttribute('data-sent', r.body.id);
     gate();
     if (typeof ctx.refreshTimeline === 'function') ctx.refreshTimeline();
+  }
+  /** Send from the person's own mailbox (wave 6, D63): a confirm sheet, then POST /api/items/:id/send; the route renders, uploads, sends, records and freezes. */
+  async function sendSheet(status) {
+    const c = contactOf();
+    if (!c) { add(notices, notice('bad', 'Choose the recipient first.', 'Elija primero el destinatario.')); return; }
+    if (state.decisions.some((d) => d === null)) return;
+    if (!(await saveReview(status))) return;
+    const m = await mailbox();
+    const old = result.querySelector('#dr-send-sheet'); if (old) old.remove();
+    const sheet = mk('div', 'hub-dr-send', null, null, { id: 'dr-send-sheet', role: 'group', 'aria-label': 'Send' });
+    add(sheet, mk('h4', null, 'Send from your mailbox', 'Enviar desde su buzón'));
+    const dl = mk('dl', 'hub-kv');
+    const row = (key, en, es, node) => add(dl, mk('dt', null, en, es), add(mk('dd', null, null, null, { 'data-send': key }), node));
+    row('from', 'From', 'De', dv('span', 'mono', (m.connection && m.connection.address) || ''));
+    row('to', 'To', 'Para', dv('span', null, c.name + ' <' + ((c.emails || [])[0] || '—') + '>'));
+    const subject = mk('input', null, null, null, { type: 'text', id: 'dr-send-subject', 'aria-label': 'Subject', value: brief.value.trim().slice(0, 120) });
+    row('subject', 'Subject', 'Asunto', subject);
+    const isEmail = kind.value === 'email';
+    const attachment = mk('select', null, null, null, { id: 'dr-send-attachment' });
+    add(attachment, mk('option', null, 'Letterhead DOCX', 'DOCX con membrete', { value: 'docx' }), mk('option', null, 'Letterhead PDF', 'PDF con membrete', { value: 'pdf' }), mk('option', null, 'No attachment: the text as the message', 'Sin adjunto: el texto como mensaje', { value: 'none' }));
+    attachment.value = isEmail ? 'none' : 'docx';
+    row('attachment', 'Attachment', 'Adjunto', attachment);
+    const kept = state.decisions.filter((d) => d && d !== 'drop').length;
+    row('body', 'Body', 'Cuerpo', mk('span', null, kept + (kept === 1 ? ' paragraph kept' : ' paragraphs kept') + (isEmail ? ' go as the message' : '; the letter goes as the attachment with a cover line'), kept + (kept === 1 ? ' párrafo mantenido' : ' párrafos mantenidos') + (isEmail ? ' van como mensaje' : '; la carta va como adjunto con una línea de presentación')));
+    add(sheet, dl);
+    const actions = mk('div', 'hub-actions');
+    const go = mk('button', 'btn btn-primary btn-sm', 'Send now', 'Enviar ahora', { type: 'button', id: 'dr-send-go' });
+    const cancel = mk('button', 'btn btn-outline btn-sm', 'Cancel', 'Cancelar', { type: 'button', id: 'dr-send-cancel' });
+    const st = mk('span', 'hub-muted', null, null, { id: 'dr-send-status', role: 'status' });
+    add(actions, go, cancel, st); add(sheet, actions);
+    add(result, sheet); sheet.scrollIntoView({ block: 'nearest' });
+    cancel.addEventListener('click', () => sheet.remove());
+    go.addEventListener('click', async () => {
+      go.disabled = true; cancel.disabled = true; setText(st, 'Sending…', 'Enviando…');
+      const r = await post('/api/items/' + encodeURIComponent(state.draft.id) + '/send', { organisation_id: c.organisation.id, contact_ids: [c.id], subject: subject.value.trim(), attachment: attachment.value }, 120000);
+      if (!r.ok) {
+        go.disabled = false; cancel.disabled = false;
+        const code = r.body && r.body.error && r.body.error.code;
+        setText(st, code === 'no_mailbox' ? 'Connect your mailbox first (Settings → Your mailbox).' : code === 'no_send_scope' ? 'Your mailbox connection does not allow sending: reconnect it from Settings.' : 'Not sent.' + (r.body && r.body.error ? ' ' + r.body.error.message : ''), code === 'no_mailbox' ? 'Conecte primero su buzón (Ajustes → Su buzón).' : 'No enviado.');
+        return;
+      }
+      state.sent = { id: r.body.id, occurred_at: r.body.occurred_at, organisation: c.organisation.name };
+      state.rendered = r.body.reference_no || state.rendered;
+      sheet.remove();
+      const when = fmtShortDate(r.body.occurred_at);
+      setText(status, 'Sent from ' + r.body.from + ' to ' + c.name + ', ' + c.organisation.name + ' on ' + when.en + (r.body.attachments && r.body.attachments.length ? ' with ' + r.body.attachments.join(', ') : '') + '. The draft is now frozen.', 'Enviado desde ' + r.body.from + ' a ' + c.name + ', ' + c.organisation.name + ' el ' + when.es + '. El borrador queda congelado.');
+      result.setAttribute('data-sent', r.body.id); result.setAttribute('data-sent-from', r.body.from);
+      gate();
+      if (typeof ctx.refreshTimeline === 'function') ctx.refreshTimeline();
+    });
   }
   /** Reopen a draft note the Vault holds (GET /api/items/:id): the paragraphs, sources and questions as drafted,
    *  the decisions and notes as last saved, frozen if it was sent. The set-up strip shows what was asked. */

@@ -349,6 +349,8 @@ test('W6-AC5: rows the capture marked ready sit in a Ready group with Accept all
   await expect(list.locator('.q-group-head[data-group="review"]')).toContainText('Needs a decision');
   await expect(list.locator('.q-row[data-group="review"]')).toHaveCount(1);
   await expect(page.locator('#n-filing')).toHaveText('3');
+  mkdirSync(path.dirname(EVIDENCE), { recursive: true });
+  await page.locator('#sec-filing').screenshot({ path: path.join(path.dirname(EVIDENCE), 'w6-ready-group.png') });
   await page.locator('#filing-accept-ready').click();
   await expect(list.locator('.q-row')).toHaveCount(1);
   await expect(page.locator('#n-filing')).toHaveText('1');
