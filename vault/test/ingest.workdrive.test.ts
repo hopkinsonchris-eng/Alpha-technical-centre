@@ -17,12 +17,22 @@ const ENV = { ZOHO_WORKDRIVE_CLIENT_ID: 'cid', ZOHO_WORKDRIVE_CLIENT_SECRET: 'se
 const MAP: WorkdriveMap = { folders: [{ folder_id: 'F1', name: 'Orinoco / Deliverables', project_id: 'orinoco-partnership', recursive: true }] };
 
 /** A recorded WorkDrive: token, JSON:API listings per "tick", and download bytes per file id. */
-function recorded(tick: { value: 't1' | 't2' }, bytes: Record<string, Uint8Array | string>) {
+function recorded(tick: { value: 't1' | 't2' }, bytes: Record<string, Uint8Array | string>, changes?: { token: string; pages: Record<string, { data: any[]; next: string | null; status?: number }> }) {
   const log: string[] = [];
   const fetchImpl = (async (input: string | URL, init?: RequestInit) => {
     const url = new URL(String(input));
     log.push(`${init?.method ?? 'GET'} ${url.host}${url.pathname}${url.search}`);
     if (url.pathname === '/oauth/v2/token') return Response.json(readJson('workdrive/token.json'));
+    // Wave 6 (P59): the Changes API, a start token per folder and pages of change records after a token.
+    const start = /^\/api\/v1\/changes\/([^/]+)$/.exec(url.pathname);
+    if (start) return changes ? Response.json({ data: { token: changes.token } }) : new Response('{}', { status: 404 });
+    if (url.pathname === '/api/v1/changes') {
+      const t = url.searchParams.get('page[next]') ?? '';
+      const pg = changes?.pages[t];
+      if (!pg) return new Response('{"errors":[{"title":"expired"}]}', { status: 400 });
+      if (pg.status) return new Response('{}', { status: pg.status });
+      return Response.json({ data: pg.data.map((a, i) => ({ id: 'ch' + i, type: 'changes', attributes: a })), cursor: { next: pg.next, has_next: false } });
+    }
     assert.match(String((init?.headers as any)?.authorization ?? ''), /^Zoho-oauthtoken 1000\.recorded\.token$/, `request without token: ${url}`);
     const list = /\/files\/([^/]+)\/files$/.exec(url.pathname);
     if (list) {
@@ -119,6 +129,52 @@ test('sync: new files become items, modified files become versions, unchanged fi
   const nda1 = (await h.db.query<any>(`SELECT id, extracted FROM items WHERE title = 'NDA Orinoco.txt'`)).rows[0];
   assert.equal(nda1.extracted.partners_only, true);
   assert.equal(nda1.extracted.expiry_date, '2029-02-13');
+});
+
+test('W6-AC10: after the first full listing the sync asks the Changes API; nothing changed means no listing; a delete hides the item; a move keeps the item with its new path; an expired token falls back to a full listing', async () => {
+  const tick = { value: 't2' as 't1' | 't2' };
+  const nda = readFixture('nda.txt');
+  const bytes: Record<string, Uint8Array | string> = { 'wd-001': await makeDocx(), 'wd-002': makeXlsx(), 'wd-003': nda };
+  const changes = { token: 'tok-1', pages: { 'tok-1': { data: [], next: 'tok-2' }, 'tok-2': { data: [{ action_category: 'DELETE', resource_group: 'FILE', resource_id: 'wd-002', resource_name: 'Price deck.xlsx', is_deleted: true }], next: 'tok-3' }, 'tok-3': { data: [{ action_category: 'MOVE', resource_group: 'FILE', resource_id: 'wd-003', resource_name: 'NDA Orinoco.txt', is_deleted: false }], next: 'tok-4' } } as Record<string, { data: any[]; next: string | null; status?: number }> };
+  const { fetchImpl, log } = recorded(tick, bytes, changes);
+  const config = workdriveConfig(ENV, fetchImpl);
+  const sink = appSink(h.app);
+  const map: WorkdriveMap = { folders: [{ folder_id: 'F1', name: 'Orinoco / Deliverables', project_id: 'orinoco-partnership', recursive: true }] };
+  const listings = () => log.filter(l => /\/files\/[^/]+\/files/.test(l)).length;
+  await h.db.query(`DELETE FROM settings WHERE key LIKE 'workdrive:changes:%'`);
+  // 1. first run: no cursor, full listing, then the start token is stored
+  const first = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.equal(first.failed, 0, first.errors.join('; '));
+  assert.ok(listings() >= 1);
+  assert.deepEqual((await h.db.query<any>(`SELECT value->>'token' AS t FROM settings WHERE key = 'workdrive:changes:F1'`)).rows[0].t, 'tok-1');
+  // 2. nothing changed: the changes page is empty, no listing, the token advances
+  const before = listings();
+  const second = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.equal(listings(), before, 'no listing when nothing changed');
+  assert.equal(second.unchanged_by_changes, 1);
+  assert.equal((await h.db.query<any>(`SELECT value->>'token' AS t FROM settings WHERE key = 'workdrive:changes:F1'`)).rows[0].t, 'tok-2');
+  // 3. a delete: the item is hidden, no listing needed
+  const third = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.equal(third.hidden, 1);
+  const deck = (await h.db.query<any>(`SELECT hidden, extracted->>'hidden_reason' AS why FROM items WHERE origin->>'source' = 'zoho-workdrive' AND external_id = 'wd-002'`)).rows[0];
+  assert.equal(deck.hidden, true); assert.equal(deck.why, 'workdrive:deleted');
+  assert.equal(listings(), before, 'a delete alone needs no listing');
+  // 4. a move: a listing runs and the moved file keeps its item (same id, same version) with the new path
+  const ndaBefore = (await h.db.query<any>(`SELECT id, version FROM items WHERE origin->>'source' = 'zoho-workdrive' AND external_id = 'wd-003'`)).rows[0];
+  await h.db.query(`UPDATE items SET extracted = jsonb_set(extracted, '{workdrive,path}', '"Somewhere/Old"'::jsonb) WHERE id = $1`, [ndaBefore.id]);
+  const fourth = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.ok(listings() > before, 'a move lists again');
+  assert.equal(fourth.moved, 1);
+  const ndaAfter = (await h.db.query<any>(`SELECT id, version, extracted->'workdrive'->>'path' AS path FROM items WHERE origin->>'source' = 'zoho-workdrive' AND external_id = 'wd-003'`)).rows[0];
+  assert.deepEqual([ndaAfter.id, ndaAfter.version, ndaAfter.path], [ndaBefore.id, ndaBefore.version, 'Orinoco / Deliverables/Legal']);
+  assert.equal((await h.db.query<any>(`SELECT value->>'token' AS t FROM settings WHERE key = 'workdrive:changes:F1'`)).rows[0].t, 'tok-4');
+  // 5. the token expired (older than the API keeps): a full listing and a fresh start token
+  const n = listings();
+  const fifth = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.ok(fifth.errors.some(e => /token expired/.test(e)));
+  assert.ok(listings() > n);
+  assert.equal((await h.db.query<any>(`SELECT value->>'token' AS t FROM settings WHERE key = 'workdrive:changes:F1'`)).rows[0].t, 'tok-1');
+  await h.db.query(`DELETE FROM settings WHERE key LIKE 'workdrive:changes:%'`);
 });
 
 test('the sync job reports a source that is not configured instead of failing, and runs WorkDrive through the injected fetch', async () => {

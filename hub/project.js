@@ -1440,6 +1440,14 @@ async function init() {
     const r = await api('/api/items/' + encodeURIComponent(draftParam));
     if (r.ok && r.body && !(await draftUi.load(r.body))) add($('#p-notices') || $('#p-body'), notice('warn', 'Not a draft.', 'No es un borrador.', 'That record was not written in the Hub.', 'Ese registro no se escribió en el Hub.'));
   }
+  // ?doc=<id>: open a document's record (linked from What came in on Today).
+  const docParam = params.get('doc');
+  if (docParam) {
+    const row = document.querySelector('.hub-tl-item[data-id="' + CSS.escape(docParam) + '"]');
+    if (row) { row.classList.add('hilite'); row.scrollIntoView({ block: 'center' }); }
+    const e = entryById.get(docParam);
+    await openRecord({ ref: 'doc:' + docParam, title: e && e.title, entry: e, trigger: row && row.querySelector('button') });
+  }
   // ?run=<id>: highlight the run in the timeline and open its record (linked from the tool page).
   const runParam = params.get('run');
   if (runParam) {

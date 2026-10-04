@@ -146,7 +146,31 @@ async function renderFiling() {
   setCount('#n-filing', items.length);
   list.textContent = '';
   if (!items.length) { empty(list); return; }
-  for (const it of items) add(list, filingRow(it, list));
+  // Wave 6 (P52): rows the capture marked ready (one candidate above the bar, a known counterparty) file in one tap; the rest need a decision.
+  const ready = items.filter((it) => it.group === 'ready'), review = items.filter((it) => it.group !== 'ready');
+  if (ready.length) {
+    const head = mk('div', 'q-group-head', null, null, { 'data-group': 'ready' });
+    add(head, mk('span', 'label', 'Ready', 'Listos'), mk('span', 'hub-muted', ready.length + (ready.length === 1 ? ' message with one clear project' : ' messages with one clear project'), ready.length + (ready.length === 1 ? ' mensaje con un proyecto claro' : ' mensajes con un proyecto claro')));
+    const all = mk('button', 'btn btn-primary btn-sm', 'Accept all', 'Aceptar todos', { type: 'button', id: 'filing-accept-ready' });
+    all.addEventListener('click', async () => {
+      all.disabled = true;
+      const res = await post('/api/queue/filing/accept-ready', { ids: ready.map((it) => it.id) });
+      if (!res.ok) { all.disabled = false; announce('Could not file them.' + (errText(res) ? ' ' + errText(res) : ''), 'No se pudieron archivar.'); return; }
+      const filed = (res.body && res.body.filed) || [];
+      for (const f of filed) { const row = list.querySelector('[data-queue-id="' + CSS.escape(f.id) + '"]'); if (row) row.remove(); }
+      const left = list.querySelectorAll('.q-row').length;
+      setCount('#n-filing', left);
+      if (!list.querySelector('[data-group="ready"] ~ .q-row[data-group="ready"]')) head.remove();
+      if (!left) empty(list);
+      announce(filed.length + (filed.length === 1 ? ' message filed.' : ' messages filed.') + ((res.body.skipped || []).length ? ' ' + res.body.skipped.length + ' could not be.' : ''), filed.length + (filed.length === 1 ? ' mensaje archivado.' : ' mensajes archivados.'));
+    });
+    add(head, all); add(list, head);
+    for (const it of ready) { const row = filingRow(it, list); row.setAttribute('data-group', 'ready'); add(list, row); }
+  }
+  if (review.length) {
+    if (ready.length) { const head = mk('div', 'q-group-head', null, null, { 'data-group': 'review' }); add(head, mk('span', 'label', 'Needs a decision', 'Requiere decisión')); add(list, head); }
+    for (const it of review) { const row = filingRow(it, list); row.setAttribute('data-group', 'review'); add(list, row); }
+  }
 }
 
 /* ── lesson proposals ────────────────────────────────────────────────── */

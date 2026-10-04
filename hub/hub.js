@@ -1055,6 +1055,68 @@ function renderAttnCard(card, cfg) {
 
 export const reasonText = (r) => (r == null ? '' : typeof r === 'string' ? r : (r.detail || r.rule || ''));
 
+/* Wave 6 (Option A, W6-AC7): what came in since the person last looked, and one cited sentence per opportunity. */
+const ACTIVITY_CITE_RE = /\[((?:run|doc|lesson):[^\]\s]+)\]/g;
+function citedSentence(host, text, records, projectId) {
+  const byRef = new Map((records || []).map((r) => [r.ref, r]));
+  let last = 0;
+  for (const m of text.matchAll(ACTIVITY_CITE_RE)) {
+    if (m.index > last) add(host, dv('span', null, text.slice(last, m.index)));
+    const ref = m[1], rec = byRef.get(ref);
+    const id = ref.slice(ref.indexOf(':') + 1);
+    const href = ref.startsWith('run:') ? '/hub/project.html?id=' + encodeURIComponent(projectId) + '&run=' + encodeURIComponent(id) : '/hub/project.html?id=' + encodeURIComponent(projectId) + '&doc=' + encodeURIComponent(id);
+    add(host, dv('a', 'hub-cite', rec ? rec.title : ref, { href, 'data-ref': ref, title: ref }));
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) add(host, dv('span', null, text.slice(last)));
+}
+async function renderActivity(person) {
+  const card = $('#card-activity');
+  if (!card || !person) return false;
+  const r = await api('/api/me/activity');
+  if (!r.ok || !r.body || !r.body.counts) return false;
+  const b = r.body, c = b.counts;
+  const sec = $('#sec-attention'); if (sec) sec.removeAttribute('hidden');
+  card.removeAttribute('hidden');
+  const d = fmtStamp(b.since);
+  setText($('#activity-since'), 'since you looked on ' + d.en, 'desde que miró el ' + d.es);
+  $('#activity-count').textContent = String(c.records || 0);
+  const bits = [[c.messages_filed, 'messages filed', 'mensajes archivados'], [c.ready, 'ready', 'listos'], [c.review, 'need a decision', 'requieren decisión'], [c.invoices, 'invoices', 'facturas'], [c.files, 'files', 'archivos'], [c.organisations_proposed, 'new organisations proposed', 'organizaciones propuestas'], [c.bulk_hidden, 'bulk hidden', 'masivos ocultos']].filter((x) => x[0] > 0);
+  const counts = $('#activity-counts'); counts.textContent = '';
+  if (!bits.length) add(counts, mk('span', 'hub-muted', 'Nothing new since then.', 'Nada nuevo desde entonces.'));
+  bits.forEach((x, i) => { if (i) add(counts, document.createTextNode(' · ')); add(counts, mk('span', null, x[0] + ' ' + x[1], x[0] + ' ' + x[2], { 'data-count': x[1].split(' ')[0] })); });
+  const host = $('#activity-projects'); host.textContent = '';
+  const projects = b.projects || [];
+  const blocks = new Map();
+  for (const p of projects) {
+    const block = mk('div', 'hub-activity-project', null, null, { 'data-activity-project': p.id });
+    add(block, dv('a', 'hub-activity-name', p.name, { href: projectHref(p.id) }));
+    const line = mk('p', 'hub-activity-line', null, null, { 'data-activity-line': '' });
+    add(line, mk('span', 'hub-muted', (p.records || []).length + ' new ' + ((p.records || []).length === 1 ? 'record' : 'records'), (p.records || []).length + ((p.records || []).length === 1 ? ' registro nuevo' : ' registros nuevos')));
+    add(block, line); add(host, block); blocks.set(p.id, { block, line, records: p.records || [] });
+  }
+  if (projects.length && b.brief_available) {
+    const br = await api('/api/me/activity/brief', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ since: b.since, language: document.documentElement.lang === 'es' ? 'es' : 'en' }), signal: AbortSignal.timeout(60000) });
+    if (br.ok && br.body && Array.isArray(br.body.projects)) {
+      for (const p of br.body.projects) {
+        const blk = blocks.get(p.project_id); if (!blk) continue;
+        blk.line.textContent = '';
+        if (p.sentence) { blk.line.setAttribute('data-cited', String((p.citations || []).length)); citedSentence(blk.line, p.sentence, p.records || blk.records, p.project_id); }
+        else { for (const rec of blk.records.slice(0, 4)) { add(blk.line, dv('a', 'hub-cite', rec.title, { href: '/hub/project.html?id=' + encodeURIComponent(p.project_id) + '&doc=' + encodeURIComponent(rec.ref.slice(4)), 'data-ref': rec.ref }), document.createTextNode(' ')); } }
+      }
+      card.setAttribute('data-brief', br.body.provider || 'none');
+    }
+  }
+  const seen = $('#activity-seen');
+  seen.onclick = async () => {
+    seen.disabled = true;
+    const s = await api('/api/me/activity/seen', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: '{}' });
+    if (s.ok) { setText($('#activity-status'), 'Seen. The next visit starts from now.', 'Visto. La próxima visita empieza desde ahora.'); card.setAttribute('data-seen', '1'); }
+    else { seen.disabled = false; setText($('#activity-status'), 'Could not save.', 'No se pudo guardar.'); }
+  };
+  return true;
+}
+
 async function renderAttention(projects) {
   const sec = $('#sec-attention');
   let any = false;
@@ -1204,7 +1266,7 @@ async function initToday() {
   try { globe = await renderGlobe(person); } catch (e) { const sec = $('#sec-globe'); if (sec) sec.setAttribute('data-globe', 'failed'); }
   try { await renderRegister(person, globe && globe.names); } catch (e) { /* the register is optional; the rest of Today still renders */ }
   const projects = await renderProjects(person);
-  await Promise.all([renderAttention(projects), renderRuns(projects)]);
+  await Promise.all([renderActivity(person).catch(() => false), renderAttention(projects), renderRuns(projects)]);
   document.body.setAttribute('data-ready', '1');
 }
 

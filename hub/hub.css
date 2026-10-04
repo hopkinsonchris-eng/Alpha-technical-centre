@@ -522,6 +522,17 @@ a.hub-proj:hover { border-color: #CDBB85; }
 /* Wave 5: connected apps */
 .hub-connections { margin-bottom: 16px; }
 .hub-mailbox-prompt { margin-bottom: 16px; border-left: 4px solid var(--gold); }
+.hub-activity { margin-bottom: 16px; }
+.hub-activity-counts { margin: 0; padding: 10px 14px; font-size: 14px; }
+.hub-activity-project { padding: 10px 14px; border-top: 1px solid var(--rule); }
+.hub-activity-name { font-weight: 600; color: var(--navy); text-decoration: none; }
+.hub-activity-name:hover { text-decoration: underline; }
+.hub-activity-line { margin: 4px 0 0; font-size: 14px; line-height: 1.6; }
+.hub-activity-line .hub-cite { text-decoration: none; }
+.hub-activity .hub-actions { margin: 0; padding: 10px 14px; border-top: 1px solid var(--rule); align-items: center; gap: 10px; flex-wrap: wrap; }
+.q-group-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--rule); background: var(--cream); }
+.q-group-head .label { margin: 0; }
+.q-group-head .btn { margin-left: auto; }
 .hub-mailbox-prompt .hub-actions { margin-top: 8px; align-items: center; flex-wrap: wrap; gap: 10px; }
 .hub-mailbox { margin-bottom: 16px; }
 .hub-mailbox .hub-kv { margin: 8px 0 12px; }

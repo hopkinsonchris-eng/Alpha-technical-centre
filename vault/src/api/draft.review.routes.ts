@@ -37,20 +37,22 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       ...(cp?.partners ?? []).map(n => ({ kind: 'partner', name: n, organisation_id: byName(n) })),
     ];
     const roleOf = (orgId: string) => counterparties.find(c => c.organisation_id === orgId)?.kind ?? (orgId === project?.client_id ? 'client' : null);
-    const rows = (await x.db.query<any>(`SELECT c.id, c.name, c.role, c.emails, c.language, o.id AS org_id, o.name AS org_name, o.kind AS org_kind,
+    const rows = (await x.db.query<any>(`SELECT c.id, c.name, c.role, c.emails, c.language, c.relationship, o.id AS org_id, o.name AS org_name, o.kind AS org_kind,
                                                (SELECT max(d.occurred_at) FROM dispatches d WHERE c.id = ANY(d.contact_ids) OR d.organisation_id = o.id) AS last_contact
                                         FROM project_contacts pc JOIN contacts c ON c.id = pc.contact_id JOIN organisations o ON o.id = c.organisation_id
                                         WHERE pc.project_id = $1 ORDER BY o.name, c.name`, [id])).rows;
     // Contacts of the client and of each counterparty organisation join the list even when nobody attached them to the project.
     const orgIds = [...new Set([project?.client_id, ...counterparties.map(c => c.organisation_id)].filter(Boolean))] as string[];
-    const extra = orgIds.length ? (await x.db.query<any>(`SELECT c.id, c.name, c.role, c.emails, c.language, o.id AS org_id, o.name AS org_name, o.kind AS org_kind,
+    const extra = orgIds.length ? (await x.db.query<any>(`SELECT c.id, c.name, c.role, c.emails, c.language, c.relationship, o.id AS org_id, o.name AS org_name, o.kind AS org_kind,
                                                (SELECT max(d.occurred_at) FROM dispatches d WHERE c.id = ANY(d.contact_ids) OR d.organisation_id = o.id) AS last_contact
                                         FROM contacts c JOIN organisations o ON o.id = c.organisation_id WHERE o.id = ANY($1::text[]) ORDER BY o.name, c.name`, [orgIds])).rows : [];
     const seen = new Set<string>();
     const contacts = [...rows, ...extra].filter(r => (seen.has(r.id) ? false : (seen.add(r.id), true))).map(r => ({
       id: r.id, name: r.name, role: r.role, emails: r.emails, language: r.language,
       organisation: { id: r.org_id, name: r.org_name, kind: r.org_kind, counterparty: roleOf(r.org_id) },
-      last_contact: r.last_contact ? new Date(r.last_contact).toISOString() : null,
+      last_contact: r.last_contact ? new Date(r.last_contact).toISOString() : (r.relationship?.last_contact_at ?? null),
+      // wave 6 (P57): from the captured mail, who at the firm last spoke to them and who knows them best
+      relationship: r.relationship && r.relationship.exchanges ? { last_contact_at: r.relationship.last_contact_at ?? null, last_contact_by: r.relationship.last_contact_by ?? null, last_direction: r.relationship.last_direction ?? null, strongest_connection: r.relationship.strongest_connection ?? null, exchanges: r.relationship.exchanges } : null,
     }));
     x.a.detail = { contacts: contacts.length, counterparties: counterparties.length };
     return { body: { project_id: id, client_id: project?.client_id ?? null, contacts, counterparties } };
