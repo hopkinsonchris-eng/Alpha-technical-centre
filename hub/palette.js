@@ -9,8 +9,8 @@
 import { api, listOf, mk, dv, add, setText, loadCatalog, loadGeo, openTarget, lang } from './hub.js';
 
 const PAGES = [
-  ['index.html', 'Today', 'Hoy'], ['search.html', 'Find across the Vault', 'Buscar en el Vault'], ['queue.html', 'Filing queue', 'Cola de archivo'],
-  ['analogues.html', 'Analogues', 'Análogos'], ['cost.html', 'Cost and usage', 'Costes y uso'], ['settings.html', 'Settings', 'Ajustes'],
+  ['/hub/index.html', 'Today', 'Hoy'], ['/hub/search.html', 'Find across the Vault', 'Buscar en el Vault'], ['/hub/queue.html', 'Filing queue', 'Cola de archivo'],
+  ['/hub/analogues.html', 'Analogues', 'Análogos'], ['/hub/cost.html', 'Cost and usage', 'Costes y uso'], ['/hub/settings.html', 'Settings', 'Ajustes'],
 ];
 const GROUP = { context: ['In this project', 'En este proyecto'], projects: ['Projects', 'Proyectos'], countries: ['Countries', 'Países'], tools: ['Tools', 'Herramientas'], pages: ['Pages', 'Páginas'] };
 
@@ -63,12 +63,12 @@ async function loadItems() {
       const cn = p.country && names.get(p.country);
       const sub = [cn ? cn.en : p.country, p.client_name || p.client_id, p.stage].filter(Boolean).join(' · ');
       const subEs = [cn ? cn.es : p.country, p.client_name || p.client_id, p.stage].filter(Boolean).join(' · ');
-      out.push({ group: 'projects', label: { en: p.name, es: p.name }, sub: { en: sub, es: subEs }, keys: [p.id, p.client_name || '', cn ? cn.en + ' ' + cn.es : ''], href: 'project.html?id=' + encodeURIComponent(p.id) });
+      out.push({ group: 'projects', label: { en: p.name, es: p.name }, sub: { en: sub, es: subEs }, keys: [p.id, p.client_name || '', cn ? cn.en + ' ' + cn.es : ''], href: '/hub/project.html?id=' + encodeURIComponent(p.id) });
     }
     const held = cr.ok && cr.body && Array.isArray(cr.body.countries) ? cr.body.countries : [];
     const heldCodes = new Set(held.map((c) => c.code));
-    for (const c of held) { const n = names.get(c.code) || c.name; out.push({ group: 'countries', label: n, sub: { en: c.counts.projects + (c.counts.projects === 1 ? ' project' : ' projects'), es: c.counts.projects + (c.counts.projects === 1 ? ' proyecto' : ' proyectos') }, keys: [c.code], href: 'index.html?country=' + c.code }); }
-    for (const [code, n] of [...names.entries()].sort((a, b) => a[1].en.localeCompare(b[1].en))) if (!heldCodes.has(code)) out.push({ group: 'countries', label: n, keys: [code], href: 'index.html?country=' + code, quiet: true });
+    for (const c of held) { const n = names.get(c.code) || c.name; out.push({ group: 'countries', label: n, sub: { en: c.counts.projects + (c.counts.projects === 1 ? ' project' : ' projects'), es: c.counts.projects + (c.counts.projects === 1 ? ' proyecto' : ' proyectos') }, keys: [c.code], href: '/hub/index.html?country=' + c.code }); }
+    for (const [code, n] of [...names.entries()].sort((a, b) => a[1].en.localeCompare(b[1].en))) if (!heldCodes.has(code)) out.push({ group: 'countries', label: n, keys: [code], href: '/hub/index.html?country=' + code, quiet: true });
     for (const t of tools) { const target = openTarget(t, byId, siteRoot); out.push({ group: 'tools', label: { en: t.name, es: t.name }, sub: { en: t.aliases.current, es: t.aliases.current }, keys: [t.id], href: target.href, blank: target.external }); }
     for (const [href, en, es] of PAGES) out.push({ group: 'pages', label: { en, es }, href });
     out.forEach((it, i) => { it.order = i; });          // insertion order wins among equal matches (toolbar order, name order)

@@ -234,7 +234,7 @@ test('seeded sections: needs attention, recent runs, and the screenshot', async 
   await expect(page.locator('#runs-wrap tr.is-stale')).toHaveCount(1);
   await expect(page.locator('#runs-wrap th')).toHaveCount(7);
   // Find is a plain link-only form to the search page.
-  await expect(page.locator('form[role="search"]')).toHaveAttribute('action', 'search.html');
+  await expect(page.locator('form[role="search"]')).toHaveAttribute('action', '/hub/search.html');
   mkdirSync(path.dirname(EVIDENCE), { recursive: true });
   await page.screenshot({ path: EVIDENCE, fullPage: true });
 });

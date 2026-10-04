@@ -72,7 +72,7 @@ test('results render with type icon, highlighted snippet, source path, legal tag
   const first = results(page).nth(0);
   await expect(first.locator('.r-ico svg')).toHaveCount(1);
   await expect(first.locator('.r-title a')).toContainText('Waterflood performance and voidage management');
-  await expect(first.locator('.r-title a')).toHaveAttribute('href', 'project.html?id=' + PROJECT);
+  await expect(first.locator('.r-title a')).toHaveAttribute('href', '/hub/project.html?id=' + PROJECT);
   await expect(first.locator('.r-title mark')).toHaveText(['Waterflood', 'voidage']);
   await expect(first.locator('.snip mark')).toHaveText(['Voidage', 'waterflood']);
   await expect(first.locator('.snip')).toContainText('<0.5', { useInnerText: true });   // a "<" in the Vault's text is text, never markup
@@ -83,7 +83,7 @@ test('results render with type icon, highlighted snippet, source path, legal tag
 
   const run = results(page).nth(1);
   await expect(run).toHaveAttribute('data-type', 'run');
-  await expect(run.locator('.r-title a')).toHaveAttribute('href', 'project.html?id=' + PROJECT + '&run=00000000-0000-4000-8000-000000000002');
+  await expect(run.locator('.r-title a')).toHaveAttribute('href', '/hub/project.html?id=' + PROJECT + '&run=00000000-0000-4000-8000-000000000002');
   await expect(results(page).nth(2).locator('.hub-stale')).toHaveText('Stale');
   await expect(results(page).nth(2).locator('.find-av')).toHaveCount(2);
 

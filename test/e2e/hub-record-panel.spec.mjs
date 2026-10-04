@@ -118,7 +118,7 @@ test('AC13: a document opens as highlights and related cards; the raw record sit
   expect(terms).toEqual(['Type', 'Project', 'Legal tag', 'Version', 'Ingested', 'Indexed', 'Stale']);
   await expect(hl.locator('[data-h="type"]')).toHaveText('Report');
   await expect(hl.locator('[data-h="project"] a')).toHaveText('Western Kazakhstan Brownfield');
-  await expect(hl.locator('[data-h="project"] a')).toHaveAttribute('href', 'project.html?id=' + PID);
+  await expect(hl.locator('[data-h="project"] a')).toHaveAttribute('href', '/hub/project.html?id=' + PID);
   await expect(hl.locator('[data-h="legal_tag"]')).toHaveText('lt-firm');
   await expect(hl.locator('[data-h="version"]')).toHaveText('v2 · supersedes v1');
   await expect(hl.locator('[data-h="ingested"]')).toContainText('30 Sept 2026');
@@ -167,7 +167,7 @@ test('AC13: a run opens with its job, status, headline outputs, inputs and super
   const terms = await hl.locator('dt').allTextContents();
   expect(terms).toEqual(['Tool', 'Status', 'Headline', 'Inputs', 'Legal tag', 'Stale']);
   await expect(hl.locator('[data-h="tool"] a')).toHaveText('opportunity-register@2.2.0');
-  await expect(hl.locator('[data-h="tool"] a')).toHaveAttribute('href', 'tool.html?id=opportunity-register');
+  await expect(hl.locator('[data-h="tool"] a')).toHaveAttribute('href', '/hub/tool.html?id=opportunity-register');
   await expect(hl.locator('[data-h="status"] .hub-pill')).toHaveText('Final');
   await expect(hl.locator('[data-h="headline"]')).toHaveText('technical potential bopd 12,400 bopd · npv10 58.3 USD MM · irr 0.21');
   await expect(hl.locator('[data-h="inputs"]')).toHaveText('2');

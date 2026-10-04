@@ -96,7 +96,7 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
   h(dl, 'type', 'Type', 'Tipo', tl ? mk('span', null, tl[0], tl[1]) : dv('span', null, cap(type)));
   const pid = src.project_id || (node && node.project_id) || (ctx.project && ctx.project.id);
   const pname = ctx.project && ctx.project.id === pid ? ctx.project.name : pid;
-  h(dl, 'project', 'Project', 'Proyecto', pid ? dv('a', 'hub-inline-link', pname, { href: 'project.html?id=' + encodeURIComponent(pid) }) : mk('span', null, '—', '—'));
+  h(dl, 'project', 'Project', 'Proyecto', pid ? dv('a', 'hub-inline-link', pname, { href: '/hub/project.html?id=' + encodeURIComponent(pid) }) : mk('span', null, '—', '—'));
   h(dl, 'legal_tag', 'Legal tag', 'Etiqueta legal', dv('span', 'hub-lt', src.legal_tag || (entry && entry.legal_tag)));
   const version = src.version || (entry && entry.version) || 1;
   const supersedes = src.supersedes || (entry && entry.supersedes);
@@ -172,7 +172,7 @@ function renderRun({ ref, rec, node, entry, ctx }) {
   const dl = mk('dl', 'hub-kv hub-rp-highlights', null, null, { 'data-highlights': '' });
   const job = src.job || (node && node.job) || (entry && entry.job);
   const ver = src.tool_version || (entry && entry.tool_version);
-  h(dl, 'tool', 'Tool', 'Herramienta', job ? dv('a', 'hub-inline-link mono', job + (ver ? '@' + ver : ''), { href: 'tool.html?id=' + encodeURIComponent(job) }) : mk('span', null, '—', '—'));
+  h(dl, 'tool', 'Tool', 'Herramienta', job ? dv('a', 'hub-inline-link mono', job + (ver ? '@' + ver : ''), { href: '/hub/tool.html?id=' + encodeURIComponent(job) }) : mk('span', null, '—', '—'));
   const status = src.status || (node && node.status) || (entry && entry.status);
   const st = RUN_STATUS[status] || [status, status, 'muted'];
   h(dl, 'status', 'Status', 'Estado', status ? mk('span', 'hub-pill ' + st[2], st[0], st[1], { 'data-status': status }) : mk('span', null, '—', '—'));
@@ -188,7 +188,7 @@ function renderRun({ ref, rec, node, entry, ctx }) {
   const rel = mk('div', 'hub-rp-related');
   const pid = rec.project_id || (ctx.project && ctx.project.id);
   const pname = ctx.project && ctx.project.id === pid ? ctx.project.name : pid;
-  add(rel, card('project', 'Project', 'Proyecto', dv('a', 'hub-inline-link', pname, { href: 'project.html?id=' + encodeURIComponent(pid) })));
+  add(rel, card('project', 'Project', 'Proyecto', dv('a', 'hub-inline-link', pname, { href: '/hub/project.html?id=' + encodeURIComponent(pid) })));
   const iul = mk('ul', 'hub-rp-list');
   if (inputs.length) for (const i of inputs) add(iul, refItem(i.ref, ctx, i.role ? dv('span', 'hub-muted', '· ' + i.role) : null));
   else add(iul, mk('li', 'hub-muted', 'None declared', 'Ninguna declarada'));

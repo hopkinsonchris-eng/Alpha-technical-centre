@@ -100,7 +100,7 @@ test('AC15: on a project page the first group offers the project tools and actio
   await page.locator('#palette-btn').click();
   await pal.locator('input').fill('venez');
   await expect(pal.locator('[data-item]').first()).toContainText('Venezuela');
-  await expect(pal.locator('[data-item]').first()).toHaveAttribute('data-href', 'index.html?country=VE');
+  await expect(pal.locator('[data-item]').first()).toHaveAttribute('data-href', '/hub/index.html?country=VE');
   await pal.locator('input').fill('settin');
   await expect(pal.locator('[data-item]').first()).toContainText('Settings');
   mkdirSync(EVIDENCE, { recursive: true });

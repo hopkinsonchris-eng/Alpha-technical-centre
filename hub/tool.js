@@ -274,8 +274,8 @@ function renderRuns(tool, current, runs, projects, note) {
     for (const r of rs.slice(0, MAX_ROWS)) {
       const tr = mk('tr', old && r.status !== 'superseded' ? 'older' : '', null, null, { 'data-run-id': r.id });
       const st = RUN_STATUS[r.status] || [r.status, r.status, 'muted'];
-      const link = dv('a', 'hub-inline-link', r.title || r.job || r.id, { href: 'project.html?id=' + encodeURIComponent(r.project_id) + '&run=' + encodeURIComponent(r.id), 'data-run-link': r.id });
-      const proj = r.project_id ? dv('a', 'hub-inline-link', pname.get(r.project_id) || r.project_id, { href: 'project.html?id=' + encodeURIComponent(r.project_id) }) : dv('span', null, '—');
+      const link = dv('a', 'hub-inline-link', r.title || r.job || r.id, { href: '/hub/project.html?id=' + encodeURIComponent(r.project_id) + '&run=' + encodeURIComponent(r.id), 'data-run-link': r.id });
+      const proj = r.project_id ? dv('a', 'hub-inline-link', pname.get(r.project_id) || r.project_id, { href: '/hub/project.html?id=' + encodeURIComponent(r.project_id) }) : dv('span', null, '—');
       add(tr, add(mk('td'), link), add(mk('td'), proj), dv('td', null, r.author), add(mk('td'), mk('span', 'hub-pill ' + st[2], st[0], st[1])), dv('td', 'nowrap', (r.created_at || '').slice(0, 10)));
       add(tb, tr);
     }

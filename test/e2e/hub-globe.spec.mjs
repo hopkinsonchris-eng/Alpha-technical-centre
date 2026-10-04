@@ -3,7 +3,7 @@
 // drill-down that is linkable (?country=XX), and the opportunity register. AC2–AC6.
 // The API is stubbed with page.route; the static server serves the pages and the geo file.
 import { test, expect } from '@playwright/test';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -112,7 +112,7 @@ test('AC3: the country list shows what the caller may see with counts and attent
   await expect(page.locator('#country-list [data-country="KZ"] .hub-flag')).toHaveCount(0);
   // Projects without a country are listed too, never dropped.
   await expect(page.locator('#country-unplaced')).toContainText('1 project without a country');
-  await expect(page.locator('#country-unplaced a[data-country-project="plain-project"]')).toHaveAttribute('href', 'project.html?id=plain-project');
+  await expect(page.locator('#country-unplaced a[data-country-project="plain-project"]')).toHaveAttribute('href', '/hub/project.html?id=plain-project');
   // Spanish follows.
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(page.locator('#country-list [data-country="KZ"]')).toContainText('Kazajistán');
@@ -133,7 +133,7 @@ test('AC4 and AC5: choosing a country sets ?country=, lists its projects, links 
   await expect(projects).toHaveCount(2);
   await expect(projects.nth(0)).toContainText('Barinas–Apure Cluster');
   await expect(projects.nth(0)).toContainText('Technical review');
-  await expect(projects.nth(0)).toHaveAttribute('href', 'project.html?id=ven-barinas');
+  await expect(projects.nth(0)).toHaveAttribute('href', '/hub/project.html?id=ven-barinas');
   await expect(projects.nth(0).locator('.hub-flag.stale')).toHaveText('2 stale');
   await expect(projects.nth(1)).toContainText('Lake Maracaibo Redevelopment');
   await expect(page.locator('#sec-globe')).toHaveAttribute('data-country', 'VE');
@@ -180,7 +180,7 @@ test('AC6: the register lists the projects with their opportunity fields; filter
   await expect(kaz.locator('[data-col="holder"]')).toHaveText('KazMunayGas + Chevron');
   await expect(page.locator('tr[data-register-row="egy-onshore"] [data-col="holder"]')).toHaveText('—');
   await expect(page.locator('.hub-register thead')).toContainText('Lead');
-  await expect(kaz.locator('a')).toHaveAttribute('href', 'project.html?id=kaz-brownfield');
+  await expect(kaz.locator('a')).toHaveAttribute('href', '/hub/project.html?id=kaz-brownfield');
   await expect(page.locator('tr[data-register-row="egy-onshore"] [data-col="client"]')).toHaveText('Frontera Energy');
   await expect(page.locator('tr[data-register-row="plain-project"] [data-col="plan"]')).toHaveText('—');
 
@@ -281,7 +281,7 @@ test('AC16: Brief this country asks the Vault and shows the cited paragraphs, th
   await expect(brief.locator('[data-brief-paragraph]').first()).not.toContainText('[run:');
   const cites = brief.locator('[data-brief-paragraph]').nth(1).locator('a[data-cite]');
   await expect(cites).toHaveCount(2);
-  await expect(cites.nth(0)).toHaveAttribute('href', 'project.html?id=ven-barinas&run=00000000-0000-4000-8000-000000000401');
+  await expect(cites.nth(0)).toHaveAttribute('href', '/hub/project.html?id=ven-barinas&run=00000000-0000-4000-8000-000000000401');
   await expect(cites.nth(0)).toHaveText('Waterflood screen, base case');
   await expect(cites.nth(1)).toHaveText('Data room index');
   await expect(brief.locator('[data-brief-paragraph]').nth(2)).toHaveClass(/question/);
@@ -571,4 +571,25 @@ test('W3-PR4: an archived project is left out of the register and My projects', 
   await ready(page);
   await expect(page.locator('#register-body tr[data-register-row]')).toHaveCount(5);
   await expect(page.locator('tr[data-register-row="old-venezuela"]')).toHaveCount(0);
+});
+
+// Render serves the Hub directory at /hub as well as /hub/ (its redirect rule is not applied), so
+// a relative page link there would resolve to the site root and answer "Not Found". Every Hub page
+// link is root-absolute; this serves Today at the unslashed URL, as Render does, and clicks through.
+test('a project link works from /hub without the trailing slash', async ({ page }) => {
+  await stubApi(page);
+  const html = readFileSync(path.join(ROOT, 'hub/index.html'), 'utf8');
+  await page.route('**/hub', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: html }));
+  await page.goto('/hub');
+  await ready(page); await globeReady(page);
+  await page.locator('#country-list [data-country="VE"]').click();
+  const link = page.locator('#country-panel [data-country-project="ven-barinas"]');
+  await expect(link).toHaveAttribute('href', '/hub/project.html?id=ven-barinas');
+  for (const a of await page.locator('a[href]').all()) {
+    const href = await a.getAttribute('href');
+    expect(href, href).toMatch(/^(\/|https?:|#|mailto:)/);
+  }
+  await link.click();
+  await expect(page).toHaveURL(/\/hub\/project\.html\?id=ven-barinas$/);
+  await expect(page.locator('body')).not.toContainText(/^Not Found$/);
 });

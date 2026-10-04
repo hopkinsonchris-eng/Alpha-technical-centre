@@ -216,7 +216,7 @@ test('(d) scorecard grid: a row per project, a cell per rule, and the RAG the se
     const row = page.locator(`[data-project="${p.id}"]`);
     await expect(row).toHaveAttribute('data-rag', p.rag);
     await expect(row.locator('a')).toHaveText(p.name);
-    await expect(row.locator('a')).toHaveAttribute('href', 'project.html?id=' + p.id);
+    await expect(row.locator('a')).toHaveAttribute('href', '/hub/project.html?id=' + p.id);
     await expect(row.locator('td[data-rule]')).toHaveCount(6);
     for (const r of p.rules) await expect(row.locator(`td[data-rule="${r.id}"]`)).toHaveAttribute('data-status', r.status);
     await expect(row.locator('[data-score]')).toHaveText(`${p.pass}/6`);

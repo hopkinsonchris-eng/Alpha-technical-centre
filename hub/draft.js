@@ -121,7 +121,8 @@ export function mountDraft(ctx, { openRecord }) {
   to.addEventListener('change', scopeCheck);
 
   // ── drafting ──
-  const post = (path, body) => api(path, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  // A draft takes the model up to a minute or two; the default ten-second request ceiling would cut it off.
+  const post = (path, body, timeoutMs) => api(path, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs || 15000) });
   async function runDraft(tone) {
     notices.textContent = '';
     const c = contactOf();
@@ -130,9 +131,9 @@ export function mountDraft(ctx, { openRecord }) {
     const body = { kind: kind.value, project_id: ctx.project.id, brief: brief.value.trim(), language: language.value };
     if (c) body.organisation_id = c.organisation.id;
     if (tone && state.draft) { body.tone = tone; body.previous = state.draft.paragraphs.join('\n\n'); }
-    const r = await post('/api/draft', body);
+    const r = await post('/api/draft', body, 180000);
     go.disabled = false; setText(go.querySelector('span') || go, 'Draft', 'Redactar');
-    if (!r.ok) { add(notices, notice('bad', r.status === 501 ? 'Drafting needs the assistant provider on the server.' : 'The draft could not be made.' + (r.body && r.body.error ? ' ' + r.body.error.message : ''), r.status === 501 ? 'La redacción necesita el proveedor del asistente en el servidor.' : 'No se pudo hacer el borrador.')); return; }
+    if (!r.ok) { add(notices, notice('bad', r.status === 501 ? 'Drafting needs the assistant provider on the server.' : r.status === 0 ? 'The draft took too long or the connection dropped. Try again.' : 'The draft could not be made.' + (r.body && r.body.error ? ' ' + r.body.error.message : ''), r.status === 501 ? 'La redacción necesita el proveedor del asistente en el servidor.' : r.status === 0 ? 'El borrador tardó demasiado o se perdió la conexión. Inténtelo de nuevo.' : 'No se pudo hacer el borrador.')); return; }
     // A tone re-draft continues the same review: the citations opened and the clock carry over; a fresh draft starts both.
     state.draft = r.body; state.decisions = r.body.paragraphs.map((p) => (QUESTION_RE.test(p) ? null : 'keep')); state.notes = {}; state.sent = null; state.rendered = null;
     if (!tone) { state.citationsOpened = 0; state.startedAt = Date.now(); }

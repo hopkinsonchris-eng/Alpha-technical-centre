@@ -219,7 +219,7 @@ function reviewRow(q, list) {
     add(row, icon(DOC_ICON, 'gold'));
     add(body, add(mk('span', 't', null, null, { id: tid }), mk('span', null, 'Field named in a document: ', 'Campo nombrado en un documento: '), dv('b', null, p.name), document.createTextNode(' '), dv('span', 'hub-muted', '(' + (p.kind || 'field') + ')')));
     const proj = projects.find((x) => x.id === p.project_id);
-    add(body, add(mk('span', 'm'), dv('a', 'hub-inline-link', (proj && proj.name) || p.project_id || '—', { href: 'project.html?id=' + encodeURIComponent(p.project_id || '') + '#p-fields', 'data-proposal-project': p.project_id || '' }), dv('span', null, [p.item_title, p.anchor].filter(Boolean).map((x) => ' · ' + x).join(''))));
+    add(body, add(mk('span', 'm'), dv('a', 'hub-inline-link', (proj && proj.name) || p.project_id || '—', { href: '/hub/project.html?id=' + encodeURIComponent(p.project_id || '') + '#p-fields', 'data-proposal-project': p.project_id || '' }), dv('span', null, [p.item_title, p.anchor].filter(Boolean).map((x) => ' · ' + x).join(''))));
     if (p.quote) add(body, dv('span', 'm q-quote', '“' + p.quote + '”'));
     const first = Array.isArray(p.candidates) && p.candidates[0];
     if (first) add(body, add(mk('span', 'm', null, null, { 'data-first-candidate': first.source + ':' + first.source_id }), mk('span', null, 'Accept attaches ', 'Aceptar adjunta '), dv('b', null, first.name), dv('span', null, ' (' + first.source + (Number.isFinite(first.lat) && Number.isFinite(first.lon) ? ', ' + first.lat + ', ' + first.lon : '') + ')')));
@@ -231,7 +231,7 @@ function reviewRow(q, list) {
     add(row, icon(DOC_ICON, 'gold'));
     add(body, add(mk('span', 't', null, null, { id: tid }), p.fact_kind === 'location' ? mk('span', null, 'Field location from the gazetteers: ', 'Ubicación de campo desde los gaceteros: ') : mk('span', null, 'Fact from research: ', 'Hecho desde la investigación: '), dv('b', null, p.proposal || p.value), document.createTextNode(' '), dv('span', 'hub-muted', p.asset_name && p.fact_kind !== 'location' ? '(' + p.asset_name + ')' : '')));
     const proj = projects.find((x) => x.id === p.project_id);
-    add(body, add(mk('span', 'm'), dv('a', 'hub-inline-link', (proj && proj.name) || p.project_id || '—', { href: 'project.html?id=' + encodeURIComponent(p.project_id || '') + '#p-fields', 'data-proposal-project': p.project_id || '' }), dv('span', null, p.item_title ? ' · ' + p.item_title : '')));
+    add(body, add(mk('span', 'm'), dv('a', 'hub-inline-link', (proj && proj.name) || p.project_id || '—', { href: '/hub/project.html?id=' + encodeURIComponent(p.project_id || '') + '#p-fields', 'data-proposal-project': p.project_id || '' }), dv('span', null, p.item_title ? ' · ' + p.item_title : '')));
     if (p.quote) add(body, dv('span', 'm q-quote', '“' + p.quote + '”'));
     accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept', { apply: true });
   } else if (q.kind === 'nda-expiry') {
