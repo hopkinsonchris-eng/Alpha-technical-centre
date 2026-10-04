@@ -16,7 +16,7 @@ const PROJECT = {
   created_at: '2026-09-30T09:00:00.000Z', closed_at: null, country: 'VE', lat: 7.6, lon: -70.9, stage: 'Initial screen', stage_history: [], register: { holder: 'Petrolera Zuata', partners: ['Chevron Venezuela'] },
 };
 const CONTACTS = { project_id: PID, client_id: 'hte', contacts: [
-  { id: 'maria-fernandez', name: 'Ing. María Fernández', role: 'Gerente de Nuevos Negocios', emails: ['maria@zuata.example'], language: 'es', organisation: { id: 'zuata', name: 'Petrolera Zuata S.A.', kind: 'operator', counterparty: 'holder' }, last_contact: '2026-09-12T10:00:00.000Z' },
+  { id: 'maria-fernandez', name: 'Ing. María Fernández', role: 'Gerente de Nuevos Negocios', emails: ['maria@zuata.example'], language: 'es', organisation: { id: 'zuata', name: 'Petrolera Zuata S.A.', kind: 'operator', counterparty: 'holder' }, last_contact: '2026-09-12T10:00:00.000Z', relationship: { last_contact_at: '2026-09-12T10:00:00.000Z', last_contact_by: 'lars', last_direction: 'out', strongest_connection: 'chris', exchanges: 7 } },
   { id: 'tom-reed', name: 'Tom Reed', role: 'CFO', emails: ['tom@hte.example'], language: 'en', organisation: { id: 'hte', name: 'High Tech Electronica', kind: 'client', counterparty: 'client' }, last_contact: null },
   { id: 'x-outsider', name: 'Someone Else', role: null, emails: [], language: 'en', organisation: { id: 'other-co', name: 'Other Co', kind: 'vendor', counterparty: null }, last_contact: null },
 ], counterparties: [{ kind: 'holder', name: 'Petrolera Zuata', organisation_id: 'zuata' }, { kind: 'partner', name: 'Chevron Venezuela', organisation_id: null }] };
@@ -74,7 +74,9 @@ test('W5-AC4/AC5/AC7: Write to… picks the recipient, shows what the draft does
   const to = panel.locator('#dr-to');
   await expect(to.locator('optgroup')).toHaveCount(3);
   await expect(to.locator('optgroup').first()).toHaveAttribute('label', 'Petrolera Zuata S.A. · current owner');
-  await expect(to.locator('option[value="maria-fernandez"]')).toHaveText('Ing. María Fernández, Gerente de Nuevos Negocios · last contact 12 Sept 2026');
+  await expect(to.locator('option[value="maria-fernandez"]')).toHaveText('Ing. María Fernández, Gerente de Nuevos Negocios · last contact 12 Sept 2026 · last spoke: lars · knows them best: chris');
+  await expect(to.locator('option[value="maria-fernandez"]')).toHaveAttribute('data-last-spoke', 'lars');
+  await expect(to.locator('option[value="tom-reed"]')).toHaveText('Tom Reed, CFO · no contact yet');
   await expect(panel.locator('#dr-nocontact [data-counterparty="partner"]')).toContainText('Chevron Venezuela (JV partner): no contact yet.');
   await to.selectOption('x-outsider');
   await expect(panel.locator('#dr-scope .hub-notice.warn')).toContainText('Other Co is not the client, the current owner, a partner or the government');

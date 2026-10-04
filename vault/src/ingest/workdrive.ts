@@ -47,7 +47,7 @@ export function workdriveConfig(env: NodeJS.ProcessEnv = process.env, fetchImpl?
   };
 }
 
-export interface SyncStats { listed: number; created: number; versioned: number; unchanged: number; skipped: number; failed: number; errors: string[]; items: Array<{ id: string; version: number }> }
+export interface SyncStats { listed: number; created: number; versioned: number; unchanged: number; skipped: number; failed: number; errors: string[]; items: Array<{ id: string; version: number }>; /** wave 6 */ moved?: number; hidden?: number; unchanged_by_changes?: number }
 const emptyStats = (): SyncStats => ({ listed: 0, created: 0, versioned: 0, unchanged: 0, skipped: 0, failed: 0, errors: [], items: [] });
 
 interface RemoteFile { id: string; name: string; mime: string; size: number; modifiedMs: number; path: string; url?: string }
@@ -94,7 +94,43 @@ async function setCursor(db: Db, key: string, value: unknown): Promise<void> {
   await db.query(`INSERT INTO settings (key, value, updated_by) VALUES ($1, $2::jsonb, 'ingest-sync') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_by = 'ingest-sync', updated_at = now()`, [key, JSON.stringify(value)]);
 }
 
-export interface WorkdriveOptions { fetchImpl?: typeof fetch; config?: WorkdriveConfig | null; map?: WorkdriveMap; now?: () => Date }
+export interface WorkdriveOptions { fetchImpl?: typeof fetch; config?: WorkdriveConfig | null; map?: WorkdriveMap; now?: () => Date; /** Wave 6 (P59): use the Changes API after the first full listing (default true). */ changes?: boolean }
+
+/* ── wave 6 (P59): the Changes API, one cursor per mapped folder ── */
+interface Change { action: string; group: string; resourceId: string | null; name: string | null; deleted: boolean }
+interface ChangesPage { changes: Change[]; next: string | null; expired: boolean }
+
+async function getCursor<T = any>(db: Db, key: string): Promise<T | null> {
+  return (await db.query<{ value: T }>('SELECT value FROM settings WHERE key = $1', [key])).rows[0]?.value ?? null;
+}
+
+/** The start token for a folder: everything from now on. */
+async function changesStart(cfg: WorkdriveConfig, fetchImpl: typeof fetch, folderId: string): Promise<string | null> {
+  const res = await fetchImpl(`${cfg.apiUrl}/changes/${encodeURIComponent(folderId)}?page%5Btoken%5D=latest&page%5Blimit%5D=50`, { headers: await cfg.auth.headers({ accept: 'application/vnd.api+json' }) });
+  if (!res.ok) return null;
+  const j: any = await res.json().catch(() => ({}));
+  return j?.data?.token ?? j?.data?.attributes?.token ?? j?.token ?? null;
+}
+
+/** The changes after a token. `expired` means the token is older than the API keeps (31 days) and a full listing is due. */
+async function changesAfter(cfg: WorkdriveConfig, fetchImpl: typeof fetch, token: string): Promise<ChangesPage> {
+  const out: ChangesPage = { changes: [], next: null, expired: false };
+  let next: string | null = token;
+  for (let page = 0; next && page < 40; page++) {
+    const res = await fetchImpl(`${cfg.apiUrl}/changes?page%5Bnext%5D=${encodeURIComponent(next)}`, { headers: await cfg.auth.headers({ accept: 'application/vnd.api+json' }) });
+    if (!res.ok) { if (res.status === 400 || res.status === 404 || res.status === 410) { out.expired = true; return out; } throw new Error(`workdrive changes failed (${res.status})`); }
+    const j: any = await res.json();
+    for (const d of j.data ?? []) {
+      const a = d.attributes ?? d;
+      out.changes.push({ action: String(a.action_category ?? a.action ?? '').toUpperCase(), group: String(a.resource_group ?? a.resource_type ?? '').toUpperCase(), resourceId: a.resource_id ?? a.resourceId ?? d.id ?? null, name: a.resource_name ?? null, deleted: a.is_deleted === true || String(a.action_category ?? '').toUpperCase() === 'DELETE' });
+    }
+    const cursor = j.cursor ?? j.data?.cursor ?? j.links ?? {};
+    const token2 = cursor.next ?? j.data?.token ?? null;
+    out.next = token2 ?? out.next;
+    next = cursor.has_next && token2 ? token2 : null;
+  }
+  return out;
+}
 
 export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptions = {}): Promise<SyncStats> {
   const fetchImpl = opts.fetchImpl ?? fetch;
@@ -106,9 +142,33 @@ export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptio
 
   for (const folder of map.folders) {
     if (folder.enabled === false || /^EXAMPLE/i.test(folder.folder_id)) continue;
+    // Wave 6 (P59): after the first full listing, ask the Changes API whether anything moved; list again only when it did.
+    const cursorKey = `workdrive:changes:${folder.folder_id}`;
+    let needList = true, nextToken: string | null = null;
+    if (opts.changes !== false) {
+      const stored = await getCursor<{ token: string }>(db, cursorKey);
+      if (stored?.token) {
+        try {
+          const page = await changesAfter(cfg, fetchImpl, stored.token);
+          if (page.expired) { needList = true; nextToken = null; stats.errors.push(`${folder.name ?? folder.folder_id}: changes token expired; full listing`); }
+          else {
+            nextToken = page.next ?? stored.token;
+            const deleted = page.changes.filter(c => c.deleted && c.group !== 'FOLDER' && c.resourceId);
+            for (const d of deleted) {
+              const hid = await db.query(`UPDATE items SET hidden = true, extracted = extracted || '{"hidden_reason":"workdrive:deleted"}'::jsonb WHERE origin->>'source' = 'zoho-workdrive' AND external_id = $1 AND project_id = $2 AND NOT hidden RETURNING id`, [d.resourceId, folder.project_id]);
+              stats.hidden = (stats.hidden ?? 0) + hid.rows.length;
+            }
+            needList = page.changes.some(c => !c.deleted);
+            if (!needList) stats.unchanged_by_changes = (stats.unchanged_by_changes ?? 0) + 1;
+          }
+        } catch (e) { stats.errors.push(`${folder.name ?? folder.folder_id}: ${(e as Error).message}`); needList = true; }
+      }
+    }
+    if (!needList) { if (nextToken) await setCursor(db, cursorKey, { token: nextToken, at: startedAt }); continue; }
     const files: RemoteFile[] = [];
     try { await listFolder(cfg, fetchImpl, folder.folder_id, folder.name ?? folder.folder_id, folder.recursive !== false, files); }
     catch (e) { stats.failed++; stats.errors.push((e as Error).message); continue; }
+    if (opts.changes !== false) { const t = nextToken ?? await changesStart(cfg, fetchImpl, folder.folder_id); if (t) await setCursor(db, cursorKey, { token: t, at: startedAt }); }
     files.sort((a, b) => a.modifiedMs - b.modifiedMs);
     stats.listed += files.length;
     for (const f of files) {
@@ -116,7 +176,11 @@ export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptio
         const known = (await db.query<{ id: string; extracted: any }>(
           `SELECT id, extracted FROM items WHERE origin->>'source' = 'zoho-workdrive' AND external_id = $1 AND project_id = $2`, [f.id, folder.project_id])).rows[0];
         const seenMs = Number(known?.extracted?.workdrive?.modified_ms ?? 0);
-        if (known && f.modifiedMs && seenMs >= f.modifiedMs) { stats.unchanged++; continue; }
+        if (known && f.modifiedMs && seenMs >= f.modifiedMs) {
+          // A move keeps the item and its versions; only the path changes (wave 6, W6-AC10).
+          if (known.extracted?.workdrive?.path !== f.path) { await db.query(`UPDATE items SET extracted = jsonb_set(extracted, '{workdrive,path}', to_jsonb($2::text)) WHERE id = $1`, [known.id, f.path]); stats.moved = (stats.moved ?? 0) + 1; }
+          stats.unchanged++; continue;
+        }
         if (f.size > MAX_BYTES) { stats.skipped++; stats.errors.push(`${f.name}: larger than ${MAX_BYTES} bytes, skipped`); continue; }
         const dl = await fetchImpl(`${cfg.downloadUrl}/${encodeURIComponent(f.id)}`, { headers: await cfg.auth.headers() });
         if (!dl.ok) throw new Error(`workdrive download ${f.id} failed (${dl.status})`);

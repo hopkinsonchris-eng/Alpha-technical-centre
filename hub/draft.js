@@ -78,7 +78,10 @@ export function mountDraft(ctx, { openRecord }) {
       const og = mk('optgroup', null, null, null, { label: org.name + (cp ? ' · ' + cp[0] : '') });
       for (const c of list) {
         const last = c.last_contact ? fmtShortDate(c.last_contact) : null;
-        add(og, mk('option', null, c.name + (c.role ? ', ' + c.role : '') + (last ? ' · last contact ' + last.en : ' · no contact yet'), c.name + (c.role ? ', ' + c.role : '') + (last ? ' · último contacto ' + last.es : ' · sin contacto aún'), { value: c.id, 'data-org': org.id }));
+        // Wave 6 (P57): who at the firm last spoke to them, from the captured mail.
+        const rel = c.relationship && c.relationship.last_contact_by ? ' · last spoke: ' + c.relationship.last_contact_by + (c.relationship.strongest_connection && c.relationship.strongest_connection !== c.relationship.last_contact_by ? ' · knows them best: ' + c.relationship.strongest_connection : '') : '';
+        const relEs = c.relationship && c.relationship.last_contact_by ? ' · último en hablar: ' + c.relationship.last_contact_by + (c.relationship.strongest_connection && c.relationship.strongest_connection !== c.relationship.last_contact_by ? ' · quien mejor le conoce: ' + c.relationship.strongest_connection : '') : '';
+        add(og, mk('option', null, c.name + (c.role ? ', ' + c.role : '') + (last ? ' · last contact ' + last.en : ' · no contact yet') + rel, c.name + (c.role ? ', ' + c.role : '') + (last ? ' · último contacto ' + last.es : ' · sin contacto aún') + relEs, { value: c.id, 'data-org': org.id, ...(c.relationship && c.relationship.last_contact_by ? { 'data-last-spoke': c.relationship.last_contact_by } : {}) }));
       }
       add(to, og);
     }

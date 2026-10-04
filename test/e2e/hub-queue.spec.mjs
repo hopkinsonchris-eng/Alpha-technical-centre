@@ -332,3 +332,29 @@ test('a field named in a document is a review row with its quote and project; At
   ]);
   await expect(page.locator('#n-review')).toHaveText('2');
 });
+
+test('W6-AC5: rows the capture marked ready sit in a Ready group with Accept all; the rest need a decision; Accept all files them in one call', async ({ page }) => {
+  const rows = [
+    { ...FILING[0], id: 'f1', group: 'ready' },
+    { ...FILING[1], id: 'f2', group: 'ready' },
+    { ...FILING[2], id: 'f3', group: 'review' },
+  ];
+  const h = full().filter((x) => !(x[0] === 'GET' && String(x[1]).includes('filing')));
+  h.push(['GET', /^\/api\/queue\/filing$/, (u, r) => json(r, { items: rows })]);
+  h.push(['POST', /^\/api\/queue\/filing\/accept-ready$/, (u, r) => json(r, { filed: [{ id: 'f1', item_id: 'i1', project_id: 'llanos-waterflood' }, { id: 'f2', item_id: 'i2', project_id: 'llanos-waterflood' }], skipped: [] })]);
+  const calls = await open(page, h);
+  const list = page.locator('#filing-list');
+  await expect(list.locator('.q-group-head[data-group="ready"]')).toContainText('2 messages with one clear project');
+  await expect(list.locator('.q-row[data-group="ready"]')).toHaveCount(2);
+  await expect(list.locator('.q-group-head[data-group="review"]')).toContainText('Needs a decision');
+  await expect(list.locator('.q-row[data-group="review"]')).toHaveCount(1);
+  await expect(page.locator('#n-filing')).toHaveText('3');
+  await page.locator('#filing-accept-ready').click();
+  await expect(list.locator('.q-row')).toHaveCount(1);
+  await expect(page.locator('#n-filing')).toHaveText('1');
+  await expect(page.locator('#live')).toContainText('2 messages filed.');
+  const post = calls.find((c) => c.method === 'POST');
+  expect(post.path).toBe('/api/queue/filing/accept-ready');
+  expect(post.body).toEqual({ ids: ['f1', 'f2'] });
+  await expect(list.locator('.q-group-head[data-group="ready"]')).toHaveCount(0);
+});

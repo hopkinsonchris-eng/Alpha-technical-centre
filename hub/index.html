@@ -296,6 +296,23 @@
             <h2 id="h-attn" data-en="Waiting on a partner" data-es="A la espera de un socio">Waiting on a partner</h2>
           </div>
         </div>
+        <!-- WHAT CAME IN (wave 6, Option A): since the person last looked, with a cited sentence per opportunity -->
+        <article class="card hub-activity" id="card-activity" hidden aria-labelledby="h-activity">
+          <div class="hub-card-head">
+            <div>
+              <h3 id="h-activity" data-en="What came in" data-es="Qué llegó">What came in</h3>
+              <p class="hub-muted" id="activity-since"></p>
+            </div>
+            <span class="hub-count" id="activity-count" aria-hidden="true">0</span>
+          </div>
+          <p class="hub-activity-counts" id="activity-counts"></p>
+          <div id="activity-projects"></div>
+          <div class="hub-actions">
+            <a class="btn btn-outline btn-sm" href="/hub/queue.html" data-en="Open the queue" data-es="Abrir la cola">Open the queue</a>
+            <button class="btn btn-outline btn-sm" type="button" id="activity-seen" data-en="Mark all as seen" data-es="Marcar todo como visto">Mark all as seen</button>
+            <span class="hub-muted" id="activity-status" role="status"></span>
+          </div>
+        </article>
         <div class="hub-attn">
           <article class="card" id="card-stale" hidden></article>
           <article class="card" id="card-filing" hidden></article>
