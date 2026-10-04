@@ -156,7 +156,7 @@ function avatar(id) {
 function hitHref(h) {
   const p = new URLSearchParams({ id: h.project_id });
   if (h.run_id) p.set('run', h.run_id);
-  return 'project.html?' + p.toString();
+  return '/hub/project.html?' + p.toString();
 }
 
 function resultItem(h, terms) {

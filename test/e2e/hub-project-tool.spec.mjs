@@ -707,7 +707,7 @@ test('AC4: the tool page lists versions newest first and links each run', async 
   for (const r of RUNS) {
     const a = page.locator(`[data-run-link="${r.id}"]`);
     await expect(a).toHaveCount(1);
-    await expect(a).toHaveAttribute('href', `project.html?id=${r.project_id}&run=${r.id}`);
+    await expect(a).toHaveAttribute('href', `/hub/project.html?id=${r.project_id}&run=${r.id}`);
   }
   await expect(page.locator(`tr[data-run-id="${u(112)}"]`)).toContainText('Middle Magdalena infill screening');
   await expect(page.locator('[data-version-group="2.1.0"] .hub-pill.gold')).toHaveText('current');

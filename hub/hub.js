@@ -391,7 +391,7 @@ async function renderTools(person) {
   return { tools, source };
 }
 
-const projectHref = (id) => 'project.html?id=' + encodeURIComponent(id);
+const projectHref = (id) => '/hub/project.html?id=' + encodeURIComponent(id);
 
 function projectName(p) { return p.name || p.title || p.id; }
 function clientName(p) { return p.client_name || (p.client && (p.client.name || p.client)) || p.client_id || ''; }
@@ -443,7 +443,7 @@ export function loadGeo() {
   if (!geoPromise) geoPromise = fetch(GEO_URL, { cache: 'force-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return geoPromise;
 }
-const countryHref = (code) => 'index.html' + (code ? '?country=' + encodeURIComponent(code) : '');
+const countryHref = (code) => '/hub/index.html' + (code ? '?country=' + encodeURIComponent(code) : '');
 
 function flags(att) {
   const out = [];
@@ -788,7 +788,7 @@ function briefParagraph(text, sources) {
     if (m.index > last) add(p, document.createTextNode(text.slice(last, m.index).replace(/\s+$/, ' ')));
     const ref = m[1] + ':' + m[2], src = byRef.get(ref);
     const label = src ? src.title : ref;
-    const href = src && src.project_id ? 'project.html?id=' + encodeURIComponent(src.project_id) + (m[1] === 'run' ? '&run=' + encodeURIComponent(m[2]) : '') : (src && src.url ? src.url : null);
+    const href = src && src.project_id ? '/hub/project.html?id=' + encodeURIComponent(src.project_id) + (m[1] === 'run' ? '&run=' + encodeURIComponent(m[2]) : '') : (src && src.url ? src.url : null);
     const ext = !!(src && !src.project_id && src.url);
     add(p, href ? dv('a', 'hub-cite' + (m[1] === 'wm' ? ' wm' : ''), label, { href, 'data-cite': ref, title: ref, ...(ext ? { target: '_blank', rel: 'noopener noreferrer' } : {}) }) : dv('span', 'hub-cite' + (m[1] === 'wm' ? ' wm' : ''), label, { 'data-cite': ref, title: ref }));
     last = m.index + m[0].length;
@@ -836,7 +836,7 @@ function setupBrief(currentCode, names) {
     const sl = mk('ul', 'hub-brief-sources', null, null, { id: 'brief-sources' });
     for (const sct of b.sources || []) {
       const li = mk('li');
-      const href = sct.project_id ? 'project.html?id=' + encodeURIComponent(sct.project_id) + (sct.kind === 'run' ? '&run=' + encodeURIComponent(sct.ref.slice(4)) : '') : (sct.url || null);
+      const href = sct.project_id ? '/hub/project.html?id=' + encodeURIComponent(sct.project_id) + (sct.kind === 'run' ? '&run=' + encodeURIComponent(sct.ref.slice(4)) : '') : (sct.url || null);
       if (sct.kind === 'wm') li.setAttribute('data-source-kind', 'wm');
       add(li, href ? dv('a', 'hub-inline-link', sct.title, { href, ...(sct.project_id ? {} : { target: '_blank', rel: 'noopener noreferrer' }) }) : dv('span', null, sct.title), sct.date ? dv('span', 'hub-muted', ' · ' + sct.date) : null, sct.detail ? dv('span', 'hub-muted', ' · ' + sct.detail) : null);
       add(sl, li);
@@ -1080,7 +1080,7 @@ async function renderAttention(projects) {
         items.push({ title, meta: [pname.get(p.id) || p.id, why].filter(Boolean).join(' · '), project: p.id, kind: x.kind });
       }
     }
-    show($('#card-stale'), { titleEn: 'Stale runs and documents', titleEs: 'Ejecuciones y documentos obsoletos', items, icon: 'doc', tone: 'bad', actionEn: 'Open', actionEs: 'Abrir', href: (it) => projectHref(it.project), moreHref: 'search.html?q=stale' });
+    show($('#card-stale'), { titleEn: 'Stale runs and documents', titleEs: 'Ejecuciones y documentos obsoletos', items, icon: 'doc', tone: 'bad', actionEn: 'Open', actionEs: 'Abrir', href: (it) => projectHref(it.project), moreHref: '/hub/search.html?q=stale' });
   };
   const filing = async () => {
     const r = await api('/api/queue/filing');
@@ -1089,7 +1089,7 @@ async function renderAttention(projects) {
       title: x.subject || x.title || x.name || x.id,
       meta: [x.from || x.sender, (x.suggested_project_name || x.suggested_project || x.project_id) ? '→ ' + (x.suggested_project_name || x.suggested_project || x.project_id) + (x.confidence != null ? ' ' + x.confidence : '') : ''].filter(Boolean).join(' · '),
     }));
-    show($('#card-filing'), { titleEn: 'Filing queue', titleEs: 'Cola de archivo', items, icon: 'mail', actionEn: 'Assign', actionEs: 'Asignar', href: () => 'queue.html', moreHref: 'queue.html' });
+    show($('#card-filing'), { titleEn: 'Filing queue', titleEs: 'Cola de archivo', items, icon: 'mail', actionEn: 'Assign', actionEs: 'Asignar', href: () => '/hub/queue.html', moreHref: '/hub/queue.html' });
   };
   const lessons = async () => {
     const r = await api('/api/lessons?status=proposed');
@@ -1098,7 +1098,7 @@ async function renderAttention(projects) {
       title: x.statement || x.text || x.title || x.id,
       meta: [x.discipline, x.confidence != null ? 'confidence ' + x.confidence : ''].filter(Boolean).join(' · '),
     }));
-    show($('#card-lessons'), { titleEn: 'Lesson proposals', titleEs: 'Propuestas de lecciones', items, icon: 'bulb', tone: 'gold', actionEn: 'Review', actionEs: 'Revisar', href: () => 'queue.html?kind=lesson', moreHref: 'queue.html?kind=lesson' });
+    show($('#card-lessons'), { titleEn: 'Lesson proposals', titleEs: 'Propuestas de lecciones', items, icon: 'bulb', tone: 'gold', actionEn: 'Review', actionEs: 'Revisar', href: () => '/hub/queue.html?kind=lesson', moreHref: '/hub/queue.html?kind=lesson' });
   };
   const rerun = async () => {
     const r = await api('/api/queue/review?kind=rerun-delta');
@@ -1107,7 +1107,7 @@ async function renderAttention(projects) {
       title: x.title || x.summary || x.headline || x.id,
       meta: [x.project_name || x.project_id, x.detail].filter(Boolean).join(' · '),
     }));
-    show($('#card-rerun'), { titleEn: 'Re-run deltas', titleEs: 'Diferencias de re-ejecución', items, icon: 'redo', tone: 'gold', actionEn: 'Review', actionEs: 'Revisar', href: () => 'queue.html?kind=rerun-delta', moreHref: 'queue.html?kind=rerun-delta' });
+    show($('#card-rerun'), { titleEn: 'Re-run deltas', titleEs: 'Diferencias de re-ejecución', items, icon: 'redo', tone: 'gold', actionEn: 'Review', actionEs: 'Revisar', href: () => '/hub/queue.html?kind=rerun-delta', moreHref: '/hub/queue.html?kind=rerun-delta' });
   };
   await Promise.all([stale(), filing(), lessons(), rerun()]);
   return any;

@@ -328,7 +328,7 @@ async function renderScorecards() {
   const byId = new Map(rules.map((r) => [r.id, r]));
   for (const p of res.body.projects) {
     const row = mk('tr', null, null, null, { 'data-project': p.id, 'data-rag': p.rag });
-    add(row, add(mk('td'), add(mk('a', 'hub-link', null, null, { href: 'project.html?id=' + encodeURIComponent(p.id) }), dv('span', null, p.name))), dv('td', 'hub-muted', p.client_name));
+    add(row, add(mk('td'), add(mk('a', 'hub-link', null, null, { href: '/hub/project.html?id=' + encodeURIComponent(p.id) }), dv('span', null, p.name))), dv('td', 'hub-muted', p.client_name));
     for (const r of rules) {
       const u = (p.rules || []).find((x) => x.id === r.id) || { id: r.id, status: 'not-measurable' };
       add(row, ruleCell(u, byId.get(r.id)));

@@ -314,7 +314,7 @@ test('a field named in a document is a review row with its quote and project; At
   await expect(row).toHaveAttribute('data-kind', 'asset');
   await expect(row).toContainText('Field named in a document: Guafita');
   await expect(row.locator('[data-proposal-project]')).toHaveText('Llanos Basin waterflood screening');
-  await expect(row.locator('[data-proposal-project]')).toHaveAttribute('href', 'project.html?id=llanos-waterflood#p-fields');
+  await expect(row.locator('[data-proposal-project]')).toHaveAttribute('href', '/hub/project.html?id=llanos-waterflood#p-fields');
   await expect(row).toContainText('Data room index · page 3');
   await expect(row.locator('.q-quote')).toContainText('Current production comes from the Guafita and La Victoria fields.');
   await expect(row.locator('[data-first-candidate="gem:G100"]')).toContainText('Accept attaches Guafita (gem, 7.98, -69.12)');
