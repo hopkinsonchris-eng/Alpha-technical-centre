@@ -85,6 +85,68 @@ function staleNode(entry, node, rec) {
   return add(mk('span'), mk('span', 'hub-stale', 'Stale', 'Obsoleta'), document.createTextNode(' '), why ? dv('span', null, why) : mk('span', null, 'no reason recorded', 'sin motivo registrado'));
 }
 
+const DRAFT_KIND = { email: ['Email draft', 'Borrador de correo'], letter: ['Letter draft', 'Borrador de carta'], 'report-section': ['Report section draft', 'Borrador de sección de informe'], 'calc-note': ['Calc note draft', 'Borrador de nota de cálculo'] };
+const DECISION_WORD = { keep: ['kept', 'mantenido'], 'keep-note': ['kept with a note', 'mantenido con nota'], drop: ['dropped', 'quitado'] };
+const QUESTION_RE = /^\[QUESTION FOR YOU: ?(.*)\]$/s;
+const CITE_RE = /\[((?:run|doc|lesson|ref|wm):[^\]]+)\]/g;
+
+/* ── drafts written in the Hub ───────────────────────────────────────── */
+
+/** The draft as saved: each paragraph with its citations as pivots, the decision and note from the saved review,
+ *  then the review's own line (saved when, by whom; or not yet) and, for a partner, a way back into Write to…. */
+function draftView(rec, ctx) {
+  const ex = rec.extracted;
+  const review = ex.review && Array.isArray(ex.review.decisions) ? ex.review : null;
+  const host = mk('div', 'hub-rp-draft', null, null, { 'data-draft-view': '', 'data-review': review ? 'saved' : 'none' });
+  const titleOf = (ref) => { const s = (ex.sources || []).find((x) => x.ref === ref); return s ? s.title : labelOf(ref, ctx); };
+  ex.paragraphs.forEach((text, i) => {
+    const decision = review ? review.decisions[i] : null;
+    const p = mk('div', 'hub-dr-para', null, null, { 'data-i': String(i), ...(decision ? { 'data-decision': decision } : {}) });
+    const q = QUESTION_RE.exec(text);
+    const body = mk('p', q ? 'hub-dr-text hub-uncited' : 'hub-dr-text');
+    if (q) {
+      const quoted = /"([\s\S]*)"\s*$/.exec(q[1]);
+      body.setAttribute('data-uncited', ''); add(body, mk('span', 'hub-dr-flag', 'No record to cite: ', 'Sin registro que citar: '), dv('span', null, quoted ? quoted[1] : q[1]));
+    } else {
+      let last = 0;
+      for (const m of text.matchAll(CITE_RE)) {
+        if (m.index > last) add(body, dv('span', null, text.slice(last, m.index)));
+        const ref = m[1], label = titleOf(ref);
+        if (/^(run|doc):/.test(ref)) { const b = dv('button', 'hub-cite hub-rp-pivot', label, { type: 'button', 'data-pivot': ref, title: ref }); b.addEventListener('click', () => ctx.open(ref, label, b)); add(body, b); }
+        else add(body, dv('span', 'hub-cite', label, { title: ref }));
+        last = m.index + m[0].length;
+      }
+      if (last < text.length) add(body, dv('span', null, text.slice(last)));
+    }
+    add(p, body);
+    if (decision) {
+      const w = DECISION_WORD[decision] || [decision, decision];
+      const line = mk('div', 'hub-rp-decision', null, null, { 'data-decided': decision });
+      add(line, mk('span', 'hub-pill ' + (decision === 'drop' ? 'muted' : 'gold'), w[0], w[1]));
+      const note = review.notes && review.notes[String(i)];
+      if (note) add(line, dv('span', 'hub-rp-note', note, { 'data-note': String(i) }));
+      add(p, line);
+    }
+    add(host, p);
+  });
+  const foot = mk('div', 'hub-rp-draft-foot', null, null, { 'data-draft-foot': '' });
+  if (ex.sent && ex.sent.at) {
+    const d = fmtShortDate(ex.sent.at);
+    add(foot, mk('p', null, 'Sent' + (ex.sent.organisation ? ' to ' + ex.sent.organisation : '') + ' on ' + d.en + '. The draft is frozen.', 'Enviado' + (ex.sent.organisation ? ' a ' + ex.sent.organisation : '') + ' el ' + d.es + '. El borrador está congelado.'));
+  } else if (review) {
+    const d = review.at ? fmtShortDate(review.at) : null;
+    const kept = review.decisions.filter((x) => x !== 'drop').length, dropped = review.decisions.length - kept;
+    add(foot, mk('p', null, 'Review saved' + (d ? ' ' + d.en : '') + (review.by ? ' by ' + review.by : '') + ' · ' + plural(kept, 'paragraph kept', 'paragraphs kept') + ', ' + dropped + ' dropped.', 'Revisión guardada' + (d ? ' el ' + d.es : '') + (review.by ? ' por ' + review.by : '') + ' · ' + plural(kept, 'párrafo mantenido', 'párrafos mantenidos') + ', ' + dropped + ' quitados.'));
+  } else add(foot, mk('p', 'hub-muted', 'Review not saved yet: the draft is kept as written.', 'Revisión aún sin guardar: el borrador se conserva tal como se escribió.'));
+  if (typeof ctx.openDraft === 'function') {
+    const b = mk('button', 'btn btn-primary btn-sm', ex.sent ? 'Open in Write to…' : 'Continue in Write to…', ex.sent ? 'Abrir en Escribir a…' : 'Continuar en Escribir a…', { type: 'button', 'data-open-draft': rec.id });
+    b.addEventListener('click', () => ctx.openDraft(rec, b));
+    add(foot, b);
+  }
+  add(host, foot);
+  return host;
+}
+
 /* ── documents ───────────────────────────────────────────────────────── */
 
 async function renderDoc({ ref, rec, node, entry, ctx }) {
@@ -92,7 +154,9 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
   const src = rec || {};
   const type = src.type || (node && node.type) || (entry && entry.type) || '';
   const dl = mk('dl', 'hub-kv hub-rp-highlights', null, null, { 'data-highlights': '' });
-  const tl = TYPE_LABEL[type];
+  const ex0 = src.extracted || {};
+  const dk = ex0.kind === 'draft' ? (DRAFT_KIND[ex0.draft_kind] || DRAFT_KIND.email) : null;
+  const tl = dk || TYPE_LABEL[type];
   h(dl, 'type', 'Type', 'Tipo', tl ? mk('span', null, tl[0], tl[1]) : dv('span', null, cap(type)));
   const pid = src.project_id || (node && node.project_id) || (ctx.project && ctx.project.id);
   const pname = ctx.project && ctx.project.id === pid ? ctx.project.name : pid;
@@ -125,9 +189,11 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
 
   // View (wave 5): the original itself, when the store has it; a record filed without one, or whose original
   // predates durable storage, says so instead.
-  const viewBody = rec.storage_key && !(ex.ingest && ex.ingest.status === 'no_original') ? buildViewer(rec)
+  // A draft written in the Hub has no original file: the draft itself is the record, with the review as saved.
+  const viewBody = ex.kind === 'draft' && Array.isArray(ex.paragraphs) ? draftView(rec, ctx)
+    : rec.storage_key && !(ex.ingest && ex.ingest.status === 'no_original') ? buildViewer(rec)
     : mk('p', 'hub-muted', rec.storage_key ? 'Original missing: upload it again.' : 'Filed without an original.', rec.storage_key ? 'Falta el original: súbalo de nuevo.' : 'Registrado sin original.');
-  add(frag, add(mk('div', 'hub-rp-card hub-rp-view', null, null, { 'data-view': '' }), mk('h4', null, 'View', 'Ver'), viewBody));
+  add(frag, add(mk('div', 'hub-rp-card hub-rp-view', null, null, { 'data-view': '' }), mk('h4', null, ex.kind === 'draft' ? 'The draft' : 'View', ex.kind === 'draft' ? 'El borrador' : 'Ver'), viewBody));
 
   // Related: versions, cites, cited by, original.
   const rel = mk('div', 'hub-rp-related');

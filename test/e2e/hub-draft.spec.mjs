@@ -130,9 +130,10 @@ test('W5-AC4/AC5/AC7: Write to… picks the recipient, shows what the draft does
   await result.locator('.hub-dr-para').nth(3).locator('[data-decide="drop"]').click();
   // Save the review, render the DOCX (PDF reports the missing renderer), mark as sent.
   await result.locator('#dr-save').click();
-  await expect.poll(() => calls.reviews.length).toBe(1);
-  expect(calls.reviews[0].decisions).toEqual(['keep', 'keep', 'drop', 'drop']);
-  expect(calls.reviews[0].citations_opened).toBe(1);
+  await expect(result.locator('#dr-status')).toHaveText('Review saved.');
+  expect(calls.reviews.length).toBeGreaterThanOrEqual(1);          // every decision also saved itself a moment after it was made
+  expect(calls.reviews.at(-1).decisions).toEqual(['keep', 'keep', 'drop', 'drop']);
+  expect(calls.reviews.at(-1).citations_opened).toBe(1);
   await result.locator('#dr-pdf').click();
   await expect(result.locator('#dr-status')).toContainText('PDF needs Chromium on the server');
   const dl = page.waitForEvent('download');
@@ -162,4 +163,101 @@ test('W5-AC7: the timeline shows a sent draft as sent; an associate who cannot w
   await page.goto('/hub/project.html?id=' + PID);
   await ready(page);
   await expect(page.locator('#p-draft-btn')).toHaveCount(0);
+});
+
+// The draft note as the Vault holds it after the review above was saved (GET /api/items/:id).
+const REVIEW = { decisions: ['keep', 'keep-note', 'keep-note', 'drop'], notes: { 1: 'check the unit' }, citations_opened: 1, review_seconds: 95, by: 'chris', at: '2026-10-03T10:00:00.000Z' };
+const DRAFT_NOTE = (extra = {}) => ({ ...ITEM(DRAFT_ID, 'Email draft: Tell her production restarted and ask for the pipeline repair report.'), authors: ['chris'], legal_tag: 'lt-firm', origin: { source: 'assistant', external_id: 'draft:' + DRAFT_ID }, organisation_ids: ['zuata'], cites: DRAFT().citations,
+  extracted: { kind: 'draft', draft_kind: 'email', brief: 'Tell her production restarted and ask for the pipeline repair report.', language: 'es', tone: null, organisation_id: 'zuata', draft: '', paragraphs: DRAFT().paragraphs, citations: DRAFT().citations, sources: DRAFT().sources, warnings: [], questions: DRAFT().questions, who_to_ask: DRAFT().who_to_ask, model: 'fake', explanation_source: 'llm', ...extra } });
+const DRAFT_ROW = { kind: 'item', ref: 'doc:' + DRAFT_ID, id: DRAFT_ID, at: '2026-10-03T09:56:00.000Z', title: 'Email draft: Tell her production restarted and ask for the pipeline repair report.', type: 'note', version: 1, legal_tag: 'lt-firm', stale: false, stale_reasons: [], supersedes: null };
+async function stubDraftNote(page, extra) {
+  const calls = await stubApi(page);
+  await page.route('**/api/items/' + DRAFT_ID, (route) => json(route, DRAFT_NOTE(extra)));
+  const letter = { kind: 'item', ref: 'doc:' + LETTER, id: LETTER, at: '2026-07-08T09:00:00.000Z', title: 'Letter ATC-2026-0131: clarification', type: 'letter', version: 1, legal_tag: 'lt-firm', stale: false, stale_reasons: [], supersedes: null, reference_no: 'ATC-2026-0131' };
+  await page.route('**/api/projects/' + PID + '/timeline', (route) => json(route, { project_id: PID, count: 2, entries: [DRAFT_ROW, letter] }));
+  return calls;
+}
+
+test('a saved draft shows itself in the record panel with the review as saved, reopens in Write to… with every decision and note, and saves each change by itself', async ({ page }) => {
+  const calls = await stubDraftNote(page, { review: REVIEW });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('.hub-tl-item[data-ref="doc:' + DRAFT_ID + '"] .hub-tl-title').click();
+  const rp = page.locator('#record-panel');
+  await expect(rp).toBeVisible();
+  await expect(rp.locator('[data-h="type"]')).toHaveText('Email draft');
+  const view = rp.locator('[data-draft-view]');
+  await expect(view).toHaveAttribute('data-review', 'saved');
+  await expect(rp.locator('[data-view] h4')).toHaveText('The draft');
+  await expect(rp.locator('[data-view]')).not.toContainText('Filed without an original');
+  const paras = view.locator('.hub-dr-para');
+  await expect(paras).toHaveCount(4);
+  await expect(paras.nth(0).locator('[data-pivot]')).toHaveText(['Letter ATC-2026-0131: clarification', 'PDVSA restarts Apure production after pipeline repair']);
+  await expect(paras.nth(1)).toHaveAttribute('data-decision', 'keep-note');
+  await expect(paras.nth(1).locator('.hub-rp-note')).toHaveText('check the unit');
+  await expect(paras.nth(2).locator('[data-uncited]')).toContainText('The pipeline repair cost USD 2.3 million.');
+  await expect(paras.nth(3)).toHaveAttribute('data-decision', 'drop');
+  await expect(rp.locator('[data-draft-foot]')).toContainText('Review saved 3 Oct 2026 by chris · 3 paragraphs kept, 1 dropped.');
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE, 'w5-draft-record.png'), fullPage: false });
+  // A citation pivots to its record, as a chip in Write to… does.
+  await paras.nth(0).locator('[data-pivot]').nth(1).click();
+  await expect(rp.locator('#rp-title')).toHaveText('PDVSA restarts Apure production after pipeline repair');
+  await page.keyboard.press('Escape');
+  // Back into Write to… from the panel: the set-up strip and every decision come back.
+  await page.locator('.hub-tl-item[data-ref="doc:' + DRAFT_ID + '"] .hub-tl-title').click();
+  await rp.locator('[data-open-draft="' + DRAFT_ID + '"]').click();
+  await expect(rp).toBeHidden();
+  const panel = page.locator('#p-draft');
+  await expect(panel).toBeVisible();
+  const result = panel.locator('#dr-result');
+  await expect(result).toHaveAttribute('data-loaded', DRAFT_ID);
+  await expect(panel.locator('#dr-brief')).toHaveValue('Tell her production restarted and ask for the pipeline repair report.');
+  await expect(panel.locator('#dr-kind')).toHaveValue('email');
+  await expect(panel.locator('#dr-lang')).toHaveValue('es');
+  await expect(panel.locator('#dr-to')).toHaveValue('maria-fernandez');
+  const rparas = result.locator('.hub-dr-para');
+  await expect(rparas).toHaveCount(4);
+  await expect(rparas.nth(1).locator('[data-decide="keep-note"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(rparas.nth(1).locator('input[data-note]')).toHaveValue('check the unit');
+  await expect(rparas.nth(1).locator('input[data-note]')).toBeVisible();
+  await expect(rparas.nth(3)).toHaveAttribute('data-decision', 'drop');
+  await expect(result.locator('#dr-status')).toHaveText('Review as saved 3 Oct 2026.');
+  await expect(result.locator('#dr-render')).toBeEnabled();
+  expect(calls.reviews.length).toBe(0);
+  // A change saves itself without pressing Save.
+  await rparas.nth(3).locator('[data-decide="keep"]').click();
+  await expect.poll(() => calls.reviews.length).toBe(1);
+  expect(calls.reviews[0].decisions).toEqual(['keep', 'keep-note', 'keep-note', 'keep']);
+  expect(calls.reviews[0].notes).toEqual({ 1: 'check the unit' });
+  await expect(result.locator('#dr-status')).toHaveText('Saved.');
+  await expect(result).toHaveAttribute('data-saved', /^2026-/);
+  // The deep link does the same.
+  await page.goto('/hub/project.html?id=' + PID + '&draft=' + DRAFT_ID);
+  await ready(page);
+  await expect(page.locator('#p-draft')).toBeVisible();
+  await expect(page.locator('#dr-result')).toHaveAttribute('data-loaded', DRAFT_ID);
+});
+
+test('a draft never reviewed says so; a sent draft reopens frozen', async ({ page }) => {
+  await stubDraftNote(page);
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('.hub-tl-item[data-ref="doc:' + DRAFT_ID + '"] .hub-tl-title').click();
+  const rp = page.locator('#record-panel');
+  await expect(rp.locator('[data-draft-view]')).toHaveAttribute('data-review', 'none');
+  await expect(rp.locator('[data-draft-foot]')).toContainText('Review not saved yet');
+  await expect(rp.locator('[data-draft-view] .hub-dr-para[data-decision]')).toHaveCount(0);
+  await stubDraftNote(page, { review: REVIEW, sent: { at: '2026-10-03T10:00:00.000Z', organisation: 'Petrolera Zuata S.A.', dispatch_id: 'd-1' }, reference_no: 'ATC-2026-0152' });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('.hub-tl-item[data-ref="doc:' + DRAFT_ID + '"] .hub-tl-title').click();
+  await expect(rp.locator('[data-draft-foot]')).toContainText('Sent to Petrolera Zuata S.A. on 3 Oct 2026. The draft is frozen.');
+  await rp.locator('[data-open-draft="' + DRAFT_ID + '"]').click();
+  const result = page.locator('#dr-result');
+  await expect(result).toHaveAttribute('data-sent', 'd-1');
+  await expect(result.locator('#dr-status')).toContainText('Sent to Petrolera Zuata S.A. on 3 Oct 2026');
+  await expect(result.locator('#dr-render')).toBeDisabled();
+  await expect(result.locator('#dr-save')).toBeDisabled();
+  await expect(result.locator('[data-tone="shorter"]')).toBeDisabled();
 });

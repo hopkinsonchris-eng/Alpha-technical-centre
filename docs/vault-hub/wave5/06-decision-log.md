@@ -33,6 +33,8 @@ The Tooler record for the project file you work from, 2 and 3 October 2026.
 2. **Supabase answers "not found" as HTTP 400 with `code: NoSuchKey`**, not 404 (its source sends a user status of 400 for every non-500 error). The backend reads the body before deciding a key is absent.
 3. **iPad Safari and PDFs.** An embedded PDF shows page one only, so the viewer draws pages on canvas; iOS caps canvas memory, so each page is clamped to four million pixels and drawn only when scrolled into view.
 
+4. **A draft was saved but looked lost.** On the first live day the partner wrote an email, closed the page and opened the note from the timeline: the panel said "Filed without an original" and hid the draft behind Full record, and Write to… could not take a saved draft back. The draft, its citations and the saved review had been in `extracted` all along. The panel now shows the draft itself with each paragraph's decision and note, the review line (saved when and by whom, or not yet, or sent and frozen) and Continue in Write to…; Write to… reloads a draft by id (`?draft=`), and every decision and note saves itself a moment after it is made, so Save review is no longer the only thing standing between the work and the Vault.
+
 ## Deviations from the Markup, stated
 
 1. **A record outside the caller's scope answers 403 from the original route, not 404.** The Markup said "as 404, like the record itself"; the record itself answers 403 (wave 1, `api.items.test.ts`), so the original follows the record. Hidden and unknown records are 404.
@@ -49,5 +51,6 @@ The Tooler record for the project file you work from, 2 and 3 October 2026.
 
 - PR 4: `evidence/w5-consent.png` (the consent page the Vault serves behind the Access login, captured on the real Vault running on the embedded database with a client registered through `/oauth/register`).
 - Final suites on the last head: Vault 438 passing, typecheck clean, the touched Playwright specs green (record panel, Write to…, settings, research, toolbar), root 82; CI green on #45, #46, #47 and #48; the sitemap pages byte-identical to `main`.
+- First live day: `evidence/w5-draft-record.png` (the record panel on a saved draft: the paragraphs with their decisions and notes, the review line and Continue in Write to…), captured by the end-to-end spec.
 - PR 3: `evidence/w5-write-to.png` (the panel after a draft: the open question with who to ask, the citation chips, the amber sentence, the per-paragraph decisions), captured by the end-to-end spec.
 - PR 2: `evidence/w5-viewer-pdf.png` (a PDF rendered in the panel with the page counter, zoom and Download), `evidence/w5-viewer-sheet.png` (a workbook as tables with sheet tabs); both captured by the end-to-end spec.

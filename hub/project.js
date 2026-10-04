@@ -1156,6 +1156,7 @@ const routeTab = () => {
 /* ── record panel ────────────────────────────────────────────────────── */
 
 let panelTrigger = null;
+let draftUi = null;          // Write to…, when the person may write this project
 let panelCtx = { project: null, entryById: new Map(), lineage: null };
 const versionsCache = new Map();
 
@@ -1209,6 +1210,8 @@ async function openRecord({ ref, title, node, entry, trigger, passage }) {
       return versionsCache.get(id);
     },
     open: (r, t, b) => openRecord({ ref: r, title: t, entry: panelCtx.entryById.get(r.slice(r.indexOf(':') + 1)), node: panelCtx.lineage && (panelCtx.lineage.nodes || []).find((n) => n.id === r), trigger: b }),
+    // A draft note written in the Hub goes back into Write to… with its saved review (partners only; the panel closes).
+    openDraft: draftUi ? (r) => { closePanel(); draftUi.load(r); } : null,
   };
   const content = await renderRecord({ kind, ref, rec, node, entry, ctx });
   if (panel.getAttribute('data-ref') !== ref) return;
@@ -1422,7 +1425,7 @@ async function init() {
     scorecard: card.fail + card.na ? bi(card.fail + card.na + ' fail', card.fail + card.na + ' fallan') : null,
   }, new Set([...(lessonsOk ? [] : ['lessons']), ...(researchOk ? [] : ['research'])]));
   renderResearch(ctx, researchOk ? rsR : null);              // after the tabs exist: the status line, the Research tab and its count
-  if (canWriteProject(ctx)) mountDraft(ctx, { openRecord });  // wave 5: Write to… beside Research
+  if (canWriteProject(ctx)) draftUi = mountDraft(ctx, { openRecord });  // wave 5: Write to… beside Research
   routeTab();
   window.addEventListener('hashchange', routeTab);
 
@@ -1431,6 +1434,12 @@ async function init() {
   const scrim = $('#record-scrim'); if (scrim) scrim.addEventListener('click', closePanel);
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !$('#record-panel').hasAttribute('hidden')) closePanel(); });
 
+  // ?draft=<id>: reopen a draft note in Write to… (linked from the record panel and the timeline).
+  const draftParam = params.get('draft');
+  if (draftParam && draftUi) {
+    const r = await api('/api/items/' + encodeURIComponent(draftParam));
+    if (r.ok && r.body && !(await draftUi.load(r.body))) add($('#p-notices') || $('#p-body'), notice('warn', 'Not a draft.', 'No es un borrador.', 'That record was not written in the Hub.', 'Ese registro no se escribió en el Hub.'));
+  }
   // ?run=<id>: highlight the run in the timeline and open its record (linked from the tool page).
   const runParam = params.get('run');
   if (runParam) {

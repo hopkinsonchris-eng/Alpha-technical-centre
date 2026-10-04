@@ -546,6 +546,11 @@ a.hub-proj:hover { border-color: #CDBB85; }
 .hub-dr-tones { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .hub-dr-source-list { list-style: none; margin: 0; padding: 0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
 .hub-dr-actions { margin-top: 14px; flex-wrap: wrap; align-items: center; }
+.hub-rp-draft .hub-dr-para { margin: 6px 0; padding: 8px 12px; }
+.hub-rp-decision { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.hub-rp-note { font-style: italic; color: var(--ink); }
+.hub-rp-draft-foot { margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.hub-rp-draft-foot p { margin: 0; }
 .hub-rp-passage { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--gold); background: var(--cream); font-size: 13.5px; font-style: italic; }
 /* Wave 5: the original in the panel */
 .hub-viewer { margin-top: 4px; }
