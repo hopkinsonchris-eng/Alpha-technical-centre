@@ -5,7 +5,7 @@
  *  - supabase:   a private bucket in the Supabase project (wave 5): SUPABASE_URL, SUPABASE_SERVICE_KEY, VAULT_STORAGE_BUCKET
  * Select with VAULT_STORAGE=filesystem|supabase (default filesystem; production refuses the filesystem unless a directory is named).
  */
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,6 +15,8 @@ export interface Storage {
   /** Read bytes, or null when the key is absent. */
   get(key: string): Promise<Uint8Array | null>;
   exists(key: string): Promise<boolean>;
+  /** Remove the bytes at key. Absent keys are not an error: a purge may run twice. */
+  delete(key: string): Promise<void>;
 }
 
 const DEFAULT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.storage');
@@ -41,6 +43,10 @@ export function filesystemStorage(root = process.env.VAULT_STORAGE_DIR || DEFAUL
     async exists(key) {
       try { return (await stat(abs(key))).isFile(); }
       catch (e) { if ((e as NodeJS.ErrnoException).code === 'ENOENT') return false; throw e; }
+    },
+    async delete(key) {
+      try { await unlink(abs(key)); }
+      catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
     },
   };
 }
@@ -83,6 +89,11 @@ export function supabaseStorage(o: SupabaseStorageOptions): Storage {
       if (res.ok) return true;
       if (await notFound(res)) return false;
       return fail('exists', key, res);
+    },
+    async delete(key) {
+      const res = await f(objectUrl(key), { method: 'DELETE', headers: auth });
+      if (res.ok || await notFound(res)) return;
+      await fail('delete', key, res);
     },
   };
 }

@@ -93,6 +93,21 @@
 
       <div id="notices" role="status"></div>
 
+      <!-- CONNECT YOUR MAILBOX (wave 6, D60): shown once, until the person connects or says Not now -->
+      <section class="card hub-mailbox-prompt" id="sec-mailbox" aria-labelledby="h-mailbox" hidden>
+        <div class="hub-card-head">
+          <div>
+            <h3 id="h-mailbox" data-en="Connect your mailbox" data-es="Conecte su buzón">Connect your mailbox</h3>
+            <p class="hub-muted" data-en="The Hub files mail about the firm's opportunities into their project files, both directions, and keeps what you send and receive about them. Mail between colleagues only, and anything you block, stays out. You can see what it holds and disconnect at any time in Settings." data-es="El Hub archiva el correo sobre las oportunidades de la firma en sus expedientes, en ambos sentidos, y conserva lo que envía y recibe sobre ellas. El correo solo entre colegas, y lo que usted bloquee, queda fuera. Puede ver lo que guarda y desconectarlo cuando quiera en Ajustes.">The Hub files mail about the firm's opportunities into their project files, both directions, and keeps what you send and receive about them. Mail between colleagues only, and anything you block, stays out. You can see what it holds and disconnect at any time in Settings.</p>
+          </div>
+        </div>
+        <div class="hub-actions">
+          <button class="btn btn-primary btn-sm" type="button" id="mailbox-connect"><span data-en="Connect" data-es="Conectar">Connect</span> <span id="mailbox-address" class="mono"></span></button>
+          <button class="btn btn-outline btn-sm" type="button" id="mailbox-later" data-en="Not now" data-es="Ahora no">Not now</button>
+          <span class="hub-muted" id="mailbox-status" role="status"></span>
+        </div>
+      </section>
+
       <!-- WHERE WE WORK: the globe (wave 2) -->
       <section id="sec-globe" aria-labelledby="h-globe" data-globe="loading">
         <div class="hub-globe">

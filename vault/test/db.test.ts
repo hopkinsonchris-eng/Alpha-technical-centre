@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { openDb } from '../src/db/client.ts';
 import { migrate } from '../src/db/migrate.ts';
 
-const EXPECTED_TABLES = ['people','organisations','contacts','legal_tags','projects','project_contacts','assets','firm_assets','tools','runs','run_inputs','items','item_versions','item_cites','dispatches','reference_counters','lessons','analogue_rows','chunks','filing_queue','review_queue','jobs','mail_cursors','settings','audit_events','schema_migrations'];
+const EXPECTED_TABLES = ['people','organisations','contacts','legal_tags','projects','project_contacts','assets','firm_assets','tools','runs','run_inputs','items','item_versions','item_cites','dispatches','reference_counters','lessons','analogue_rows','chunks','filing_queue','review_queue','jobs','mail_cursors','settings','audit_events','schema_migrations','mailbox_connections','mail_rules','filing_decisions'];
 
 test('001_init applies to an empty database and is idempotent', async () => {
   const db = await openDb(undefined);
   try {
     const first = await migrate(db);
-    assert.deepEqual(first, ['001_init.sql', '002_opportunities.sql', '003_country_briefs.sql', '004_assets_wave3.sql', '005_research.sql', '006_oauth.sql']);
+    assert.deepEqual(first, ['001_init.sql', '002_opportunities.sql', '003_country_briefs.sql', '004_assets_wave3.sql', '005_research.sql', '006_oauth.sql', '007_mailboxes.sql']);
     const second = await migrate(db);
     assert.deepEqual(second, []);
     const { rows } = await db.query<{ table_name: string }>("SELECT table_name FROM information_schema.tables WHERE table_schema='public'");

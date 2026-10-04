@@ -246,6 +246,18 @@ connects.
    project". Reads run without a prompt; writes ask first. **Settings →
    Connected apps** in the Hub lists the connections and revokes them.
 
+## 7. Each person's mailbox, by consent (wave 6, about 15 minutes once)
+
+Nobody hands over an app password. Each person connects their own Zoho mailbox from the Hub the first time they open it (a card on Today, or Settings → Your mailbox); the Vault keeps one refresh token per person, sealed, and reads and sends through the Zoho Mail API as them. You set up the one Zoho client the Vault uses.
+
+1. **A token key.** On the API service (dashboard.render.com → `atc-vault-api` → Environment) add `VAULT_TOKEN_KEY` with 32 random bytes in base64. On a Mac or Linux: `openssl rand -base64 32`. Add the same value to the `atc-vault-mail-poll` cron (or to the `vault-storage` environment group both share). Never paste it anywhere else.
+2. **The Zoho client.** https://api-console.zoho.com → **Add Client → Server-based Applications**. Client name `ATC Vault`, homepage `https://www.alpha-technical-centre.com`, authorized redirect URI `https://www.alpha-technical-centre.com/oauth/zoho/callback`. Create. Copy the **Client ID** and **Client Secret** into `ZOHO_MAIL_CLIENT_ID` and `ZOHO_MAIL_CLIENT_SECRET` on the API service and the mail-poll cron. If the firm's Zoho account lives in another data centre (the console address ends in `.eu`, `.in`, …), add `ZOHO_MAIL_ACCOUNTS_URL` with that accounts server, e.g. `https://accounts.zoho.eu`.
+3. **The Worker route.** `www.alpha-technical-centre.com/oauth*` already reaches the Vault (§6 step 2), so the callback does; nothing to add.
+4. **Sessions.** Zero Trust → Access → Applications → the Hub application → **Session duration: 1 month**, and Settings → Authentication → **Global session timeout: 1 month**, so a device signs in once a month. Ask everyone to open the Hub from a normal tab or the Home Screen, not a Private tab, which forgets the login when it closes.
+5. **Try it.** Open the Hub, press **Connect** on the card, approve on Zoho's page, and you are back on Today with "Mailbox connected". Settings → Your mailbox shows what is held, your Blocked list, the firm's Protected and Blocked lists (partners), a per-contact export and Disconnect.
+
+Scopes asked for: `ZohoMail.accounts.READ`, `ZohoMail.folders.READ`, `ZohoMail.messages.READ`, `ZohoMail.messages.CREATE` (the last so a letter can leave from the person's own address). Zoho refresh tokens never expire unless revoked; the Vault stores one per person and replaces it on a reconnect.
+
 ## 5. The APEX apps' developer (an email from you)
 
 Send the developer the file `vault/src/adapters/README.md` (on GitHub once
@@ -261,14 +273,14 @@ needed). The Vault reads it hourly and the Hub then shows the app's real
 version instead of "Version unverified"; see
 `docs/vault-hub/wave2/hub-sidecar.md`.
 
-## 6. The pull request
+## 8. The pull request
 
 Pull request #15 is open. Review it on GitHub, then **Merge**. Render
 deploys the static site automatically; the API and cron jobs appear when
 you apply the blueprint (step 2). After merging, in Render → `atc-vault-api`
 → **Manual Deploy → Deploy latest commit** if it has not picked it up.
 
-## 7. First week
+## 9. First week
 
 - Add the other partners to `vault/master/people.json` (id, email, name,
   role `partner`, signature block) by pull request; associates need

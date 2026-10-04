@@ -521,6 +521,19 @@ a.hub-proj:hover { border-color: #CDBB85; }
 .hub-rp-details { margin-top: 16px; }
 /* Wave 5: connected apps */
 .hub-connections { margin-bottom: 16px; }
+.hub-mailbox-prompt { margin-bottom: 16px; border-left: 4px solid var(--gold); }
+.hub-mailbox-prompt .hub-actions { margin-top: 8px; align-items: center; flex-wrap: wrap; gap: 10px; }
+.hub-mailbox { margin-bottom: 16px; }
+.hub-mailbox .hub-kv { margin: 8px 0 12px; }
+.hub-mailbox fieldset { border: 0; padding: 0; margin: 10px 0; }
+.hub-mailbox fieldset legend { font-family: var(--font-label); font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.hub-mailbox .hub-radios { display: flex; gap: 14px; flex-wrap: wrap; }
+.hub-mailbox .hub-radios label { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.hub-mailbox textarea { width: 100%; min-height: 64px; border: 1px solid var(--rule); border-radius: var(--r); padding: 8px 10px; font: inherit; font-size: 13px; }
+.hub-mailbox .hub-rules { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .hub-mailbox .hub-rules { grid-template-columns: 1fr 1fr; } }
+.hub-mailbox .hub-export { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.hub-mailbox .hub-export input { flex: 1; min-width: 220px; border: 1px solid var(--rule); border-radius: var(--r); padding: 6px 10px; font: inherit; font-size: 13px; }
 .hub-connection { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .hub-connection button { margin-left: auto; }
 /* Wave 5: Write to… */
