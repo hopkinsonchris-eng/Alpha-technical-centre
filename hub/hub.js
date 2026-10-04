@@ -639,14 +639,15 @@ async function renderIntel(code, names) {
   host.removeAttribute('hidden');
   host.setAttribute('data-state', 'loading');
   add(host, add(mk('p', 'hub-muted hub-brief-wait'), mk('span', 'hub-spin', null, null, { 'aria-hidden': 'true' }), mk('span', null, ' Reading World Monitor…', ' Leyendo World Monitor…')));
-  const res = await api('/api/countries/' + encodeURIComponent(code) + '/intel');
+  // World Monitor answers each section within ten seconds; the request must outlive that, or the browser gives up first.
+  const res = await api('/api/countries/' + encodeURIComponent(code) + '/intel', { signal: AbortSignal.timeout(30000) });
   if (intelFor !== code) return;
   host.textContent = '';
   const n = (names && names.get(code)) || { en: code, es: code };
   if (!res.ok || !res.body || !res.body.sections) {
     host.setAttribute('data-state', 'failed');
     const msg = (res.body && res.body.error && res.body.error.message) || '';
-    add(host, notice('warn', 'Country intelligence not available.', 'Inteligencia del país no disponible.', msg || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), msg || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.')));
+    add(host, notice('warn', 'Country intelligence not available.', 'Inteligencia del país no disponible.', msg || (res.status ? 'HTTP ' + res.status : 'World Monitor did not answer in time. Try again in a moment.'), msg || (res.status ? 'HTTP ' + res.status : 'World Monitor no respondió a tiempo. Vuelva a intentarlo en un momento.')));
     return;
   }
   const S = res.body.sections, wm = res.body.world_monitor || {};
