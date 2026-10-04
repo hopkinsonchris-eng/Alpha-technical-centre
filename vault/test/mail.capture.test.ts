@@ -339,8 +339,10 @@ test('both adapters feed the same capture: the recorded mailbox through IMAP, th
   await h.db.query(`DELETE FROM settings WHERE key = 'mail_exclusions'`);
   const imap = new ImapSource({ user: MAILBOX, clientFactory: fakeImapFactory() });
   const s1 = await pollMailbox(h.db, h.storage, imap, deps);
-  assert.deepEqual([s1.fetched, s1.created, s1.skipped, s1.filed, s1.queued, s1.errors], [12, 11, 1, 6, 5, []], 'the personal message is skipped; contacts of the Orinoco project file, the rest queue');
+  assert.deepEqual([s1.fetched, s1.created, s1.skipped, s1.filed, s1.queued, s1.errors], [12, 11, 1, 6, 4, []], 'the personal message is skipped; contacts of the Orinoco project file; the newsletter is bulk (wave 6); the rest queue');
   assert.equal((await item('m07@mail.fixture')), undefined);
+  const news = await item('m04@mail.fixture');
+  assert.equal(news.hidden, true, 'a newsletter is kept apart (P56)'); assert.equal(news.extracted.category, 'bulk'); assert.match(news.extracted.bulk_reason, /sender news@/);
   assert.equal(s1.attachments, 6, 'one child per attachment: pdf, nda draft, csv, two comments, invoice');
 
   const filed = (await q(`SELECT external_id FROM items WHERE project_id = 'orinoco-partnership' AND origin->>'source' = 'zoho-mail' AND external_id LIKE 'm%@mail.fixture' AND parent_id IS NULL ORDER BY external_id`)).map(r => r.external_id);
@@ -351,7 +353,7 @@ test('both adapters feed the same capture: the recorded mailbox through IMAP, th
   const irt = Object.fromEntries(dirs.map(d => [d.external_id.slice(0, 3), d.in_reply_to]));
   assert.equal(irt.m02, byExt.m01); assert.equal(irt.m08, byExt.m03); assert.equal(irt.m09, byExt.m03); assert.equal(irt.m11, null);
   const orgs = (await q(`SELECT payload->>'domain' AS d FROM review_queue WHERE kind = 'organisation' AND payload->>'source' = 'mail-capture' AND payload->>'sender_email' LIKE '%@%' AND payload->>'domain' IN ('andinolabs.co','oilgasjournal.com','camara-hidrocarburos.org','suministros-llano.com') ORDER BY 1`)).map(r => r.d);
-  assert.deepEqual(orgs, ['andinolabs.co', 'camara-hidrocarburos.org', 'oilgasjournal.com', 'suministros-llano.com']);
+  assert.deepEqual(orgs, ['andinolabs.co', 'camara-hidrocarburos.org', 'suministros-llano.com'], 'bulk mail proposes no organisation');
 
   const gmail = new GmailSource({ clientId: 'a', clientSecret: 'b', refreshToken: 'c', mailbox: MAILBOX, fetch: fakeGmailFetch(), sleep: async () => {} });
   const s2 = await pollMailbox(h.db, h.storage, gmail, { ...deps, origin: 'gmail' });
@@ -383,6 +385,10 @@ test('AC3: a backfill of 1,000 generated messages completes with zero duplicates
   for (let i = 0; i < 100; i++) delivered.splice(i * 9 + 5, 0, gen[i * 9]);
   for (let i = 0; i < 30; i++) delivered.push({ ...gen[i * 31 + 3], external_id: `bulk-reissued-${i}@gateway.example`, thread_id: `bulk-reissued-${i}@gateway.example`, in_reply_to: null, references: [] });
   assert.equal(delivered.length, 1130);
+  // Wave 6 (P54): mail between colleagues only is never kept, so the 200 colleague-only messages (and their repeats) are skipped by rule.
+  const colleaguesOnly = (m: RawMessage) => [m.from, ...m.to, ...m.cc].every(a => a.address.endsWith('@alpha-technical-centre.com'));
+  const kept = gen.filter(m => !colleaguesOnly(m)).length, protectedDeliveries = delivered.filter(colleaguesOnly).length;
+  assert.deepEqual([kept, protectedDeliveries], [800, 226]);
 
   const beforeItems = (await q(`SELECT count(*)::int AS n FROM items`))[0].n;
   const t0 = Date.now();
@@ -392,15 +398,16 @@ test('AC3: a backfill of 1,000 generated messages completes with zero duplicates
   const s = run.mailboxes[0];
   assert.deepEqual(s.errors, []);
   assert.equal(s.fetched, 1130);
-  assert.equal(s.created, 1000, 'one item for each of the 1,000 distinct messages');
-  assert.equal(s.duplicates, 130);
+  assert.equal(s.created, kept, 'one item for each distinct message the rules allow');
+  assert.equal(s.duplicates, 1130 - kept - protectedDeliveries);
+  assert.equal(s.skipped, protectedDeliveries);
   console.log(`backfill: ${s.fetched} delivered, ${s.created} created, ${s.duplicates} duplicates, ${s.filed} filed, ${s.queued} queued, ${s.dispatches} dispatches, ${s.attachments} attachments in ${took} ms`);
 
   const bulk = await q(`SELECT id, external_id, parent_id, extracted->>'fingerprint' AS fp FROM items WHERE external_id LIKE 'bulk-%'`);
   const parents = bulk.filter(b => b.parent_id === null);
-  assert.equal(parents.length, 1000);
-  assert.equal(new Set(parents.map(p => p.external_id)).size, 1000, 'no Message-Id twice');
-  assert.equal(new Set(parents.map(p => p.fp)).size, 1000, 'no content twice');
+  assert.equal(parents.length, kept);
+  assert.equal(new Set(parents.map(p => p.external_id)).size, kept, 'no Message-Id twice');
+  assert.equal(new Set(parents.map(p => p.fp)).size, kept, 'no content twice');
   assert.equal(bulk.length - parents.length, 50, 'every attachment is stored once');
   assert.equal((await q(`SELECT count(*)::int AS n FROM items WHERE external_id LIKE 'bulk-reissued%'`))[0].n, 0);
   assert.equal((await q(`SELECT count(*)::int AS n FROM (SELECT item_id, organisation_id FROM dispatches GROUP BY 1, 2 HAVING count(*) > 1) x`))[0].n, 0, 'no dispatch twice');
@@ -409,8 +416,8 @@ test('AC3: a backfill of 1,000 generated messages completes with zero duplicates
   assert.equal((await q(`SELECT status FROM jobs WHERE name = 'mail-backfill' ORDER BY id DESC LIMIT 1`))[0].status, 'ok');
 
   const again = await runMailBackfill(h.db, new Date('2000-01-01T00:00:00Z'), { sources: [listSource('zoho-mail:bulk', delivered)], deps: null, storage: h.storage, sink: deps.sink });
-  assert.deepEqual([again.mailboxes[0].created, again.mailboxes[0].duplicates], [0, 1130]);
-  assert.equal((await q(`SELECT count(*)::int AS n FROM items`))[0].n, beforeItems + 1050);
+  assert.deepEqual([again.mailboxes[0].created, again.mailboxes[0].duplicates, again.mailboxes[0].skipped], [0, 1130 - protectedDeliveries, protectedDeliveries]);
+  assert.equal((await q(`SELECT count(*)::int AS n FROM items`))[0].n, beforeItems + kept + 50);
 });
 
 test('the poll job runs every configured mailbox from its cursor and records the run', async () => {

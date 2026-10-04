@@ -150,7 +150,7 @@ export async function syncCounterparties(db: Db, itemId: string, o: SyncOptions 
     const seen = new Set<string>();
     for (const cp of unresolved) {
       const d = domainOf(cp.email);
-      if (!d || seen.has(d)) continue;
+      if (!d || seen.has(d) || isFreeMail(d)) continue;      // a public mail domain is never an organisation (wave 6, P54)
       seen.add(d);
       const p = await proposeOrganisation(db, { domain: d, sender_email: cp.email, sender_name: cp.name, item_id: item.id, subject: item.title ?? '', direction });
       if (p) result.proposals.push(p.id);

@@ -29,6 +29,8 @@ export interface RawMessage {
   /** Provider labels or IMAP flags/keywords, as the provider spells them (Gmail: label names; IMAP: flags such as \Seen, $Personal). */
   labels: string[];
   folder: MailFolder;
+  /** Bulk-mail headers the message carried (List-Unsubscribe, List-Id, Precedence: bulk|list, Auto-Submitted); absent when none. */
+  bulk_signals?: string[];
 }
 
 export interface FetchOptions {
@@ -36,11 +38,16 @@ export interface FetchOptions {
   since?: Date;
 }
 
+/** Capture-time facts a source knows about the mailbox it reads: whose it is, and what they allowed the firm to keep. */
+export interface MailboxContext { person_id?: string | null; privacy?: 'all' | 'subjects' | 'none'; connection_id?: string | null }
+
 export interface MailSource {
   /** Stable id of the mailbox, `<zoho-mail|gmail>:<address>`; the key of its row in mail_cursors. */
   id: string;
   /** Which `origin.source` its items carry. Derived from `id` when absent. */
   origin?: 'zoho-mail' | 'gmail';
+  /** Set for a mailbox connected by consent (wave 6): the person and their privacy level. */
+  context?: MailboxContext;
   /**
    * Messages after `cursor` (everything when null), in the order the source holds them (oldest first within a folder or mailbox).
    * Each message comes with the cursor that

@@ -20,13 +20,16 @@ import type { Db } from '../../db/client.ts';
 import type { LlmProvider } from '../../llm/provider.ts';
 import { normaliseDomain, normaliseOrgName } from '../../api/organisations.routes.ts';
 import type { RawMessage } from './types.ts';
+import { recallDecisions } from './rules.ts';
 
 export const FILE_THRESHOLD = 0.85;
 export const WEIGHTS = { contact: 0.5, domain: 0.35, thread: 0.3, tokens: 0.2 } as const;
 const TIE_WINDOW = 0.1;
 const UNRESOLVED_CAP = 0.6;
 
-export type Signal = 'contact' | 'domain' | 'thread' | 'tokens' | 'llm';
+export type Signal = 'contact' | 'domain' | 'thread' | 'tokens' | 'llm' | 'memory';
+/** ready: one candidate at or above READY_THRESHOLD on a message with a known counterparty, so one tap files it; review: anything else unfiled. */
+export const READY_THRESHOLD = 0.6;
 export interface Evidence { signal: Signal; detail: string; weight: number }
 export interface Candidate { project_id: string; score: number; confidence: number; evidence: Evidence[] }
 export interface Classification {
@@ -36,8 +39,10 @@ export interface Classification {
   /** Every project with a non-zero score, best first. */
   candidates: Candidate[];
   tie_break?: 'llm' | 'unresolved';
+  /** The memory said "not a project email" for this conversation (P51): file to the firm inbox, do not queue. */
+  dismissed?: boolean;
 }
-export interface ClassifyOptions { provider?: LlmProvider | null; firmDomains?: string[]; threshold?: number }
+export interface ClassifyOptions { provider?: LlmProvider | null; firmDomains?: string[]; threshold?: number; /** Consult the filing memory (default true). */ memory?: boolean }
 
 const FREE_MAIL = new Set(['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'yahoo.com', 'icloud.com', 'proton.me', 'protonmail.com', 'aol.com', 'zoho.com', 'gmx.com', 'msn.com']);
 export const isFreeMail = (d: string) => FREE_MAIL.has(d);
@@ -126,7 +131,13 @@ async function threadProjects(db: Db, msg: RawMessage): Promise<Map<string, numb
 export async function classify(db: Db, msg: RawMessage, opts: ClassifyOptions = {}): Promise<Classification> {
   const firm = opts.firmDomains ?? firmDomains();
   const threshold = opts.threshold ?? FILE_THRESHOLD;
-  const [index, threads] = await Promise.all([loadIndex(db), threadProjects(db, msg)]);
+  const [index, threads, memory] = await Promise.all([loadIndex(db), threadProjects(db, msg), opts.memory === false ? [] : recallDecisions(db, msg, firm)]);
+  const settled = memory.find(m => m.weight >= 1);
+  if (settled) {
+    const ev: Evidence = { signal: 'memory', detail: settled.detail, weight: 1 };
+    if (!settled.project_id) return { project_id: null, confidence: 0, evidence: [ev], candidates: [], dismissed: true };
+    return { project_id: settled.project_id, confidence: 1, evidence: [ev], candidates: [{ project_id: settled.project_id, score: 1, confidence: 1, evidence: [ev] }] };
+  }
   const participants = [msg.from, ...msg.to, ...msg.cc].map(a => a.address.toLowerCase()).filter(a => a && !isFirmAddress(a, firm));
   const subject = ` ${words(msg.subject)} `;
   const body = ` ${words(msg.text.slice(0, 6000))} `;
@@ -155,6 +166,7 @@ export async function classify(db: Db, msg: RawMessage, opts: ClassifyOptions = 
       if (has(subjectTokens, w)) { hits += 1; found.push(w); } else if (has(bodyTokens, w)) { hits += 0.5; found.push(w); }
     }
     if (hits > 0) evidence.push({ signal: 'tokens', detail: found.slice(0, 6).join(', '), weight: Math.round(WEIGHTS.tokens * Math.min(1, hits / 2) * 1000) / 1000 });
+    for (const m of memory) if (m.project_id === p.id && m.weight < 1) evidence.push({ signal: 'memory', detail: m.detail, weight: m.weight });
 
     const score = Math.round(evidence.reduce((s, e) => s + e.weight, 0) * 1000) / 1000;
     if (score > 0) candidates.push({ project_id: p.id, score, confidence: confidenceOf(score), evidence });
