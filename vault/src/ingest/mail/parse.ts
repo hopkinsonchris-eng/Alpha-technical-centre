@@ -32,6 +32,18 @@ function addresses(a: AddressObject | AddressObject[] | undefined): MailAddress[
   return out;
 }
 
+/** The headers that mark automated or list mail; their names, as evidence. */
+export function bulkSignals(p: ParsedMail): string[] {
+  const out: string[] = [];
+  const h = p.headers;
+  const get = (k: string) => { const v = h.get(k) as any; return v == null ? '' : typeof v === 'string' ? v : Array.isArray(v) ? v.join(' ') : (v.text ?? v.value ?? JSON.stringify(v)); };
+  if (get('list-unsubscribe')) out.push('List-Unsubscribe');
+  if (get('list-id')) out.push('List-Id');
+  if (/^(bulk|list|junk)$/i.test(get('precedence').trim())) out.push('Precedence');
+  if (get('auto-submitted') && !/^no$/i.test(get('auto-submitted').trim())) out.push('Auto-Submitted');
+  return out;
+}
+
 export interface ParseMeta { mailbox: string; folder: MailFolder; labels?: string[]; fallbackDate?: Date; fallbackId?: string }
 
 export async function parseRfc822(source: Uint8Array | Buffer, meta: ParseMeta): Promise<RawMessage> {
@@ -58,6 +70,7 @@ export async function parseRfc822(source: Uint8Array | Buffer, meta: ParseMeta):
       .filter(a => a.content && a.content.length > 0)
       .map((a, i) => ({ filename: a.filename || `attachment-${i + 1}`, mime: a.contentType || 'application/octet-stream', bytes: new Uint8Array(a.content) })),
     labels: [...(meta.labels ?? [])],
+    ...(bulkSignals(p).length ? { bulk_signals: bulkSignals(p) } : {}),
     folder: meta.folder,
   };
   if (typeof p.html === 'string' && p.html) msg.html = p.html;

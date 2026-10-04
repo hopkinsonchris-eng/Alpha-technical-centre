@@ -87,8 +87,9 @@ export async function mailboxCounts(db: Db, address: string): Promise<{ messages
     `SELECT count(*) FILTER (WHERE NOT hidden)::int AS messages,
             count(*) FILTER (WHERE NOT hidden AND project_id <> 'firm')::int AS filed,
             count(*) FILTER (WHERE NOT hidden AND EXISTS (SELECT 1 FROM filing_queue q WHERE q.item_id = i.id AND q.status = 'open'))::int AS waiting,
-            count(*) FILTER (WHERE hidden AND extracted->>'hidden_reason' = 'protected')::int AS hidden_internal,
             count(*) FILTER (WHERE hidden AND extracted->>'category' = 'bulk')::int AS hidden_bulk
        FROM items i WHERE parent_id IS NULL AND origin->>'source' = 'zoho-mail' AND lower(extracted->>'mailbox') = lower($1)`, [address])).rows[0];
-  return { messages: r.messages, filed: r.filed, waiting: r.waiting, hidden_internal: r.hidden_internal, hidden_bulk: r.hidden_bulk };
+  // Mail between colleagues only, and blocked mail, is never stored: the count is what the capture declined, from the audit log.
+  const skipped = (await db.query<{ n: number }>(`SELECT count(*)::int AS n FROM audit_events WHERE action = 'mail.capture.skipped' AND detail->>'reason' IN ('protected','blocked') AND lower(detail->>'mailbox') = lower($1)`, [address])).rows[0];
+  return { messages: r.messages, filed: r.filed, waiting: r.waiting, hidden_internal: skipped.n, hidden_bulk: r.hidden_bulk };
 }

@@ -89,3 +89,39 @@ export function fakeGmailFetch(o: { late?: boolean; failHistory404?: boolean; ca
     return reply({ error: { code: 404 } }, 404);
   }) as typeof fetch;
 }
+
+export interface ZohoCalls { urls: string[]; tokens: number }
+
+/** A recorded Zoho Mail REST API over the same mailbox: folders, messages/view newest first with start/limit paging, originalmessage as JSON. */
+export function fakeZohoFetch(o: { late?: boolean; calls?: ZohoCalls; rateLimitAfter?: number; expireFirstToken?: boolean; rawAsText?: boolean } = {}): typeof fetch {
+  const calls = o.calls ?? { urls: [], tokens: 0 };
+  let expired = !!o.expireFirstToken;
+  const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  const FOLDERS = [{ folderId: '9001', folderName: 'Inbox', folderType: 'Inbox' }, { folderId: '9002', folderName: 'Drafts', folderType: 'Drafts' }, { folderId: '9003', folderName: 'Sent', folderType: 'Sent' }, { folderId: '9004', folderName: 'Trash', folderType: 'Trash' }];
+  const all = manifest.messages.filter(m => o.late || !m.late).map(m => ({ ...m, zid: String(100000 + m.n), time: new Date(m.date).getTime() }));
+  return (async (input: any, init?: RequestInit) => {
+    const url = new URL(typeof input === 'string' ? input : input.url);
+    if (url.pathname === '/oauth/v2/token') { calls.tokens++; return reply({ access_token: `ztoken-${calls.tokens}`, expires_in: 3600, scope: 'ZohoMail.messages.READ' }); }
+    calls.urls.push(url.pathname + url.search);
+    if (o.rateLimitAfter !== undefined && calls.urls.length > o.rateLimitAfter) return reply({ status: { code: 429, description: 'Too many requests' } }, 429);
+    const auth = (init?.headers as Record<string, string> | undefined)?.authorization;
+    if (expired && auth === 'Zoho-oauthtoken ztoken-1') { expired = false; return reply({ status: { code: 401, description: 'Invalid OAuth token' } }, 401); }
+    const p = url.pathname.replace(/^\/api\/accounts\/776/, '');
+    if (p === '/folders') return reply({ status: { code: 200 }, data: FOLDERS });
+    if (p === '/messages/view') {
+      const folderId = url.searchParams.get('folderId'), start = Number(url.searchParams.get('start') ?? 1), limit = Number(url.searchParams.get('limit') ?? 10);
+      const kind = folderId === '9001' ? 'inbox' : folderId === '9003' ? 'sent' : null;
+      const rows = all.filter(m => m.folder === kind).sort((a, b) => b.time - a.time).slice(start - 1, start - 1 + limit);
+      return reply({ status: { code: 200 }, data: rows.map(m => ({ messageId: m.zid, folderId, receivedTime: String(m.time), sentDateInGMT: String(m.time), subject: '', status: m.n === 1 ? 'unread' : 'read', flagid: m.n === 3 ? 'important' : 'flag_not_set', hasAttachment: 'false' })) });
+    }
+    const om = /^\/messages\/(\d+)\/originalmessage$/.exec(p);
+    if (om) {
+      const m = all.find(x => x.zid === om[1]);
+      if (!m) return reply({ status: { code: 404 } }, 404);
+      const eml = readEml(m.file).toString('utf8');
+      if (o.rawAsText) return new Response(eml, { status: 200, headers: { 'content-type': 'message/rfc822' } });
+      return reply({ status: { code: 200 }, data: { messageContent: eml } });
+    }
+    return reply({ status: { code: 404 } }, 404);
+  }) as typeof fetch;
+}

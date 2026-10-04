@@ -15,6 +15,7 @@ import {
   assertVisible, bad, canSee, conflict, iso, jsonBody, loadAccess, notFound, requireWritableProject, resolveTag, route, scopeLabel, uuidParam,
 } from './common.ts';
 import { ensureContact, syncCounterparties } from '../ingest/mail/counterparties.ts';
+import { rememberDecision } from '../ingest/mail/rules.ts';
 import { firmDomains, domainOf } from '../ingest/mail/classify.ts';
 
 const STATUSES = ['open', 'assigned', 'dismissed'];
@@ -80,6 +81,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     }
     const sync = await syncCounterparties(x.db, item.id, { firm });
     await x.db.query(`UPDATE filing_queue SET status = 'assigned', resolved_by = $2, resolved_at = $3 WHERE id = $1`, [id, x.person.id, x.now.toISOString()]);
+    await x.db.query(`UPDATE items SET extracted = extracted || '{"status":"filed"}'::jsonb WHERE id = $1`, [item.id]);
+    await rememberDecision(x.db, item.id, target.id, x.person.id, firm);   // wave 6 (P51): the thread, the domain and the attachment names teach the filer
     x.a.refs = family.map(f => `doc:${f}`);
     x.a.detail = { project: target.id, contacts_added: contacts.length, dispatches: sync.dispatch_ids.length };
     return { body: { id, status: 'assigned', item_id: item.id, project_id: target.id, legal_tag: tag, contacts, dispatch_ids: sync.dispatch_ids } };
@@ -99,6 +102,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     await x.db.query(`UPDATE items SET filing = $2::jsonb, tags = array_append(array_remove(array_remove(tags, 'unfiled'), 'firm/inbox'), 'firm/inbox') WHERE id = ANY($1::uuid[])`,
       [family, JSON.stringify({ method: 'manual', confidence: 1, confirmed_by: x.person.id })]);
     await x.db.query(`UPDATE filing_queue SET status = 'dismissed', resolved_by = $2, resolved_at = $3 WHERE id = $1`, [id, x.person.id, x.now.toISOString()]);
+    await x.db.query(`UPDATE items SET extracted = extracted || '{"status":"dismissed"}'::jsonb WHERE id = $1`, [item.id]);
+    await rememberDecision(x.db, item.id, null, x.person.id);              // wave 6 (P51): "not a project email" is remembered for the thread
     x.a.refs = family.map(f => `doc:${f}`);
     return { body: { id, status: 'dismissed', item_id: item.id, project_id: 'firm' } };
   });

@@ -258,6 +258,8 @@ Nobody hands over an app password. Each person connects their own Zoho mailbox f
 
 Scopes asked for: `ZohoMail.accounts.READ`, `ZohoMail.folders.READ`, `ZohoMail.messages.READ`, `ZohoMail.messages.CREATE` (the last so a letter can leave from the person's own address). Zoho refresh tokens never expire unless revoked; the Vault stores one per person and replaces it on a reconnect.
 
+**What happens after a connection.** The five-minute poll reads the Inbox and Sent folders of every connected mailbox through the Zoho Mail API (the IMAP app-password route is still there for `info@`, and a connection supersedes it for the same address). Each poll also brings in one slice of history, newest first, back to 180 days (Settings → Your mailbox → history window), at most 20,000 messages, so the past arrives quietly over the first day or two. History never proposes organisations and only waits in the queue when a known counterparty is on the message. Zoho allows 30 requests a minute per mailbox: a rate limit shows as an error on the Your mailbox card and clears at the next poll. On the first live connection, check the mail-poll log for `originalmessage`: the Vault accepts the raw message as JSON or as bytes, and a tenant that answers in an unexpected shape shows up there as a parse error on every message.
+
 ## 5. The APEX apps' developer (an email from you)
 
 Send the developer the file `vault/src/adapters/README.md` (on GitHub once
