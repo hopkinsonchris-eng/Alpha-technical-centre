@@ -1158,10 +1158,46 @@ async function renderRuns(projects) {
   add(wrap, table);
 }
 
+/* Wave 6 (D60): the Connect card, shown until the person connects or says Not now; the return from Zoho's consent page. */
+async function renderMailboxPrompt(person) {
+  const sec = $('#sec-mailbox');
+  if (!sec || !person) return;
+  const back = new URLSearchParams(location.search).get('mailbox');
+  if (back) {
+    const host = $('#notices');
+    if (host) {
+      const kind = back === 'connected' ? 'ok' : 'warn';
+      const n = mk('div', 'hub-notice ' + kind, null, null, { role: 'status', 'data-mailbox-notice': back });
+      if (back === 'connected') add(n, mk('span', null, 'Mailbox connected. Mail from today onwards files as it arrives; the last 180 days arrive quietly over the next day. See Settings for what it holds.', 'Buzón conectado. El correo desde hoy se archiva al llegar; los últimos 180 días llegan poco a poco durante el próximo día. Vea en Ajustes lo que guarda.'));
+      else add(n, mk('span', null, 'The mailbox was not connected. You can connect it later from Settings.', 'El buzón no se conectó. Puede conectarlo más tarde desde Ajustes.'));
+      add(host, n);
+    }
+    const u = new URL(location.href); u.searchParams.delete('mailbox'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+  }
+  const r = await api('/api/me/mailbox');
+  if (!r.ok || !r.body || !r.body.prompt) return;
+  $('#mailbox-address').textContent = person.email || '';
+  sec.removeAttribute('hidden');
+  const status = $('#mailbox-status'), connect = $('#mailbox-connect'), later = $('#mailbox-later');
+  connect.addEventListener('click', async () => {
+    connect.disabled = true; setText(status, 'Opening Zoho…', 'Abriendo Zoho…');
+    const c = await api('/api/me/mailbox/connect', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: '{}' });
+    if (c.ok && c.body && c.body.url) { location.href = c.body.url; return; }
+    connect.disabled = false;
+    setText(status, c.status === 503 ? 'Not set up on the server yet (SETUP.md §7).' : 'Could not start the connection.', c.status === 503 ? 'Aún no configurado en el servidor (SETUP.md §7).' : 'No se pudo iniciar la conexión.');
+  });
+  later.addEventListener('click', async () => {
+    later.disabled = true;
+    await api('/api/me/mailbox', { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ prompt_hidden_days: 30 }) });
+    sec.setAttribute('hidden', '');
+  });
+}
+
 async function initToday() {
   const d = fmtDateLong(new Date());
   setText($('#today-date'), d.en, d.es);
   const person = await showSession();
+  try { await renderMailboxPrompt(person); } catch (e) { /* the card is optional */ }
   await renderTools(person);
   setupNewProject(person);
   let globe = null;

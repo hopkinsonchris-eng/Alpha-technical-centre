@@ -67,6 +67,13 @@ services:
         value: alpha-technical-centre.com
       - key: VAULT_PUBLIC_URL
         value: https://www.alpha-technical-centre.com
+      # wave 6: each person's mailbox by consent (vault/SETUP.md §7)
+      - key: ZOHO_MAIL_CLIENT_ID
+        sync: false
+      - key: ZOHO_MAIL_CLIENT_SECRET
+        sync: false
+      - key: VAULT_TOKEN_KEY
+        sync: false
 
   # Nightly staleness (M08): recomputes stale flags on runs and documents.
   - type: cron
@@ -128,6 +135,12 @@ services:
     buildCommand: npm ci
     startCommand: npx tsx src/jobs/mail-poll.ts
     envVars:
+      - key: ZOHO_MAIL_CLIENT_ID
+        sync: false
+      - key: ZOHO_MAIL_CLIENT_SECRET
+        sync: false
+      - key: VAULT_TOKEN_KEY
+        sync: false
       - key: VAULT_STORAGE
         value: supabase
       - key: VAULT_STORAGE_BUCKET

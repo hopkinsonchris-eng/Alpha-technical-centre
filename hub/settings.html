@@ -104,6 +104,60 @@
         <p class="hub-muted" id="connections-empty" hidden data-en="No app is connected. In the Claude app: Settings → Connectors → Add custom connector, URL https://www.alpha-technical-centre.com/mcp." data-es="Ninguna aplicación conectada. En la app de Claude: Ajustes → Conectores → Añadir conector personalizado, URL https://www.alpha-technical-centre.com/mcp.">No app is connected. In the Claude app: Settings → Connectors → Add custom connector, URL https://www.alpha-technical-centre.com/mcp.</p>
       </section>
 
+      <!-- YOUR MAILBOX (wave 6, D60, D61, P58): what the firm holds from your mailbox, your rules, disconnect -->
+      <section class="card hub-mailbox" id="sec-mailbox" aria-labelledby="h-mailbox" hidden>
+        <div class="hub-card-head">
+          <div>
+            <h3 id="h-mailbox" data-en="Your mailbox" data-es="Su buzón">Your mailbox</h3>
+            <p class="hub-muted" id="mailbox-sub" data-en="Mail about the firm's opportunities, both directions, filed into their project files." data-es="El correo sobre las oportunidades de la firma, en ambos sentidos, archivado en sus expedientes.">Mail about the firm's opportunities, both directions, filed into their project files.</p>
+          </div>
+        </div>
+        <div id="mailbox-off" hidden>
+          <p class="hub-muted" id="mailbox-off-text" data-en="No mailbox is connected." data-es="Ningún buzón conectado.">No mailbox is connected.</p>
+          <div class="hub-actions"><button class="btn btn-primary btn-sm" type="button" id="mailbox-connect" data-en="Connect my mailbox" data-es="Conectar mi buzón">Connect my mailbox</button><span class="hub-muted" id="mailbox-connect-status" role="status"></span></div>
+        </div>
+        <div id="mailbox-on" hidden>
+          <dl class="hub-kv" id="mailbox-facts"></dl>
+          <p id="mailbox-held" data-mailbox-held></p>
+          <fieldset>
+            <legend data-en="What the firm sees" data-es="Lo que ve la firma">What the firm sees</legend>
+            <div class="hub-radios" id="mailbox-privacy">
+              <label><input type="radio" name="privacy" value="all"> <span data-en="Everything" data-es="Todo">Everything</span></label>
+              <label><input type="radio" name="privacy" value="subjects"> <span data-en="Subjects only" data-es="Solo asuntos">Subjects only</span></label>
+              <label><input type="radio" name="privacy" value="none"> <span data-en="Nothing" data-es="Nada">Nothing</span></label>
+            </div>
+            <p class="hub-muted" data-en="Lowering this applies to everything already held: Subjects only removes the bodies and attachments; Nothing hides the messages." data-es="Bajar este nivel se aplica a todo lo ya guardado: Solo asuntos elimina cuerpos y adjuntos; Nada oculta los mensajes.">Lowering this applies to everything already held: Subjects only removes the bodies and attachments; Nothing hides the messages.</p>
+            <span class="hub-muted" id="mailbox-privacy-status" role="status"></span>
+          </fieldset>
+          <div class="hub-rules">
+            <fieldset>
+              <legend data-en="Blocked (yours)" data-es="Bloqueados (suyos)">Blocked (yours)</legend>
+              <textarea id="mailbox-blocked" aria-label="Blocked addresses and domains, one per line" placeholder="family@example.com&#10;mybank.com"></textarea>
+              <p class="hub-muted" data-en="Addresses or domains, one per line. Mail with any of them on it is never kept from your mailbox." data-es="Direcciones o dominios, uno por línea. El correo con cualquiera de ellos nunca se guarda desde su buzón.">Addresses or domains, one per line. Mail with any of them on it is never kept from your mailbox.</p>
+              <div class="hub-actions"><button class="btn btn-outline btn-sm" type="button" id="mailbox-rules-save" data-en="Save my rules" data-es="Guardar mis reglas">Save my rules</button><span class="hub-muted" id="mailbox-rules-status" role="status"></span></div>
+            </fieldset>
+            <fieldset id="firm-rules" hidden>
+              <legend data-en="Firm rules (partners)" data-es="Reglas de la firma (socios)">Firm rules (partners)</legend>
+              <p class="hub-muted" id="firm-inherent"></p>
+              <label for="firm-protected" data-en="Protected: hidden when everyone on the message is protected" data-es="Protegidos: oculto cuando todos en el mensaje están protegidos">Protected: hidden when everyone on the message is protected</label>
+              <textarea id="firm-protected" placeholder="partnerfirm.example"></textarea>
+              <label for="firm-blocked" data-en="Blocked: hidden whoever else is on it" data-es="Bloqueados: oculto esté quien esté">Blocked: hidden whoever else is on it</label>
+              <textarea id="firm-blocked" placeholder="recruiter.example"></textarea>
+              <div class="hub-actions"><button class="btn btn-outline btn-sm" type="button" id="firm-rules-save" data-en="Save firm rules" data-es="Guardar reglas de la firma">Save firm rules</button><span class="hub-muted" id="firm-rules-status" role="status"></span></div>
+            </fieldset>
+          </div>
+          <form class="hub-export" id="mailbox-export" novalidate>
+            <label for="export-contact" data-en="Download what is held about a contact" data-es="Descargar lo que se guarda de un contacto">Download what is held about a contact</label>
+            <input id="export-contact" type="text" placeholder="contact id, e.g. maria-fernandez" aria-label="Contact id">
+            <button class="btn btn-outline btn-sm" type="submit" data-en="Download" data-es="Descargar">Download</button>
+          </form>
+          <div class="hub-actions">
+            <button class="btn btn-outline btn-sm" type="button" id="mailbox-disconnect" data-en="Disconnect and hide my synced mail" data-es="Desconectar y ocultar mi correo sincronizado">Disconnect and hide my synced mail</button>
+            <span class="hub-muted" id="mailbox-disconnect-status" role="status"></span>
+          </div>
+        </div>
+      </section>
+
       <form id="rates-form" novalidate>
         <section aria-labelledby="h-rates">
           <div class="card">
@@ -392,6 +446,85 @@ async function loadConnections() {
   }
 }
 loadConnections();
+
+/* Wave 6 (D60, D61, P58): the person's own mailbox: status, what is held, privacy, rules, export, disconnect. */
+const when = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); };
+const ago = (iso) => { const d = new Date(iso); if (isNaN(d)) return ''; const m = Math.round((Date.now() - d.getTime()) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : when(iso); };
+const lines = (t) => t.split(/\r?\n|,/).map((x) => x.trim()).filter(Boolean);
+const jsonInit = (method, body) => ({ method, headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+let mailboxMe = null;
+async function loadMailbox() {
+  const sec = $('sec-mailbox');
+  const r = await api('/api/me/mailbox');
+  if (!r.ok || !r.body) { sec.setAttribute('hidden', ''); return; }
+  const m = r.body; mailboxMe = m;
+  sec.removeAttribute('hidden');
+  sec.setAttribute('data-mailbox', m.connected ? 'connected' : 'off');
+  if (!m.connected) {
+    $('mailbox-on').setAttribute('hidden', ''); $('mailbox-off').removeAttribute('hidden');
+    setText($('mailbox-off-text'), m.configured ? 'No mailbox is connected.' : 'Mailbox connections are not set up on the server yet (SETUP.md §7).', m.configured ? 'Ningún buzón conectado.' : 'Las conexiones de buzón aún no están configuradas en el servidor (SETUP.md §7).');
+    $('mailbox-connect').disabled = !m.configured;
+    return;
+  }
+  $('mailbox-off').setAttribute('hidden', ''); $('mailbox-on').removeAttribute('hidden');
+  const c = m.connection, k = m.counts || {};
+  const dl = $('mailbox-facts'); dl.textContent = '';
+  const row = (key, en, es, node) => add(dl, mk('dt', null, en, es), add(mk('dd', null, null, null, { 'data-h': key }), node));
+  row('address', 'Mailbox', 'Buzón', dv('span', 'mono', c.address));
+  row('status', 'Status', 'Estado', c.status === 'error' ? add(mk('span'), mk('span', 'hub-pill bad', 'Error', 'Error'), dv('span', 'hub-muted', ' ' + (c.last_error || ''))) : add(mk('span'), mk('span', 'hub-pill ok', 'Connected', 'Conectado'), mk('span', 'hub-muted', ' · since ' + when(c.connected_at), ' · desde ' + when(c.connected_at))));
+  row('polled', 'Last read', 'Última lectura', c.last_poll_at ? dv('span', null, ago(c.last_poll_at)) : mk('span', 'hub-muted', 'not yet', 'aún no'));
+  row('history', 'History', 'Historial', c.history.done_at ? mk('span', null, c.history.window_days + ' days, done ' + when(c.history.done_at), c.history.window_days + ' días, completado el ' + when(c.history.done_at)) : mk('span', null, c.history.window_days + ' days, arriving', c.history.window_days + ' días, en curso'));
+  row('send', 'Sending', 'Envío', c.can_send ? mk('span', null, 'from this address', 'desde esta dirección') : mk('span', 'hub-muted', 'not granted: reconnect to allow', 'no concedido: reconecte para permitirlo'));
+  setText($('mailbox-held'), 'Held from this mailbox: ' + (k.messages || 0) + ' messages · ' + (k.filed || 0) + ' filed · ' + (k.waiting || 0) + ' waiting · ' + (k.hidden_internal || 0) + ' internal (hidden) · ' + (k.hidden_bulk || 0) + ' bulk (hidden)',
+    'Guardado de este buzón: ' + (k.messages || 0) + ' mensajes · ' + (k.filed || 0) + ' archivados · ' + (k.waiting || 0) + ' en espera · ' + (k.hidden_internal || 0) + ' internos (ocultos) · ' + (k.hidden_bulk || 0) + ' masivos (ocultos)');
+  for (const i of document.querySelectorAll('#mailbox-privacy input')) i.checked = i.value === c.privacy;
+  const rules = await api('/api/me/mailbox/rules');
+  if (rules.ok && rules.body) {
+    $('mailbox-blocked').value = (rules.body.personal || []).map((x) => x.pattern).join('\n');
+    const me = await api('/api/me');
+    if (me.ok && me.body && me.body.role === 'partner') {
+      $('firm-rules').removeAttribute('hidden');
+      setText($('firm-inherent'), 'Protected by itself: ' + ((rules.body.inherent && rules.body.inherent.protected) || []).join(', ') + ' and everyone at the firm.', 'Protegidos por sí mismos: ' + ((rules.body.inherent && rules.body.inherent.protected) || []).join(', ') + ' y todos en la firma.');
+      $('firm-protected').value = (rules.body.firm || []).filter((x) => x.kind === 'protected').map((x) => x.pattern).join('\n');
+      $('firm-blocked').value = (rules.body.firm || []).filter((x) => x.kind === 'blocked').map((x) => x.pattern).join('\n');
+    }
+  }
+}
+$('mailbox-connect').addEventListener('click', async () => {
+  const b = $('mailbox-connect'); b.disabled = true; setText($('mailbox-connect-status'), 'Opening Zoho…', 'Abriendo Zoho…');
+  const c = await api('/api/me/mailbox/connect', jsonInit('POST', {}));
+  if (c.ok && c.body && c.body.url) { location.href = c.body.url; return; }
+  b.disabled = false; setText($('mailbox-connect-status'), 'Could not start the connection.', 'No se pudo iniciar la conexión.');
+});
+$('mailbox-privacy').addEventListener('change', async (ev) => {
+  const level = ev.target.value;
+  if (level !== 'all' && !confirm(document.documentElement.lang === 'es' ? (level === 'none' ? '¿Ocultar todo lo guardado de su buzón? Se eliminan los originales.' : '¿Eliminar cuerpos y adjuntos de todo lo guardado de su buzón?') : (level === 'none' ? 'Hide everything held from your mailbox? The originals are removed.' : 'Remove the bodies and attachments of everything held from your mailbox?'))) { await loadMailbox(); return; }
+  const r = await api('/api/me/mailbox', jsonInit('PATCH', { privacy: level }));
+  if (r.ok) { const a = r.body.applied || {}; setText($('mailbox-privacy-status'), 'Saved. ' + (a.hidden || 0) + ' hidden, ' + (a.originals_purged || 0) + ' originals removed.', 'Guardado. ' + (a.hidden || 0) + ' ocultos, ' + (a.originals_purged || 0) + ' originales eliminados.'); await loadMailbox(); }
+  else setText($('mailbox-privacy-status'), 'Could not save.', 'No se pudo guardar.');
+});
+$('mailbox-rules-save').addEventListener('click', async () => {
+  const r = await api('/api/me/mailbox/rules', jsonInit('PUT', { blocked: lines($('mailbox-blocked').value) }));
+  setText($('mailbox-rules-status'), r.ok ? 'Saved.' : 'Not saved: ' + ((r.body && r.body.error && r.body.error.message) || 'check the list.'), r.ok ? 'Guardado.' : 'No guardado: compruebe la lista.');
+  if (r.ok) $('mailbox-blocked').value = (r.body.personal || []).map((x) => x.pattern).join('\n');
+});
+$('firm-rules-save').addEventListener('click', async () => {
+  const r = await api('/api/mail/rules', jsonInit('PUT', { protected: lines($('firm-protected').value), blocked: lines($('firm-blocked').value) }));
+  setText($('firm-rules-status'), r.ok ? 'Saved.' : 'Not saved: ' + ((r.body && r.body.error && r.body.error.message) || 'check the lists.'), r.ok ? 'Guardado.' : 'No guardado: compruebe las listas.');
+});
+$('mailbox-export').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const id = $('export-contact').value.trim();
+  if (id) location.href = '/api/contacts/' + encodeURIComponent(id) + '/export?download=1';
+});
+$('mailbox-disconnect').addEventListener('click', async () => {
+  if (!confirm(document.documentElement.lang === 'es' ? '¿Desconectar su buzón? Los mensajes que solo este buzón vio quedan ocultos y sus originales se eliminan. Los contactos se conservan.' : 'Disconnect your mailbox? Messages only this mailbox saw are hidden and their originals removed. Contacts stay.')) return;
+  const b = $('mailbox-disconnect'); b.disabled = true;
+  const r = await api('/api/me/mailbox', { method: 'DELETE' });
+  if (r.ok) { const w = (r.body && r.body.withdrawn) || {}; setText($('mailbox-disconnect-status'), 'Disconnected. ' + (w.hidden || 0) + ' records hidden.', 'Desconectado. ' + (w.hidden || 0) + ' registros ocultos.'); await loadMailbox(); }
+  else { b.disabled = false; setText($('mailbox-disconnect-status'), 'Could not disconnect.', 'No se pudo desconectar.'); }
+});
+loadMailbox();
 </script>
 </body>
 </html>
