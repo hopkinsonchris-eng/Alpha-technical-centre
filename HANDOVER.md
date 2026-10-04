@@ -9,7 +9,7 @@ reference. It complements — does not replace — `README.md` (architecture) an
 
 ## Wave 5 (3 October 2026) in one paragraph
 
-Originals live in Supabase Storage (a production server refuses to start without it); the record panel opens PDFs, images and spreadsheets and downloads the rest; Write to… drafts from the file with every figure cited and a review loop before the letterhead render and the dispatch; and the Vault is an OAuth 2.1 server for its own MCP endpoint, so the Claude app connects as the signed-in person (setup: `vault/SETUP.md` §1.5 and §6). Design pack: `docs/vault-hub/wave5/`.
+Originals live in Supabase Storage (a production server refuses to start without it); the record panel opens PDFs, images and spreadsheets and downloads the rest; Write to… drafts from the file with every figure cited and a review loop before the letterhead render and the dispatch (a saved draft reopens from the timeline with its review, and every decision saves itself); and the Vault is an OAuth 2.1 server for its own MCP endpoint, so the Claude app connects as the signed-in person (setup: `vault/SETUP.md` §1.5 and §6). Design pack: `docs/vault-hub/wave5/`.
 
 ## 0. Ownership & guardrails (read first)
 

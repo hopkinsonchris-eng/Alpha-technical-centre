@@ -135,14 +135,14 @@ export function mountDraft(ctx, { openRecord }) {
     go.disabled = false; setText(go.querySelector('span') || go, 'Draft', 'Redactar');
     if (!r.ok) { add(notices, notice('bad', r.status === 501 ? 'Drafting needs the assistant provider on the server.' : r.status === 0 ? 'The draft took too long or the connection dropped. Try again.' : 'The draft could not be made.' + (r.body && r.body.error ? ' ' + r.body.error.message : ''), r.status === 501 ? 'La redacción necesita el proveedor del asistente en el servidor.' : r.status === 0 ? 'El borrador tardó demasiado o se perdió la conexión. Inténtelo de nuevo.' : 'No se pudo hacer el borrador.')); return; }
     // A tone re-draft continues the same review: the citations opened and the clock carry over; a fresh draft starts both.
-    state.draft = r.body; state.decisions = r.body.paragraphs.map((p) => (QUESTION_RE.test(p) ? null : 'keep')); state.notes = {}; state.sent = null; state.rendered = null;
+    state.draft = r.body; state.decisions = r.body.paragraphs.map((p) => (QUESTION_RE.test(p) ? null : 'keep')); state.notes = {}; state.sent = null; state.rendered = null; state.loadedReview = null;
     if (!tone) { state.citationsOpened = 0; state.startedAt = Date.now(); }
     renderResult();
   }
   setup.addEventListener('submit', (ev) => { ev.preventDefault(); runDraft(null); });
 
   const sourceOf = (ref) => (state.draft.sources || []).find((s) => s.ref === ref) || null;
-  const titleOf = (ref) => { const s = sourceOf(ref); if (s) return s.title; const d = (state.draft.context && state.draft.context.dispatches || []).find((x) => 'doc:' + x.item_id === ref); if (d) return d.title; const run = (state.draft.context && state.draft.context.runs || []).find((x) => 'run:' + x.id === ref); if (run) return run.title; return ref; };
+  const titleOf = (ref) => { const s = sourceOf(ref); if (s) return s.title; const d = (state.draft.context && state.draft.context.dispatches || []).find((x) => 'doc:' + x.item_id === ref); if (d) return d.title; const run = (state.draft.context && state.draft.context.runs || []).find((x) => 'run:' + x.id === ref); if (run) return run.title; const e = (ctx.entries || []).find((x) => x.ref === ref); if (e && e.title) return e.title; return ref; };
   const isCorrespondence = (ref) => (state.draft.context && state.draft.context.dispatches || []).some((x) => 'doc:' + x.item_id === ref);
 
   function paragraphNode(text, i) {
@@ -171,11 +171,13 @@ export function mountDraft(ctx, { openRecord }) {
     const opts = q ? [['keep-note', 'Keep as my own words', 'Mantener como mis palabras'], ['drop', 'Drop', 'Quitar']] : [['keep', 'Keep', 'Mantener'], ['keep-note', 'Keep with a note', 'Mantener con nota'], ['drop', 'Drop', 'Quitar']];
     for (const [v, en, es] of opts) {
       const b = mk('button', 'btn btn-outline btn-sm', en, es, { type: 'button', 'data-decide': v, 'aria-pressed': state.decisions[i] === v ? 'true' : 'false' });
-      b.addEventListener('click', () => { state.decisions[i] = v; for (const x of ctl.querySelectorAll('[data-decide]')) x.setAttribute('aria-pressed', x.dataset.decide === v ? 'true' : 'false'); p.setAttribute('data-decision', v); note.toggleAttribute('hidden', v !== 'keep-note'); gate(); });
+      b.addEventListener('click', () => { state.decisions[i] = v; for (const x of ctl.querySelectorAll('[data-decide]')) x.setAttribute('aria-pressed', x.dataset.decide === v ? 'true' : 'false'); p.setAttribute('data-decision', v); note.toggleAttribute('hidden', v !== 'keep-note'); gate(); autosave(); });
       add(ctl, b);
     }
     const note = mk('input', null, null, null, { type: 'text', placeholder: 'Note', 'aria-label': 'Note', 'data-note': String(i), hidden: '' });
-    note.addEventListener('input', () => { state.notes[i] = note.value; });
+    if (state.notes[i]) note.value = state.notes[i];
+    if (state.decisions[i] === 'keep-note') note.removeAttribute('hidden');
+    note.addEventListener('input', () => { state.notes[i] = note.value; autosave(); });
     add(p, ctl, note);
     if (state.decisions[i]) p.setAttribute('data-decision', state.decisions[i]);
     return p;
@@ -190,6 +192,15 @@ export function mountDraft(ctx, { openRecord }) {
     result.setAttribute('data-uncited', String(uncited));
     if (markSent) markSent.disabled = !state.rendered || !!state.sent;
     if (saveBtn) saveBtn.disabled = !!state.sent;
+    for (const b of result.querySelectorAll('[data-tone]')) b.disabled = !!state.sent;
+  }
+
+  // Every decision and note is saved on its own a moment after it is made, so leaving the page loses nothing.
+  let autosaveTimer = null;
+  function autosave() {
+    if (!state.draft || state.sent) return;
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => { const st = document.getElementById('dr-status'); if (st) saveReview(st, true); }, 1200);
   }
 
   function renderResult() {
@@ -238,6 +249,8 @@ export function mountDraft(ctx, { openRecord }) {
     const status = mk('span', 'hub-muted', null, null, { id: 'dr-status', role: 'status' });
     add(act, saveBtn, renderDocx, renderPdf, markSent, status);
     add(result, act);
+    if (state.sent && state.sent.occurred_at) { const when = fmtShortDate(state.sent.occurred_at); setText(status, 'Sent' + (state.sent.organisation ? ' to ' + state.sent.organisation : '') + ' on ' + when.en + '. The draft is frozen.', 'Enviado' + (state.sent.organisation ? ' a ' + state.sent.organisation : '') + ' el ' + when.es + '. El borrador está congelado.'); result.setAttribute('data-sent', state.sent.id || 'yes'); }
+    else if (state.loadedReview) setText(status, 'Review as saved' + (state.loadedReview.at ? ' ' + fmtShortDate(state.loadedReview.at).en : '') + '.', 'Revisión tal como se guardó' + (state.loadedReview.at ? ' el ' + fmtShortDate(state.loadedReview.at).es : '') + '.');
     saveBtn.addEventListener('click', () => saveReview(status));
     renderDocx.addEventListener('click', () => render('docx', status));
     renderPdf.addEventListener('click', () => render('pdf', status));
@@ -245,11 +258,13 @@ export function mountDraft(ctx, { openRecord }) {
     gate();
   }
 
-  async function saveReview(status) {
+  async function saveReview(status, quiet) {
+    clearTimeout(autosaveTimer);
     const r = await api('/api/items/' + encodeURIComponent(state.draft.id) + '/review', { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' },
       body: JSON.stringify({ decisions: state.decisions.map((d) => d || 'keep'), notes: state.notes, citations_opened: state.citationsOpened, review_seconds: Math.round((Date.now() - state.startedAt) / 1000) }) });
-    if (!r.ok) { setText(status, 'The review could not be saved.', 'No se pudo guardar la revisión.'); return false; }
-    setText(status, 'Review saved.', 'Revisión guardada.');
+    if (!r.ok) { setText(status, 'The review could not be saved.', 'No se pudo guardar la revisión.'); result.setAttribute('data-saved', 'failed'); return false; }
+    setText(status, quiet ? 'Saved.' : 'Review saved.', quiet ? 'Guardado.' : 'Revisión guardada.');
+    result.setAttribute('data-saved', new Date().toISOString());
     return true;
   }
   async function render(format, status) {
@@ -285,5 +300,32 @@ export function mountDraft(ctx, { openRecord }) {
     gate();
     if (typeof ctx.refreshTimeline === 'function') ctx.refreshTimeline();
   }
-  return { open: () => toggle(true) };
+  /** Reopen a draft note the Vault holds (GET /api/items/:id): the paragraphs, sources and questions as drafted,
+   *  the decisions and notes as last saved, frozen if it was sent. The set-up strip shows what was asked. */
+  async function load(rec) {
+    const ex = rec && rec.extracted;
+    if (!ex || ex.kind !== 'draft' || !Array.isArray(ex.paragraphs)) return false;
+    notices.textContent = '';
+    if (ex.draft_kind && KINDS.some((k) => k[0] === ex.draft_kind)) kind.value = ex.draft_kind;
+    if (ex.language === 'es' || ex.language === 'en') language.value = ex.language;
+    brief.value = ex.brief || '';
+    state.draft = { id: rec.id, draft: ex.draft || '', paragraphs: ex.paragraphs, citations: ex.citations || [], questions: ex.questions || [], warnings: ex.warnings || [], who_to_ask: ex.who_to_ask || [], sources: ex.sources || [], context: null };
+    const review = ex.review && Array.isArray(ex.review.decisions) && ex.review.decisions.length === ex.paragraphs.length ? ex.review : null;
+    // A question paragraph offers no plain Keep: a saved 'keep' there means it was never decided.
+    state.decisions = ex.paragraphs.map((p, i) => { const d = review ? review.decisions[i] : null; return QUESTION_RE.test(p) ? (d === 'keep-note' || d === 'drop' ? d : null) : (d || 'keep'); });
+    state.notes = review && review.notes ? { ...review.notes } : {};
+    state.citationsOpened = review ? Number(review.citations_opened) || 0 : 0;
+    state.startedAt = Date.now();
+    state.loadedReview = review;
+    state.sent = ex.sent && ex.sent.at ? { id: ex.sent.dispatch_id || null, occurred_at: ex.sent.at, organisation: ex.sent.organisation || null } : null;
+    state.rendered = ex.reference_no || rec.reference_no || null;
+    if (!state.contacts) await loadContacts();
+    toggle(true);
+    if (ex.organisation_id && state.contacts) { const c = state.contacts.contacts.find((x) => x.organisation.id === ex.organisation_id); if (c) { to.value = c.id; scopeCheck(); } }
+    renderResult();
+    result.setAttribute('data-loaded', rec.id);
+    host.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    return true;
+  }
+  return { open: () => toggle(true), load };
 }
