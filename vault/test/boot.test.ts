@@ -12,7 +12,7 @@ test('boot migrates and seeds master data on a fresh database', async () => {
   const db = await openDb(undefined);
   try {
     const r = await boot(db);
-    assert.deepEqual(r.migrations, ['001_init.sql', '002_opportunities.sql', '003_country_briefs.sql', '004_assets_wave3.sql', '005_research.sql', '006_oauth.sql', '007_mailboxes.sql', '008_standing.sql', '009_country_packs.sql', '010_rounds.sql']);
+    assert.deepEqual(r.migrations, ['001_init.sql', '002_opportunities.sql', '003_country_briefs.sql', '004_assets_wave3.sql', '005_research.sql', '006_oauth.sql', '007_mailboxes.sql', '008_standing.sql', '009_country_packs.sql', '010_rounds.sql', '011_round_queue.sql']);
     assert.ok(r.master.people >= 1);
     const chris = (await db.query<{ role: string }>("SELECT role FROM people WHERE email = 'chris@alpha-technical-centre.com'")).rows[0];
     assert.equal(chris?.role, 'partner');

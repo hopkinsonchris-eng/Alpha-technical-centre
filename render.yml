@@ -261,6 +261,34 @@ services:
       - key: PACK_BUDGET_GBP
         sync: false
 
+  # Round watch (wave 7 PR6, W7-AC21): fetches the licensing pages of every country with an active or prospect project
+  # through the pack's own fetch and store, reads each changed page once at low effort, and proposes dated round stages
+  # with a verbatim quote into the review queue; nothing counts until a member confirms it. The research cron's keys.
+  - type: cron
+    name: atc-vault-round-watch
+    runtime: node
+    rootDir: vault
+    schedule: "30 4 * * 0"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/round-watch.ts
+    envVars:
+      - key: VAULT_STORAGE
+        value: supabase
+      - key: VAULT_STORAGE_BUCKET
+        value: vault
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: WORLD_MONITOR_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: S2_API_KEY
+        sync: false
+
   # Weekly dream (M15): proposes lessons into the review queue.
   - type: cron
     name: atc-vault-weekly-dream
