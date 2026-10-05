@@ -9,7 +9,7 @@
  */
 import type { Db } from '../db/client.ts';
 
-export type AssetKind = 'field' | 'block' | 'basin' | 'well';
+export type AssetKind = 'field' | 'block' | 'basin' | 'reservoir' | 'well';
 export type Source = 'vault' | 'gem' | 'geonames' | 'wikidata';
 export interface Candidate {
   name: string; kind: AssetKind; country: string | null; lat: number | null; lon: number | null;
@@ -20,7 +20,7 @@ export interface Unavailable { source: Source; reason: string }
 export interface LocateOptions { fetch?: typeof fetch; geonamesUser?: string; timeoutMs?: number; limit?: number }
 export interface LocateResult { candidates: Candidate[]; unavailable: Unavailable[] }
 
-export const ASSET_KINDS: AssetKind[] = ['field', 'block', 'basin', 'well'];
+export const ASSET_KINDS: AssetKind[] = ['field', 'block', 'basin', 'reservoir', 'well'];   // wave 7 PR3: a reservoir sits between a field and its wells
 const UA = 'ATC-Vault/1.0 (https://www.alpha-technical-centre.com; vault@alpha-technical-centre.com)';
 
 /** `field:ve:la-victoria-apure`: kind, lower-case country, ascii slug of the name. */

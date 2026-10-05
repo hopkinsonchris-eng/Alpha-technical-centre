@@ -170,6 +170,9 @@ function findProblem(rec, skip) {
   if (!isObj(rec.outputs)) return { path: '$.outputs', problem: 'must be an object' };
   for (const k of Object.keys(rec.outputs)) {
     if (!isObj(rec.outputs[k]) || !('value' in rec.outputs[k])) return { path: '$.outputs.' + k + '.value', problem: 'is required' };
+    // Wave 7 (03-data-hierarchy.md §7.4): a number travels with its unit or it does not travel at all.
+    const o = rec.outputs[k];
+    if (typeof o.value === 'number' && (typeof o.unit !== 'string' || !o.unit)) return { path: '$.outputs.' + k + '.unit', problem: 'is required for a numeric output' };
   }
   if (rec.assumptions !== undefined) {
     if (!isObj(rec.assumptions)) return { path: '$.assumptions', problem: 'must be an object' };
@@ -277,6 +280,21 @@ function updateQueued(id, patch) {
 
 function queuedRun(entry) { return Object.assign({}, entry.record, { queued: true }); }
 
+/* ── the asset the page was opened with (wave 7, W7-AC14) ────────────── */
+
+const ASSET_ID_RE = /^[a-z]+:[a-z0-9][a-z0-9:._-]{0,118}$/;
+
+/**
+ * The Hub opens a tool on a field or well with ?asset=<id> beside ?project=<id>. The id is read here, never by the
+ * page, so a public tool page stays byte-identical; it lands in asset_ids on every run the page saves.
+ */
+function pageAsset() {
+  try {
+    const v = new URLSearchParams(globalThis.location.search || '').get('asset');
+    return v && ASSET_ID_RE.test(v) ? v : null;
+  } catch (e) { return null; }
+}
+
 /* ── saving ──────────────────────────────────────────────────────────── */
 
 /** Build a complete record. Validation of caller fields and hashing happen before any network call. */
@@ -295,6 +313,11 @@ async function buildRecord(partial, opts, supersedes) {
     created_at: new Date().toISOString(),
     input_hash,
   });
+  const asset = pageAsset();
+  if (asset) {
+    const given = Array.isArray(partial.asset_ids) ? partial.asset_ids.slice() : [];
+    record.asset_ids = given.indexOf(asset) >= 0 ? given : given.concat([asset]);
+  }
   if (person && person.id) record.author = person.id;
   if (version) { record.tool_version = version.version; record.tool_commit = version.commit; }
   if (supersedes) record.supersedes = supersedes;
@@ -575,9 +598,9 @@ function configure(opts = {}) {
 
 export const vault = {
   mode, me, resolve, canonicalHash, saveRun, loadRun, listRuns, supersede, find, mountFind, flushQueue,
-  pickProject, configure,
+  pickProject, pageAsset, configure,
 };
-export { pickProject, configure };
+export { pickProject, pageAsset, configure };
 
 // In a served page, learn the mode early so mode() is meaningful and a waiting queue drains.
 if (typeof location !== 'undefined' && location && /^https?:$/.test(location.protocol)) {
