@@ -23,6 +23,8 @@ import { runInputHash } from '../hash.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
 import { emitIfEvaluation } from '../analogues/emit.ts';
 import { adapterEnvVars, adapterFor } from '../adapters/index.ts';
+import { confirmRound, dismissRound, RoundDecisionError } from '../rounds/store.ts';
+import type { RoundEvent } from '../rounds/types.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 export interface RerunDeps { siteOrigin?: string; provider?: LlmProvider | null; catalog?: () => Catalog; executablePath?: string | null }
@@ -154,6 +156,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       // accepting attaches the chosen candidate, or the name alone when none is chosen, and files the dossier.
       let attached: Awaited<ReturnType<typeof attachAsset>> | null = null;
       let located: Awaited<ReturnType<typeof applyLocation>> = null;
+      let roundEvent: RoundEvent | null = null;
       if (row.kind === 'asset') {
         const acc = await loadAccess(x.db, x.person, x.now);
         const pid = String(row.payload?.project_id ?? '');
@@ -195,6 +198,15 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
           }
           x.a.detail = { fact_kind: pl.fact_kind, value: pl.value, asset_id: pl.asset_id ?? null };
         }
+      } else if (row.kind === 'round') {
+        // Wave 7 PR6 (W7-AC21): a dated round stage the watch proposed from a regulator page, with its verbatim quote. Any
+        // member decides it; accepting confirms the event, rejecting dismisses it, through the same functions as
+        // POST /api/rounds/:id/confirm and /dismiss (which resolve this row themselves when used directly).
+        const evId = String(row.payload?.round_event_id ?? '');
+        x.a.scope = 'public';
+        try { roundEvent = verb === 'accept' ? await confirmRound(x.db, evId, x.person.id, x.now) : await dismissRound(x.db, evId, x.person.id, x.now); }
+        catch (e) { if (e instanceof RoundDecisionError) throw new ApiError(e.status, e.code, e.message); throw e; }
+        x.a.detail = { country: roundEvent.country, round: roundEvent.round, stage: roundEvent.stage, event_date: roundEvent.event_date };
       } else if (row.kind !== 'rerun-delta') requirePartner(x.person, `${verb} a ${row.kind} review item`);
       await x.db.query('UPDATE review_queue SET status=$2, resolved_by=$3, resolved_at=$4 WHERE id=$1', [id, verb === 'accept' ? 'accepted' : 'rejected', x.person.id, x.now.toISOString()]);
       if (verb === 'accept' && row.kind === 'rerun-delta' && row.payload?.rerun) {
@@ -203,7 +215,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       }
       x.a.refs = [`review:${id}`, ...(attached ? [`asset:${attached.asset.id}`, ...attached.dossier.map(d => `doc:${d}`)] : []), ...(row.kind === 'research' && row.payload?.item_id ? [`item:${row.payload.item_id}`] : [])]; x.a.detail = { ...(x.a.detail ?? {}), kind: row.kind, ...(attached ? { asset_id: attached.asset.id, created: attached.created, dossier: attached.dossier.length } : {}) };
       if (located) { x.a.refs.push(`asset:${located.asset.id}`, ...located.dossier.map(d => `doc:${d}`)); x.a.detail = { ...(x.a.detail ?? {}), located: located.asset.id, dossier: located.dossier.length }; }
-      return { body: { id, status: verb === 'accept' ? 'accepted' : 'rejected', ...(attached ? { asset: attached.asset, created: attached.created, already: attached.already, dossier: attached.dossier } : {}), ...(located ? { asset: located.asset, dossier: located.dossier } : {}) } };
+      if (roundEvent) { x.a.refs.push(`round:${roundEvent.id}`); if (roundEvent.source_item) x.a.refs.push(`doc:${roundEvent.source_item}`); }
+      return { body: { id, status: verb === 'accept' ? 'accepted' : 'rejected', ...(attached ? { asset: attached.asset, created: attached.created, already: attached.already, dossier: attached.dossier } : {}), ...(located ? { asset: located.asset, dossier: located.dossier } : {}), ...(roundEvent ? { event: roundEvent } : {}) } };
     });
   }
 }

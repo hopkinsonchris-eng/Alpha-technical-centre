@@ -15,6 +15,7 @@
  *   ingest.context, llm.context, llm.chunk        chunking    contextual retrieval at ingest (no producer audits it yet)
  *   miners.paper-facts, paper_facts, llm.extract  extraction  paper facts and legal/finance extraction
  *   llm.country-pack                              country-pack  the country opening pack's sections (wave 7 PR5)
+ *   llm.round-watch                               round-watch   dated stages read from changed regulator pages (wave 7 PR6)
  * Any other row that carries tokens is counted under "other" so nothing is silently dropped. Summary rows that
  * only repeat totals (lesson.dream keeps detail.tokens as an object) carry no token columns and are not read.
  *
@@ -28,11 +29,12 @@ import { costOf, DEFAULT_MODEL } from './prices.ts';
 export const INFRA_CEILING_USD = 60;
 export const BUDGET_WARN_AT = 0.8;
 
-export const FEATURES = ['draft', 'tool', 'delta', 'chunking', 'dream', 'extraction', 'country-pack'] as const;
+export const FEATURES = ['draft', 'tool', 'delta', 'chunking', 'dream', 'extraction', 'country-pack', 'round-watch'] as const;
 export type FeatureId = (typeof FEATURES)[number] | 'other';
 export const FEATURE_LABELS: Record<FeatureId, string> = {
   draft: 'Drafting (email, letter, report, calc note)', tool: 'Tool assistant', delta: 'Delta notes (re-run explanations)',
-  chunking: 'Chunking (contextual retrieval)', dream: 'Dream (weekly lessons)', extraction: 'Extraction (paper facts, legal and finance terms)', 'country-pack': 'Country pack (sections drafted from stored originals)', other: 'Other',
+  chunking: 'Chunking (contextual retrieval)', dream: 'Dream (weekly lessons)', extraction: 'Extraction (paper facts, legal and finance terms)', 'country-pack': 'Country pack (sections drafted from stored originals)',
+  'round-watch': 'Round watch (dated stages read from changed regulator pages)', other: 'Other',
 };
 
 export const ACTION_FEATURES: Array<[prefix: string, feature: FeatureId]> = [
@@ -41,6 +43,7 @@ export const ACTION_FEATURES: Array<[prefix: string, feature: FeatureId]> = [
   ['ingest.context', 'chunking'], ['llm.context', 'chunking'], ['llm.chunk', 'chunking'],
   ['miners.paper-facts', 'extraction'], ['paper_facts', 'extraction'], ['llm.extract', 'extraction'],
   ['llm.country-pack', 'country-pack'],
+  ['llm.round-watch', 'round-watch'],
 ];
 
 export function featureOf(action: string): FeatureId {
