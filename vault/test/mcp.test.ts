@@ -13,6 +13,7 @@ import { seedMaster, seedFixture } from '../src/db/seed.ts';
 import { createApp } from '../src/app.ts';
 import { configureSearch } from '../src/gateway/index.ts';
 import { configureDraft } from '../src/api/draft.routes.ts';
+import { FakeProvider } from '../src/llm/provider.ts';
 import { setFirmDir } from '../src/jobs/lessons-index.ts';
 
 const DOMAIN = 'alpha-technical-centre.com';
@@ -261,7 +262,7 @@ test('draft returns the DraftResult without the assembled context, and the draft
   const db = await openDb(undefined); await migrate(db); await seedMaster(db);
   await seedFixture(db, path.join(HERE, 'fixtures/ac15/seed.json'));
   await db.query("UPDATE projects SET members = '{chris}' WHERE id = 'orinoco-partnership'");
-  configureDraft({ provider: null, search: {} });
+  configureDraft({ provider: new FakeProvider(() => 'We propose a joint technical evaluation of the asset.'), search: {} });
   const { app, client } = await connect(db, 'chris');
   const bad = await call(client, 'draft', { kind: 'letter', project_id: 'nope', brief: 'Propose the scope of the evaluation.' });
   assert.equal(bad.isError, true);
