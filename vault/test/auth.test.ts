@@ -53,6 +53,14 @@ test('wrong audience, wrong issuer and tampered tokens are refused', async () =>
   await assert.rejects(verifyAccessJwt(await sign({}), cfg), /no email/);
 });
 
+test('CF_ACCESS_AUD may list several application tags, comma separated', async () => {
+  const { cfg, sign } = await setup();
+  const two: AuthConfig = { ...cfg, audience: 'aud-123, aud-connector' };
+  assert.equal(await verifyAccessJwt(await sign({ email: 'chris@alpha-technical-centre.com' }, { aud: 'aud-connector' }), two), 'chris@alpha-technical-centre.com');
+  assert.equal(await verifyAccessJwt(await sign({ email: 'chris@alpha-technical-centre.com' }), two), 'chris@alpha-technical-centre.com');
+  await assert.rejects(verifyAccessJwt(await sign({ email: 'chris@alpha-technical-centre.com' }, { aud: 'other' }), two), /invalid Access token/);
+});
+
 test('DEV_USER_EMAIL bypass works only when set, and never in production config', async () => {
   const { db } = await setup();
   const app = await createApp({ db, auth: { allowedEmailDomain: 'alpha-technical-centre.com', devUserEmail: 'chris@alpha-technical-centre.com' } });
