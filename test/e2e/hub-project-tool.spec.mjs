@@ -666,10 +666,10 @@ test('AC4: the tool page lists versions newest first and links each run', async 
   const mf = page.locator('#t-manifest');
   await expect(mf).toContainText('opportunity-register');
   await expect(mf).toContainText('browser-tool');
-  await expect(mf).toContainText('tools/opportunity-register/CHANGELOG.md');
+  await expect(mf).not.toContainText('CHANGELOG.md');                               // wave 7 (R11): no file names in user copy
   await expect(mf.locator('.hub-asset')).toHaveText(['technical_potential_bopd', 'npv10', 'irr', 'price_deck', 'fiscal_terms']);
   await expect(mf).toContainText('current → 2.1.0 · previous → 2.0.0');
-  await expect(page.locator('#t-path')).toHaveText('tools/opportunity-register/tool.json');
+  await expect(page.locator('#t-path')).toHaveText('opportunity-register');      // wave 7 (R11): the id, not the manifest path
 
   // versions, descending, with status, breaking flag and notes
   const vrows = page.locator('[data-version-row]');
@@ -760,12 +760,12 @@ test('tool page: unknown tool, missing id, Vault down (catalog from hub/catalog.
   await page.goto('/hub/tool.html?id=nope'); await ready(page);
   await expect(page.locator('h1')).toHaveText('Tool not found');
   await page.goto('/hub/tool.html'); await ready(page);
-  await expect(page.locator('h1')).toHaveText('No tool selected');
+  await expect(page.locator('h1')).toHaveText('Tools');                                 // wave 7 (R4): no id is the Tools index
   const p2 = await page.context().newPage();
   await p2.route('**/api/**', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }));
   await p2.goto('/hub/tool.html?id=' + TOOL_ID); await p2.locator('body[data-ready="1"]').waitFor();
   await expect(p2.locator('h1')).toHaveText('Opportunity Register');                    // from the static catalog
-  await expect(p2.locator('.hub-notice.warn')).toContainText('hub/catalog.json');
+  await expect(p2.locator('.hub-notice.warn')).toContainText('The Vault is unreachable');   // wave 7 (R11): no file name in the notice
   await expect(p2.locator('[data-version-row]').first()).toBeVisible();
   await expect(p2.locator('[data-older-count]')).toHaveCount(0);
   await expect(p2.locator('#t-runs')).toContainText('Runs are available when the Vault is reachable.');
@@ -789,7 +789,7 @@ function langAudit() {
 test('AC5: every text node has data-en and data-es on the project page, and the language toggle follows', async ({ page }) => {
   await openProject(page);
   await page.locator('.hub-tl-item .hub-tl-title').first().click();          // include the open record panel
-  await expect(page.locator('#record-panel [data-highlights]')).toBeVisible();
+  await expect(page.locator('#record-panel [data-meta]')).toBeVisible();
   const en = await page.evaluate(langAudit);
   expect(en.count).toBeGreaterThan(200);
   expect(en.missing).toEqual([]);
@@ -855,7 +855,7 @@ test('AC5: axe finds no WCAG 2 A/AA violations on any tab of the project page, w
   }
   await gotoTab(page, 'lineage');
   await page.locator(`.ln-node[data-node="run:${R.yopal}"]`).click();
-  await expect(page.locator('#record-panel [data-highlights]')).toBeVisible();
+  await expect(page.locator('#record-panel [data-meta]')).toBeVisible();
   expect(await axeCheck(page), 'panel open').toEqual([]);
   await page.locator('.nav-lang button[data-lang="es"]').click();
   expect(await axeCheck(page), 'Spanish').toEqual([]);
@@ -912,6 +912,7 @@ test('add documents: files chosen on the project page go to POST /api/ingest/upl
       ] });
     },
   });
+  await page.locator('#p-add-docs').click();                 // wave 7 (R6): the drop zone opens as a sheet from the tab strip
   const panel = page.locator('#p-upload');
   await expect(panel).toBeVisible();
   await expect(panel).toContainText('Add documents');

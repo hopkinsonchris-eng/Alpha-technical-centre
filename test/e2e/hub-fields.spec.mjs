@@ -90,7 +90,8 @@ async function stubApi(page, { attach, proposals, decide, upload, extraAssets } 
   });
   return calls;
 }
-const ready = (page) => page.locator('body[data-ready="1"]').waitFor();
+// Wave 7 (R6): the Fields row lives inside the File disclosure, closed by default; these checks open it first.
+const ready = async (page) => { await page.locator('body[data-ready="1"]').waitFor(); await page.evaluate(() => { const d = document.querySelector('#p-file-wrap'); if (d) d.open = true; }); };
 
 test('W3-AC6: the Fields card lists the attached fields with kind, coordinates, source and facts; the header chips carry their names; a dossier opens in the record panel', async ({ page }) => {
   await stubApi(page);
@@ -347,14 +348,15 @@ test('W3-PR4: a partner can archive a project (hide, never delete) after confirm
   });
   await page.goto('/hub/project.html?id=' + PID);
   await ready(page);
+  await page.locator('#p-more').click();               // wave 7 (R1): Archive lives in the … overflow behind a confirm sheet
   const btn = page.locator('#p-archive');
   await expect(btn).toHaveText('Archive project');
   await expect(page.locator('#p-archived')).toBeHidden();
   await btn.click();
-  await expect(btn).toHaveText('Confirm: archive this project');
-  await expect(page.locator('#p-notices .hub-notice.warn')).toContainText('Nothing is deleted');
+  await expect(page.locator('#p-archive-sheet')).toBeVisible();
+  await expect(page.locator('#p-archive-sheet')).toContainText('Nothing is deleted');
   expect(patched).toEqual([]);
-  await btn.click();
+  await page.locator('#p-archive-confirm').click();
   await expect.poll(() => patched).toEqual([{ status: 'archived' }]);
   await expect(page.locator('#p-archived')).toBeVisible();
   await expect(page.locator('#p-sub [data-status="archived"]')).toHaveText('Archived');
@@ -371,5 +373,6 @@ test('W3-PR4: associates see no archive button', async ({ page }) => {
   await page.route('**/api/me', (route) => json(route, { ...PARTNER, role: 'associate' }));   // registered last, so it wins
   await page.goto('/hub/project.html?id=' + PID);
   await ready(page);
+  await expect(page.locator('#p-more')).toHaveCount(0);
   await expect(page.locator('#p-archive')).toHaveCount(0);
 });

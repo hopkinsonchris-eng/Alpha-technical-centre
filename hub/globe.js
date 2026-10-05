@@ -5,11 +5,13 @@
    (hub/vendor). No tiles, no key, no WebGL: it runs on the iPad and
    behind Cloudflare Access.
 
-   createGlobe(canvas, { geo, lang, onSelect, onHover, reducedMotion })
+   createGlobe(canvas, { geo, lang, onSelect, onPoint, onHover, reducedMotion })
      .setData({ held: Map<iso2, {projects, stale, expiring}>, points: [{lat, lon, id, name, kind?: 'field'}] })
      // wave 3: a point with kind 'field' is drawn smaller and cream beside the gold project
      // points; hovering it reports its name. onSelect(code, feature, {lat, lon}) carries the
      // geographic point under the tap so "Create a project here" can prefill coordinates.
+     // wave 7 PR2 (idea A): a tap on a project dot calls onPoint(point, {lat, lon}) instead of
+     // onSelect, so the page can light the project's register row rather than open the country.
      .select(code, { fly: true })      // fly to a country and highlight it; null clears
      .setLang('en' | 'es')
      .destroy()
@@ -268,6 +270,9 @@ export function createGlobe(canvas, opts) {
     const d = drag; drag = null;
     if (!d.moved) {
       const [x, y] = local(ev);
+      // Wave 7 PR2 (idea A): a tap on a project dot is the project, not its country.
+      const pt = pointAt(x, y);
+      if (pt && pt.kind !== 'field' && opts.onPoint) { opts.onPoint(pt, geoAt(x, y)); schedule(); return; }
       const f = hit(x, y);
       if (f && opts.onSelect) opts.onSelect(f.properties.iso2, f, geoAt(x, y));
     } else if (!reduced) inertia = clamp(d.vx, -0.5, 0.5);

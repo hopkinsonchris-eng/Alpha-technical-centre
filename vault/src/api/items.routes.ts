@@ -32,6 +32,29 @@ export function itemRecord(row: any, cites: string[] = []) {
   return o;
 }
 
+/**
+ * The document's text from its chunks in order. The chunker (ingest/chunk.ts) prefixes every chunk after the first
+ * with ~15 % of the previous one, so the longest prefix of a chunk that is also a suffix of the text so far is
+ * dropped; chunks that do not overlap (hand-written rows, tables split by row) are simply appended.
+ */
+export function assembleText(chunks: { ordinal: number; anchor: string | null; text: string }[]): { text: string; anchors: { ordinal: number; anchor: string | null; offset: number }[] } {
+  let text = '';
+  const anchors: { ordinal: number; anchor: string | null; offset: number }[] = [];
+  for (const c of chunks) {
+    const t = c.text ?? '';
+    let cut = 0;
+    if (text.length) {
+      const max = Math.min(t.length, text.length, Math.ceil(t.length * 0.6));
+      for (let k = max; k >= 12; k--) { if (text.endsWith(t.slice(0, k))) { cut = k; break; } }
+    }
+    const own = t.slice(cut);
+    const sep = text.length && cut === 0 && own.length ? '\n\n' : '';
+    anchors.push({ ordinal: c.ordinal, anchor: c.anchor ?? null, offset: text.length + sep.length });
+    text += sep + own;
+  }
+  return { text, anchors };
+}
+
 export async function citesOf(x: Ctx, ids: string[]): Promise<Map<string, string[]>> {
   const m = new Map<string, string[]>();
   if (!ids.length) return m;
@@ -161,13 +184,25 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     return { status: 201, body: { id, version, deduplicated: false } };
   });
 
+  // Wave 7 PR2 (W7-AC8): `?text=1` adds `extracted.text`, the record's text assembled from its current chunks in
+  // order with the overlap each chunk repeats from the one before removed, and `extracted.text_anchors` (the
+  // anchor and offset where each chunk's own content starts). Additive: the plain read is unchanged, and the
+  // scope check is the item's own, done before any chunk is read.
   route(app, 'GET', '/api/items/:id', 'item.read', async (x) => {
     const id = uuidParam(x.c);
     const row = (await x.db.query<any>(`SELECT ${ITEM_COLS} FROM items WHERE id = $1`, [id])).rows[0];
     if (!row || row.hidden) throw notFound(`item ${id} not found`);
     x.a.refs = [`doc:${id}`]; x.a.scope = scopeLabel(row.project_id);
     assertVisible(await loadAccess(x.db, x.person, x.now), row.legal_tag, row.project_id, `item ${id}`, row);
-    return { body: itemRecord(row, (await citesOf(x, [id])).get(id) ?? []) };
+    const rec = itemRecord(row, (await citesOf(x, [id])).get(id) ?? []);
+    if (x.c.req.query('text') === '1') {
+      const chunks = (await x.db.query<{ ordinal: number; anchor: string | null; text: string }>(
+        'SELECT ordinal, anchor, text FROM chunks WHERE item_id = $1 AND current ORDER BY ordinal', [id])).rows;
+      const assembled = assembleText(chunks);
+      rec.extracted = { ...(rec.extracted as Record<string, unknown>), text: assembled.text, text_anchors: assembled.anchors };
+      x.a.detail = { text: true, chunks: chunks.length };
+    }
+    return { body: rec };
   });
 
   route(app, 'GET', '/api/items/:id/versions', 'item.versions', async (x) => {

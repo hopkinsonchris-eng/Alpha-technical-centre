@@ -84,7 +84,8 @@ async function stubApi(page, { me = PARTNER, research, proposals = PROPOSALS, on
   });
   return calls;
 }
-const ready = (page) => page.locator('body[data-ready="1"]').waitFor();
+// Wave 7 (R6): the Fields row lives inside the File disclosure, closed by default; these checks open it first.
+const ready = async (page) => { await page.locator('body[data-ready="1"]').waitFor(); await page.evaluate(() => { const d = document.querySelector('#p-file-wrap'); if (d) d.open = true; }); };
 
 test('W4-AC7: the toolbar shows the last run line; the Research tab lists findings by source with the query and quote; open shows the record', async ({ page }) => {
   await stubApi(page);

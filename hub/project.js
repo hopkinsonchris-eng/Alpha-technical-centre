@@ -31,6 +31,7 @@ import { mountDraft } from './draft.js';
 import { annotate, fmtPct } from './components/vintage-table.js';
 import './components/vintage-table.js';
 import './components/lineage-graph.js';
+import { stateline } from './components/stateline.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const DAY = 864e5;
@@ -62,7 +63,13 @@ function failPage(res) {
   else if (st === 403) { t = bi('No access to this project', 'Sin acceso a este proyecto'); en = 'You are not a member of this project or its legal tag is outside your scope.'; es = 'No es miembro de este proyecto o su etiqueta legal está fuera de su alcance.'; }
   else { t = bi('The Vault is unreachable', 'El Vault no es accesible'); en = 'The project could not be loaded' + (errMessage(res) ? ': ' + errMessage(res) : '.'); es = 'No se pudo cargar el proyecto' + (errMessage(res) ? ': ' + errMessage(res) : '.'); showVault(false); }
   setText($('#p-title'), t.en, t.es);
-  add($('#notices'), notice('bad', t.en + '.', t.es + '.', en, es));
+  const n = notice('bad', t.en + '.', t.es + '.', en, es);
+  // Wave 7 (R12): a way back, never a dead end.
+  const ways = mk('div', 'hub-actions-row hub-fail-ways');
+  add(ways, mk('a', 'btn btn-primary btn-sm', 'Back to Today', 'Volver a Hoy', { href: '/hub/index.html' }), mk('a', 'btn btn-outline btn-sm', 'Find a project', 'Buscar un proyecto', { href: '/hub/search.html' }));
+  add(n, ways);
+  add($('#notices'), n);
+  const sk = $('#p-skeleton'); if (sk) sk.setAttribute('hidden', '');
   document.body.setAttribute('data-ready', '1');
 }
 
@@ -98,36 +105,14 @@ function renderHeader(ctx) {
   if (opened) add(sub, document.createTextNode(' · '), mk('span', null, 'opened', 'abierto'), document.createTextNode(' '), mk('span', null, opened.en, opened.es));
   const sp = STATUS_PILL[p.status] || [p.status, p.status, 'muted'];
   add(sub, document.createTextNode(' · '), mk('span', null, 'status', 'estado'), document.createTextNode(' '), mk('span', 'hub-pill ' + sp[2], sp[0], sp[1], { 'data-status': p.status }));
-  // Wave 2: where it is and what stage it is at; the stage changes in place (PATCH /api/projects/:id).
+  // Wave 2: where it is; the stage now changes in place from the stateline (PATCH /api/projects/:id).
   const cn = p.country && ctx.names && ctx.names.get(p.country);
   if (p.country) add(sub, document.createTextNode(' · '), cn ? mk('b', null, cn.en, cn.es, { 'data-country': p.country }) : dv('b', null, p.country, { 'data-country': p.country }));
-  // Wave 7 (S25): the internal holding project is not an opportunity: no stage, no archive, no register card.
-  if (!isHoldingProject(p)) {
-    const stageCtl = mk('span', 'hub-stage-ctl');
-    const sel = mk('select', null, null, null, { id: 'p-stage', 'aria-label': 'Stage' });
-    for (const st of STAGES) add(sel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
-    sel.value = p.stage || 'Initial screen';
-    add(stageCtl, mk('label', null, 'stage', 'etapa', { for: 'p-stage' }), sel);
-    add(sub, document.createTextNode(' · '), stageCtl);
-    sel.addEventListener('change', () => changeStage(ctx, sel));
-    // Wave 7 (W7-AC4): what comes next and what last happened, readable before anything scrolls.
-    const reg = p.register || {};
-    const next = mk('span', 'hub-next', null, null, { 'data-next': reg.next ? '1' : '' });
-    add(next, mk('span', null, 'next', 'siguiente'), document.createTextNode(' '), reg.next ? dv('b', null, reg.next) : mk('span', 'hub-muted', 'not set', 'sin definir'));
-    add(sub, document.createTextNode(' · '), next);
-    const lastEntry = (ctx.entries || []).find((e) => e.kind === 'run' || e.kind === 'item');
-    const last = mk('span', 'hub-last', null, null, { 'data-last': lastEntry ? lastEntry.id : '' });
-    if (lastEntry) { const d = fmtShortDate(lastEntry.at); add(last, mk('span', null, 'last', 'último'), document.createTextNode(' '), dv('b', null, lastEntry.title || lastEntry.id), document.createTextNode(' '), mk('span', 'hub-muted', d.en, d.es)); }
-    else add(last, mk('span', null, 'last', 'último'), document.createTextNode(' '), mk('span', 'hub-muted', 'no records yet', 'aún sin registros'));
-    add(sub, document.createTextNode(' · '), last);
-    // Wave 3 PR 4: archive (hide, never delete) and restore; partners only, like creating.
-    if (ctx.person && ctx.person.role === 'partner') {
-      const archived = p.status === 'archived';
-      const btn = mk('button', 'btn btn-outline btn-sm hub-archive-btn', archived ? 'Restore project' : 'Archive project', archived ? 'Restaurar proyecto' : 'Archivar proyecto', { type: 'button', id: 'p-archive', 'data-archived': archived ? '1' : '0' });
-      btn.addEventListener('click', () => archiveProject(ctx, btn));
-      add(sub, document.createTextNode(' · '), btn);
-    }
-  }
+  // The crumb names the project (the chrome is shared; this only fills the slot when it is there).
+  const crumbSlot = document.querySelector('.hub-crumb > span[data-en="Project file"]');
+  if (crumbSlot) setText(crumbSlot, p.name, p.name);
+  renderStateline(ctx);
+  renderActions(ctx);
   const banner = $('#p-archived');
   if (banner) { if (p.status === 'archived') banner.removeAttribute('hidden'); else banner.setAttribute('hidden', ''); }
 
@@ -187,6 +172,142 @@ function renderHeader(ctx) {
   if ((p.members || []).length) for (const m of p.members) add(twrap, dv('div', null, m, { 'data-member': m }));
   else add(twrap, mk('span', 'hub-muted', 'Open to every partner and associate with access', 'Abierto a todos los socios y asociados con acceso'));
   add(card, twrap);
+
+  // Wave 7 (R6): the File disclosure's one-line brief: the tag, how many contacts, the fields.
+  const brief = $('#p-file-brief');
+  if (brief) {
+    brief.textContent = '';
+    add(brief, dv('span', 'hub-lt', p.default_legal_tag));
+    const nc = contacts.length || ids.size;
+    add(brief, mk('span', null, ' · ' + nc + (nc === 1 ? ' contact' : ' contacts'), ' · ' + nc + (nc === 1 ? ' contacto' : ' contactos')));
+    const fnames = (ctx.fields || []).map((f) => f.name);
+    if (fnames.length) add(brief, dv('span', null, ' · ' + fnames.join(' · ')));
+    else if (!isHoldingProject(p)) add(brief, mk('span', 'hub-muted', ' · no fields yet', ' · sin campos todavía'));
+  }
+}
+
+/* ── wave 7 PR2 (R1, W7-AC6): the stateline and the actions ──────────── */
+
+/** The row the stateline component reads: the project plus the counts and the newest record from the timeline, and the NDA expiry. */
+function statelineRow(ctx) {
+  const { project: p, entries, orgFile } = ctx;
+  const list = entries || [];
+  const runs = list.filter((e) => e.kind === 'run' && e.status !== 'superseded').length;
+  const docs = list.filter((e) => e.kind === 'item').length;
+  const stale = list.filter((e) => e.stale).length;
+  const newest = list.filter((e) => e.kind === 'run' || e.kind === 'item').slice().sort((a, b) => (a.at < b.at ? 1 : -1))[0] || null;
+  const exp = tagExpiry(p, orgFile);
+  return {
+    ...p,
+    run_count: typeof p.run_count === 'number' ? p.run_count : runs,
+    item_count: typeof p.item_count === 'number' ? p.item_count : docs,
+    stale_count: typeof p.stale_count === 'number' ? p.stale_count : stale,
+    last_activity: newest ? { title: newest.title || newest.job || newest.id, at: newest.at, ref: newest.ref || (newest.kind === 'run' ? 'run:' : 'doc:') + newest.id } : null,
+    last_activity_at: newest ? newest.at : p.last_activity_at || null,
+    legal_tag_expiry: exp ? exp.date : p.legal_tag_expiry || null,
+  };
+}
+
+/** Directly under the H1: the stateline in full size, its stage token the live select. Re-rendered after a stage change or a register edit. */
+function renderStateline(ctx) {
+  const host = $('#p-stateline');
+  if (!host) return;
+  host.textContent = '';
+  const p = ctx.project;
+  if (isHoldingProject(p)) return;              // wave 7 (S25): the holding project is not an opportunity
+  const sel = mk('select', 'hub-sl-select', null, null, { id: 'p-stage', 'aria-label': 'Stage' });
+  for (const st of STAGES) add(sel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
+  sel.value = p.stage || 'Initial screen';
+  sel.addEventListener('change', () => changeStage(ctx, sel));
+  const el = stateline(statelineRow(ctx), { size: 'full', now: new Date(ctx.now || Date.now()), stageControl: sel });
+  // Each token lands on the thing it names on this page: the hash drives it, so a reload or a palette jump lands the same way.
+  el.addEventListener('click', (ev) => {
+    const a = ev.target.closest('a.hub-sl-token');
+    if (!a) return;
+    const hash = (a.getAttribute('href') || '').replace(/^[^#]*/, '');
+    if (!hash) return;
+    ev.preventDefault();
+    if (location.hash === hash) routeHash(); else location.hash = hash;
+  });
+  add(host, el);
+}
+
+/** The tools whose jobs appear on this project's timeline, in toolbar order first, then the rest. */
+function orderedTools(ctx, cat) {
+  const tools = ((cat && cat.catalog && cat.catalog.tools) || []).filter((t) => t.lifecycle === 'production' && t.hub && (t.hub.context || []).includes('project'));
+  const jobs = new Set((ctx.entries || []).filter((e) => e.kind === 'run' && e.job).map((e) => e.job));
+  const byToolbar = (a, b) => (a.hub.toolbar ?? 999) - (b.hub.toolbar ?? 999);
+  return [...tools.filter((t) => jobs.has(t.id)).sort(byToolbar), ...tools.filter((t) => !jobs.has(t.id)).sort(byToolbar)].map((t) => ({ tool: t, produced: jobs.has(t.id) }));
+}
+
+/** A small menu under a button: opens on click, closes on Escape, outside click or a choice; focus returns to the button. */
+function attachMenu(btn, menu) {
+  const close = (refocus) => { if (menu.hasAttribute('hidden')) return; menu.setAttribute('hidden', ''); btn.setAttribute('aria-expanded', 'false'); if (refocus) btn.focus(); };
+  const open = () => { menu.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); const first = menu.querySelector('a, button'); if (first) first.focus(); };
+  btn.addEventListener('click', () => (menu.hasAttribute('hidden') ? open() : close(true)));
+  menu.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); close(true); } });
+  document.addEventListener('click', (ev) => { if (!menu.contains(ev.target) && ev.target !== btn && !btn.contains(ev.target)) close(false); });
+  menu.addEventListener('click', (ev) => { if (ev.target.closest('a, button')) close(false); });
+  return { open, close };
+}
+
+/**
+ * Right of the H1: Write to… (primary; mounted by draft.js), Research (renderResearch), "Open in tool ▾" with the tools that
+ * produced this project's runs first, and a "…" overflow holding Archive behind a confirm sheet. Restore stays a plain action.
+ */
+function renderActions(ctx) {
+  const host = $('#p-toolbar');
+  if (!host) return;
+  for (const old of host.querySelectorAll('[data-actions-built]')) old.remove();
+  const p = ctx.project, cat = ctx.catalog;
+  const siteRoot = new URL('../', location.href);
+  // Open in tool ▾
+  const wrap = mk('span', 'hub-menu-wrap', null, null, { 'data-actions-built': '' });
+  const btn = mk('button', 'btn btn-outline btn-sm hub-openin', null, null, { type: 'button', id: 'p-openin', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': 'p-openin-menu' });
+  add(btn, mk('span', null, 'Open in tool', 'Abrir en herramienta'), mk('span', 'hub-caret', '▾', '▾', { 'aria-hidden': 'true' }));
+  const menu = mk('div', 'hub-menu', null, null, { id: 'p-openin-menu', role: 'menu', hidden: '' });
+  if (!cat || !cat.catalog) add(menu, mk('span', 'hub-muted hub-menu-note', 'The tool catalog is not available.', 'El catálogo de herramientas no está disponible.'));
+  else {
+    const byId = new Map(((cat.catalog && cat.catalog.tools) || []).map((t) => [t.id, t]));
+    const list = orderedTools(ctx, cat);
+    let external = 0;
+    for (const { tool: t, produced } of list) {
+      const target = openTarget(t, byId, siteRoot);
+      const u = new URL(target.href);
+      // Wave 7 (S28): only a browser tool reads ?project=; an external app opens as itself.
+      if (!target.external) u.searchParams.set(t.hub.param || 'project', p.id); else external++;
+      const a = mk('a', 'hub-menu-item', null, null, { href: u.href, role: 'menuitem', 'data-toolbar-tool': t.id, 'data-external': target.external ? '1' : '0', 'data-produced': produced ? '1' : '0' });
+      a.insertAdjacentHTML('afterbegin', svgIcon('<path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>'));
+      add(a, dv('span', null, t.name));
+      if (produced) add(a, mk('span', 'hub-menu-hint', 'has runs here', 'con ejecuciones aquí'));
+      if (target.external) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); add(a, mk('span', 'hub-menu-hint', 'opens as itself', 'se abre por sí misma')); }
+      add(menu, armOnOpen(a));                                  // wave 7 (S13): the legacy portal check is satisfied before the tool opens
+    }
+    if (!list.length) add(menu, mk('span', 'hub-muted hub-menu-note', 'No tool declares a project context yet.', 'Ninguna herramienta declara aún un contexto de proyecto.'));
+    else add(menu, mk('span', 'hub-muted hub-menu-note', external ? 'Browser tools open in this project; the external apps open as themselves.' : 'Each opens in this project.', external ? 'Las herramientas del navegador se abren en este proyecto; las apps externas se abren por sí mismas.' : 'Cada una se abre en este proyecto.'));
+  }
+  add(wrap, btn, menu);
+  attachMenu(btn, menu);
+  add(host, wrap);
+  // … overflow (partners): Archive behind a confirm sheet; Restore stays a plain action.
+  if (ctx.person && ctx.person.role === 'partner' && !isHoldingProject(p)) {
+    if (p.status === 'archived') {
+      const restore = mk('button', 'btn btn-outline btn-sm hub-archive-btn', 'Restore project', 'Restaurar proyecto', { type: 'button', id: 'p-archive', 'data-archived': '1', 'data-actions-built': '' });
+      restore.addEventListener('click', () => archiveProject(ctx, restore));
+      add(host, restore);
+    } else {
+      const mwrap = mk('span', 'hub-menu-wrap', null, null, { 'data-actions-built': '' });
+      const more = mk('button', 'btn btn-outline btn-sm hub-more', '…', '…', { type: 'button', id: 'p-more', 'aria-label': 'More actions', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': 'p-more-menu' });
+      const mmenu = mk('div', 'hub-menu', null, null, { id: 'p-more-menu', role: 'menu', hidden: '' });
+      const archive = mk('button', 'hub-menu-item', 'Archive project', 'Archivar proyecto', { type: 'button', role: 'menuitem', id: 'p-archive', 'data-archived': '0' });
+      archive.addEventListener('click', () => archiveProject(ctx, archive));
+      add(mmenu, archive);
+      add(mwrap, more, mmenu);
+      attachMenu(more, mmenu);
+      add(host, mwrap);
+    }
+  }
+  host.removeAttribute('hidden');
 }
 
 /* ── wave 2: stage, toolbar, opportunity card ────────────────────────── */
@@ -201,31 +322,57 @@ function refreshTimeline(ctx) {
   if (tl && ctx.entries) tl.entries = [...ctx.entries, ...stageEntries(ctx.project)];
 }
 
-/** Archive hides the project from Today, the globe, the register and Cmd+K; its records stay and the file still opens by id. Restore puts it back. */
+/** A bottom sheet (Add documents, the archive confirm): shown over a scrim, closed by its Close, the scrim or Escape; focus returns to the opener. */
+function openSheet(sheet, scrim, opener, onClose) {
+  if (!sheet) return;
+  sheet.removeAttribute('hidden'); if (scrim) scrim.removeAttribute('hidden');
+  document.body.classList.add('has-sheet');
+  if (opener) opener.setAttribute('aria-expanded', 'true');
+  const close = () => {
+    sheet.setAttribute('hidden', ''); if (scrim) scrim.setAttribute('hidden', '');
+    document.body.classList.remove('has-sheet');
+    if (opener) { opener.setAttribute('aria-expanded', 'false'); if (opener.isConnected) opener.focus(); }
+    document.removeEventListener('keydown', onKey, true);
+    if (scrim) scrim.removeEventListener('click', close);
+    if (onClose) onClose();
+  };
+  const onKey = (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); close(); } };
+  document.addEventListener('keydown', onKey, true);
+  if (scrim) scrim.addEventListener('click', close);
+  const first = sheet.querySelector('input:not([type="file"]), button, [href]');
+  if (first) first.focus();
+  return close;
+}
+
+/** Archive hides the project from Today, the globe, the register and Cmd+K; its records stay and the file still opens by id. Restore puts it back.
+ *  Wave 7 (R1): Archive asks in a confirm sheet (#p-archive-sheet); Restore is one tap. */
 async function archiveProject(ctx, btn) {
   const p = ctx.project;
   const notices = pnotices(); notices.textContent = '';
   const archiving = p.status !== 'archived';
-  if (archiving && !btn.hasAttribute('data-confirm')) {
-    btn.setAttribute('data-confirm', '1');
-    setText(btn, 'Confirm: archive this project', 'Confirmar: archivar este proyecto');
-    add(notices, notice('warn', 'Archive this project?', '¿Archivar este proyecto?', 'It leaves Today, the globe and the register. Nothing is deleted: every run and document stays, and the file still opens from its address. Press the button again to confirm.', 'Sale de Hoy, del globo y del registro. No se borra nada: cada ejecución y documento se conserva, y la ficha sigue abriéndose desde su dirección. Pulse el botón otra vez para confirmar.'));
+  if (archiving && !btn.hasAttribute('data-confirmed')) {
+    const sheet = $('#p-archive-sheet'), yes = $('#p-archive-confirm'), no = $('#p-archive-cancel');
+    if (!sheet || !yes) return;
+    const close = openSheet(sheet, $('#archive-scrim'), btn);
+    const onYes = () => { yes.removeEventListener('click', onYes); no.removeEventListener('click', onNo); close(); btn.setAttribute('data-confirmed', '1'); archiveProject(ctx, btn); };
+    const onNo = () => { yes.removeEventListener('click', onYes); no.removeEventListener('click', onNo); close(); };
+    yes.addEventListener('click', onYes); no.addEventListener('click', onNo);
+    yes.focus();
     return;
   }
+  btn.removeAttribute('data-confirmed');
   btn.disabled = true;
   // Wave 7 (S14): the Vault noted the status at archive time; Restore puts it back (an old archive without the note falls back as before).
   const before = p.register && typeof p.register.status_before_archive === 'string' ? p.register.status_before_archive : null;
   const next = archiving ? 'archived' : (before && before !== 'archived' ? before : (p.closed_at ? 'closed' : 'prospect'));
   const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ status: next }) });
   btn.disabled = false;
-  btn.removeAttribute('data-confirm');
   if (res.ok && res.body) {
     Object.assign(p, res.body);
     renderHeader(ctx);
     add(notices, archiving ? notice('ok', 'Archived.', 'Archivado.', 'Hidden from Today, the globe and the register; nothing was deleted.', 'Oculto de Hoy, del globo y del registro; no se borró nada.') : notice('ok', 'Restored.', 'Restaurado.', 'Back on Today, the globe and the register.', 'De vuelta en Hoy, el globo y el registro.'));
     return;
   }
-  setText(btn, archiving ? 'Archive project' : 'Restore project', archiving ? 'Archivar proyecto' : 'Restaurar proyecto');
   const msg = errMessage(res);
   add(notices, notice('bad', archiving ? 'Not archived.' : 'Not restored.', archiving ? 'No se archivó.' : 'No se restauró.', msg || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), msg || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.')));
 }
@@ -241,38 +388,13 @@ async function changeStage(ctx, sel) {
     sel.value = p.stage;
     add(notices, notice('ok', 'Stage is now ' + p.stage + '.', 'La etapa ahora es ' + (STAGE_ES[p.stage] || p.stage) + '.', 'Recorded on the timeline.', 'Registrado en la cronología.'));
     refreshTimeline(ctx);
+    renderStateline(ctx);                                     // wave 7 (R1): the stateline states the new stage and since when
   } else {
     sel.value = was;
     const msg = errMessage(res);
     if (res.status === 0) add(notices, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The stage was not changed.', 'No se cambió la etapa.'));
     else add(notices, notice('bad', 'The stage was not changed.', 'No se cambió la etapa.', msg || 'HTTP ' + res.status, msg || 'HTTP ' + res.status));
   }
-}
-
-/** The production tools whose sidecar accepts a project, in toolbar order, each opening inside this project. */
-function renderToolbar(ctx, cat) {
-  const host = $('#p-toolbar');
-  host.textContent = '';
-  add(host, mk('span', 'label', 'Tools', 'Herramientas'));
-  if (!cat || !cat.catalog) { add(host, mk('span', 'hub-muted', 'The tool catalog is not available.', 'El catálogo de herramientas no está disponible.')); return; }
-  const tools = cat.catalog.tools || [];
-  const byId = new Map(tools.map((t) => [t.id, t]));
-  const siteRoot = new URL('../', location.href);
-  const list = tools.filter((t) => t.lifecycle === 'production' && t.hub && (t.hub.context || []).includes('project')).sort((a, b) => (a.hub.toolbar ?? 999) - (b.hub.toolbar ?? 999));
-  let external = 0;
-  for (const t of list) {
-    const target = openTarget(t, byId, siteRoot);
-    const u = new URL(target.href);
-    // Wave 7 (S28): only a browser tool reads ?project=; an external app opens as itself.
-    if (!target.external) u.searchParams.set(t.hub.param || 'project', ctx.project.id); else external++;
-    const a = mk('a', null, null, null, { href: u.href, 'data-toolbar-tool': t.id, 'data-external': target.external ? '1' : '0' });
-    a.insertAdjacentHTML('afterbegin', svgIcon('<path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>'));
-    add(a, dv('span', null, t.name));
-    if (target.external) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
-    add(host, armOnOpen(a));                                    // wave 7 (S13): the legacy portal check is satisfied before the tool opens
-  }
-  if (!list.length) add(host, mk('span', 'hub-muted', 'No tool declares a project context yet.', 'Ninguna herramienta declara aún un contexto de proyecto.'));
-  else add(host, mk('span', 'hub-muted', external ? 'open in this project; the external apps open as themselves' : 'open in this project', external ? 'se abren en este proyecto; las apps externas se abren por sí mismas' : 'se abren en este proyecto'));
 }
 
 /** Wave 4: licence types on the register, bilingual (value, English, Spanish). */
@@ -368,8 +490,11 @@ function renderOpportunity(ctx) {
   add(form, fn, actions);
   add(host, form);
   const close = () => { form.setAttribute('hidden', ''); edit.setAttribute('aria-expanded', 'false'); edit.focus(); };
-  edit.addEventListener('click', () => { if (form.hasAttribute('hidden')) { form.removeAttribute('hidden'); edit.setAttribute('aria-expanded', 'true'); country.focus(); } else close(); });
+  const openEditor = (focusId) => { form.removeAttribute('hidden'); edit.setAttribute('aria-expanded', 'true'); const f = focusId ? $('#' + focusId) : null; (f || country).focus(); if (f) f.scrollIntoView({ block: 'center' }); };
+  edit.addEventListener('click', () => { if (form.hasAttribute('hidden')) openEditor(); else close(); });
   cancel.addEventListener('click', close);
+  // Wave 7 (R1): the stateline's Next token opens this editor on the Next step field.
+  ctx.openRegisterEditor = (focusId) => { openFileDisclosure(); openEditor(focusId); };
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     fn.textContent = '';
@@ -397,7 +522,7 @@ function renderOpportunity(ctx) {
     if (res.ok && res.body) {
       // The API answers with the merged register; a cleared field stays until a reload, so keep the client's view authoritative for what it just sent.
       Object.assign(p, res.body, { register });
-      renderHeader(ctx); renderOpportunity(ctx);
+      renderHeader(ctx); renderOpportunity(ctx);              // the stateline's Next token follows the register
       return;
     }
     const msg = errMessage(res);
@@ -780,8 +905,21 @@ const UP_STATUS = {
 function setupUpload(project) {
   const input = $('#up-files'), drop = $('#up-drop'), list = $('#up-results'), notices = $('#up-notices');
   if (!input || !drop || !list) return;
+  // Wave 7 (R6): the drop zone is a sheet opened from the tab strip; the whole page stays a drop target.
+  const sheet = $('#p-upload'), opener = $('#p-add-docs'), scrim = $('#upload-scrim'), closeBtn = $('#up-close');
+  let closeSheet = null;
+  const openUpload = () => { if (!sheet || !sheet.hasAttribute('hidden')) return; closeSheet = openSheet(sheet, scrim, opener, () => { closeSheet = null; }); };
+  if (opener) opener.addEventListener('click', () => (sheet.hasAttribute('hidden') ? openUpload() : closeSheet && closeSheet()));
+  if (closeBtn) closeBtn.addEventListener('click', () => closeSheet && closeSheet());
+  let dragDepth = 0;
+  const hasFiles = (ev) => !!(ev.dataTransfer && (Array.from(ev.dataTransfer.types || []).includes('Files') || ev.dataTransfer.files));
+  document.addEventListener('dragenter', (ev) => { if (!hasFiles(ev)) return; dragDepth++; document.body.classList.add('is-dragover'); });
+  document.addEventListener('dragover', (ev) => { if (!hasFiles(ev)) return; ev.preventDefault(); document.body.classList.add('is-dragover'); });
+  document.addEventListener('dragleave', (ev) => { dragDepth = Math.max(0, dragDepth - 1); if (dragDepth === 0 || ev.relatedTarget === null) { dragDepth = 0; document.body.classList.remove('is-dragover'); } });
+  document.addEventListener('drop', (ev) => { if (!hasFiles(ev)) return; ev.preventDefault(); dragDepth = 0; document.body.classList.remove('is-dragover'); openUpload(); send(ev.dataTransfer && ev.dataTransfer.files); });
   const send = async (files) => {
     if (!files || !files.length) return;
+    openUpload();
     notices.textContent = '';
     const fd = new FormData();
     fd.append('project_id', project.id);
@@ -834,7 +972,7 @@ function setupUpload(project) {
   input.addEventListener('change', () => send(input.files));
   drop.addEventListener('dragover', (ev) => { ev.preventDefault(); drop.classList.add('over'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-  drop.addEventListener('drop', (ev) => { ev.preventDefault(); drop.classList.remove('over'); send(ev.dataTransfer && ev.dataTransfer.files); });
+  drop.addEventListener('drop', (ev) => { ev.preventDefault(); ev.stopPropagation(); drop.classList.remove('over'); document.body.classList.remove('is-dragover'); send(ev.dataTransfer && ev.dataTransfer.files); });
 }
 
 /* ── scorecard ───────────────────────────────────────────────────────── */
@@ -1169,11 +1307,51 @@ function showTab(key) {
     b.setAttribute('aria-selected', String(on));
     b.setAttribute('tabindex', on ? '0' : '-1');
     if (on) p.removeAttribute('hidden'); else p.setAttribute('hidden', '');
-    if (on) setText($('#crumb-tab'), en, es);
+    if (on) { const c = $('#crumb-tab'); if (c) setText(c, en, es); if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
   }
+  currentTab = key;
+  return key;
 }
-const routeTab = () => {
-  showTab((location.hash || '#timeline').slice(1));
+/** Opens the File disclosure (wave 7 R6) and, when asked, puts focus on its summary. */
+function openFileDisclosure(focus) {
+  const d = $('#p-file-wrap');
+  if (!d) return;
+  d.open = true;
+  if (focus) { const s = d.querySelector('summary'); if (s) { s.focus(); s.scrollIntoView({ block: 'start' }); } }
+}
+/** Shows the timeline tab with a filter chip pressed and the list in view (the stateline's counts land here). */
+function showTimelineFiltered(filter) {
+  showTab('timeline');
+  const tl = $('#tl');
+  if (tl) { tl.filter = filter; tl.scrollIntoView({ block: 'start' }); }
+}
+/** The address's hash: a tab, or (wave 7 R1) one of the stateline's targets, which is acted on and then folded back to the tab. */
+const ACTION_HASH = /^(stage|next|file|tab-runs|tab-docs|stale|rec=.+)$/;
+let currentTab = 'timeline';
+function routeHash() {
+  const h = (location.hash || '#timeline').slice(1);
+  if (!ACTION_HASH.test(h)) { routeTab(h); return; }
+  const ctx = panelCtx.ctx;
+  if (h === 'stage') { const s = $('#p-stage'); if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } }
+  else if (h === 'next') { if (ctx && ctx.openRegisterEditor) ctx.openRegisterEditor('op-next'); else openFileDisclosure(true); }
+  else if (h === 'file') openFileDisclosure(true);
+  else if (h === 'tab-runs') showTimelineFiltered('run');
+  else if (h === 'tab-docs') showTimelineFiltered('docs');
+  else if (h === 'stale') showTimelineFiltered('stale');
+  else if (h.startsWith('rec=')) {
+    const ref = decodeURIComponent(h.slice(4));
+    showTab('timeline');
+    const id = ref.slice(ref.indexOf(':') + 1);
+    const row = document.querySelector('.hub-tl-item[data-id="' + CSS.escape(id) + '"]');
+    for (const r of document.querySelectorAll('.hub-tl-item.hilite')) r.classList.remove('hilite');
+    if (row) { row.classList.add('hilite'); row.scrollIntoView({ block: 'center' }); }
+    const e = panelCtx.entryById.get(id);
+    openRecord({ ref, title: e && e.title, entry: e, trigger: row && row.querySelector('button') });
+  }
+  history.replaceState(null, '', location.pathname + location.search + '#' + currentTab);   // the address names the tab again, without a second hashchange
+}
+const routeTab = (key) => {
+  currentTab = showTab(key || (location.hash || '#timeline').slice(1));
   const p = $('#record-panel');
   if (p && !p.hasAttribute('hidden')) { p.setAttribute('hidden', ''); document.body.classList.remove('has-panel'); panelTrigger = null; }   // the panel belongs to the tab it was opened from
 };
@@ -1182,7 +1360,7 @@ const routeTab = () => {
 
 let panelTrigger = null;
 let draftUi = null;          // Write to…, when the person may write this project
-let panelCtx = { project: null, entryById: new Map(), lineage: null };
+let panelCtx = { project: null, entryById: new Map(), lineage: null, catalog: null, ctx: null };
 const versionsCache = new Map();
 
 function closePanel() {
@@ -1200,7 +1378,7 @@ function closePanel() {
  * (run:<uuid>, doc:<uuid>, ref:...): a highlights strip, related cards you can
  * pivot through, and the raw record behind a closed disclosure (hub/record.js).
  */
-async function openRecord({ ref, title, node, entry, trigger, passage }) {
+async function openRecord({ ref, title, node, entry, trigger, passage, highlight }) {
   const panel = $('#record-panel'), body = $('#rp-body');
   const first = panel.hasAttribute('hidden');
   if (first) panelTrigger = trigger || document.activeElement;        // a pivot keeps the trigger that opened the panel
@@ -1237,6 +1415,11 @@ async function openRecord({ ref, title, node, entry, trigger, passage }) {
     open: (r, t, b) => openRecord({ ref: r, title: t, entry: panelCtx.entryById.get(r.slice(r.indexOf(':') + 1)), node: panelCtx.lineage && (panelCtx.lineage.nodes || []).find((n) => n.id === r), trigger: b }),
     // A draft note written in the Hub goes back into Write to… with its saved review (partners only; the panel closes).
     openDraft: draftUi ? (r) => { closePanel(); draftUi.load(r); } : null,
+    // Wave 7 (R5): Write a reply opens Write to… on the thread (the panel closes so the draft sits beside the file).
+    openReply: draftUi ? (r) => { closePanel(); draftUi.reply(r); } : null,
+    highlight: highlight || null,         // the Find term, when opened from Find (?doc=…&q=…)
+    passage: passage || null,
+    siteRoot: new URL('../', location.href),
   };
   const content = await renderRecord({ kind, ref, rec, node, entry, ctx });
   if (panel.getAttribute('data-ref') !== ref) return;
@@ -1246,7 +1429,11 @@ async function openRecord({ ref, title, node, entry, trigger, passage }) {
   add(body, content);
   if (node && node.restricted) add(body, notice('warn', 'Restricted.', 'Restringido.', 'This record is outside your scope; only its id is shown.', 'Este registro está fuera de su alcance; solo se muestra su id.'));
   if (!rec && kind !== 'ref' && !(node && node.restricted)) add(body, notice('warn', 'Full record unavailable.', 'Registro completo no disponible.', 'Showing what the graph knows' + (res && errMessage(res) ? ' (' + errMessage(res) + ')' : '') + '.', 'Se muestra lo que conoce el grafo' + (res && errMessage(res) ? ' (' + errMessage(res) + ')' : '') + '.'));
-  add(body, detailsNode(rec || { node: node || null, entry: entry || null }));
+  // Wave 7 (R5): a record carries its own Technical disclosure; only a bare node or entry still needs the raw dump here.
+  if (!rec) add(body, detailsNode({ node: node || null, entry: entry || null }));
+  // The passage anchor: the first highlighted match (or the cited passage) scrolled into view inside the panel.
+  const anchor = body.querySelector('[data-anchor]');
+  if (anchor) anchor.scrollIntoView({ block: 'center' });
 }
 
 /* ── tab contents ────────────────────────────────────────────────────── */
@@ -1314,6 +1501,14 @@ function kpi(labelEn, labelEs, valueNode, detailNode, cls) {
   add(k, mk('span', 'k', labelEn, labelEs), add(mk('span', 'v' + (cls ? ' ' + cls : '')), valueNode), add(mk('span', 'd'), detailNode));
   return k;
 }
+/** Idea D: a figure in tabular Barlow Condensed with its unit in small caps after it. */
+const figure = (value, unit) => add(mk('span', 'hub-figure'), dv('span', 'hub-num', typeof value === 'number' ? num(value) : value), unit ? dv('span', 'hub-unit', unit) : null);
+/** "npv10_musd" with unit "MUSD" reads "NPV10", never "NPV10 MUSD MUSD". */
+const keyLabel = (k, unit) => {
+  let s = String(k).replace(/_/g, ' ');
+  if (unit) { const u = String(unit).toLowerCase(); if (s.toLowerCase().endsWith(' ' + u)) s = s.slice(0, -(u.length + 1)); }
+  return s.replace(/\bnpv(\d+)\b/i, 'NPV$1').replace(/\birr\b/i, 'IRR').replace(/\bbopd\b/i, 'bopd');
+};
 
 function renderKpis(ctx, card) {
   const host = $('#p-kpis');
@@ -1328,29 +1523,29 @@ function renderKpis(ctx, card) {
     for (const k of keys) if (pick.length < 2 && !pick.includes(k)) pick.push(k);
     for (const k of pick) {
       const o = newest.outputs[k], d = meta.deltas[k];
-      const val = add(mk('span'), dv('span', null, num(o.value)), o.unit ? dv('small', null, ' ' + o.unit) : null);
+      const val = figure(o.value, o.unit);
       const det = d && typeof d.delta_pct === 'number'
-        ? add(mk('span'), dv('span', d.delta_pct < 0 ? 'dn' : 'up', fmtPct(d.delta_pct)), mk('span', null, ' vs vintage ' + (meta.number - 1), ' vs añada ' + (meta.number - 1)))
+        ? add(mk('span'), dv('span', (d.delta_pct < 0 ? 'dn' : 'up') + ' hub-num', fmtPct(d.delta_pct)), mk('span', null, ' vs vintage ' + (meta.number - 1), ' vs añada ' + (meta.number - 1)))
         : mk('span', null, 'vintage ' + meta.number, 'añada ' + meta.number);
-      const kk = kpi('Latest ' + k.replace(/_/g, ' '), 'Última ' + k.replace(/_/g, ' '), val, det);
+      const kk = kpi('Latest ' + keyLabel(k, o.unit), 'Última ' + keyLabel(k, o.unit), val, det);
       kk.setAttribute('data-kpi', k);
       add(host, kk);
     }
-  } else add(host, kpi('Latest headline', 'Última cifra', mk('span', null, '—', '—'), mk('span', null, 'no final run yet', 'aún sin ejecución final')));
+  } else add(host, kpi('Latest headline', 'Última cifra', figure('—'), mk('span', null, 'no final run yet', 'aún sin ejecución final')));
 
   const runs = entries.filter((e) => e.kind === 'run');
   const sup = runs.filter((r) => r.status === 'superseded').length;
-  add(host, kpi('Active runs', 'Ejecuciones activas', dv('span', null, String(runs.length - sup)), mk('span', null, sup + ' superseded', sup + ' reemplazadas')));
+  add(host, kpi('Active runs', 'Ejecuciones activas', figure(runs.length - sup), mk('span', null, sup + ' superseded', sup + ' reemplazadas')));
 
   const stale = entries.filter((e) => e.stale);
   const byKind = {};
   for (const e of stale) { const k = iconKind(e); byKind[k] = (byKind[k] || 0) + 1; }
   const KL = { run: ['run', 'ejecución'], letter: ['letter', 'carta'], email: ['email', 'correo'], spreadsheet: ['spreadsheet', 'hoja'], paper: ['paper', 'artículo'], invoice: ['invoice', 'factura'], note: ['note', 'nota'], reference: ['reference set', 'conjunto'], other: ['other', 'otro'] };
   const en = Object.entries(byKind).map(([k, n]) => n + ' ' + KL[k][0]).join(' · '), es = Object.entries(byKind).map(([k, n]) => n + ' ' + KL[k][1]).join(' · ');
-  add(host, kpi('Stale records', 'Registros obsoletos', dv('span', null, String(stale.length)), stale.length ? mk('span', null, en, es) : mk('span', null, 'nothing stale', 'nada obsoleto'), stale.length ? 'bad' : ''));
+  add(host, kpi('Stale records', 'Registros obsoletos', figure(stale.length), stale.length ? mk('span', null, en, es) : mk('span', null, 'nothing stale', 'nada obsoleto'), stale.length ? 'bad' : ''));
 
   const rag = card.rag === 'g' ? 'g' : card.rag === 'r' ? 'r' : '';
-  const v = add(mk('span'), mk('span', 'hub-rag ' + rag, null, null, { 'aria-hidden': 'true' }), dv('span', null, card.pass + '/6'));
+  const v = add(mk('span', 'hub-figure'), mk('span', 'hub-rag ' + rag, null, null, { 'aria-hidden': 'true' }), dv('span', 'hub-num', card.pass + '/6'), mk('span', 'hub-unit', 'rules', 'reglas'));
   add(host, kpi('Scorecard', 'Ficha', v, mk('span', null, card.fail + card.na + ' rules failing or unmeasured', card.fail + card.na + ' reglas fallan o no son medibles')));
 }
 
@@ -1389,7 +1584,7 @@ async function init() {
   const orgFile = fileR && fileR.ok ? fileR.body : null;
   const runs = runsR.ok ? listOf(runsR.body, 'runs', 'items') : null;
   const entryById = new Map(entries.map((e) => [e.id, e]));
-  panelCtx = { project, entryById, lineage };
+  panelCtx = { project, entryById, lineage, catalog: cat && cat.catalog ? cat.catalog : null, ctx: null };
   let basis;
   if (noteR.ok) basis = listOf(noteR.body, 'items').filter(isBasisItem);
   else basis = entries.filter((e) => e.kind === 'item' && e.type === 'note' && /^basis/i.test(e.title || ''));
@@ -1397,14 +1592,14 @@ async function init() {
   const lessons = lessonsOk ? listOf(lessonR.body, 'lessons', 'items') : [];
   const now = Date.now();
   const contactsList = ctR.ok && ctR.body && Array.isArray(ctR.body.contacts) ? ctR.body.contacts : null;
-  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names, person: me, contactsList };
+  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names, person: me, contactsList, catalog: cat };
+  panelCtx.ctx = ctx;
 
   renderHeader(ctx);
-  renderToolbar(ctx, cat);
   const researchOk = rsR.ok && rsR.status !== 404 && rsR.status !== 501;
   if (isHoldingProject(project)) { const opp = $('#p-opportunity'); if (opp) opp.setAttribute('hidden', ''); } else renderOpportunity(ctx);
   await renderFields(ctx);
-  renderHeader(ctx);                                       // the asset chips now carry names
+  renderHeader(ctx);                                       // the asset chips and the File brief now carry names
   setupUpload(project);
 
   const rules = computeScorecard(ctx);
@@ -1453,10 +1648,11 @@ async function init() {
   }, new Set([...(lessonsOk ? [] : ['lessons']), ...(researchOk ? [] : ['research'])]));
   renderResearch(ctx, researchOk ? rsR : null);              // after the tabs exist: the status line, the Research tab and its count
   if (canWriteProject(ctx)) draftUi = mountDraft(ctx, { openRecord });  // wave 5: Write to… beside Research
-  routeTab();
-  window.addEventListener('hashchange', routeTab);
-
+  ctx.refreshTimeline = () => refreshTimeline(ctx);
   $('#p-body').removeAttribute('hidden');
+  const sk = $('#p-skeleton'); if (sk) sk.setAttribute('hidden', '');
+  routeHash();
+  window.addEventListener('hashchange', routeHash);
   $('#rp-close').addEventListener('click', closePanel);
   const scrim = $('#record-scrim'); if (scrim) scrim.addEventListener('click', closePanel);
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !$('#record-panel').hasAttribute('hidden')) closePanel(); });
@@ -1467,13 +1663,13 @@ async function init() {
     const r = await api('/api/items/' + encodeURIComponent(draftParam));
     if (r.ok && r.body && !(await draftUi.load(r.body))) add($('#p-notices') || $('#p-body'), notice('warn', 'Not a draft.', 'No es un borrador.', 'That record was not written in the Hub.', 'Ese registro no se escribió en el Hub.'));
   }
-  // ?doc=<id>: open a document's record (linked from What came in on Today).
+  // ?doc=<id>: open a document's record (linked from What came in on Today and from Find, which adds &q= so the term is highlighted).
   const docParam = params.get('doc');
   if (docParam) {
     const row = document.querySelector('.hub-tl-item[data-id="' + CSS.escape(docParam) + '"]');
     if (row) { row.classList.add('hilite'); row.scrollIntoView({ block: 'center' }); }
     const e = entryById.get(docParam);
-    await openRecord({ ref: 'doc:' + docParam, title: e && e.title, entry: e, trigger: row && row.querySelector('button') });
+    await openRecord({ ref: 'doc:' + docParam, title: e && e.title, entry: e, trigger: row && row.querySelector('button'), highlight: params.get('q') || null });
   }
   // ?run=<id>: highlight the run in the timeline and open its record (linked from the tool page).
   const runParam = params.get('run');

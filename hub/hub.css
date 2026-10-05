@@ -812,3 +812,469 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-research-sources { list-style: none; margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--cream); font-size: 12.5px; display: grid; gap: 4px; }
 .hub-research-sources b { font-weight: 600; color: var(--navy); }
 .hub-research-sources .hub-pill { font-size: 11px; vertical-align: middle; }
+
+/* ── Wave 7 PR2: the stateline (hub/components/stateline.js), one line in three sizes ── */
+.hub-stateline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-weight: 600; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--navy); line-height: 1.4; }
+.hub-stateline-full { padding: 10px 0; border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold); margin: 6px 0 14px; font-size: 16px; }
+.hub-stateline-row { font-size: 13.5px; gap: 4px 6px; padding: 8px 0; border-bottom: 1px solid var(--rule); text-transform: none; letter-spacing: .01em; }
+.hub-stateline-card { font-size: 12.5px; gap: 2px 6px; }
+.hub-sl-token { color: inherit; text-decoration: none; display: inline-flex; align-items: baseline; gap: 5px; min-height: 36px; padding: 4px 2px; border-radius: 4px; }
+.hub-stateline-row .hub-sl-token, .hub-stateline-card .hub-sl-token { min-height: 28px; padding: 2px 2px; }
+.hub-sl-token:hover, .hub-sl-token:focus-visible { background: var(--cream); outline: none; box-shadow: 0 0 0 2px var(--gold); }
+.hub-sl-token[data-empty] { color: var(--muted, #6b7280); font-weight: 500; }
+.hub-sl-label { font-size: .72em; letter-spacing: .14em; color: var(--muted, #6b7280); text-transform: uppercase; }
+.hub-sl-sep { color: var(--gold); font-weight: 400; }
+.hub-sl-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted, #9ca3af); align-self: center; flex: 0 0 auto; }
+.hub-stateline[data-tone="live"] .hub-sl-dot { background: var(--gold); box-shadow: 0 0 0 3px rgba(201,162,39,.25); }
+.hub-stateline[data-tone="won"] .hub-sl-dot { background: #2f855a; }
+.hub-stateline[data-tone="closed"] .hub-sl-dot { background: #9ca3af; }
+.hub-sl-since, .hub-sl-when, .hub-sl-owner { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink, #111827); }
+.hub-sl-title { text-transform: none; letter-spacing: 0; font-weight: 600; max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-sl-name { flex: 1 1 100%; font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--navy); text-decoration: none; }
+.hub-sl-flag[data-tone="warn"], .hub-sl-token[data-tone="warn"] { color: #b45309; }
+.hub-stateline .hub-sl-token:nth-child(2) { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .hub-stateline-full { font-size: 14px; } .hub-sl-title { max-width: 18ch; } }
+
+/* ── Wave 7 PR2 D: project file, record panel, Write to… ── */
+/* The project header: the H1, the stateline directly under it, the meta line; three actions right of it. */
+.hub-project .hub-project-head { align-items: flex-start; }
+.hub-project .hub-project-title { flex: 1 1 520px; min-width: 0; }
+.hub-project .hub-project-head h1 { overflow-wrap: anywhere; }
+.hub-project .hub-project-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; margin-left: auto; padding-top: 30px; max-width: 100%; }
+.hub-project .hub-project-actions[hidden] { display: none; }
+.hub-project .hub-project-actions #p-draft-btn { order: 1; }
+.hub-project .hub-project-actions #p-research { order: 2; display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.hub-project .hub-project-actions .hub-menu-wrap { order: 3; }
+.hub-project .hub-project-actions .hub-menu-wrap:has(#p-more), .hub-project .hub-project-actions #p-archive[data-archived="1"] { order: 4; }
+.hub-project .hub-project-actions .hub-research-status { order: 9; flex: 1 1 100%; text-align: right; font-size: 12px; color: var(--muted); margin: 0; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+.hub-project .hub-project-actions .btn { min-height: 36px; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 14px; }
+.hub-project .hub-project-actions .btn .hub-ic { width: 14px; height: 14px; }
+.hub-project .hub-project-actions .hub-more { width: 36px; padding: 5px 0; justify-content: center; font-weight: 700; letter-spacing: .1em; }
+.hub-project .hub-project-actions .hub-caret { font-size: 11px; margin-left: 2px; }
+.hub-project .hub-project-stateline .hub-stateline-full { min-height: 56px; align-items: center; margin: 8px 0 8px; padding: 6px 0; }
+.hub-project .hub-sl-stage { align-items: center; }
+.hub-project .hub-sl-select {
+  appearance: none; -webkit-appearance: none; border: none; background: transparent; color: inherit; font: inherit; text-transform: uppercase; letter-spacing: inherit;
+  padding: 2px 18px 2px 0; cursor: pointer; min-height: 36px; max-width: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C9A84C' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 2px center; background-size: 12px;
+}
+.hub-project .hub-sl-select:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--gold); border-radius: 4px; }
+.hub-project #p-sub { margin-top: 2px; font-size: 13px; }
+/* Menus under the action buttons (Open in tool ▾, …). */
+.hub-project .hub-menu-wrap { position: relative; display: inline-block; }
+.hub-project .hub-menu { position: absolute; right: 0; top: calc(100% + 6px); min-width: 260px; max-width: min(360px, 92vw); background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-lg); box-shadow: 0 10px 30px rgba(11,31,58,.16); padding: 6px; z-index: 60; }
+.hub-project .hub-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 8px 10px; border: none; background: none; border-radius: var(--r); font: inherit; font-size: 13.5px; color: var(--navy); text-align: left; text-decoration: none; cursor: pointer; }
+.hub-project .hub-menu-item:hover, .hub-project .hub-menu-item:focus-visible { background: var(--cream); color: var(--gold-ink); outline: none; }
+.hub-project .hub-menu-item .hub-ic { width: 14px; height: 14px; flex: none; }
+.hub-project .hub-menu-item[data-produced="1"] { font-weight: 600; }
+.hub-project .hub-menu-hint { margin-left: auto; font-size: 11px; color: var(--muted); letter-spacing: .04em; white-space: nowrap; font-family: var(--font-label); text-transform: uppercase; }
+.hub-project .hub-menu-note { display: block; padding: 8px 10px 4px; font-size: 12px; }
+/* The skeleton (R12): the stateline, the tab strip and three rows, until data-ready. */
+.hub-project .hub-skeleton { margin: 6px 0 24px; }
+.hub-project .hub-skeleton span { display: inline-block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, #E9E4D8 0%, #F4F0E6 40%, #E9E4D8 80%); background-size: 200% 100%; animation: hub-sk 1.2s linear infinite; }
+.hub-project .hub-sk-stateline { min-height: 56px; display: flex; gap: 14px; align-items: center; border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold); margin-bottom: 18px; }
+.hub-project .hub-sk-stateline span { height: 14px; width: 16%; }
+.hub-project .hub-sk-stateline span:first-child { width: 22%; }
+.hub-project .hub-sk-tabs { display: flex; gap: 22px; border-bottom: 1.5px solid var(--rule); padding: 12px 0 14px; margin-bottom: 18px; }
+.hub-project .hub-sk-tabs span { width: 84px; height: 11px; }
+.hub-project .hub-sk-row { display: grid; grid-template-columns: 104px 1fr; gap: 12px; min-height: 44px; align-items: center; border-bottom: 1px solid #F0F1F4; }
+.hub-project .hub-sk-row span:last-child { width: 62%; }
+.hub-project .hub-sk-row span:first-child { width: 80px; }
+@keyframes hub-sk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .hub-project .hub-skeleton span { animation: none; } }
+body[data-ready] .hub-project #p-skeleton { display: none; }
+.hub-project .hub-fail-ways { margin-top: 10px; }
+/* The File disclosure (R1, R6): one line closed; the tag, contacts and team, the Fields row and the register when open. */
+.hub-project .hub-pfile-wrap { margin-top: 14px; padding: 0 !important; }
+.hub-project .hub-pfile-wrap > summary { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 18px; cursor: pointer; font-size: 13.5px; color: var(--navy); border-radius: var(--r-lg); }
+.hub-project .hub-pfile-wrap > summary::-webkit-details-marker { display: none; }
+.hub-project .hub-pfile-wrap > summary::before { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--gold); border-bottom: 2px solid var(--gold); transform: rotate(-45deg); margin-right: 2px; transition: transform .15s var(--ease); flex: none; }
+.hub-project .hub-pfile-wrap[open] > summary::before { transform: rotate(45deg); }
+.hub-project .hub-pfile-wrap[open] > summary { border-bottom: 1px solid var(--rule); border-radius: var(--r-lg) var(--r-lg) 0 0; }
+.hub-project .hub-pfile-wrap > summary:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--gold); }
+.hub-project .hub-pfile-word { font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-ink); }
+.hub-project .hub-pfile-brief { color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; min-width: 0; font-size: 13px; }
+.hub-project .hub-pfile-brief .hub-lt { font-size: 11.5px; }
+.hub-project .hub-pfile-wrap .hub-pfile { padding: 16px 18px !important; }
+.hub-project .hub-pfile-wrap .hub-fields { margin: 0; padding: 10px 18px 12px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-card-head { display: contents; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-card-head > div { display: contents; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-card-head h3 { font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 4px 0 0; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-card-head .hub-muted { display: none; }
+.hub-project .hub-pfile-wrap .hub-fields #fld-notices, .hub-project .hub-pfile-wrap .hub-fields #fld-proposed, .hub-project .hub-pfile-wrap .hub-fields #fld-add { flex: 1 1 100%; order: 5; }
+.hub-project .hub-pfile-wrap .hub-fields-list { display: contents; }
+.hub-project .hub-pfile-wrap .hub-field-row { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 10px; border: 1px solid var(--rule); border-radius: 999px; background: var(--white); font-size: 13px; min-height: 36px; }
+.hub-project .hub-pfile-wrap .hub-field-row > div:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.hub-project .hub-pfile-wrap .hub-field-row .hub-note-s { display: none; }
+.hub-project .hub-pfile-wrap .hub-field-row .hub-actions-row { gap: 4px; }
+.hub-project .hub-pfile-wrap .hub-field-row .hub-actions-row .hub-muted { display: none; }
+.hub-project .hub-pfile-wrap .hub-field-row .btn { padding: 2px 9px; min-height: 28px; font-size: 10.5px; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-empty { flex: 1 1 auto; padding: 0; font-size: 13px; }
+.hub-project .hub-pfile-wrap .hub-fields #fld-add-btn { order: 4; }
+.hub-project .hub-pfile-wrap .hub-opp-card { margin: 0; padding: 14px 18px 18px; border-top: 1px solid var(--rule); }
+/* The sticky tab strip (R6) with the Add documents button at its end; edge fades and snap on the scroll. */
+.hub-project .hub-project-tabs { position: sticky; top: var(--hub-sticky-top, 56px); z-index: 15; background: var(--cream); display: flex; align-items: flex-end; gap: 10px; margin: 18px 0 18px; padding-top: 4px; }
+.hub-project .hub-project-tabs .hub-tabs { flex: 1 1 auto; min-width: 0; margin: 0; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 22px), transparent); padding: 0 6px; }
+.hub-project .hub-project-tabs .hub-tabs::-webkit-scrollbar { display: none; }
+.hub-project .hub-project-tabs .hub-tabs button { scroll-snap-align: start; min-height: 44px; }
+.hub-project .hub-add-docs { flex: none; margin-bottom: 6px; min-height: 36px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
+.hub-project .hub-add-docs[aria-expanded="true"] { border-color: var(--gold); color: var(--gold-ink); }
+@media (max-width: 900px) { .hub-project .hub-project-tabs { top: 0; } }
+/* Timeline rows (R6): one tappable block, 44 px, the date on one line, the type a mono prefix, a pill on the right. */
+.hub-project .hub-tl-item { position: relative; min-height: 44px; align-items: center; padding: 8px 8px 8px 0; grid-template-columns: 104px 32px minmax(0, 1fr) auto; }
+.hub-project .hub-tl-item:focus-within { background: #FCFBF7; box-shadow: inset 3px 0 0 var(--gold); }
+.hub-project .hub-tl-date { padding-top: 0; text-transform: none; letter-spacing: .02em; font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--navy-mid); font-weight: 600; }
+.hub-project .hub-tl-date span { display: inline; font-size: 12.5px; }
+.hub-project .hub-tl-line { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.hub-project .hub-tl-type { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); flex: none; }
+.hub-project .hub-tl-title::after { content: ''; position: absolute; inset: 0; }
+.hub-project .hub-tl-title:focus-visible { outline: none; }
+.hub-project .hub-tl-stage::after { content: none; }
+.hub-project .hub-tl-side { position: relative; z-index: 1; align-items: flex-end; justify-content: center; }
+.hub-project .hub-tl-meta a, .hub-project .hub-tl-meta button { position: relative; z-index: 1; }
+.hub-project .hub-tl-meta { margin-top: 0; }
+@media (max-width: 900px) { .hub-project .hub-tl-item { grid-template-columns: 92px 28px minmax(0, 1fr); } .hub-project .hub-tl-side { grid-column: 3; justify-content: flex-start; } }
+/* The drop target: the whole page, with a full-page gold outline while a file is over it. */
+.hub.is-dragover::after { content: ''; position: fixed; inset: 6px; border: 3px solid var(--gold); border-radius: 12px; pointer-events: none; z-index: 300; box-shadow: inset 0 0 0 9999px rgba(201,168,76,.08); }
+/* Sheets (Add documents, the archive confirm): anchored to the bottom over a scrim at every width. */
+.hub .hub-sheet { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(760px, 100vw); max-height: 85vh; z-index: 260; background: var(--white); border: 1px solid var(--rule); border-bottom: none; border-radius: 16px 16px 0 0; box-shadow: 0 -12px 32px rgba(11,31,58,.22); display: flex; flex-direction: column; }
+.hub .hub-sheet.hub-confirm { width: min(520px, 100vw); }
+.hub .hub-sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 18px 20px 12px; border-bottom: 1px solid var(--rule); position: relative; }
+.hub .hub-sheet-head::before { content: ''; position: absolute; left: 50%; top: 6px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--rule); }
+.hub .hub-sheet-head h3 { font-family: var(--font-body); font-weight: 600; font-size: 15px; }
+.hub .hub-sheet-head .hub-muted { font-size: 13px; display: block; margin-top: 2px; }
+.hub .hub-sheet-body { padding: 14px 0 20px; overflow: auto; }
+.hub .hub-sheet-body > p { padding: 0 20px; max-width: none; }
+.hub .hub-sheet-body .hub-actions { padding: 12px 20px 0; }
+.hub .hub-sheet .hub-drop { margin: 0 20px; }
+.hub .hub-sheet #up-notices { padding: 0 20px; }
+.hub .hub-sheet .hub-upload-list, .hub .hub-sheet .hub-upload-progress { padding-left: 20px; padding-right: 20px; }
+.hub .hub-sheet #up-reload { margin: 0 20px; }
+.hub.has-sheet .hub-upload { margin-top: 0; }
+@media (min-width: 1200px) { .hub #upload-scrim:not([hidden]), .hub #archive-scrim:not([hidden]) { display: block !important; } }
+/* Idea D: figures in tabular Barlow Condensed with the unit in small caps after them; no Playfair below the H1. */
+.hub-project .hub-figure, .hub-record .hub-figure { display: inline-flex; align-items: baseline; gap: 4px; }
+.hub-project .hub-num, .hub-record .hub-num { font-family: 'Barlow Condensed', var(--font-label), sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.hub-project .hub-unit, .hub-record .hub-unit { font-family: 'Barlow Condensed', var(--font-label), sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: lowercase; font-variant: small-caps; color: var(--muted); }
+.hub-project .hub-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 6px; }
+.hub-project .hub-kpi .v { font-family: 'Barlow Condensed', var(--font-label), sans-serif; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.hub-project .hub-kpi .v .hub-rag { margin-right: 4px; }
+.hub-project .hub-kpi .d .hub-num { font-size: 12px; }
+@media (max-width: 1100px) { .hub-project .hub-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .hub-project .hub-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hub-project .hub-project-actions { padding-top: 4px; justify-content: flex-start; } }
+/* The record panel (R5): title, one meta line, the content, the actions, related, Technical last. The focus ring is on the panel. */
+.hub #rp-title:focus, .hub #rp-title:focus-visible, .hub [tabindex="-1"]:focus { outline: none; }
+.hub .hub-panel:focus-within { box-shadow: -12px 0 32px rgba(11,31,58,.18), inset 0 0 0 2px var(--gold); }
+.hub-record .hub-panel-head h2 { font-family: var(--font-body); font-weight: 600; font-size: 1.05rem; line-height: 1.35; }
+.hub-record .hub-rp-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 4px; margin: 0 0 12px; font-size: 13px; color: var(--muted); max-width: none; }
+.hub-record .hub-rp-meta .hub-rp-type { color: var(--navy); font-weight: 600; }
+.hub-record .hub-rp-meta .hub-lt { font-size: 11.5px; }
+.hub-record .hub-rp-meta .hub-pill { margin-right: 2px; }
+.hub-record .hub-rp-meta-sep { color: var(--gold); }
+.hub-record .hub-rp-view h4 { font-family: var(--font-label); font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+.hub-record .hub-rp-view h4:first-child { margin-top: 0; }
+.hub-record .hub-rp-text { font-family: var(--font-body); font-size: 15px; line-height: 1.5; color: var(--navy-mid); background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: 14px 16px; max-height: 62vh; overflow: auto; overflow-wrap: anywhere; }
+.hub-record .hub-rp-text p { font-size: 15px; line-height: 1.5; max-width: none; margin: 0 0 .9em; color: inherit; }
+.hub-record .hub-rp-text p:last-child { margin-bottom: 0; }
+.hub-record mark.hub-hl { background: #F6EED6; color: var(--navy); border-radius: 2px; box-shadow: 0 0 0 2px #F6EED6; }
+.hub-record mark.hub-hl[data-anchor] { background: var(--gold-light); box-shadow: 0 0 0 2px var(--gold-light); }
+.hub-record .hub-rp-actions { margin: 12px 0 4px; }
+.hub-record .hub-rp-actions .btn { min-height: 36px; display: inline-flex; align-items: center; }
+.hub-record .hub-rp-actions [data-copied="1"] { border-color: var(--ok-line); color: var(--ok); }
+.hub-record .hub-rp-related { margin-top: 12px; }
+.hub-record .hub-rp-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.hub-record .hub-rp-table th, .hub-record .hub-rp-table td { padding: 7px 8px; border-bottom: 1px solid #F0F1F4; text-align: left; vertical-align: baseline; }
+.hub-record .hub-rp-table thead th { font-family: var(--font-label); font-size: 11px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.hub-record .hub-rp-table th[scope="row"] { font-weight: 500; color: var(--navy); }
+.hub-record .hub-rp-table .num { text-align: right; white-space: nowrap; }
+.hub-record .hub-rp-table td.num .hub-num { font-size: 16px; }
+.hub-record .hub-rp-src { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.hub-record .hub-prov { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: baseline; background: var(--muted); }
+.hub-record .hub-prov[data-provenance="measured"] { background: var(--ok); }
+.hub-record .hub-prov[data-provenance="reference"] { background: var(--navy); }
+.hub-record .hub-prov[data-provenance="document"] { background: var(--gold); }
+.hub-record .hub-prov[data-provenance="analogue"] { background: #6B4B8A; }
+.hub-record .hub-prov[data-provenance="assumed"] { background: var(--warn); }
+.hub-record .hub-prov[data-provenance="model"] { background: var(--info); }
+.hub-record .hub-prov-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
+.hub-record .hub-prov-key { display: inline-flex; align-items: center; }
+.hub-record .hub-rp-compare { margin-top: 4px; }
+.hub-record .hub-rp-compare .up { color: var(--ok); }
+.hub-record .hub-rp-compare .dn { color: var(--bad); }
+.hub-record .hub-rerun-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; }
+.hub-record .hub-rp-technical { margin-top: 14px; }
+.hub-record .hub-rp-technical .hub-kv { margin-top: 8px; font-size: 12.5px; }
+.hub-record .hub-rp-technical .hub-json { max-height: 40vh; overflow: auto; }
+.hub-record [data-inputs] { font-size: 13.5px; }
+/* Write to… (R13): the panel beside the file at ≥1200 px, a bottom sheet below; Draft full-width at the foot; hints under To. */
+.hub .hub-draft-panel { z-index: 245; padding: 0 !important; margin: 0; }
+.hub .hub-draft-panel .hub-panel-head h3 { font-family: var(--font-body); font-weight: 600; font-size: 1.1rem; }
+.hub .hub-draft-panel .hub-panel-head .label { display: block; margin-bottom: 2px; }
+.hub .hub-draft-body { padding-top: 12px; }
+.hub .hub-draft-intro { font-size: 13px; margin: 0 0 10px; max-width: none; }
+.hub .hub-draft-grid { grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.hub .hub-draft-grid .hub-opp-text { grid-column: 1 / -1; }
+.hub .hub-draft-hint { font-size: 12.5px; margin-top: 4px; }
+.hub .hub-draft-hint .hub-notice { margin: 4px 0 0; padding: 6px 10px; font-size: 12.5px; }
+.hub .hub-draft-hint .hub-draft-missing { margin: 4px 0 0; }
+.hub .hub-draft-foot { padding: 12px 20px; border-top: 1px solid var(--rule); background: var(--white); flex: none; }
+.hub .hub-draft-foot .hub-draft-go { width: 100%; min-height: 46px; font-size: 13px; letter-spacing: .14em; display: inline-flex; align-items: center; justify-content: center; }
+.hub .hub-draft-panel .hub-dr-actions { position: sticky; bottom: 0; background: var(--white); padding: 10px 0 2px; }
+@media (min-width: 1200px) { .hub.has-draft .hub-main { margin-right: 520px; } .hub.has-draft.has-panel .hub-main { margin-right: 520px; } .hub #draft-scrim { display: none !important; } }
+@media (max-width: 1199px) { .hub .hub-draft-panel { max-height: 90vh; } }
+/* The header as a grid: the label and the H1 beside the actions; the stateline and the meta line span the full width below. */
+.hub-project .hub-project-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 46%); grid-template-areas: "label actions" "h1 actions" "line line" "sub sub"; gap: 0 20px; align-items: end; }
+.hub-project .hub-project-title { display: contents; }
+.hub-project .hub-project-title > .label { grid-area: label; }
+.hub-project .hub-project-title > h1 { grid-area: h1; }
+.hub-project #p-stateline { grid-area: line; min-width: 0; }
+.hub-project #p-sub { grid-area: sub; }
+.hub-project .hub-project-actions { grid-area: actions; padding-top: 0; align-self: center; }
+.hub-project .hub-sl-token[data-token="last"] .hub-sl-when { margin-left: -4px; }
+@media (max-width: 640px) { .hub-project .hub-project-head { grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "h1" "line" "sub" "actions"; } .hub-project .hub-project-actions { justify-content: flex-start; margin-left: 0; padding-top: 6px; } }
+/* ── Wave 7 PR2 F: type, touch, Find, Settings, Cost ── */
+/* R14: the three families ship with the Hub (hub/fonts/, latin subset, SIL OFL) so a blocked font CDN never
+   drops every label into the system font. style.css keeps its Google Fonts import for the public site; these
+   declarations come later in the cascade and win on the Hub. */
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/playfair-display-400.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/playfair-display-600.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/playfair-display-700.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: italic; font-weight: 400; font-display: swap; src: url('fonts/playfair-display-400-italic.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: italic; font-weight: 600; font-display: swap; src: url('fonts/playfair-display-600-italic.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 300; font-display: swap; src: url('fonts/barlow-300.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/barlow-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url('fonts/barlow-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/barlow-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 300; font-display: swap; src: url('fonts/barlow-condensed-300.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/barlow-condensed-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url('fonts/barlow-condensed-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/barlow-condensed-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/barlow-condensed-700.woff2') format('woff2'); }
+
+/* Idea D, numbers as data. Playfair is the page H1 and nothing else; every other heading is Barlow 600, card
+   titles at 15 px. A figure carries .hub-num (Barlow Condensed 600, tabular) and its unit .hub-unit (11 px small
+   caps after it); a delta is a signed figure with a triangle, never a sentence. */
+.hub h2, .hub h3, .hub h4, .hub h5, .hub-panel-head h2, .hub-head h2, #country-panel h3 { font-family: var(--font-body); font-weight: 600; letter-spacing: -.005em; }
+.hub-sec-head h2 { font-size: 1.3rem; }
+.hub h3, .hub-card-head h3, .hub .card h3, .hub-basis h3, .hub-rule h3 { font-size: 15px; line-height: 1.35; }
+.hub-head h1, .hub h1 { font-family: var(--font-display); }
+.hub-num, .hub-kpi .v, .hub-summary .big, .hub-opp-grid .v.big, .hub-preview-grid b, .hub-vint-n, .hub-runbar b, .hub-vgroup-head b, .hub-register td.num, .hub-vintages .num, .hub-ibar .v {
+  font-family: var(--font-label); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: .01em; text-transform: none;
+}
+.hub-kpi .v { font-size: 26px; line-height: 1.2; }
+.hub-unit { font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: .08em; font-variant-caps: all-small-caps; color: var(--muted); margin-left: .3em; vertical-align: baseline; text-transform: none; }
+.hub-num > .hub-unit, .hub-kpi .v .hub-unit { font-size: 11px; }
+.hub-delta { white-space: nowrap; }
+.hub-delta.up { color: var(--ok); } .hub-delta.down { color: var(--bad); }
+.hub-delta.up::before { content: '\25B2\00A0'; font-size: .7em; } .hub-delta.down::before { content: '\25BC\00A0'; font-size: .7em; }
+
+/* R8: labels and pills are 12 px with .14em tracking, everywhere. */
+.hub .label, .hub-pill, .hub-table th, .hub-partners th, .hub-field label, .hub-kv dt, .hub-crumb, .hub-kpi .k, .hub-flag, .hub-kind, .hub-stale, .hub-count, .hub-nav-group,
+.hub-opp-grid .k, .hub-rp-card h4, .hub-brief-block h4, .hub-intel-sec h4, .hub-palette-group h4, .hub-tabs .n, .hub-research-group h4 .n, .hub-tl-date span, .hub-foot, .skip-link,
+.hub-rp-details summary, .hub-opp summary, .hub-mailbox fieldset legend, .hub-dr-send h4, .hub-draft-result h4, .hub-globe-hint, .hub-globe-tip, .hub-src, .hub-changelog-full h5,
+.hub-sl-label, .find-field label, .find-date label, .hub-find button, .hub-palette-btn kbd, .hub-chip-tag, .hub-asset, .hub-lt { font-size: 12px; }
+.hub .label, .hub-pill, .hub-table th, .hub-partners th, .hub-field label, .hub-kv dt, .hub-kpi .k, .hub-flag, .hub-kind, .hub-stale, .hub-nav-group, .hub-opp-grid .k, .hub-rp-card h4,
+.hub-brief-block h4, .hub-intel-sec h4, .hub-palette-group h4, .hub-sl-label, .find-field label, .find-date label, .hub-mailbox fieldset legend, .hub-rp-details summary, .hub-opp summary { letter-spacing: .14em; }
+.hub-pill { padding: 2px 10px; }
+.hub-stateline-card .hub-sl-label, .hub-stateline-row .hub-sl-label { font-size: 12px; }
+
+/* R8: EN/ES is a 36 px segmented control, in the sidebar and in Settings → Language. */
+.hub .nav-lang { display: inline-flex; gap: 2px; padding: 3px; margin: 14px 12px 0; border: 1px solid rgba(255,255,255,.28); border-left: 1px solid rgba(255,255,255,.28); border-top: 1px solid rgba(255,255,255,.28); border-radius: 999px; background: rgba(255,255,255,.04); }
+.hub .nav-lang button { min-height: 36px; min-width: 48px; padding: 0 14px; font-size: 12px; letter-spacing: .14em; border-radius: 999px; color: rgba(255,255,255,.78); transition: none; }
+.hub .nav-lang button.active { background: var(--gold); color: var(--navy); }
+.hub .nav-lang button:hover:not(.active) { color: var(--gold); }
+.hub .nav-lang button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hub-lang-seg { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--navy); border-radius: 999px; background: var(--white); }
+.hub-lang-seg button { min-height: 36px; min-width: 48px; padding: 0 14px; border: none; border-radius: 999px; background: none; cursor: pointer; font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .14em; color: var(--navy-mid); transition: background .15s, color .15s; }
+.hub-lang-seg button.active { background: var(--navy); color: var(--white); }
+.hub-lang-seg button:hover:not(.active) { color: var(--gold-ink); }
+
+/* R8: one responsive table pattern. The wrap scrolls sideways, the first column stays put and the right edge fades
+   so a cut-off column reads as "more to the right". Used by the register, headline numbers, partner assignment,
+   the scorecard, the infrastructure lines and the runs table. */
+.hub-table-wrap {
+  position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%;   /* relative: absolutely positioned helpers inside (sr-only) stay inside the scroll box */
+  background:
+    linear-gradient(to right, var(--white) 30%, rgba(255,255,255,0)) left / 48px 100% no-repeat local,
+    linear-gradient(to left, var(--white) 30%, rgba(255,255,255,0)) right / 48px 100% no-repeat local,
+    linear-gradient(to right, rgba(11,31,58,.14), rgba(11,31,58,0)) left / 14px 100% no-repeat scroll,
+    linear-gradient(to left, rgba(11,31,58,.14), rgba(11,31,58,0)) right / 14px 100% no-repeat scroll;
+}
+.hub-table-wrap > table { background: transparent; }
+.hub-table-wrap > table th:first-child, .hub-table-wrap > table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--white); box-shadow: inset -1px 0 0 var(--rule); }
+.hub-table-wrap > table thead th:first-child { background: #FBFAF6; z-index: 2; }
+.hub-table-wrap > table tr:hover td:first-child { background: #FCFBF7; }
+.hub-partners td { white-space: nowrap; }
+.hub-partners input { min-width: 160px; }
+
+/* R9: the sticky Save bar on Settings, shown only while a field is dirty. */
+.hub-savebar {
+  position: sticky; bottom: 0; z-index: 30; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 24px -36px -32px; padding: 12px 36px; background: rgba(255,255,255,.96); border-top: 1px solid var(--gold);
+  box-shadow: 0 -8px 24px rgba(11,31,58,.08); backdrop-filter: blur(6px);
+}
+.hub-savebar .btn-primary { min-height: 44px; }
+.hub-savebar .btn-outline { min-height: 44px; }
+.hub-savebar[data-state="saved"] { border-top-color: var(--ok-line); }
+.hub-sec-you, .hub-sec-firm { margin-top: 28px; }
+.hub-sec-you > .hub-sec-head, .hub-sec-firm > .hub-sec-head { border-bottom: 1px solid var(--gold); padding-bottom: 8px; margin-bottom: 16px; }
+.hub-sec-you .card, .hub-sec-firm .card { margin-bottom: 16px; }
+.hub-sec-firm form .card { margin-bottom: 16px; }
+.hub-lang-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px 20px; }
+#connections-empty, #mailbox-off > p, #sec-plan-your-job > .hub-sec-head p { margin: 0; }
+#connections-empty, #mailbox-off > p { padding: 14px 20px 16px; }
+#mailbox-off > .hub-actions:has(> [hidden]) { padding: 0; }
+
+/* R8: touch. Below 1024 px every control has a 36 px hit area (44 for primary actions and row taps), through
+   padding, not font size. Links inside running prose keep their line. */
+@media (max-width: 1024px) {
+  .hub button, .hub .btn, .hub input:not([type="radio"]):not([type="checkbox"]), .hub select, .hub textarea, .hub summary,
+  .hub-nav a, .hub-chip, .find-chip, .hub-tabs button, .hub-toolbar a, .hub-sl-token, .hub-country, .hub-country-project, .hub-palette-btn,
+  .hub-viewer-tab, .hub-cite, .hub-rp-pivot, .hub-field-pt, .hub-flag, .hub-select, .hub-stage-ctl select, .hub-find, .hub-find input, .hub-find button { min-height: 36px; box-sizing: border-box; }
+  .hub .btn-sm { padding-top: 6px; padding-bottom: 6px; }
+  .hub-tabs button { padding-top: 8px; padding-bottom: 8px; }
+  .hub-stateline-row .hub-sl-token, .hub-stateline-card .hub-sl-token { min-height: 36px; padding: 4px 4px; }
+  .hub-linkbtn, .hub-rp-pivot, .hub-cite { display: inline-block; vertical-align: middle; padding-top: 6px; padding-bottom: 6px; }
+  .hub-crumb a { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; min-width: 36px; padding: 0 4px; margin: 0 -4px; }
+  .hub-find { height: auto; padding: 2px 2px 2px 14px; }
+  .hub-find button { padding: 0 14px; border-radius: 999px; }
+  .hub-side .nav-lang button { min-height: 36px; }
+  .hub-rp-details summary, .hub-opp summary { display: flex; align-items: center; }
+  /* primary actions and row taps */
+  .hub .btn-primary, .hub [type="submit"], .hub-tl-item .hub-tl-title, [data-register-row] a, .hub-tl-item > a, .hub-tl-item > button { min-height: 44px; }
+  .hub-tl-item .hub-tl-title { display: inline-block; vertical-align: middle; padding-top: 12px; padding-bottom: 12px; }
+  [data-register-row] a { display: inline-flex; align-items: center; }
+}
+@media (max-width: 900px) { .hub-savebar { margin: 20px -16px -28px; padding: 10px 16px; } }
+@media (max-width: 640px) {
+  .hub-top { height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px 12px; padding-top: 8px; padding-bottom: 8px; }
+  .hub-find { flex: 1 1 180px; width: auto; min-width: 0; }
+  .hub-palette-btn { margin-left: 0; }
+}
+@media (max-width: 640px) { .hub-kpi .v { font-size: 22px; } }
+
+/* ── Wave 7 PR2 E: chrome, Today, globe, palette ── */
+/* the status strip (idea C): 28 px under the top bar, sidebar navy, gold figures, zeros dimmed, a dash when the Vault is away */
+.hub .hub-strip { box-sizing: border-box; min-height: 28px; background: var(--navy); color: var(--gold); display: flex; flex-wrap: wrap; align-items: center; gap: 0 9px; padding: 0 36px; font-family: var(--font-label); font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; position: sticky; top: 56px; z-index: 19; }
+/* each figure is a 36 px hit area (W7-AC9) inside the 28 px line: the extra sits in negative margins */
+.hub .hub-strip-fig, .hub .hub-strip-dot, .hub .hub-strip-sep { display: inline-flex; align-items: center; min-height: 36px; margin: -4px 0; }
+.hub .hub-strip a.hub-strip-fig { padding: 0 2px; }
+.hub .hub-strip-dot { color: #4CB58A; font-size: 10px; }
+.hub .hub-strip[data-state="off"] .hub-strip-dot, .hub .hub-strip[data-state="unknown"] .hub-strip-dot { color: rgba(255,255,255,.45); }
+.hub .hub-strip-fig { color: var(--gold); text-decoration: none; font-variant-numeric: tabular-nums; }
+.hub .hub-strip a.hub-strip-fig:hover, .hub .hub-strip a.hub-strip-fig:focus-visible { color: var(--gold-light); text-decoration: underline; text-underline-offset: 3px; outline: none; }
+.hub .hub-strip-fig[data-zero="1"] { color: rgba(201,168,76,.8); font-weight: 400; }   /* dimmed, still AA on the navy */
+.hub .hub-strip[data-state="off"] .hub-strip-fig { color: rgba(255,255,255,.6); }
+.hub .hub-strip-sep { color: rgba(201,168,76,.45); }
+/* the Queues count in the sidebar (R3) */
+.hub .hub-nav-count { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--gold); color: var(--navy); font-family: var(--font-label); font-size: 11px; font-weight: 700; letter-spacing: 0; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.hub .hub-more-btn { display: none; }
+/* below 900 px: the navy block is a 56 px bottom bar of five icons; More opens the user card, Settings and the language switch */
+@media (max-width: 900px) {
+  .hub .hub-app { padding-bottom: 56px; }
+  .hub .hub-side { position: fixed; left: 0; right: 0; bottom: 0; top: auto; height: 56px; z-index: 60; padding: 0; display: flex; flex-wrap: wrap; align-items: stretch; overflow: visible; border-right: none; border-top: 1px solid rgba(201,168,76,.3); box-shadow: 0 -4px 14px rgba(11,31,58,.18); }
+  .hub .hub-side nav, .hub .hub-side .hub-nav { display: contents; }
+  .hub .hub-side [data-bar] { flex: 1 1 20%; min-width: 0; height: 56px; order: 10; margin: 0; padding: 0; border-radius: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: var(--font-label); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.82); background: none; border: none; cursor: pointer; }
+  .hub .hub-side [data-bar="today"] { order: 10; } .hub .hub-side [data-bar="projects"] { order: 11; } .hub .hub-side [data-bar="find"] { order: 12; } .hub .hub-side [data-bar="queue"] { order: 13; } .hub .hub-side [data-bar="more"] { order: 14; }
+  .hub .hub-side [data-bar] .hub-ic { width: 20px; height: 20px; }
+  .hub .hub-side [data-bar][aria-current="page"], .hub .hub-side [data-bar][aria-expanded="true"] { color: var(--gold); background: rgba(201,168,76,.13); }
+  .hub .hub-side [data-bar][aria-current="page"]::before { display: none; }
+  .hub .hub-side [data-bar="queue"] { position: relative; }
+  .hub .hub-side [data-bar] .hub-nav-count { position: absolute; margin: 0; top: 6px; left: calc(50% + 6px); height: 16px; min-width: 16px; font-size: 10px; padding: 0 4px; }
+  .hub .hub-more-btn { display: flex; }
+  .hub .hub-side .hub-brand, .hub .hub-side .hub-me, .hub .hub-side .hub-nav-group, .hub .hub-side a[data-nav="settings"] { display: none; order: 1; flex: 1 1 100%; margin: 0 12px; }
+  /* the language switch stays in reach: a navy pill at the right end of the top bar (W7-AC9: 36 × 44 px buttons) */
+  .hub .hub-side .nav-lang { display: flex; position: fixed; top: 10px; right: 12px; z-index: 61; margin: 0; padding: 0 2px; border: none; background: var(--navy); border-radius: 999px; gap: 0; }
+  .hub .hub-side .nav-lang button { min-height: 36px; min-width: 44px; padding: 0 10px; font-size: 12px; border-radius: 999px; }
+  .hub .hub-side .nav-lang button.active { background: rgba(201,168,76,.18); }
+  .hub .hub-top { position: sticky; top: 0; z-index: 20; padding-right: 112px; }
+  .hub .hub-side[data-more="open"] { height: auto; max-height: 80vh; overflow-y: auto; padding-top: 14px; }
+  .hub .hub-side[data-more="open"] .hub-me { display: flex; margin-bottom: 10px; }
+  .hub .hub-side[data-more="open"] .hub-nav-group { display: block; padding: 6px 10px 4px; }
+  .hub .hub-side[data-more="open"] .hub-nav-group:first-of-type { display: none; }
+  .hub .hub-side[data-more="open"] a[data-nav="settings"] { display: flex; min-height: 44px; }
+  .hub .hub-strip { padding: 0 16px; position: static; }
+}
+/* Today's head is one short row: the globe and the register are the page */
+.hub .hub-head-today { margin-bottom: 12px; align-items: center; }
+.hub .hub-head-today h1 { font-size: 1.6rem; margin-top: 2px; }
+.hub .hub-head-today .label { font-size: 12px; }
+/* the globe at 55 % with the live register beside it, scrolling inside its column (idea A) */
+.hub .hub-globe { grid-template-columns: 55fr 45fr; gap: 24px; align-items: stretch; margin-bottom: 0; }
+.hub .hub-globe-wrap { max-height: none; align-self: start; }   /* its height follows its width; the row, and the register column, follow it */
+.hub .hub-globe-side { display: flex; flex-direction: column; height: 0; min-height: 100%; }
+.hub .hub-globe-side .hub-reg-head { margin-bottom: 8px; flex: none; }
+.hub .hub-globe-side .hub-reg-head h2 { font-size: 1.25rem; }
+.hub .hub-reg-filters { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; flex: none; font-size: 12.5px; }
+.hub .hub-reg-filters .hub-select { font: inherit; font-size: 12.5px; padding: 4px 8px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--white); color: var(--navy); min-height: 32px; }
+.hub .hub-register-live { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.hub .hub-reg-group { margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.hub .hub-reg-group .hub-country { border-radius: var(--r-lg) var(--r-lg) 0 0; position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--rule); min-height: 44px; }
+.hub .hub-reg-group div.hub-country { cursor: default; }
+.hub .hub-reg-group div.hub-country:hover { border-color: var(--rule); background: var(--white); }
+.hub .hub-reg-rows { background: var(--white); border: 1px solid var(--rule); border-top: none; padding: 0 14px; }
+.hub .hub-reg-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 2px 0; border-bottom: 1px solid #ECEEF1; cursor: pointer; scroll-margin-top: 48px; }
+.hub .hub-reg-row:last-child { border-bottom: none; }
+.hub .hub-reg-row .hub-stateline-row { flex: 1 1 320px; border-bottom: none; padding: 6px 0; }
+.hub .hub-reg-row:hover { background: #FCFBF7; }
+.hub .hub-reg-row[data-hot="1"], .hub .hub-country-project[data-hot="1"] { background: #F6EED6; box-shadow: inset 3px 0 0 var(--gold); }
+.hub .hub-risk-tag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-label); font-size: 12px; letter-spacing: .04em; color: var(--navy-mid); white-space: nowrap; padding: 2px 0 6px; font-variant-numeric: tabular-nums; }
+.hub .hub-risk-tag .hub-sl-label { font-size: 12px; }
+.hub .hub-reg-group .hub-create-here-btn { align-self: stretch; margin: 0 0 2px; border-radius: 0 0 var(--r-lg) var(--r-lg); border-top: none; text-align: left; }
+.hub .hub-country-projects .hub-country-project { display: block; padding: 6px 14px 10px; }
+.hub .hub-country-project .hub-stateline-row { border-bottom: none; }
+.hub .hub-country-project .flags, .hub .hub-country-project .hub-country-fields { margin-top: 4px; }
+.hub #country-panel { min-height: 0; overflow-y: auto; flex: 1 1 0; padding-right: 4px; }
+.hub .hub-create-here { margin-top: 10px; }
+@media (max-width: 900px) {
+  .hub .hub-globe { grid-template-columns: 1fr; gap: 16px; }
+  .hub .hub-globe-side { height: auto; min-height: 0; }
+  .hub .hub-register-live { max-height: 60vh; }
+  .hub #country-panel { max-height: none; flex: none; overflow: visible; }
+}
+/* What came in: a full-width band, figures as a grid, record chips as links (R4) */
+.hub #sec-activity { margin-top: 24px; }
+.hub .hub-activity-counts { display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 12px 20px; border-bottom: 1px solid var(--rule); }
+.hub .hub-activity-counts .hub-fig-sep { display: none; }
+.hub .hub-activity-counts .hub-fig { display: inline-flex; align-items: baseline; gap: 6px; }
+.hub .hub-activity-counts .hub-fig .hub-num { font-family: var(--font-label); font-weight: 600; font-size: 22px; line-height: 1; color: var(--navy); font-variant-numeric: tabular-nums; }
+.hub .hub-activity-counts .hub-fig .hub-unit { font-family: var(--font-label); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hub .hub-activity[data-empty="1"] .hub-activity-counts { border-bottom: none; }
+.hub .hub-activity .hub-cite { text-decoration: none; border-bottom: 1px solid var(--gold); }
+.hub .hub-activity .hub-cite::after { content: ' ›'; color: var(--gold-ink); }
+.hub .hub-activity .hub-cite:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* the four counters (R4, R12): one row, one line each at zero */
+.hub #sec-counters { margin-top: 16px; }
+.hub .hub-counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.hub .hub-counter-head { padding: 10px 16px; gap: 10px; }
+.hub .hub-counter[data-empty="1"] .hub-counter-head { border-bottom: none; }
+.hub .hub-counter-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.hub .hub-counter-title h3 { font-family: var(--font-body); font-weight: 600; font-size: 15px; line-height: 1.3; }
+.hub .hub-counter-title .hub-item-ico { width: 26px; height: 26px; }
+.hub .hub-counter .hub-fig .hub-num { font-family: var(--font-label); font-weight: 600; font-size: 22px; line-height: 1; color: var(--navy); font-variant-numeric: tabular-nums; }
+.hub .hub-counter[data-empty="1"] .hub-fig .hub-num { color: var(--muted); }
+.hub .hub-counter .hub-item { padding: 10px 16px; }
+@media (max-width: 1100px) { .hub .hub-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .hub .hub-counters { grid-template-columns: 1fr; } }
+/* skeletons while data-ready is unset (R12) */
+.hub .hub-skel { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; }
+.hub .hub-skel span { display: block; height: 14px; border-radius: 4px; background: linear-gradient(90deg, #E9ECF0 0%, #F5F6F8 50%, #E9ECF0 100%); background-size: 200% 100%; animation: hub-skel 1.2s linear infinite; }
+.hub .hub-skel span:nth-child(2) { width: 82%; } .hub .hub-skel span:nth-child(3) { width: 64%; } .hub .hub-skel span:nth-child(4) { width: 74%; }
+@keyframes hub-skel { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .hub .hub-skel span { animation: none; } }
+body.hub[data-ready="1"] .hub-skel { display: none; }
+/* the palette on touch (R7): an icon and "Jump" */
+.hub .hub-palette-btn[data-touch="1"] { min-height: 36px; gap: 6px; }
+.hub .hub-palette-btn[data-touch="1"] .hub-ic { width: 16px; height: 16px; }
+@media (max-width: 640px) { .hub .hub-palette-btn[data-touch="1"] span { display: inline; } }
+.hub .hub-palette-group[data-group="records"] .hub-palette-item .l::before { content: '§ '; color: var(--gold-ink); }
+
+/* ── Wave 7 PR2, at the merge: the last four controls under the touch minimum ── */
+@media (max-width: 1024px) {
+  .hub-register-filters select, #reg-filters select, select.hub-select { min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
+  .hub-project #p-draft-btn.btn-primary, .hub-draft-btn.btn-primary { min-height: 44px; padding-top: 10px; padding-bottom: 10px; }
+  /* a register row is a row tap: its tokens take the 44 px primary size on touch widths */
+  .hub-stateline-row .hub-sl-token, [data-register-row] .hub-sl-token { min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
+}
+/* labels never below 12 px, whatever the size of the line they sit in (W7-AC9) */
+.hub .hub-sl-label, .hub-stateline .hub-sl-label, .hub-stateline-row .hub-sl-label, .hub-stateline-card .hub-sl-label, .hub .label, .hub-head .label { font-size: 12px; }

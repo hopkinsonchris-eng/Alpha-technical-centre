@@ -89,9 +89,17 @@ function notice(kind, boldEn, boldEs, en, es) {
 
 /* ── cost ────────────────────────────────────────────────────────────── */
 
-function kpi(key, en, es, value, noteEn, noteEs, tone) {
+/** A figure with its unit after it (idea D): the number in Barlow Condensed tabular, the unit in small caps. */
+function figure(tag, cls, value, unit, attrs) {
+  const el = mk(tag, (cls ? cls + ' ' : '') + 'hub-num', null, null, attrs);
+  add(el, dv('span', null, value));
+  if (unit) add(el, mk('span', 'hub-unit', unit, unit));
+  return el;
+}
+
+function kpi(key, en, es, value, unit, noteEn, noteEs, tone) {
   const c = mk('div', 'hub-kpi', null, null, { 'data-kpi': key });
-  add(c, mk('span', 'k', en, es), dv('span', 'v' + (tone ? ' ' + tone : ''), value, { 'data-value': '' }), noteEn ? mk('span', 'd', noteEn, noteEs) : null);
+  add(c, mk('span', 'k', en, es), figure('span', 'v' + (tone ? ' ' + tone : ''), value, unit, { 'data-value': '' }), noteEn ? mk('span', 'd', noteEn, noteEs) : null);
   return c;
 }
 
@@ -101,13 +109,14 @@ function renderKpis(cost) {
   host.removeAttribute('hidden');
   const infra = cost.infrastructure, over = infra.total_usd > infra.ceiling_usd;
   add(host,
-    kpi('llm', 'Tokens (LLM)', 'Tokens (LLM)', 'USD ' + usd(cost.llm.cost_usd), cost.llm.calls + ' calls', cost.llm.calls + ' llamadas'),
+    kpi('llm', 'Tokens (LLM)', 'Tokens (LLM)', usd(cost.llm.cost_usd), 'USD', cost.llm.calls + ' calls', cost.llm.calls + ' llamadas'),
     // Wave 7 (S39): planning defaults are said to be defaults; no acceptance-criterion ids in what a partner reads.
-    kpi('infra', 'Infrastructure', 'Infraestructura', 'USD ' + usd(infra.total_usd),
+    kpi('infra', 'Infrastructure', 'Infraestructura', usd(infra.total_usd), 'USD',
       (over ? 'above the ' + infra.ceiling_usd + ' ceiling' : 'within the ' + infra.ceiling_usd + ' ceiling') + (infra.source === 'settings' ? '' : ' · planning defaults, no invoices entered'),
       (over ? 'por encima del techo de ' + infra.ceiling_usd : 'dentro del techo de ' + infra.ceiling_usd) + (infra.source === 'settings' ? '' : ' · valores de planificación, sin facturas'), over ? 'bad' : ''),
-    kpi('total', 'Total', 'Total', 'USD ' + usd(cost.total_usd), 'tokens plus infrastructure', 'tokens más infraestructura'),
-    kpi('cache', 'Cache hit rate', 'Tasa de aciertos de caché', pct(cost.llm.cache_hit_rate), 'cached share of input tokens', 'parte de tokens de entrada en caché'));
+    kpi('total', 'Total', 'Total', usd(cost.total_usd), 'USD', 'tokens plus infrastructure', 'tokens más infraestructura'));
+  // R10: Cache hit rate only once there is a value; an empty figure is not a figure.
+  if (typeof cost.llm.cache_hit_rate === 'number') add(host, kpi('cache', 'Cache hit rate', 'Tasa de aciertos de caché', String(Math.round(cost.llm.cache_hit_rate * 100)), '%', 'cached share of input tokens', 'parte de tokens de entrada en caché'));
   if (cost.llm.unpriced_calls) {
     add($('#notices'), notice('warn', cost.llm.unpriced_calls + ' call(s) have no price.', cost.llm.unpriced_calls + ' llamada(s) sin precio.',
       'Their tokens are counted but their cost is not; add the model to the price table.', 'Sus tokens se cuentan pero su coste no; añada el modelo a la tabla de precios.'));
@@ -140,7 +149,7 @@ function renderBars(cost) {
   for (const f of cost.features) {
     const en = FEATURE_EN[f.feature] || f.label, es = FEATURE_ES[f.feature] || f.label;
     const row = mk('div', 'c-feat', null, null, { 'data-feature': f.feature, 'data-cost': String(f.cost_usd) });
-    add(row, add(mk('div', 'c-feat-top'), mk('span', null, en, es), dv('b', null, 'USD ' + usd(f.cost_usd))));
+    add(row, add(mk('div', 'c-feat-top'), mk('span', null, en, es), figure('b', null, usd(f.cost_usd), 'USD')));
     const bar = mk('div', 'hub-bar' + (exceeded.has(f.feature) ? ' over' : ''), null, null, { role: 'img', 'aria-label': en + ': USD ' + usd(f.cost_usd) });
     const fill = document.createElement('i');
     fill.style.width = (max > 0 ? Math.max(f.cost_usd > 0 ? 2 : 0, (f.cost_usd / max) * 100) : 0) + '%';
@@ -153,12 +162,22 @@ function renderBars(cost) {
     add(row, mk('span', 'c-note', bits.join(' · '), bitsEs.join(' · ')));
     add(host, row);
   }
-  add(host, add(mk('div', 'c-total', null, null, { 'data-llm-total': String(cost.llm.cost_usd) }), mk('span', null, 'Total tokens', 'Total de tokens'), dv('span', null, 'USD ' + usd(cost.llm.cost_usd))));
+  add(host, add(mk('div', 'c-total', null, null, { 'data-llm-total': String(cost.llm.cost_usd) }), mk('span', null, 'Total tokens', 'Total de tokens'), figure('span', null, usd(cost.llm.cost_usd), 'USD')));
 }
 
 function renderWeeks(cost) {
   const host = $('#weeks');
   host.textContent = '';
+  host.classList.toggle('is-note', cost.weekly.length < 2);
+  if (cost.weekly.length < 2) {
+    // R10: one point is a sentence, not a chart.
+    const w = cost.weekly[0];
+    add(host, w
+      ? mk('p', 'c-weeks-note', null, null, { 'data-weeks-note': w.week })
+      : mk('p', 'c-weeks-note', 'No spend recorded yet in this period.', 'Aún no hay gasto registrado en este periodo.', { 'data-weeks-note': '' }));
+    if (w) add(host.firstChild, mk('span', null, 'One week so far, from ' + shortDay(w.week, 'en-GB') + ': ', 'Una semana hasta ahora, desde el ' + shortDay(w.week, 'es-ES') + ': '), figure('span', null, usd(w.cost_usd), 'USD'), mk('span', null, '.', '.'));
+    return;
+  }
   const max = Math.max(0, ...cost.weekly.map((w) => w.cost_usd));
   cost.weekly.forEach((w, i) => {
     const col = mk('div', 'c-week' + (i === cost.weekly.length - 1 ? ' now' : ''), null, null, { 'data-week': w.week, 'data-cost': String(w.cost_usd), title: 'USD ' + usd(w.cost_usd) });
@@ -175,20 +194,20 @@ function renderInfra(cost) {
   body.textContent = '';
   for (const l of infra.lines) {
     add(body, add(mk('tr', null, null, null, { 'data-infra-line': l.key, 'data-usd': String(l.usd_month) }),
-      dv('td', null, l.label), dv('td', null, l.plan), dv('td', 'r', usd(l.usd_month))));
+      dv('td', null, l.label), dv('td', null, l.plan), dv('td', 'r hub-num', usd(l.usd_month))));
   }
   const over = infra.total_usd > infra.ceiling_usd;
   add(body, add(mk('tr', 'sum', null, null, { 'data-infra-total': String(infra.total_usd) }),
     add(mk('td'), mk('b', null, 'Infrastructure total', 'Total de infraestructura')),
     add(mk('td', 'hub-muted'), mk('span', null, 'ceiling ' + infra.ceiling_usd + (over ? ' (exceeded)' : ''), 'techo ' + infra.ceiling_usd + (over ? ' (superado)' : ''))),
-    dv('td', 'r', usd(infra.total_usd))));
+    dv('td', 'r hub-num', usd(infra.total_usd))));
   add(body, add(mk('tr', null, null, null, { 'data-llm-line': String(cost.llm.cost_usd) }),
-    mk('td', null, 'LLM tokens', 'Tokens LLM'), mk('td', null, 'Anthropic, all features', 'Anthropic, todas las funciones'), dv('td', 'r', usd(cost.llm.cost_usd))));
+    mk('td', null, 'LLM tokens', 'Tokens LLM'), mk('td', null, 'Anthropic, all features', 'Anthropic, todas las funciones'), dv('td', 'r hub-num', usd(cost.llm.cost_usd))));
   add(body, add(mk('tr', 'grand', null, null, { 'data-grand-total': String(cost.total_usd) }),
-    add(mk('td'), mk('b', null, 'Total', 'Total')), mk('td'), dv('td', 'r', usd(cost.total_usd))));
+    add(mk('td'), mk('b', null, 'Total', 'Total')), mk('td'), dv('td', 'r hub-num', usd(cost.total_usd))));
   if (infra.source === 'default') {
     add($('#notices'), notice('warn', 'Infrastructure lines are the planning defaults.', 'Las partidas de infraestructura son las previstas por defecto.',
-      'Enter the real invoices in settings (infra_costs) and they replace these.', 'Introduzca las facturas reales en ajustes (infra_costs) y las sustituirán.'));
+      'Enter the real invoices in Settings and they replace these.', 'Introduzca las facturas reales en Ajustes y las sustituirán.'));
   }
   if (infra.ignored && infra.ignored.length) {
     add($('#notices'), notice('warn', 'Some infrastructure entries were ignored.', 'Se ignoraron algunas partidas de infraestructura.', infra.ignored.join(', '), infra.ignored.join(', ')));
@@ -246,19 +265,20 @@ function metricBlock(results, key, titleEn, titleEs, subEn, subEs) {
   const box = mk('div', null, null, null, { 'data-metric': key });
   const top = add(mk('div', 'c-metric-top'), mk('span', 'label', titleEn, titleEs));
   if (!last) { add(box, top, mk('p', 'hub-muted', 'Not measured in the latest run.', 'No medido en la última ejecución.')); return box; }
-  add(top, dv('span', 'big', last.v.toFixed(2), { 'data-value': last.v.toFixed(2) }));
+  add(top, dv('span', 'big hub-num', last.v.toFixed(2), { 'data-value': last.v.toFixed(2) }));
   if (typeof target === 'number') {
     const ok = last.v >= target;
     add(top, mk('span', 'hub-pill ' + (ok ? 'ok' : 'bad'), (ok ? 'Target ≥ ' : 'Below target ≥ ') + target.toFixed(2), (ok ? 'Objetivo ≥ ' : 'Bajo el objetivo ≥ ') + target.toFixed(2), { 'data-target-met': ok ? 'yes' : 'no' }));
   }
   if (prev) {
     const d = last.v - prev.v, s = (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(2);
-    add(top, mk('span', 'c-delta ' + (d > 0 ? 'up' : d < 0 ? 'down' : ''), s + ' vs last run', s + ' frente a la última', { 'data-delta': s }));
+    // Idea D: a signed figure with a triangle, never a sentence.
+    add(top, add(mk('span', 'c-delta hub-num hub-delta' + (d > 0 ? ' up' : d < 0 ? ' down' : ''), null, null, { 'data-delta': s }), dv('span', null, s), mk('span', 'hub-unit', 'vs last run', 'frente a la última')));
   } else {
     add(top, mk('span', 'hub-muted', 'first run', 'primera ejecución'));
   }
   add(box, top, subEn ? mk('p', 'hub-muted', subEn, subEs) : null);
-  add(box, sparkline(pts, typeof target === 'number' ? target : 0));
+  if (pts.length >= 2) add(box, sparkline(pts, typeof target === 'number' ? target : 0));   // R10: a chart needs two points
   return box;
 }
 
@@ -270,11 +290,17 @@ async function renderRagas() {
   const results = res.ok ? listOf(res.body, 'results') : [];
   if (!res.ok) { add(host, notice('bad', 'Could not load the evaluation results.', 'No se pudieron cargar los resultados de evaluación.', errText(res), errText(res))); return; }
   if (!results.length) {
-    add(host, mk('div', 'hub-empty', 'No evaluation has run yet. From the vault folder: npx tsx eval/runner.ts', 'Aún no se ha ejecutado ninguna evaluación. Desde la carpeta vault: npx tsx eval/runner.ts'));
+    add(host, mk('div', 'hub-empty', 'No evaluation has run yet. Ask Chris to run one.', 'Aún no se ha ejecutado ninguna evaluación. Pida a Chris que ejecute una.'));
     return;
   }
   const latest = results[results.length - 1];
-  setText($('#ragas-note'), (latest.questions || '?') + ' gold questions · latest run ' + latest.date + (latest.passed ? '' : ' · below threshold'), (latest.questions || '?') + ' preguntas de referencia · última ejecución ' + latest.date + (latest.passed ? '' : ' · bajo el umbral'));
+  setText($('#ragas-note'), (latest.questions || '?') + ' reference questions · latest run ' + latest.date + (latest.passed ? '' : ' · below threshold'), (latest.questions || '?') + ' preguntas de referencia · última ejecución ' + latest.date + (latest.passed ? '' : ' · bajo el umbral'));
+  if (results.length === 1) {
+    // R10: one evaluation is a sentence, not two charts.
+    const m1 = latest.metrics || {};
+    const f = typeof m1.faithfulness === 'number' ? m1.faithfulness.toFixed(2) : '—', p = typeof m1.context_precision === 'number' ? m1.context_precision.toFixed(2) : '—';
+    add(host, mk('p', 'c-first', 'First evaluation ' + shortDay(latest.date, 'en-GB') + ': faithfulness ' + f + ', precision ' + p + '.', 'Primera evaluación ' + shortDay(latest.date, 'es-ES') + ': fidelidad ' + f + ', precisión ' + p + '.', { 'data-first-eval': latest.date }));
+  }
   const grid = mk('div', 'c-ragas');
   add(grid,
     metricBlock(results, 'faithfulness', 'Faithfulness', 'Fidelidad', 'Every claim in the answer is supported by the retrieved context.', 'Cada afirmación de la respuesta está respaldada por el contexto recuperado.'),
@@ -282,9 +308,9 @@ async function renderRagas() {
   add(host, grid);
   const m = latest.metrics || {};
   add(host, add(mk('div', 'c-others'),
-    add(mk('span', null, null, null, { 'data-metric': 'context_recall' }), mk('span', null, 'Context recall ', 'Cobertura de contexto '), dv('b', null, typeof m.context_recall === 'number' ? m.context_recall.toFixed(2) : '—')),
-    add(mk('span', null, null, null, { 'data-metric': 'response_relevancy' }), mk('span', null, 'Response relevancy ', 'Relevancia de la respuesta '), dv('b', null, typeof m.response_relevancy === 'number' ? m.response_relevancy.toFixed(2) : '—')),
-    add(mk('span'), mk('span', null, 'Leaks across scope ', 'Fugas entre ámbitos '), dv('b', null, String(latest.leaks || 0)))));
+    add(mk('span', null, null, null, { 'data-metric': 'context_recall' }), mk('span', null, 'Context recall ', 'Cobertura de contexto '), dv('b', 'hub-num', typeof m.context_recall === 'number' ? m.context_recall.toFixed(2) : '—')),
+    add(mk('span', null, null, null, { 'data-metric': 'response_relevancy' }), mk('span', null, 'Response relevancy ', 'Relevancia de la respuesta '), dv('b', 'hub-num', typeof m.response_relevancy === 'number' ? m.response_relevancy.toFixed(2) : '—')),
+    add(mk('span'), mk('span', null, 'Leaks across scope ', 'Fugas entre ámbitos '), dv('b', 'hub-num', String(latest.leaks || 0)))));
 }
 
 /* ── scorecards ──────────────────────────────────────────────────────── */
@@ -335,7 +361,7 @@ async function renderScorecards() {
       add(row, ruleCell(u, byId.get(r.id)));
     }
     const total = rules.length;
-    add(row, add(mk('td', 'dotcol'), dv('b', null, p.pass + '/' + total, { 'data-score': String(p.pass) })));
+    add(row, add(mk('td', 'dotcol'), dv('b', 'hub-num', p.pass + '/' + total, { 'data-score': String(p.pass) })));
     const rg = RAG[p.rag] || RAG.grey;
     add(row, add(mk('td', 'dotcol'), mk('span', 'hub-rag ' + rg[0], null, null, { 'aria-hidden': 'true' }), mk('span', 'sr-only', rg[1], rg[2])));
     add(body, row);

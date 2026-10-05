@@ -29,39 +29,65 @@ export function mountDraft(ctx, { openRecord }) {
   // Wave 6 (D63): whether this person's mailbox is connected with the send scope; asked once.
   const mailbox = () => state.mailbox || (state.mailbox = api('/api/me/mailbox').then((r) => (r.ok && r.body ? r.body : { connected: false })).catch(() => ({ connected: false })));
 
-  const btn = mk('button', 'btn btn-outline btn-sm hub-draft-btn', null, null, { type: 'button', id: 'p-draft-btn', 'aria-expanded': 'false', 'aria-controls': 'p-draft' });
+  const btn = mk('button', 'btn btn-primary btn-sm hub-draft-btn', null, null, { type: 'button', id: 'p-draft-btn', 'aria-expanded': 'false', 'aria-controls': 'p-draft' });
   btn.insertAdjacentHTML('afterbegin', '<svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M12 6l4 4"/></svg>');
   add(btn, mk('span', null, 'Write to…', 'Escribir a…'));
   add(toolbar, btn);
-  const toggle = (open) => { if (open) { host.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); if (!state.contacts) loadContacts(); brief.focus(); } else { host.setAttribute('hidden', ''); btn.setAttribute('aria-expanded', 'false'); } };
+  // Wave 7 (R13): Write to… is a right-hand panel the width of the record panel at ≥1200 px so the file stays visible while
+  // drafting, and a bottom sheet over a scrim below that; Escape or the scrim close it and focus returns to the button.
+  const scrim = document.getElementById('draft-scrim');
+  // Capture phase: when the record panel is open over the draft, Escape closes that one (project.js) and leaves the draft.
+  const onKey = (ev) => { const rp = document.getElementById('record-panel'); if (ev.key === 'Escape' && (!rp || rp.hasAttribute('hidden'))) toggle(false); };
+  const toggle = (open) => {
+    if (open) {
+      host.removeAttribute('hidden'); if (scrim) scrim.removeAttribute('hidden');
+      document.body.classList.add('has-draft'); btn.setAttribute('aria-expanded', 'true');
+      document.addEventListener('keydown', onKey, true);
+      if (!state.contacts) loadContacts();
+      brief.focus();
+    } else {
+      host.setAttribute('hidden', ''); if (scrim) scrim.removeAttribute('hidden'), scrim.setAttribute('hidden', '');
+      document.body.classList.remove('has-draft'); btn.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('keydown', onKey, true);
+      if (btn.isConnected) btn.focus();
+    }
+  };
   btn.addEventListener('click', () => toggle(host.hasAttribute('hidden')));
+  if (scrim) scrim.addEventListener('click', () => toggle(false));
 
-  // ── the set-up strip ──
+  // ── the panel: head, body (the set-up form, the notices, the result), foot (Draft) ──
   host.textContent = '';
-  const head = mk('div', 'hub-card-head');
-  add(head, add(mk('div'), mk('h3', null, 'Write to…', 'Escribir a…'), mk('span', 'hub-muted', 'A draft from this project\'s file: every figure cites a record, what it does not know comes first.', 'Un borrador del expediente de este proyecto: cada cifra cita un registro; lo que no sabe va primero.')));
-  const close = mk('button', 'btn btn-outline btn-sm', 'Close', 'Cerrar', { type: 'button' }); close.addEventListener('click', () => toggle(false)); add(head, close);
+  const head = mk('div', 'hub-panel-head');
+  add(head, add(mk('div'), mk('span', 'label', 'Draft from the file', 'Borrador del expediente'), mk('h3', null, 'Write to…', 'Escribir a…', { id: 'h-draft' })));
+  const close = mk('button', 'btn btn-outline btn-sm', 'Close', 'Cerrar', { type: 'button', id: 'dr-close' }); close.addEventListener('click', () => toggle(false)); add(head, close);
   add(host, head);
+  const body = mk('div', 'hub-panel-body hub-draft-body');
+  add(body, mk('p', 'hub-muted hub-draft-intro', 'A draft from this project\'s file: every figure cites a record, what it does not know comes first.', 'Un borrador del expediente de este proyecto: cada cifra cita un registro; lo que no sabe va primero.'));
   const setup = mk('form', 'hub-draft-setup', null, null, { id: 'draft-setup', novalidate: '' });
-  const grid = mk('div', 'hub-form-grid');
-  const fld = (id, en, es, input, cls) => add(grid, add(mk('div', 'hub-field' + (cls ? ' ' + cls : '')), mk('label', null, en, es, { for: id }), input));
+  const grid = mk('div', 'hub-form-grid hub-draft-grid');
+  const fld = (id, en, es, input, cls, ...after) => add(grid, add(mk('div', 'hub-field' + (cls ? ' ' + cls : '')), mk('label', null, en, es, { for: id }), input, ...after));
   const kind = mk('select', null, null, null, { id: 'dr-kind' }); for (const [v, en, es] of KINDS) add(kind, mk('option', null, en, es, { value: v }));
   const language = mk('select', null, null, null, { id: 'dr-lang' }); add(language, mk('option', null, 'English', 'Inglés', { value: 'en' }), mk('option', null, 'Spanish', 'Español', { value: 'es' }));
   const to = mk('select', null, null, null, { id: 'dr-to' }); add(to, mk('option', null, 'Loading contacts…', 'Cargando contactos…', { value: '' }));
-  const brief = mk('textarea', null, null, null, { id: 'dr-brief', rows: '3', placeholder: 'What to say, in a sentence or two' });
-  fld('dr-kind', 'Kind', 'Tipo', kind); fld('dr-lang', 'Language', 'Idioma', language); fld('dr-to', 'To', 'Para', to);
+  const brief = mk('textarea', null, null, null, { id: 'dr-brief', rows: '4', placeholder: 'What to say, in a sentence or two', 'data-en-ph': 'What to say, in a sentence or two', 'data-es-ph': 'Qué decir, en una o dos frases' });
+  // The contact warning and the counterparties without a contact are hints under To, inside the field.
+  const scope = mk('div', 'hub-draft-hint', null, null, { id: 'dr-scope' });
+  const noContact = mk('div', 'hub-draft-hint', null, null, { id: 'dr-nocontact' });
+  fld('dr-kind', 'Kind', 'Tipo', kind); fld('dr-lang', 'Language', 'Idioma', language);
+  fld('dr-to', 'To', 'Para', to, 'hub-opp-text', scope, noContact);
   fld('dr-brief', 'Brief', 'Encargo', brief, 'hub-opp-text');
   add(setup, grid);
-  const scope = mk('div', null, null, null, { id: 'dr-scope' });
-  const noContact = mk('div', null, null, null, { id: 'dr-nocontact' });
-  const actions = mk('div', 'hub-actions');
-  const go = mk('button', 'btn btn-primary btn-sm', 'Draft', 'Redactar', { type: 'submit', id: 'dr-go' });
-  add(actions, go);
-  add(setup, scope, noContact, actions);
-  add(host, setup);
+  add(body, setup);
   const notices = mk('div', null, null, null, { id: 'dr-notices', role: 'status' });
   const result = mk('div', 'hub-draft-result', null, null, { id: 'dr-result', hidden: '' });
-  add(host, notices, result);
+  add(body, notices, result);
+  add(host, body);
+  // Draft: a full-width gold button at the foot of the panel; it submits the set-up form.
+  const foot = mk('div', 'hub-draft-foot');
+  const go = mk('button', 'btn btn-primary hub-draft-go', null, null, { type: 'submit', id: 'dr-go', form: 'draft-setup' });
+  add(go, mk('span', null, 'Draft', 'Redactar'));
+  add(foot, go);
+  add(host, foot);
 
   const contactOf = () => (state.contacts && state.contacts.contacts.find((c) => c.id === to.value)) || null;
   function scopeCheck() {
@@ -403,8 +429,33 @@ export function mountDraft(ctx, { openRecord }) {
     if (ex.organisation_id && state.contacts) { const c = state.contacts.contacts.find((x) => x.organisation.id === ex.organisation_id); if (c) { to.value = c.id; scopeCheck(); } }
     renderResult();
     result.setAttribute('data-loaded', rec.id);
-    host.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    host.removeAttribute('data-reply');
+    body.scrollTop = 0;
     return true;
   }
-  return { open: () => toggle(true), load };
+  /** Wave 7 (R5): "Write a reply" on an email or letter: an email to the sender's contact, the brief naming the thread. */
+  async function reply(rec) {
+    if (!rec) return false;
+    const ex = rec.extracted || {};
+    notices.textContent = ''; result.textContent = ''; result.setAttribute('hidden', ''); state.draft = null;
+    kind.value = rec.type === 'letter' ? 'letter' : 'email';
+    if (!state.contacts) await loadContacts();
+    let c = null;
+    const from = String(ex.from || (ex.headers && ex.headers.from) || '').toLowerCase();
+    const list = (state.contacts && state.contacts.contacts) || [];
+    if (from) c = list.find((x) => (x.emails || []).some((e) => from.includes(String(e).toLowerCase()))) || null;
+    if (!c) for (const oid of rec.organisation_ids || []) { c = list.find((x) => x.organisation && x.organisation.id === oid) || null; if (c) break; }
+    if (c) { to.value = c.id; scopeCheck(); if (c.language === 'es' || c.language === 'en') language.value = c.language; }
+    const when = rec.authored_at || rec.created_at;
+    const d = when ? fmtShortDate(when) : null;
+    brief.value = 'Reply to "' + (rec.title || rec.id) + '"' + (d ? ' of ' + d.en : '') + (ex.thread_id ? ' (same thread)' : '') + ': ';
+    host.setAttribute('data-reply', rec.id);
+    if (ex.thread_id) host.setAttribute('data-thread', ex.thread_id); else host.removeAttribute('data-thread');
+    toggle(true);
+    brief.focus();
+    try { brief.setSelectionRange(brief.value.length, brief.value.length); } catch (e) { /* not every browser */ }
+    body.scrollTop = 0;
+    return true;
+  }
+  return { open: () => toggle(true), close: () => toggle(false), load, reply };
 }

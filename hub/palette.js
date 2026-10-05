@@ -1,21 +1,33 @@
 /* ============================================================
-   The command menu (wave 2, docs/vault-hub/wave2/05-markup.md §1.5, P20).
-   Cmd/Ctrl+K or the header button on every Hub page. Groups, in order:
-   this project's tools and actions (on a project page), projects,
-   countries, tools, pages. Fuzzy match on the typed text; arrows and
-   Enter; Escape closes. No model behind it: with under a few hundred
-   projects a local match is faster, offline and exact.
+   The command menu (wave 2, docs/vault-hub/wave2/05-markup.md §1.5, P20;
+   wave 7 PR2 R7). Cmd/Ctrl+K or the header button on every Hub page.
+   Groups, in order: this project's tools and actions (on a project page),
+   projects, records, contacts, organisations, countries, tools, pages.
+   Projects, countries, tools and pages match locally on the typed text;
+   records come from GET /api/search?q=&scope=firm&limit=5 and contacts and
+   organisations from GET /api/organisations?q=, both debounced 150 ms after
+   the third character. A country matches on a word start only, and a
+   country the Vault does not hold never outranks a record. On touch the
+   trigger is a search icon and "Jump".
    ============================================================ */
 import { api, listOf, mk, dv, add, setText, loadCatalog, loadGeo, openTarget, lang, armLegacyGate } from './hub.js';
 
 /** Wave 7 (S10): a row shows only on a word-start or contiguous match (label 1 or 2, key 2 or 3); a bare subsequence ("nodal" in "French Southern and Antarctic Lands") no longer qualifies. */
 const SHOW_BELOW = 4;
+const WORD_START = 1;                 // the fuzzy score of a match at the start of a word
+const QUIET_PENALTY = 2;              // a country the Vault does not hold ranks after any Vault hit
+const REMOTE_MIN = 3;                 // characters typed before the Vault is asked
+const REMOTE_DEBOUNCE_MS = 150;
+const RECORD_LIMIT = 5;
 
 const PAGES = [
   ['/hub/index.html', 'Today', 'Hoy'], ['/hub/search.html', 'Find across the Vault', 'Buscar en el Vault'], ['/hub/queue.html', 'Filing queue', 'Cola de archivo'],
+  ['/hub/tool.html', 'Tools', 'Herramientas'],
   ['/hub/analogues.html', 'Analogues', 'Análogos'], ['/hub/cost.html', 'Cost and usage', 'Costes y uso'], ['/hub/settings.html', 'Settings', 'Ajustes'],
 ];
-const GROUP = { context: ['In this project', 'En este proyecto'], projects: ['Projects', 'Proyectos'], countries: ['Countries', 'Países'], tools: ['Tools', 'Herramientas'], pages: ['Pages', 'Páginas'] };
+const GROUP = { context: ['In this project', 'En este proyecto'], projects: ['Projects', 'Proyectos'], records: ['Records', 'Registros'], contacts: ['Contacts', 'Contactos'], organisations: ['Organisations', 'Organizaciones'], countries: ['Countries', 'Países'], tools: ['Tools', 'Herramientas'], pages: ['Pages', 'Páginas'] };
+const ORDER = ['context', 'projects', 'records', 'contacts', 'organisations', 'countries', 'tools', 'pages'];
+const TYPE_WORD = { run: ['run', 'ejecución'], email: ['email', 'correo'], letter: ['letter', 'carta'], report: ['report', 'informe'], note: ['note', 'nota'], paper: ['paper', 'artículo'], document: ['document', 'documento'], invoice: ['invoice', 'factura'], contract: ['contract', 'contrato'], dossier: ['dossier', 'dossier'], csv: ['CSV', 'CSV'], image: ['image', 'imagen'] };
 
 /** Subsequence score: lower is better; -1 when the query is not a subsequence of the text. Word starts and runs score better. */
 export function fuzzy(query, text) {
@@ -33,6 +45,9 @@ export function fuzzy(query, text) {
 }
 
 let items = [];          // {group, label:{en,es}, sub?:{en,es}, href?, action?, blank?}
+let remote = [];         // records, contacts and organisations for the current query, from the Vault
+let remoteFor = '';      // the query the remote items answer
+let remoteTimer = 0, remoteSeq = 0;
 let open = false, selected = 0, loaded = null;
 let root, input, list, empty, btn;
 
@@ -41,6 +56,8 @@ function pageContext() {
   const id = page === 'project' ? new URLSearchParams(location.search).get('id') : null;
   return { page, projectId: id };
 }
+/** A touch device shows no keyboard shortcut: the trigger is a search icon and "Jump". */
+const isTouch = () => { try { return ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches); } catch (e) { return false; } };
 
 async function loadItems() {
   if (loaded) return loaded;
@@ -80,16 +97,71 @@ async function loadItems() {
   return loaded;
 }
 
+/* ── the Vault's own answers: records, contacts, organisations (R7) ─── */
+
+const recordHref = (h) => {
+  const id = h.run_id || h.item_id || (h.ref ? h.ref.slice(h.ref.indexOf(':') + 1) : '');
+  const run = !!h.run_id || (h.ref && h.ref.startsWith('run:'));
+  return '/hub/project.html?id=' + encodeURIComponent(h.project_id || '') + (run ? '&run=' : '&doc=') + encodeURIComponent(id);
+};
+/** A record opens in the record panel on the current page when it has one (the page answers the event), else on the project page with ?doc= or &run=. */
+function openRecord(h) {
+  const id = h.run_id || h.item_id || (h.ref ? h.ref.slice(h.ref.indexOf(':') + 1) : '');
+  const ev = new CustomEvent('hub:open-record', { cancelable: true, bubbles: true, detail: { ref: h.ref, id, kind: h.run_id ? 'run' : 'doc', projectId: h.project_id, title: h.title } });
+  const panel = document.querySelector('#record-panel');
+  if (panel && !document.dispatchEvent(ev)) return;
+  location.href = recordHref(h);
+}
+
+/** Asks the Vault for the query, 150 ms after the last keystroke, and re-renders when the answer is for the query still typed. */
+function askVault(q) {
+  clearTimeout(remoteTimer);
+  if (q.length < REMOTE_MIN) { remote = []; remoteFor = ''; return; }
+  if (q === remoteFor) return;
+  remoteTimer = setTimeout(async () => {
+    const seq = ++remoteSeq;
+    const [sr, orr] = await Promise.all([
+      api('/api/search?q=' + encodeURIComponent(q) + '&scope=firm&limit=' + RECORD_LIMIT),
+      api('/api/organisations?q=' + encodeURIComponent(q)),
+    ]);
+    if (seq !== remoteSeq || !open) return;
+    const out = [];
+    const seen = new Set();
+    for (const h of (sr.ok ? listOf(sr.body, 'hits') : []).slice(0, RECORD_LIMIT)) {
+      const key = h.ref || h.run_id || h.item_id; if (!key || seen.has(key)) continue; seen.add(key);
+      const tw = TYPE_WORD[h.type] || [h.type || 'record', h.type || 'registro'];
+      const d = h.date ? new Date(h.date) : null;
+      const day = d && !isNaN(d) ? ' · ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+      const dayEs = d && !isNaN(d) ? ' · ' + d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+      out.push({ group: 'records', label: { en: h.title || key, es: h.title || key }, sub: { en: tw[0] + day, es: tw[1] + dayEs }, href: recordHref(h), action: () => openRecord(h), remote: true });
+    }
+    const orgs = orr.ok ? listOf(orr.body, 'organisations').filter((o) => o && o.id).slice(0, 5) : [];
+    for (const o of orgs) out.push({ group: 'organisations', label: { en: o.name || o.id, es: o.name || o.id }, sub: o.kind ? { en: o.kind, es: o.kind } : null, href: '/hub/search.html?q=' + encodeURIComponent(o.name || o.id) + '&scope=firm', remote: true });
+    // Contacts live under their organisations; the first three matching organisations are read for theirs.
+    const reads = await Promise.all(orgs.slice(0, 3).map((o) => api('/api/organisations/' + encodeURIComponent(o.id))));
+    if (seq !== remoteSeq || !open) return;
+    reads.forEach((r, i) => {
+      if (!r.ok || !r.body) return;
+      for (const c of listOf(r.body, 'contacts').slice(0, 5)) {
+        if (!c || !c.name) continue;
+        out.push({ group: 'contacts', label: { en: c.name, es: c.name }, sub: { en: [c.role, orgs[i].name].filter(Boolean).join(' · '), es: [c.role, orgs[i].name].filter(Boolean).join(' · ') }, href: '/hub/search.html?q=' + encodeURIComponent(c.name) + '&scope=firm', remote: true });
+      }
+    });
+    remote = out; remoteFor = q;
+    render(false);
+  }, REMOTE_DEBOUNCE_MS);
+}
+
 function build() {
   root = mk('div', 'hub-palette', null, null, { id: 'palette', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Command menu', hidden: '' });
   const box = mk('div', 'hub-palette-box');
-  input = mk('input', null, null, null, { type: 'text', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Jump to', 'data-en-ph': 'Type a project, country, tool or page…', 'data-es-ph': 'Escriba un proyecto, país, herramienta o página…', placeholder: 'Type a project, country, tool or page…' });
+  input = mk('input', null, null, null, { type: 'text', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Jump to', 'data-en-ph': 'Type a project, record, country, tool or page…', 'data-es-ph': 'Escriba un proyecto, registro, país, herramienta o página…', placeholder: 'Type a project, record, country, tool or page…' });
   list = mk('div', 'hub-palette-list', null, null, { role: 'listbox', id: 'palette-list' });
   empty = mk('p', 'hub-muted hub-palette-empty', 'Nothing matches.', 'Nada coincide.', { id: 'palette-empty', hidden: '' });
   add(box, input, list, empty, mk('p', 'hub-palette-foot', '↑↓ to move · Enter to open · Esc to close', '↑↓ para moverse · Intro para abrir · Esc para cerrar'));
   add(root, box);
   root.addEventListener('click', (ev) => { if (ev.target === root) close(); });
-  input.addEventListener('input', () => render());
+  input.addEventListener('input', () => render(true));
   input.addEventListener('keydown', (ev) => {
     const vis = visible();
     if (ev.key === 'ArrowDown') { ev.preventDefault(); selected = Math.min(vis.length - 1, selected + 1); paint(); }
@@ -100,8 +172,14 @@ function build() {
   document.body.appendChild(root);
   const top = document.querySelector('.hub-top');
   if (top) {
-    btn = mk('button', 'hub-palette-btn', null, null, { type: 'button', id: 'palette-btn', 'aria-haspopup': 'dialog', title: 'Command menu (Ctrl or ⌘ K)' });
-    add(btn, mk('span', null, 'Jump', 'Ir a'), dv('kbd', null, '⌘K'));
+    const touch = isTouch();
+    btn = mk('button', 'hub-palette-btn', null, null, { type: 'button', id: 'palette-btn', 'aria-haspopup': 'dialog', title: touch ? 'Jump to a project, record, country, tool or page' : 'Command menu (Ctrl or ⌘ K)', ...(touch ? { 'data-touch': '1' } : {}) });
+    if (touch) {
+      const ic = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      ic.setAttribute('class', 'hub-ic'); ic.setAttribute('viewBox', '0 0 24 24'); ic.setAttribute('aria-hidden', 'true');
+      ic.innerHTML = '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>';   // static, trusted markup
+      add(btn, ic, mk('span', null, 'Jump', 'Ir a'));
+    } else add(btn, mk('span', null, 'Jump', 'Ir a'), dv('kbd', null, '⌘K'));
     btn.addEventListener('click', () => (open ? close() : show()));
     top.appendChild(btn);
   }
@@ -110,20 +188,26 @@ function build() {
 
 let current = [];
 function visible() { return current; }
-function render() {
+/** Scores the local items for the typed text, folds in the Vault's answers, and paints the list. `typed` asks the Vault again. */
+function render(typed) {
   const q = input.value.trim();
+  if (typed) askVault(q);
   const scored = [];
   for (const it of items) {
     if (!q && it.quiet) continue;
-    let best = -1;
-    for (const t of [it.label.en, it.label.es]) { const s = fuzzy(q, String(t)); if (s >= 0 && (best < 0 || s < best)) best = s; }
-    for (const t of it.keys || []) { const s = fuzzy(q, String(t)); if (s >= 0) { const k = s + 1; if (best < 0 || k < best) best = k; } }   // a match on the name beats one on its keys
+    let best = -1, labelBest = -1, keyBest = -1;
+    for (const t of [it.label.en, it.label.es]) { const s = fuzzy(q, String(t)); if (s >= 0 && (labelBest < 0 || s < labelBest)) labelBest = s; }
+    for (const t of it.keys || []) { const s = fuzzy(q, String(t)); if (s >= 0 && (keyBest < 0 || s < keyBest)) keyBest = s; }
+    if (labelBest >= 0) best = labelBest;
+    if (keyBest >= 0 && (best < 0 || keyBest + 1 < best)) best = keyBest + 1;   // a match on the name beats one on its keys
     if (best < 0 || (q && best >= SHOW_BELOW)) continue;
+    // R7: a country matches on a word start only (its name or its code), and one the Vault does not hold ranks after any Vault hit.
+    if (q && it.group === 'countries') { if (labelBest !== WORD_START && keyBest !== WORD_START) continue; if (it.quiet) best += QUIET_PENALTY; }
     scored.push({ it, s: best });
   }
-  const order = ['context', 'projects', 'countries', 'tools', 'pages'];
-  scored.sort((a, b) => order.indexOf(a.it.group) - order.indexOf(b.it.group) || a.s - b.s || a.it.order - b.it.order);
-  if (q) scored.sort((a, b) => a.s - b.s || order.indexOf(a.it.group) - order.indexOf(b.it.group) || a.it.order - b.it.order);
+  if (q.length >= REMOTE_MIN && remoteFor === q) remote.forEach((it, i) => scored.push({ it: Object.assign({ order: -1000 + i }, it), s: WORD_START }));
+  scored.sort((a, b) => ORDER.indexOf(a.it.group) - ORDER.indexOf(b.it.group) || a.s - b.s || a.it.order - b.it.order);
+  if (q) scored.sort((a, b) => a.s - b.s || ORDER.indexOf(a.it.group) - ORDER.indexOf(b.it.group) || a.it.order - b.it.order);
   current = scored.slice(0, 40).map((x) => x.it);
   selected = 0;
   list.textContent = '';
@@ -155,11 +239,12 @@ async function show() {
   open = true;
   root.removeAttribute('hidden');
   input.value = '';
+  remote = []; remoteFor = '';
   input.focus();
   items = await loadItems();
-  if (open) render();
+  if (open) render(false);
 }
-function close() { open = false; root.setAttribute('hidden', ''); if (btn) btn.focus({ preventScroll: true }); }
+function close() { open = false; clearTimeout(remoteTimer); root.setAttribute('hidden', ''); if (btn) btn.focus({ preventScroll: true }); }
 
 if (typeof document !== 'undefined' && document.body) {
   build();

@@ -111,7 +111,7 @@ function pvDot(row, p) {
 }
 function numCell(row, p, digits, scale, suffix) {
   const v = val(row, p);
-  const td = mk('td', 'r');
+  const td = mk('td', v === null ? 'r' : 'r hub-num');
   td.appendChild(document.createTextNode(v === null ? '—' : fmtNum(scale ? v * scale : v, digits) + (suffix || '')));
   if (v !== null) { const d = pvDot(row, p); if (d) td.appendChild(d); td.setAttribute('data-value', String(v)); }
   return td;
@@ -230,7 +230,7 @@ function renderTable() {
       add(mk('td'), dv('span', null, setting(r)), add(mk('span', 'sub'), dv('span', null, fluidDrive(r)))),
       numCell(r, 'depth_m', 0), numCell(r, 'porosity_frac', 2), numCell(r, 'permeability_md', 0),
       numCell(r, 'recovery_factor_frac', 0, 100, '%'), numCell(r, 'eur_per_well_mbbl', 0),
-      dist ? add(mk('td', 'r'), dv('b', null, dist.distance.toFixed(2))) : add(mk('td', 'r'), dv('span', 'hub-muted', '—')),
+      dist ? add(mk('td', 'r'), dv('b', 'hub-num', dist.distance.toFixed(2))) : add(mk('td', 'r'), dv('span', 'hub-muted', '—')),
       src);
     add(tb, row);
   }

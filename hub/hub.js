@@ -10,6 +10,8 @@
    ============================================================ */
 import { createGlobe } from './globe.js';
 import { vault } from '../js/vault-client.js';
+import { mountStatusStrip } from './components/status-strip.js';
+import { stateline } from './components/stateline.js';
 
 /* ── language and DOM helpers ────────────────────────────────────────── */
 
@@ -149,12 +151,41 @@ export async function showSession() {
   return person;
 }
 
+/** Wave 7 PR2 (idea C): the Vault's state lives in the status strip; the sidebar footer is gone. */
 export function showVault(reachable) {
-  const dot = $('#vault-dot'), st = $('#vault-state');
-  if (!dot || !st) return;
-  dot.classList.toggle('off', !reachable);
-  if (reachable) setText(st, 'Vault reachable', 'Vault accesible');
-  else setText(st, 'Vault unreachable', 'Vault no accesible');
+  const strip = mountStatusStrip();
+  if (strip) strip.vault(reachable ? 'on' : 'off');
+}
+
+/* ── the chrome every page shares (wave 7 PR2 E) ─────────────────────── */
+
+const SCOPE_KEY = 'atc-hub-find-scope';
+/**
+ * The header Find form carries the scope the page is in (§1.4): the project on a project page, else the
+ * scope remembered by the Find page or firm. Below 900 px the sidebar is a bottom bar and More opens the
+ * user card, Settings and the language switch (R3). The status strip is mounted under the top bar and,
+ * on every page but Today (which feeds it from its own fetches), loads its own figures.
+ */
+export function setupChrome() {
+  const page = document.body.getAttribute('data-page');
+  const projectId = page === 'project' ? new URLSearchParams(location.search).get('id') : null;
+  let remembered = '';
+  try { remembered = localStorage.getItem(SCOPE_KEY) || ''; } catch (e) { /* private window */ }
+  for (const form of document.querySelectorAll('form.hub-find')) {
+    let input = form.querySelector('input[name="scope"]');
+    if (!input) { input = mk('input', null, null, null, { type: 'hidden', name: 'scope' }); form.appendChild(input); }
+    input.value = projectId ? 'project:' + projectId : (remembered || 'firm');
+  }
+  const side = document.querySelector('aside.hub-side'), more = $('#hub-more');
+  if (side && more) {
+    const setOpen = (open) => { more.setAttribute('aria-expanded', open ? 'true' : 'false'); if (open) side.setAttribute('data-more', 'open'); else side.removeAttribute('data-more'); };
+    more.addEventListener('click', () => setOpen(more.getAttribute('aria-expanded') !== 'true'));
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && more.getAttribute('aria-expanded') === 'true') setOpen(false); });
+    document.addEventListener('click', (ev) => { if (more.getAttribute('aria-expanded') === 'true' && !side.contains(ev.target)) setOpen(false); });
+  }
+  const strip = mountStatusStrip();
+  if (strip && page !== 'today') strip.load(['health', 'mailbox', 'activity', 'filing', 'lessons', 'stale']);
+  return strip;
 }
 
 /* ── the one sidebar (wave 7, S3) ────────────────────────────────────── */
@@ -368,16 +399,21 @@ function notice(kind, boldEn, boldEs, en, es) {
     add(mk('span'), mk('b', null, boldEn, boldEs), document.createTextNode(' '), mk('span', null, en, es)));
 }
 
-async function renderTools(person) {
+/**
+ * The catalog (wave 7 PR2, R4): no longer on Today, it is the Tools index at hub/tool.html without a
+ * tool id. The host page holds #tools-grid, #tools-filter, #tools-older-grid, #tools-sub and #tools-source.
+ */
+export async function renderCatalog(person) {
   const grid = $('#tools-grid');
-  const strip = $('#status-strip');
+  if (!grid) return { tools: [], source: 'none' };
+  const src = $('#tools-source');
   const notices = $('#notices');
   const { catalog, source } = await loadCatalog();
   const now = Date.now();
   if (!catalog) {
     showVault(false);
-    add(notices, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The catalog could not be loaded from the API or from hub/catalog.json.', 'No se pudo cargar el catálogo desde la API ni desde hub/catalog.json.'));
-    setText($('#today-sub'), 'The catalog is not available.', 'El catálogo no está disponible.');
+    add(notices, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The catalog could not be loaded from the Vault or from the copy kept with the Hub.', 'No se pudo cargar el catálogo desde el Vault ni desde la copia guardada con el Hub.'));
+    setText($('#tools-sub'), 'The catalog is not available.', 'El catálogo no está disponible.');
     return { tools: [], source };
   }
   const tools = catalog.tools.filter((t) => t.lifecycle !== 'retired');     // retired tools never appear
@@ -390,24 +426,26 @@ async function renderTools(person) {
   setupLifecycleFilter(tools);
 
   const prod = tools.filter((t) => t.lifecycle === 'production').length;
-  setText($('#today-sub'),
+  setText($('#tools-sub'),
     tools.length + ' tools in the catalog, ' + prod + ' in production.',
     tools.length + ' herramientas en el catálogo, ' + prod + ' en producción.');
 
+  if (src) src.textContent = '';
   if (source === 'api') {
-    add(strip, mk('span', 'hub-pill ok', 'Catalog from the Vault', 'Catálogo del Vault'));
+    if (src) add(src, mk('span', 'hub-pill ok', 'Catalog from the Vault', 'Catálogo del Vault'));
+    showVault(true);
   } else {
     showVault(false);
-    add(strip, mk('span', 'hub-pill warn', 'Catalog from hub/catalog.json', 'Catálogo de hub/catalog.json'));
+    // R11: the copy says where the catalog came from in plain words, never as a file name.
+    if (src) add(src, mk('span', 'hub-pill warn', 'Catalog kept with the Hub', 'Catálogo guardado con el Hub'));
     add(notices, notice('warn', 'The Vault is unreachable.', 'El Vault no es accesible.',
-      'Showing the catalog from hub/catalog.json; versions and links may be out of date.',
-      'Se muestra el catálogo de hub/catalog.json; las versiones y los enlaces pueden estar desactualizados.'));
+      'Showing the catalog kept with the Hub; versions and links may be out of date.',
+      'Se muestra el catálogo guardado con el Hub; las versiones y los enlaces pueden estar desactualizados.'));
   }
-  if (catalog.built_at) {
+  if (src && catalog.built_at) {
     const d = fmtShortDate(catalog.built_at);
-    add(strip, add(mk('span'), mk('span', null, 'Built', 'Generado'), document.createTextNode(' '), mk('span', null, d.en, d.es)));
+    add(src, add(mk('span'), mk('span', null, 'Built', 'Generado'), document.createTextNode(' '), mk('span', null, d.en, d.es)));
   }
-  if (source === 'api') showVault(true);
 
   // Signed in: let the Vault resolve @current so links follow the alias on the server. Best effort.
   if (person && source === 'api') {
@@ -429,12 +467,13 @@ function clientName(p) { return p.client_name || (p.client && (p.client.name || 
 const isOpportunity = (p) => p && p.status !== 'archived' && p.id !== 'firm';
 // Wave 7 (S2, D65): the "My projects" cards are gone; the register above them lists the same projects with counts.
 
-/* ── Today: the globe and the register (wave 2) ──────────────────────── */
-
+/* ── Today: the globe and the live register (wave 2, reshaped in wave 7 PR2: idea A, R4) ── */
 
 export const STAGES = ['Initial screen', 'Qualified', 'Technical review', 'Commercial review', 'Negotiation', 'Won', 'Lost', 'Closed'];
 export const STAGE_ES = { 'Initial screen': 'Cribado inicial', Qualified: 'Calificada', 'Technical review': 'Revisión técnica', 'Commercial review': 'Revisión comercial', Negotiation: 'Negociación', Won: 'Ganada', Lost: 'Perdida', Closed: 'Cerrada' };
 export const RISK_LABEL = { green: ['Managed', 'Gestionado'], amber: ['Elevated', 'Elevado'], red: ['High', 'Alto'] };
+/** R11: the register names the two risks apart: "World Monitor 71" for the country, "our execution risk Amber 54" for the project. */
+export const RISK_WORD = { green: ['Green', 'Verde'], amber: ['Amber', 'Ámbar'], red: ['Red', 'Rojo'] };
 const GEO_URL = '/hub/geo/countries-110m.json';
 let geoPromise = null;
 /** The country polygons (hub/geo), fetched once per page. */
@@ -451,18 +490,26 @@ function flags(att) {
   if (att && att.expiring_days !== null && att.expiring_days !== undefined) out.push(mk('span', 'hub-flag expiring', 'NDA ' + att.expiring_days + ' d', 'NDA ' + att.expiring_days + ' d'));
   return out;
 }
-const stagePill = (stage) => mk('span', 'hub-pill muted hub-stage', stage, STAGE_ES[stage] || stage, { 'data-stage': stage });
-/** "risk 71 · advisory: reconsider travel (World Monitor, 09:00)" from the countries summary (wave 3); null without a reading. */
+/** "World Monitor 71 · advisory: reconsider travel (09:00)" from the countries summary (wave 3); null without a reading. */
 function riskLine(risk) {
   if (!risk || (risk.score === null && !risk.level)) return null;
   const el = mk('span', 'hub-risk-line', null, null, { 'data-risk-score': risk.score === null ? '' : String(risk.score) });
   const tone = risk.score === null ? '' : risk.score >= 70 ? 'red' : risk.score >= 40 ? 'amber' : 'green';
   if (tone) add(el, mk('span', 'hub-rag', null, null, { 'data-risk': tone, 'aria-hidden': 'true' }));
-  if (risk.score !== null) add(el, mk('span', null, 'risk ' + Math.round(risk.score), 'riesgo ' + Math.round(risk.score)));
-  if (risk.level) add(el, document.createTextNode(risk.score !== null ? ' · ' : ''), mk('span', null, 'advisory: ', 'aviso: '), dv('span', null, risk.level));
+  add(el, mk('span', null, 'World Monitor' + (risk.score !== null ? ' ' + Math.round(risk.score) : ''), 'World Monitor' + (risk.score !== null ? ' ' + Math.round(risk.score) : '')));
+  if (risk.level) add(el, document.createTextNode(' · '), mk('span', null, 'advisory: ', 'aviso: '), dv('span', null, risk.level));
   const t = risk.fetched_at ? new Date(risk.fetched_at) : null;
   const hm = t && !isNaN(t) ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
-  add(el, mk('span', 'hub-muted', ' (World Monitor' + (hm ? ', ' + hm : '') + ')', ' (World Monitor' + (hm ? ', ' + hm : '') + ')'));
+  if (hm) add(el, mk('span', 'hub-muted', ' (' + hm + ')', ' (' + hm + ')'));
+  return el;
+}
+/** The project's own execution risk beside its register row: "our execution risk Amber 54". */
+function riskTag(reg) {
+  if (!reg || !reg.risk) return null;
+  const w = RISK_WORD[reg.risk] || [reg.risk, reg.risk];
+  const score = typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : '';
+  const el = mk('span', 'hub-risk-tag', null, null, { 'data-risk-tag': reg.risk });
+  add(el, mk('span', 'hub-rag', null, null, { 'data-risk': reg.risk, 'aria-hidden': 'true' }), mk('span', 'hub-sl-label', 'our execution risk', 'nuestro riesgo de ejecución'), document.createTextNode(' '), mk('span', null, w[0] + score, w[1] + score));
   return el;
 }
 /** Where a field's location came from, for pills and tooltips (wave 3). */
@@ -472,10 +519,52 @@ export const SOURCE_WORD = {
 };
 export const sourceWord = (src) => { const w = SOURCE_WORD[src] || (src ? [src, src] : ['no location', 'sin ubicación']); return { en: w[0], es: w[1] }; };
 
+let projectsById = new Map();      // the register's projects, so the country panel renders the same stateline from the same fields
+let suppressScrollUntil = 0;       // a programmatic scroll of the register is not the person turning the globe
+
+/** A dot was tapped (idea A): the project's register row lights up and glides into view; the country panel's row too when it is open. */
+function hotRow(id) {
+  for (const r of document.querySelectorAll('[data-hot]')) r.removeAttribute('data-hot');
+  const sel = '[data-register-row="' + CSS.escape(id) + '"], #country-panel [data-country-project="' + CSS.escape(id) + '"]';
+  const rows = document.querySelectorAll(sel);
+  if (!rows.length) return false;
+  suppressScrollUntil = performance.now() + 800;
+  for (const row of rows) {
+    row.setAttribute('data-hot', '1');
+    if (!row.closest('[hidden]')) row.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  return true;
+}
+
+/** One project of the countries summary as the stateline row (W7-AC6), with its client, flags and fields beneath. */
+function panelRow(p, names) {
+  const li = mk('li', 'hub-country-project', null, null, { 'data-country-project': p.id });
+  const full = projectsById.get(p.id) || {};
+  const proj = Object.assign({ id: p.id, name: p.name, stage: p.stage, status: p.status, register: {}, last_activity_at: p.last_run_at || null, stale_count: p.attention ? p.attention.stale : 0 }, full);
+  add(li, stateline(proj, { size: 'row' }));
+  if (p.client_name) add(li, dv('div', 'hub-note-s', p.client_name));
+  add(li, add(mk('div', 'flags'), ...flags(p.attention)));
+  // Wave 3: the fields attached to the project, each with its source.
+  const fields = (p.assets || []).filter((x) => x && x.name);
+  if (fields.length) {
+    const fl = mk('div', 'hub-country-fields', null, null, { 'data-project-fields': p.id });
+    for (const f of fields) {
+      const pill = mk('span', 'hub-field-pt' + (f.outside ? ' outside' : ''), null, null, { 'data-field': f.id, title: sourceWord(f.location_source).en, ...(f.outside ? { 'data-outside': f.outside } : {}) });
+      add(pill, mk('span', 'dot', null, null, { 'aria-hidden': 'true' }), dv('span', null, f.name));
+      if (Number.isFinite(f.lat) && Number.isFinite(f.lon)) add(pill, dv('span', 'hub-muted coord', f.lat + ', ' + f.lon));
+      if (f.outside) { const on = (names && names.get(f.outside)) || { en: f.outside, es: f.outside }; add(pill, mk('span', 'hub-outside', 'outside: in ' + on.en, 'fuera: en ' + on.es)); }
+      add(fl, pill);
+    }
+    add(li, fl);
+  }
+  return li;
+}
+
 /**
- * The globe and the country list. Countries come from GET /api/countries (only what the
- * caller may see); the polygons from hub/geo. The list is the keyboard and screen-reader path;
- * ?country=XX in the URL selects a country, and selecting one writes it back so the state is linkable.
+ * The globe and the country panel. Countries come from GET /api/countries (only what the caller may
+ * see); the polygons from hub/geo. The live register beside the globe (renderRegister) is the keyboard
+ * and screen-reader path and turns the globe as it scrolls; a tap on a dot lights its row; a tap on a
+ * country opens the panel; ?country=XX in the URL selects a country and selecting one writes it back.
  */
 async function renderGlobe(person) {
   const sec = $('#sec-globe'), canvas = $('#globe');
@@ -491,6 +580,7 @@ async function renderGlobe(person) {
       globe = createGlobe(canvas, {
         geo, lang: lang(), reducedMotion: reduced,
         onSelect: (code, f, point) => select(code, true, point),
+        onPoint: (p) => hotRow(p.id),
         onHover: (h) => {
           if (!h) { tip.setAttribute('hidden', ''); return; }
           tip.textContent = h.name; tip.style.left = h.x + 'px'; tip.style.top = h.y + 'px'; tip.removeAttribute('hidden');
@@ -500,8 +590,7 @@ async function renderGlobe(person) {
   }
   const names = new Map();
   if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
-  const list = $('#country-list'), panel = $('#country-panel'), unplaced = $('#country-unplaced');
-  list.textContent = '';
+  const panel = $('#country-panel'), unplaced = $('#country-unplaced'), reg = $('#register'), filters = $('#reg-filters');
 
   if (!data) {
     setText(count, 'Vault data not available: the globe shows no projects.', 'Datos del Vault no disponibles: el globo no muestra proyectos.');
@@ -518,15 +607,6 @@ async function renderGlobe(person) {
         // Wave 3: the project's fields with a located record, drawn smaller beside it.
         for (const a of p.assets || []) if (Number.isFinite(a.lat) && Number.isFinite(a.lon)) points.push({ id: a.id, name: a.name, lat: a.lat, lon: a.lon, kind: 'field' });
       }
-      const name = names.get(c.code) || c.name;
-      const b = mk('button', 'hub-country', null, null, { type: 'button', 'data-country': c.code, role: 'listitem' });
-      // The count and the risk are sibling spans so a language switch re-renders each without wiping the other.
-      const nSpan = add(mk('span', 'n'), mk('span', null, c.projects.length + (c.projects.length === 1 ? ' project' : ' projects'), c.projects.length + (c.projects.length === 1 ? ' proyecto' : ' proyectos')));
-      if (c.risk && c.risk.score !== null) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'risk ' + Math.round(c.risk.score), 'riesgo ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }));
-      add(b, mk('span', 'name', name.en, name.es), nSpan,
-        add(mk('span', 'flags'), ...flags({ stale: c.counts.stale, filing: c.counts.filing, expiring_days: c.counts.expiring ? Math.min(...c.projects.filter((p) => p.attention.expiring_days !== null).map((p) => p.attention.expiring_days)) : null })));
-      b.addEventListener('click', () => select(c.code, true));
-      add(list, b);
     }
     if (globe) globe.setData({ held, points });
     if (data.unplaced && data.unplaced.length) {
@@ -537,7 +617,7 @@ async function renderGlobe(person) {
     }
   }
 
-  // Wave 3: the point under the last tap (or the country's centre when chosen from the list) feeds "Create a project here".
+  // Wave 3: the point under the last tap (or the country's centre when chosen from the register) feeds "Create a project here".
   let tapped = null;
   function select(code, write, point) {
     const c = data && data.countries.find((x) => x.code === code);
@@ -546,7 +626,7 @@ async function renderGlobe(person) {
     const brief = $('#country-brief'); if (brief) { brief.setAttribute('hidden', ''); brief.textContent = ''; }
     if (write) history.replaceState(null, '', countryHref(code));
     if (!code) {
-      panel.setAttribute('hidden', ''); list.removeAttribute('hidden'); unplaced.style.display = '';
+      panel.setAttribute('hidden', ''); reg.removeAttribute('hidden'); if (filters) filters.removeAttribute('hidden'); unplaced.style.display = '';
       const intel = $('#country-intel'); if (intel) { intel.setAttribute('hidden', ''); intel.textContent = ''; intelFor = null; }
       if (globe) globe.select(null);
       return;
@@ -559,32 +639,10 @@ async function renderGlobe(person) {
     // Wave 3: the live risk line, only when World Monitor answered (nothing is simulated).
     const riskEl = $('#country-risk');
     if (riskEl) { riskEl.textContent = ''; const line = riskLine(c && c.risk); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
-    for (const p of projects) {
-      const a = mk('a', 'hub-country-project', null, null, { href: projectHref(p.id), 'data-country-project': p.id });
-      add(a, dv('b', null, p.name), stagePill(p.stage));
-      const meta = mk('div', 'hub-note-s');
-      if (p.client_name) add(meta, dv('span', null, p.client_name), document.createTextNode(' · '));
-      if (p.last_run_at) { const d = fmtShortDate(p.last_run_at); add(meta, mk('span', null, 'last run ' + d.en, 'última ejecución ' + d.es)); }
-      else add(meta, mk('span', null, 'no runs yet', 'aún sin ejecuciones'));
-      add(a, meta, add(mk('div', 'flags'), ...flags(p.attention)));
-      // Wave 3: the fields attached to the project, each with its source.
-      const fields = (p.assets || []).filter((x) => x && x.name);
-      if (fields.length) {
-        const fl = mk('div', 'hub-country-fields', null, null, { 'data-project-fields': p.id });
-        for (const f of fields) {
-          const pill = mk('span', 'hub-field-pt' + (f.outside ? ' outside' : ''), null, null, { 'data-field': f.id, title: sourceWord(f.location_source).en, ...(f.outside ? { 'data-outside': f.outside } : {}) });
-          add(pill, mk('span', 'dot', null, null, { 'aria-hidden': 'true' }), dv('span', null, f.name));
-          if (Number.isFinite(f.lat) && Number.isFinite(f.lon)) add(pill, dv('span', 'hub-muted coord', f.lat + ', ' + f.lon));
-          if (f.outside) { const on = (names && names.get(f.outside)) || { en: f.outside, es: f.outside }; add(pill, mk('span', 'hub-outside', 'outside: in ' + on.en, 'fuera: en ' + on.es)); }
-          add(fl, pill);
-        }
-        add(a, fl);
-      }
-      add(ul, a);
-    }
+    for (const p of projects) add(ul, panelRow(p, names));                 // W7-AC6: the same stateline as the register
     const createRow = $('#country-create-row');
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
-    list.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
+    reg.setAttribute('hidden', ''); if (filters) filters.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
     renderIntel(code, names);
     if (globe) globe.select(code, { fly: true });
   }
@@ -595,12 +653,10 @@ async function renderGlobe(person) {
     if (code && openProjectForm) openProjectForm('opportunity', { country: code, lat: tapped ? tapped.lat : null, lon: tapped ? tapped.lon : null });
   });
   setupBrief(() => sec.getAttribute('data-country'), names);
-  const want = new URLSearchParams(location.search).get('country');
-  if (want && /^[A-Z]{2}$/.test(want)) select(want, false);
   // The tooltip and the canvas label follow the language.
   new MutationObserver(() => { if (globe) globe.setLang(lang()); const l = lang(); canvas.setAttribute('aria-label', canvas.getAttribute('data-' + l + '-aria') || canvas.getAttribute('aria-label')); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   sec.setAttribute('data-globe', globe ? 'ready' : 'no-geo');
-  return { data, names };
+  return { data, names, select, globe };
 }
 
 /* ── Today: country intelligence from World Monitor (wave 3 PR 4) ───── */
@@ -858,62 +914,124 @@ function setupBrief(currentCode, names) {
   });
 }
 
-/** The register table: every project the caller may see, with the opportunity fields, filters and Add opportunity (partners). */
-async function renderRegister(person, names) {
-  const sec = $('#sec-register');
-  if (!sec) return [];
+/**
+ * The live register (wave 7 PR2, idea A, R4): beside the globe, one stateline row per project the
+ * caller may see, grouped by country with the country's counts, flags and World Monitor reading in
+ * the heading; "Create a project here" as an outline action at the end of each group (partners).
+ * Scrolling the column turns the globe to the country in view; a row's tokens open the project file.
+ * Filters narrow it; Add opportunity and New project (partners) open the form above.
+ */
+async function renderRegister(person, info) {
+  const reg = $('#register');
+  if (!reg) return [];
+  const names = info && info.names, data = info && info.data, globe = info && info.globe;
+  const filters = $('#reg-filters');
   const [res, orgR] = await Promise.all([api('/api/projects'), api('/api/organisations')]);
-  if (!res.ok) return [];
+  if (!res.ok) {
+    reg.textContent = '';
+    if (filters) filters.setAttribute('hidden', '');
+    if (res.status === 0 || res.status >= 500) add($('#notices'), notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The register and the counters stay empty until it answers.', 'El registro y los contadores quedan vacíos hasta que responda.'));
+    return [];
+  }
   const list = listOf(res.body, 'projects', 'items').filter(isOpportunity);   // archived: hidden, never deleted; the internal project: not an opportunity
   const orgName = new Map(orgR.ok ? listOf(orgR.body, 'organisations').map((o) => [o.id, o.name || o.id]) : []);
   for (const p of list) if (!p.client_name && p.client_id) p.client_name = orgName.get(p.client_id) || p.client_id;
-  sec.removeAttribute('hidden');
-  const body = $('#register-body'); body.textContent = '';
+  projectsById = new Map(list.map((p) => [p.id, p]));
+  reg.textContent = '';
   const stageSel = $('#reg-stage'), riskSel = $('#reg-risk'), countrySel = $('#reg-country');
   for (const st of STAGES) add(stageSel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
-  const codes = [...new Set(list.map((p) => p.country).filter(Boolean))].sort();
-  for (const code of codes) { const n = (names && names.get(code)) || { en: code, es: code }; add(countrySel, mk('option', null, n.en, n.es, { value: code })); }
-  // Wave 7 (S5): "Updated" is the project's last activity (a run, a document, a stage change), so a row moves when work happens.
-  const updated = (p) => p.last_activity_at || (p.stage_history && p.stage_history.length ? p.stage_history[p.stage_history.length - 1].at : p.created_at);
-  for (const p of list.slice().sort((a, b) => (updated(a) < updated(b) ? 1 : -1))) {
-    const reg = p.register || {};
-    const tr = mk('tr', null, null, null, { 'data-register-row': p.id, 'data-stage': p.stage || '', 'data-risk': reg.risk || '', 'data-country': p.country || '' });
-    add(tr, add(mk('td', null, null, null, { 'data-col': 'name' }), dv('a', 'hub-inline-link', p.name, { href: projectHref(p.id) })));
-    const cn = p.country ? (names && names.get(p.country)) || { en: p.country, es: p.country } : null;
-    add(tr, cn ? mk('td', null, cn.en, cn.es, { 'data-col': 'country' }) : mk('td', 'hub-muted', '—', '—', { 'data-col': 'country' }));
-    add(tr, dv('td', null, clientName(p) || '—', { 'data-col': 'client' }));
-    add(tr, add(mk('td', null, null, null, { 'data-col': 'stage' }), stagePill(p.stage || 'Initial screen')));
-    const plan = typeof reg.current === 'number' || typeof reg.plan === 'number' ? (reg.current ?? '—') + ' → ' + (reg.plan ?? '—') : '—';
-    add(tr, dv('td', 'right num', plan, { 'data-col': 'plan' }));
-    const risk = mk('td', null, null, null, { 'data-col': 'risk' });
-    if (reg.risk) { const rl = RISK_LABEL[reg.risk] || [reg.risk, reg.risk]; add(risk, mk('span', 'hub-rag', null, null, { 'data-risk': reg.risk, 'aria-hidden': 'true' }), mk('span', null, rl[0] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''), rl[1] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''))); }
-    else add(risk, mk('span', 'hub-muted', '—', '—'));
-    add(tr, risk);
-    const partners = Array.isArray(reg.partners) ? reg.partners.filter(Boolean) : [];
-    const holder = [reg.holder, partners.length ? partners.join(', ') : null].filter(Boolean).join(' + ');
-    add(tr, holder ? dv('td', null, holder, { 'data-col': 'holder' }) : mk('td', 'hub-muted', '—', '—', { 'data-col': 'holder' }));
-    add(tr, dv('td', null, reg.owner || '—', { 'data-col': 'owner' }));
-    const u = updated(p); const ud = u ? fmtShortDate(u) : null;
-    add(tr, ud ? mk('td', 'nowrap', ud.en, ud.es, { 'data-col': 'updated' }) : dv('td', null, '—', { 'data-col': 'updated' }));
-    add(body, tr);
+
+  const cinfo = new Map((data ? data.countries : []).map((c) => [c.code, c]));
+  const nameOf = (code) => (code ? (names && names.get(code)) || (cinfo.get(code) && cinfo.get(code).name) || { en: code, es: code } : { en: 'No country yet', es: 'Aún sin país' });
+  const byCountry = new Map();
+  for (const p of list) { const k = p.country || ''; if (!byCountry.has(k)) byCountry.set(k, []); byCountry.get(k).push(p); }
+  const codes = [...byCountry.keys()].sort((a, b) => (!a ? 1 : !b ? -1 : nameOf(a).en.localeCompare(nameOf(b).en)));
+  for (const code of codes) if (code) { const n = nameOf(code); add(countrySel, mk('option', null, n.en, n.es, { value: code })); }
+  // Wave 7 (S5): a row moves when work happens: the project's last activity (a run, a document, a stage change).
+  const updated = (p) => p.last_activity_at || (p.stage_history && p.stage_history.length ? p.stage_history[p.stage_history.length - 1].at : p.created_at) || '';
+  const now = new Date();
+
+  for (const code of codes) {
+    const c = cinfo.get(code);
+    const rows = byCountry.get(code).slice().sort((a, b) => (updated(a) < updated(b) ? 1 : -1));
+    const nm = nameOf(code);
+    const g = mk('section', 'hub-reg-group', null, null, { 'data-country-group': code });
+    const head = code ? mk('button', 'hub-country', null, null, { type: 'button', 'data-country': code }) : mk('div', 'hub-country', null, null, { 'data-country-group-head': '' });
+    const n = rows.length;
+    const nSpan = add(mk('span', 'n'), mk('span', null, n + (n === 1 ? ' project' : ' projects'), n + (n === 1 ? ' proyecto' : ' proyectos')));
+    if (c && c.risk && c.risk.score !== null && c.risk.score !== undefined) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'World Monitor ' + Math.round(c.risk.score), 'World Monitor ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }));
+    const att = c ? { stale: c.counts.stale, filing: c.counts.filing, expiring_days: c.counts.expiring ? Math.min(...c.projects.filter((p) => p.attention.expiring_days !== null).map((p) => p.attention.expiring_days)) : null } : null;
+    add(head, mk('span', 'name', nm.en, nm.es), nSpan, add(mk('span', 'flags'), ...flags(att)));
+    if (code && info && info.select) head.addEventListener('click', () => info.select(code, true));
+    add(g, head);
+    const host = mk('div', 'hub-reg-rows');
+    for (const p of rows) {
+      const r = p.register || {};
+      const row = mk('div', 'hub-reg-row', null, null, { 'data-register-row': p.id, 'data-stage': p.stage || '', 'data-risk': r.risk || '', 'data-row-country': code });
+      add(row, stateline(p, { size: 'row', now }), riskTag(r));
+      // R4: tapping a row (not one of its tokens) recentres the globe on its country and lights the row.
+      row.addEventListener('click', (ev) => { if (ev.target.closest('a')) return; hotRow(p.id); if (code && globe) { suppressScrollUntil = performance.now() + 800; globe.select(code, { fly: true }); $('#sec-globe').setAttribute('data-target', code); } });
+      add(host, row);
+    }
+    add(g, host);
+    if (code && person && person.role === 'partner') {
+      const b = mk('button', 'btn btn-outline btn-sm hub-create-here-btn', 'Create a project here', 'Crear un proyecto aquí', { type: 'button', 'data-create-here': code });
+      b.addEventListener('click', () => { const pt = globe ? globe.centroidOf(code) : null; if (openProjectForm) openProjectForm('opportunity', { country: code, lat: pt ? pt.lat : null, lon: pt ? pt.lon : null }); });
+      add(g, b);
+    }
+    add(reg, g);
   }
+
   const apply = () => {
     let shown = 0;
-    for (const tr of body.querySelectorAll('tr[data-register-row]')) {
-      const on = (!stageSel.value || tr.getAttribute('data-stage') === stageSel.value) && (!riskSel.value || tr.getAttribute('data-risk') === riskSel.value) && (!countrySel.value || tr.getAttribute('data-country') === countrySel.value);
-      if (on) { tr.removeAttribute('hidden'); shown++; } else tr.setAttribute('hidden', '');
+    for (const g of reg.querySelectorAll('[data-country-group]')) {
+      let any = 0;
+      for (const row of g.querySelectorAll('[data-register-row]')) {
+        const on = (!stageSel.value || row.getAttribute('data-stage') === stageSel.value) && (!riskSel.value || row.getAttribute('data-risk') === riskSel.value) && (!countrySel.value || row.getAttribute('data-row-country') === countrySel.value);
+        if (on) { row.removeAttribute('hidden'); any++; } else row.setAttribute('hidden', '');
+      }
+      if (any) g.removeAttribute('hidden'); else g.setAttribute('hidden', '');
+      shown += any;
     }
     setText($('#register-count'), shown + ' of ' + list.length, shown + ' de ' + list.length);
-    const empty = $('#register-empty'); if (shown) empty.setAttribute('hidden', ''); else empty.removeAttribute('hidden');
+    const empty = $('#register-empty'); if (empty) { if (shown || !list.length) empty.setAttribute('hidden', ''); else empty.removeAttribute('hidden'); }
   };
   for (const sel of [stageSel, riskSel, countrySel]) sel.addEventListener('change', apply);
   apply();
+  if (filters) filters.removeAttribute('hidden');
+  setupScrollLink(reg, globe);
   const btn = $('#btn-new-opportunity');
   if (btn && person && person.role === 'partner') {
     btn.removeAttribute('hidden');
     btn.addEventListener('click', () => { if (openProjectForm) openProjectForm('opportunity'); });
   }
   return list;
+}
+
+/** Idea A: the globe turns to the country whose group fills most of the register's viewport; ties go to the group nearest the top. */
+function setupScrollLink(reg, globe) {
+  const sec = $('#sec-globe');
+  let last = null, raf = 0;
+  reg.addEventListener('scroll', () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      if (performance.now() < suppressScrollUntil) return;
+      const box = reg.getBoundingClientRect();
+      let best = null, bestH = 0;
+      for (const g of reg.querySelectorAll('[data-country-group]')) {
+        const code = g.getAttribute('data-country-group');
+        if (!code || g.hasAttribute('hidden')) continue;
+        const r = g.getBoundingClientRect();
+        const h = Math.min(r.bottom, box.bottom) - Math.max(r.top, box.top);
+        if (h > bestH) { bestH = h; best = code; }
+      }
+      if (!best || best === last) return;
+      last = best;
+      sec.setAttribute('data-target', best);
+      if (globe) globe.select(best, { fly: true });
+    });
+  }, { passive: true });
 }
 
 /* ── Today: new project (partners) ───────────────────────────────────── */
@@ -1066,29 +1184,36 @@ function icon(kind, tone) {
 }
 
 const MAX_ITEMS = 5;
-function renderAttnCard(card, cfg) {
+/**
+ * One of the four counters (wave 7 PR2, R4, R12): filing, lessons, re-run, stale. A count of zero is one
+ * line, the title and the figure; a non-zero count expands into its first items with an action each.
+ */
+function renderCounter(card, cfg) {
   card.textContent = '';
   card.removeAttribute('hidden');
-  add(card, add(mk('div', 'hub-card-head'),
-    mk('h3', null, cfg.titleEn, cfg.titleEs),
-    dv('span', 'hub-count', String(cfg.items.length), { 'aria-label': cfg.items.length + ' items' })));
-  if (!cfg.items.length) { add(card, mk('div', 'hub-empty', 'Nothing waiting.', 'Nada pendiente.')); return; }
+  const n = cfg.items.length;
+  const head = mk('div', 'hub-card-head hub-counter-head');
+  add(head, add(mk('div', 'hub-counter-title'), icon(cfg.icon, cfg.tone), mk('h3', null, cfg.titleEn, cfg.titleEs)),
+    add(mk('span', 'hub-fig'), dv('b', 'hub-num', String(n), { 'aria-label': n + (n === 1 ? ' item' : ' items') })));
+  add(card, head);
+  if (!n) { card.setAttribute('data-empty', '1'); return; }
+  card.removeAttribute('data-empty');
   for (const it of cfg.items.slice(0, MAX_ITEMS)) {
     const row = mk('div', 'hub-item');
-    add(row, icon(cfg.icon, cfg.tone));
     add(row, add(mk('div', 'hub-item-body'), dv('span', 't', it.title), dv('span', 'm', it.meta)));
     add(row, mk('a', 'btn btn-outline btn-sm', cfg.actionEn, cfg.actionEs, { href: cfg.href(it) }));
     add(card, row);
   }
-  if (cfg.items.length > MAX_ITEMS) {
-    const n = cfg.items.length - MAX_ITEMS;
-    add(card, add(mk('div', 'hub-more'), mk('a', 'hub-link', n + ' more', n + ' más', { href: cfg.moreHref })));
+  if (n > MAX_ITEMS) {
+    const more = n - MAX_ITEMS;
+    add(card, add(mk('div', 'hub-more'), mk('a', 'hub-link', more + ' more', more + ' más', { href: cfg.moreHref })));
   }
 }
 
 export const reasonText = (r) => (r == null ? '' : typeof r === 'string' ? r : (r.detail || r.rule || ''));
 
-/* Wave 6 (Option A, W6-AC7): what came in since the person last looked, and one cited sentence per opportunity. */
+/* Wave 6 (Option A, W6-AC7): what came in since the person last looked, and one cited sentence per opportunity.
+   Wave 7 PR2 (R4): a full-width band under the globe; the counts as a grid of figures, the record chips as links. */
 const ACTIVITY_CITE_RE = /\[((?:run|doc|lesson):[^\]\s]+)\]/g;
 function citedSentence(host, text, records, projectId) {
   const byRef = new Map((records || []).map((r) => [r.ref, r]));
@@ -1103,21 +1228,27 @@ function citedSentence(host, text, records, projectId) {
   }
   if (last < text.length) add(host, dv('span', null, text.slice(last)));
 }
-async function renderActivity(person) {
+async function renderActivity(person, strip) {
   const card = $('#card-activity');
   if (!card || !person) return false;
   const r = await api('/api/me/activity');
-  if (!r.ok || !r.body || !r.body.counts) return false;
+  if (!r.ok || !r.body || !r.body.counts) { if (strip) { strip.set('need', null); strip.set('came', null); } return false; }
   const b = r.body, c = b.counts;
-  const sec = $('#sec-attention'); if (sec) sec.removeAttribute('hidden');
+  if (strip) { strip.set('need', Number(c.review || 0)); strip.set('came', Number(c.records || 0)); }
+  const sec = $('#sec-activity'); if (sec) sec.removeAttribute('hidden');
   card.removeAttribute('hidden');
   const d = fmtStamp(b.since);
   setText($('#activity-since'), 'since you looked on ' + d.en, 'desde que miró el ' + d.es);
   $('#activity-count').textContent = String(c.records || 0);
   const bits = [[c.messages_filed, 'messages filed', 'mensajes archivados'], [c.ready, 'ready', 'listos'], [c.review, 'need a decision', 'requieren decisión'], [c.invoices, 'invoices', 'facturas'], [c.files, 'files', 'archivos'], [c.organisations_proposed, 'new organisations proposed', 'organizaciones propuestas'], [c.bulk_hidden, 'bulk hidden', 'masivos ocultos']].filter((x) => x[0] > 0);
   const counts = $('#activity-counts'); counts.textContent = '';
-  if (!bits.length) add(counts, mk('span', 'hub-muted', 'Nothing new since then.', 'Nada nuevo desde entonces.'));
-  bits.forEach((x, i) => { if (i) add(counts, document.createTextNode(' · ')); add(counts, mk('span', null, x[0] + ' ' + x[1], x[0] + ' ' + x[2], { 'data-count': x[1].split(' ')[0] })); });
+  if (!bits.length) { add(counts, mk('span', 'hub-muted', 'Nothing new since then.', 'Nada nuevo desde entonces.')); card.setAttribute('data-empty', '1'); }
+  else card.removeAttribute('data-empty');
+  // The counts as figures (idea D: .hub-num and .hub-unit), each a cell of the grid; the separator keeps the line readable as text.
+  bits.forEach((x, i) => {
+    if (i) add(counts, mk('span', 'hub-fig-sep', ' · ', ' · ', { 'aria-hidden': 'true' }));
+    add(counts, add(mk('span', 'hub-fig', null, null, { 'data-count': x[1].split(' ')[0] }), dv('b', 'hub-num', String(x[0])), document.createTextNode(' '), mk('span', 'hub-unit', x[1], x[2])));
+  });
   const host = $('#activity-projects'); host.textContent = '';
   const projects = b.projects || [];
   const blocks = new Map();
@@ -1159,18 +1290,24 @@ async function renderActivity(person) {
   return true;
 }
 
-async function renderAttention(projects) {
-  const sec = $('#sec-attention');
-  let any = false;
-  const show = (card, cfg) => { renderAttnCard(card, cfg); any = true; sec.removeAttribute('hidden'); };
+/** The four counters: each starts at zero in one line (R12) and expands when its source answers with items; the strip reads the same figures. */
+async function renderAttention(projects, strip) {
   const pname = new Map(projects.map((p) => [p.id, projectName(p)]));
+  const CFG = {
+    filing: { titleEn: 'Filing queue', titleEs: 'Cola de archivo', icon: 'mail', actionEn: 'Assign', actionEs: 'Asignar', href: () => '/hub/queue.html', moreHref: '/hub/queue.html' },
+    lessons: { titleEn: 'Lesson proposals', titleEs: 'Propuestas de lecciones', icon: 'bulb', tone: 'gold', actionEn: 'Review', actionEs: 'Revisar', href: () => '/hub/queue.html?kind=lesson', moreHref: '/hub/queue.html?kind=lesson' },
+    rerun: { titleEn: 'Re-run deltas', titleEs: 'Diferencias de re-ejecución', icon: 'redo', tone: 'gold', actionEn: 'Review', actionEs: 'Revisar', href: () => '/hub/queue.html?kind=rerun-delta', moreHref: '/hub/queue.html?kind=rerun-delta' },
+    stale: { titleEn: 'Stale runs and documents', titleEs: 'Ejecuciones y documentos obsoletos', icon: 'doc', tone: 'bad', actionEn: 'Open', actionEs: 'Abrir', href: (it) => projectHref(it.project), moreHref: '/hub/index.html#card-stale' },
+  };
+  const show = (key, items) => { const card = $('#card-' + key); if (card) renderCounter(card, Object.assign({ items }, CFG[key])); };
+  for (const key of Object.keys(CFG)) show(key, []);
 
   // Stale runs and documents (M08), one call per project of mine.
   const stale = async () => {
-    if (!projects.length) return;
+    if (!projects.length) { if (strip) strip.set('stale', 0); return; }
     const results = await Promise.all(projects.slice(0, 12).map(async (p) => ({ p, r: await api('/api/projects/' + encodeURIComponent(p.id) + '/stale') })));
     const okOnes = results.filter((x) => x.r.ok);
-    if (!okOnes.length) return;
+    if (!okOnes.length) { if (strip) strip.set('stale', null); return; }
     const items = [];
     for (const { p, r } of okOnes) {
       const b = r.body;
@@ -1184,25 +1321,28 @@ async function renderAttention(projects) {
         items.push({ title, meta: [pname.get(p.id) || p.id, why].filter(Boolean).join(' · '), project: p.id, kind: x.kind });
       }
     }
-    show($('#card-stale'), { titleEn: 'Stale runs and documents', titleEs: 'Ejecuciones y documentos obsoletos', items, icon: 'doc', tone: 'bad', actionEn: 'Open', actionEs: 'Abrir', href: (it) => projectHref(it.project), moreHref: '/hub/search.html?q=stale' });
+    show('stale', items);
+    if (strip) strip.set('stale', items.length);
   };
   const filing = async () => {
     const r = await api('/api/queue/filing');
-    if (!r.ok) return;
+    if (!r.ok) { if (strip) strip.set('file', null); return; }
     const items = listOf(r.body, 'items', 'queue', 'entries').map((x) => ({
       title: x.subject || x.title || x.name || x.id,
       meta: [x.from || x.sender, (x.suggested_project_name || x.suggested_project || x.project_id) ? '→ ' + (x.suggested_project_name || x.suggested_project || x.project_id) + (x.confidence != null ? ' ' + x.confidence : '') : ''].filter(Boolean).join(' · '),
     }));
-    show($('#card-filing'), { titleEn: 'Filing queue', titleEs: 'Cola de archivo', items, icon: 'mail', actionEn: 'Assign', actionEs: 'Asignar', href: () => '/hub/queue.html', moreHref: '/hub/queue.html' });
+    show('filing', items);
+    if (strip) strip.set('file', items.length);
   };
   const lessons = async () => {
     const r = await api('/api/lessons?status=proposed');
-    if (!r.ok) return;
+    if (!r.ok) { if (strip) strip.set('lessons', null); return; }
     const items = listOf(r.body, 'lessons', 'items').map((x) => ({
       title: x.statement || x.text || x.title || x.id,
       meta: [x.discipline, x.confidence != null ? 'confidence ' + x.confidence : ''].filter(Boolean).join(' · '),
     }));
-    show($('#card-lessons'), { titleEn: 'Lesson proposals', titleEs: 'Propuestas de lecciones', items, icon: 'bulb', tone: 'gold', actionEn: 'Review', actionEs: 'Revisar', href: () => '/hub/queue.html?kind=lesson', moreHref: '/hub/queue.html?kind=lesson' });
+    show('lessons', items);
+    if (strip) strip.set('lessons', items.length);
   };
   const rerun = async () => {
     const r = await api('/api/queue/review?kind=rerun-delta');
@@ -1211,10 +1351,10 @@ async function renderAttention(projects) {
       title: x.title || x.summary || x.headline || x.id,
       meta: [x.project_name || x.project_id, x.detail].filter(Boolean).join(' · '),
     }));
-    show($('#card-rerun'), { titleEn: 'Re-run deltas', titleEs: 'Diferencias de re-ejecución', items, icon: 'redo', tone: 'gold', actionEn: 'Review', actionEs: 'Revisar', href: () => '/hub/queue.html?kind=rerun-delta', moreHref: '/hub/queue.html?kind=rerun-delta' });
+    show('rerun', items);
   };
   await Promise.all([stale(), filing(), lessons(), rerun()]);
-  return any;
+  return true;
 }
 
 function headline(run) {
@@ -1263,7 +1403,7 @@ async function renderRuns(projects) {
 }
 
 /* Wave 6 (D60): the Connect card, shown until the person connects or says Not now; the return from Zoho's consent page. */
-async function renderMailboxPrompt(person) {
+async function renderMailboxPrompt(person, mailbox) {
   const sec = $('#sec-mailbox');
   if (!sec || !person) return;
   const back = new URLSearchParams(location.search).get('mailbox');
@@ -1278,8 +1418,7 @@ async function renderMailboxPrompt(person) {
     }
     const u = new URL(location.href); u.searchParams.delete('mailbox'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
   }
-  const r = await api('/api/me/mailbox');
-  if (!r.ok || !r.body || !r.body.prompt) return;
+  if (!mailbox || !mailbox.prompt) return;
   $('#mailbox-address').textContent = person.email || '';
   sec.removeAttribute('hidden');
   const status = $('#mailbox-status'), connect = $('#mailbox-connect'), later = $('#mailbox-later');
@@ -1300,15 +1439,24 @@ async function renderMailboxPrompt(person) {
 async function initToday() {
   const d = fmtDateLong(new Date());
   setText($('#today-date'), d.en, d.es);
+  // Wave 7 PR2 (idea C): the strip reads the Vault's health itself; the rest of its figures come from the fetches below.
+  const strip = mountStatusStrip();
+  if (strip) strip.load(['health']);
   const person = await showSession();
-  try { await renderMailboxPrompt(person); } catch (e) { /* the card is optional */ }
-  await renderTools(person);
+  let mailbox = null;
+  if (person) { const r = await api('/api/me/mailbox'); mailbox = r.ok ? r.body : null; }
+  if (strip) strip.mail(mailbox);
+  try { await renderMailboxPrompt(person, mailbox); } catch (e) { /* the card is optional */ }
   setupNewProject(person);
-  let globe = null;
-  try { globe = await renderGlobe(person); } catch (e) { const sec = $('#sec-globe'); if (sec) sec.setAttribute('data-globe', 'failed'); }
+  let info = null;
+  try { info = await renderGlobe(person); } catch (e) { const sec = $('#sec-globe'); if (sec) sec.setAttribute('data-globe', 'failed'); }
   let projects = [];
-  try { projects = await renderRegister(person, globe && globe.names); } catch (e) { /* the register is optional; the rest of Today still renders */ }
-  await Promise.all([renderActivity(person).catch(() => false), renderAttention(projects), renderRuns(projects)]);
+  try { projects = await renderRegister(person, info); } catch (e) { /* the register is optional; the rest of Today still renders */ }
+  // ?country=XX in the address selects a country once the register knows its projects.
+  const want = new URLSearchParams(location.search).get('country');
+  if (info && info.select && want && /^[A-Z]{2}$/.test(want)) info.select(want, false);
+  await Promise.all([renderActivity(person, strip).catch(() => false), renderAttention(projects, strip), renderRuns(projects)]);
+  for (const sk of document.querySelectorAll('.hub-skel')) sk.remove();   // R12: the skeleton leaves with data-ready
   document.body.setAttribute('data-ready', '1');
 }
 
@@ -1319,6 +1467,6 @@ async function initSettingsShell() {
 }
 
 const page = document.body && document.body.getAttribute('data-page');
-if (document.body) { markNav(); armLegacyGate(); }
+if (document.body) { markNav(); armLegacyGate(); setupChrome(); }
 if (page === 'today') initToday();
 else if (page === 'settings') initSettingsShell();

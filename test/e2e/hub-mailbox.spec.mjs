@@ -152,7 +152,7 @@ test('W6-AC3: an associate sees no firm rules; a server without the Zoho client 
   await page.goto('/hub/settings.html');
   await expect(sec).toHaveAttribute('data-mailbox', 'off', { timeout: 10000 });
   await expect(sec.locator('#mailbox-off-text')).toHaveText('Mail capture is not switched on for this Vault yet. Ask Chris.');   // wave 7 (S34): no file names in the copy
-  await expect(sec.locator('#mailbox-connect')).toBeDisabled();
+  await expect(sec.locator('#mailbox-connect')).toBeHidden();      // wave 7 PR2 (R9, builder F): hidden, not disabled
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(sec.locator('#h-mailbox')).toHaveText('Su buzón');
 });

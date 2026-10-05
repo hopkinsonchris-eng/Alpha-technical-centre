@@ -15,7 +15,7 @@
      POST /api/runs/:id/rerun      replay a run on the current version
    Every string a person reads carries data-en and data-es.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, openTarget, fmtShortDate, LIFECYCLE, KIND, SECTION, RUN_STATUS, armOnOpen } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, openTarget, fmtShortDate, LIFECYCLE, KIND, SECTION, RUN_STATUS, armOnOpen, renderCatalog } from './hub.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const params = new URLSearchParams(location.search);
@@ -40,8 +40,8 @@ function notice(kind, boldEn, boldEs, en, es) {
 function failPage(res, source) {
   const st = res ? res.status : 0;
   let t, en, es;
-  if (!toolId) { t = bi('No tool selected', 'Ninguna herramienta seleccionada'); en = 'Open a tool from Today, or add ?id=<tool> to the address.'; es = 'Abra una herramienta desde Hoy, o añada ?id=<herramienta> a la dirección.'; }
-  else if (source === 'none') { t = bi('The Vault is unreachable', 'El Vault no es accesible'); en = 'The catalog could not be loaded from the API or from hub/catalog.json.'; es = 'No se pudo cargar el catálogo desde la API ni desde hub/catalog.json.'; showVault(false); }
+  if (!toolId) { t = bi('No tool selected', 'Ninguna herramienta seleccionada'); en = 'Open a tool from the Tools index.'; es = 'Abra una herramienta desde el índice de herramientas.'; }
+  else if (source === 'none') { t = bi('The Vault is unreachable', 'El Vault no es accesible'); en = 'The catalog could not be loaded from the Vault or from the copy kept with the Hub.'; es = 'No se pudo cargar el catálogo desde el Vault ni desde la copia guardada con el Hub.'; showVault(false); }
   else { t = bi('Tool not found', 'Herramienta no encontrada'); en = 'There is no tool "' + toolId + '" in the catalog.'; es = 'No existe la herramienta "' + toolId + '" en el catálogo.'; }
   setText($('#t-title'), t.en, t.es);
   add($('#notices'), notice('bad', t.en + '.', t.es + '.', en, es));
@@ -91,7 +91,7 @@ function chips(values) {
 }
 
 function renderManifest(tool) {
-  setText($('#t-path'), 'tools/' + tool.id + '/tool.json');
+  setText($('#t-path'), tool.id);
   const dl = $('#t-manifest');
   dl.textContent = '';
   const row = (en, es, node) => add(dl, mk('dt', null, en, es), node);
@@ -102,8 +102,6 @@ function renderManifest(tool) {
   row('Lifecycle', 'Ciclo de vida', add(mk('dd'), mk('span', 'hub-pill ' + life[2], life[0], life[1])));
   row('Kind', 'Tipo', dv('dd', 'mono', tool.kind));
   row('Entry', 'Entrada', dv('dd', 'mono', tool.entry));
-  if (tool.changelog) row('Changelog', 'Registro de cambios', dv('dd', 'mono', tool.changelog));
-  if (tool.docs) row('Docs', 'Documentación', dv('dd', 'mono', tool.docs));
   row('Produces', 'Produce', chips(tool.produces));
   row('Consumes', 'Consume', chips(tool.consumes));
   const al = mk('dd');
@@ -271,7 +269,7 @@ function renderVersions(tool, byVer) {
       add(mk('td'), v.breaking ? mk('span', 'hub-pill bad', 'Breaking', 'Incompatible') : mk('span', 'hub-pill ghost', 'No', 'No')),
       dv('td', 'mono wrap', (v.modules || []).join(', ')),
       dv('td', 'num', String(byVer.get(v.version) || 0)),
-      dv('td', 'notes', v.notes || firstLine(rel.get(v.version))));
+      dv('td', 'notes', v.notes || firstLine(rel.get(v.version)), { 'data-source-text': 'notes' }));
     add(tb, tr);
   }
   add(table, tb);
@@ -281,6 +279,7 @@ function renderVersions(tool, byVer) {
 function renderChangelog(tool) {
   const host = $('#t-changelog');
   host.textContent = '';
+  host.setAttribute('data-source-text', 'changelog');   // the tool's own release notes, quoted verbatim
   const byV = new Map((tool.versions || []).map((v) => [v.version, v]));
   const rels = (tool.releases || []).filter((r) => r && r.version !== 'Unreleased' && (Object.keys(r.sections || {}).length || r.date));
   if (!rels.length) return void add(host, mk('p', 'hub-muted', 'No changelog entries.', 'Sin entradas en el registro de cambios.'));
@@ -344,16 +343,28 @@ function renderRuns(tool, current, runs, projects, note) {
 
 /* ── load ────────────────────────────────────────────────────────────── */
 
+/** Wave 7 PR2 (R4): without a tool id the page is the Tools index, the catalog that used to sit at the foot of Today. */
+async function renderToolsIndex(person) {
+  setText($('#t-label'), 'Tools', 'Herramientas');
+  setText($('#t-title'), 'Tools', 'Herramientas');
+  document.title = 'Tools — Alpha Technical Centre';
+  const crumb = $('.hub-crumb b'); if (crumb) setText(crumb, 'Tools', 'Herramientas');
+  const sub = $('#t-sub'); if (sub) setText(sub, 'Every tool the firm runs, with its current version and what changed. Open one here, or from a project file with Open in tool.', 'Cada herramienta que usa la firma, con su versión actual y lo que cambió. Ábrala aquí, o desde la ficha de un proyecto con Abrir en herramienta.');
+  const sec = $('#sec-tools'); if (sec) sec.removeAttribute('hidden');
+  await renderCatalog(person);
+  document.body.setAttribute('data-ready', '1');
+}
+
 async function init() {
-  await showSession();
-  if (!toolId) return failPage(null);
+  const person = await showSession();
+  if (!toolId) return renderToolsIndex(person);
   const { catalog, source } = await loadCatalog();
   if (!catalog) return failPage(null, 'none');
   const byId = new Map(catalog.tools.map((t) => [t.id, t]));
   const tool = byId.get(toolId);
   if (!tool) return failPage(null, source);
   showVault(source === 'api');
-  if (source !== 'api') add($('#notices'), notice('warn', 'The Vault is unreachable.', 'El Vault no es accesible.', 'Showing hub/catalog.json; runs are not available.', 'Se muestra hub/catalog.json; las ejecuciones no están disponibles.'));
+  if (source !== 'api') add($('#notices'), notice('warn', 'The Vault is unreachable.', 'El Vault no es accesible.', 'Showing the catalog kept with the Hub; runs are not available.', 'Se muestra el catálogo guardado con el Hub; las ejecuciones no están disponibles.'));
 
   const siteRoot = new URL('../', location.href);
   const versions = tool.versions || [];

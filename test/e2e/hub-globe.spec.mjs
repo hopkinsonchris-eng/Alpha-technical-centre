@@ -96,26 +96,26 @@ test('AC3: the country list shows what the caller may see with counts and attent
   await page.goto('/hub/index.html');
   await ready(page);
   await expect(page.locator('#globe-count')).toHaveText('3 countries · 4 projects');
-  const rows = page.locator('#country-list [data-country]');
+  const rows = page.locator('#register [data-country]');
   await expect(rows).toHaveCount(3);
   expect(await rows.evaluateAll((els) => els.map((e) => e.getAttribute('data-country')))).toEqual(['EG', 'KZ', 'VE']);
-  const ve = page.locator('#country-list [data-country="VE"]');
+  const ve = page.locator('#register [data-country="VE"]');
   await expect(ve).toContainText('Venezuela');
   await expect(ve).toContainText('2 projects');
   await expect(ve.locator('.hub-flag.stale')).toHaveText('2 stale');
   await expect(ve.locator('.hub-flag.filing')).toHaveText('1 to file');
   await expect(ve.locator('.hub-flag.expiring')).toHaveCount(0);
-  const eg = page.locator('#country-list [data-country="EG"]');
+  const eg = page.locator('#register [data-country="EG"]');
   await expect(eg).toContainText('1 project');
   await expect(eg.locator('.hub-flag.expiring')).toHaveText('NDA 12 d');
   await expect(eg.locator('.hub-flag.stale')).toHaveCount(0);
-  await expect(page.locator('#country-list [data-country="KZ"] .hub-flag')).toHaveCount(0);
+  await expect(page.locator('#register [data-country="KZ"] .hub-flag')).toHaveCount(0);
   // Projects without a country are listed too, never dropped.
   await expect(page.locator('#country-unplaced')).toContainText('1 project without a country');
   await expect(page.locator('#country-unplaced a[data-country-project="plain-project"]')).toHaveAttribute('href', '/hub/project.html?id=plain-project');
   // Spanish follows.
   await page.locator('.nav-lang button[data-lang="es"]').click();
-  await expect(page.locator('#country-list [data-country="KZ"]')).toContainText('Kazajistán');
+  await expect(page.locator('#register [data-country="KZ"]')).toContainText('Kazajistán');
   await expect(page.locator('#globe-count')).toHaveText('3 países · 4 proyectos');
 });
 
@@ -123,31 +123,32 @@ test('AC4 and AC5: choosing a country sets ?country=, lists its projects, links 
   await stubApi(page);
   await page.goto('/hub/index.html');
   await ready(page); await globeReady(page);
-  await page.locator('#country-list [data-country="VE"]').click();
+  await page.locator('#register [data-country="VE"]').click();
   await expect(page).toHaveURL(/\?country=VE$/);
   const panel = page.locator('#country-panel');
   await expect(panel).toBeVisible();
   await expect(panel.locator('h3')).toHaveText('Venezuela');
-  await expect(page.locator('#country-list')).toBeHidden();
+  await expect(page.locator('#register')).toBeHidden();
   const projects = panel.locator('[data-country-project]');
   await expect(projects).toHaveCount(2);
   await expect(projects.nth(0)).toContainText('Barinas–Apure Cluster');
   await expect(projects.nth(0)).toContainText('Technical review');
-  await expect(projects.nth(0)).toHaveAttribute('href', '/hub/project.html?id=ven-barinas');
+  await expect(projects.nth(0).locator('a[data-token="name"]')).toHaveAttribute('href', '/hub/project.html?id=ven-barinas');
+  await expect(projects.nth(0).locator('.hub-stateline[data-stateline="row"]')).toHaveCount(1);   // W7-AC6: the same component as Today's register
   await expect(projects.nth(0).locator('.hub-flag.stale')).toHaveText('2 stale');
   await expect(projects.nth(1)).toContainText('Lake Maracaibo Redevelopment');
   await expect(page.locator('#sec-globe')).toHaveAttribute('data-country', 'VE');
   // Back to all countries.
   await panel.getByRole('button', { name: 'All countries' }).click();
   await expect(page).not.toHaveURL(/country=/);
-  await expect(page.locator('#country-list')).toBeVisible();
+  await expect(page.locator('#register')).toBeVisible();
   await expect(panel).toBeHidden();
   // Deep link.
   await page.goto('/hub/index.html?country=KZ');
   await ready(page); await globeReady(page);
   await expect(panel.locator('h3')).toHaveText('Kazakhstan');
   await expect(panel.locator('[data-country-project]')).toHaveCount(1);
-  await expect(panel.locator('[data-country-project]').first()).toContainText('last run 28 Sept 2026');
+  await expect(panel.locator('[data-country-project]').first().locator('[data-token="last"]')).toContainText('Last');
   await expect(page.locator('#sec-globe')).toHaveAttribute('data-country', 'KZ');
   // A country we hold nothing in still opens, and says so.
   await page.goto('/hub/index.html?country=BR');
@@ -167,31 +168,30 @@ test('AC6: the register lists the projects with their opportunity fields; filter
   const posted = await stubApi(page);
   await page.goto('/hub/index.html');
   await ready(page);
-  const rows = page.locator('#register-body tr[data-register-row]');
+  const rows = page.locator('#register [data-register-row]');
   await expect(rows).toHaveCount(5);
-  const kaz = page.locator('tr[data-register-row="kaz-brownfield"]');
+  // Wave 7 PR2 (idea A, W7-AC6): one stateline row per project, grouped by country, with the execution risk labelled beside it.
+  const kaz = page.locator('#register [data-register-row="kaz-brownfield"]');
   await expect(kaz).toContainText('Western Kazakhstan Brownfield');
-  await expect(kaz).toContainText('Kazakhstan');
-  await expect(kaz).toContainText('Qualified');
-  await expect(kaz.locator('[data-col="plan"]')).toHaveText('16 → 22');
-  await expect(kaz.locator('[data-col="risk"] .hub-rag')).toHaveAttribute('data-risk', 'amber');
-  await expect(kaz.locator('[data-col="risk"]')).toContainText('54');
-  await expect(kaz.locator('[data-col="owner"]')).toHaveText('Tom');
-  await expect(kaz.locator('[data-col="holder"]')).toHaveText('KazMunayGas + Chevron');
-  await expect(page.locator('tr[data-register-row="egy-onshore"] [data-col="holder"]')).toHaveText('—');
-  await expect(page.locator('.hub-register thead')).toContainText('Lead');
-  await expect(kaz.locator('a')).toHaveAttribute('href', '/hub/project.html?id=kaz-brownfield');
-  await expect(page.locator('tr[data-register-row="egy-onshore"] [data-col="client"]')).toHaveText('Frontera Energy');
-  await expect(page.locator('tr[data-register-row="plain-project"] [data-col="plan"]')).toHaveText('—');
+  expect(await kaz.evaluate((el) => el.closest('[data-country-group]').getAttribute('data-country-group'))).toBe('KZ');
+  await expect(kaz.locator('a[data-token="stage"]')).toContainText('Qualified');
+  await expect(kaz.locator('a[data-token="next"]')).toHaveCount(0);            // the row size shows Next only when there is one
+  await expect(kaz.locator('[data-risk-tag]')).toHaveText('our execution risk Amber 54');
+  await expect(kaz.locator('[data-risk-tag] .hub-rag')).toHaveAttribute('data-risk', 'amber');
+  await expect(kaz.locator('a[data-token="name"]')).toHaveAttribute('href', '/hub/project.html?id=kaz-brownfield');
+  await expect(page.locator('#register [data-register-row="egy-onshore"] a[data-token="stage"]')).toContainText('Negotiation');
+  await expect(page.locator('#register [data-register-row="plain-project"] [data-risk-tag]')).toHaveCount(0);
+  expect(await page.locator('#register [data-register-row="plain-project"]').evaluate((el) => el.closest('[data-country-group]').getAttribute('data-country-group'))).toBe('');
+  await expect(page.locator('#register [data-country-group=""] .hub-country')).toContainText('No country yet');
 
   await page.locator('#reg-stage').selectOption('Qualified');
-  await expect(page.locator('#register-body tr[data-register-row]:visible')).toHaveCount(2);
+  await expect(page.locator('#register [data-register-row]:visible')).toHaveCount(2);
   await page.locator('#reg-risk').selectOption('red');
-  await expect(page.locator('#register-body tr[data-register-row]:visible')).toHaveCount(1);
+  await expect(page.locator('#register [data-register-row]:visible')).toHaveCount(1);
   await page.locator('#reg-stage').selectOption('');
   await page.locator('#reg-risk').selectOption('');
   await page.locator('#reg-country').selectOption('VE');
-  await expect(page.locator('#register-body tr[data-register-row]:visible')).toHaveCount(2);
+  await expect(page.locator('#register [data-register-row]:visible')).toHaveCount(2);
   await expect(page.locator('#register-count')).toHaveText('2 of 5');
   await page.locator('#reg-country').selectOption('');
 
@@ -222,14 +222,14 @@ test('AC6: associates see the register but no Add opportunity; with the Vault do
   await stubApi(page, { '/api/me': (u, r) => json(r, { ...PARTNER, role: 'associate' }) });
   await page.goto('/hub/index.html');
   await ready(page);
-  await expect(page.locator('#register-body tr[data-register-row]')).toHaveCount(5);
+  await expect(page.locator('#register [data-register-row]')).toHaveCount(5);
   await expect(page.getByRole('button', { name: 'Add opportunity' })).toHaveCount(0);
 
   await page.route('**/api/**', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"boom"}' }));
   await page.goto('/hub/index.html');
   await ready(page); await globeReady(page);
   await expect(page.locator('#globe')).toBeVisible();
-  await expect(page.locator('#sec-register')).toBeHidden();
+  await expect(page.locator('#register [data-register-row]')).toHaveCount(0);
   await expect(page.locator('#globe-count')).toContainText('not available');
 });
 
@@ -240,7 +240,7 @@ test('AC18: evidence screenshots of the globe front page and a selected country'
   await page.waitForTimeout(600);
   mkdirSync(EVIDENCE, { recursive: true });
   await page.screenshot({ path: path.join(EVIDENCE, 'w2-globe-front.png') });
-  await page.locator('#country-list [data-country="VE"]').click();
+  await page.locator('#register [data-country="VE"]').click();
   await page.waitForTimeout(1200);
   await page.screenshot({ path: path.join(EVIDENCE, 'w2-globe-country.png') });
 });
@@ -296,7 +296,7 @@ test('AC16: Brief this country asks the Vault and shows the cited paragraphs, th
   await page.screenshot({ path: path.join(EVIDENCE, 'w2-country-brief.png'), fullPage: false });
   // Changing country hides the brief.
   await page.locator('#country-back').click();
-  await page.locator('#country-list [data-country="KZ"]').click();
+  await page.locator('#register [data-country="KZ"]').click();
   await expect(brief).toBeHidden();
 });
 
@@ -373,7 +373,7 @@ test('W3-AC8: Create a project here appears for partners, opens the form with th
   await page.goto('/hub/index.html');
   await ready(page); await globeReady(page);
   // From the list: the country's centre stands in for the tap.
-  await page.locator('#country-list [data-country="BR"], #country-list [data-country="VE"]').first().click();
+  await page.locator('#register [data-country="BR"], #register [data-country="VE"]').first().click();
   const row = page.locator('#country-create-row');
   await expect(row).toBeVisible();
   await expect(row.locator('#country-create')).toHaveText('Create a project here');
@@ -426,19 +426,20 @@ test('W3-AC9: a country with a World Monitor reading shows the score and level w
   await ready(page); await globeReady(page);
   const risk = page.locator('#country-risk');
   await expect(risk).toBeVisible();
-  await expect(risk).toContainText('risk 71');
+  await expect(risk).toContainText('World Monitor 71');
+  await expect(risk).not.toContainText(/\brisk 71/);
   await expect(risk).toContainText('advisory: reconsider travel');
   await expect(risk).toContainText('World Monitor');
   await expect(risk.locator('.hub-rag')).toHaveAttribute('data-risk', 'red');
   await expect(risk.locator('[data-risk-score="71.4"]')).toHaveCount(1);
   await page.locator('#country-back').click();
-  await expect(page.locator('#country-list [data-country="VE"] .hub-risk-n')).toHaveText('risk 71');
-  await expect(page.locator('#country-list [data-country="KZ"] .hub-risk-n')).toHaveCount(0);
-  await page.locator('#country-list [data-country="KZ"]').click();
+  await expect(page.locator('#register [data-country="VE"] .hub-risk-n')).toHaveText('World Monitor 71');
+  await expect(page.locator('#register [data-country="KZ"] .hub-risk-n')).toHaveCount(0);
+  await page.locator('#register [data-country="KZ"]').click();
   await expect(risk).toBeHidden();
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await page.locator('#country-back').click();
-  await expect(page.locator('#country-list [data-country="VE"] .hub-risk-n')).toHaveText('riesgo 71');
+  await expect(page.locator('#register [data-country="VE"] .hub-risk-n')).toHaveText('World Monitor 71');
   expect(leaks).toEqual([]);
 });
 
@@ -517,7 +518,7 @@ test('W3-PR4: choosing a country reads its intelligence from the Vault and shows
   await expect(card.locator('#intel-meta')).toContainText('1 did not answer');
   const risk = card.locator('[data-intel="risk"]');
   await expect(risk).toHaveAttribute('data-state', 'live');
-  await expect(risk).toContainText('risk 50');
+  await expect(risk).toContainText('World Monitor 50');
   await expect(risk).toContainText('trend rising');
   await expect(risk).toContainText('sanctions active (212 designations)');
   await expect(risk.locator('.hub-ibar')).toHaveCount(4);
@@ -542,12 +543,12 @@ test('W3-PR4: choosing a country reads its intelligence from the Vault and shows
   // Leaving the country clears the card; a country without a reading says not connected.
   await page.locator('#country-back').click();
   await expect(card).toBeHidden();
-  await page.locator('#country-list [data-country="KZ"]').click();
+  await page.locator('#register [data-country="KZ"]').click();
   await expect(card).toHaveAttribute('data-state', 'failed');     // the stub has no KZ route: a 404 is reported, never hidden
   expect(intelCalls).toBe(1);
   // Spanish follows.
   await page.locator('#country-back').click();
-  await page.locator('#country-list [data-country="VE"]').click();
+  await page.locator('#register [data-country="VE"]').click();
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(card.locator('h3')).toHaveText('Inteligencia del país: Venezuela');
 });
@@ -568,12 +569,12 @@ test('W3-PR4: a field whose coordinates fall outside the country is flagged in t
   await expect(page.locator('#country-intel')).toBeHidden();
 });
 
-test('W3-PR4: an archived project is left out of the register and My projects', async ({ page }) => {
+test('W3-PR4: an archived project is left out of the register', async ({ page }) => {
   const withArchived = { projects: [...PROJECTS.projects, { ...PROJECTS.projects[2], id: 'old-venezuela', name: 'Venezuela', status: 'archived' }] };
   await stubApi(page, { '/api/projects': (u, r, posted) => (r.request().method() === 'POST' ? json(r, {}, 201) : json(r, withArchived)) });
   await page.goto('/hub/index.html');
   await ready(page);
-  await expect(page.locator('#register-body tr[data-register-row]')).toHaveCount(5);
+  await expect(page.locator('#register [data-register-row]')).toHaveCount(5);
   await expect(page.locator('tr[data-register-row="old-venezuela"]')).toHaveCount(0);
 });
 
@@ -586,8 +587,8 @@ test('a project link works from /hub without the trailing slash', async ({ page 
   await page.route('**/hub', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: html }));
   await page.goto('/hub');
   await ready(page); await globeReady(page);
-  await page.locator('#country-list [data-country="VE"]').click();
-  const link = page.locator('#country-panel [data-country-project="ven-barinas"]');
+  await page.locator('#register [data-country="VE"]').click();
+  const link = page.locator('#country-panel [data-country-project="ven-barinas"] a[data-token="name"]');
   await expect(link).toHaveAttribute('href', '/hub/project.html?id=ven-barinas');
   for (const a of await page.locator('a[href]').all()) {
     const href = await a.getAttribute('href');
@@ -596,4 +597,31 @@ test('a project link works from /hub without the trailing slash', async ({ page 
   await link.click();
   await expect(page).toHaveURL(/\/hub\/project\.html\?id=ven-barinas$/);
   await expect(page.locator('body')).not.toContainText(/^Not Found$/);
+});
+
+/* ── wave 7 PR2 (idea B, W7-AC6): the country panel's project rows are statelines ── */
+
+test('W7-AC6: the country panel renders each project as the stateline row, every token a link into the project file, with the flags and fields beneath', async ({ page }) => {
+  await stubApi(page);
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const rows = page.locator('#country-panel [data-country-project]');
+  await expect(rows).toHaveCount(2);
+  const sl = rows.nth(0).locator('.hub-stateline[data-stateline="row"]');
+  await expect(sl).toHaveCount(1);
+  await expect(sl).toHaveAttribute('data-project', 'ven-barinas');
+  await expect(sl.locator('a[data-token="name"]')).toHaveText('Barinas–Apure Cluster');
+  await expect(sl.locator('a[data-token="stage"]')).toContainText('Technical review');
+  await expect(sl.locator('a[data-token="stage"]')).toHaveAttribute('href', '/hub/project.html?id=ven-barinas#stage');
+  await expect(sl.locator('a[data-token="last"]')).toHaveAttribute('href', '/hub/project.html?id=ven-barinas#timeline');
+  await expect(sl.locator('.hub-sl-flag[data-tone="warn"]')).toHaveAttribute('title', '2 stale');
+  await expect(rows.nth(0).locator('.hub-flag.filing')).toHaveText('1 to file');
+  await expect(rows.nth(0).locator('[data-project-fields="ven-barinas"] .hub-field-pt')).toHaveCount(3);
+  // The old card rendering is gone: no stage pill, no "last run" prose.
+  await expect(rows.nth(0).locator('.hub-stage')).toHaveCount(0);
+  await expect(rows.nth(0)).not.toContainText('last run');
+  // Create a project here is an outline action, not the gold primary, under the project rows (R4).
+  const create = page.locator('#country-create');
+  await expect(create).toHaveClass(/btn-outline/);
+  expect(await create.evaluate((el) => el.closest('#country-panel').querySelector('#country-projects').compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
 });

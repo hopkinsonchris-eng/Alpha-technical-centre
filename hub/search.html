@@ -10,58 +10,71 @@
 <link rel="stylesheet" href="/hub/hub.css">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
-/* Find page (M12). Page-local layout on the Hub tokens from hub.css. */
+/* Find page. Page-local layout on the Hub tokens from hub.css; type and touch rules come from hub.css (wave 7 PR2). */
 .find-box { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 400px) auto; gap: 10px; align-items: end; padding: 20px; }
-.find-field label { display: block; font-family: var(--font-label); font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-.find-field label .req { color: var(--gold-ink); }
-.find-input { display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px; background: var(--white); border: 1.5px solid var(--navy); border-radius: var(--r); }
+.find-field label { display: block; font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.find-input { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; background: var(--white); border: 1.5px solid var(--navy); border-radius: var(--r); }
 .find-input:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.3); }
 .find-input input { flex: 1; min-width: 0; border: none; outline: none !important; background: none; font: inherit; font-size: 16px; color: var(--navy); }
 .find-input input::placeholder { color: var(--muted); }
-.find-scope { width: 100%; height: 42px; padding: 0 10px; font: inherit; font-size: 14px; color: var(--navy); background: var(--white); border: 1.5px solid var(--rule); border-radius: var(--r); }
-.find-scope[aria-invalid="true"] { border-color: var(--bad); background: var(--bad-bg); }
-.find-go { height: 42px; padding: 0 20px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-.find-pred { max-width: none; margin: 0 20px 20px; padding: 8px 12px; border: 1px dashed var(--gold); border-radius: var(--r); font-size: 12.5px; color: var(--navy-mid); background: var(--white); }
-.find-pred code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; color: var(--navy); }
+.find-scope { width: 100%; height: 44px; padding: 0 10px; font: inherit; font-size: 14px; color: var(--navy); background: var(--white); border: 1.5px solid var(--rule); border-radius: var(--r); }
+.find-go { height: 44px; padding: 0 20px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.find-pred { max-width: none; margin: -6px 20px 16px; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.find-pred[data-scope-state="chosen"] { color: var(--navy-mid); }
+.hub .find-pred .find-change-scope { display: inline-flex; align-items: center; min-height: 36px; padding: 0; color: var(--navy); border-bottom: 1px solid var(--gold); font-size: 13px; }
+.find-change-scope:hover { color: var(--gold-ink); }
 .find-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 18px 0 12px; }
 .find-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.find-chip { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font: inherit; font-size: 12.5px; color: var(--navy-mid); background: var(--white); border: 1px solid var(--rule); border-radius: 999px; padding: 3px 12px; }
+.find-chip { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font: inherit; font-size: 13px; color: var(--navy-mid); background: var(--white); border: 1px solid var(--rule); border-radius: 999px; padding: 6px 14px; min-height: 36px; }
 .find-chip:hover { border-color: var(--gold); color: var(--navy); }
 .find-chip[aria-pressed="true"] { background: var(--navy); color: var(--white); border-color: var(--navy); }
-.find-chip .n { font-size: 11px; opacity: .85; }
+.find-chip .n { font-size: 12px; opacity: .85; }
 .find-date { display: flex; align-items: center; gap: 8px; }
-.find-date label { font-family: var(--font-label); font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
-.find-date select { height: 34px; padding: 0 8px; font: inherit; font-size: 13.5px; color: var(--navy); background: var(--white); border: 1px solid var(--rule); border-radius: var(--r); }
+.find-date label { font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.find-date select { height: 36px; padding: 0 8px; font: inherit; font-size: 13.5px; color: var(--navy); background: var(--white); border: 1px solid var(--rule); border-radius: var(--r); }
 .find-who { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid #ECEEF1; background: #FCFBF7; }
 .find-who .label { margin: 0; color: var(--muted); }
-.find-who-chip { display: inline-flex; align-items: center; gap: 8px; padding: 2px 12px 2px 3px; background: var(--white); border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; color: var(--navy); }
-.find-who-chip small { color: var(--muted); font-size: 11.5px; }
-.find-av { width: 26px; height: 26px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--navy); color: var(--gold-light); border: 2px solid var(--white); font-family: var(--font-label); font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+.find-who-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; background: var(--white); border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; color: var(--navy); min-height: 36px; }
+.find-who-chip small { color: var(--muted); font-size: 12px; }
+.find-av { width: 26px; height: 26px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--navy); color: var(--gold-light); border: 2px solid var(--white); font-family: var(--font-label); font-size: 11px; font-weight: 700; letter-spacing: .04em; }
 .find-av-stack { display: inline-flex; }
 .find-av-stack .find-av + .find-av { margin-left: -4px; }
 .find-count { font-size: 13.5px; color: var(--navy); }
-.find-list { list-style: none; margin: 0; padding: 0; }
-.result { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #ECEEF1; }
-.result:last-child { border-bottom: none; }
+.find-count .hub-num { font-size: 15px; }
+.find-groups, .find-list { list-style: none; margin: 0; padding: 0; }
+.find-group { border-bottom: 1px solid var(--rule); }
+.find-group:last-child { border-bottom: none; }
+.find-group-head { display: flex; align-items: center; gap: 6px 18px; flex-wrap: wrap; padding: 12px 20px 8px; background: #FCFBF7; border-bottom: 1px solid #ECEEF1; }
+.find-group-name { display: inline-flex; align-items: center; min-height: 44px; font-family: var(--font-body); font-weight: 600; font-size: 15px; color: var(--navy); text-decoration: none; }
+a.find-group-name:hover { color: var(--gold-ink); text-decoration: underline; text-decoration-color: var(--gold); }
+.find-group-head .hub-stateline-card { flex: 1 1 auto; }
+.result { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 14px; padding: 12px 20px 10px; border-bottom: 1px solid #ECEEF1; }
+.find-group .result:last-child { border-bottom: none; }
 .result:hover { background: #FCFBF7; }
-.r-ico { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--rule); background: var(--cream); color: var(--navy); }
+.r-ico { width: 34px; height: 34px; margin-top: 5px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--rule); background: var(--cream); color: var(--navy); }
 .r-ico .hub-ic { width: 18px; height: 18px; }
-.r-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; line-height: 1.3; color: var(--navy); overflow-wrap: anywhere; }
-.r-title a { color: inherit; text-decoration: none; }
+.r-title { font-family: var(--font-body); font-weight: 600; font-size: 15px; line-height: 1.35; color: var(--navy); overflow-wrap: anywhere; }
+.r-title a { display: inline-flex; align-items: center; min-height: 44px; color: inherit; text-decoration: none; }
 .r-title a:hover { color: var(--gold-ink); text-decoration: underline; text-decoration-color: var(--gold); }
-.snip { font-size: 13.5px; color: var(--navy-mid); margin-top: 4px; max-width: 88ch; overflow-wrap: anywhere; }
+.snip { font-size: 13.5px; color: var(--navy-mid); margin-top: 2px; max-width: 88ch; overflow-wrap: anywhere; }
 mark { background: #F6E7A8; color: var(--navy); border-radius: 2px; padding: 0 1px; }
-.path { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
-.r-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-.r-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 120px; font-size: 12.5px; color: var(--muted); }
+.r-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+.r-actions { display: flex; gap: 6px 18px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+.hub .result .find-open { display: inline-flex; align-items: center; min-height: 44px; padding: 0; color: var(--navy); border-bottom: 1px solid var(--gold); font-weight: 600; font-size: 13.5px; }
+.hub .result .find-open:hover { color: var(--gold-ink); }
+.find-in-project { display: inline-flex; align-items: center; min-height: 44px; font-size: 13.5px; color: var(--muted); text-decoration: none; }
+.find-in-project:hover { color: var(--navy); text-decoration: underline; }
+.r-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 120px; font-size: 12.5px; color: var(--muted); padding-top: 8px; }
 .r-side .label { margin-bottom: 3px; text-align: right; color: var(--muted); }
 .find-state { padding: 36px 20px; text-align: center; color: var(--muted); font-size: 13.5px; }
-.find-state b { display: block; color: var(--navy); font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 4px; }
+.find-state b { display: block; color: var(--navy); font-family: var(--font-body); font-weight: 600; font-size: 1.05rem; margin-bottom: 4px; }
 @media (max-width: 1100px) { .find-box { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) auto; } }
 @media (max-width: 720px) {
   .find-box { grid-template-columns: 1fr; }
   .result { grid-template-columns: 36px minmax(0, 1fr); }
-  .r-side { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; }
+  .r-side { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; padding-top: 0; }
+  .find-group-head { padding: 10px 16px 6px; }
+  .result { padding: 12px 16px 10px; }
 }
 </style>
 </head>
@@ -97,19 +110,20 @@ mark { background: #F6E7A8; color: var(--navy); border-radius: 2px; padding: 0 1
     <nav aria-label="Hub">
       <span class="hub-nav-group" data-en="Work" data-es="Trabajo">Work</span>
       <div class="hub-nav">
-        <a href="/hub/index.html" data-nav="today">
+        <a href="/hub/index.html" data-nav="today" data-bar="today">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
           <span data-en="Today" data-es="Hoy">Today</span>
         </a>
-        <a href="/hub/index.html#register" data-nav="projects">
+        <a href="/hub/index.html#register" data-nav="projects" data-bar="projects">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
           <span data-en="Projects" data-es="Proyectos">Projects</span>
         </a>
-        <a href="/hub/queue.html" data-nav="queue">
+        <a href="/hub/queue.html" data-nav="queue" data-bar="queue">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
           <span data-en="Queues" data-es="Colas">Queues</span>
+          <span class="hub-nav-count" data-nav-count="queue" hidden></span>
         </a>
-        <a href="/hub/search.html" data-nav="find">
+        <a href="/hub/search.html" data-nav="find" data-bar="find">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <span data-en="Find" data-es="Buscar">Find</span>
         </a>
@@ -121,15 +135,15 @@ mark { background: #F6E7A8; color: var(--navy); border-radius: 2px; padding: 0 1
           <span data-en="Settings" data-es="Ajustes">Settings</span>
         </a>
       </div>
+      <button type="button" class="hub-more-btn" id="hub-more" data-bar="more" aria-expanded="false" aria-controls="me">
+        <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        <span data-en="More" data-es="Más">More</span>
+      </button>
     </nav>
 
     <div class="nav-lang" role="group" aria-label="Language">
       <button type="button" data-lang="en" class="active">EN</button>
       <button type="button" data-lang="es">ES</button>
-    </div>
-
-    <div class="hub-side-foot">
-      <span class="hub-dot off" id="vault-dot" aria-hidden="true"></span><span id="vault-state" data-en="Vault not checked" data-es="Vault sin comprobar">Vault not checked</span>
     </div>
   </aside>
 
@@ -146,7 +160,7 @@ mark { background: #F6E7A8; color: var(--navy); border-radius: 2px; padding: 0 1
         <div>
           <span class="label" data-en="Find" data-es="Buscar">Find</span>
           <h1 data-en="Search the <em>Vault</em>" data-es="Buscar en el <em>Vault</em>">Search the <em>Vault</em></h1>
-          <p class="hub-sub" data-en="Every search runs inside a scope. Nothing outside the scope, or past its legal tag's expiry, is ever returned." data-es="Toda búsqueda se ejecuta dentro de un alcance. Nunca se devuelve nada fuera del alcance ni con la etiqueta legal vencida.">Every search runs inside a scope. Nothing outside the scope, or past its legal tag's expiry, is ever returned.</p>
+          <p class="hub-sub" data-en="Runs, documents, correspondence, papers and lessons, searched inside the scope you choose. Nothing outside it, or past its legal tag's expiry, is ever returned." data-es="Ejecuciones, documentos, correspondencia, artículos y lecciones, buscados dentro del alcance que elija. Nunca se devuelve nada fuera de él ni con la etiqueta legal vencida.">Runs, documents, correspondence, papers and lessons, searched inside the scope you choose. Nothing outside it, or past its legal tag's expiry, is ever returned.</p>
         </div>
       </div>
 
@@ -160,14 +174,12 @@ mark { background: #F6E7A8; color: var(--navy); border-radius: 2px; padding: 0 1
             </div>
           </div>
           <div class="find-field">
-            <label for="find-scope"><span data-en="Scope" data-es="Alcance">Scope</span> <span class="req" data-en="(required)" data-es="(obligatorio)">(required)</span></label>
-            <select class="find-scope" id="find-scope" name="scope" aria-describedby="scope-pred" required>
-              <option value="" data-en="Choose a scope…" data-es="Elija un alcance…">Choose a scope…</option>
-            </select>
+            <label for="find-scope" data-en="Scope" data-es="Alcance">Scope</label>
+            <select class="find-scope" id="find-scope" name="scope" aria-describedby="scope-pred"></select>
           </div>
           <button class="btn btn-primary find-go" type="submit"><span data-en="Find" data-es="Buscar">Find</span></button>
         </form>
-        <p class="find-pred" id="scope-pred"></p>
+        <p class="find-pred" id="scope-pred" data-scope-state="default"></p>
       </div>
 
       <div class="find-bar">
@@ -186,7 +198,7 @@ mark { background: #F6E7A8; color: var(--navy); border-radius: 2px; padding: 0 1
       <div class="card" id="results-card">
         <div class="hub-card-head">
           <div class="find-count" id="find-count" role="status" aria-live="polite"></div>
-          <span class="hub-muted" style="font-size:12.5px" data-en="hybrid search + rerank · every retrieval is logged" data-es="búsqueda híbrida + reordenación · cada consulta queda registrada">hybrid search + rerank · every retrieval is logged</span>
+          <span class="hub-muted" style="font-size:12.5px" data-en="Grouped by project · every search is logged" data-es="Agrupado por proyecto · cada búsqueda queda registrada">Grouped by project · every search is logged</span>
         </div>
         <div class="find-who" id="find-who" hidden></div>
         <div id="find-results"></div>
@@ -195,6 +207,19 @@ mark { background: #F6E7A8; color: var(--navy); border-radius: 2px; padding: 0 1
       <p class="hub-foot" data-en="Internal · Strictly confidential" data-es="Interno · Estrictamente confidencial">Internal · Strictly confidential</p>
     </main>
   </div>
+</div>
+
+<!-- Record panel, opened from a hit's Open record (wave 7, R2): a side panel on wide screens, a bottom sheet over the scrim below 1200 px. -->
+<div class="hub-scrim" id="record-scrim" hidden></div>
+<div class="hub-panel" id="record-panel" role="dialog" aria-modal="false" aria-labelledby="rp-title" hidden>
+  <div class="hub-panel-head">
+    <div>
+      <span class="label" id="rp-kind" data-en="Record" data-es="Registro">Record</span>
+      <h2 id="rp-title" tabindex="-1"></h2>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" id="rp-close" data-en="Close" data-es="Cerrar">Close</button>
+  </div>
+  <div class="hub-panel-body" id="rp-body"></div>
 </div>
 
 <script src="/main.js"></script>
