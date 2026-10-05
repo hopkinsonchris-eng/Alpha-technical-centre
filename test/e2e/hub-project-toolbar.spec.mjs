@@ -148,7 +148,7 @@ test('AC10 / R6: the opportunity card sits inside the File disclosure, shows the
   await expect(card).toBeHidden();                       // the File disclosure is closed until asked for
   await page.locator('#p-file-wrap > summary').click();
   await expect(card).toBeVisible();
-  await expect(card.locator('[data-opp="plan"]')).toHaveText('16 → 22 kboe/d');
+  await expect(card.locator('[data-opp="plan"]')).toHaveText(/16 kboe\/d.*→ 22 kboe\/d/);   // wave 7 (H4): each figure carries its unit and a source chip
   await expect(card.locator('[data-opp="risk"]')).toContainText('Elevated 54');
   await expect(card.locator('[data-opp="owner"]')).toHaveText('Tom');
   await expect(card.locator('[data-opp="source"]')).toHaveText('Intermediary');
