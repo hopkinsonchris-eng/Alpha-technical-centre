@@ -13,12 +13,16 @@ export type InputType = 'document' | 'query';
 export interface Embedder {
   readonly name: string;
   readonly dims: number;
+  /** Cosine distance beyond which a neighbour is not a match for this embedder (the search's vector ceiling). */
+  readonly maxDistance: number;
   embed(texts: string[], inputType?: InputType): Promise<number[][]>;
 }
 
 export class VoyageEmbedder implements Embedder {
   readonly name = 'voyage';
   readonly dims = EMBED_DIMS;
+  /** Unrelated text sits around 0.7 and above with the Voyage models, a paraphrase well under 0.5. */
+  readonly maxDistance = 0.6;
   constructor(
     private readonly apiKey: string,
     public readonly model = process.env.VOYAGE_MODEL || 'voyage-3.5',
@@ -57,6 +61,8 @@ export class VoyageEmbedder implements Embedder {
 export class FakeEmbedder implements Embedder {
   readonly name = 'fake';
   readonly dims = EMBED_DIMS;
+  /** Hashed bag of words: no shared word puts a query at distance 1.0, any shared word well under 0.9. */
+  readonly maxDistance = 0.9;
   async embed(texts: string[]): Promise<number[][]> { return texts.map(t => this.one(t)); }
 
   private one(text: string): number[] {

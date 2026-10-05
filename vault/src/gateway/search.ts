@@ -18,13 +18,13 @@ export interface SearchHit { ref: string; item_id: string | null; run_id: string
 export interface Reranker { rerank(query: string, hits: SearchHit[], topK: number): Promise<SearchHit[]> }
 export const passthroughReranker: Reranker = { async rerank(_q, hits, k) { return hits.slice(0, k); } };
 
-export interface SearchDeps { embed?: (text: string) => Promise<number[]>; reranker?: Reranker }
+export interface SearchDeps { embed?: (text: string) => Promise<number[]>; reranker?: Reranker; /** the embedder's own cosine ceiling; see Embedder.maxDistance */ maxDistance?: number }
 
 /** RRF constant: a hit at rank i (1-based) in one list scores 1 / (RRF_K + i). */
 export const RRF_K = 60;
 /**
- * Cosine distance above which a vector neighbour is not a match. 0.6 suits the Voyage models (unrelated text sits
- * around 0.7 and above, a paraphrase well under 0.5). SEARCH_MAX_DISTANCE overrides it for another embedder.
+ * Cosine distance above which a vector neighbour is not a match when the embedder does not say (Embedder.maxDistance
+ * does for Voyage and for the fake). 0.6 suits the Voyage models; SEARCH_MAX_DISTANCE overrides it.
  */
 export const DEFAULT_MAX_DISTANCE = 0.6;
 export function maxDistance(env: NodeJS.ProcessEnv = process.env): number {
@@ -35,7 +35,7 @@ export function maxDistance(env: NodeJS.ProcessEnv = process.env): number {
 const COLS = 'c.id, c.item_id::text AS item_id, c.run_id::text AS run_id, c.item_version AS version, c.ordinal, c.anchor, c.text, c.legal_tag, c.project_id, i.title';
 
 export async function hybridSearch(db: Db, q: string, scope: ResolvedScope, person: Person, projects: Map<string, ProjectInfo>, deps: SearchDeps = {}, opts: { k?: number; candidates?: number; now?: Date; maxDistance?: number } = {}): Promise<SearchHit[]> {
-  const k = opts.k ?? 20, cand = opts.candidates ?? 50, now = opts.now ?? new Date(), maxd = opts.maxDistance ?? maxDistance();
+  const k = opts.k ?? 20, cand = opts.candidates ?? 50, now = opts.now ?? new Date(), maxd = opts.maxDistance ?? deps.maxDistance ?? maxDistance();
   if (!q.trim()) return [];
   const pred = buildPredicate(scope, person, now, projects, 2);
   const base = `FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE ${pred.sql}`;
