@@ -23,8 +23,11 @@ import { mk, add, ago, fmtStamp, fmtShortDate, STAGE_ES } from '../hub.js';
 /** Stage tone for the dot: early stages are neutral, live stages gold, closed ones muted. */
 const STAGE_TONE = { 'Initial screen': 'early', Qualified: 'early', 'Technical review': 'live', 'Commercial review': 'live', Negotiation: 'live', Won: 'won', Lost: 'closed', Closed: 'closed' };
 
+// The language toggle rewrites the text of any element that carries data-en/data-es, so a token's own words live
+// in a child span and the anchor itself carries no pair; children (the dot, the label, the date) survive a toggle.
 const link = (project, hash, token, en, es, extra) => {
-  const a = mk('a', 'hub-sl-token', en, es, Object.assign({ href: '/hub/project.html?id=' + encodeURIComponent(project.id) + (hash ? '#' + hash : ''), 'data-token': token }, extra || {}));
+  const a = mk('a', 'hub-sl-token', null, null, Object.assign({ href: '/hub/project.html?id=' + encodeURIComponent(project.id) + (hash ? '#' + hash : ''), 'data-token': token }, extra || {}));
+  if (en !== '' && en !== null && en !== undefined) add(a, mk('span', 'hub-sl-text', en, es));
   return a;
 };
 const label = (en, es) => mk('span', 'hub-sl-label', en, es);
@@ -48,7 +51,8 @@ export function stateline(project, opts) {
   el.setAttribute('aria-label', 'Where ' + (project.name || project.id) + ' stands');
 
   if (o.size === 'row') {
-    const name = mk('a', 'hub-sl-name', project.name || project.id, project.name || project.id, { href: '/hub/project.html?id=' + encodeURIComponent(project.id), 'data-token': 'name' });
+    const name = mk('a', 'hub-sl-name', null, null, { href: '/hub/project.html?id=' + encodeURIComponent(project.id), 'data-token': 'name' });
+    add(name, mk('span', 'hub-sl-text', project.name || project.id, project.name || project.id));
     add(el, name);
   }
 
