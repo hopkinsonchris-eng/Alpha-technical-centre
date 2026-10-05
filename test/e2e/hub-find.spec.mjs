@@ -239,15 +239,15 @@ test('W7-AC6: hits are grouped under a stateline card per project; Open record o
   await expect(rp).toBeVisible();
   await expect(rp).toHaveAttribute('data-ref', 'doc:' + DOC);
   await expect(rp.locator('#rp-title')).toHaveText('Waterflood performance and voidage management in Llanos Basin Cretaceous sandstones');
-  await expect(rp.locator('[data-highlights]')).toBeVisible();
-  await expect(rp.locator('.hub-rp-details summary')).toHaveText('Full record');
+  await expect(rp.locator('[data-meta]')).toBeVisible();                                 // R5: a meta line, then the record
+  await expect(rp.locator('.hub-rp-technical summary')).toHaveText('Technical');          // the raw record sits last, closed
   expect(fetched).toEqual(['item']);
   expect(page.url()).toContain('/hub/search.html');                                     // in place, not the project page
   // A run hit opens the run; Escape closes the panel and the focus goes back to the trigger.
   await results(page).nth(1).locator('[data-open-record]').click();
   await expect(rp).toHaveAttribute('data-ref', 'run:' + RUN);
   await expect(rp.locator('#rp-title')).toHaveText('Cubiro waterflood: base (re-run on 2.1.0)');
-  await expect(rp.locator('[data-h="status"] [data-status]')).toHaveAttribute('data-status', 'final');
+  await expect(rp.locator('[data-m="status"][data-status]')).toHaveAttribute('data-status', 'final');   // R5: the status pill on the run's meta line
   await page.keyboard.press('Escape');
   await expect(rp).toBeHidden();
   await expect(results(page).nth(1).locator('[data-open-record]')).toBeFocused();

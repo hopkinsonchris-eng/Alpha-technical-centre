@@ -760,12 +760,12 @@ test('tool page: unknown tool, missing id, Vault down (catalog from hub/catalog.
   await page.goto('/hub/tool.html?id=nope'); await ready(page);
   await expect(page.locator('h1')).toHaveText('Tool not found');
   await page.goto('/hub/tool.html'); await ready(page);
-  await expect(page.locator('h1')).toHaveText('No tool selected');
+  await expect(page.locator('h1')).toHaveText('Tools');                                 // wave 7 (R4): no id is the Tools index
   const p2 = await page.context().newPage();
   await p2.route('**/api/**', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }));
   await p2.goto('/hub/tool.html?id=' + TOOL_ID); await p2.locator('body[data-ready="1"]').waitFor();
   await expect(p2.locator('h1')).toHaveText('Opportunity Register');                    // from the static catalog
-  await expect(p2.locator('.hub-notice.warn')).toContainText('built-in catalog');   // wave 7 (R11): no file name in the notice
+  await expect(p2.locator('.hub-notice.warn')).toContainText('The Vault is unreachable');   // wave 7 (R11): no file name in the notice
   await expect(p2.locator('[data-version-row]').first()).toBeVisible();
   await expect(p2.locator('[data-older-count]')).toHaveCount(0);
   await expect(p2.locator('#t-runs')).toContainText('Runs are available when the Vault is reachable.');
