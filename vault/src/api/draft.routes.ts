@@ -1,6 +1,7 @@
 /**
  * Drafting, rendering and the scoped LLM proxy (M13).
- *   POST /api/draft    {kind, project_id, brief, organisation_id?, thread_id?, language?, run_id?} → DraftResult; saved as a note item citing its sources
+ *   POST /api/draft    {kind, project_id, brief, organisation_id?, thread_id?, language?, run_id?} → DraftResult; saved as a note item citing its sources;
+ *                      503 not_configured without a drafting provider (wave 7, S19), never a silent template
  *   POST /api/render   {draft_id | letter} → {html} or a DOCX/PDF download (?format=docx|pdf|html)
  *   POST /api/llm      {purpose, scope, messages[]} → {text, usage}; used by tools instead of browser keys; 501 without a provider
  */
@@ -9,7 +10,7 @@ import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
 import type { RouteDeps } from './index.ts';
 import { ApiError, bad, jsonBody, loadAccess, notFound, route, scopeLabel, requireWritableProject, assertVisible } from './common.ts';
-import { draft as runDraft, type DraftKind, type DraftRequest } from '../llm/draft.ts';
+import { draft as runDraft, NoProviderError, type DraftKind, type DraftRequest } from '../llm/draft.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
 import { letterDocx, letterHtml, htmlToPdf, type LetterInput } from '../render/letter.ts';
 import type { SearchDeps } from '../gateway/search.ts';
@@ -34,7 +35,11 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     x.a.scope = scopeLabel(project.id);
     let result;
     try { result = await runDraft(x.db, x.person, req, provider(), deps.search ?? {}, x.now); }
-    catch (e: any) { if (e instanceof ScopeError) throw new ApiError(e.status, e.status === 403 ? 'forbidden' : 'invalid', e.message); throw e; }
+    catch (e: any) {
+      if (e instanceof ScopeError) throw new ApiError(e.status, e.status === 403 ? 'forbidden' : 'invalid', e.message);
+      if (e instanceof NoProviderError) throw new ApiError(e.status, e.code, e.message);
+      throw e;
+    }
     // Save the draft as a note so it participates in staleness and the timeline.
     const id = randomUUID();
     const title = `${req.kind === 'letter' ? 'Letter draft' : req.kind === 'email' ? 'Email draft' : req.kind === 'calc-note' ? 'Calc note draft' : 'Report section draft'}: ${req.brief.slice(0, 80)}`;
@@ -42,12 +47,12 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
                       VALUES ($1,'note',$2,$3,$4::text[],$5,$6,$7::text[],$8,$9::jsonb,$10,1,$11::jsonb)`,
       [id, title, x.now.toISOString(), [x.person.id], project.client_id ?? null, project.id, req.organisation_id ? [req.organisation_id] : [], project.default_legal_tag,
        JSON.stringify({ source: 'assistant', external_id: `draft:${id}` }), 'sha256:' + Buffer.from(id.replace(/-/g, '').padEnd(64, '0')).toString('hex').slice(0, 64),
-       JSON.stringify({ kind: 'draft', draft_kind: req.kind, brief: req.brief, language: req.language, tone: req.tone ?? null, organisation_id: req.organisation_id ?? null, draft: result.draft, paragraphs: result.paragraphs, citations: result.citations, sources: result.sources, warnings: result.warnings, questions: result.questions, who_to_ask: result.who_to_ask, model: result.model ?? null, explanation_source: result.model ? 'llm' : 'fallback' })]);
+       JSON.stringify({ kind: 'draft', draft_kind: req.kind, brief: req.brief, language: req.language, tone: req.tone ?? null, organisation_id: req.organisation_id ?? null, draft: result.draft, paragraphs: result.paragraphs, citations: result.citations, sources: result.sources, warnings: result.warnings, questions: result.questions, who_to_ask: result.who_to_ask, model: result.model ?? null, explanation_source: 'llm' })]);
     for (const ref of result.citations) await x.db.query('INSERT INTO item_cites (item_id, ref) VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, ref]);
     if (result.usage) await x.db.query("INSERT INTO audit_events (person_id, action, scope, refs, detail, tokens_in, tokens_cached, tokens_out) VALUES ($1,'llm.draft',$2,$3::text[],$4::jsonb,$5,$6,$7)",
       [x.person.id, x.a.scope, [`doc:${id}`], JSON.stringify({ model: result.model, kind: req.kind }), result.usage.input, result.usage.cached, result.usage.output]);
     x.a.refs = [`doc:${id}`, ...result.citations];
-    x.a.detail = { kind: req.kind, citations: result.citations.length, questions: result.questions.length, provider: result.model ?? 'fallback' };
+    x.a.detail = { kind: req.kind, citations: result.citations.length, questions: result.questions.length, provider: result.model ?? null };
     const { context, ...rest } = result;
     return { status: 201, body: { id, ...rest, context: { organisation: context.organisation ? { id: context.organisation.id, name: context.organisation.name } : null, contacts: context.contacts ?? [], dispatches: context.dispatches ?? [], contracts: (context.contracts ?? []).map(c => ({ id: c.id, type: c.type, title: c.title, expiry: c.extracted?.expiry ?? null })), runs: context.runs.map(r => ({ id: r.id, title: r.title, job: r.job, tool_version: r.tool_version, status: r.status, stale: r.stale })), lessons: context.lessons, sub_queries: context.sub_queries, letterhead: context.letterhead ?? null } } };
   });

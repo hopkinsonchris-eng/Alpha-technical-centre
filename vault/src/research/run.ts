@@ -13,11 +13,11 @@ import { openProvider } from '../llm/provider.ts';
 import { openStorage, type Storage } from '../storage.ts';
 import { audit } from '../audit.ts';
 import { countryName } from '../opportunities.ts';
-import { runMiners, screenPaper, type RunSummary as MinerSummary } from '../miners/run.ts';
-import type { FeedAdapter, TopicSpec } from '../miners/types.ts';
+import { buildAdapters, runMiners, screenPaper, type MinersConfig, type RunSummary as MinerSummary } from '../miners/run.ts';
+import type { FeedAdapter, FeedRecord, TopicSpec } from '../miners/types.ts';
 import type { Clock } from '../miners/util.ts';
 import { companyEnrichment, companySignals, gdeltDocuments, intelTimeline, secFilings, worldMonitorConfigured } from '../intel/worldmonitor.ts';
-import { buildQueries, type ResearchField, type ResearchProject, type ResearchQueries } from './queries.ts';
+import { buildQueries, geologyNames, scorePaper, LITERATURE_CAP, type ResearchField, type ResearchProject, type ResearchQueries } from './queries.ts';
 import { fetchGemWiki, gemWikiFindings } from './gemwiki.ts';
 import { locateFields } from './locate.ts';
 import { citedBy } from '../api/settings.routes.ts';
@@ -40,6 +40,8 @@ export interface ResearchOptions {
   webMaxUses?: number; usdPerSearch?: number;
   /** How often the running counts are written while the literature pass goes (ms). */
   progressEveryMs?: number;
+  /** Papers filed per run at most (S17); the default is LITERATURE_CAP. */
+  maxPapers?: number;
 }
 export interface SourceCount { queries: number; findings: number; created: number; updated: number; unchanged: number; error?: string; skipped?: string; /** what the source did behind the counts, e.g. searches made and pages seen */ detail?: string }
 export interface NotReached { source: string; query: string; reason: string }
@@ -59,6 +61,9 @@ export const RESEARCH_DISABLED = 'research runs are switched off (RESEARCH_ENABL
 export function researchEnabled(env = process.env): boolean { return !/^(false|0|off)$/i.test(env.RESEARCH_ENABLED ?? ''); }
 const budgetMsOf = (env = process.env) => Math.max(60_000, Number(env.RESEARCH_BUDGET_MINUTES ?? 15) * 60_000);
 const budgetGbpOf = (env = process.env) => Math.max(0.1, Number(env.RESEARCH_BUDGET_GBP ?? 3));
+/** A run gets its budget plus this grace to write its summary before it is given up (S16). */
+const REAP_GRACE_MS = 5 * 60_000;
+export const reapAfterMs = (env = process.env) => budgetMsOf(env) + REAP_GRACE_MS;
 /** USD per million tokens, input and output, by model family; the firm's default is Sonnet. */
 const PRICES: [RegExp, [number, number]][] = [[/fable|mythos/i, [10, 50]], [/opus/i, [4, 20]], [/haiku/i, [1, 5]], [/sonnet/i, [2, 10]]];
 const USD_PER_GBP = 1.28;
@@ -72,10 +77,34 @@ export function costGbp(model: string, usage: { input: number; cached: number; o
 /* ── queue ───────────────────────────────────────────────────────────── */
 
 /**
+ * Wave 7 (S16): a run that started more than budget + grace ago and never wrote its summary was lost to a
+ * restart or a hung fetch. Whoever reads or queues reaps it: the row becomes `failed` with the reason first
+ * among its warnings and `reaped: true`, keeping the counts it had written, so the status route, the toolbar
+ * and the button see the truth now rather than on the next cron. Returns the ids reaped.
+ */
+export async function reapStaleRuns(db: Db, opts: { projectId?: string; now?: Date; afterMs?: number } = {}): Promise<number[]> {
+  const now = opts.now ?? new Date();
+  const afterMs = opts.afterMs ?? reapAfterMs();
+  const minutes = Math.round(afterMs / 60_000);
+  const stuck = (await db.query<{ id: number; summary: any }>(
+    `SELECT id, summary FROM jobs WHERE name = 'research' AND status = 'running' AND (summary->>'queued') IS DISTINCT FROM 'true'
+       AND started_at < $1::timestamptz - make_interval(secs => $2) AND ($3::text IS NULL OR summary->>'project_id' = $3)`,
+    [now.toISOString(), afterMs / 1000, opts.projectId ?? null])).rows;
+  for (const s of stuck) {
+    const reason = `did not finish within ${minutes} minutes`;
+    const patch = { status: 'failed', reaped: true, error: reason, phase: 'done', finished_at: now.toISOString(), warnings: [`reaped: ${reason}`, ...(Array.isArray(s.summary?.warnings) ? s.summary.warnings : [])] };
+    await db.query("UPDATE jobs SET status = 'failed', finished_at = $2, summary = summary || $3::jsonb WHERE id = $1 AND status = 'running'", [s.id, now.toISOString(), JSON.stringify(patch)]);
+  }
+  return stuck.map(s => s.id);
+}
+
+/**
  * Queues a run for the project, or extends the queued one with more names. Returns the job id
- * and whether it was new; `running` when a run is in progress (the caller answers 409).
+ * and whether it was new; `running` when a run is in progress (the caller answers 409). A run
+ * past its budget is reaped first, so a stuck run never blocks the button (S16).
  */
 export async function enqueueResearch(db: Db, projectId: string, by: string, names: string[] = []): Promise<{ job_id: number; state: 'queued' | 'extended' | 'running' }> {
+  await reapStaleRuns(db, { projectId });
   const open = (await db.query<{ id: number; summary: any }>("SELECT id, summary FROM jobs WHERE name = 'research' AND status = 'running' AND summary->>'project_id' = $1 ORDER BY id DESC LIMIT 1", [projectId])).rows[0];
   if (open) {
     if (open.summary?.queued) {
@@ -89,13 +118,13 @@ export async function enqueueResearch(db: Db, projectId: string, by: string, nam
   return { job_id: row.id, state: 'queued' };
 }
 
-/** Runs every queued job, oldest first; a job that has been running without finishing for over 20 minutes is marked failed and re-queued once. */
+/** Runs every queued job, oldest first; a job that has been running past its budget and grace is reaped and re-queued once. */
 export async function runQueued(db: Db, opts: ResearchOptions = {}): Promise<ResearchSummary[]> {
   const out: ResearchSummary[] = [];
-  const stuck = (await db.query<{ id: number; summary: any }>("SELECT id, summary FROM jobs WHERE name = 'research' AND status = 'running' AND (summary->>'queued') IS DISTINCT FROM 'true' AND started_at < now() - interval '20 minutes'")).rows;
-  for (const s of stuck) {
-    await db.query("UPDATE jobs SET status = 'failed', finished_at = now(), summary = summary || '{\"error\":\"did not finish within 20 minutes\"}'::jsonb WHERE id = $1", [s.id]);
-    if (!s.summary?.requeued) await db.query("INSERT INTO jobs (name, status, summary) VALUES ('research', 'running', $1::jsonb)", [JSON.stringify({ project_id: s.summary.project_id, queued: true, names: s.summary.names ?? [], requeued: true })]);
+  const stuckIds = await reapStaleRuns(db, { now: opts.now?.() });
+  if (stuckIds.length) {
+    const stuck = (await db.query<{ id: number; summary: any }>('SELECT id, summary FROM jobs WHERE id = ANY($1::bigint[])', [stuckIds])).rows;
+    for (const s of stuck) if (!s.summary?.requeued) await db.query("INSERT INTO jobs (name, status, summary) VALUES ('research', 'running', $1::jsonb)", [JSON.stringify({ project_id: s.summary.project_id, queued: true, names: s.summary.names ?? [], requeued: true })]);
   }
   const queued = (await db.query<{ id: number; summary: any }>("SELECT id, summary FROM jobs WHERE name = 'research' AND status = 'running' AND summary->>'queued' = 'true' ORDER BY id")).rows;
   for (const q of queued) out.push(await runResearch(db, q.summary.project_id, { ...opts, by: opts.by ?? q.summary.requested_by ?? 'research' }, q.id));
@@ -131,7 +160,9 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
   try {
     const p = (await db.query<any>('SELECT p.id, p.name, p.country, p.asset_ids, p.register, o.name AS client_name FROM projects p LEFT JOIN organisations o ON o.id = p.client_id WHERE p.id = $1', [projectId])).rows[0];
     if (!p) throw new Error(`project "${projectId}" not found`);
-    const fields: (ResearchField & { lat: number | null; lon: number | null })[] = p.asset_ids?.length ? (await db.query<any>('SELECT id, name, kind, country, operator, props, lat, lon FROM assets WHERE id = ANY($1::text[])', [p.asset_ids])).rows : [];
+    // Each field carries the name of its parent basin, so the literature can be asked about the basin too (S17).
+    const fields: (ResearchField & { lat: number | null; lon: number | null })[] = p.asset_ids?.length ? (await db.query<any>(
+      "SELECT a.id, a.name, a.kind, a.country, a.operator, a.props, a.lat, a.lon, b.name AS basin FROM assets a LEFT JOIN assets b ON b.id = a.parent_id AND b.kind = 'basin' WHERE a.id = ANY($1::text[])", [p.asset_ids])).rows : [];
     const project: ResearchProject = { id: p.id, name: p.name, country: p.country ?? null, client_name: p.client_name ?? null, register: p.register ?? null };
     const q: ResearchQueries = buildQueries(project, fields, p.country ? countryName(p.country).en : null);
     const provider = opts.provider === undefined ? openProvider() : opts.provider;
@@ -232,7 +263,7 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
     if (!opts.skipWeb) {
       const c = count('web');
       if (!researchWebEnabled()) c.skipped = RESEARCH_WEB_OFF;
-      else if (!provider || !provider.search) c.skipped = provider ? 'the provider has no web search' : 'no assistant configured (ANTHROPIC_API_KEY)';
+      else if (!provider || !provider.search) c.skipped = provider ? 'the provider has no web search' : 'no assistant configured';
       else {
         const usdPerSearch = opts.usdPerSearch ?? 0.01;
         const did = { searches: 0, pages: 0, cited: 0, calls: 0 };
@@ -276,23 +307,35 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
         const since = new Date(started.getTime() - 60 * 365 * 86_400_000);
         const before = summary.findings;
         let lastProgress = 0;
+        const clock: Clock | undefined = opts.clock ?? (opts.now ? { now: () => now().getTime(), sleep: async () => {} } : undefined);
+        const minerCfg = { topics: q.literature, negative: ['retracted', 'erratum'], sec_issuers: [], lookback_days: { weekly: 8, monthly: 40 }, sources: { openalex: { enabled: true }, crossref: { enabled: true }, 'semantic-scholar': { enabled: true } } } as unknown as MinersConfig;
+        const capped = capLiterature(opts.minerAdapters ?? [...buildAdapters(minerCfg, { fetch: opts.fetch, clock, seedIds: () => [], onWarn: m => summary.warnings.push(`literature: ${m}`) }).values()].filter(a => LITERATURE_SOURCES.includes(a.id)),
+          { cfg: minerCfg, cap: opts.maxPapers ?? LITERATURE_CAP, basins: geologyNames(fields, p.register ?? null), fieldNames: fields.filter(f => f.kind !== 'basin').map(f => f.name), until: started.getTime() + budget.ms, clock });
         try {
-          const m: MinerSummary = await runMiners(db, { now: started, since, only: ['openalex', 'crossref', 'semantic-scholar'], force: true, storage: opts.storage, fetch: opts.fetch, adapters: opts.minerAdapters, clock: opts.clock ?? (opts.now ? { now: () => now().getTime(), sleep: async () => {} } : undefined),
-            config: { topics: q.literature, negative: ['retracted', 'erratum'], sec_issuers: [], lookback_days: { weekly: 8, monthly: 40 }, sources: { openalex: { enabled: true }, crossref: { enabled: true }, 'semantic-scholar': { enabled: true } } } as any,
+          const m: MinerSummary = await runMiners(db, { now: started, since, only: LITERATURE_SOURCES, force: true, storage: opts.storage, fetch: opts.fetch, adapters: capped.adapters, clock, config: minerCfg,
             projectId, queryOf: (topicId) => q.literature.find(t => t.id === topicId)?.query ?? null, budgetUntil: new Date(started.getTime() + budget.ms),
             onProgress: async (ms) => {
               summary.findings = before + ms.created + ms.updated;
-              const c = count('literature'); c.findings = Object.values(ms.adapters).reduce((n, a) => n + a.fetched, 0); c.created = ms.created; c.updated = ms.updated; c.unchanged = ms.unchanged;
+              const c = count('literature'); c.findings = capped.seen.answered; c.created = ms.created; c.updated = ms.updated; c.unchanged = ms.unchanged;
               const t = now().getTime();
               if (t - lastProgress >= (opts.progressEveryMs ?? 3000)) { lastProgress = t; await progress(); }
             } });
           const c = count('literature');
-          c.findings = Object.values(m.adapters).reduce((n, a) => n + a.fetched, 0); c.created = m.created; c.updated = m.updated; c.unchanged = m.unchanged;
+          c.findings = capped.seen.answered; c.created = m.created; c.updated = m.updated; c.unchanged = m.unchanged;
           summary.findings = before + m.created + m.updated;
+          if (capped.seen.capped) c.skipped = `${capped.seen.capped} more not filed: ${capped.cap} papers per run at most, the ones naming the basin or field first`;
           const errs = Object.entries(m.adapters).filter(([, a]) => a.error).map(([id, a]) => `${id}: ${a.error}`);
           if (errs.length) c.error = errs.join('; ');
           for (const w of m.warnings) summary.warnings.push(`literature: ${w}`);
           if (m.stopped) summary.not_reached.push({ source: 'literature', query: m.stopped, reason: 'time' });
+          // The abstract goes into the finding's `extracted` so the record panel and the Research tab can show it (S26).
+          for (const [source, byId] of capped.abstracts) {
+            const ids = [...byId.keys()], texts = ids.map(id => byId.get(id)!);
+            if (ids.length) await db.query(
+              `UPDATE items SET extracted = extracted || jsonb_build_object('abstract', v.abstract) FROM unnest($3::text[], $4::text[]) AS v(external_id, abstract)
+                 WHERE items.project_id = $1 AND items.type = 'paper' AND items.origin->>'source' = $2 AND items.external_id = v.external_id AND NOT items.hidden AND items.extracted->>'abstract' IS DISTINCT FROM v.abstract`,
+              [projectId, source, ids, texts]);
+          }
         } catch (e) { count('literature').error = (e as Error).message; }
       }
     }
@@ -314,6 +357,36 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
 
 /** The literature sources a research run files from; what it filed is what it re-screens. */
 export const LITERATURE_SOURCES = ['openalex', 'crossref', 'semantic-scholar'];
+
+/**
+ * Wave 7 (S17): the literature answers are screened and ranked before the miners file them, so a run files at
+ * most `cap` papers across its sources, the ones naming the basin (then the field) in their title first. The
+ * miners' own screen and dedup still run on what is yielded; `seen` counts what the sources answered and what
+ * the cap held back; `abstracts` keeps each yielded paper's abstract by source and id for `extracted`.
+ */
+export function capLiterature(adapters: FeedAdapter[], o: { cfg: MinersConfig; cap: number; basins: string[]; fieldNames: string[]; until: number; clock?: Clock }) {
+  const seen = { answered: 0, capped: 0 };
+  const abstracts = new Map<string, Map<string, string>>();
+  const left = { n: Math.max(0, o.cap) };
+  const now = () => o.clock?.now?.() ?? Date.now();
+  const wrapped: FeedAdapter[] = adapters.map(a => ({ ...a, async *fetch(since, topics) {
+    const kept: FeedRecord[] = [];
+    for await (const rec of a.fetch(since, topics)) {
+      seen.answered++;
+      if (screenPaper(rec, o.cfg) !== 'keep') continue;
+      kept.push(rec);
+      if (now() >= o.until) break;
+    }
+    const scored = kept.map((rec, i) => ({ rec, i, s: scorePaper(rec, o.basins, o.fieldNames) })).sort((x, y) => y.s - x.s || x.i - y.i);
+    for (const { rec } of scored) {
+      if (left.n <= 0) { seen.capped++; continue; }
+      left.n--;
+      if (typeof rec.text === 'string' && rec.text.trim()) { let m = abstracts.get(a.id); if (!m) { m = new Map(); abstracts.set(a.id, m); } m.set(rec.external_id, rec.text.trim()); }
+      yield rec;
+    }
+  } }));
+  return { adapters: wrapped, seen, abstracts, cap: o.cap };
+}
 
 /**
  * Re-screens the papers research filed under a project (from a literature source, query stamp or not), hidden or
@@ -350,10 +423,11 @@ export async function pruneLiterature(db: Db, projectId: string, topics: TopicSp
   return out;
 }
 
-/** The last runs and the findings for a project, for GET /api/projects/:id/research. */
-export async function researchView(db: Db, projectId: string, limit = 5) {
+/** The last runs and the findings for a project, for GET /api/projects/:id/research. A run past its budget is reaped on read (S16). */
+export async function researchView(db: Db, projectId: string, limit = 5, now?: Date) {
+  await reapStaleRuns(db, { projectId, now });
   const runs = (await db.query<any>("SELECT id, status, started_at, finished_at, summary FROM jobs WHERE name = 'research' AND summary->>'project_id' = $1 ORDER BY id DESC LIMIT $2", [projectId, limit])).rows
-    .map(r => ({ id: r.id, status: r.summary?.queued ? 'queued' : r.status === 'running' ? 'running' : r.summary?.status ?? r.status, started_at: r.started_at, finished_at: r.finished_at, summary: r.summary }));
+    .map(r => ({ id: r.id, status: r.summary?.queued ? 'queued' : r.status === 'running' ? 'running' : r.summary?.status ?? r.status, started_at: r.started_at, finished_at: r.finished_at, reaped: r.summary?.reaped === true, summary: r.summary }));
   const items = (await db.query<any>(
     `SELECT id, type, title, authored_at, created_at, legal_tag, origin, extracted, asset_ids, version FROM items
       WHERE project_id = $1 AND NOT hidden AND (extracted->>'kind' = 'research' OR (type = 'paper' AND (origin ? 'query' OR origin->>'source' = ANY($2::text[]))))
