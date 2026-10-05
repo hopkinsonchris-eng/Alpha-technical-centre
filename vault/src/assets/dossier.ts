@@ -10,7 +10,7 @@ import type { Db } from '../db/client.ts';
 
 export const GEM_ATTRIBUTION = 'Global Oil and Gas Extraction Tracker, Global Energy Monitor, {release} release, CC BY 4.0 (https://globalenergymonitor.org/projects/global-oil-gas-extraction-tracker/)';
 
-export interface AssetRow { id: string; kind: string; name: string; country: string | null; lat: number | null; lon: number | null; location_source: string | null; source_url: string | null; operator: string | null; props: Record<string, any> }
+export interface AssetRow { id: string; kind: string; name: string; parent_id?: string | null; country: string | null; lat: number | null; lon: number | null; location_source: string | null; source_url: string | null; operator: string | null; props: Record<string, any> }
 
 interface DossierSource { source: 'gem' | 'wikidata' | 'geonames'; external_id: string; url: string | null; facts: Record<string, unknown>; summary: string }
 

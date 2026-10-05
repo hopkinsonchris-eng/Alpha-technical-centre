@@ -27,6 +27,7 @@ import { register as registerLessons } from '../api/lessons.routes.ts';
 import { register as registerDraft } from '../api/draft.routes.ts';
 import { register as registerItems } from '../api/items.routes.ts';
 import { counterpartiesOf } from '../llm/draft.ts';
+import { computeStanding, type Standing } from '../api/standing.routes.ts';
 import { issuerFrom } from '../oauth/server.ts';
 import { randomUUID } from 'node:crypto';
 import { hybridSearch, loadProjects, resolveScope, runsFor, ScopeError, searchDeps, type SearchHit } from '../gateway/index.ts';
@@ -102,7 +103,27 @@ async function enrich(db: Db, hits: SearchHit[]): Promise<FoundHit[]> {
 
 /* ── the project summary resource ───────────────────────────────────── */
 
-export async function projectSummary(db: Db, person: Person, id: string, now: Date): Promise<{ markdown: string; lastModified: string; refs: string[] }> {
+/** The standing as the model reads it (wave 7 PR3, W7-AC12): stage and since, next, figures with units, deadlines, counterparties, open items. */
+export function standingMarkdown(s: Standing): string[] {
+  const day = (v: string | null) => (v ?? '').slice(0, 10);
+  const nextBits = s.next ? [s.next.due_at ? `due ${s.next.due_at}` : null, s.next.owner].filter(Boolean) : [];
+  const open = s.open;
+  const proposals = open.proposals.asset + open.proposals.organisation + open.proposals.research + open.proposals.round;
+  return [
+    '## Standing',
+    '',
+    `- Stage: ${s.project.stage} since ${day(s.project.stage_since)}`,
+    `- Next: ${s.next ? `${s.next.title}${nextBits.length ? ` (${nextBits.join(', ')})` : ''}` : 'none recorded'}`,
+    ...(s.figures.length ? ['- Figures:', ...s.figures.map(f => `  - ${f.name}: ${f.value} ${f.unit} (${[`as of ${f.as_of}`, f.run_status ?? f.provenance, f.source_ref !== f.provenance ? f.source_ref : null, f.stale ? 'stale' : null].filter(Boolean).join(', ')})${f.asset_id ? ` [${f.asset_id}]` : ''}`)] : ['- Figures: none yet']),
+    ...(s.deadlines.length ? ['- Deadlines:', ...s.deadlines.map(d => `  - ${d.title}: ${d.due_at}${d.overdue ? ' (overdue)' : ''}${d.ref ? ` [${d.ref}]` : ''}`)] : ['- Deadlines: none']),
+    `- Counterparties: ${s.counterparties.length ? s.counterparties.map(c => `${c.name} (${c.role}${c.last_contact_at ? `, last contact ${day(c.last_contact_at)}` : ''})`).join('; ') : 'none linked'}`,
+    `- Open: ${proposals} proposal${proposals === 1 ? '' : 's'}, ${open.filing} to file, ${open.questions_in_drafts} question${open.questions_in_drafts === 1 ? '' : 's'} in drafts, ${open.unanswered_inbound} unanswered inbound, ${open.unacknowledged_dispatches} unacknowledged dispatch${open.unacknowledged_dispatches === 1 ? '' : 'es'}`,
+    `- Stale: ${s.stale_counts.runs} run${s.stale_counts.runs === 1 ? '' : 's'}, ${s.stale_counts.items} item${s.stale_counts.items === 1 ? '' : 's'}`,
+    '',
+  ];
+}
+
+export async function projectSummary(db: Db, person: Person, id: string, now: Date): Promise<{ markdown: string; lastModified: string; refs: string[]; standing: Standing }> {
   const projects = await loadProjects(db);
   try { resolveScope(`project:${id}`, person, projects); } catch (e) { throw toApiError(e); }
   const acc = await loadAccess(db, person, now);
@@ -125,6 +146,7 @@ export async function projectSummary(db: Db, person: Person, id: string, now: Da
   const superseded = runs.filter(r => r.status === 'superseded').length;
   const staleRuns = runs.filter(r => r.stale).length, staleItems = items.filter(i => i.stale).length;
   const day = (s: string | null) => (s ?? '').slice(0, 10);
+  const standing = await computeStanding(db, acc, p, now);
 
   const md = [
     `# ${p.name} (${p.id})`,
@@ -145,8 +167,10 @@ export async function projectSummary(db: Db, person: Person, id: string, now: Da
     '',
     ...(contacts.length ? contacts.map((c: any) => `- ${c.name}${c.role ? `, ${c.role}` : ''} (${c.organisation})${c.emails?.length ? `: ${c.emails.join(', ')}` : ''}`) : ['- none linked']),
     '',
+    // Wave 7 PR3 (W7-AC12): the standing, the same shape GET /api/projects/:id/standing returns.
+    ...standingMarkdown(standing),
   ].join('\n');
-  return { markdown: md, lastModified, refs: [] };
+  return { markdown: md, lastModified, refs: [], standing };
 }
 
 /* ── the server ─────────────────────────────────────────────────────── */
@@ -306,7 +330,7 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
 
   server.registerTool('get_project_context', {
     title: 'Get a project\'s context',
-    description: 'Everything to read before working on a project: the brief (status, client, members, counterparties from the register: current owner, government, licence, partners), the activity, the contacts, and the runs and records that are current or stale. Start here before drafting or filing. Use search_vault for a question across records and get_item for one record\'s text.',
+    description: 'Everything to read before working on a project: the brief (status, client, members, counterparties from the register: current owner, government, licence, partners), the activity, the contacts, and the standing (stage and since, next action and due date, figures with unit, date and source, open items, counterparties with last contact, deadlines, stale counts, last activity), as `standing` and in the markdown. Start here before drafting or filing. Use search_vault for a question across records and get_item for one record\'s text.',
     inputSchema: { project_id: z.string().min(1).max(64) },
     annotations: { readOnlyHint: true },
   }, ({ project_id }) => tool('get_project_context', async (a) => {
@@ -316,7 +340,7 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     const cp = counterpartiesOf(reg);
     const lines = cp ? ['', '## Counterparties (from the register)', '', ...(cp.holder ? [`- Current owner: ${cp.holder}`] : []), ...(cp.government ? [`- Government: ${cp.government}`] : []), ...(cp.licence ? [`- Licence: ${cp.licence}`] : []), ...(cp.partners.length ? [`- JV partners: ${cp.partners.join(', ')}`] : [])] : [];
     const open = (await db.query<any>("SELECT count(*)::int AS n FROM review_queue WHERE status = 'open' AND payload->>'project_id' = $1", [project_id])).rows[0]?.n ?? 0;
-    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, markdown: sum.markdown + lines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
+    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, markdown: sum.markdown + lines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
   }));
 
   server.registerTool('get_item', {

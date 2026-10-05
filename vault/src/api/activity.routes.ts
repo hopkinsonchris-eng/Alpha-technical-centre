@@ -8,7 +8,8 @@
 import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
 import type { RouteDeps } from './index.ts';
-import { bad, canSee, iso, jsonBody, loadAccess, route, type Access } from './common.ts';
+import { assertVisible, bad, canSee, iso, jsonBody, loadAccess, notFound, route, scopeLabel, type Access } from './common.ts';
+import { lastOpened } from './standing.routes.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
 import { briefActivity, type ActivityProject } from '../llm/activity-brief.ts';
 
@@ -29,16 +30,18 @@ async function sinceOf(db: RouteDeps['db'], personId: string, q: string | undefi
 
 interface NewRow { id: string; type: string; title: string; created_at: string; authored_at: string | null; project_id: string; legal_tag: string; hidden: boolean; origin: any; extracted: any; snippet: string | null }
 
-async function newRows(db: RouteDeps['db'], since: Date): Promise<NewRow[]> {
+/** What came in since `since`, optionally for one project (wave 7 PR3, A7). */
+export async function newRows(db: RouteDeps['db'], since: Date, projectId?: string): Promise<NewRow[]> {
   return (await db.query<NewRow>(
     `SELECT i.id, i.type, i.title, i.created_at, i.authored_at, i.project_id, i.legal_tag, i.hidden, i.origin, i.extracted,
             (SELECT left(c.text, 240) FROM chunks c WHERE c.item_id = i.id ORDER BY c.ordinal LIMIT 1) AS snippet
        FROM items i WHERE i.parent_id IS NULL AND i.created_at > $1 AND coalesce(i.extracted->>'history', 'false') <> 'true'
-        AND coalesce(i.extracted->>'kind', '') NOT IN ('draft', 'research', 'country-brief')
-      ORDER BY i.created_at DESC LIMIT 2000`, [since.toISOString()])).rows;
+        AND coalesce(i.extracted->>'kind', '') NOT IN ('draft', 'research', 'country-brief') ${projectId ? 'AND i.project_id = $2' : ''}
+      ORDER BY i.created_at DESC LIMIT 2000`, projectId ? [since.toISOString(), projectId] : [since.toISOString()])).rows;
 }
 
-function gather(acc: Access, rows: NewRow[]) {
+/** Counts and the new records per project, from rows the caller may see. `maxPerProject` caps each project's list. */
+export function gather(acc: Access, rows: NewRow[], maxPerProject = MAX_PER_PROJECT) {
   const counts = { messages_filed: 0, ready: 0, review: 0, invoices: 0, files: 0, organisations_proposed: 0, bulk_hidden: 0, records: 0 };
   const byProject = new Map<string, ActivityProject>();
   for (const r of rows) {
@@ -57,7 +60,7 @@ function gather(acc: Access, rows: NewRow[]) {
     const p = acc.projects.get(r.project_id);
     if (!p) continue;
     const entry = byProject.get(r.project_id) ?? { id: r.project_id, name: p.name, records: [] };
-    if (entry.records.length < MAX_PER_PROJECT) {
+    if (entry.records.length < maxPerProject) {
       const from = (ex.contacts ?? []).find((c: any) => c.role === 'from');
       entry.records.push({ ref: `doc:${r.id}`, type: r.type, title: r.title, date: iso(r.authored_at ?? r.created_at), direction: ex.direction ?? null, from: from ? (from.name || from.email) : null, snippet: r.snippet ?? null });
     }
@@ -88,6 +91,27 @@ export function register(app: Hono<Env>, { db }: RouteDeps): void {
     const brief = await briefActivity(p, projects, language);
     x.a.scope = 'firm'; x.a.refs = brief.projects.flatMap(r => r.citations); x.a.detail = { since: since.toISOString(), projects: projects.length, provider: brief.model ?? 'none', dropped: brief.projects.reduce((n, r) => n + r.dropped, 0) };
     return { body: { since: since.toISOString(), provider: brief.model, projects: brief.projects.map(r => ({ ...r, name: projects.find(q => q.id === r.project_id)?.name ?? r.project_id, records: projects.find(q => q.id === r.project_id)?.records ?? [] })), usage: brief.usage } };
+  });
+
+  /**
+   * Wave 7 PR3 (A7): what came in on one project, the same gatherer as Today, from `?since=` or the caller's
+   * last project.read on this project (everything since the project opened when they never read it).
+   */
+  route(app, 'GET', '/api/projects/:id/activity', 'project.activity', async (x) => {
+    const id = x.c.req.param('id')!;
+    const acc = await loadAccess(x.db, x.person, x.now);
+    const p = acc.projects.get(id);
+    if (!p) throw notFound(`project "${id}" not found`);
+    x.a.scope = scopeLabel(id); x.a.refs = [`project:${id}`];
+    assertVisible(acc, p.default_legal_tag, p.id, `project "${id}"`);
+    const q = x.c.req.query('since');
+    let since: Date;
+    if (q) { since = new Date(q); if (Number.isNaN(since.getTime())) throw bad('since must be an ISO date', '?since'); }
+    else { const opened = await lastOpened(x.db, x.person.id, id); since = opened ? new Date(opened) : new Date(p.created_at); }
+    const { counts, projects } = gather(acc, await newRows(x.db, since, id), 200);
+    const records = projects.find(e => e.id === id)?.records ?? [];
+    x.a.detail = { since: since.toISOString(), records: counts.records };
+    return { body: { project_id: id, since: since.toISOString(), counts, records } };
   });
 
   route(app, 'POST', '/api/me/activity/seen', 'activity.seen', async (x) => {

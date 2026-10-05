@@ -15,7 +15,7 @@ import {
 } from './common.ts';
 
 const MAX_BYTES = 50 * 1024 * 1024;
-const ITEM_COLS = `id, type, title, created_at, authored_at, authors, client_id, project_id, asset_ids, organisation_ids, legal_tag, origin,
+export const ITEM_COLS = `id, type, title, created_at, authored_at, authors, client_id, project_id, asset_ids, organisation_ids, legal_tag, origin,
   storage_key, mime, content_hash, version, supersedes, reference_no, filing, extracted, stale, tags, hidden`;
 
 /** A VaultItem as the schema describes it (server-owned fields taken from the row). */
@@ -225,6 +225,9 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     }
     const org = c.req.query('organisation');
     if (org) { params.push([org]); where.push(`organisation_ids && $${params.length}::text[]`); }
+    // Wave 7 PR3 (A3): `asset=` keeps the items that name that asset exactly; the asset file walks the tree.
+    const asset = c.req.query('asset');
+    if (asset) { params.push(asset); where.push(`$${params.length} = ANY(asset_ids)`); }
     const since = sinceParam(c);
     if (since) { params.push(since); where.push(`created_at >= $${params.length}`); }
     const limit = intParam(c, 'limit', 200, 1000);
@@ -234,7 +237,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const cites = await citesOf(x, visible.map(r => r.id));
     x.a.scope = scopeLabel(c.req.query('project'));
     x.a.refs = visible.map(r => `doc:${r.id}`);
-    x.a.detail = { count: visible.length, project: c.req.query('project') ?? null, type: c.req.query('type') ?? null };
+    x.a.detail = { count: visible.length, project: c.req.query('project') ?? null, type: c.req.query('type') ?? null, asset: asset ?? null };
     return { body: { items: visible.map(r => itemRecord(r, cites.get(r.id) ?? [])) } };
   });
 

@@ -3,7 +3,8 @@
  * (project default ∪ posted tag ∪ every run/document input and parent), dedupes on
  * (job, tool_version, input_hash), inserts, indexes the run for Find (wave 7, S31)
  * and audits. Runs are immutable: PUT/PATCH/DELETE answer 409, supersede creates a
- * new run, marks the old one and retires its chunks.
+ * new run, marks the old one and retires its chunks. The row's status is the one
+ * mutable field: POST /api/runs/:id/status (runs.status.routes.ts) moves it forward.
  */
 import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
@@ -17,11 +18,26 @@ import { emitIfEvaluation } from '../analogues/emit.ts';
 import { openEmbedder } from '../ingest/embed.ts';
 import { indexRun, retireRunChunks } from '../ingest/index.ts';
 
-const RUN_COLS = 'id, job, tool_version, project_id, legal_tag, status, supersedes, hidden, created_at, record';
+export const RUN_COLS = 'id, job, tool_version, project_id, legal_tag, status, supersedes, hidden, created_at, record, stale, stale_reasons, age_flags, reviewed_by, reviewed_at';
 
-/** The RunRecord as stored, with the one mutable field (status) taken from the row. */
+/** The RunRecord as stored, with the one mutable field (status) taken from the row, and who reviewed it (wave 7 PR3). */
 export function runRecord(row: any) {
-  return { ...row.record, status: row.status, supersedes: row.supersedes ?? row.record.supersedes ?? null };
+  const rec = { ...row.record, status: row.status, supersedes: row.supersedes ?? row.record.supersedes ?? null };
+  if (row.reviewed_by !== undefined) rec.reviewed_by = row.reviewed_by ?? null;
+  return rec;
+}
+
+/**
+ * What the API answers for a run (wave 7 PR3, W7-AC15): the RunRecord plus the Vault's own state of it under
+ * `facets.vault`, the one place the Tier A schema leaves open. `stale` and `stale_reasons` are the staleness
+ * engine's (an input changed); `age_flags` are advisory (G1 to G7) and never set `stale`.
+ */
+export function runView(row: any) {
+  const rec = runRecord(row);
+  if (row.stale === undefined) return rec;
+  const vault = { _producer: 'atc-vault', _schema_url: 'https://www.alpha-technical-centre.com/schemas/run-record.schema.json#facets-vault',
+    stale: !!row.stale, stale_reasons: row.stale_reasons ?? [], age_flags: row.age_flags ?? [], reviewed_at: row.reviewed_at ? new Date(row.reviewed_at).toISOString() : null };
+  return { ...rec, facets: { ...(rec.facets ?? {}), vault } };
 }
 
 export async function createRun(x: Ctx, rec: any, supersedesId: string | null) {
@@ -115,9 +131,10 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     if (!row || row.hidden) throw notFound(`run ${id} not found`);
     x.a.refs = [`run:${id}`]; x.a.scope = scopeLabel(row.project_id);
     assertVisible(await loadAccess(x.db, x.person, x.now), row.legal_tag, row.project_id, `run ${id}`);
-    return { body: runRecord(row) };
+    return { body: runView(row) };
   });
 
+  // Wave 7 PR3 (A3): `asset=` keeps the runs that name that asset exactly (a well is not its field; the asset file walks the tree).
   route(app, 'GET', '/api/runs', 'run.list', async (x) => {
     const { c } = x;
     const where = ['NOT hidden']; const params: unknown[] = [];
@@ -125,6 +142,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       const v = c.req.query(q);
       if (v) { params.push(v); where.push(`${col} = $${params.length}`); }
     }
+    const asset = c.req.query('asset');
+    if (asset) { params.push(asset); where.push(`$${params.length} = ANY(asset_ids)`); }
     const status = c.req.query('status');
     if (status && !['draft', 'reviewed', 'final', 'superseded'].includes(status)) throw bad('status must be draft, reviewed, final or superseded', '?status');
     const since = sinceParam(c);
@@ -135,8 +154,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const visible = rows.filter(r => canSee(acc, r.legal_tag, r.project_id)).slice(0, limit);
     x.a.scope = scopeLabel(c.req.query('project'));
     x.a.refs = visible.map(r => `run:${r.id}`);
-    x.a.detail = { count: visible.length, project: c.req.query('project') ?? null, job: c.req.query('job') ?? null, status: status ?? null };
-    return { body: { runs: visible.map(runRecord) } };
+    x.a.detail = { count: visible.length, project: c.req.query('project') ?? null, job: c.req.query('job') ?? null, status: status ?? null, asset: asset ?? null };
+    return { body: { runs: visible.map(runView) } };
   });
 
   // Runs are immutable: there is no edit, only supersede.

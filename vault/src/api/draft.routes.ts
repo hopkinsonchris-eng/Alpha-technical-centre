@@ -54,7 +54,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     x.a.refs = [`doc:${id}`, ...result.citations];
     x.a.detail = { kind: req.kind, citations: result.citations.length, questions: result.questions.length, provider: result.model ?? null };
     const { context, ...rest } = result;
-    return { status: 201, body: { id, ...rest, context: { organisation: context.organisation ? { id: context.organisation.id, name: context.organisation.name } : null, contacts: context.contacts ?? [], dispatches: context.dispatches ?? [], contracts: (context.contracts ?? []).map(c => ({ id: c.id, type: c.type, title: c.title, expiry: c.extracted?.expiry ?? null })), runs: context.runs.map(r => ({ id: r.id, title: r.title, job: r.job, tool_version: r.tool_version, status: r.status, stale: r.stale })), lessons: context.lessons, sub_queries: context.sub_queries, letterhead: context.letterhead ?? null } } };
+    return { status: 201, body: { id, ...rest, context: { organisation: context.organisation ? { id: context.organisation.id, name: context.organisation.name } : null, contacts: context.contacts ?? [], dispatches: context.dispatches ?? [], contracts: (context.contracts ?? []).map(c => ({ id: c.id, type: c.type, title: c.title, expiry: c.extracted?.expiry ?? null })), runs: context.runs.map(r => ({ id: r.id, title: r.title, job: r.job, tool_version: r.tool_version, status: r.status, stale: r.stale, asset_ids: r.asset_ids ?? [], created_at: r.created_at, outputs: r.outputs ?? {}, newer_document: r.newer_document ?? null })), lessons: context.lessons, sub_queries: context.sub_queries, letterhead: context.letterhead ?? null } } };
   });
 
   route(app, 'POST', '/api/render', 'draft.render', async (x) => {

@@ -48,6 +48,8 @@ async function stubApi(page, over = {}) {
   const posted = [];
   await page.route('**/api/**', (route) => {
     const u = new URL(route.request().url()); const p = u.pathname;
+    // Wave 7 PR3 (H5): choosing a country reads the cached brief with GET (404 when none); a test that has one keys it by ':GET'.
+    if (/^\/api\/countries\/[A-Z]{2}\/brief$/.test(p) && route.request().method() === 'GET') return over[p + ':GET'] ? over[p + ':GET'](u, route, posted) : json(route, { error: { code: 'not_found', message: 'no brief yet' } }, 404);
     if (over[p]) return over[p](u, route, posted);
     if (p === '/api/me') return json(route, PARTNER);
     if (p === '/api/catalog') return json(route, CATALOG);
@@ -624,4 +626,30 @@ test('W7-AC6: the country panel renders each project as the stateline row, every
   const create = page.locator('#country-create');
   await expect(create).toHaveClass(/btn-outline/);
   expect(await create.evaluate((el) => el.closest('#country-panel').querySelector('#country-projects').compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
+});
+
+test('W7-AC15 (Hub, H5): choosing a country shows its cached brief with its date; one past max_age_days says so and offers Regenerate, which asks the Vault for a fresh one; the two risks are labelled apart', async ({ page }) => {
+  const posts = [];
+  await stubApi(page, {
+    '/api/countries/VE/brief:GET': (u, r) => json(r, { ...BRIEF, cached: true, generated_at: '2026-06-20T09:00:00.000Z', max_age_days: 90, due: true }),
+    '/api/countries/VE/brief': (u, r) => { posts.push(JSON.parse(r.request().postData())); return json(r, { ...BRIEF, cached: false, generated_at: '2026-10-05T10:00:00.000Z', max_age_days: 90, due: false }); },
+  });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const brief = page.locator('#country-brief');
+  await expect(brief).toBeVisible();
+  await expect(brief.locator('#brief-meta')).toHaveAttribute('data-generated-at', '2026-06-20');
+  await expect(brief.locator('#brief-meta')).toHaveAttribute('data-due', '1');
+  await expect(brief.locator('#brief-meta .hub-brief-date')).toContainText('brief of 20 Jun 2026');
+  await expect(brief.locator('[data-brief-due]')).toContainText('older than 90 days');
+  expect(posts).toEqual([]);
+  await brief.locator('#country-brief-regenerate').click();
+  await expect.poll(() => posts.length).toBe(1);
+  expect(posts[0]).toEqual({ language: 'en', refresh: true });
+  await expect(brief.locator('#brief-meta')).toHaveAttribute('data-due', '0');
+  await expect(brief.locator('[data-brief-due]')).toHaveCount(0);
+  await expect(brief.locator('#brief-meta .hub-brief-date')).toContainText('brief of 5 Oct 2026');
+  // The two risks, labelled apart: the country's World Monitor reading above the rows, the project's own execution risk on its row.
+  const row = page.locator('#country-projects [data-country-project="ven-barinas"]');
+  await expect(row.locator('[data-risk-tag]')).toHaveText('our execution risk Red 78');
 });

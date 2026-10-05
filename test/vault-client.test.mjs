@@ -276,3 +276,69 @@ describe('pickProject reads ?project= from the URL (wave 2, AC9)', () => {
     assert.equal(await vault.pickProject(null), null);
   });
 });
+
+/* ── Wave 7 PR3 (03-data-hierarchy.md A10, §7.4 item 1): the asset from the URL, and no number without a unit ── */
+
+describe('saveRun names the asset the page was opened with (wave 7, W7-AC14)', () => {
+  beforeEach(() => {
+    net.meStatus = 200;
+    Object.defineProperty(globalThis, 'location', { configurable: true, writable: true, value: { pathname: '/nodal-analysis-tool.html', search: '' } });
+  });
+
+  test('?asset= beside ?project= becomes asset_ids on the saved run, without the page changing', async () => {
+    globalThis.location.search = '?project=kaz-brownfield&asset=well:kz:tengiz-1';
+    assert.equal(vault.pageAsset(), 'well:kz:tengiz-1');
+    const res = await vault.saveRun(partialRun({ asset_ids: [] }));
+    assert.equal(res.queued, false);
+    assert.deepEqual(net.runsPosted[0].asset_ids, ['well:kz:tengiz-1']);
+    const again = await vault.saveRun(partialRun());             // a page that sends no asset_ids at all
+    assert.deepEqual(net.runsPosted[1].asset_ids, ['well:kz:tengiz-1']);
+    assert.equal(again.queued, false);
+  });
+
+  test('an asset the page already names is kept and the URL asset joins it; without ?asset= nothing is added', async () => {
+    globalThis.location.search = '?asset=well:kz:tengiz-1';
+    await vault.saveRun(partialRun({ asset_ids: ['field:kz:tengiz'] }));
+    assert.deepEqual(net.runsPosted[0].asset_ids, ['field:kz:tengiz', 'well:kz:tengiz-1']);
+    await vault.saveRun(partialRun({ asset_ids: ['well:kz:tengiz-1'] }));
+    assert.deepEqual(net.runsPosted[1].asset_ids, ['well:kz:tengiz-1'], 'not duplicated');
+    globalThis.location.search = '';
+    assert.equal(vault.pageAsset(), null);
+    await vault.saveRun(partialRun({ asset_ids: [] }));
+    assert.deepEqual(net.runsPosted[2].asset_ids, []);
+    await vault.saveRun(partialRun());
+    assert.equal(net.runsPosted[3].asset_ids, undefined, 'a record that never had asset_ids gains none');
+  });
+
+  test('a malformed asset parameter is ignored', async () => {
+    globalThis.location.search = '?asset=../x';
+    assert.equal(vault.pageAsset(), null);
+    await vault.saveRun(partialRun({ asset_ids: [] }));
+    assert.deepEqual(net.runsPosted[0].asset_ids, []);
+    globalThis.location.search = '?asset=' + encodeURIComponent('well:kz:tengiz 1');
+    assert.equal(vault.pageAsset(), null);
+  });
+});
+
+describe('a numeric output must carry its unit (wave 7, §7.4)', () => {
+  test('a number without a unit is refused with its path and nothing is sent or queued', async () => {
+    net.meStatus = 200;
+    await assert.rejects(vault.saveRun(partialRun({ outputs: { npv10: { value: 12.5 } } })), (e) => {
+      assert.match(e.message, /\$\.outputs\.npv10\.unit/);
+      assert.equal(e.code, 'invalid_run');
+      assert.equal(e.path, '$.outputs.npv10.unit');
+      return true;
+    });
+    await assert.rejects(vault.saveRun(partialRun({ outputs: { npv10: { value: 12.5, unit: '' } } })), /\$\.outputs\.npv10\.unit/);
+    await assert.rejects(vault.saveRun(partialRun({ outputs: { ok: { value: 1, unit: 'bopd' }, bad: { value: 2 } } })), /\$\.outputs\.bad\.unit/);
+    assert.equal(net.calls.length, 0);
+    assert.equal(store.get('vault_queue_v1'), undefined, 'nothing queued');
+  });
+
+  test('a unitless output that is not a number is still accepted (a flag, a label, a ranking)', async () => {
+    net.meStatus = 200;
+    const res = await vault.saveRun(partialRun({ outputs: { risk: { value: 'amber' }, screened: { value: true }, npv10: { value: 12.5, unit: 'MMUSD' } } }));
+    assert.equal(res.queued, false);
+    assert.deepEqual(Object.keys(net.runsPosted[0].outputs), ['risk', 'screened', 'npv10']);
+  });
+});

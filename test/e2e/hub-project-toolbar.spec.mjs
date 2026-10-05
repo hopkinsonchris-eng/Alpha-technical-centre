@@ -148,7 +148,7 @@ test('AC10 / R6: the opportunity card sits inside the File disclosure, shows the
   await expect(card).toBeHidden();                       // the File disclosure is closed until asked for
   await page.locator('#p-file-wrap > summary').click();
   await expect(card).toBeVisible();
-  await expect(card.locator('[data-opp="plan"]')).toHaveText('16 → 22 kboe/d');
+  await expect(card.locator('[data-opp="plan"]')).toHaveText(/16 kboe\/d.*→ 22 kboe\/d/);   // wave 7 (H4): each figure carries its unit and a source chip
   await expect(card.locator('[data-opp="risk"]')).toContainText('Elevated 54');
   await expect(card.locator('[data-opp="owner"]')).toHaveText('Tom');
   await expect(card.locator('[data-opp="source"]')).toHaveText('Intermediary');
@@ -178,7 +178,7 @@ test('AC10 / R6: the opportunity card sits inside the File disclosure, shows the
   await expect.poll(() => patched.length).toBe(1);
   expect(patched[0]).toEqual({ country: 'KZ', lat: 47.2, lon: 51.9, register: { source: 'Intermediary', current: 16, plan: 25, risk: 'red', risk_score: 54, attractiveness: 76, owner: 'Tom', thesis: PROJECT.register.thesis, next: 'Request the data room index',
     holder: 'KazMunayGas', government: null, licence_type: 'jv', licence_note: 'Empresa mixta, 60/40', partners: ['Chevron', 'Lukoil', 'Eni'] } });
-  await expect(card.locator('[data-opp="plan"]')).toHaveText('16 → 25 kboe/d');
+  await expect(card.locator('[data-opp="plan"]')).toHaveText(/16 kboe\/d.*→ 25 kboe\/d/);
   await expect(card.locator('[data-opp="government"]')).toHaveText('—');
   await expect(card.locator('[data-opp="licence"]')).toHaveText('Joint venture / empresa mixta · Empresa mixta, 60/40');
   await expect(card.locator('[data-opp="partners"]')).toHaveText('Chevron, Lukoil, Eni');

@@ -543,7 +543,9 @@ function panelRow(p, names) {
   const proj = Object.assign({ id: p.id, name: p.name, stage: p.stage, status: p.status, register: {}, last_activity_at: p.last_run_at || null, stale_count: p.attention ? p.attention.stale : 0 }, full);
   add(li, stateline(proj, { size: 'row' }));
   if (p.client_name) add(li, dv('div', 'hub-note-s', p.client_name));
-  add(li, add(mk('div', 'flags'), ...flags(p.attention)));
+  // Wave 7 PR3 (H5): the project's own execution risk is labelled as such here too, apart from the country's World Monitor reading above.
+  const rt = riskTag(proj.register || (full && full.register));
+  add(li, add(mk('div', 'flags'), ...flags(p.attention), rt));
   // Wave 3: the fields attached to the project, each with its source.
   const fields = (p.assets || []).filter((x) => x && x.name);
   if (fields.length) {
@@ -619,6 +621,7 @@ async function renderGlobe(person) {
 
   // Wave 3: the point under the last tap (or the country's centre when chosen from the register) feeds "Create a project here".
   let tapped = null;
+  let briefUi = null;                                                        // wave 7 PR3 (H5): reads the cached brief on selection
   function select(code, write, point) {
     const c = data && data.countries.find((x) => x.code === code);
     sec.setAttribute('data-country', code || '');
@@ -644,6 +647,7 @@ async function renderGlobe(person) {
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
     reg.setAttribute('hidden', ''); if (filters) filters.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
     renderIntel(code, names);
+    if (briefUi) briefUi.loadCached(code);
     if (globe) globe.select(code, { fly: true });
   }
   $('#country-back').addEventListener('click', () => select(null, true));
@@ -652,7 +656,7 @@ async function renderGlobe(person) {
     const code = sec.getAttribute('data-country');
     if (code && openProjectForm) openProjectForm('opportunity', { country: code, lat: tapped ? tapped.lat : null, lon: tapped ? tapped.lon : null });
   });
-  setupBrief(() => sec.getAttribute('data-country'), names);
+  briefUi = setupBrief(() => sec.getAttribute('data-country'), names);
   // The tooltip and the canvas label follow the language.
   new MutationObserver(() => { if (globe) globe.setLang(lang()); const l = lang(); canvas.setAttribute('aria-label', canvas.getAttribute('data-' + l + '-aria') || canvas.getAttribute('aria-label')); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   sec.setAttribute('data-globe', globe ? 'ready' : 'no-geo');
@@ -853,14 +857,15 @@ function briefParagraph(text, sources) {
 function setupBrief(currentCode, names) {
   const btn = $('#country-brief-btn'), host = $('#country-brief');
   if (!btn || !host) return;
-  btn.addEventListener('click', async () => {
+  // Wave 7 PR3 (H5, W7-AC15): `refresh` asks for a new brief when the cached one is past its max_age_days (the Regenerate button).
+  const write = async (refresh) => {
     const code = currentCode();
     if (!code) return;
     host.textContent = '';
     host.removeAttribute('hidden');
     add(host, add(mk('p', 'hub-muted hub-brief-wait'), mk('span', 'hub-spin', null, null, { 'aria-hidden': 'true' }), mk('span', null, ' Reading the Vault and writing the brief…', ' Leyendo el Vault y escribiendo el resumen…')));
     btn.disabled = true;
-    const res = await api('/api/countries/' + encodeURIComponent(code) + '/brief', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ language: lang() }) });
+    const res = await api('/api/countries/' + encodeURIComponent(code) + '/brief', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ language: lang(), ...(refresh ? { refresh: true } : {}) }) });
     btn.disabled = false;
     if (currentCode() !== code) return;
     host.textContent = '';
@@ -871,7 +876,17 @@ function setupBrief(currentCode, names) {
       else add(host, notice('bad', 'The brief was not written.', 'No se escribió el resumen.', msg || 'HTTP ' + res.status, msg || 'HTTP ' + res.status));
       return;
     }
-    const b = res.body;
+    paint(res.body, code);
+  };
+  /** Wave 7 PR3 (H5): the cached brief, read with GET when a country is chosen, so its date and Regenerate show without a click (404: none yet). */
+  const loadCached = async (code) => {
+    const res = await api('/api/countries/' + encodeURIComponent(code) + '/brief?language=' + encodeURIComponent(lang()));
+    if (currentCode() !== code) return;
+    if (!res.ok || !res.body || !Array.isArray(res.body.paragraphs)) return;
+    host.textContent = ''; host.removeAttribute('hidden');
+    paint({ cached: true, ...res.body }, code);
+  };
+  const paint = (b, code) => {
     const n = (names && names.get(code)) || b.name || { en: code, es: code };
     add(host, add(mk('div', 'hub-card-head'), add(mk('div'), mk('h3', null, 'Country brief: ' + n.en, 'Resumen del país: ' + n.es))));
     const body = mk('div', 'hub-brief-body');
@@ -895,12 +910,22 @@ function setupBrief(currentCode, names) {
       add(sl, li);
     }
     add(srcBlock, sl); add(host, srcBlock);
-    const meta = mk('p', 'hub-muted hub-note-s', null, null, { id: 'brief-meta' });
+    const meta = mk('p', 'hub-muted hub-note-s', null, null, { id: 'brief-meta', 'data-generated-at': b.generated_at ? String(b.generated_at).slice(0, 10) : '', 'data-due': b.due ? '1' : '0' });
     const d = b.generated_at ? fmtShortDate(b.generated_at) : null;
     add(meta, b.cached ? mk('span', null, 'Served from the cache: nothing in this country changed since it was written', 'Servido desde la caché: nada cambió en este país desde que se escribió') : mk('span', null, 'Written now from the Vault', 'Escrito ahora a partir del Vault'),
-      d ? mk('span', null, ' · ' + d.en, ' · ' + d.es) : null, b.model ? dv('span', null, ' · ' + b.model) : null);
+      d ? mk('span', 'hub-brief-date', ' · brief of ' + d.en, ' · resumen del ' + d.es) : null, b.model ? dv('span', null, ' · ' + b.model) : null);
     for (const w of b.warnings || []) if (!/turned into questions/.test(w)) add(meta, document.createTextNode(' · '), dv('span', null, w));
     add(host, meta);
+    // Wave 7 PR3 (H5, W7-AC15): a brief older than its max_age_days says so and offers Regenerate.
+    if (b.due) {
+      const age = typeof b.max_age_days === 'number' ? b.max_age_days : 90;
+      const n = notice('warn', 'This brief is older than ' + age + ' days.', 'Este resumen tiene más de ' + age + ' días.', d ? 'Written ' + d.en + '; the country may have moved on.' : 'The country may have moved on.', d ? 'Escrito el ' + d.es + '; el país puede haber cambiado.' : 'El país puede haber cambiado.');
+      n.setAttribute('data-brief-due', '1');
+      const rb = mk('button', 'btn btn-primary btn-sm', 'Regenerate', 'Regenerar', { type: 'button', id: 'country-brief-regenerate' });
+      rb.addEventListener('click', () => write(true));
+      add(n, add(mk('div', 'hub-actions-row'), rb));
+      add(host, n);
+    }
     // Wave 3: whether the live risk feed was in the context.
     const wm = b.world_monitor || { status: 'not_connected' };
     const wmLine = mk('span', null, null, null, { id: 'brief-wm', 'data-status': wm.status });
@@ -911,7 +936,9 @@ function setupBrief(currentCode, names) {
       for (const n of wm.notes || []) add(wmLine, document.createTextNode(' · '), dv('span', null, n));
     } else add(wmLine, mk('span', null, 'World Monitor: not connected', 'World Monitor: no conectado'));
     add(meta, document.createTextNode(' · '), wmLine);
-  });
+  };
+  btn.addEventListener('click', () => write(false));
+  return { loadCached, write };
 }
 
 /**

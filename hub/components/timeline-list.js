@@ -12,6 +12,16 @@
    line ("5 Oct · 13:54"), the type is a small mono prefix rather than a pill,
    and every kind carries a status pill on the right. A "Documents" filter
    joins the chips so the stateline's docs count has a place to land.
+
+   Wave 7 PR3 (H2, W7-AC13): every entry carries a class, foreground or
+   background, from the Vault (`entry.class`) or, on an older Vault, from the
+   rules in docs/vault-hub/wave7/03-data-hierarchy.md §4 (superseded runs,
+   research findings and dossiers, history mail, older stage changes). The
+   list shows Foreground by default; the background rows stay in the list in
+   date order but hidden behind one "Background (n)" toggle at the foot, so
+   a row's address, count and order never change. The type prefix reads the
+   record's `kind` (draft, research, dossier, basis note…) when the Vault
+   gives one, else the type.
    Plain custom element, light DOM, every text carries data-en and data-es.
    ============================================================ */
 import { mk, dv, add, RUN_STATUS } from '../hub.js';
@@ -43,6 +53,32 @@ const TYPE_LABEL = {
   stage: ['Stage', 'Etapa'], run: ['Run', 'Ejecución'], letter: ['Letter', 'Carta'], email: ['Email', 'Correo'], spreadsheet: ['Spreadsheet', 'Hoja de cálculo'],
   paper: ['Paper', 'Artículo'], invoice: ['Invoice', 'Factura'], note: ['Note', 'Nota'], reference: ['Reference set', 'Conjunto de referencia'],
 };
+
+/** Wave 7 PR3: the record's own kind (the items.kind column), as the type prefix reads it. */
+const KIND_LABEL = {
+  draft: ['Draft', 'Borrador'], research: ['Research', 'Investigación'], dossier: ['Dossier', 'Dosier'], basis: ['Basis note', 'Nota de bases'],
+  'calc-note': ['Calc note', 'Nota de cálculo'], paper: ['Paper', 'Artículo'], 'reference-set': ['Reference set', 'Conjunto de referencia'],
+  history: ['History', 'Histórico'], bulk: ['Bulk', 'Masivo'],
+};
+const STRUCTURAL_KINDS = new Set(['run', 'item', 'stage']);
+/** The record kind of an entry: `record_kind`, a `kind` that is not the structural run/item/stage, or extracted.kind; null when the Vault gives none. */
+export function recordKind(e) {
+  if (!e) return null;
+  if (typeof e.record_kind === 'string' && e.record_kind) return e.record_kind;
+  if (typeof e.kind === 'string' && e.kind && !STRUCTURAL_KINDS.has(e.kind)) return e.kind;
+  if (e.extracted && typeof e.extracted.kind === 'string' && e.extracted.kind) return e.extracted.kind;
+  return null;
+}
+/** foreground | background: the Vault's class when given, else §4's rules (superseded runs, research and dossiers, history, older stage changes). */
+export function classOf(e) {
+  if (!e) return 'foreground';
+  if (e.class === 'background' || e.class === 'foreground') return e.class;
+  if (e.kind === 'run' && (e.status === 'superseded' || e.superseded_by)) return 'background';
+  const rk = recordKind(e);
+  if (rk === 'research' || rk === 'dossier' || rk === 'history' || rk === 'bulk') return 'background';
+  if (e.history === true || (e.extracted && e.extracted.history === true)) return 'background';
+  return 'foreground';
+}
 
 /** Icon / label kind of a timeline entry. */
 export function iconKind(e) {
@@ -84,11 +120,14 @@ function icon(kind, stale) {
 }
 
 export class TimelineList extends HTMLElement {
-  constructor() { super(); this._entries = []; this._filter = 'all'; this._built = false; }
+  constructor() { super(); this._entries = []; this._filter = 'all'; this._built = false; this._showBackground = false; }
   set entries(v) { this._entries = Array.isArray(v) ? v.slice().sort(byNewest) : []; if (this.isConnected) this.render(); }
   get entries() { return this._entries; }
   get filter() { return this._filter; }
   set filter(v) { this._filter = v; if (this._built) this.renderList(); }
+  /** Wave 7 PR3: whether the background rows are shown (false by default; the toggle at the foot flips it). */
+  get showBackground() { return this._showBackground; }
+  set showBackground(v) { this._showBackground = !!v; if (this._built) this.renderList(); }
   connectedCallback() { this.render(); }
 
   render() {
@@ -126,20 +165,38 @@ export class TimelineList extends HTMLElement {
       const li = mk('li', 'hub-empty', 'No records match this filter.', 'Ningún registro coincide con este filtro.');
       return void add(this._list, li);
     }
-    for (const e of rows) add(this._list, this.row(e));
+    // Wave 7 PR3 (H2): foreground rows show; background rows stay in place, hidden until the toggle at the foot opens them.
+    let bg = 0;
+    for (const e of rows) {
+      const li = this.row(e);
+      if (li.getAttribute('data-class') === 'background') { bg++; if (!this._showBackground) li.setAttribute('hidden', ''); }
+      add(this._list, li);
+    }
+    this.setAttribute('data-background', String(bg));
+    if (bg) {
+      const foot = mk('li', 'hub-tl-bg-row', null, null, { 'data-background-row': '' });
+      const b = mk('button', 'hub-chip hub-tl-bg-toggle', null, null, { type: 'button', 'data-background-toggle': '', 'aria-expanded': String(this._showBackground) });
+      add(b, mk('span', 'hub-tl-bg-caret', this._showBackground ? '▾' : '▸', this._showBackground ? '▾' : '▸', { 'aria-hidden': 'true' }), document.createTextNode(' '),
+        mk('span', null, 'Background (' + bg + ')', 'Segundo plano (' + bg + ')'));
+      b.addEventListener('click', () => { this._showBackground = !this._showBackground; this.renderList(); });
+      add(foot, b, mk('span', 'hub-muted hub-tl-bg-note', 'superseded runs, research findings, dossiers, history mail and sent drafts', 'ejecuciones reemplazadas, hallazgos de investigación, dosieres, correo histórico y borradores enviados'));
+      add(this._list, foot);
+    }
   }
 
   row(e) {
-    const kind = iconKind(e), stale = !!e.stale;
-    const li = mk('li', 'hub-tl-item' + (stale ? ' is-stale' : ''), null, null, { 'data-ref': e.ref || (e.kind === 'run' ? 'run:' : 'doc:') + e.id, 'data-id': e.id, 'data-kind': e.kind, 'data-icon': kind, 'data-stale': String(stale) });
+    const kind = iconKind(e), stale = !!e.stale, cls = classOf(e), rk = recordKind(e);
+    const li = mk('li', 'hub-tl-item' + (stale ? ' is-stale' : '') + (cls === 'background' ? ' is-background' : ''), null, null, { 'data-ref': e.ref || (e.kind === 'run' ? 'run:' : 'doc:') + e.id, 'data-id': e.id, 'data-kind': e.kind, 'data-icon': kind, 'data-stale': String(stale), 'data-class': cls, ...(rk ? { 'data-record-kind': rk } : {}) });
     const st = stamp(e.at);
     const date = mk('div', 'hub-tl-date');
     if (st) { add(date, mk('span', null, st.en, st.es)); date.setAttribute('title', st.title); } else add(date, dv('span', null, '—'));
     add(li, date, icon(kind, stale));
 
     const body = mk('div', 'hub-tl-body');
-    const lab = TYPE_LABEL[kind];
-    const type = lab ? mk('span', 'hub-tl-type mono', lab[0].toLowerCase(), lab[1].toLowerCase(), { 'data-type': kind }) : dv('span', 'hub-tl-type mono', e.type, { 'data-type': kind });
+    // The type prefix: the record's kind when the Vault gives one (wave 7 PR3), else the type.
+    const kl = rk && e.kind !== 'run' && e.kind !== 'stage' ? (KIND_LABEL[rk] || [rk.replace(/[-_]/g, ' '), rk.replace(/[-_]/g, ' ')]) : null;
+    const lab = kl || TYPE_LABEL[kind];
+    const type = lab ? mk('span', 'hub-tl-type mono', lab[0].toLowerCase(), lab[1].toLowerCase(), { 'data-type': kind, ...(kl ? { 'data-kind-label': rk } : {}) }) : dv('span', 'hub-tl-type mono', e.type, { 'data-type': kind });
     if (e.kind === 'stage') {
       // A stage change has no record to open: the row states it.
       add(body, add(mk('span', 'hub-tl-title hub-tl-stage'), type, document.createTextNode(' '), mk('span', null, 'Stage: ', 'Etapa: '), dv('b', null, e.title),

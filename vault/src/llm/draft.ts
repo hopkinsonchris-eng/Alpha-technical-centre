@@ -73,6 +73,82 @@ export function checkCitations(paragraphs: string[], allowed: Set<string>): { pa
   return { paragraphs: out, warnings, questions, citations: [...citations] };
 }
 
+/* ── wave 7 PR3 (A6, 03 §7.4 item 3): a cited figure must be the cited run's figure ─────────────────────── */
+
+export interface RunFigures { outputs?: any; assumptions?: any }
+interface Figure { value: number; unit: string }
+const RUN_CITE_RE = /\[run:([^\]]+)\]/g;
+const OTHER_CITE_RE = /\[(doc|lesson|ref|wm):[^\]]+\]/;
+const MONTH_WORDS = '(?:january|february|march|april|may|june|july|august|september|october|november|december|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)';
+const NOT_FIGURES = [
+  /\[[a-z]+:[^\]]+\]/gi,                                                          // citations
+  /\b\d{4}-\d{2}-\d{2}(?:T[\d:.]+Z?)?\b/g,                                        // ISO dates
+  new RegExp(`\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:de\\s+)?${MONTH_WORDS}(?:\\s+de)?\\s+\\d{4}\\b`, 'gi'),   // 8 July 2026, 8 de julio de 2026
+  new RegExp(`\\b${MONTH_WORDS}\\s+\\d{1,2},?\\s+\\d{4}\\b`, 'gi'),                 // July 8, 2026
+  /\b[A-Z]{2,6}-\d{4}-\d{2,6}\b/g,                                                // reference numbers (ATC-2026-0131)
+  /(?<![\d.,])(?:19|20)\d{2}(?![\d.,])/g,                                        // a bare year
+];
+const NUMBER_WITH_UNIT_RE = /(?<![\w.,])(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?:\s*(%|[A-Za-z°$€£][\w$€£/°^³².-]*))?/g;
+const normUnit = (u: unknown): string => String(u ?? '').toLowerCase().replace(/[\s.]/g, '');
+
+function figuresOf(run: RunFigures): Figure[] {
+  const out: Figure[] = [];
+  const take = (bag: unknown) => {
+    if (!bag || typeof bag !== 'object') return;
+    for (const v of Object.values(bag as Record<string, any>)) {
+      if (v === null || typeof v !== 'object') { if (typeof v === 'number' && Number.isFinite(v)) out.push({ value: v, unit: '' }); continue; }
+      const unit = normUnit(v.unit);
+      for (const k of ['value', 'low', 'high']) if (typeof v[k] === 'number' && Number.isFinite(v[k])) out.push({ value: v[k], unit });
+    }
+  };
+  take(run.outputs); take(run.assumptions);
+  return out;
+}
+/** Does v, shown at the precision n was written with, read as n? */
+const readsAs = (n: number, v: number, decimals: number): boolean => Math.abs(n - v) <= 0.5 * Math.pow(10, -decimals) + 1e-9;
+
+/**
+ * Every sentence that cites a run and nothing else must quote only figures the cited runs carry in outputs or
+ * assumptions, at the precision written, with the unit when one is written. A sentence that fails becomes a
+ * question to the author; a sentence that also cites a document, lesson or reference is not checked here, since
+ * the figure may be theirs. Dates, reference numbers, citation ids and bare years are not figures.
+ */
+export function checkFigures(paragraphs: string[], runs: Map<string, RunFigures>): { paragraphs: string[]; warnings: string[]; questions: string[] } {
+  const warnings: string[] = [], questions: string[] = [];
+  const out = paragraphs.map(p => p.split(/(?<=[.!?])\s+(?![^\[]*\])/).map(s => {
+    if (/^\s*\[QUESTION FOR YOU/.test(s) || OTHER_CITE_RE.test(s)) return s;
+    const cited = [...s.matchAll(RUN_CITE_RE)].map(m => m[1]).filter(id => runs.has(id));
+    if (!cited.length) return s;
+    const figures = cited.flatMap(id => figuresOf(runs.get(id)!));
+    const units = new Set(figures.map(f => f.unit).filter(Boolean));
+    let text = s;
+    for (const re of NOT_FIGURES) text = text.replace(re, ' ');
+    const bad: string[] = [];
+    for (const m of text.matchAll(NUMBER_WITH_UNIT_RE)) {
+      const shown = `${m[1]}${m[2] ?? ''}`;
+      const n = Number(shown.replace(/,/g, ''));
+      const decimals = m[2] ? m[2].length - 1 : 0;
+      const unit = m[3] ? normUnit(m[3]) : '';
+      const ok = figures.some(f => {
+        if (unit === '%') return (f.unit === '%' && readsAs(n, f.value, decimals)) || ((f.unit === '' || f.unit === 'fraction' || f.unit === 'frac') && readsAs(n, f.value * 100, decimals));
+        if (!readsAs(n, f.value, decimals)) return false;
+        if (!unit || !f.unit) return true;                       // no unit written, or the run's figure carries none
+        if (f.unit === unit) return true;
+        return !units.has(unit);                                  // a word after the number that is no unit of this run (wells, years, items)
+      });
+      if (!ok) bad.push(m[3] ? `${shown} ${m[3]}` : shown);
+    }
+    if (!bad.length) return s;
+    questions.push(s.trim());
+    return `[QUESTION FOR YOU: this sentence quotes ${bad.join(', ')}, which is not an output or assumption of the cited run: "${s.trim()}"]`;
+  }).join(' '));
+  if (questions.length) warnings.push(`${questions.length} sentence(s) quoted a figure that is not in the cited run and were turned into questions for you`);
+  return { paragraphs: out, warnings, questions };
+}
+
+/** The item types that count as a delivered or received document (the same rule as the nightly age flag G1). */
+const FOREGROUND_TYPES = ['letter', 'report', 'spreadsheet', 'data-room-file'];
+
 async function loadProjects(db: Db): Promise<Map<string, ProjectInfo>> {
   return new Map((await db.query<any>('SELECT id, client_id, members FROM projects')).rows.map(r => [r.id, { id: r.id, client_id: r.client_id, members: r.members ?? [] }]));
 }
@@ -97,9 +173,20 @@ export async function assembleContext(db: Db, person: Person, req: DraftRequest,
                                             FROM dispatches d JOIN items i ON i.id = d.item_id WHERE d.organisation_id = $1 AND NOT i.hidden ORDER BY d.occurred_at ASC`, [orgId])).rows;
     ctx.contracts = (await db.query<any>(`SELECT id, type, title, authored_at, reference_no, extracted, legal_tag FROM items WHERE NOT hidden AND type IN ('nda','contract','licence') AND $1 = ANY(organisation_ids) ORDER BY authored_at DESC`, [orgId])).rows;
   }
-  // Runs in scope: the project's non-superseded runs, newest first; a named run first.
-  ctx.runs = (await db.query<any>(`SELECT id, job, tool_version, title, status, created_at, record->'outputs' AS outputs, record->'assumptions' AS assumptions, stale, legal_tag, project_id FROM runs
+  // Runs in scope: the project's non-superseded runs, newest first; a named run first. Wave 7 PR3 (A6): each carries its
+  // assets, its date and its outputs with units, and the newest foreground document it is older than, if any.
+  ctx.runs = (await db.query<any>(`SELECT id, job, tool_version, title, status, created_at, asset_ids, record->'outputs' AS outputs, record->'assumptions' AS assumptions, stale, legal_tag, project_id FROM runs
                                     WHERE project_id = $1 AND NOT hidden AND status <> 'superseded' ORDER BY (id = $2::uuid) DESC NULLS LAST, created_at DESC LIMIT 12`, [req.project_id, req.run_id ?? null])).rows;
+  const newest = (await db.query<any>(
+    `SELECT i.id, i.title, coalesce(i.authored_at, i.created_at) AS at FROM items i
+      WHERE i.project_id = $1 AND NOT i.hidden AND coalesce(i.extracted->>'kind', '') NOT IN ('draft', 'research', 'dossier') AND coalesce(i.extracted->>'history', 'false') <> 'true' AND coalesce(i.extracted->>'category', '') <> 'bulk'
+        AND (i.type = ANY($2::text[]) OR (i.type = 'email' AND EXISTS (SELECT 1 FROM items c WHERE c.parent_id = i.id)))
+      ORDER BY coalesce(i.authored_at, i.created_at) DESC, i.id LIMIT 1`, [req.project_id, FOREGROUND_TYPES])).rows[0];
+  for (const r of ctx.runs) {
+    r.created_at = new Date(r.created_at).toISOString();
+    r.asset_ids = r.asset_ids ?? [];
+    r.newer_document = newest && new Date(newest.at) > new Date(r.created_at) ? { id: newest.id, title: newest.title, date: ymd(newest.at) } : null;
+  }
   // Lessons in scope.
   ctx.lessons = (await db.query<any>(`SELECT id, record->>'claim' AS claim, scope, scope_id, last_confirmed FROM lessons WHERE status = 'confirmed' AND (scope IN ('firm') OR (scope = 'project' AND scope_id = $1) OR (scope = 'client' AND scope_id = $2) OR scope = 'discipline') ORDER BY last_confirmed DESC NULLS LAST LIMIT 12`, [req.project_id, project.client_id])).rows;
   // Retrieval: sub-queries through the gateway.
@@ -185,6 +272,17 @@ export async function draft(db: Db, person: Person, req: DraftRequest, provider:
   const checked = checkCitations(paragraphs, allowed);
   const warnings = [...checked.warnings];
   if (checked.questions.length) warnings.push(`${checked.questions.length} sentence(s) had no citation and were turned into questions for you`);
+  // Wave 7 PR3 (A6): a cited figure must be the run's figure, and a weak run is named.
+  const figures = checkFigures(checked.paragraphs, new Map(ctx.runs.map(r => [r.id, { outputs: r.outputs, assumptions: r.assumptions }])));
+  warnings.push(...figures.warnings);
+  for (const c of checked.citations) {
+    if (!c.startsWith('run:')) continue;
+    const r = ctx.runs.find(x => x.id === c.slice(4));
+    if (!r) continue;
+    if (r.status === 'draft') warnings.push(`cites draft run ${r.id}`);
+    if (r.newer_document) warnings.push(`cites run older than document ${r.newer_document.id}`);
+  }
   if (!ctx.sources.length && !ctx.runs.length) warnings.push('no runs or documents were found in scope; the draft is skeletal');
-  return { draft: checked.paragraphs.join('\n\n'), paragraphs: checked.paragraphs, citations: checked.citations, sources: ctx.sources, who_to_ask: ctx.who_to_ask, warnings, questions: checked.questions, usage, model, context: ctx };
+  const questions = [...checked.questions, ...figures.questions];
+  return { draft: figures.paragraphs.join('\n\n'), paragraphs: figures.paragraphs, citations: checked.citations, sources: ctx.sources, who_to_ask: ctx.who_to_ask, warnings, questions, usage, model, context: ctx };
 }

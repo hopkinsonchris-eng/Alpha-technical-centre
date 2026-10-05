@@ -187,7 +187,7 @@ test('R1: three actions right-aligned (Write to… primary, Research, Open in to
   await expect(menu).toBeVisible();
   const links = menu.locator('a[data-toolbar-tool]');
   expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('data-toolbar-tool')))).toEqual(['nodal-analysis', 'opportunity-register', 'plan-your-job']);
-  await expect(links.first()).toHaveAttribute('href', /nodal-analysis-tool\.html\?project=llanos-waterflood$/);
+  await expect(links.first()).toHaveAttribute('href', /nodal-analysis-tool\.html\?project=llanos-waterflood(&asset=field%3Aco%3Acubiro)?$/);   // wave 7 PR3 (W7-AC14): the first attached field rides along
   await expect(links.first()).toHaveAttribute('data-produced', '1');
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();

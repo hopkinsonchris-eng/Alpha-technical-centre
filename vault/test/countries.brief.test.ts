@@ -252,3 +252,35 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
   assert.equal(hits, before, 'the brief made no further call while the limit holds');
   configureWorldMonitor({ apiKey: null });
 });
+
+/* ── wave 7 PR3 (S8, W7-AC15): a brief ages ── */
+
+test('S8: the brief carries generated_at, max_age_days and due; past max_age_days it is due and GET reads the cache without the provider', async () => {
+  configureWorldMonitor({ apiKey: null });
+  configureBrief({ provider });
+  calls = 0;
+  const r = await post(partner, '/api/countries/KZ/brief');
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.max_age_days, 90);
+  assert.equal(r.body.due, false);
+  assert.match(r.body.generated_at, /^\d{4}-/);
+  const g = await partner.request('/api/countries/KZ/brief', { headers: { accept: 'application/json' } });
+  assert.equal(g.status, 200);
+  const gb: any = await g.json();
+  assert.equal(gb.cached, true); assert.equal(gb.due, false); assert.equal(gb.max_age_days, 90);
+  assert.equal(gb.paragraphs.length, r.body.paragraphs.length);
+  await db.query("UPDATE country_briefs SET created_at = now() - interval '100 days' WHERE country = 'KZ' AND language = 'en'");
+  const before = calls;
+  const again = await post(partner, '/api/countries/KZ/brief');
+  assert.equal(again.status, 200);
+  assert.equal(again.body.cached, true, 'the sources are unchanged: still served from the cache');
+  assert.equal(again.body.due, true, 'but the Hub is told it is due so it can show the date and offer Regenerate');
+  assert.equal(calls, before, 'ageing alone never spends on the provider');
+  const g2: any = await (await partner.request('/api/countries/KZ/brief', { headers: { accept: 'application/json' } })).json();
+  assert.equal(g2.due, true);
+  // No cached brief: GET is 404 and spends nothing; a bad code is 400; outside scope is 404.
+  assert.equal((await partner.request('/api/countries/PE/brief')).status, 404);
+  assert.equal((await partner.request('/api/countries/kz/brief')).status, 400);
+  assert.equal((await ben.request('/api/countries/EG/brief')).status, 404, 'Ben sees no project in Egypt');
+  assert.equal(calls, before);
+});

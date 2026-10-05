@@ -87,6 +87,19 @@ services:
       - key: DATABASE_URL
         sync: false
 
+  # Project figures (wave 7 PR3, S1): one dated, unit-bearing figure per project and job from the newest
+  # non-superseded run and the register, after the staleness pass so `stale` is current when copied.
+  - type: cron
+    name: atc-vault-figures
+    runtime: node
+    rootDir: vault
+    schedule: "30 3 * * *"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/figures.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+
   # APEX Asset Intelligence snapshot (M05, D6): files saved formations as runs
   # until the app pushes them itself. Needs APP_TOKENS, APEX_AI_BASE_URL, APEX_AI_TOKEN.
   - type: cron

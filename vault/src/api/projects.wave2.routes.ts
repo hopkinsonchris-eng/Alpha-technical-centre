@@ -5,12 +5,18 @@
  * change is appended to stage_history and named in the audit event. A project
  * the caller cannot see answers 404 so its existence is not leaked. The
  * register block merges field by field (a partial edit keeps the rest).
+ * Wave 7 PR3 (S2, S3, S4): a stage change stamps projects.stage_changed_at; register.next (with an optional
+ * next_due date, YYYY-MM-DD) keeps one open next_action milestone in step so the Hub's Next token has a date;
+ * a holder, government or partner that names an organisation writes the project_organisations link.
  */
 import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
 import type { RouteDeps } from './index.ts';
 import { bad, canSee, jsonBody, loadAccess, notFound, requireWritableProject, route, scopeLabel } from './common.ts';
 import { readOpportunityFields, stageEntry } from '../opportunities.ts';
+import { ensureNextActionMilestone, readDate } from './milestones.routes.ts';
+import { linkRegisterCounterparties } from './organisations.routes.ts';
+import { projectView } from './projects.routes.ts';
 
 const STATUSES = ['prospect', 'active', 'closed', 'archived'];
 const FIELDS = new Set(['stage', 'status', 'country', 'lat', 'lon', 'register']);
@@ -44,20 +50,30 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       if (b.status === 'archived' && p.status !== 'archived') register = { ...(register ?? {}), status_before_archive: p.status };
       if (b.status !== 'archived' && p.status === 'archived') register = { ...(register ?? {}), status_before_archive: null };
     }
+    // Wave 7 PR3 (S2): the next action's date lives on the milestone, not in the register.
+    const nextText = typeof register?.next === 'string' && register.next.trim() ? register.next.trim() : null;
+    let nextDue: string | null | undefined;
+    if (register && register.next_due !== undefined) {
+      nextDue = readDate(register.next_due, '/register/next_due');
+      const { next_due: _drop, ...rest } = register;
+      register = rest;
+    }
     if (register !== undefined) set('register', JSON.stringify(register), '::jsonb');
     const stageChange = opp.stage !== undefined && opp.stage !== p.stage ? { from: p.stage, to: opp.stage } : null;
     if (stageChange) {
       set('stage', stageChange.to);
       set('stage_history', JSON.stringify([...p.stage_history, stageEntry(stageChange.to, x.person.id, x.now)]), '::jsonb');
+      set('stage_changed_at', x.now.toISOString(), '::timestamptz');
     }
     if (sets.length) {
       // register merges: existing fields survive unless the patch names them; a key sent as null is cleared.
       const sql = `UPDATE projects SET ${sets.map(s => s.startsWith('register =') ? s.replace(/^register = (\$\d+::jsonb)$/, 'register = jsonb_strip_nulls(register || $1)') : s).join(', ')} WHERE id = $1`;
       await x.db.query(sql, params);
     }
-    x.a.detail = { fields: keys, ...(stageChange ? { stage: stageChange } : {}) };
-    const fresh = (await loadAccess(x.db, x.person, x.now)).projects.get(id)!;
-    const contacts = (await x.db.query<{ contact_id: string }>('SELECT contact_id FROM project_contacts WHERE project_id = $1 ORDER BY contact_id', [id])).rows.map(r => r.contact_id);
-    return { body: { ...fresh, contacts } };
+    const milestone = nextText ? await ensureNextActionMilestone(x.db, id, x.person.id, nextText, nextDue, x.now) : null;
+    const linked = register ? await linkRegisterCounterparties(x.db, id, register) : [];
+    x.a.detail = { fields: keys, ...(stageChange ? { stage: stageChange } : {}), ...(milestone ? { next_milestone: milestone.id } : {}), ...(linked.length ? { linked } : {}) };
+    const freshAcc = await loadAccess(x.db, x.person, x.now);
+    return { body: await projectView(x, freshAcc, freshAcc.projects.get(id)!) };
   });
 }

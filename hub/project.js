@@ -19,13 +19,17 @@
      POST/DELETE /api/projects/:id/assets  wave 3: attach (filing the dossier) and detach
      GET /api/queue/review?kind=asset    wave 3: fields named in documents, proposed for this project
      POST /api/queue/review/:id/accept|reject  wave 3: attach the proposal (with a chosen candidate or by name) or dismiss it
+     GET /api/projects/:id/standing      wave 7 PR3 (H1, W7-AC12): the "Where it stands" strip under the stateline: the figure per
+                                         job with unit, as-of and status, open decisions, counterparties, deadlines, since you opened
+     GET /api/assets/:id/file            wave 7 PR3 (H3, W7-AC14): the asset panel (runs, documents, analogues, wells) and the counts
+     POST /api/runs/:id/status           wave 7 PR3 (H6, W7-AC11): Mark reviewed (members) and Mark final (partners), from the run panel
    Every string a person reads carries data-en and data-es.
    ============================================================ */
 import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, fmtStamp, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord, armOnOpen } from './hub.js';
 import './components/stale-badge.js';
 import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
-import { renderRecord, detailsNode } from './record.js';
+import { renderRecord, detailsNode, keyLabel as outputLabel } from './record.js';
 import './components/timeline-list.js';
 import { mountDraft } from './draft.js';
 import { annotate, fmtPct } from './components/vintage-table.js';
@@ -197,14 +201,19 @@ function statelineRow(ctx) {
   const stale = list.filter((e) => e.stale).length;
   const newest = list.filter((e) => e.kind === 'run' || e.kind === 'item').slice().sort((a, b) => (a.at < b.at ? 1 : -1))[0] || null;
   const exp = tagExpiry(p, orgFile);
+  // Wave 7 PR3 (H1): the standing endpoint's dated facts win: next with its due date, stage since, the NDA expiry the project carries.
+  const st = ctx.standing || null;
+  const stStale = st && st.stale_counts ? Number(st.stale_counts.runs || 0) + Number(st.stale_counts.items || 0) : null;
   return {
     ...p,
+    stage_changed_at: p.stage_changed_at || (st && st.project && st.project.stage_since) || null,
+    next: st && st.next && typeof st.next === 'object' ? st.next : null,
     run_count: typeof p.run_count === 'number' ? p.run_count : runs,
     item_count: typeof p.item_count === 'number' ? p.item_count : docs,
-    stale_count: typeof p.stale_count === 'number' ? p.stale_count : stale,
-    last_activity: newest ? { title: newest.title || newest.job || newest.id, at: newest.at, ref: newest.ref || (newest.kind === 'run' ? 'run:' : 'doc:') + newest.id } : null,
-    last_activity_at: newest ? newest.at : p.last_activity_at || null,
-    legal_tag_expiry: exp ? exp.date : p.legal_tag_expiry || null,
+    stale_count: typeof p.stale_count === 'number' ? p.stale_count : stStale !== null ? stStale : stale,
+    last_activity: (st && st.last_activity && st.last_activity.at ? st.last_activity : null) || (newest ? { title: newest.title || newest.job || newest.id, at: newest.at, ref: newest.ref || (newest.kind === 'run' ? 'run:' : 'doc:') + newest.id } : null),
+    last_activity_at: (st && st.last_activity && st.last_activity.at) || (newest ? newest.at : p.last_activity_at || null),
+    legal_tag_expiry: p.legal_tag_expiry || (exp ? exp.date : null),
   };
 }
 
@@ -230,6 +239,179 @@ function renderStateline(ctx) {
     if (location.hash === hash) routeHash(); else location.hash = hash;
   });
   add(host, el);
+  renderStanding(ctx);
+}
+
+/* ── wave 7 PR3 (H1, H4, W7-AC12): "Where it stands" ─────────────────── */
+
+/** A figure as the page shows every number: value in tabular figures, its unit, then "as of <date>" and a source chip that opens the record. */
+function figureNode(value, unit) {
+  const f = mk('span', 'hub-figure');
+  add(f, dv('span', 'hub-num', typeof value === 'number' ? num(value) : value));
+  if (unit) add(f, document.createTextNode(' '), dv('span', 'hub-unit', unit));
+  return f;
+}
+// A figure whose provenance is 'register' has no source behind it yet (G5): the chip says so, and opens the editor.
+const PROVENANCE_WORD = { run: ['run', 'ejecución'], register: ['unsourced', 'sin fuente'], research: ['research', 'investigación'], document: ['document', 'documento'] };
+/** "as of 28 Sept 2026" with the source chip: the run's status pill (draft, reviewed, final) that opens the run, or the register / document it came from. */
+function asOfChip(fig, opts) {
+  const o = opts || {};
+  const wrap = mk('span', 'hub-asof', null, null, { 'data-asof': fig.as_of ? String(fig.as_of).slice(0, 10) : '', 'data-source': fig.source_ref || '' });
+  if (fig.as_of) { const d = fmtShortDate(fig.as_of); add(wrap, mk('span', 'hub-asof-date', 'as of ' + d.en, 'al ' + d.es)); }
+  const ref = fig.source_ref || '';
+  const isRun = /^run:/.test(ref), isDoc = /^doc:/.test(ref);
+  const status = fig.run_status || (isRun ? 'draft' : null);
+  if (isRun || isDoc) {
+    const s = status ? (RUN_STATUS[status] || [status, status, 'muted']) : ['document', 'documento', 'muted'];
+    const b = mk('button', 'hub-pill hub-src-chip ' + s[2], s[0], s[1], { type: 'button', 'data-status': status || 'document', 'data-open-source': ref, 'aria-label': (isRun ? 'Open the run (' : 'Open the document (') + s[0] + ')' });
+    b.addEventListener('click', () => openRecord({ ref, title: fig.title || fig.name, trigger: b }));
+    add(wrap, b);
+  } else {
+    const w = PROVENANCE_WORD[fig.provenance] || PROVENANCE_WORD[ref] || [ref || 'unsourced', ref || 'sin fuente'];
+    const unsourced = fig.provenance === 'register' || ref === 'register' || !ref;
+    if (o.openRegister && unsourced) {
+      const b = mk('button', 'hub-pill hub-src-chip warn', w[0], w[1], { type: 'button', 'data-status': 'unsourced', 'data-open-source': 'register', title: 'No source behind this figure yet: open the register' });
+      b.addEventListener('click', () => o.openRegister(fig.name === 'plan' ? 'op-plan' : 'op-current'));
+      add(wrap, b);
+    } else add(wrap, mk('span', 'hub-pill hub-src-chip ' + (unsourced ? 'warn' : 'ghost'), w[0], w[1], { 'data-status': unsourced ? 'unsourced' : fig.provenance || 'unsourced' }));
+  }
+  if (fig.stale) add(wrap, mk('span', 'hub-pill bad', 'stale', 'obsoleta', { 'data-stale': '1' }));
+  return wrap;
+}
+/** The register's current and plan as figures: from the standing endpoint when the Vault has computed them, else the register text (reading `current_kboed` when `current` is text). */
+export function registerFigures(project, standing) {
+  const reg = project.register || {};
+  const figs = ((standing && standing.figures) || []).filter((f) => f && f.job === 'register' && (f.name === 'current' || f.name === 'plan'));
+  const out = {};
+  for (const f of figs) out[f.name] = f;
+  const text = (v) => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+  if (!out.current) {
+    const v = typeof reg.current_kboed === 'number' ? reg.current_kboed : text(reg.current);
+    if (v !== null) out.current = { job: 'register', name: 'current', value: v, unit: 'kboe/d', as_of: reg.current_as_of || reg.current_date || null, source_ref: reg.current_source || 'register', provenance: reg.current_source ? 'document' : 'register', text: typeof reg.current === 'string' ? reg.current : null };
+    else if (typeof reg.current === 'string' && reg.current.trim()) out.current = { job: 'register', name: 'current', value: reg.current, unit: '', as_of: null, source_ref: reg.current_source || 'register', provenance: reg.current_source ? 'document' : 'register', text: reg.current };
+  }
+  if (!out.plan) { const v = text(reg.plan); if (v !== null) out.plan = { job: 'register', name: 'plan', value: v, unit: 'kboe/d', as_of: reg.plan_as_of || null, source_ref: 'register', provenance: 'register' }; }
+  return out;
+}
+const OPEN_LABEL = {
+  asset: ['field proposed', 'fields proposed', 'campo propuesto', 'campos propuestos', '/hub/queue.html'],
+  organisation: ['organisation proposed', 'organisations proposed', 'organización propuesta', 'organizaciones propuestas', '/hub/queue.html'],
+  research: ['fact from research', 'facts from research', 'hecho de la investigación', 'hechos de la investigación', '/hub/queue.html'],
+  round: ['round to confirm', 'rounds to confirm', 'ronda por confirmar', 'rondas por confirmar', '/hub/queue.html?kind=round'],
+};
+const DEADLINE_WORD = { next_action: ['next action', 'siguiente acción'], deadline: ['deadline', 'plazo'], reply_due: ['reply due', 'respuesta debida'], expiry: ['expiry', 'vencimiento'], data_room_closes: ['data room closes', 'cierre de la sala de datos'], nda: ['NDA', 'NDA'], invoice: ['invoice due', 'factura vence'], dispatch: ['awaiting acknowledgement', 'a la espera de acuse'] };
+const ROLE_WORD = { holder: ['holder', 'titular'], government: ['government', 'gobierno'], partner: ['partner', 'socio'], operator: ['operator', 'operador'], regulator: ['regulator', 'regulador'], counsel: ['counsel', 'asesor legal'], vendor: ['vendor', 'proveedor'], client: ['client', 'cliente'] };
+/** The hash a deadline's ref lands on: a run or document opens its panel, a tag the File card, a milestone the Next step. */
+const refHash = (ref) => (!ref ? 'next' : /^(run|doc):/.test(ref) ? 'rec=' + encodeURIComponent(ref) : /^tag:/.test(ref) ? 'file' : /^dispatch:/.test(ref) ? 'tab-docs' : 'next');
+
+/**
+ * The "Where it stands" strip, directly below the stateline: the figure per job (value · unit · as-of · status pill that opens the
+ * run), the open decisions as chips (each landing on the queue or the draft), the counterparties with their last contact, the
+ * deadlines with overdue in red, and "since you opened". Hidden when the Vault has no standing route (an older Vault), never a dash soup.
+ */
+function renderStanding(ctx) {
+  const host = $('#p-standing');
+  if (!host) return;
+  host.textContent = '';
+  const st = ctx.standing, p = ctx.project;
+  if (!st || isHoldingProject(p)) { host.setAttribute('hidden', ''); host.setAttribute('data-standing', st ? 'holding' : 'unavailable'); return; }
+  host.removeAttribute('hidden'); host.setAttribute('data-standing', 'ready');
+  const now = new Date(ctx.now || Date.now());
+  const group = (key, en, es) => { const g = mk('div', 'hub-st-group', null, null, { 'data-standing-group': key }); add(g, mk('span', 'hub-sl-label hub-st-label', en, es)); const body = mk('div', 'hub-st-body'); add(g, body); return [g, body]; };
+  const pageHash = (hash) => '/hub/project.html?id=' + encodeURIComponent(p.id) + '#' + hash;
+
+  // Figures: one per job, the register's current and plan among them.
+  const figs = Array.isArray(st.figures) ? st.figures.filter((f) => f && f.value !== null && f.value !== undefined) : [];
+  if (figs.length) {
+    const [g, body] = group('figures', 'Figures', 'Cifras');
+    for (const f of figs) {
+      const row = mk('div', 'hub-st-fig', null, null, { 'data-figure': f.job + ':' + f.name, 'data-job': f.job || '', 'data-run-status': f.run_status || '', ...(f.asset_id ? { 'data-asset': f.asset_id } : {}) });
+      const lab = f.job === 'register' ? (f.name === 'current' ? { en: 'Fact today', es: 'Hecho hoy' } : f.name === 'plan' ? { en: "Operator's plan", es: 'Plan del operador' } : outputLabel(f.name, f.unit)) : outputLabel(f.name, f.unit);
+      const jobTool = f.job && f.job !== 'register' && ctx.catalog && ctx.catalog.catalog ? (ctx.catalog.catalog.tools || []).find((t) => t.id === f.job) : null;
+      add(row, mk('span', 'hub-st-fig-label', lab.en + (jobTool ? ' · ' + jobTool.name : ''), lab.es + (jobTool ? ' · ' + jobTool.name : '')), figureNode(f.value, f.unit), asOfChip(f, { openRegister: ctx.openRegisterEditor }));
+      add(body, row);
+    }
+    add(host, g);
+  }
+
+  // Open decisions as chips.
+  const open = st.open || {};
+  const chips = [];
+  const chip = (key, n, one, many, oneEs, manyEs, href, tone) => { if (!n) return; const a = mk('a', 'hub-chip hub-st-chip' + (tone ? ' ' + tone : ''), n + ' ' + (n === 1 ? one : many), n + ' ' + (n === 1 ? oneEs : manyEs), { href, 'data-open': key, 'data-count': String(n) }); chips.push(a); };
+  for (const [k, n] of Object.entries(open.proposals || {})) { const w = OPEN_LABEL[k] || [k + ' proposal', k + ' proposals', 'propuesta ' + k, 'propuestas ' + k, '/hub/queue.html?kind=' + encodeURIComponent(k)]; chip('proposals:' + k, Number(n || 0), w[0], w[1], w[2], w[3], w[4]); }
+  chip('filing', Number(open.filing || 0), 'message to file', 'messages to file', 'mensaje por archivar', 'mensajes por archivar', '/hub/queue.html');
+  chip('questions', Number(open.questions_in_drafts || 0), 'question in a draft', 'questions in drafts', 'pregunta en un borrador', 'preguntas en borradores', pageHash('tab-docs'));
+  chip('unanswered', Number(open.unanswered_inbound || 0), 'reply overdue', 'replies overdue', 'respuesta atrasada', 'respuestas atrasadas', pageHash('tab-docs'), 'bad');
+  chip('dispatches', Number(open.unacknowledged_dispatches || 0), 'dispatch unacknowledged', 'dispatches unacknowledged', 'envío sin acuse', 'envíos sin acuse', pageHash('file'), 'warn');
+  if (chips.length) { const [g, body] = group('open', 'Open', 'Abierto'); body.classList.add('hub-chips'); for (const c of chips) add(body, c); add(host, g); }
+
+  // Counterparties with their last contact: "Frontera · Jorge Ruiz · 5 Oct".
+  const cps = Array.isArray(st.counterparties) ? st.counterparties : [];
+  if (cps.length) {
+    const [g, body] = group('counterparties', 'Counterparties', 'Contrapartes');
+    for (const c of cps) {
+      const row = mk('a', 'hub-st-cp', null, null, { href: pageHash('file'), 'data-organisation': c.organisation_id || '', 'data-role': c.role || '' });
+      add(row, dv('b', null, c.name || c.organisation_id));
+      const rw = ROLE_WORD[c.role]; if (rw) add(row, mk('span', 'hub-st-role', ' ' + rw[0], ' ' + rw[1]));
+      if (c.last_contact_by) add(row, dv('span', null, ' · ' + c.last_contact_by));
+      if (c.last_contact_at) { const d = fmtShortDate(c.last_contact_at); add(row, mk('span', 'hub-muted', ' · ' + d.en, ' · ' + d.es)); } else add(row, mk('span', 'hub-muted', ' · no contact yet', ' · sin contacto todavía'));
+      add(body, row);
+    }
+    add(host, g);
+  }
+
+  // Deadlines, overdue in red.
+  const dls = Array.isArray(st.deadlines) ? st.deadlines : [];
+  if (dls.length) {
+    const [g, body] = group('deadlines', 'Deadlines', 'Plazos');
+    for (const d of dls) {
+      const overdue = d.overdue === true || (!!d.due_at && Date.parse(String(d.due_at).slice(0, 10) + 'T23:59:59Z') < now.getTime());
+      const row = mk('a', 'hub-st-deadline' + (overdue ? ' is-overdue' : ''), null, null, { href: pageHash(refHash(d.ref)), 'data-deadline': d.kind || '', 'data-overdue': String(overdue), 'data-ref': d.ref || '' });
+      const kw = DEADLINE_WORD[d.kind] || [String(d.kind || '').replace(/_/g, ' '), String(d.kind || '').replace(/_/g, ' ')];
+      add(row, mk('span', 'hub-st-role', kw[0], kw[1]), document.createTextNode(' '), dv('span', null, d.title));
+      if (d.due_at) { const dd = fmtShortDate(d.due_at); add(row, mk('span', 'hub-st-due', ' · ' + dd.en + (overdue ? ' · overdue' : ''), ' · ' + dd.es + (overdue ? ' · vencido' : ''))); }
+      add(body, row);
+    }
+    add(host, g);
+  }
+
+  // Since you opened: 2 runs, 3 documents, 5 emails.
+  const since = st.since || null;
+  const n = (k) => Number((since && since[k]) || 0);
+  if (since && (n('runs') || n('items') || n('mail'))) {
+    // opened_at null: the caller never opened this project, so the counts are everything since it began.
+    const [g, body] = since.opened_at ? group('since', 'Since you opened', 'Desde que lo abrió') : group('since', 'First time here: so far', 'Primera vez aquí: hasta ahora');
+    const bits = [], bitsEs = [];
+    if (n('runs')) { bits.push(n('runs') + (n('runs') === 1 ? ' run' : ' runs')); bitsEs.push(n('runs') + (n('runs') === 1 ? ' ejecución' : ' ejecuciones')); }
+    if (n('items')) { bits.push(n('items') + (n('items') === 1 ? ' document' : ' documents')); bitsEs.push(n('items') + (n('items') === 1 ? ' documento' : ' documentos')); }
+    if (n('mail')) { bits.push(n('mail') + (n('mail') === 1 ? ' email' : ' emails')); bitsEs.push(n('mail') + (n('mail') === 1 ? ' correo' : ' correos')); }
+    const a = mk('a', 'hub-st-since', null, null, { href: pageHash('timeline'), 'data-since': since.opened_at || '' });
+    add(a, mk('span', null, bits.join(', '), bitsEs.join(', ')));
+    if (since.opened_at) { const d = fmtStamp(since.opened_at); add(a, mk('span', 'hub-muted', ' · opened ' + d.en, ' · abierto ' + d.es)); }
+    add(body, a);
+    add(host, g);
+  }
+  if (!host.childNodes.length) add(host, mk('span', 'hub-muted hub-st-empty', 'No figures, decisions or deadlines yet: the first run or email fills this line.', 'Aún sin cifras, decisiones ni plazos: la primera ejecución o correo llena esta línea.'));
+  // Each in-page link routes through the hash, as the stateline's tokens do.
+  host.addEventListener('click', (ev) => {
+    const a = ev.target.closest('a[href]');
+    if (!a) return;
+    const u = new URL(a.href, location.href);
+    if (u.pathname !== location.pathname || u.search !== location.search || !u.hash) return;
+    ev.preventDefault();
+    if (location.hash === u.hash) routeHash(); else location.hash = u.hash;
+  });
+}
+
+/** Re-fetch what a run's status changes: the standing strip, the headline numbers and the KPI tiles (wave 7 PR3, H6). */
+async function refreshHeadlines(ctx) {
+  const enc = encodeURIComponent(ctx.project.id);
+  const [stR, vR] = await Promise.all([api('/api/projects/' + enc + '/standing'), api('/api/projects/' + enc + '/vintages')]);
+  if (stR.ok && stR.body) ctx.standing = stR.body;
+  if (vR.ok) { ctx.vintages = listOf(vR.body, 'vintages'); const vt = $('#vint'); if (vt) vt.vintages = ctx.vintages; }
+  renderStateline(ctx);
+  renderKpis(ctx, ctx.card || { pass: 0, fail: 0, na: 6, rag: 'r' });
+  if (!isHoldingProject(ctx.project)) renderOpportunity(ctx);
 }
 
 /** The tools whose jobs appear on this project's timeline, in toolbar order first, then the rest. */
@@ -238,6 +420,16 @@ function orderedTools(ctx, cat) {
   const jobs = new Set((ctx.entries || []).filter((e) => e.kind === 'run' && e.job).map((e) => e.job));
   const byToolbar = (a, b) => (a.hub.toolbar ?? 999) - (b.hub.toolbar ?? 999);
   return [...tools.filter((t) => jobs.has(t.id)).sort(byToolbar), ...tools.filter((t) => !jobs.has(t.id)).sort(byToolbar)].map((t) => ({ tool: t, produced: jobs.has(t.id) }));
+}
+
+/** The tools that read ?asset= beside ?project= (wave 7 PR3, A10): the nodal analysis and the reservoir simulator, and any tool whose manifest says so. */
+const ASSET_TOOLS = new Set(['nodal-analysis', 'reservoir-simulator']);
+/** The first attached field (kind field, else the first attached asset of any kind): what a new run is about by default. */
+function firstAttachedField(ctx) {
+  const fields = Array.isArray(ctx.fields) ? ctx.fields : [];
+  const ids = Array.isArray(ctx.project.asset_ids) ? ctx.project.asset_ids : [];
+  const f = fields.find((x) => x.kind === 'field' && ids.includes(x.id)) || fields.find((x) => x.kind === 'field') || fields[0] || null;
+  return f ? f.id : ids[0] || null;
 }
 
 /** A small menu under a button: opens on click, closes on Escape, outside click or a choice; focus returns to the button. */
@@ -276,6 +468,9 @@ function renderActions(ctx) {
       const u = new URL(target.href);
       // Wave 7 (S28): only a browser tool reads ?project=; an external app opens as itself.
       if (!target.external) u.searchParams.set(t.hub.param || 'project', p.id); else external++;
+      // Wave 7 PR3 (H3, W7-AC14): the nodal and simulator links carry the first attached field, so a run names its well under it.
+      const firstField = firstAttachedField(ctx);
+      if (!target.external && firstField && ASSET_TOOLS.has(t.id)) u.searchParams.set('asset', firstField);
       const a = mk('a', 'hub-menu-item', null, null, { href: u.href, role: 'menuitem', 'data-toolbar-tool': t.id, 'data-external': target.external ? '1' : '0', 'data-produced': produced ? '1' : '0' });
       a.insertAdjacentHTML('afterbegin', svgIcon('<path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>'));
       add(a, dv('span', null, t.name));
@@ -315,7 +510,8 @@ function renderActions(ctx) {
 const pnotices = () => $('#p-notices');
 const stageEntries = (p) => {
   const hist = Array.isArray(p.stage_history) ? p.stage_history : [];
-  return hist.map((h, i) => ({ kind: 'stage', id: 'stage-' + i, ref: 'stage:' + i, at: h.at, title: h.stage, from: i ? hist[i - 1].stage : null, by: h.by, stale: false }));
+  // Wave 7 PR3 (H2): only the current stage's change is foreground; the older ones sit in Background.
+  return hist.map((h, i) => ({ kind: 'stage', id: 'stage-' + i, ref: 'stage:' + i, at: h.at, title: h.stage, from: i ? hist[i - 1].stage : null, by: h.by, stale: false, class: i === hist.length - 1 ? 'foreground' : 'background' }));
 };
 function refreshTimeline(ctx) {
   const tl = $('#tl');
@@ -387,14 +583,39 @@ async function changeStage(ctx, sel) {
     Object.assign(p, res.body);
     sel.value = p.stage;
     add(notices, notice('ok', 'Stage is now ' + p.stage + '.', 'La etapa ahora es ' + (STAGE_ES[p.stage] || p.stage) + '.', 'Recorded on the timeline.', 'Registrado en la cronología.'));
+    if (!p.stage_changed_at) p.stage_changed_at = new Date(ctx.now || Date.now()).toISOString();   // an older Vault without the column: since now
     refreshTimeline(ctx);
     renderStateline(ctx);                                     // wave 7 (R1): the stateline states the new stage and since when
+    offerStatus(ctx);                                         // wave 7 PR3 (H8): Won offers Active; Lost and Closed offer Closed
   } else {
     sel.value = was;
     const msg = errMessage(res);
     if (res.status === 0) add(notices, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The stage was not changed.', 'No se cambió la etapa.'));
     else add(notices, notice('bad', 'The stage was not changed.', 'No se cambió la etapa.', msg || 'HTTP ' + res.status, msg || 'HTTP ' + res.status));
   }
+}
+
+/** Wave 7 PR3 (H8): after a stage change, the status that usually follows is one tap away; nothing changes until it is tapped. */
+function offerStatus(ctx) {
+  const p = ctx.project;
+  const want = p.stage === 'Won' ? 'active' : p.stage === 'Lost' || p.stage === 'Closed' ? 'closed' : null;
+  if (!want || p.status === want || p.status === 'archived') return;
+  const n = notice('info', want === 'active' ? 'Won: make it an active job?' : 'Set the status to Closed?', want === 'active' ? 'Ganada: ¿convertirla en trabajo activo?' : '¿Pasar el estado a Cerrado?',
+    want === 'active' ? 'The project stays a prospect until you say so.' : 'The project keeps its status until you say so.', want === 'active' ? 'El proyecto sigue siendo un prospecto hasta que lo indique.' : 'El proyecto conserva su estado hasta que lo indique.');
+  n.setAttribute('data-offer-status', want);
+  const row = mk('div', 'hub-actions-row');
+  const yes = mk('button', 'btn btn-primary btn-sm', want === 'active' ? 'Set status Active' : 'Set status Closed', want === 'active' ? 'Estado: Activo' : 'Estado: Cerrado', { type: 'button', 'data-set-status': want });
+  const no = mk('button', 'btn btn-outline btn-sm', 'Not now', 'Ahora no', { type: 'button', 'data-set-status': '' });
+  yes.addEventListener('click', async () => {
+    yes.disabled = no.disabled = true;
+    const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ status: want }) });
+    if (res.ok && res.body) { Object.assign(p, res.body); n.remove(); renderHeader(ctx); add(pnotices(), notice('ok', 'Status is now ' + (STATUS_PILL[p.status] || [p.status])[0] + '.', 'El estado ahora es ' + (STATUS_PILL[p.status] || [p.status, p.status])[1] + '.', 'The stage stays ' + p.stage + '.', 'La etapa sigue siendo ' + (STAGE_ES[p.stage] || p.stage) + '.')); return; }
+    yes.disabled = no.disabled = false;
+    add(n, notice('bad', 'The status was not changed.', 'No se cambió el estado.', errMessage(res) || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), errMessage(res) || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.')));
+  });
+  no.addEventListener('click', () => n.remove());
+  add(row, yes, no); add(n, row);
+  add(pnotices(), n);
 }
 
 /** Wave 4: licence types on the register, bilingual (value, English, Spanish). */
@@ -427,8 +648,20 @@ function renderOpportunity(ctx) {
   const whereEs = p.country ? (cn ? cn.es : p.country) + (Number.isFinite(p.lat) && Number.isFinite(p.lon) ? ' · ' + p.lat + ', ' + p.lon : '') : null;
   field('where', 'Where', 'Dónde', where ? mk('span', null, where, whereEs) : mk('span', 'hub-muted', 'not placed yet', 'sin ubicar todavía'));
   field('source', 'Source', 'Origen', reg.source ? dv('span', null, reg.source) : mk('span', 'hub-muted', '—', '—'));
-  const hasProd = typeof reg.current === 'number' || typeof reg.plan === 'number';
-  field('plan', 'Fact → plan', 'Hecho → plan', hasProd ? dv('span', null, (reg.current ?? '—') + ' → ' + (reg.plan ?? '—') + ' kboe/d') : mk('span', 'hub-muted', '—', '—'), 'big');
+  // Wave 7 PR3 (H4, W7-AC15): the two register figures carry unit, as-of and their source chip; `current_kboed` is read when `current` is text.
+  const rf = registerFigures(p, ctx.standing);
+  if (rf.current || rf.plan) {
+    const node = mk('span', 'hub-reg-figures');
+    const one = (f, key) => {
+      const w = mk('span', 'hub-reg-fig', null, null, { 'data-register-figure': key });
+      if (!f) { add(w, mk('span', 'hub-muted', '—', '—')); return w; }
+      add(w, figureNode(f.value, f.unit), document.createTextNode(' '), asOfChip(f, { openRegister: (id) => { form.removeAttribute('hidden'); edit.setAttribute('aria-expanded', 'true'); const el = $('#' + id); if (el) el.focus(); } }));
+      if (f.text && typeof f.value === 'number') w.setAttribute('title', f.text);
+      return w;
+    };
+    add(node, one(rf.current, 'current'), mk('span', 'hub-reg-arrow', ' → ', ' → ', { 'aria-hidden': 'true' }), one(rf.plan, 'plan'));
+    field('plan', 'Fact → plan', 'Hecho → plan', node, 'big');
+  } else field('plan', 'Fact → plan', 'Hecho → plan', mk('span', 'hub-muted', '—', '—'), 'big');
   const risk = mk('span');
   if (reg.risk) { const rl = RISK_LABEL[reg.risk] || [reg.risk, reg.risk]; add(risk, mk('span', 'hub-rag', null, null, { 'data-risk': reg.risk, 'aria-hidden': 'true' }), mk('span', null, rl[0] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''), rl[1] + (typeof reg.risk_score === 'number' ? ' ' + reg.risk_score : ''))); }
   else add(risk, mk('span', 'hub-muted', 'not assessed', 'sin evaluar'));
@@ -469,7 +702,7 @@ function renderOpportunity(ctx) {
   fld('op-licence-note', 'Licence note', 'Nota de la licencia', inp('op-licence-note', 'text', reg.licence_note));
   fld('op-partners', 'JV partners, comma separated', 'Socios, separados por comas', inp('op-partners', 'text', partners.join(', ')));
   fld('op-owner', 'Lead at the firm', 'Responsable en la firma', inp('op-owner', 'text', reg.owner));
-  fld('op-current', 'Fact today, kboe/d', 'Hecho hoy, kboe/d', inp('op-current', 'number', reg.current, { min: '0', step: '0.1', inputmode: 'decimal' }));
+  fld('op-current', 'Fact today, kboe/d', 'Hecho hoy, kboe/d', inp('op-current', 'number', typeof reg.current === 'number' ? reg.current : typeof reg.current_kboed === 'number' ? reg.current_kboed : (Number.isFinite(Number(reg.current)) && String(reg.current).trim() !== '' ? Number(reg.current) : ''), { min: '0', step: '0.1', inputmode: 'decimal' }));
   fld('op-plan', "Operator's plan, kboe/d", 'Plan del operador, kboe/d', inp('op-plan', 'number', reg.plan, { min: '0', step: '0.1', inputmode: 'decimal' }));
   const riskSel = mk('select', null, null, null, { id: 'op-risk' });
   for (const [v, en, es] of RISK_OPTS) add(riskSel, mk('option', null, en, es, { value: v }));
@@ -481,6 +714,9 @@ function renderOpportunity(ctx) {
   const wide = (id, en, es, ta) => add(fg, add(mk('div', 'hub-field hub-opp-text'), mk('label', null, en, es, { for: id }), ta));
   wide('op-thesis', 'Thesis', 'Tesis', thesis);
   wide('op-next', 'Next step', 'Siguiente paso', next);
+  // Wave 7 PR3 (H1): an optional date for the next step; the Vault keeps one open next_action milestone in step with it.
+  const nextDue = ctx.standing && ctx.standing.next && ctx.standing.next.due_at ? String(ctx.standing.next.due_at).slice(0, 10) : reg.next_due ? String(reg.next_due).slice(0, 10) : '';
+  fld('op-next-due', 'By when (optional)', 'Para cuándo (opcional)', inp('op-next-due', 'date', nextDue));
   add(form, fg);
   const fn = mk('div', null, null, null, { id: 'op-notices', role: 'status' });
   const actions = mk('div', 'hub-actions');
@@ -515,6 +751,9 @@ function renderOpportunity(ctx) {
     setOrDrop('risk_score', numOrNull($('#op-risk-score')));
     setOrDrop('thesis', thesis.value.trim());
     setOrDrop('next', next.value.trim());
+    // The date is a request to the milestone, not a register field: send it only when one is given.
+    const nextDueVal = $('#op-next-due').value.trim();
+    if (nextDueVal) register.next_due = nextDueVal;
     const body = { country: country.value || null, lat: numOrNull($('#op-lat')), lon: numOrNull($('#op-lon')), register };
     save.disabled = true;
     const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -522,6 +761,8 @@ function renderOpportunity(ctx) {
     if (res.ok && res.body) {
       // The API answers with the merged register; a cleared field stays until a reload, so keep the client's view authoritative for what it just sent.
       Object.assign(p, res.body, { register });
+      // The standing's next milestone follows the register (the Vault keeps them in step); the stateline reads it.
+      if (ctx.standing) ctx.standing.next = register.next ? { title: register.next, due_at: register.next_due || null, owner: register.owner || null, ref: (ctx.standing.next && ctx.standing.next.ref) || null } : null;
       renderHeader(ctx); renderOpportunity(ctx);              // the stateline's Next token follows the register
       return;
     }
@@ -532,7 +773,9 @@ function renderOpportunity(ctx) {
 
 /* ── wave 3: the Fields card ─────────────────────────────────────────── */
 
-const KIND_WORD = { field: ['field', 'campo'], block: ['block', 'bloque'], basin: ['basin', 'cuenca'], well: ['well', 'pozo'] };
+const KIND_WORD = { field: ['field', 'campo'], block: ['block', 'bloque'], basin: ['basin', 'cuenca'], reservoir: ['reservoir', 'yacimiento'], well: ['well', 'pozo'] };
+/** Wave 7 PR3 (H3, W7-AC14): the kinds Add field can create, in the order of the hierarchy, and the kinds a parent may be for each. */
+const ASSET_KINDS = [['basin', 'Basin', 'Cuenca'], ['block', 'Block', 'Bloque'], ['field', 'Field', 'Campo'], ['reservoir', 'Reservoir', 'Yacimiento'], ['well', 'Well', 'Pozo']];
 const kindWord = (k) => { const w = KIND_WORD[k] || [k, k]; return mk('span', 'hub-kind', w[0], w[1], { 'data-kind': k }); };
 const coordText = (o) => (Number.isFinite(o.lat) && Number.isFinite(o.lon) ? o.lat + ', ' + o.lon : null);
 const srcPill = (src) => { const w = sourceWord(src); return mk('span', 'hub-pill ghost hub-src', w.en, w.es, { 'data-source': src || '' }); };
@@ -578,16 +821,110 @@ function candidateRow(ctx, c, onAttach) {
   return li;
 }
 
-/** The body posted to attach a candidate: the existing asset by id, or a new one carrying its source. */
-export function attachBody(c, projectCountry) {
-  if (c.asset_id) return { asset_id: c.asset_id };
+/** The body posted to attach a candidate: the existing asset by id, or a new one carrying its source and, wave 7 PR3, its parent. */
+export function attachBody(c, projectCountry, parentId) {
+  if (c.asset_id) return parentId ? { asset_id: c.asset_id, parent_id: parentId } : { asset_id: c.asset_id };
   const create = { name: c.name, kind: c.kind || 'field' };
   if (Number.isFinite(c.lat) && Number.isFinite(c.lon)) { create.lat = c.lat; create.lon = c.lon; create.location_source = c.source; }
   if (c.source_id) create.source_id = c.source_id;
   if (c.source_url) create.source_url = c.source_url;
   if (c.detail) create.detail = c.detail;
   if (c.country || projectCountry) create.country = c.country || projectCountry;
+  if (parentId) create.parent_id = parentId;
   return create.name ? { create } : null;
+}
+
+/* ── wave 7 PR3 (H3, W7-AC14): the asset you can open ───────────────── */
+
+const COUNT_WORD = { runs: ['run', 'runs', 'ejecución', 'ejecuciones'], items: ['document', 'documents', 'documento', 'documentos'], analogues: ['analogue', 'analogues', 'análogo', 'análogos'], children: ['well', 'wells', 'pozo', 'pozos'] };
+/** "2 runs · 3 documents · 1 analogue · 2 wells" from an asset file; children that are not wells count as what they are. */
+function fileCounts(file) {
+  const n = (k) => (Array.isArray(file && file[k]) ? file[k].length : 0);
+  const wells = Array.isArray(file && file.children) ? file.children.filter((c) => c && c.kind === 'well').length : 0;
+  const others = n('children') - wells;
+  const parts = [['runs', n('runs')], ['items', n('items')], ['analogues', n('analogues')], ['children', wells]];
+  const en = parts.map(([k, v]) => v + ' ' + (v === 1 ? COUNT_WORD[k][0] : COUNT_WORD[k][1])), es = parts.map(([k, v]) => v + ' ' + (v === 1 ? COUNT_WORD[k][2] : COUNT_WORD[k][3]));
+  if (others) { en.push(others + (others === 1 ? ' other asset' : ' other assets')); es.push(others + (others === 1 ? ' otro activo' : ' otros activos')); }
+  return { en: en.join(' · '), es: es.join(' · '), runs: n('runs'), items: n('items'), analogues: n('analogues'), wells, others };
+}
+
+/** The asset panel in the record panel's chrome: the facts, the counts, then its runs, documents, analogues and wells, each opening its record, and Find similar. */
+async function openAssetPanel(ctx, f, trigger) {
+  const panel = $('#record-panel'), body = $('#rp-body');
+  if (!panel || !body) return;
+  const ref = 'asset:' + f.id;
+  if (panel.hasAttribute('hidden')) panelTrigger = trigger || document.activeElement;
+  const kw = KIND_WORD[f.kind] || [f.kind || 'asset', f.kind || 'activo'];
+  setText($('#rp-kind'), kw[0].charAt(0).toUpperCase() + kw[0].slice(1), kw[1].charAt(0).toUpperCase() + kw[1].slice(1));
+  setText($('#rp-title'), f.name || f.id);
+  panel.setAttribute('data-ref', ref);
+  panel.removeAttribute('hidden');
+  const scrim = $('#record-scrim'); if (scrim) scrim.removeAttribute('hidden');
+  document.body.classList.add('has-panel');
+  body.textContent = '';
+  add(body, mk('p', 'hub-muted', 'Loading the asset…', 'Cargando el activo…'));
+  $('#rp-title').focus();
+  const res = f.file && f.file.asset ? { ok: true, body: f.file } : await api('/api/assets/' + encodeURIComponent(f.id) + '/file');
+  if (panel.getAttribute('data-ref') !== ref) return;
+  body.textContent = '';
+  const file = res.ok && res.body ? res.body : null;
+  if (file) f.file = file;
+  const a = (file && file.asset) || f;
+  const meta = mk('p', 'hub-rp-meta', null, null, { 'data-meta': '' });
+  add(meta, kindWord(a.kind || f.kind));
+  if (a.parent_id) { const parent = (ctx.fields || []).find((x) => x.id === a.parent_id); add(meta, document.createTextNode(' · '), mk('span', null, 'in ', 'en '), dv('span', null, parent ? parent.name : a.parent_id, { 'data-parent': a.parent_id })); }
+  if (a.operator) add(meta, document.createTextNode(' · '), dv('span', null, a.operator));
+  if (a.country) { const cn = ctx.names && ctx.names.get(a.country); add(meta, document.createTextNode(' · '), cn ? mk('span', null, cn.en, cn.es) : dv('span', null, a.country)); }
+  const c = coordText(a); if (c) add(meta, document.createTextNode(' · '), dv('span', 'mono', c));
+  add(meta, document.createTextNode(' · '), srcPill(a.location_source));
+  add(body, meta);
+  if (!file) { add(body, notice('warn', 'The asset file could not be loaded.', 'No se pudo cargar el expediente del activo.', res.status === 404 || res.status === 501 ? 'This Vault does not keep asset files yet.' : errMessage(res) || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), res.status === 404 || res.status === 501 ? 'Este Vault aún no guarda expedientes de activos.' : errMessage(res) || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.'))); return; }
+  const counts = fileCounts(file);
+  add(body, mk('p', 'hub-note-s hub-asset-counts', counts.en, counts.es, { 'data-asset-counts': '' }));
+  const view = mk('div', 'hub-rp-view hub-asset-file', null, null, { 'data-view': '', 'data-mode': 'asset' });
+  const section = (key, en, es, rows, rowFn) => {
+    const sec = mk('section', 'hub-asset-sec', null, null, { 'data-asset-list': key });
+    add(sec, mk('h4', null, en + ' (' + rows.length + ')', es + ' (' + rows.length + ')'));
+    const ul = mk('ul', 'hub-rp-list');
+    if (!rows.length) add(ul, mk('li', 'hub-muted', 'None yet', 'Ninguno todavía'));
+    for (const r of rows) add(ul, rowFn(r));
+    add(sec, ul); add(view, sec);
+  };
+  const pivot = (ref, title, extra) => {
+    const li = mk('li', null, null, null, { 'data-ref': ref });
+    const b = dv('button', 'hub-linkbtn hub-rp-pivot', title, { type: 'button', 'data-pivot': ref });
+    b.addEventListener('click', () => openRecord({ ref, title, trigger: b }));
+    add(li, b); if (extra) add(li, document.createTextNode(' '), extra);
+    return li;
+  };
+  section('runs', 'Runs', 'Ejecuciones', file.runs || [], (r) => { const s = RUN_STATUS[r.status] || [r.status || '', r.status || '', 'muted']; const d = r.created_at ? fmtShortDate(r.created_at) : null; return pivot('run:' + r.id, r.title || r.job || r.id, add(mk('span', 'hub-muted'), r.status ? mk('span', 'hub-pill ' + s[2], s[0], s[1], { 'data-status': r.status }) : null, d ? mk('span', null, ' · ' + d.en, ' · ' + d.es) : null)); });
+  section('items', 'Documents', 'Documentos', file.items || [], (i) => { const d = i.created_at || i.authored_at ? fmtShortDate(i.authored_at || i.created_at) : null; return pivot('doc:' + i.id, i.title || i.id, add(mk('span', 'hub-muted'), i.type ? dv('span', null, i.type) : null, d ? mk('span', null, ' · ' + d.en, ' · ' + d.es) : null)); });
+  section('analogues', 'Analogues', 'Análogos', file.analogues || [], (r) => { const li = mk('li', null, null, null, { 'data-analogue': r.id || '' }); add(li, dv('b', null, r.asset_id || r.name || r.id), r.play_type ? dv('span', 'hub-muted', ' · ' + r.play_type) : null, r.provenance ? dv('span', 'hub-muted', ' · ' + r.provenance) : null); return li; });
+  section('children', 'Wells and other assets under it', 'Pozos y otros activos bajo él', file.children || [], (ch) => { const li = mk('li', null, null, null, { 'data-child': ch.id, 'data-kind': ch.kind || '' }); const b = dv('button', 'hub-linkbtn hub-rp-pivot', ch.name || ch.id, { type: 'button', 'data-open-asset': ch.id }); b.addEventListener('click', () => openAssetPanel(ctx, { ...ch, file: null }, b)); add(li, b, document.createTextNode(' '), kindWord(ch.kind || 'well')); return li; });
+  const dossier = Array.isArray(file.dossier) ? file.dossier : [];
+  if (dossier.length) section('dossier', 'Dossier', 'Dosier', dossier, (d) => pivot('doc:' + (d.id || d), (d.title || 'Field dossier: ' + (a.name || f.name))));
+  add(body, view);
+  // Find similar: the k nearest analogue rows in this project's scope, with their distance, listed here.
+  const actions = mk('div', 'hub-rp-actions hub-actions-row', null, null, { 'data-actions': '' });
+  const sim = mk('button', 'btn btn-outline btn-sm', 'Find similar', 'Buscar similares', { type: 'button', 'data-action': 'find-similar' });
+  const simHost = mk('div', null, null, null, { 'data-similar-host': '' });
+  sim.addEventListener('click', async () => {
+    sim.disabled = true; simHost.textContent = '';
+    const r = await api('/api/analogues/similar?scope=' + encodeURIComponent('project:' + ctx.project.id) + '&asset=' + encodeURIComponent(f.id) + '&k=5');
+    sim.disabled = false;
+    if (!r.ok) { add(simHost, notice('warn', 'No similar rows found.', 'No se encontraron filas similares.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.'))); return; }
+    const hits = listOf(r.body, 'hits', 'rows');
+    const sec = mk('section', 'hub-asset-sec', null, null, { 'data-asset-list': 'similar' });
+    add(sec, mk('h4', null, 'Nearest analogues (' + hits.length + ')', 'Análogos más cercanos (' + hits.length + ')'));
+    const ul = mk('ul', 'hub-rp-list');
+    if (!hits.length) add(ul, mk('li', 'hub-muted', 'Nothing comparable in this scope yet.', 'Nada comparable en este alcance todavía.'));
+    for (const hh of hits) { const row = hh.row || hh; const li = mk('li', null, null, null, { 'data-similar': row.id || row.asset_id || '' }); add(li, dv('b', null, row.asset_id || row.name || row.id), typeof hh.distance === 'number' ? dv('span', 'hub-muted mono', ' · ' + hh.distance.toFixed(2)) : null, row.play_type ? dv('span', 'hub-muted', ' · ' + row.play_type) : null); add(ul, li); }
+    add(sec, ul); add(simHost, sec);
+    add(simHost, mk('a', 'hub-inline-link', 'Open the analogues table', 'Abrir la tabla de análogos', { href: '/hub/analogues.html?scope=' + encodeURIComponent('project:' + ctx.project.id) }));
+  });
+  add(actions, sim, mk('a', 'btn btn-outline btn-sm', 'Analogues table', 'Tabla de análogos', { href: '/hub/analogues.html?scope=' + encodeURIComponent('project:' + ctx.project.id), 'data-action': 'analogues' }));
+  add(body, actions, simHost);
+  add(body, detailsNode(file));
 }
 
 /**
@@ -614,15 +951,29 @@ async function renderFields(ctx) {
   const res = await api('/api/projects/' + encodeURIComponent(p.id) + '/assets');
   ctx.fields = res.ok ? listOf(res.body, 'assets') : [];
   if (!res.ok) add(notices, notice('warn', 'The fields could not be loaded.', 'No se pudieron cargar los campos.', res.status ? 'HTTP ' + res.status + (errMessage(res) ? ': ' + errMessage(res) : '') : 'The Vault is unreachable.', res.status ? 'HTTP ' + res.status + (errMessage(res) ? ': ' + errMessage(res) : '') : 'El Vault no es accesible.'));
+  // Wave 7 PR3 (H3): each field's file, for the counts on its row (runs · documents · analogues · wells); an older Vault answers 404 and the row shows no counts.
+  const loadFiles = async () => { await Promise.all(ctx.fields.map(async (f) => { if (f.file !== undefined) return; const r = await api('/api/assets/' + encodeURIComponent(f.id) + '/file'); f.file = r.ok && r.body && typeof r.body === 'object' ? r.body : null; })); };
+  await loadFiles();
 
   const paint = () => {
     list.textContent = '';
     if (!ctx.fields.length) { add(list, mk('li', 'hub-empty', 'No fields attached yet. Add field searches the Vault, Global Energy Monitor, GeoNames and Wikidata.', 'Aún no hay campos adjuntos. Añadir campo busca en el Vault, Global Energy Monitor, GeoNames y Wikidata.')); return; }
     for (const f of ctx.fields) {
-      const li = mk('li', 'hub-field-row' + (f.location_check && f.location_check.outside ? ' outside' : ''), null, null, { 'data-field': f.id });
+      const li = mk('li', 'hub-field-row' + (f.location_check && f.location_check.outside ? ' outside' : ''), null, null, { 'data-field': f.id, 'data-kind': f.kind || '', ...(f.parent_id ? { 'data-parent': f.parent_id } : {}) });
       const main = mk('div');
       add(main, mk('span', 'dot', null, null, { 'aria-hidden': 'true' }), dv('b', null, f.name), fieldFacts(f, ctx.names));
       const actions = mk('div', 'hub-actions-row');
+      // Wave 7 PR3 (H3, W7-AC14): the counts open the asset panel.
+      if (f.file) {
+        const counts = fileCounts(f.file);
+        const cb = mk('button', 'btn btn-outline btn-sm hub-field-counts', counts.en, counts.es, { type: 'button', 'data-field-counts': f.id, 'data-runs': String(counts.runs), 'data-items': String(counts.items), 'data-analogues': String(counts.analogues), 'data-wells': String(counts.wells) });
+        cb.addEventListener('click', () => openAssetPanel(ctx, f, cb));
+        add(actions, cb);
+      } else {
+        const ob = mk('button', 'btn btn-outline btn-sm hub-field-counts', 'Open', 'Abrir', { type: 'button', 'data-field-open': f.id });
+        ob.addEventListener('click', () => openAssetPanel(ctx, f, ob));
+        add(actions, ob);
+      }
       const dossier = Array.isArray(f.dossier) ? f.dossier : [];
       if (dossier.length) {
         const b = mk('button', 'btn btn-outline btn-sm', dossier.length === 1 ? 'Dossier' : 'Dossier (' + dossier.length + ')', dossier.length === 1 ? 'Dosier' : 'Dosier (' + dossier.length + ')', { type: 'button', 'data-dossier': f.id });
@@ -820,6 +1171,25 @@ async function renderFields(ctx) {
   const go = mk('button', 'btn btn-primary btn-sm', 'Search', 'Buscar', { type: 'submit' });
   add(row, mk('label', 'sr-only', 'Field name', 'Nombre del campo', { for: 'fld-q' }), q, go);
   add(form, row);
+  // Wave 7 PR3 (H3, W7-AC14): what kind of asset, and under which of the project's assets, so a well is created under its field.
+  const pickers = mk('div', 'hub-fld-pickers');
+  const kindSel = mk('select', null, null, null, { id: 'fld-kind', 'aria-label': 'Kind of asset' });
+  for (const [v, en, es] of ASSET_KINDS) add(kindSel, mk('option', null, en, es, { value: v }));
+  kindSel.value = 'field';
+  const parentSel = mk('select', null, null, null, { id: 'fld-parent', 'aria-label': 'Under which asset' });
+  const paintParents = () => {
+    const was = parentSel.value;
+    parentSel.textContent = '';
+    add(parentSel, mk('option', null, 'No parent (top level)', 'Sin padre (nivel superior)', { value: '' }));
+    for (const f of ctx.fields) add(parentSel, dv('option', null, f.name + ' (' + (KIND_WORD[f.kind] ? KIND_WORD[f.kind][0] : f.kind) + ')', { value: f.id, 'data-kind': f.kind || '' }));
+    parentSel.value = [...parentSel.options].some((o) => o.value === was) ? was : '';
+  };
+  paintParents();
+  // A well sits under a field or reservoir by default: choosing the kind picks the first fitting parent when none is chosen.
+  const PARENT_OF = { well: ['field', 'reservoir', 'block'], reservoir: ['field'], field: ['block', 'basin'], block: ['basin'], basin: [] };
+  kindSel.addEventListener('change', () => { if (parentSel.value) return; const want = PARENT_OF[kindSel.value] || []; const f = ctx.fields.find((x) => want.includes(x.kind)); if (f) parentSel.value = f.id; });
+  add(pickers, add(mk('label', 'hub-fld-pick'), mk('span', null, 'Kind', 'Tipo'), kindSel), add(mk('label', 'hub-fld-pick'), mk('span', null, 'Under', 'Bajo'), parentSel));
+  add(form, pickers);
   const where = mk('p', 'hub-note-s');
   if (p.country) add(where, mk('span', null, 'Searching in ' + ((ctx.names && ctx.names.get(p.country)) || { en: p.country }).en + ': the Vault and Global Energy Monitor first, then GeoNames and Wikidata.', 'Buscando en ' + ((ctx.names && ctx.names.get(p.country)) || { es: p.country }).es + ': primero el Vault y Global Energy Monitor, luego GeoNames y Wikidata.'));
   else add(where, mk('span', null, 'The project has no country yet, so the search is worldwide.', 'El proyecto aún no tiene país, así que la búsqueda es mundial.'));
@@ -832,7 +1202,7 @@ async function renderFields(ctx) {
 
   const attach = async (c, btn, confirmOutside) => {
     notices.textContent = '';
-    const body = attachBody(c, p.country || null);
+    const body = attachBody(c, p.country || null, parentSel.value || null);
     if (!body) return;
     if (confirmOutside) body.confirm_outside = true;
     if (btn) btn.disabled = true;
@@ -847,10 +1217,11 @@ async function renderFields(ctx) {
       if (i >= 0) ctx.fields[i] = rowData; else ctx.fields.push(rowData);
       if (!(p.asset_ids || []).includes(a.id)) p.asset_ids = [...(p.asset_ids || []), a.id];
       const n = filed.length;
-      add(notices, notice('ok', (r.body.already ? a.name + ' was already attached.' : a.name + ' attached.'), (r.body.already ? a.name + ' ya estaba adjunto.' : a.name + ' adjuntado.'),
+      const parent = a.parent_id ? ctx.fields.find((x) => x.id === a.parent_id) : null;
+      add(notices, notice('ok', (r.body.already ? a.name + ' was already attached.' : a.name + ' attached' + (parent ? ' under ' + parent.name : '') + '.'), (r.body.already ? a.name + ' ya estaba adjunto.' : a.name + ' adjuntado' + (parent ? ' bajo ' + parent.name : '') + '.'),
         n ? n + (n === 1 ? ' dossier record filed from ' : ' dossier records filed from ') + sourceWord(a.location_source).en + '.' : 'No gazetteer record to file: no dossier.',
         n ? n + (n === 1 ? ' registro de dosier archivado desde ' : ' registros de dosier archivados desde ') + sourceWord(a.location_source).es + '.' : 'Sin registro de gacetero que archivar: sin dosier.'));
-      paint(); renderHeader(ctx); toggle(false); out.textContent = ''; q.value = '';
+      paint(); paintParents(); renderHeader(ctx); toggle(false); out.textContent = ''; q.value = '';
       return;
     }
     add(notices, notice('bad', 'Not attached.', 'No se adjuntó.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.')));
@@ -882,7 +1253,7 @@ async function renderFields(ctx) {
     const manual = mk('div', 'hub-candidate hub-candidate-manual');
     add(manual, add(mk('div'), dv('b', null, name), document.createTextNode(' '), mk('span', 'hub-note-s', 'Attach by name only; its location can come later from a document or a gazetteer.', 'Adjuntar solo por nombre; su ubicación puede llegar después desde un documento o un gacetero.')));
     const mb = mk('button', 'btn btn-outline btn-sm', 'Attach without a location', 'Adjuntar sin ubicación', { type: 'button', id: 'fld-manual' });
-    mb.addEventListener('click', () => attach({ name, kind: 'field', source: 'manual', country: p.country || null }, mb));
+    mb.addEventListener('click', () => attach({ name, kind: kindSel.value || 'field', source: 'manual', country: p.country || null }, mb));
     add(manual, mb);
     add(out, manual);
   });
@@ -1420,6 +1791,16 @@ async function openRecord({ ref, title, node, entry, trigger, passage, highlight
     highlight: highlight || null,         // the Find term, when opened from Find (?doc=…&q=…)
     passage: passage || null,
     siteRoot: new URL('../', location.href),
+    // Wave 7 PR3 (H6, W7-AC11): who may mark a run reviewed (members and partners) or final (partners); what the page refreshes after.
+    person: panelCtx.ctx ? panelCtx.ctx.person : null,
+    canWrite: panelCtx.ctx ? canWriteProject(panelCtx.ctx) : false,
+    onRunStatus: (runId, status) => {
+      const c = panelCtx.ctx; if (!c) return;
+      const e = panelCtx.entryById.get(runId); if (e) e.status = status;
+      for (const r of c.runs || []) if (r.id === runId) r.status = status;
+      refreshTimeline(c);
+      refreshHeadlines(c);
+    },
   };
   const content = await renderRecord({ kind, ref, rec, node, entry, ctx });
   if (panel.getAttribute('data-ref') !== ref) return;
@@ -1524,14 +1905,26 @@ function renderKpis(ctx, card) {
     for (const k of pick) {
       const o = newest.outputs[k], d = meta.deltas[k];
       const val = figure(o.value, o.unit);
-      const det = d && typeof d.delta_pct === 'number'
+      const vint = d && typeof d.delta_pct === 'number'
         ? add(mk('span'), dv('span', (d.delta_pct < 0 ? 'dn' : 'up') + ' hub-num', fmtPct(d.delta_pct)), mk('span', null, ' vs vintage ' + (meta.number - 1), ' vs añada ' + (meta.number - 1)))
         : mk('span', null, 'vintage ' + meta.number, 'añada ' + meta.number);
+      // Wave 7 PR3 (H4): the tile carries its as-of date and the source chip (the run's status pill, opening the run). The chip sits
+      // beside the vintage word in a plain wrapper: the language toggle rewrites any bilingual element's text, children included.
+      const det = add(mk('span'), vint, document.createTextNode(' · '), asOfChip({ as_of: newest.created_at, source_ref: 'run:' + newest.run_id, run_status: newest.status === 'superseded' ? 'final' : newest.status || 'final', title: newest.title, name: k }));
       const kk = kpi('Latest ' + keyLabel(k, o.unit), 'Última ' + keyLabel(k, o.unit), val, det);
       kk.setAttribute('data-kpi', k);
       add(host, kk);
     }
-  } else add(host, kpi('Latest headline', 'Última cifra', figure('—'), mk('span', null, 'no final run yet', 'aún sin ejecución final')));
+  } else {
+    // No final run: the newest reviewed or draft figure the standing endpoint knows, marked as such, rather than a bare dash.
+    const st = ctx.standing, fig = st && Array.isArray(st.figures) ? st.figures.find((f) => f && f.job !== 'register' && typeof f.value === 'number') : null;
+    if (fig) {
+      const lab = outputLabel(fig.name, fig.unit);
+      const kk = kpi('Latest ' + lab.en, 'Última ' + lab.es, figure(fig.value, fig.unit), add(mk('span'), asOfChip(fig)));
+      kk.setAttribute('data-kpi', fig.name); kk.setAttribute('data-kpi-status', fig.run_status || '');
+      add(host, kk);
+    } else add(host, kpi('Latest headline', 'Última cifra', figure('—'), mk('span', null, 'no final run yet', 'aún sin ejecución final')));
+  }
 
   const runs = entries.filter((e) => e.kind === 'run');
   const sup = runs.filter((r) => r.status === 'superseded').length;
@@ -1555,6 +1948,9 @@ async function init() {
   const me = await showSession();
   if (!projectId) return failPage(null);
   const enc = encodeURIComponent(projectId);
+  // Wave 7 PR3 (H1): the standing is read before the project, so "since you opened" measures from the previous visit, not this one
+  // (GET /api/projects/:id writes the project.read event the standing route measures against).
+  const stR = await api('/api/projects/' + enc + '/standing');
   const pr = await api('/api/projects/' + enc);
   if (!pr.ok || !pr.body) return failPage(pr);
   showVault(true);
@@ -1592,7 +1988,8 @@ async function init() {
   const lessons = lessonsOk ? listOf(lessonR.body, 'lessons', 'items') : [];
   const now = Date.now();
   const contactsList = ctR.ok && ctR.body && Array.isArray(ctR.body.contacts) ? ctR.body.contacts : null;
-  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names, person: me, contactsList, catalog: cat };
+  const standing = stR.ok && stR.body && typeof stR.body === 'object' && !stR.body.error ? stR.body : null;
+  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names, person: me, contactsList, catalog: cat, standing };
   panelCtx.ctx = ctx;
 
   renderHeader(ctx);
@@ -1604,6 +2001,7 @@ async function init() {
 
   const rules = computeScorecard(ctx);
   const card = renderScorecard(rules);
+  ctx.card = card;
   renderKpis(ctx, card);
 
   // Timeline.
