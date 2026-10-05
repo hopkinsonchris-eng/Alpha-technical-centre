@@ -211,9 +211,9 @@ for (const vp of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }]) {
     expect(errors).toEqual([]);
     expect(log.notFound).toEqual([]);
     await expect(page.locator('#p-stage')).toHaveValue('Technical review');
-    await expect(page.locator('#p-sub [data-next]')).toContainText('Issue screening letter to Frontera');
-    await expect(page.locator('#p-sub [data-last]')).toContainText('Cubiro screen, base case');
-    for (const sel of ['#p-stage', '#p-sub [data-next]', '#p-sub [data-last]']) {
+    await expect(page.locator('#p-stateline [data-token="next"]')).toContainText('Issue screening letter to Frontera');
+    await expect(page.locator('#p-stateline [data-token="last"]')).toContainText('Cubiro screen, base case');
+    for (const sel of ['#p-stage', '#p-stateline [data-token="next"]', '#p-stateline [data-token="last"]']) {
       const box = await page.locator(sel).boundingBox();
       expect(box, sel).not.toBeNull();
       expect(box.y + box.height, sel + ' is above the fold').toBeLessThanOrEqual(vp.height);
@@ -226,9 +226,9 @@ test('check 4: Restore returns the prior status, not Prospect', async ({ page })
   await page.goto('/hub/project.html?id=' + PID);
   await ready(page);
   await expect(page.locator('#p-sub [data-status]')).toHaveAttribute('data-status', 'active');
-  const btn = page.locator('#p-archive');
-  await btn.click();                                   // asks to confirm
-  await btn.click();                                   // confirms
+  await page.locator('#p-more').click();               // Archive lives in the … overflow (wave 7 R1)
+  await page.locator('#p-archive').click();            // asks to confirm in a sheet
+  await page.locator('#p-archive-confirm').click();    // confirms
   await expect(page.locator('#p-sub [data-status]')).toHaveAttribute('data-status', 'archived');
   await expect(page.locator('#p-archive')).toHaveText('Restore project');
   await page.locator('#p-archive').click();

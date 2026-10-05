@@ -835,6 +835,203 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-stateline .hub-sl-token:nth-child(2) { font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .hub-stateline-full { font-size: 14px; } .hub-sl-title { max-width: 18ch; } }
 
+/* ── Wave 7 PR2 D: project file, record panel, Write to… ── */
+/* The project header: the H1, the stateline directly under it, the meta line; three actions right of it. */
+.hub-project .hub-project-head { align-items: flex-start; }
+.hub-project .hub-project-title { flex: 1 1 520px; min-width: 0; }
+.hub-project .hub-project-head h1 { overflow-wrap: anywhere; }
+.hub-project .hub-project-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; margin-left: auto; padding-top: 30px; max-width: 100%; }
+.hub-project .hub-project-actions[hidden] { display: none; }
+.hub-project .hub-project-actions #p-draft-btn { order: 1; }
+.hub-project .hub-project-actions #p-research { order: 2; display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.hub-project .hub-project-actions .hub-menu-wrap { order: 3; }
+.hub-project .hub-project-actions .hub-menu-wrap:has(#p-more), .hub-project .hub-project-actions #p-archive[data-archived="1"] { order: 4; }
+.hub-project .hub-project-actions .hub-research-status { order: 9; flex: 1 1 100%; text-align: right; font-size: 12px; color: var(--muted); margin: 0; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+.hub-project .hub-project-actions .btn { min-height: 36px; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 14px; }
+.hub-project .hub-project-actions .btn .hub-ic { width: 14px; height: 14px; }
+.hub-project .hub-project-actions .hub-more { width: 36px; padding: 5px 0; justify-content: center; font-weight: 700; letter-spacing: .1em; }
+.hub-project .hub-project-actions .hub-caret { font-size: 11px; margin-left: 2px; }
+.hub-project .hub-project-stateline .hub-stateline-full { min-height: 56px; align-items: center; margin: 8px 0 8px; padding: 6px 0; }
+.hub-project .hub-sl-stage { align-items: center; }
+.hub-project .hub-sl-select {
+  appearance: none; -webkit-appearance: none; border: none; background: transparent; color: inherit; font: inherit; text-transform: uppercase; letter-spacing: inherit;
+  padding: 2px 18px 2px 0; cursor: pointer; min-height: 36px; max-width: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C9A84C' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 2px center; background-size: 12px;
+}
+.hub-project .hub-sl-select:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--gold); border-radius: 4px; }
+.hub-project #p-sub { margin-top: 2px; font-size: 13px; }
+/* Menus under the action buttons (Open in tool ▾, …). */
+.hub-project .hub-menu-wrap { position: relative; display: inline-block; }
+.hub-project .hub-menu { position: absolute; right: 0; top: calc(100% + 6px); min-width: 260px; max-width: min(360px, 92vw); background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-lg); box-shadow: 0 10px 30px rgba(11,31,58,.16); padding: 6px; z-index: 60; }
+.hub-project .hub-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 8px 10px; border: none; background: none; border-radius: var(--r); font: inherit; font-size: 13.5px; color: var(--navy); text-align: left; text-decoration: none; cursor: pointer; }
+.hub-project .hub-menu-item:hover, .hub-project .hub-menu-item:focus-visible { background: var(--cream); color: var(--gold-ink); outline: none; }
+.hub-project .hub-menu-item .hub-ic { width: 14px; height: 14px; flex: none; }
+.hub-project .hub-menu-item[data-produced="1"] { font-weight: 600; }
+.hub-project .hub-menu-hint { margin-left: auto; font-size: 11px; color: var(--muted); letter-spacing: .04em; white-space: nowrap; font-family: var(--font-label); text-transform: uppercase; }
+.hub-project .hub-menu-note { display: block; padding: 8px 10px 4px; font-size: 12px; }
+/* The skeleton (R12): the stateline, the tab strip and three rows, until data-ready. */
+.hub-project .hub-skeleton { margin: 6px 0 24px; }
+.hub-project .hub-skeleton span { display: inline-block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, #E9E4D8 0%, #F4F0E6 40%, #E9E4D8 80%); background-size: 200% 100%; animation: hub-sk 1.2s linear infinite; }
+.hub-project .hub-sk-stateline { min-height: 56px; display: flex; gap: 14px; align-items: center; border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold); margin-bottom: 18px; }
+.hub-project .hub-sk-stateline span { height: 14px; width: 16%; }
+.hub-project .hub-sk-stateline span:first-child { width: 22%; }
+.hub-project .hub-sk-tabs { display: flex; gap: 22px; border-bottom: 1.5px solid var(--rule); padding: 12px 0 14px; margin-bottom: 18px; }
+.hub-project .hub-sk-tabs span { width: 84px; height: 11px; }
+.hub-project .hub-sk-row { display: grid; grid-template-columns: 104px 1fr; gap: 12px; min-height: 44px; align-items: center; border-bottom: 1px solid #F0F1F4; }
+.hub-project .hub-sk-row span:last-child { width: 62%; }
+.hub-project .hub-sk-row span:first-child { width: 80px; }
+@keyframes hub-sk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .hub-project .hub-skeleton span { animation: none; } }
+body[data-ready] .hub-project #p-skeleton { display: none; }
+.hub-project .hub-fail-ways { margin-top: 10px; }
+/* The File disclosure (R1, R6): one line closed; the tag, contacts and team, the Fields row and the register when open. */
+.hub-project .hub-pfile-wrap { margin-top: 14px; padding: 0 !important; }
+.hub-project .hub-pfile-wrap > summary { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 18px; cursor: pointer; font-size: 13.5px; color: var(--navy); border-radius: var(--r-lg); }
+.hub-project .hub-pfile-wrap > summary::-webkit-details-marker { display: none; }
+.hub-project .hub-pfile-wrap > summary::before { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--gold); border-bottom: 2px solid var(--gold); transform: rotate(-45deg); margin-right: 2px; transition: transform .15s var(--ease); flex: none; }
+.hub-project .hub-pfile-wrap[open] > summary::before { transform: rotate(45deg); }
+.hub-project .hub-pfile-wrap[open] > summary { border-bottom: 1px solid var(--rule); border-radius: var(--r-lg) var(--r-lg) 0 0; }
+.hub-project .hub-pfile-wrap > summary:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--gold); }
+.hub-project .hub-pfile-word { font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-ink); }
+.hub-project .hub-pfile-brief { color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; min-width: 0; font-size: 13px; }
+.hub-project .hub-pfile-brief .hub-lt { font-size: 11.5px; }
+.hub-project .hub-pfile-wrap .hub-pfile { padding: 16px 18px !important; }
+.hub-project .hub-pfile-wrap .hub-fields { margin: 0; padding: 10px 18px 12px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-card-head { display: contents; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-card-head > div { display: contents; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-card-head h3 { font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 4px 0 0; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-card-head .hub-muted { display: none; }
+.hub-project .hub-pfile-wrap .hub-fields #fld-notices, .hub-project .hub-pfile-wrap .hub-fields #fld-proposed, .hub-project .hub-pfile-wrap .hub-fields #fld-add { flex: 1 1 100%; order: 5; }
+.hub-project .hub-pfile-wrap .hub-fields-list { display: contents; }
+.hub-project .hub-pfile-wrap .hub-field-row { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 10px; border: 1px solid var(--rule); border-radius: 999px; background: var(--white); font-size: 13px; min-height: 36px; }
+.hub-project .hub-pfile-wrap .hub-field-row > div:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.hub-project .hub-pfile-wrap .hub-field-row .hub-note-s { display: none; }
+.hub-project .hub-pfile-wrap .hub-field-row .hub-actions-row { gap: 4px; }
+.hub-project .hub-pfile-wrap .hub-field-row .hub-actions-row .hub-muted { display: none; }
+.hub-project .hub-pfile-wrap .hub-field-row .btn { padding: 2px 9px; min-height: 28px; font-size: 10.5px; }
+.hub-project .hub-pfile-wrap .hub-fields .hub-empty { flex: 1 1 auto; padding: 0; font-size: 13px; }
+.hub-project .hub-pfile-wrap .hub-fields #fld-add-btn { order: 4; }
+.hub-project .hub-pfile-wrap .hub-opp-card { margin: 0; padding: 14px 18px 18px; border-top: 1px solid var(--rule); }
+/* The sticky tab strip (R6) with the Add documents button at its end; edge fades and snap on the scroll. */
+.hub-project .hub-project-tabs { position: sticky; top: var(--hub-sticky-top, 56px); z-index: 15; background: var(--cream); display: flex; align-items: flex-end; gap: 10px; margin: 18px 0 18px; padding-top: 4px; }
+.hub-project .hub-project-tabs .hub-tabs { flex: 1 1 auto; min-width: 0; margin: 0; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 22px), transparent); padding: 0 6px; }
+.hub-project .hub-project-tabs .hub-tabs::-webkit-scrollbar { display: none; }
+.hub-project .hub-project-tabs .hub-tabs button { scroll-snap-align: start; min-height: 44px; }
+.hub-project .hub-add-docs { flex: none; margin-bottom: 6px; min-height: 36px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
+.hub-project .hub-add-docs[aria-expanded="true"] { border-color: var(--gold); color: var(--gold-ink); }
+@media (max-width: 900px) { .hub-project .hub-project-tabs { top: 0; } }
+/* Timeline rows (R6): one tappable block, 44 px, the date on one line, the type a mono prefix, a pill on the right. */
+.hub-project .hub-tl-item { position: relative; min-height: 44px; align-items: center; padding: 8px 8px 8px 0; grid-template-columns: 104px 32px minmax(0, 1fr) auto; }
+.hub-project .hub-tl-item:focus-within { background: #FCFBF7; box-shadow: inset 3px 0 0 var(--gold); }
+.hub-project .hub-tl-date { padding-top: 0; text-transform: none; letter-spacing: .02em; font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--navy-mid); font-weight: 600; }
+.hub-project .hub-tl-date span { display: inline; font-size: 12.5px; }
+.hub-project .hub-tl-line { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.hub-project .hub-tl-type { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); flex: none; }
+.hub-project .hub-tl-title::after { content: ''; position: absolute; inset: 0; }
+.hub-project .hub-tl-title:focus-visible { outline: none; }
+.hub-project .hub-tl-stage::after { content: none; }
+.hub-project .hub-tl-side { position: relative; z-index: 1; align-items: flex-end; justify-content: center; }
+.hub-project .hub-tl-meta a, .hub-project .hub-tl-meta button { position: relative; z-index: 1; }
+.hub-project .hub-tl-meta { margin-top: 0; }
+@media (max-width: 900px) { .hub-project .hub-tl-item { grid-template-columns: 92px 28px minmax(0, 1fr); } .hub-project .hub-tl-side { grid-column: 3; justify-content: flex-start; } }
+/* The drop target: the whole page, with a full-page gold outline while a file is over it. */
+.hub.is-dragover::after { content: ''; position: fixed; inset: 6px; border: 3px solid var(--gold); border-radius: 12px; pointer-events: none; z-index: 300; box-shadow: inset 0 0 0 9999px rgba(201,168,76,.08); }
+/* Sheets (Add documents, the archive confirm): anchored to the bottom over a scrim at every width. */
+.hub .hub-sheet { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(760px, 100vw); max-height: 85vh; z-index: 260; background: var(--white); border: 1px solid var(--rule); border-bottom: none; border-radius: 16px 16px 0 0; box-shadow: 0 -12px 32px rgba(11,31,58,.22); display: flex; flex-direction: column; }
+.hub .hub-sheet.hub-confirm { width: min(520px, 100vw); }
+.hub .hub-sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 18px 20px 12px; border-bottom: 1px solid var(--rule); position: relative; }
+.hub .hub-sheet-head::before { content: ''; position: absolute; left: 50%; top: 6px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--rule); }
+.hub .hub-sheet-head h3 { font-family: var(--font-body); font-weight: 600; font-size: 15px; }
+.hub .hub-sheet-head .hub-muted { font-size: 13px; display: block; margin-top: 2px; }
+.hub .hub-sheet-body { padding: 14px 0 20px; overflow: auto; }
+.hub .hub-sheet-body > p { padding: 0 20px; max-width: none; }
+.hub .hub-sheet-body .hub-actions { padding: 12px 20px 0; }
+.hub .hub-sheet .hub-drop { margin: 0 20px; }
+.hub .hub-sheet #up-notices { padding: 0 20px; }
+.hub .hub-sheet .hub-upload-list, .hub .hub-sheet .hub-upload-progress { padding-left: 20px; padding-right: 20px; }
+.hub .hub-sheet #up-reload { margin: 0 20px; }
+.hub.has-sheet .hub-upload { margin-top: 0; }
+@media (min-width: 1200px) { .hub #upload-scrim:not([hidden]), .hub #archive-scrim:not([hidden]) { display: block !important; } }
+/* Idea D: figures in tabular Barlow Condensed with the unit in small caps after them; no Playfair below the H1. */
+.hub-project .hub-figure, .hub-record .hub-figure { display: inline-flex; align-items: baseline; gap: 4px; }
+.hub-project .hub-num, .hub-record .hub-num { font-family: 'Barlow Condensed', var(--font-label), sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.hub-project .hub-unit, .hub-record .hub-unit { font-family: 'Barlow Condensed', var(--font-label), sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: lowercase; font-variant: small-caps; color: var(--muted); }
+.hub-project .hub-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 6px; }
+.hub-project .hub-kpi .v { font-family: 'Barlow Condensed', var(--font-label), sans-serif; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.hub-project .hub-kpi .v .hub-rag { margin-right: 4px; }
+.hub-project .hub-kpi .d .hub-num { font-size: 12px; }
+@media (max-width: 1100px) { .hub-project .hub-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .hub-project .hub-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hub-project .hub-project-actions { padding-top: 4px; justify-content: flex-start; } }
+/* The record panel (R5): title, one meta line, the content, the actions, related, Technical last. The focus ring is on the panel. */
+.hub #rp-title:focus, .hub #rp-title:focus-visible, .hub [tabindex="-1"]:focus { outline: none; }
+.hub .hub-panel:focus-within { box-shadow: -12px 0 32px rgba(11,31,58,.18), inset 0 0 0 2px var(--gold); }
+.hub-record .hub-panel-head h2 { font-family: var(--font-body); font-weight: 600; font-size: 1.05rem; line-height: 1.35; }
+.hub-record .hub-rp-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 4px; margin: 0 0 12px; font-size: 13px; color: var(--muted); max-width: none; }
+.hub-record .hub-rp-meta .hub-rp-type { color: var(--navy); font-weight: 600; }
+.hub-record .hub-rp-meta .hub-lt { font-size: 11.5px; }
+.hub-record .hub-rp-meta .hub-pill { margin-right: 2px; }
+.hub-record .hub-rp-meta-sep { color: var(--gold); }
+.hub-record .hub-rp-view h4 { font-family: var(--font-label); font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+.hub-record .hub-rp-view h4:first-child { margin-top: 0; }
+.hub-record .hub-rp-text { font-family: var(--font-body); font-size: 15px; line-height: 1.5; color: var(--navy-mid); background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: 14px 16px; max-height: 62vh; overflow: auto; overflow-wrap: anywhere; }
+.hub-record .hub-rp-text p { font-size: 15px; line-height: 1.5; max-width: none; margin: 0 0 .9em; color: inherit; }
+.hub-record .hub-rp-text p:last-child { margin-bottom: 0; }
+.hub-record mark.hub-hl { background: #F6EED6; color: var(--navy); border-radius: 2px; box-shadow: 0 0 0 2px #F6EED6; }
+.hub-record mark.hub-hl[data-anchor] { background: var(--gold-light); box-shadow: 0 0 0 2px var(--gold-light); }
+.hub-record .hub-rp-actions { margin: 12px 0 4px; }
+.hub-record .hub-rp-actions .btn { min-height: 36px; display: inline-flex; align-items: center; }
+.hub-record .hub-rp-actions [data-copied="1"] { border-color: var(--ok-line); color: var(--ok); }
+.hub-record .hub-rp-related { margin-top: 12px; }
+.hub-record .hub-rp-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.hub-record .hub-rp-table th, .hub-record .hub-rp-table td { padding: 7px 8px; border-bottom: 1px solid #F0F1F4; text-align: left; vertical-align: baseline; }
+.hub-record .hub-rp-table thead th { font-family: var(--font-label); font-size: 11px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.hub-record .hub-rp-table th[scope="row"] { font-weight: 500; color: var(--navy); }
+.hub-record .hub-rp-table .num { text-align: right; white-space: nowrap; }
+.hub-record .hub-rp-table td.num .hub-num { font-size: 16px; }
+.hub-record .hub-rp-src { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.hub-record .hub-prov { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: baseline; background: var(--muted); }
+.hub-record .hub-prov[data-provenance="measured"] { background: var(--ok); }
+.hub-record .hub-prov[data-provenance="reference"] { background: var(--navy); }
+.hub-record .hub-prov[data-provenance="document"] { background: var(--gold); }
+.hub-record .hub-prov[data-provenance="analogue"] { background: #6B4B8A; }
+.hub-record .hub-prov[data-provenance="assumed"] { background: var(--warn); }
+.hub-record .hub-prov[data-provenance="model"] { background: var(--info); }
+.hub-record .hub-prov-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
+.hub-record .hub-prov-key { display: inline-flex; align-items: center; }
+.hub-record .hub-rp-compare { margin-top: 4px; }
+.hub-record .hub-rp-compare .up { color: var(--ok); }
+.hub-record .hub-rp-compare .dn { color: var(--bad); }
+.hub-record .hub-rerun-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; }
+.hub-record .hub-rp-technical { margin-top: 14px; }
+.hub-record .hub-rp-technical .hub-kv { margin-top: 8px; font-size: 12.5px; }
+.hub-record .hub-rp-technical .hub-json { max-height: 40vh; overflow: auto; }
+.hub-record [data-inputs] { font-size: 13.5px; }
+/* Write to… (R13): the panel beside the file at ≥1200 px, a bottom sheet below; Draft full-width at the foot; hints under To. */
+.hub .hub-draft-panel { z-index: 245; padding: 0 !important; margin: 0; }
+.hub .hub-draft-panel .hub-panel-head h3 { font-family: var(--font-body); font-weight: 600; font-size: 1.1rem; }
+.hub .hub-draft-panel .hub-panel-head .label { display: block; margin-bottom: 2px; }
+.hub .hub-draft-body { padding-top: 12px; }
+.hub .hub-draft-intro { font-size: 13px; margin: 0 0 10px; max-width: none; }
+.hub .hub-draft-grid { grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.hub .hub-draft-grid .hub-opp-text { grid-column: 1 / -1; }
+.hub .hub-draft-hint { font-size: 12.5px; margin-top: 4px; }
+.hub .hub-draft-hint .hub-notice { margin: 4px 0 0; padding: 6px 10px; font-size: 12.5px; }
+.hub .hub-draft-hint .hub-draft-missing { margin: 4px 0 0; }
+.hub .hub-draft-foot { padding: 12px 20px; border-top: 1px solid var(--rule); background: var(--white); flex: none; }
+.hub .hub-draft-foot .hub-draft-go { width: 100%; min-height: 46px; font-size: 13px; letter-spacing: .14em; display: inline-flex; align-items: center; justify-content: center; }
+.hub .hub-draft-panel .hub-dr-actions { position: sticky; bottom: 0; background: var(--white); padding: 10px 0 2px; }
+@media (min-width: 1200px) { .hub.has-draft .hub-main { margin-right: 520px; } .hub.has-draft.has-panel .hub-main { margin-right: 520px; } .hub #draft-scrim { display: none !important; } }
+@media (max-width: 1199px) { .hub .hub-draft-panel { max-height: 90vh; } }
+/* The header as a grid: the label and the H1 beside the actions; the stateline and the meta line span the full width below. */
+.hub-project .hub-project-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 46%); grid-template-areas: "label actions" "h1 actions" "line line" "sub sub"; gap: 0 20px; align-items: end; }
+.hub-project .hub-project-title { display: contents; }
+.hub-project .hub-project-title > .label { grid-area: label; }
+.hub-project .hub-project-title > h1 { grid-area: h1; }
+.hub-project #p-stateline { grid-area: line; min-width: 0; }
+.hub-project #p-sub { grid-area: sub; }
+.hub-project .hub-project-actions { grid-area: actions; padding-top: 0; align-self: center; }
+.hub-project .hub-sl-token[data-token="last"] .hub-sl-when { margin-left: -4px; }
+@media (max-width: 640px) { .hub-project .hub-project-head { grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "h1" "line" "sub" "actions"; } .hub-project .hub-project-actions { justify-content: flex-start; margin-left: 0; padding-top: 6px; } }
 /* ── Wave 7 PR2 F: type, touch, Find, Settings, Cost ── */
 /* R14: the three families ship with the Hub (hub/fonts/, latin subset, SIL OFL) so a blocked font CDN never
    drops every label into the system font. style.css keeps its Google Fonts import for the public site; these

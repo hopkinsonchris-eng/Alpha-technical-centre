@@ -63,13 +63,18 @@ async function stubApi(page, { patch } = {}) {
 }
 const ready = (page) => page.locator('body[data-ready="1"]').waitFor();
 
-test('AC9: the toolbar lists the production tools that take a project, in toolbar order, each opening inside this project', async ({ page, baseURL }) => {
+test('AC9 / R1: "Open in tool ▾" lists the production tools that take a project, the ones that produced this project\'s runs first, then toolbar order, each opening inside this project', async ({ page, baseURL }) => {
   await stubApi(page);
   await page.goto('/hub/project.html?id=' + PID);
   await ready(page);
+  await expect(page.locator('#p-openin-menu')).toBeHidden();
+  await page.locator('#p-openin').click();
+  await expect(page.locator('#p-openin-menu')).toBeVisible();
   const links = page.locator('#p-toolbar a[data-toolbar-tool]');
   await expect(links).toHaveCount(4);
   expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('data-toolbar-tool')))).toEqual(['opportunity-register', 'nodal-analysis', 'plan-your-job', 'apex-asset-intelligence']);
+  await expect(links.nth(0)).toHaveAttribute('data-produced', '1');            // the run on the timeline came from it
+  await expect(links.nth(1)).toHaveAttribute('data-produced', '0');
   await expect(links.nth(0)).toHaveAttribute('href', new URL('opportunity-register.html?project=' + PID, baseURL + '/').href);
   await expect(links.nth(1)).toHaveAttribute('href', new URL('nodal-analysis-tool.html?project=' + PID, baseURL + '/').href);
   await expect(links.nth(0)).not.toHaveAttribute('target', /.+/);
@@ -79,7 +84,10 @@ test('AC9: the toolbar lists the production tools that take a project, in toolba
   await expect(links.nth(3)).toHaveAttribute('target', '_blank');
   await expect(links.nth(3)).toHaveAttribute('rel', /noopener/);
   await expect(links.nth(0)).toContainText('Opportunity Register');
-  await expect(page.locator('#p-toolbar')).toContainText('open in this project');
+  await expect(page.locator('#p-openin-menu')).toContainText('opens as itself');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#p-openin-menu')).toBeHidden();
+  await expect(page.locator('#p-openin')).toBeFocused();
   // The header shows the country and stage.
   await expect(page.locator('#p-sub')).toContainText('Kazakhstan');
   await expect(page.locator('#p-stage')).toHaveValue('Qualified');
@@ -95,6 +103,7 @@ test('W7-AC3: Opportunity Register and APEX Reservoir 3D open from the toolbar w
   for (const [id, file] of [['opportunity-register', 'opportunity-register.html'], ['apex-reservoir-3d', 'reservoir-simulator.html']]) {
     await page.goto('/hub/project.html?id=' + PID);
     await ready(page);
+    await page.locator('#p-openin').click();
     await page.locator(`#p-toolbar a[data-toolbar-tool="${id}"]`).click();
     await page.waitForURL(new RegExp(file.replace('.', '\\.') + '\\?project=' + PID + '$'));
     expect(page.url(), id).not.toMatch(/admin\.html/);
@@ -131,11 +140,13 @@ test('AC10: an associate who may not change the stage gets the refusal as a read
   await expect(page.locator('#p-stage')).toHaveValue('Qualified');
 });
 
-test('AC10: the opportunity card shows the register fields and edits them in place', async ({ page }) => {
+test('AC10 / R6: the opportunity card sits inside the File disclosure, shows the register fields and edits them in place', async ({ page }) => {
   const patched = await stubApi(page);
   await page.goto('/hub/project.html?id=' + PID);
   await ready(page);
   const card = page.locator('#p-opportunity');
+  await expect(card).toBeHidden();                       // the File disclosure is closed until asked for
+  await page.locator('#p-file-wrap > summary').click();
   await expect(card).toBeVisible();
   await expect(card.locator('[data-opp="plan"]')).toHaveText('16 → 22 kboe/d');
   await expect(card.locator('[data-opp="risk"]')).toContainText('Elevated 54');
@@ -183,8 +194,10 @@ test('AC9: with no catalog the toolbar says so instead of vanishing; Spanish fol
   await page.route('**/hub/catalog.json', (route) => route.fulfill({ status: 500, body: '{}' }));   // and the static fallback
   await page.goto('/hub/project.html?id=' + PID);
   await ready(page);
-  await expect(page.locator('#p-toolbar')).toContainText('The tool catalog is not available');
+  await page.locator('#p-openin').click();
+  await expect(page.locator('#p-openin-menu')).toContainText('The tool catalog is not available');
   await page.locator('.nav-lang button[data-lang="es"]').click();
-  await expect(page.locator('#p-toolbar')).toContainText('El catálogo de herramientas no está disponible');
+  await expect(page.locator('#p-openin-menu')).toContainText('El catálogo de herramientas no está disponible');
+  await expect(page.locator('#p-openin')).toContainText('Abrir en herramienta');
   await expect(page.locator('#p-opportunity h3')).toHaveText('Oportunidad');
 });

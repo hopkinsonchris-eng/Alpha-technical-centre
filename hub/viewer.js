@@ -32,7 +32,12 @@ function downloadButton(rec) {
   return a;
 }
 
-export function buildViewer(rec) {
+/**
+ * The viewer element. `opts.download` (default true) puts a Download button in the viewer's own bar; the record panel
+ * (wave 7, R5) passes false because Download sits in its actions row under the content.
+ */
+export function buildViewer(rec, opts = {}) {
+  const withDownload = opts.download !== false;
   const kind = viewerKind(rec);
   const host = mk('div', 'hub-viewer', null, null, { 'data-viewer': kind, 'data-state': 'loading' });
   const bar = mk('div', 'hub-viewer-bar');
@@ -40,19 +45,19 @@ export function buildViewer(rec) {
   const tooBig = Number(rec.extracted && rec.extracted.bytes) > INLINE_LIMIT;
   if (kind === 'other' || tooBig) {
     host.setAttribute('data-state', 'download');
-    add(bar, mk('span', 'hub-muted', tooBig ? 'Too large to show here.' : 'Opens in its own app.', tooBig ? 'Demasiado grande para mostrar aquí.' : 'Se abre en su propia aplicación.'), downloadButton(rec));
+    add(bar, mk('span', 'hub-muted', tooBig ? 'Too large to show here.' : 'Opens in its own app.', tooBig ? 'Demasiado grande para mostrar aquí.' : 'Se abre en su propia aplicación.'), withDownload ? downloadButton(rec) : null);
     return host;
   }
   if (kind === 'image') {
-    add(bar, downloadButton(rec));
+    if (withDownload) add(bar, downloadButton(rec));
     const img = mk('img', 'hub-viewer-img', null, null, { src: originalUrl(rec.id), alt: rec.title || '' });
     img.addEventListener('load', () => host.setAttribute('data-state', 'ready'));
     img.addEventListener('error', () => fail(host, bar));
     add(host, img);
     return host;
   }
-  if (kind === 'sheet') { add(bar, downloadButton(rec)); renderSheet(rec, host, bar).catch((e) => { console.error('viewer: sheet', e); fail(host, bar); }); return host; }
-  renderPdf(rec, host, bar).catch((e) => { console.error('viewer: pdf', e); fail(host, bar); });
+  if (kind === 'sheet') { if (withDownload) add(bar, downloadButton(rec)); renderSheet(rec, host, bar).catch((e) => { console.error('viewer: sheet', e); fail(host, bar); }); return host; }
+  renderPdf(rec, host, bar, withDownload).catch((e) => { console.error('viewer: pdf', e); fail(host, bar); });
   return host;
 }
 
@@ -75,12 +80,12 @@ function loadPdfjs() {
   return pdfjsPromise;
 }
 
-async function renderPdf(rec, host, bar) {
+async function renderPdf(rec, host, bar, withDownload = true) {
   host.dataset.id = rec.id;
   const counter = mk('span', 'hub-viewer-pages', null, null, { 'data-page-counter': '' });
   const zoomOut = mk('button', 'btn btn-outline btn-sm', '−', '−', { type: 'button', 'aria-label': 'Zoom out', 'data-zoom': 'out' });
   const zoomIn = mk('button', 'btn btn-outline btn-sm', '+', '+', { type: 'button', 'aria-label': 'Zoom in', 'data-zoom': 'in' });
-  add(bar, counter, zoomOut, zoomIn, downloadButton(rec));
+  add(bar, counter, zoomOut, zoomIn, withDownload ? downloadButton(rec) : null);
   const scroller = mk('div', 'hub-viewer-scroll', null, null, { tabindex: '0' });
   add(host, scroller);
   const [pdfjs, data] = await Promise.all([loadPdfjs(), fetchBytes(rec)]);

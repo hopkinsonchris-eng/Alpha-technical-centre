@@ -42,6 +42,7 @@ function stageSince(project) {
 /**
  * Build the stateline. `size`: 'full' (the project header: every token, two rows at phone width),
  * 'row' (register rows: name, stage dot, next, last age), 'card' (Find results: stage dot, next, last age, counts).
+ * `stageControl` (full only): an element, normally the stage <select>, rendered as the stage token itself.
  */
 export function stateline(project, opts) {
   const o = Object.assign({ size: 'full', now: new Date() }, opts || {});
@@ -56,8 +57,13 @@ export function stateline(project, opts) {
     add(el, name);
   }
 
-  // STAGE ● since
-  const st = link(project, 'stage', 'stage', stage || 'No stage', stage ? (STAGE_ES[stage] || stage) : 'Sin etapa');
+  // STAGE ● since. The project header (PR2 D, R1) passes `stageControl`, the stage <select>: the token then IS the
+  // control, so tapping it opens the stage list as a native popover; everywhere else the token links to #stage.
+  let st;
+  if (o.size === 'full' && o.stageControl) {
+    st = mk('span', 'hub-sl-token hub-sl-stage', null, null, { 'data-token': 'stage', 'data-stage-control': '' });
+    add(st, o.stageControl);
+  } else st = link(project, 'stage', 'stage', stage || 'No stage', stage ? (STAGE_ES[stage] || stage) : 'Sin etapa');
   st.insertBefore(mk('span', 'hub-sl-dot', null, null, { 'aria-hidden': 'true' }), st.firstChild);
   const since = stageSince(project);
   if (o.size === 'full' && since) {

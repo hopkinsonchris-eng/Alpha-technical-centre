@@ -7,6 +7,11 @@
      tl.entries = timeline.entries;             // GET /api/projects/:id/timeline
      tl.addEventListener('record-select', (e) => e.detail.entry);
 
+   Wave 7 PR2 (R6): a row is one tappable block at least 44 px tall (the
+   title button's hit area is stretched over the row), the date sits on one
+   line ("5 Oct · 13:54"), the type is a small mono prefix rather than a pill,
+   and every kind carries a status pill on the right. A "Documents" filter
+   joins the chips so the stateline's docs count has a place to land.
    Plain custom element, light DOM, every text carries data-en and data-es.
    ============================================================ */
 import { mk, dv, add, RUN_STATUS } from '../hub.js';
@@ -28,9 +33,9 @@ export const ICONS = {
 };
 const WARN = svg('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>');
 
-/** Filter buckets, in the order of the mockup chips. */
+/** Filter buckets, in the order of the mockup chips; "Documents" (wave 7) is every record that is not a run or a stage change. */
 export const TYPE_FILTERS = [
-  ['all', 'All', 'Todo'], ['run', 'Runs', 'Ejecuciones'], ['letter', 'Letters', 'Cartas'], ['email', 'Emails', 'Correos'],
+  ['all', 'All', 'Todo'], ['run', 'Runs', 'Ejecuciones'], ['docs', 'Documents', 'Documentos'], ['letter', 'Letters', 'Cartas'], ['email', 'Emails', 'Correos'],
   ['spreadsheet', 'Spreadsheets', 'Hojas de cálculo'], ['paper', 'Papers', 'Artículos'], ['invoice', 'Invoices', 'Facturas'],
   ['other', 'Other', 'Otros'], ['stale', 'Stale only', 'Solo obsoletos'],
 ];
@@ -56,13 +61,15 @@ export function filterKind(e) {
 }
 
 const pad = (n) => String(n).padStart(2, '0');
+/** "5 Oct · 13:54" on one line; the year travels in the title. */
 function stamp(iso) {
   const d = new Date(iso);
   if (isNaN(d)) return null;
   const o = { day: 'numeric', month: 'short', timeZone: 'UTC' };
+  const hm = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
   return {
-    en: d.toLocaleDateString('en-GB', o), es: d.toLocaleDateString('es-ES', o),
-    tail: d.getUTCFullYear() + ' · ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()),
+    en: d.toLocaleDateString('en-GB', o) + ' · ' + hm, es: d.toLocaleDateString('es-ES', o) + ' · ' + hm,
+    title: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) + ' ' + hm + ' UTC',
   };
 }
 const byNewest = (a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : a.id < b.id ? 1 : -1);
@@ -103,7 +110,7 @@ export class TimelineList extends HTMLElement {
 
   visible() {
     const f = this._filter;
-    return this._entries.filter((e) => (f === 'all' ? true : f === 'stale' ? !!e.stale : filterKind(e) === f));
+    return this._entries.filter((e) => (f === 'all' ? true : f === 'stale' ? !!e.stale : f === 'docs' ? e.kind !== 'run' && e.kind !== 'stage' : filterKind(e) === f));
   }
 
   renderList() {
@@ -127,25 +134,29 @@ export class TimelineList extends HTMLElement {
     const li = mk('li', 'hub-tl-item' + (stale ? ' is-stale' : ''), null, null, { 'data-ref': e.ref || (e.kind === 'run' ? 'run:' : 'doc:') + e.id, 'data-id': e.id, 'data-kind': e.kind, 'data-icon': kind, 'data-stale': String(stale) });
     const st = stamp(e.at);
     const date = mk('div', 'hub-tl-date');
-    if (st) add(date, mk('b', null, st.en, st.es), dv('span', null, st.tail)); else add(date, dv('b', null, '—'));
+    if (st) { add(date, mk('span', null, st.en, st.es)); date.setAttribute('title', st.title); } else add(date, dv('span', null, '—'));
     add(li, date, icon(kind, stale));
 
     const body = mk('div', 'hub-tl-body');
+    const lab = TYPE_LABEL[kind];
+    const type = lab ? mk('span', 'hub-tl-type mono', lab[0].toLowerCase(), lab[1].toLowerCase(), { 'data-type': kind }) : dv('span', 'hub-tl-type mono', e.type, { 'data-type': kind });
     if (e.kind === 'stage') {
       // A stage change has no record to open: the row states it.
-      add(body, add(mk('span', 'hub-tl-title hub-tl-stage'), mk('span', null, 'Stage: ', 'Etapa: '), dv('b', null, e.title),
+      add(body, add(mk('span', 'hub-tl-title hub-tl-stage'), type, document.createTextNode(' '), mk('span', null, 'Stage: ', 'Etapa: '), dv('b', null, e.title),
         e.from ? add(mk('span', 'hub-muted'), mk('span', null, ' · from ' + e.from, ' · desde ' + e.from)) : null));
       if (e.by) add(body, add(mk('div', 'hub-tl-meta'), mk('span', null, 'by ' + e.by, 'por ' + e.by)));
-      add(li, body, mk('div', 'hub-tl-side'));
+      const side = mk('div', 'hub-tl-side');
+      add(side, mk('span', 'hub-pill info', 'Stage', 'Etapa', { 'data-status': 'stage' }));
+      add(li, body, side);
       return li;
     }
+    const line = mk('div', 'hub-tl-line');
     const title = dv('button', 'hub-tl-title', e.title || e.job || e.id, { type: 'button' });
     title.addEventListener('click', () => this.dispatchEvent(new CustomEvent('record-select', { bubbles: true, detail: { entry: e, ref: li.getAttribute('data-ref'), trigger: title } })));
-    add(body, title);
+    add(line, type, title);
+    add(body, line);
 
-    const lab = TYPE_LABEL[kind];
     const meta = mk('div', 'hub-tl-meta', null, null);
-    add(meta, lab ? mk('span', 'hub-kind', lab[0], lab[1]) : dv('span', 'hub-kind', e.type));
     if (e.kind === 'run') {
       add(meta, dv('span', 'mono', (e.job || '—') + (e.tool_version ? '@' + e.tool_version : '')));
       if (e.superseded_by) add(meta, mk('span', null, 'superseded', 'reemplazada'));
@@ -155,7 +166,7 @@ export class TimelineList extends HTMLElement {
       if (e.version && e.version > 1) add(meta, dv('span', null, 'v' + e.version));
       if (e.sent) add(meta, mk('span', 'hub-pill ok', 'sent to ' + e.sent.organisation, 'enviado a ' + e.sent.organisation, { 'data-sent': '' }));
     }
-    add(body, meta);
+    if (meta.childNodes.length) add(body, meta);
 
     if (stale) {
       const why = firstReason(e.stale_reasons);
@@ -168,11 +179,15 @@ export class TimelineList extends HTMLElement {
     }
     add(li, body);
 
+    // The right-hand pill: the run's status, a sent document's dispatch, else the document's version.
     const side = mk('div', 'hub-tl-side');
     if (stale) { const b = document.createElement('stale-badge'); b.reasons = e.stale_reasons; add(side, b); }
     if (e.kind === 'run' && e.status) {
       const s = RUN_STATUS[e.status] || [e.status, e.status, 'muted'];
       add(side, mk('span', 'hub-pill ' + s[2], s[0], s[1], { 'data-status': e.status }));
+    } else if (e.kind !== 'run') {
+      if (e.sent) add(side, mk('span', 'hub-pill ok', 'Sent', 'Enviado', { 'data-status': 'sent' }));
+      else add(side, dv('span', 'hub-pill muted', 'v' + (e.version || 1), { 'data-status': 'filed' }));
     }
     add(li, side);
     return li;

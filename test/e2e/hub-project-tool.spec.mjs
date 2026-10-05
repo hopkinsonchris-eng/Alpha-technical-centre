@@ -789,7 +789,7 @@ function langAudit() {
 test('AC5: every text node has data-en and data-es on the project page, and the language toggle follows', async ({ page }) => {
   await openProject(page);
   await page.locator('.hub-tl-item .hub-tl-title').first().click();          // include the open record panel
-  await expect(page.locator('#record-panel [data-highlights]')).toBeVisible();
+  await expect(page.locator('#record-panel [data-meta]')).toBeVisible();
   const en = await page.evaluate(langAudit);
   expect(en.count).toBeGreaterThan(200);
   expect(en.missing).toEqual([]);
@@ -855,7 +855,7 @@ test('AC5: axe finds no WCAG 2 A/AA violations on any tab of the project page, w
   }
   await gotoTab(page, 'lineage');
   await page.locator(`.ln-node[data-node="run:${R.yopal}"]`).click();
-  await expect(page.locator('#record-panel [data-highlights]')).toBeVisible();
+  await expect(page.locator('#record-panel [data-meta]')).toBeVisible();
   expect(await axeCheck(page), 'panel open').toEqual([]);
   await page.locator('.nav-lang button[data-lang="es"]').click();
   expect(await axeCheck(page), 'Spanish').toEqual([]);
@@ -912,6 +912,7 @@ test('add documents: files chosen on the project page go to POST /api/ingest/upl
       ] });
     },
   });
+  await page.locator('#p-add-docs').click();                 // wave 7 (R6): the drop zone opens as a sheet from the tab strip
   const panel = page.locator('#p-upload');
   await expect(panel).toBeVisible();
   await expect(panel).toContainText('Add documents');

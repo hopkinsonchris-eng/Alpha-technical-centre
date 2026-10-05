@@ -192,7 +192,7 @@ test('a saved draft shows itself in the record panel with the review as saved, r
   await expect(rp.locator('[data-h="type"]')).toHaveText('Email draft');
   const view = rp.locator('[data-draft-view]');
   await expect(view).toHaveAttribute('data-review', 'saved');
-  await expect(rp.locator('[data-view] h4')).toHaveText('The draft');
+  await expect(rp.locator('[data-view]')).toHaveAttribute('data-mode', 'draft');
   await expect(rp.locator('[data-view]')).not.toContainText('Filed without an original');
   const paras = view.locator('.hub-dr-para');
   await expect(paras).toHaveCount(4);
@@ -317,6 +317,55 @@ test('W6-AC9: with a connected mailbox that may send, Write to… ends with Send
   await expect(result.locator('#dr-send')).toBeHidden();
   await expect(result.locator('#dr-send-hint')).toContainText('Connect your mailbox to send from here');
   await expect(result.locator('#dr-sent')).toBeVisible();
+});
+
+test('W7 R13: Write to… is a right-hand panel the width of the record panel at 1440 so the file stays visible, a bottom sheet on a phone; Draft is a full-width gold button at the foot; the contact warning is a hint under To', async ({ page }) => {
+  await stubApi(page);
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('#p-draft-btn').click();
+  const panel = page.locator('#p-draft');
+  await expect(panel).toBeVisible();
+  let pb = await panel.boundingBox();
+  expect(Math.round(pb.x)).toBe(1440 - 520);
+  expect(Math.round(pb.width)).toBe(520);
+  expect(Math.round(pb.y)).toBe(0);
+  expect(Math.round(pb.height)).toBe(900);
+  const main = await page.locator('.hub-main').boundingBox();
+  expect(Math.round(main.x + main.width)).toBeLessThanOrEqual(1440 - 520 + 1);          // the file stays visible beside the draft
+  await expect(page.locator('#p-stateline')).toBeVisible();
+  // Draft: full width, gold, at the foot of the panel.
+  const go = panel.locator('#dr-go');
+  await expect(go).toHaveClass(/btn-primary/);
+  const gb = await go.boundingBox();
+  expect(gb.width).toBeGreaterThanOrEqual(pb.width - 48);
+  expect(Math.round(gb.y + gb.height)).toBeGreaterThanOrEqual(900 - 40);
+  expect(await go.evaluate((b) => !!b.closest('.hub-draft-foot'))).toBe(true);
+  // The contact warning is a hint inside the To field, not a line outside the card.
+  await panel.locator('#dr-to').selectOption('x-outsider');
+  const hint = panel.locator('#dr-scope .hub-notice.warn');
+  await expect(hint).toContainText('Other Co is not the client');
+  expect(await hint.evaluate((h) => !!h.closest('.hub-field'))).toBe(true);
+  expect(await panel.locator('#dr-nocontact [data-counterparty]').first().evaluate((h) => !!h.closest('.hub-field'))).toBe(true);
+  // Close returns focus to the button; the page gets its width back.
+  await panel.locator('#dr-close').click();
+  await expect(panel).toBeHidden();
+  await expect(page.locator('#p-draft-btn')).toBeFocused();
+  expect(Math.round((await page.locator('.hub-main').boundingBox()).width)).toBeGreaterThan(main.width + 100);
+  // A phone: the bottom sheet, full width, with the Draft button at its foot.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#p-draft-btn').click();
+  await expect(panel).toBeVisible();
+  pb = await panel.boundingBox();
+  expect(Math.round(pb.width)).toBe(390);
+  expect(Math.round(pb.y + pb.height)).toBe(844);
+  expect(pb.height).toBeLessThanOrEqual(0.92 * 844 + 1);
+  await expect(page.locator('#draft-scrim')).toBeVisible();
+  const gb2 = await go.boundingBox();
+  expect(gb2.width).toBeGreaterThanOrEqual(390 - 48);
+  expect(gb2.height).toBeGreaterThanOrEqual(44);
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
 });
 
 test('W7-AC4 (S19): Write to… without a provider refuses clearly in the form, bilingual, and shows no template and no "does not know" box', async ({ page }) => {

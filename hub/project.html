@@ -90,48 +90,49 @@
       </form>
     </header>
 
-    <main class="hub-content" id="main">
+    <main class="hub-content hub-project" id="main">
       <div id="notices" role="status"></div>
 
-      <div class="hub-head">
-        <div>
+      <div class="hub-head hub-project-head">
+        <div class="hub-project-title">
           <span class="label" data-en="Project file" data-es="Ficha del proyecto">Project file</span>
           <h1 id="p-title" data-en="Loading the project…" data-es="Cargando el proyecto…">Loading the project…</h1>
+          <!-- Wave 7 PR2 (R1, W7-AC6): the stateline, directly under the H1, from hub/components/stateline.js -->
+          <div id="p-stateline" class="hub-project-stateline"></div>
           <p class="hub-sub" id="p-sub"></p>
         </div>
+        <!-- Wave 7 PR2 (R1): three actions right-aligned (Write to…, Research, Open in tool ▾) and the … overflow -->
+        <div class="hub-project-actions" id="p-toolbar" aria-label="Actions for this project" hidden></div>
       </div>
+
+      <!-- Wave 7 PR2 (R12): a skeleton of the stateline, the tab strip and three rows until data-ready is set -->
+      <div id="p-skeleton" class="hub-skeleton" aria-hidden="true">
+        <div class="hub-sk-stateline"><span></span><span></span><span></span><span></span></div>
+        <div class="hub-sk-tabs"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="hub-sk-row"><span></span><span></span></div>
+        <div class="hub-sk-row"><span></span><span></span></div>
+        <div class="hub-sk-row"><span></span><span></span></div>
+      </div>
+
       <div id="p-notices" role="status"></div>
       <div class="hub-notice warn hub-archived" id="p-archived" hidden><span><b data-en="Archived." data-es="Archivado.">Archived.</b> <span data-en="This project is hidden from Today, the globe and the register. Its records are intact; Restore project puts it back." data-es="Este proyecto está oculto de Hoy, del globo y del registro. Sus registros están intactos; Restaurar proyecto lo devuelve.">This project is hidden from Today, the globe and the register. Its records are intact; Restore project puts it back.</span></span></div>
 
       <div id="p-body" hidden>
-        <div class="hub-toolbar" id="p-toolbar" aria-label="Tools for this project"></div>
-        <section class="card hub-draft" id="p-draft" aria-label="Write to" hidden></section>
-        <div class="card hub-pfile" id="p-file"></div>
         <div class="hub-kpis" id="p-kpis"></div>
-        <section class="card hub-opp-card" id="p-opportunity" aria-labelledby="h-opp"></section>
-        <section class="card hub-fields" id="p-fields" aria-labelledby="h-fields"></section>
 
-        <section class="card hub-upload" id="p-upload" aria-labelledby="h-upload">
-          <div class="hub-card-head">
-            <div>
-              <h3 id="h-upload" data-en="Add documents" data-es="Añadir documentos">Add documents</h3>
-              <span class="hub-muted" data-en="Letters, emails, spreadsheets, papers and scans. Each file becomes a record in this project with its legal tag, and is indexed for Find and the assistant." data-es="Cartas, correos, hojas de cálculo, artículos y escaneos. Cada archivo se convierte en un registro de este proyecto con su etiqueta legal, y se indexa para Buscar y el asistente.">Letters, emails, spreadsheets, papers and scans. Each file becomes a record in this project with its legal tag, and is indexed for Find and the assistant.</span>
-            </div>
-          </div>
-          <div id="up-notices" role="status"></div>
-          <div class="hub-drop" id="up-drop">
-            <label class="btn btn-primary btn-sm hub-file-btn" for="up-files" data-en="Choose files" data-es="Elegir archivos">Choose files</label>
-            <input type="file" id="up-files" multiple class="sr-only">
-            <span class="hub-muted" data-en="or drop them here. PDF, Word, Excel, PowerPoint, text and .eml. Large files are indexed in the background." data-es="o suéltelos aquí. PDF, Word, Excel, PowerPoint, texto y .eml. Los archivos grandes se indexan en segundo plano.">or drop them here. PDF, Word, Excel, PowerPoint, text and .eml. Large files are indexed in the background.</span>
-          </div>
-          <div class="hub-upload-progress" id="up-progress" role="status" hidden>
-            <span class="hub-spin" aria-hidden="true"></span>
-            <span id="up-progress-text"></span>
-          </div>
-          <ul class="hub-upload-list" id="up-results" aria-live="polite"></ul>
-        </section>
+        <!-- Wave 7 PR2 (R1, R6): the file, one tap away: the legal tag, contacts and ATC team, the Fields row and the register, behind one disclosure -->
+        <details class="card hub-pfile-wrap" id="p-file-wrap">
+          <summary id="p-file-summary"><span class="hub-pfile-word" data-en="File" data-es="Expediente">File</span><span class="hub-pfile-brief" id="p-file-brief"></span></summary>
+          <div class="hub-pfile" id="p-file"></div>
+          <section class="hub-fields" id="p-fields" aria-labelledby="h-fields"></section>
+          <section class="hub-opp-card" id="p-opportunity" aria-labelledby="h-opp"></section>
+        </details>
 
-        <div class="hub-tabs" role="tablist" aria-label="Project sections" id="p-tabs"></div>
+        <!-- Wave 7 PR2 (R6): the sticky tab strip under the stateline, with Add documents at its end -->
+        <div class="hub-project-tabs" id="p-tabs-wrap">
+          <div class="hub-tabs hub-tabs-scroll" role="tablist" aria-label="Project sections" id="p-tabs"></div>
+          <button type="button" class="btn btn-outline btn-sm hub-add-docs" id="p-add-docs" aria-haspopup="dialog" aria-controls="p-upload" aria-expanded="false"><span aria-hidden="true">＋</span> <span data-en="Add documents" data-es="Añadir documentos">Add documents</span></button>
+        </div>
 
         <div class="hub-tabpanel" role="tabpanel" id="panel-timeline" aria-labelledby="tab-timeline" tabindex="0">
           <div class="card"><timeline-list id="tl"></timeline-list></div>
@@ -170,9 +171,51 @@
   </div>
 </div>
 
+<!-- Wave 7 PR2 (R6): Add documents as a sheet; the whole page is the drop target -->
+<div class="hub-scrim" id="upload-scrim" hidden></div>
+<section class="hub-sheet hub-upload" id="p-upload" role="dialog" aria-modal="false" aria-labelledby="h-upload" hidden>
+  <div class="hub-sheet-head">
+    <div>
+      <h3 id="h-upload" data-en="Add documents" data-es="Añadir documentos">Add documents</h3>
+      <span class="hub-muted" data-en="Letters, emails, spreadsheets, papers and scans. Each file becomes a record in this project with its legal tag, and is indexed for Find and the assistant." data-es="Cartas, correos, hojas de cálculo, artículos y escaneos. Cada archivo se convierte en un registro de este proyecto con su etiqueta legal, y se indexa para Buscar y el asistente.">Letters, emails, spreadsheets, papers and scans. Each file becomes a record in this project with its legal tag, and is indexed for Find and the assistant.</span>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" id="up-close" data-en="Close" data-es="Cerrar">Close</button>
+  </div>
+  <div class="hub-sheet-body">
+    <div id="up-notices" role="status"></div>
+    <div class="hub-drop" id="up-drop">
+      <label class="btn btn-primary btn-sm hub-file-btn" for="up-files" data-en="Choose files" data-es="Elegir archivos">Choose files</label>
+      <input type="file" id="up-files" multiple class="sr-only">
+      <span class="hub-muted" data-en="or drop them anywhere on the page. PDF, Word, Excel, PowerPoint, text and .eml. Large files are indexed in the background." data-es="o suéltelos en cualquier parte de la página. PDF, Word, Excel, PowerPoint, texto y .eml. Los archivos grandes se indexan en segundo plano.">or drop them anywhere on the page. PDF, Word, Excel, PowerPoint, text and .eml. Large files are indexed in the background.</span>
+    </div>
+    <div class="hub-upload-progress" id="up-progress" role="status" hidden>
+      <span class="hub-spin" aria-hidden="true"></span>
+      <span id="up-progress-text"></span>
+    </div>
+    <ul class="hub-upload-list" id="up-results" aria-live="polite"></ul>
+  </div>
+</section>
+
+<!-- Wave 7 PR2 (R1): Archive asks in a sheet; nothing is deleted -->
+<div class="hub-scrim" id="archive-scrim" hidden></div>
+<div class="hub-sheet hub-confirm" id="p-archive-sheet" role="dialog" aria-modal="true" aria-labelledby="h-archive" hidden>
+  <div class="hub-sheet-head"><h3 id="h-archive" data-en="Archive this project?" data-es="¿Archivar este proyecto?">Archive this project?</h3></div>
+  <div class="hub-sheet-body">
+    <p data-en="It leaves Today, the globe and the register. Nothing is deleted: every run and document stays, and the file still opens from its address. Restore project puts it back." data-es="Sale de Hoy, del globo y del registro. No se borra nada: cada ejecución y documento se conserva, y la ficha sigue abriéndose desde su dirección. Restaurar proyecto lo devuelve.">It leaves Today, the globe and the register. Nothing is deleted: every run and document stays, and the file still opens from its address. Restore project puts it back.</p>
+    <div class="hub-actions">
+      <button type="button" class="btn btn-primary btn-sm" id="p-archive-confirm" data-en="Archive project" data-es="Archivar proyecto">Archive project</button>
+      <button type="button" class="btn btn-outline btn-sm" id="p-archive-cancel" data-en="Cancel" data-es="Cancelar">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Wave 7 PR2 (R13): Write to… beside the file: a right-hand panel the width of the record panel, a bottom sheet below 1200 px -->
+<div class="hub-scrim" id="draft-scrim" hidden></div>
+<section class="hub-panel hub-draft-panel hub-draft" id="p-draft" role="dialog" aria-modal="false" aria-labelledby="h-draft" hidden></section>
+
 <!-- Record panel: opened from a lineage node or a timeline row. A side panel on wide screens, a bottom sheet over the scrim below 1200 px. -->
 <div class="hub-scrim" id="record-scrim" hidden></div>
-<div class="hub-panel" id="record-panel" role="dialog" aria-modal="false" aria-labelledby="rp-title" hidden>
+<div class="hub-panel hub-record" id="record-panel" role="dialog" aria-modal="false" aria-labelledby="rp-title" hidden>
   <div class="hub-panel-head">
     <div>
       <span class="label" id="rp-kind" data-en="Record" data-es="Registro">Record</span>
