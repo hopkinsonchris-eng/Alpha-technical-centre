@@ -53,6 +53,8 @@ const HITS = [
 ];
 const ready = (page) => page.locator('body[data-ready="1"]').waitFor();
 const groupsOf = (page) => page.locator('#palette [data-group]').evaluateAll((els) => els.map((e) => e.getAttribute('data-group')));
+/** The palette fills its groups once its data has loaded; wait for the list rather than snapshot it. */
+const expectGroups = (page, groups) => expect.poll(() => groupsOf(page), { timeout: 5000 }).toEqual(groups);
 
 test('AC15: Cmd/Ctrl+K opens the menu on the Today page; three letters of a project and Enter open it; Escape closes', async ({ page }) => {
   await stubApi(page);
@@ -65,7 +67,7 @@ test('AC15: Cmd/Ctrl+K opens the menu on the Today page; three letters of a proj
   await expect(pal).toBeVisible();
   await expect(pal.locator('input')).toBeFocused();
   // Empty query: every group in order, projects first.
-  expect(await groupsOf(page)).toEqual(['projects', 'countries', 'tools', 'pages']);
+  await expectGroups(page, ['projects', 'countries', 'tools', 'pages']);
   await expect(pal.locator('[data-group="tools"] [data-item]')).toHaveCount(2);          // production only
   await pal.locator('input').fill('kaz');
   const items = pal.locator('[data-item]');
@@ -88,7 +90,7 @@ test('AC15: on a project page the first group offers the project tools and actio
   await page.locator('#palette-btn').click();
   const pal = page.locator('#palette');
   await expect(pal).toBeVisible();
-  expect(await groupsOf(page)).toEqual(['context', 'projects', 'countries', 'tools', 'pages']);
+  await expectGroups(page, ['context', 'projects', 'countries', 'tools', 'pages']);
   const ctx = pal.locator('[data-group="context"] [data-item]');
   await expect(ctx).toHaveCount(4);
   await expect(ctx.nth(0)).toContainText('Open Opportunity Register in this project');
@@ -189,7 +191,7 @@ test('R7: word start only. "zuela" finds no country, "venez" does; a held countr
   await ready(page);
   await page.keyboard.press('ControlOrMeta+k');
   const pal = page.locator('#palette');
-  expect(await groupsOf(page)).toEqual(['projects', 'countries', 'tools', 'pages']);   // no Records, no Organisations until typed
+  await expectGroups(page, ['projects', 'countries', 'tools', 'pages']);   // no Records, no Organisations until typed
   await pal.locator('input').fill('zuela');
   await page.waitForTimeout(250);
   await expect(pal.locator('[data-group="countries"] [data-item]')).toHaveCount(0);
