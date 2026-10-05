@@ -35,7 +35,7 @@ for (const [name, p] of Object.entries(PAGES)) {
       await expect(page.locator('#find-results .result')).toHaveCount(2);
       await page.locator('#find-results .result').first().locator('[data-open-record]').click();
       await expect(page.locator('#record-panel')).toHaveAttribute('data-ref', 'doc:' + DOC);
-      await expect(page.locator('#record-panel .hub-rp-details')).toHaveCount(1);
+      await expect(page.locator('#record-panel .hub-rp-technical')).toHaveCount(1);   // the Technical disclosure, closed, holds the storage key
     }
     if (name === 'today') {
       const co = page.locator('#country-list [data-country="CO"]');

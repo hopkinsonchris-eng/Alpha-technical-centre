@@ -1198,7 +1198,7 @@ body[data-ready] .hub-project #p-skeleton { display: none; }
 /* Today's head is one short row: the globe and the register are the page */
 .hub .hub-head-today { margin-bottom: 12px; align-items: center; }
 .hub .hub-head-today h1 { font-size: 1.6rem; margin-top: 2px; }
-.hub .hub-head-today .label { font-size: 10.5px; }
+.hub .hub-head-today .label { font-size: 12px; }
 /* the globe at 55 % with the live register beside it, scrolling inside its column (idea A) */
 .hub .hub-globe { grid-template-columns: 55fr 45fr; gap: 24px; align-items: stretch; margin-bottom: 0; }
 .hub .hub-globe-wrap { max-height: none; align-self: start; }   /* its height follows its width; the row, and the register column, follow it */
@@ -1219,7 +1219,7 @@ body[data-ready] .hub-project #p-skeleton { display: none; }
 .hub .hub-reg-row:hover { background: #FCFBF7; }
 .hub .hub-reg-row[data-hot="1"], .hub .hub-country-project[data-hot="1"] { background: #F6EED6; box-shadow: inset 3px 0 0 var(--gold); }
 .hub .hub-risk-tag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-label); font-size: 12px; letter-spacing: .04em; color: var(--navy-mid); white-space: nowrap; padding: 2px 0 6px; font-variant-numeric: tabular-nums; }
-.hub .hub-risk-tag .hub-sl-label { font-size: 10.5px; }
+.hub .hub-risk-tag .hub-sl-label { font-size: 12px; }
 .hub .hub-reg-group .hub-create-here-btn { align-self: stretch; margin: 0 0 2px; border-radius: 0 0 var(--r-lg) var(--r-lg); border-top: none; text-align: left; }
 .hub .hub-country-projects .hub-country-project { display: block; padding: 6px 14px 10px; }
 .hub .hub-country-project .hub-stateline-row { border-bottom: none; }
@@ -1268,3 +1268,13 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 .hub .hub-palette-btn[data-touch="1"] .hub-ic { width: 16px; height: 16px; }
 @media (max-width: 640px) { .hub .hub-palette-btn[data-touch="1"] span { display: inline; } }
 .hub .hub-palette-group[data-group="records"] .hub-palette-item .l::before { content: '§ '; color: var(--gold-ink); }
+
+/* ── Wave 7 PR2, at the merge: the last four controls under the touch minimum ── */
+@media (max-width: 1024px) {
+  .hub-register-filters select, #reg-filters select, select.hub-select { min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
+  .hub-project #p-draft-btn.btn-primary, .hub-draft-btn.btn-primary { min-height: 44px; padding-top: 10px; padding-bottom: 10px; }
+  /* a register row is a row tap: its tokens take the 44 px primary size on touch widths */
+  .hub-stateline-row .hub-sl-token, [data-register-row] .hub-sl-token { min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
+}
+/* labels never below 12 px, whatever the size of the line they sit in (W7-AC9) */
+.hub .hub-sl-label, .hub-stateline .hub-sl-label, .hub-stateline-row .hub-sl-label, .hub-stateline-card .hub-sl-label, .hub .label, .hub-head .label { font-size: 12px; }

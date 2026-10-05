@@ -46,7 +46,7 @@ function failures(a) {
   return { small, primary, labels };
 }
 
-const ASSERTED = ['find', 'settings'];
+const ASSERTED = ['find', 'settings', 'today', 'project', 'queue'];   // every page, now that D and E are merged
 const PARALLEL = { today: 'E rebuilds Today (status strip, globe, register) in parallel', project: 'D rebuilds the project page in parallel', queue: 'E owns the shared chrome and the queue page' };
 
 for (const name of ['today', 'project', 'find', 'queue', 'settings']) {
