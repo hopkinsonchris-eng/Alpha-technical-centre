@@ -103,6 +103,8 @@ async function seed(page, { rerun, draft } = {}) {
     if (/^\/api\/countries\/[A-Z]{2}\/intel$/.test(p)) return json(route, { country: p.split('/')[3], name: { en: 'Country', es: 'País' }, world_monitor: { status: 'not_connected', reason: 'not connected' }, sections: {} });
     // Wave 7 PR5 (W7-AC19): the pack route answers for every country; nothing assembled yet in this seed.
     if (/^\/api\/countries\/[A-Z]{2}\/pack$/.test(p)) return json(route, { country: p.split('/')[3], assembled_at: null, sections: [], counts: { built: 0, fresh: 0, due: 0, stale: 0, unreachable: 0, empty: 10 }, job: null, spend_gbp: 0 });
+    // Wave 7 PR6 (W7-AC22): the round watch answers with nothing due and nothing proposed, so the Deadlines card reads zero in one line.
+    if (p === '/api/rounds') return json(route, { countries: [], deadlines: [], proposed: 0 });
     if (p === '/api/me/mailbox') return json(route, { prompt: false, connected: false, configured: false });
     if (p === '/api/me/activity') return json(route, { since: iso(DAY), counts: { records: 0 }, projects: [], brief_available: false });
     if (p === '/api/queue/filing') return json(route, { items: [] });

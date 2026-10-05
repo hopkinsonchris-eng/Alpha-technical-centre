@@ -13,6 +13,8 @@
      // wave 7 PR2 (idea A): a tap on a project dot calls onPoint(point, {lat, lon}) instead of
      // onSelect, so the page can light the project's register row rather than open the country.
      .select(code, { fly: true })      // fly to a country and highlight it; null clears
+     .setRings(['BR', 'PE'])           // wave 7 PR6: a thin gold ring around each country with an open licence
+                                       // round, sized to the country's area; onHover carries open: true for it
      .setLang('en' | 'es')
      .destroy()
 
@@ -33,7 +35,9 @@ const COLOURS = {
   stale: '#E8A33D', expiring: '#E25B4A',
   point: '#FFFFFF', pointRing: 'rgba(201,168,76,0.9)',
   field: '#F3E9C9', fieldLine: 'rgba(11,31,58,0.9)', fieldHover: '#FFFFFF',
+  ring: '#F2DFA0', ringOuter: 'rgba(201,168,76,0.75)',
 };
+const RING_MIN = 12;                    // px: the smallest ring, so a small country still wears one
 const FIELD_R = 2.6;                    // field points: smaller, no pulse
 const POINT_HIT_PX = 8;                 // hover radius for a point
 const FULL_TURN_MS = 90_000;            // one revolution
@@ -69,6 +73,7 @@ export function createGlobe(canvas, opts) {
   let rotation = [20, -18];             // [lambda, phi]: start over the Atlantic, tilted
   let zoom = 1;
   let held = new Map(), points = [];
+  let rings = new Set();                // wave 7 PR6: iso2 codes with an open licence round
   let hovered = null, selected = null;
   let hoveredPoint = null;              // wave 3: the field point under the pointer
   let visible = [];                     // [{p, x, y}] drawn this frame, for hit testing
@@ -137,6 +142,25 @@ export function createGlobe(canvas, opts) {
     // Points on the visible hemisphere: fields first (small, cream, still), then project
     // points on top, pulsing unless motion is reduced.
     const centre = [-rotation[0], -rotation[1]];
+    // Wave 7 PR6 (O, W7-AC22): a thin gold ring around each country with an open licence round, drawn over the land
+    // and under the points: the radius is that of the cap with the country's area, so the ring encloses the country
+    // without any new data; a dashed outer line makes it read as a ring rather than a selection.
+    for (const code of rings) {
+      const f = byCode.get(code);
+      if (!f) continue;
+      const c = centroid.get(f);
+      if (d3.geoDistance(c, centre) > Math.PI / 2 - 0.05) continue;
+      const xy = projection(c);
+      if (!xy) continue;
+      const theta = Math.acos(Math.max(-1, Math.min(1, 1 - area.get(f) / (2 * Math.PI))));
+      const rr = Math.max(RING_MIN, R * Math.sin(theta) * 1.05 + 6);
+      ctx.save();
+      ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
+      ctx.strokeStyle = COLOURS.ring; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.95; ctx.stroke();
+      ctx.beginPath(); ctx.arc(xy[0], xy[1], rr + 4, 0, Math.PI * 2);
+      ctx.setLineDash([3, 4]); ctx.strokeStyle = COLOURS.ringOuter; ctx.lineWidth = 1; ctx.globalAlpha = 0.8; ctx.stroke();
+      ctx.restore();
+    }
     const pulse = reduced ? 0.5 : (Math.sin(now / 600) + 1) / 2;
     visible = [];
     for (const p of points) {
@@ -258,7 +282,7 @@ export function createGlobe(canvas, opts) {
       canvas.style.cursor = f || pt ? 'pointer' : 'grab';
       if (opts.onHover) {
         if (pt) opts.onHover({ code, name: pt.name, x, y, point: pt });
-        else opts.onHover(f ? { code, name: f.properties[lang] || f.properties.en, x, y } : null);
+        else opts.onHover(f ? { code, name: f.properties[lang] || f.properties.en, x, y, open: rings.has(code) } : null);
       }
       if (reduced || pt || !code) draw();
     }
@@ -314,6 +338,8 @@ export function createGlobe(canvas, opts) {
       else if (!code) zoom = 1;
       draw(); schedule();
     },
+    /** Wave 7 PR6: the countries with an open licence round; each wears the ring until the list changes. */
+    setRings(codes) { rings = new Set(Array.isArray(codes) ? codes.filter((c) => byCode.has(c)) : []); draw(); schedule(); },
     setLang(l) { lang = l; },
     nameOf(code) { const f = byCode.get(code); return f ? { en: f.properties.en, es: f.properties.es } : null; },
     /** The country's geographic centre from its polygon (a computed point, never a guess). */

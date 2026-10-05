@@ -8,9 +8,11 @@
                     POST /api/queue/filing/:id/dismiss                 ("not a project email": stays in the firm inbox)
      Lessons        GET  /api/lessons?status=proposed
                     POST /api/lessons/:id/confirm | /reject
-     Review queue   GET  /api/queue/review           (NDA expiries, organisation proposals and fields named in documents; ?kind= adds one more kind)
+     Review queue   GET  /api/queue/review           (NDA expiries, organisation proposals, fields named in documents and round dates; ?kind= adds one more kind)
                     POST /api/organisations          (accepting an organisation proposal adds it to the registry first)
                     POST /api/queue/review/:id/accept | /reject
+     Wave 7 PR6 (O, W7-AC22): a row of kind `round` carries the proposal (country, round, stage, date, the verbatim quote, the source
+                    page and the day it was read); Confirm the date accepts it so it counts on Today, Not a round date rejects it.
      Wave 7 PR3 (H7, W7-AC16), partners:
                     POST /api/queue/filing/:id/create-project {name, id, country, organisation_id?}   "Create a project from this": the project
                                        takes the sender's organisation and country, origin_ref the message, and the row is filed to it
@@ -18,6 +20,7 @@
    No secrets, no provider calls: this file only talks to /api/* on the same origin (behind Cloudflare Access).
    ============================================================ */
 import { api, listOf, mk, dv, add, setText, showSession, showVault, fmtStamp, loadGeo, slugify } from './hub.js';
+import { roundQueueBody } from './components/rounds.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const JSON_HEADERS = { accept: 'application/json', 'content-type': 'application/json' };
@@ -125,6 +128,7 @@ function createSheet(it, row, list) {
 const MAIL_ICON = '<svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
 const BULB_ICON = '<svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>';
 const DOC_ICON = '<svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+const CAL_ICON = '<svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
 function icon(svg, tone) {
   const s = document.createElement('span');
   s.className = 'hub-item-ico' + (tone ? ' ' + tone : '');
@@ -371,6 +375,12 @@ function reviewRow(q, list) {
     add(body, m);
     if (p.evidence) add(body, dv('span', 'm q-quote', '“' + p.evidence + '”'));
     accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept');
+  } else if (q.kind === 'round') {
+    // Wave 7 PR6 (O, W7-AC22): a dated stage of a licence round read from a regulator's page, with the sentence that states it.
+    // Confirm the date moves it to the calendar on Today; nothing counts until a person does.
+    add(row, icon(CAL_ICON, 'gold'));
+    roundQueueBody(body, p, tid, countryNames);
+    accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept');
   } else {
     add(row, icon(DOC_ICON, 'gold'));
     add(body, dv('span', 't', p.summary || p.title || p.proposal || q.kind, { id: tid }));
@@ -378,11 +388,12 @@ function reviewRow(q, list) {
     accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept');
   }
 
-  const okLabel = q.kind === 'organisation' ? ['Add to registry', 'Añadir al registro'] : q.kind === 'asset' ? ['Attach', 'Adjuntar'] : q.kind === 'research' ? (p.fact_kind === 'operator' ? ['Set as operator', 'Fijar como operador'] : p.fact_kind === 'location' ? ['Set location', 'Fijar ubicación'] : ['File as fact', 'Archivar como hecho']) : ['Accept', 'Aceptar'];
+  const okLabel = q.kind === 'organisation' ? ['Add to registry', 'Añadir al registro'] : q.kind === 'asset' ? ['Attach', 'Adjuntar'] : q.kind === 'research' ? (p.fact_kind === 'operator' ? ['Set as operator', 'Fijar como operador'] : p.fact_kind === 'location' ? ['Set location', 'Fijar ubicación'] : ['File as fact', 'Archivar como hecho']) : q.kind === 'round' ? ['Confirm the date', 'Confirmar la fecha'] : ['Accept', 'Aceptar'];
   const ok = mk('button', 'btn btn-primary btn-sm', okLabel[0], okLabel[1], { type: 'button', 'data-action': 'accept', 'aria-describedby': tid });
-  const no = mk('button', 'btn btn-outline btn-sm', q.kind === 'asset' ? 'Not a field' : q.kind === 'research' ? (p.fact_kind === 'location' ? 'Not it' : 'Not a fact') : 'Reject', q.kind === 'asset' ? 'No es un campo' : q.kind === 'research' ? (p.fact_kind === 'location' ? 'No es ese' : 'No es un hecho') : 'Rechazar', { type: 'button', 'data-action': 'reject', 'aria-describedby': tid });
-  ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : q.kind === 'asset' ? 'Field attached to the project; its dossier is filed.' : q.kind === 'research' ? 'Fact recorded with its quote.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : q.kind === 'asset' ? 'Campo adjuntado al proyecto; su dosier queda archivado.' : q.kind === 'research' ? 'Hecho registrado con su cita.' : 'Aceptado.')));
-  no.addEventListener('click', () => act(row, list, '#n-review', () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/reject'), () => announce('Rejected.', 'Rechazado.')));
+  const noLabel = q.kind === 'asset' ? ['Not a field', 'No es un campo'] : q.kind === 'research' ? (p.fact_kind === 'location' ? ['Not it', 'No es ese'] : ['Not a fact', 'No es un hecho']) : q.kind === 'round' ? ['Not a round date', 'No es una fecha de ronda'] : ['Reject', 'Rechazar'];
+  const no = mk('button', 'btn btn-outline btn-sm', noLabel[0], noLabel[1], { type: 'button', 'data-action': 'reject', 'aria-describedby': tid });
+  ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : q.kind === 'asset' ? 'Field attached to the project; its dossier is filed.' : q.kind === 'research' ? 'Fact recorded with its quote.' : q.kind === 'round' ? 'Round date confirmed; it now counts on Today.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : q.kind === 'asset' ? 'Campo adjuntado al proyecto; su dosier queda archivado.' : q.kind === 'research' ? 'Hecho registrado con su cita.' : q.kind === 'round' ? 'Fecha de ronda confirmada; ya cuenta en Hoy.' : 'Aceptado.')));
+  no.addEventListener('click', () => act(row, list, '#n-review', () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/reject'), () => (q.kind === 'round' ? announce('Not a round date; nothing was recorded.', 'No es una fecha de ronda; no se registró nada.') : announce('Rejected.', 'Rechazado.'))));
   add(controls, ok, no);
   add(body, controls);
   add(row, body);
@@ -393,7 +404,7 @@ async function renderReview() {
   const sec = $('#sec-review'), list = $('#review-list');
   const r = await api('/api/queue/review');
   if (!r.ok) return;
-  const want = new Set(['nda-expiry', 'organisation', 'asset', 'research']);
+  const want = new Set(['nda-expiry', 'organisation', 'asset', 'research', 'round']);   // wave 7 PR6: round dates wait here too
   if (kindParam && kindParam !== 'lesson' && kindParam !== 'filing') want.add(kindParam);
   const items = listOf(r.body, 'items', 'queue').filter((q) => q && want.has(q.kind));
   sec.removeAttribute('hidden');
@@ -407,7 +418,8 @@ async function renderReview() {
 
 async function init() {
   person = await showSession();
-  const [pr, geo] = await Promise.all([api('/api/projects'), person && person.role === 'partner' ? loadGeo() : Promise.resolve(null)]);
+  // The polygons name countries for the create sheet (partners) and for the round rows (everyone); the file is cached by the browser.
+  const [pr, geo] = await Promise.all([api('/api/projects'), loadGeo()]);
   showVault(pr.ok || pr.status > 0);
   projects = listOf(pr.body, 'projects', 'items').filter((p) => p && p.id && p.id !== 'firm').map((p) => ({ id: p.id, name: p.name || p.title || p.id }));
   projects.sort((a, b) => a.name.localeCompare(b.name));
