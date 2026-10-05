@@ -3,8 +3,8 @@
  * active or prospect project, under PACK_BUDGET_GBP per country, and writes what changed. The nightly staleness job
  * marks the sections; this job only drafts. A country with no active project is never refreshed.
  *   npx tsx src/jobs/country-pack-refresh.ts        (Render cron "atc-vault-country-pack-refresh", Mondays 05:00 UTC)
- * The sources are the previous build's, read at their newest stored version; when the country-pack job's fetch is
- * wired here (`sources` in RefreshOpts) the refresh re-fetches them first.
+ * Every due or stale section's sources are re-fetched first through the country-pack job's own fetcher, so a
+ * changed page is read at its newest edition and filed as a new version before the section is drafted again.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +13,7 @@ import { migrate } from '../db/migrate.ts';
 import { openProvider } from '../llm/provider.ts';
 import { packBudget } from '../country/types.ts';
 import { refreshStale } from '../country/refresh.ts';
+import { packSourcesFetcher } from './country-pack.ts';
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const db = await openDb();
@@ -20,7 +21,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const provider = openProvider();
   if (!provider) console.error('no drafting provider is configured (ANTHROPIC_API_KEY); due sections stay due and are not drafted');
   try {
-    const r = await refreshStale(db, { provider, budgetGbp: packBudget(), by: 'job:country-pack-refresh' });
+    const r = await refreshStale(db, { provider, budgetGbp: packBudget(), by: 'job:country-pack-refresh', sources: packSourcesFetcher(db) });
     console.log(JSON.stringify({ job_id: r.job_id, countries: r.countries.map(c => ({ country: c.country, sections: c.sections.map(s => `${s.section}:${s.status}`), spend_gbp: c.spend_gbp, stopped_by: c.stopped_by })), rebuilt: r.rebuilt, changed: r.changed.length, spend_gbp: r.spend_gbp, skipped_no_project: r.skipped_no_project }));
   } catch (e) {
     console.error(JSON.stringify({ error: (e as Error).message }));
