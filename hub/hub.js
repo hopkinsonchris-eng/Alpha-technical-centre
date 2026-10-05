@@ -13,6 +13,7 @@ import { vault } from '../js/vault-client.js';
 import { mountStatusStrip } from './components/status-strip.js';
 import { stateline } from './components/stateline.js';
 import { packController, packLine, orderedSections, shortWord, fmtDayMonth } from './components/country-pack.js';
+import { loadRounds, deadlinesCard, roundLine, movedLines, projectCountries } from './components/rounds.js';
 
 /* ── language and DOM helpers ────────────────────────────────────────── */
 
@@ -586,7 +587,9 @@ async function renderGlobe(person) {
         onPoint: (p) => hotRow(p.id),
         onHover: (h) => {
           if (!h) { tip.setAttribute('hidden', ''); return; }
-          tip.textContent = h.name; tip.style.left = h.x + 'px'; tip.style.top = h.y + 'px'; tip.removeAttribute('hidden');
+          // Wave 7 PR6 (O, W7-AC22): a country wearing the ring is named with its open round.
+          tip.textContent = h.name + (h.open ? (lang() === 'es' ? ' · Ronda de licencias abierta' : ' · Open licence round') : '');
+          tip.style.left = h.x + 'px'; tip.style.top = h.y + 'px'; tip.removeAttribute('hidden');
         },
       });
     } catch (e) { globe = null; }
@@ -635,6 +638,21 @@ async function renderGlobe(person) {
     if (!el) { el = mk('span', 'hub-muted', 'Creating a project here also assembles its country pack.', 'Crear un proyecto aquí también arma su paquete del país.', { id: 'country-pack-note', hidden: '' }); const row = $('#country-create-row'); if (row) add(row, el); }
     return el;
   })();
+  // Wave 7 PR6 (O, W7-AC22): the round line under the pack line ("Round: … · bid deadline 7 Oct 2026 (in 2 days)" or
+  // "No open round"), one fetch per selected country; nothing when the Vault has no rounds route.
+  const roundEl = (() => {
+    let el = $('#country-round');
+    if (!el) { el = mk('p', 'hub-note-s hub-round-line', null, null, { id: 'country-round', hidden: '', 'data-round-state': 'off', 'aria-live': 'polite' }); packEl.insertAdjacentElement('afterend', el); }
+    return el;
+  })();
+  async function showRound(code) {
+    roundEl.setAttribute('hidden', ''); roundEl.textContent = ''; roundEl.setAttribute('data-round-state', code ? 'loading' : 'off');
+    if (!code) return;
+    const r = await loadRounds('country=' + encodeURIComponent(code) + '&status=confirmed');
+    if (sec.getAttribute('data-country') !== code) return;                  // another country was chosen meanwhile
+    if (r.state !== 'ready') { roundEl.setAttribute('data-round-state', r.state); return; }
+    roundLine(roundEl, r.view, code);
+  }
   function showPack(code) {
     if (packCtl) { packCtl.stop(); packCtl = null; }
     packEl.setAttribute('hidden', ''); packEl.textContent = ''; packEl.setAttribute('data-pack-state', code ? 'loading' : 'off');
@@ -658,7 +676,7 @@ async function renderGlobe(person) {
     if (!code) {
       panel.setAttribute('hidden', ''); reg.removeAttribute('hidden'); if (filters) filters.removeAttribute('hidden'); unplaced.style.display = '';
       const intel = $('#country-intel'); if (intel) { intel.setAttribute('hidden', ''); intel.textContent = ''; intelFor = null; }
-      showPack(null);
+      showPack(null); showRound(null);
       if (globe) globe.select(null);
       return;
     }
@@ -676,6 +694,7 @@ async function renderGlobe(person) {
     reg.setAttribute('hidden', ''); if (filters) filters.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
     renderIntel(code, names);
     showPack(code);
+    showRound(code);
     if (briefUi) briefUi.loadCached(code);
     if (globe) globe.select(code, { fly: true });
   }
@@ -1388,6 +1407,39 @@ async function renderPackLines(person, projects, info, since) {
   return shown;
 }
 
+/* Wave 7 PR6 (O, W7-AC22): the round watch on Today, from one fetch of GET /api/rounds?within=90&status=confirmed: the
+   Deadlines card among the counters for the countries of the person's live projects, the ring on the globe for every
+   country with an open round, and one What came in line per confirmed deadline that moved since the person last looked.
+   The card stays out of sight when the Vault has no rounds route (404 or 501), like the pack. */
+async function renderRounds(person, projects, info, since) {
+  const card = $('#card-deadlines');
+  if (!card) return null;
+  const r = await loadRounds('within=90&status=confirmed');
+  if (r.state !== 'ready') { card.setAttribute('hidden', ''); card.textContent = ''; card.removeAttribute('data-empty'); card.setAttribute('data-rounds', r.state); return null; }
+  const names = info && info.names, codes = projectCountries(projects);
+  deadlinesCard(card, r.view, { names, codes, onCountry: info && info.select ? (code) => { info.select(code, true); $('#sec-globe').scrollIntoView({ block: 'start', behavior: 'smooth' }); } : null });
+  // The ring: every country the view says has an open round.
+  const rings = r.view.countries.filter((c) => c && c.open).map((c) => c.country).sort();
+  const sec = $('#sec-globe');
+  if (sec) { if (rings.length) sec.setAttribute('data-rings', rings.join(',')); else sec.removeAttribute('data-rings'); }
+  if (info && info.globe && info.globe.setRings) info.globe.setRings(rings);
+  // What came in: a confirmed deadline that moved (or was first confirmed) since the person last looked.
+  const act = $('#card-activity'), host = $('#activity-projects');
+  if (act && host && person && since) {
+    const lines = movedLines(r.view, Date.parse(since), names, codes);
+    for (const l of lines) {
+      const line = mk('p', 'hub-activity-line hub-round-line', null, null, { 'data-activity-round': l.code, 'data-round-event': l.id, 'data-round-change': l.moved ? 'moved' : 'confirmed' });
+      add(line, mk('a', 'hub-cite hub-pack-cite', l.en, l.es, { href: '/hub/index.html#card-deadlines' }));
+      add(host, line);
+    }
+    if (lines.length && act.getAttribute('data-empty') === '1') {
+      act.removeAttribute('data-empty');
+      const counts = $('#activity-counts'); if (counts) { counts.textContent = ''; add(counts, mk('span', 'hub-muted', 'Nothing new in the files, but a round date moved.', 'Nada nuevo en los expedientes, pero una fecha de ronda cambió.')); }
+    }
+  }
+  return r.view;
+}
+
 /** The four counters: each starts at zero in one line (R12) and expands when its source answers with items; the strip reads the same figures. */
 async function renderAttention(projects, strip) {
   const pname = new Map(projects.map((p) => [p.id, projectName(p)]));
@@ -1555,6 +1607,7 @@ async function initToday() {
   if (info && info.select && want && /^[A-Z]{2}$/.test(want)) info.select(want, false);
   await Promise.all([renderActivity(person, strip).catch(() => false), renderAttention(projects, strip), renderRuns(projects)]);
   try { await renderPackLines(person, projects, info, activitySince); } catch (e) { /* the pack lines are optional */ }   // wave 7 PR5 (M)
+  try { await renderRounds(person, projects, info, activitySince); } catch (e) { const c = $('#card-deadlines'); if (c) { c.setAttribute('hidden', ''); c.setAttribute('data-rounds', 'failed'); } }   // wave 7 PR6 (O)
   for (const sk of document.querySelectorAll('.hub-skel')) sk.remove();   // R12: the skeleton leaves with data-ready
   document.body.setAttribute('data-ready', '1');
 }

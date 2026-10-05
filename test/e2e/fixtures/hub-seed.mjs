@@ -75,6 +75,14 @@ export const PACK_CO = {
   ],
 };
 
+// Wave 7 PR6 (W7-AC22): the round watch. Colombia's permanent process has a confirmed qualification date in twelve days
+// and an open round; one more proposal waits in the review queue with its verbatim quote, so Today's Deadlines card, the
+// globe ring, the country panel line and the queue's round row all render on the pages the audits walk.
+const ANH_URL = 'https://www.anh.gov.co/es/hidrocarburos/oportunidades-disponibles/proceso-permanente-de-asignacion-de-areas/';
+const CO_QUAL = { id: u(941), country: 'CO', round: 'Permanent Process for the Assignment of Areas, cycle 2026-II', stage: 'qualification', event_date: new Date(NOW + 12 * DAY).toISOString().slice(0, 10), title: 'PPAA 2026-II: qualification', quote: 'Qualification closes twelve days from the date of this notice.', source_item: null, source_url: ANH_URL, read_at: iso(DAY), status: 'confirmed', confirmed_by: 'chris', confirmed_at: iso(DAY / 2), created_at: iso(DAY), days: 12 };
+export const ROUNDS = { countries: [{ country: 'CO', name: 'Colombia', open: true, events: [CO_QUAL] }, { country: 'PE', name: 'Peru', open: false, events: [] }], deadlines: [CO_QUAL], proposed: 1 };
+export const ROUND_ROW = { id: 'q-round-1', kind: 'round', status: 'open', payload: { country: 'CO', round: 'Permanent Process for the Assignment of Areas, cycle 2026-II', stage: 'bid_deadline', event_date: new Date(NOW + 40 * DAY).toISOString().slice(0, 10), title: 'PPAA 2026-II: bid deadline', quote: 'Proposals are received until the fortieth day after this notice.', source_item: null, source_url: ANH_URL, read_at: iso(DAY) } };
+
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
 /** Seed every route the Hub pages ask for. Returns the log of requests that were answered 404. */
@@ -96,6 +104,8 @@ export async function seedHub(page) {
     if (p === '/api/me/mailbox') return json(route, { prompt: false, connected: false, configured: false });
     if (p === '/api/me/activity') return json(route, { since: iso(DAY), counts: { records: 0 }, projects: [], brief_available: false });
     if (p === '/api/me/connections') return json(route, { connections: [] });
+    if (p === '/api/rounds') return json(route, url.searchParams.get('country') ? { ...ROUNDS, countries: ROUNDS.countries.filter((c) => url.searchParams.get('country').split(',').includes(c.country)) } : ROUNDS);
+    if (p === '/api/queue/review' && m === 'GET') return json(route, { items: [ROUND_ROW], count: 1 });
     if (p.startsWith('/api/queue')) return json(route, { items: [], count: 0 });
     if (p === '/api/lessons') return json(route, { lessons: [] });
     if (p === '/api/runs') return json(route, { runs: RUNS });
