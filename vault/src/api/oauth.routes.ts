@@ -51,10 +51,17 @@ const oauthError = (c: Context, e: unknown) => {
 };
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!));
 
-function page(title: string, body: string, status = 200) {
+/**
+ * `formTo` names the origin the consent form's redirect may land on. Browsers apply
+ * `form-action` to the redirect that follows a form submission as well as to the
+ * submission itself, so without the client's origin here Safari and Chrome refuse the
+ * 302 back to the app and the page just sits there after Allow.
+ */
+function page(title: string, body: string, status = 200, formTo?: string) {
+  const formAction = formTo ? `form-action 'self' ${formTo}` : "form-action 'self'";
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>${esc(title)} · Alpha Technical Centre</title>
 <link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/hub/hub.css"><style>.consent{max-width:560px;margin:48px auto;padding:0 20px}.consent .card{padding:24px}.consent h1{font-size:1.4rem;margin:0 0 8px}.consent p{margin:8px 0}.consent .es{color:var(--muted,#6b7280);font-size:.95em}.consent .actions{display:flex;gap:10px;margin-top:18px}.consent code{font-size:.95em}</style></head>
-<body class="hub"><main class="consent"><div class="card">${body}</div></main></body></html>`, { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-frame-options': 'DENY', 'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'" } });
+<body class="hub"><main class="consent"><div class="card">${body}</div></main></body></html>`, { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-frame-options': 'DENY', 'content-security-policy': `default-src 'self'; style-src 'self' 'unsafe-inline'; ${formAction}; frame-ancestors 'none'` } });
 }
 const denied = (title: string, en: string, es: string, status: number) => page(title, `<h1>${esc(title)}</h1><p>${esc(en)}</p><p class="es">${esc(es)}</p>`, status);
 
@@ -103,7 +110,7 @@ export function register(app: Hono<Env>, { db }: RouteDeps): void {
     return page('Connect to the Vault', `<h1>Allow ${host ? `<code>${esc(host)}</code>` : esc(v.client.name)} to use the Vault as you?</h1>
 <p>${host ? `The app at <code>${esc(host)}</code>` : esc(v.client.name)} asks to search, read, draft and file in the Alpha Technical Centre Vault as <b>${who}</b>. Everything it does is scoped to what you may see and recorded in the audit log under your name. You can revoke it any time under Settings → Connected apps.</p>
 <p class="es">La aplicación pide buscar, leer, redactar y archivar en el Vault como <b>${who}</b>. Todo queda limitado a lo que usted puede ver y registrado a su nombre. Puede revocarlo en Ajustes → Aplicaciones conectadas.</p>
-<form method="post" action="/oauth/authorize">${hidden}<div class="actions"><button class="btn btn-primary" type="submit" name="decision" value="allow">Allow · Permitir</button><button class="btn btn-outline" type="submit" name="decision" value="deny">Cancel · Cancelar</button></div></form>`);
+<form method="post" action="/oauth/authorize">${hidden}<div class="actions"><button class="btn btn-primary" type="submit" name="decision" value="allow">Allow · Permitir</button><button class="btn btn-outline" type="submit" name="decision" value="deny">Cancel · Cancelar</button></div></form>`, 200, new URL(v.redirect_uri).origin);
   });
 
   app.post('/oauth/authorize', async (c) => {
