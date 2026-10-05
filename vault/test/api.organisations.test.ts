@@ -262,5 +262,8 @@ test('firm assets: list, current by kind and language, ambiguity, and settings',
   assert.equal((await call(app, 'PUT', '/api/settings/no-value', { nope: 1 })).status, 400);
   assert.equal((await call(app, 'GET', '/api/settings/missing')).status, 404);
   assert.equal((await call(app, 'DELETE', '/api/settings/day-rates')).status, 200);
-  assert.equal((await call(app, 'GET', '/api/settings/day-rates')).status, 404);
+  // Wave 7 (S34): a deleted day-rates key reads back as the firm defaults, never a 404.
+  const back = await (await call(app, 'GET', '/api/settings/day-rates')).json();
+  assert.equal(back.defaults, true);
+  assert.equal(back.value.rates.Principal, 13500);
 });

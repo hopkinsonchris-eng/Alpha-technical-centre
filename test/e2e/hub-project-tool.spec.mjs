@@ -297,8 +297,8 @@ test('project: header shows client, legal tag and expiry, contacts, assets and s
   await expect(card.locator('.hub-asset')).toContainText(['basin:llanos', 'field:llanos:cubiro']);
   await expect(card.locator('[data-member]')).toHaveCount(2);
   await expect(page).toHaveTitle(/Llanos Basin waterflood screening/);
-  // the sidebar carries the open page's link only here
-  await expect(page.locator('.hub-nav a[aria-current="page"]')).toHaveText('Project file');
+  // wave 7 (S3): one sidebar everywhere; a project page marks Projects as current
+  await expect(page.locator('.hub-nav a[aria-current="page"]')).toHaveText('Projects');
   await expect(page.locator('.hub-nav a', { hasText: 'Tool page' })).toHaveCount(0);
   // KPIs: latest NPV10 171.1 (-8.2 % vs vintage 2), 4 active runs... 2 superseded, 3 stale, scorecard 4/6
   await expect(page.locator('[data-kpi="NPV10"]')).toContainText('171.1');
@@ -616,7 +616,7 @@ test('scorecard: rules whose data source is not built say "not yet measurable"; 
       await expect(page.locator(`[data-rule="${n}"] .hub-pill`)).toHaveText('Not yet measurable');
     }
     for (const n of [1, 3, 4]) await expect(page.locator(`[data-rule="${n}"]`)).not.toHaveAttribute('data-status', 'na');
-    await expect(page.locator('[data-expiry]')).toContainText('expiry not available');
+    await expect(page.locator('[data-expiry]')).toContainText('no expiry recorded on the client file');   // wave 7 (S24)
     await expect(page.locator('[data-pass]')).toContainText('rules pass');
     await expect(page.locator('#notices .hub-notice')).toHaveCount(0);
   }
@@ -657,7 +657,7 @@ test('AC4: the tool page lists versions newest first and links each run', async 
   await expect(page.locator('h1')).toHaveText('Opportunity Register');
   await expect(page.locator('#t-label')).toHaveText('Tool · Browser tool');
   await expect(page.locator('[data-owner]')).toHaveText('chris');
-  await expect(page.locator('.hub-nav a[aria-current="page"]')).toHaveText('Tool page');
+  await expect(page.locator('.hub-nav a[aria-current="page"]')).toHaveCount(0);     // wave 7 (S3): the tool page belongs to no nav entry
   await expect(page.locator('.hub-nav a', { hasText: 'Project file' })).toHaveCount(0);
   await expect(page.locator('#t-actions [data-open]')).toContainText('Open current 2.1.0');
   await expect(page.locator('#t-actions [data-open]')).toHaveAttribute('href', /\/opportunity-register\.html$/);
@@ -714,7 +714,7 @@ test('AC4: the tool page lists versions newest first and links each run', async 
   await expect(page.locator('[data-version-group="2.0.0"] .hub-pill.bad').first()).toHaveText('older than current');
 });
 
-test('tool page: runs on older versions are counted, Re-run all is inert until M08', async ({ page }) => {
+test('tool page: runs on older versions are counted and each is offered a Re-run (wave 7, S36: no inert button, no module hint)', async ({ page }) => {
   await openTool(page);
   const alert = page.locator('[data-older-count]');
   await expect(alert).toHaveAttribute('data-older-count', '4');                        // 3 on 2.0.0 + 1 on 1.2.0; the superseded runs do not count
@@ -723,11 +723,11 @@ test('tool page: runs on older versions are counted, Re-run all is inert until M
   await expect(alert).toContainText('Version 2.0.0 is marked breaking');
   const btn = alert.locator('button[data-action="rerun-all"]');
   await expect(btn).toHaveText('Re-run all 4');
-  await expect(btn).toBeDisabled();
-  await expect(alert.locator('.hub-rerun')).toHaveAttribute('title', 'available with M08');
-  await expect(alert.locator('#rerun-hint')).toHaveText('available with M08');
+  await expect(btn).toBeEnabled();
+  await expect(page.locator('[data-rerun-run]')).toHaveCount(4);
+  await expect(page.locator('[data-rerun-run] button[data-action="rerun"]')).toHaveCount(4);
+  await expect(page.locator('#t-older')).not.toContainText('M08');
   await page.locator('.nav-lang button[data-lang="es"]').click();
-  await expect(alert.locator('.hub-rerun')).toHaveAttribute('title', 'disponible con M08');
   await expect(btn).toHaveText('Volver a ejecutar las 4');
   await page.locator('.nav-lang button[data-lang="en"]').click();
   // bars: by version, older ones red

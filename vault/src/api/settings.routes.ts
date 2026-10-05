@@ -80,6 +80,24 @@ export async function purge(db: Db, person: Person, kind: 'run' | 'item', id: st
   }
 }
 
+/* ── defaults (wave 7, S34) ─────────────────────────────────────────── */
+
+/**
+ * The firm's day rates before a partner has saved any: the same figures Plan Your Job and the
+ * Settings page carry, served with `defaults: true` so neither page logs a 404 on every load.
+ */
+export const DAY_RATE_DEFAULTS = {
+  rates: { Principal: 13500, Senior: 11000, 'Mid-level': 8000, Junior: 5500 },
+  swMult: 100, miscMult: 100, dataMult: 100, margin: 0,
+  partners: [
+    { code: 'MP', name: 'Chris Hopkinson', role: 'Managing Partner', level: 'Principal' },
+    { code: 'RE', name: 'Anton Agafonov', role: 'Reservoir Engineer', level: 'Senior' },
+    { code: 'INFRA', name: 'Pavel Markman', role: 'Facilities / Wells', level: 'Senior' },
+    { code: 'GEO', name: 'Dmitry Sazonenko', role: 'Geoscience / Geology', level: 'Senior' },
+  ],
+};
+const SETTING_DEFAULTS: Record<string, unknown> = { 'day-rates': DAY_RATE_DEFAULTS };
+
 /* ── routes ─────────────────────────────────────────────────────────── */
 
 export function register(app: Hono<Env>, _deps: RouteDeps): void {
@@ -93,7 +111,11 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const key = x.c.req.param('key')!;
     x.a.scope = 'firm'; x.a.refs = [`setting:${key}`];
     const r = (await x.db.query<any>('SELECT key, value, updated_by, updated_at FROM settings WHERE key = $1', [key])).rows[0];
-    if (!r) throw notFound(`setting "${key}" not found`);
+    if (!r) {
+      // A key with firm defaults answers them (wave 7, S34): nothing saved yet is not an error.
+      if (key in SETTING_DEFAULTS) { x.a.detail = { defaults: true }; return { body: { key, value: SETTING_DEFAULTS[key], updated_by: null, updated_at: null, defaults: true } }; }
+      throw notFound(`setting "${key}" not found`);
+    }
     return { body: { ...r, updated_at: iso(r.updated_at) } };
   });
 

@@ -3,23 +3,25 @@
    hub/tool.html?id=<tool id>
 
    Manifest, versions newest first with status, breaking flag and changelog,
-   runs grouped by version, the count of runs still on older versions (with
-   an inert "Re-run all", available with M08) and the owner.
+   runs grouped by version, the runs still on older versions each with a
+   Re-run (wave 7, S36: POST /api/runs/:id/rerun, the server's reason shown
+   when it cannot run them) and the owner. An external app's page is not
+   shown (wave 7, S37): its runs live in the app until it pushes them.
 
      GET /api/catalog              tool manifest + changelog releases
      GET /api/tools/:id/resolve    where "Open current" goes (best effort)
      GET /api/runs?job=<id>        the tool's runs
      GET /api/projects             project names for the run links
+     POST /api/runs/:id/rerun      replay a run on the current version
    Every string a person reads carries data-en and data-es.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, openTarget, fmtShortDate, LIFECYCLE, KIND, SECTION, RUN_STATUS } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, openTarget, fmtShortDate, LIFECYCLE, KIND, SECTION, RUN_STATUS, armOnOpen } from './hub.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const params = new URLSearchParams(location.search);
 const toolId = params.get('id');
 const bi = (en, es) => ({ en, es: es === undefined ? en : es });
 const errMessage = (res) => (res && res.body && res.body.error && res.body.error.message) || '';
-const RERUN_HINT = bi('available with M08', 'disponible con M08');
 
 /** Semver comparison, the same rule the staleness engine uses. */
 export function cmpSemver(a, b) {
@@ -74,7 +76,7 @@ function renderHeader(tool, currentVersion, siteRoot, byId, source) {
     const a = mk('a', 'btn btn-primary btn-sm', null, null, { href: t.href, 'data-open': tool.id });
     add(a, mk('span', null, 'Open current ', 'Abrir versión actual'), dv('span', null, currentVersion));
     if (t.external) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
-    add(act, a);
+    add(act, armOnOpen(a));                                   // wave 7 (S13)
     if (source === 'api') {
       api('/api/tools/' + encodeURIComponent(tool.id) + '/resolve').then((r) => { if (r.ok && r.body && r.body.entry) a.setAttribute('href', new URL(r.body.entry, siteRoot).href); });
     }
@@ -143,11 +145,64 @@ function renderOlder(tool, current, runs, byVer) {
     'Version ' + brk.version + ' is marked breaking, so these runs are not comparable with current and every document citing them is flagged stale. Re-running creates new runs with parents=[old]; nothing is overwritten.',
     'La versión ' + brk.version + ' está marcada como incompatible, así que estas ejecuciones no son comparables con la actual y todo documento que las cite se marca obsoleto. Volver a ejecutar crea ejecuciones nuevas con parents=[antigua]; nada se sobrescribe.'));
   add(box, body);
-  const btn = mk('button', 'btn btn-outline btn-sm', 'Re-run all ' + n, 'Volver a ejecutar las ' + n, { type: 'button', disabled: '', 'aria-describedby': 'rerun-hint', 'data-action': 'rerun-all' });
-  const wrap = mk('span', 'hub-rerun', null, null, { title: RERUN_HINT.en, 'data-title-en': RERUN_HINT.en, 'data-title-es': RERUN_HINT.es });
-  add(wrap, btn, mk('span', 'sr-only', RERUN_HINT.en, RERUN_HINT.es, { id: 'rerun-hint' }));
-  add(box, wrap);
+  const all = mk('button', 'btn btn-outline btn-sm', 'Re-run all ' + n, 'Volver a ejecutar las ' + n, { type: 'button', 'data-action': 'rerun-all' });
+  add(box, add(mk('span', 'hub-rerun'), all));
   add(host, box);
+
+  // Wave 7 (S36): each run on an older version, with its own Re-run; the server's reason when it cannot run them.
+  const rerunList = mk('ul', 'hub-rerun-list', null, null, { 'data-rerun-list': '' });
+  const olderRuns = runs.filter((r) => r.status !== 'superseded' && cmpSemver(r.tool_version, current) < 0).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  const reason = mk('div', 'hub-notice warn', null, null, { 'data-rerun-reason': '', hidden: '' });
+  const rows = new Map();
+  for (const r of olderRuns) {
+    const li = mk('li', null, null, null, { 'data-rerun-run': r.id });
+    add(li, dv('a', 'hub-inline-link', r.title || r.job || r.id, { href: '/hub/project.html?id=' + encodeURIComponent(r.project_id) + '&run=' + encodeURIComponent(r.id) }),
+      dv('span', 'hub-muted', ' · ' + r.tool_version + ' · ' + (r.created_at || '').slice(0, 10)));
+    const b = mk('button', 'btn btn-outline btn-sm', 'Re-run', 'Volver a ejecutar', { type: 'button', 'data-action': 'rerun' });
+    const st = mk('span', 'hub-rerun-state', null, null, { role: 'status' });
+    add(li, document.createTextNode(' '), b, document.createTextNode(' '), st);
+    b.addEventListener('click', () => rerunOne(r, { li, b, st }));
+    rows.set(r.id, { li, b, st });
+    add(rerunList, li);
+  }
+  add(host, rerunList, reason);
+
+  let stopped = false;
+  function stopAll(res) {
+    stopped = true;
+    reason.textContent = '';
+    const msg = errMessage(res);
+    add(reason, add(mk('span'), mk('b', null, 'Re-run is not available on this server yet.', 'La re-ejecución aún no está disponible en este servidor.'), document.createTextNode(' '),
+      mk('span', null, 'Ask Chris.', 'Pregunte a Chris.'), msg ? dv('span', 'hub-muted', ' (' + msg + ')') : null));
+    reason.removeAttribute('hidden');
+    all.disabled = true;
+    for (const { b } of rows.values()) b.disabled = true;
+  }
+  /** POST /api/runs/:id/rerun: a 201 links the new run; a 503 is the server saying it cannot run tools, shown once and stopping everything. */
+  async function rerunOne(r, { li, b, st }) {
+    if (stopped) return 'stop';
+    b.disabled = true; st.textContent = '';
+    add(st, mk('span', 'hub-spin', null, null, { 'aria-hidden': 'true' }), mk('span', null, ' re-running…', ' re-ejecutando…'));
+    const res = await api('/api/runs/' + encodeURIComponent(r.id) + '/rerun', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(120000) });
+    st.textContent = '';
+    if (res.ok && res.body && res.body.id) {
+      b.remove();
+      const changes = res.body.delta && Array.isArray(res.body.delta.changes) ? res.body.delta.changes.length : null;
+      add(st, mk('a', 'btn btn-primary btn-sm', changes ? 'Open the new run (' + changes + ' changed)' : 'Open the new run', changes ? 'Abrir la nueva ejecución (' + changes + ' cambios)' : 'Abrir la nueva ejecución', { href: '/hub/project.html?id=' + encodeURIComponent(r.project_id) + '&run=' + encodeURIComponent(res.body.id), 'data-rerun-done': res.body.id }));
+      li.setAttribute('data-rerun-state', 'done');
+      return 'ok';
+    }
+    if (res.status === 503) { stopAll(res); li.setAttribute('data-rerun-state', 'unavailable'); return 'stop'; }
+    b.disabled = false;
+    li.setAttribute('data-rerun-state', 'failed');
+    add(st, mk('span', 'hub-pill bad', 'not re-run', 'no re-ejecutada'), document.createTextNode(' '), dv('span', 'hub-muted', errMessage(res) || (res.status ? 'HTTP ' + res.status : 'the Vault is unreachable')));
+    return 'failed';
+  }
+  all.addEventListener('click', async () => {
+    all.disabled = true;
+    for (const r of olderRuns) { if (rows.get(r.id).li.getAttribute('data-rerun-state') === 'done') continue; if ((await rerunOne(r, rows.get(r.id))) === 'stop') return; }
+    all.disabled = false;
+  });
 }
 
 // The tooltip is an attribute, which the shared language toggle does not translate: follow the html lang here.
@@ -304,6 +359,15 @@ async function init() {
   const versions = tool.versions || [];
   const cur = tool.aliases && tool.aliases.current;
   const current = versions.some((v) => v.version === cur) ? cur : (versions.slice().sort((a, b) => cmpSemver(b.version, a.version))[0] || {}).version || '—';
+
+  // Wave 7 (S37, D65): an external app keeps its runs until it pushes them; its page here would be empty tables and a placeholder version.
+  if (tool.kind === 'external-app') {
+    renderHeader(tool, current, siteRoot, byId, source);
+    add($('#notices'), notice('warn', tool.name + ' runs in its own app.', tool.name + ' se ejecuta en su propia app.',
+      'Its runs are not held in the Vault yet; open the app from the catalog or the button above.', 'Sus ejecuciones aún no se guardan en el Vault; abra la app desde el catálogo o con el botón de arriba.'));
+    document.body.setAttribute('data-ready', '1');
+    return;
+  }
 
   let runs = [], runsNote = null, projects = [];
   if (source === 'api') {

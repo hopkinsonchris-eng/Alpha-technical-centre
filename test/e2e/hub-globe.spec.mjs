@@ -301,12 +301,14 @@ test('AC16: Brief this country asks the Vault and shows the cited paragraphs, th
 });
 
 test('AC16: without a provider the button explains what is missing; a refusal is shown', async ({ page }) => {
-  await stubApi(page, { '/api/countries/VE/brief': (u, r) => json(r, { error: { code: 'not_implemented', message: 'the Vault assistant is not connected (no LLM provider configured)' } }, 501) });
+  await stubApi(page, { '/api/countries/VE/brief': (u, r) => json(r, { error: { code: 'not_configured', message: 'The drafting assistant is not connected. Ask Chris.' } }, 503) });
   await page.goto('/hub/index.html?country=VE');
   await ready(page); await globeReady(page);
   await page.locator('#country-brief-btn').click();
-  await expect(page.locator('#country-brief .hub-notice.warn')).toContainText('no LLM provider configured');
-  await expect(page.locator('#country-brief .hub-notice.warn')).toContainText('ANTHROPIC_API_KEY');
+  // Wave 7 (S8): one plain sentence, no variable names or file names in what the engineer reads.
+  await expect(page.locator('#country-brief .hub-notice.warn')).toContainText('The drafting assistant is not connected.');
+  await expect(page.locator('#country-brief .hub-notice.warn')).toContainText('Ask Chris');
+  await expect(page.locator('#country-brief .hub-notice.warn')).not.toContainText('_KEY');
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(page.locator('#country-brief-btn')).toHaveText('Resumen del país');
 });
@@ -472,7 +474,8 @@ test('W3-AC9: the brief shows live risk citations as chips, lists the World Moni
   await stubApi(page, { '/api/countries/VE/brief': (u, r) => json(r, { ...BRIEF, world_monitor: { status: 'not_connected', reason: 'not connected (set WORLD_MONITOR_API_KEY on the Vault service)', fetched_at: null, notes: [] } }) });
   await page.locator('#country-brief-btn').click();
   await expect(brief.locator('#brief-wm')).toHaveAttribute('data-status', 'not_connected');
-  await expect(brief.locator('#brief-wm')).toContainText('World Monitor: not connected (set WORLD_MONITOR_API_KEY on the Vault service)');
+  await expect(brief.locator('#brief-wm')).toContainText('World Monitor: not connected');
+  await expect(brief.locator('#brief-wm')).not.toContainText('_KEY');
 });
 
 /* ── wave 3 PR 4: the country intelligence card, fields outside the country ── */
@@ -560,8 +563,9 @@ test('W3-PR4: a field whose coordinates fall outside the country is flagged in t
   await expect(pill).toHaveAttribute('data-outside', 'US');
   await expect(pill).toContainText('outside: in United States');
   await expect(page.locator('[data-project-fields="ven-barinas"] .hub-field-pt[data-field="field:ve:barinas"]')).not.toHaveClass(/outside/);
+  // Wave 7 (S9): without World Monitor the card stays hidden instead of announcing it on every country.
   await expect(page.locator('#country-intel')).toHaveAttribute('data-state', 'not_connected');
-  await expect(page.locator('#country-intel')).toContainText('World Monitor is not connected.');
+  await expect(page.locator('#country-intel')).toBeHidden();
 });
 
 test('W3-PR4: an archived project is left out of the register and My projects', async ({ page }) => {

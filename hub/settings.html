@@ -42,18 +42,26 @@
     <nav aria-label="Hub">
       <span class="hub-nav-group" data-en="Work" data-es="Trabajo">Work</span>
       <div class="hub-nav">
-        <a href="/hub/index.html">
+        <a href="/hub/index.html" data-nav="today">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
           <span data-en="Today" data-es="Hoy">Today</span>
         </a>
-        <a href="/hub/search.html">
+        <a href="/hub/index.html#register" data-nav="projects">
+          <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span data-en="Projects" data-es="Proyectos">Projects</span>
+        </a>
+        <a href="/hub/queue.html" data-nav="queue">
+          <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          <span data-en="Queues" data-es="Colas">Queues</span>
+        </a>
+        <a href="/hub/search.html" data-nav="find">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <span data-en="Find" data-es="Buscar">Find</span>
         </a>
       </div>
       <span class="hub-nav-group" data-en="Firm" data-es="Firma">Firm</span>
       <div class="hub-nav">
-        <a href="/hub/settings.html" aria-current="page">
+        <a href="/hub/settings.html" data-nav="settings">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
           <span data-en="Settings" data-es="Ajustes">Settings</span>
         </a>
@@ -84,9 +92,9 @@
     <main class="hub-content" id="main">
       <div class="hub-head">
         <div>
-          <span class="label" data-en="Rate configuration" data-es="Configuración de tarifas">Rate configuration</span>
-          <h1 data-en="Engineer day rates" data-es="Tarifas de ingenieros">Engineer day rates</h1>
-          <p data-en="Weekly rates and cost adjustments used by Plan Your Job. Saved to the Vault so every machine sees the same rates; this browser keeps a copy as a fallback." data-es="Tarifas semanales y ajustes de coste que usa Plan Your Job. Se guardan en el Vault para que todos los equipos vean las mismas tarifas; este navegador conserva una copia de respaldo.">Weekly rates and cost adjustments used by Plan Your Job. Saved to the Vault so every machine sees the same rates; this browser keeps a copy as a fallback.</p>
+          <span class="label" data-en="Hub" data-es="Hub">Hub</span>
+          <h1 data-en="Settings" data-es="Ajustes">Settings</h1>
+          <p data-en="Your connected apps and mailbox, then the firm's figures for Plan Your Job." data-es="Sus aplicaciones conectadas y su buzón, y luego las cifras de la firma para Plan Your Job.">Your connected apps and mailbox, then the firm's figures for Plan Your Job.</p>
         </div>
         <div class="hub-status" id="status-strip"></div>
       </div>
@@ -158,6 +166,15 @@
         </div>
       </section>
 
+      <!-- PLAN YOUR JOB (wave 7, S34): the day rates and cost components the public Plan Your Job page reads -->
+      <section id="sec-plan-your-job" aria-labelledby="h-pyj">
+        <div class="hub-sec-head">
+          <div>
+            <span class="label" data-en="Plan Your Job" data-es="Plan Your Job">Plan Your Job</span>
+            <h2 id="h-pyj" data-en="Day rates and cost components" data-es="Tarifas diarias y componentes de coste">Day rates and cost components</h2>
+            <p class="hub-muted" data-en="Saved to the Vault so every machine sees the same rates; this browser keeps a copy as a fallback. Partners change them." data-es="Se guardan en el Vault para que todos los equipos vean las mismas tarifas; este navegador conserva una copia de respaldo. Los socios las cambian.">Saved to the Vault so every machine sees the same rates; this browser keeps a copy as a fallback. Partners change them.</p>
+          </div>
+        </div>
       <form id="rates-form" novalidate>
         <section aria-labelledby="h-rates">
           <div class="card">
@@ -258,6 +275,18 @@
           <span id="save-status" role="status" class="hub-muted"></span>
         </div>
       </form>
+      </section>
+
+      <!-- COST & HEALTH (wave 7, S40): operations telemetry, out of the main navigation, for partners -->
+      <section class="card" id="sec-cost" aria-labelledby="h-cost" hidden>
+        <div class="hub-card-head">
+          <div>
+            <h3 id="h-cost" data-en="Cost &amp; health" data-es="Coste y salud">Cost &amp; health</h3>
+            <span class="hub-muted" data-en="Token spend by feature, the infrastructure ceiling, retrieval quality and the project scorecards. For partners." data-es="Gasto en tokens por función, el techo de infraestructura, la calidad de recuperación y las fichas de proyecto. Para socios.">Token spend by feature, the infrastructure ceiling, retrieval quality and the project scorecards. For partners.</span>
+          </div>
+        </div>
+        <div class="hub-actions"><a class="btn btn-outline btn-sm" href="/hub/cost.html" data-en="Open Cost &amp; health" data-es="Abrir Coste y salud">Open Cost &amp; health</a></div>
+      </section>
 
       <p class="hub-foot" data-en="Internal · Strictly confidential" data-es="Interno · Estrictamente confidencial">Internal · Strictly confidential</p>
     </main>
@@ -296,19 +325,20 @@ const setStatus = (en, es, bad) => {
 };
 const banner = (en, es) => { $('notices').textContent = ''; if (en) add($('notices'), add(mk('div', 'hub-notice warn'), mk('span', null, en, es))); };
 
-/* Vault first; the API answers {key, value, ...}. A JSON not_found means "API is up, nothing saved yet". */
+/* Vault first; the API answers {key, value, ...}. Wave 7 (S34): the Vault answers 200 with `defaults: true` until a partner
+   saves, which means "API is up, nothing saved yet" (an older Vault said the same with a 404 not_found). */
 async function readVault() {
   const r = await api(API_PATH);
+  if (r.ok && r.body && r.body.defaults === true) return { state: 'empty' };
   if (r.ok && r.body) return { state: 'ok', cfg: r.body.value !== undefined ? r.body.value : r.body };
   if (r.status === 404 && r.body && r.body.error && r.body.error.code === 'not_found') return { state: 'empty' };
   return { state: 'down' };
 }
+let lastWrite = null;
+/** One PUT (the settings route is PUT /api/settings/:key); the refusal is kept so the status line can say why. */
 async function writeVault(cfg) {
-  let r = await api(API_PATH, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ value: cfg }) });
-  if (r.status === 404 || r.status === 405) {
-    r = await api(API_PATH, { method: 'PUT', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ value: cfg }) });
-  }
-  return r.ok;
+  lastWrite = await api(API_PATH, { method: 'PUT', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ value: cfg }) });
+  return lastWrite.ok;
 }
 
 function fill(cfg) {
@@ -370,8 +400,20 @@ function collect() {
 }
 
 let vaultUp = false;
+let partnerHere = true;
+
+/* Wave 7 (S35): the Vault lets partners change the rates; everyone else reads them with the form switched off. */
+async function loadRole() {
+  const me = await api('/api/me');
+  partnerHere = !!(me.ok && me.body && me.body.role === 'partner');
+  if (partnerHere) { $('sec-cost').removeAttribute('hidden'); return; }
+  if (!me.ok) return;                                           // the Vault is down: the browser copy stays editable as before
+  for (const el of document.querySelectorAll('#rates-form input, #rates-form button')) el.disabled = true;
+  setStatus('Rates are set by a partner. You can read them here.', 'Las tarifas las fija un socio. Puede consultarlas aquí.');
+}
 
 async function load() {
+  await loadRole();
   const v = await readVault();
   const local = lsGet();
   const strip = $('status-strip');
@@ -411,6 +453,7 @@ $('rates-form').addEventListener('submit', async (e) => {
   const local = lsSet(cfg);
   const remote = vaultUp ? await writeVault(cfg) : false;
   if (remote) setStatus('Saved to the Vault. Plan Your Job will use these rates on next load.', 'Guardado en el Vault. Plan Your Job usará estas tarifas en la próxima carga.');
+  else if (vaultUp && lastWrite && lastWrite.status === 403) setStatus('Not saved: ' + ((lastWrite.body && lastWrite.body.error && lastWrite.body.error.message) || 'changing settings is restricted to partners') + '.', 'No guardado: cambiar los ajustes está reservado a los socios.', true);
   else if (local) setStatus('Saved in this browser only; the Vault could not be reached.', 'Guardado solo en este navegador; no se pudo acceder al Vault.', true);
   else setStatus('Save failed.', 'Error al guardar.', true);
   renderPartners(cfg.partners);
@@ -425,7 +468,7 @@ $('reset').addEventListener('click', async () => {
   setStatus('Reset to defaults.', 'Valores restablecidos.');
 });
 
-load();
+load().finally(() => document.body.setAttribute('data-ready', '1'));
 
 /* Wave 5: the apps connected through the Vault's own OAuth (docs/vault-hub/wave5/05-markup.md §1.4). */
 async function loadConnections() {
@@ -462,7 +505,7 @@ async function loadMailbox() {
   sec.setAttribute('data-mailbox', m.connected ? 'connected' : 'off');
   if (!m.connected) {
     $('mailbox-on').setAttribute('hidden', ''); $('mailbox-off').removeAttribute('hidden');
-    setText($('mailbox-off-text'), m.configured ? 'No mailbox is connected.' : 'Mailbox connections are not set up on the server yet (SETUP.md §7).', m.configured ? 'Ningún buzón conectado.' : 'Las conexiones de buzón aún no están configuradas en el servidor (SETUP.md §7).');
+    setText($('mailbox-off-text'), m.configured ? 'No mailbox is connected.' : 'Mail capture is not switched on for this Vault yet. Ask Chris.', m.configured ? 'Ningún buzón conectado.' : 'La captura de correo aún no está activada en este Vault. Pregunte a Chris.');
     $('mailbox-connect').disabled = !m.configured;
     return;
   }

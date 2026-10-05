@@ -151,7 +151,7 @@ test('W6-AC3: an associate sees no firm rules; a server without the Zoho client 
   await stub(page, { mailbox: { configured: false, connected: false, prompt: false, connection: null, counts: null, firm_domains: [] } });
   await page.goto('/hub/settings.html');
   await expect(sec).toHaveAttribute('data-mailbox', 'off', { timeout: 10000 });
-  await expect(sec.locator('#mailbox-off-text')).toContainText('not set up on the server yet');
+  await expect(sec.locator('#mailbox-off-text')).toHaveText('Mail capture is not switched on for this Vault yet. Ask Chris.');   // wave 7 (S34): no file names in the copy
   await expect(sec.locator('#mailbox-connect')).toBeDisabled();
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(sec.locator('#h-mailbox')).toHaveText('Su buzón');
