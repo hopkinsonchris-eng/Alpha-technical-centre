@@ -1,0 +1,5 @@
+{
+  "$comment": "The country opening pack's source registry (wave 7 PR4). Reviewed in pull requests like the reference sets. Every source carries its licence and attribution line and the domains the fetch may touch; a {year} in a url is a series resolved to the current edition at build time. Builders J and K fill the generic set and the per-country entries from docs/vault-hub/wave7/04-step-changes.md P1 and 00-practice-scan-research.md; this skeleton fixes the shape (vault/src/country/types.ts CountryRegistry).",
+  "generic": [],
+  "countries": {}
+}
