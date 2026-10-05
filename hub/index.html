@@ -294,9 +294,11 @@
         </article>
       </section>
 
-      <!-- THE FOUR COUNTERS (wave 7 PR2 R4, R12): one line each at zero, open when there is something -->
-      <section id="sec-counters" aria-label="Filing, lessons, re-runs and stale records">
+      <!-- THE COUNTERS (wave 7 PR2 R4, R12): one line each at zero, open when there is something.
+           Wave 7 PR6 (O, W7-AC22): Deadlines in the next 90 days leads the row, full width, hidden until the Vault answers with a rounds view -->
+      <section id="sec-counters" aria-label="Deadlines, filing, lessons, re-runs and stale records">
         <div class="hub-counters">
+          <article class="card hub-counter hub-deadlines" id="card-deadlines" aria-labelledby="h-deadlines" data-rounds="loading" hidden></article>
           <article class="card hub-counter" id="card-filing" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>
           <article class="card hub-counter" id="card-lessons" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>
           <article class="card hub-counter" id="card-rerun" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>

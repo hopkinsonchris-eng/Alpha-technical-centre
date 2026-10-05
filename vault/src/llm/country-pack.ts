@@ -23,6 +23,7 @@ import { countryName } from '../opportunities.ts';
 import { SECTIONS, SECTION_IDS, type PackSectionBody, type PackSentence, type PackStatus, type SectionId } from '../country/types.ts';
 import { SECTION_SPECS, caveatFor, literatureOriginals, vendorContacts } from '../country/sections.ts';
 import { countryRisk, worldMonitorConfigured, NOT_CONNECTED } from '../intel/worldmonitor.ts';
+import { confirmedRoundSentences } from '../rounds/store.ts';
 
 /* ── contracts shared with the job (builder J wires `opts.draft = draftSections`) ─────────────────────────── */
 
@@ -325,6 +326,12 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
       continue;
     }
     result = await draftSection(ctx.provider, w.section, originals, { country, contacts, unreachable });
+    // Wave 7 PR6 (W7-AC22): the licensing section reads from round_events. Each confirmed event is one cited line added
+    // from the table after drafting, never fed to the model, so the section stays true once the watch confirms a date.
+    if (w.section === 'licensing') {
+      const lines = await confirmedRoundSentences(ctx.db, country);
+      if (lines.length) result = { ...result, body: { ...result.body, sentences: [...result.body.sentences, ...lines] }, citations: [...new Set([...result.citations, ...lines.flatMap(l => l.cites)])] };
+    }
     if (result.called) {
       summary.calls++; spent = round4(spent + result.spend_gbp);
       await ctx.db.query(`INSERT INTO audit_events (person_id, action, scope, refs, detail, tokens_in, tokens_cached, tokens_out, cost_usd) VALUES ($1,$2,'public',$3::text[],$4::jsonb,$5,$6,$7,$8)`,
