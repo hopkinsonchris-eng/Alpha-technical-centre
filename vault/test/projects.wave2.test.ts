@@ -224,7 +224,9 @@ test('AC12: GET /api/countries groups the projects the caller may see, with name
   assert.equal(eg.projects[0].client_name, 'Frontera Energy');
   // Projects without a country are listed separately, never silently dropped.
   assert.ok(r.body.unplaced.some((p: any) => p.id === 'plain-project'));
-  assert.ok(r.body.unplaced.some((p: any) => p.id === 'firm'));
+  // Wave 7 (S4): the internal holding project is not an opportunity; it is never on the globe or in the unplaced list.
+  assert.ok(!r.body.unplaced.some((p: any) => p.id === 'firm'));
+  assert.ok(!r.body.countries.some((c: any) => c.projects.some((p: any) => p.id === 'firm')));
   assert.equal(r.body.generated_at.slice(0, 4), new Date().toISOString().slice(0, 4));
 });
 

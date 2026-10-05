@@ -45,7 +45,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
   route(app, 'GET', '/api/countries', 'country.summary', async (x) => {
     const acc = await loadAccess(x.db, x.person, x.now);
     // Archived projects are hidden from the globe, the panel and the counts (never deleted: the file still opens by id).
-    const visible = [...acc.projects.values()].filter(p => p.status !== 'archived' && canSee(acc, p.default_legal_tag, p.id));
+    // Wave 7 (S4): the internal holding project is not an opportunity; it is never on the globe or in the unplaced list.
+    const visible = [...acc.projects.values()].filter(p => p.id !== 'firm' && p.status !== 'archived' && canSee(acc, p.default_legal_tag, p.id));
     const ids = visible.map(p => p.id);
     const orgs = new Map((await x.db.query<{ id: string; name: string }>('SELECT id, name FROM organisations')).rows.map(o => [o.id, o.name]));
 
@@ -121,7 +122,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
    * country within the caller's scope (docs/vault-hub/wave2/05-markup.md §1.6). Cached per
    * (country, language, scope tags, source set); a cached row is served only to a caller who may
    * see every tag it was built from, and regenerated when any source changed. Never written to
-   * items, so a brief cannot widen a scope. 501 without a provider, like /api/llm.
+   * items, so a brief cannot widen a scope. 503 not_configured without a provider (wave 7: the same code Write to… uses).
    */
   route(app, 'POST', '/api/countries/:code/brief', 'country.brief', async (x) => {
     const code = x.c.req.param('code')!;
@@ -150,7 +151,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       return { body: view(hit.body, true, iso(hit.created_at)!, hit.model ?? null) };
     }
     const provider = briefProvider();
-    if (!provider) throw new ApiError(501, 'not_implemented', 'the Vault assistant is not connected (no LLM provider configured)');
+    if (!provider) throw new ApiError(503, 'not_configured', 'The drafting assistant is not connected. Ask Chris.');
     const r = await writeBrief(ctx, name[language], language, provider);
     const body = { paragraphs: r.paragraphs, citations: r.citations, sources: ctx.sources, warnings: r.warnings, questions: r.questions };
     await x.db.query('INSERT INTO country_briefs (country, language, scope_hash, source_hash, tags, body, model, created_by, created_at) VALUES ($1,$2,$3,$4,$5::text[],$6::jsonb,$7,$8,$9)',

@@ -35,11 +35,16 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     if (opp.country !== undefined) set('country', opp.country);
     if (opp.lat !== undefined) set('lat', opp.lat);
     if (opp.lon !== undefined) set('lon', opp.lon);
+    // Wave 7 (S14): archiving remembers the status the project had in register.status_before_archive;
+    // leaving archived clears the note, so Restore puts an Active project back as Active.
+    let register = opp.register;
     if (b.status !== undefined) {
       set('status', b.status);
       if (b.status === 'closed' && p.status !== 'closed') set('closed_at', x.now.toISOString());
+      if (b.status === 'archived' && p.status !== 'archived') register = { ...(register ?? {}), status_before_archive: p.status };
+      if (b.status !== 'archived' && p.status === 'archived') register = { ...(register ?? {}), status_before_archive: null };
     }
-    if (opp.register !== undefined) set('register', JSON.stringify(opp.register), '::jsonb');
+    if (register !== undefined) set('register', JSON.stringify(register), '::jsonb');
     const stageChange = opp.stage !== undefined && opp.stage !== p.stage ? { from: p.stage, to: opp.stage } : null;
     if (stageChange) {
       set('stage', stageChange.to);

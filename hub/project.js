@@ -21,7 +21,7 @@
      POST /api/queue/review/:id/accept|reject  wave 3: attach the proposal (with a chosen candidate or by name) or dismiss it
    Every string a person reads carries data-en and data-es.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, fmtStamp, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, fmtStamp, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord, armOnOpen } from './hub.js';
 import './components/stale-badge.js';
 import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
@@ -68,6 +68,9 @@ function failPage(res) {
 
 /* ── header ──────────────────────────────────────────────────────────── */
 
+/** Wave 7 (S4, S25): the internal holding project carries records but is not an opportunity. */
+const isHoldingProject = (p) => !!p && p.id === 'firm';
+
 const STATUS_PILL = { active: ['Active', 'Activo', 'ok'], prospect: ['Prospect', 'Prospecto', 'info'], closed: ['Closed', 'Cerrado', 'muted'], archived: ['Archived', 'Archivado', 'muted'] };
 
 /** The legal tag's expiry: from a tag object on the project if the API ever adds one, else the NDA in force on the client's file. */
@@ -98,19 +101,32 @@ function renderHeader(ctx) {
   // Wave 2: where it is and what stage it is at; the stage changes in place (PATCH /api/projects/:id).
   const cn = p.country && ctx.names && ctx.names.get(p.country);
   if (p.country) add(sub, document.createTextNode(' · '), cn ? mk('b', null, cn.en, cn.es, { 'data-country': p.country }) : dv('b', null, p.country, { 'data-country': p.country }));
-  const stageCtl = mk('span', 'hub-stage-ctl');
-  const sel = mk('select', null, null, null, { id: 'p-stage', 'aria-label': 'Stage' });
-  for (const st of STAGES) add(sel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
-  sel.value = p.stage || 'Initial screen';
-  add(stageCtl, mk('label', null, 'stage', 'etapa', { for: 'p-stage' }), sel);
-  add(sub, document.createTextNode(' · '), stageCtl);
-  sel.addEventListener('change', () => changeStage(ctx, sel));
-  // Wave 3 PR 4: archive (hide, never delete) and restore; partners only, like creating.
-  if (ctx.person && ctx.person.role === 'partner') {
-    const archived = p.status === 'archived';
-    const btn = mk('button', 'btn btn-outline btn-sm hub-archive-btn', archived ? 'Restore project' : 'Archive project', archived ? 'Restaurar proyecto' : 'Archivar proyecto', { type: 'button', id: 'p-archive', 'data-archived': archived ? '1' : '0' });
-    btn.addEventListener('click', () => archiveProject(ctx, btn));
-    add(sub, document.createTextNode(' · '), btn);
+  // Wave 7 (S25): the internal holding project is not an opportunity: no stage, no archive, no register card.
+  if (!isHoldingProject(p)) {
+    const stageCtl = mk('span', 'hub-stage-ctl');
+    const sel = mk('select', null, null, null, { id: 'p-stage', 'aria-label': 'Stage' });
+    for (const st of STAGES) add(sel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
+    sel.value = p.stage || 'Initial screen';
+    add(stageCtl, mk('label', null, 'stage', 'etapa', { for: 'p-stage' }), sel);
+    add(sub, document.createTextNode(' · '), stageCtl);
+    sel.addEventListener('change', () => changeStage(ctx, sel));
+    // Wave 7 (W7-AC4): what comes next and what last happened, readable before anything scrolls.
+    const reg = p.register || {};
+    const next = mk('span', 'hub-next', null, null, { 'data-next': reg.next ? '1' : '' });
+    add(next, mk('span', null, 'next', 'siguiente'), document.createTextNode(' '), reg.next ? dv('b', null, reg.next) : mk('span', 'hub-muted', 'not set', 'sin definir'));
+    add(sub, document.createTextNode(' · '), next);
+    const lastEntry = (ctx.entries || []).find((e) => e.kind === 'run' || e.kind === 'item');
+    const last = mk('span', 'hub-last', null, null, { 'data-last': lastEntry ? lastEntry.id : '' });
+    if (lastEntry) { const d = fmtShortDate(lastEntry.at); add(last, mk('span', null, 'last', 'último'), document.createTextNode(' '), dv('b', null, lastEntry.title || lastEntry.id), document.createTextNode(' '), mk('span', 'hub-muted', d.en, d.es)); }
+    else add(last, mk('span', null, 'last', 'último'), document.createTextNode(' '), mk('span', 'hub-muted', 'no records yet', 'aún sin registros'));
+    add(sub, document.createTextNode(' · '), last);
+    // Wave 3 PR 4: archive (hide, never delete) and restore; partners only, like creating.
+    if (ctx.person && ctx.person.role === 'partner') {
+      const archived = p.status === 'archived';
+      const btn = mk('button', 'btn btn-outline btn-sm hub-archive-btn', archived ? 'Restore project' : 'Archive project', archived ? 'Restaurar proyecto' : 'Archivar proyecto', { type: 'button', id: 'p-archive', 'data-archived': archived ? '1' : '0' });
+      btn.addEventListener('click', () => archiveProject(ctx, btn));
+      add(sub, document.createTextNode(' · '), btn);
+    }
   }
   const banner = $('#p-archived');
   if (banner) { if (p.status === 'archived') banner.removeAttribute('hidden'); else banner.setAttribute('hidden', ''); }
@@ -132,7 +148,8 @@ function renderHeader(ctx) {
     add(note, mk('span', null, 'expires', 'vence'), document.createTextNode(' '), dv('b', null, exp.date),
       document.createTextNode(' ('), mk('span', null, d + ' days', d + ' días'), document.createTextNode(')'));
     if (exp.ref) add(note, document.createTextNode(' · '), dv('span', null, exp.ref));
-  } else add(note, mk('span', null, 'expiry not available from the API', 'vencimiento no disponible en la API'));
+  } else if (/^lt-(firm|public)$/.test(p.default_legal_tag || '')) add(note, mk('span', null, 'no expiry (firm tag)', 'sin vencimiento (etiqueta de la firma)'));   // wave 7 (S24)
+  else add(note, mk('span', null, 'no expiry recorded on the client file', 'sin vencimiento registrado en la ficha del cliente'));
   add(tagDd, note);
   add(dl, mk('dt', null, 'Legal tag', 'Etiqueta legal'), tagDd);
   const assets = mk('dd', 'chips');
@@ -143,20 +160,23 @@ function renderHeader(ctx) {
   add(dl, mk('dt', null, 'Default tag', 'Etiqueta por defecto'), mk('dd', null, 'inherited by every run and document', 'heredada por cada ejecución y documento'));
   add(card, dl);
 
-  // Client contacts.
+  // Contacts. Wave 7 (S15): the same list Write to… uses (GET /api/projects/:id/contacts: the project's own contacts plus the
+  // client's and each counterparty's); the organisation file is the fallback when that route is not for this caller.
   const cwrap = mk('div', 'hub-people');
-  add(cwrap, mk('span', 'label', 'Client contacts', 'Contactos del cliente'));
+  add(cwrap, mk('span', 'label', 'Contacts', 'Contactos'));
   const ids = new Set(p.contacts || []);
-  const contacts = ((org && org.contacts) || []).filter((c) => ids.has(c.id));
+  const shared = Array.isArray(ctx.contactsList) ? ctx.contactsList : null;
+  const contacts = shared || ((org && org.contacts) || []).filter((c) => ids.has(c.id));
   if (contacts.length) {
     for (const c of contacts) {
       const d = mk('div', null, null, null, { 'data-contact': c.id });
       add(d, dv('b', null, c.name), document.createTextNode(' '), c.role ? dv('span', 'hub-muted', '· ' + c.role) : null);
-      const bits = [(c.emails || [])[0], c.language ? String(c.language).toUpperCase() : ''].filter(Boolean).join(' · ');
+      const orgName = c.organisation && c.organisation.name ? c.organisation.name : '';
+      const bits = [orgName, (c.emails || [])[0], c.language ? String(c.language).toUpperCase() : ''].filter(Boolean).join(' · ');
       if (bits) add(d, dv('div', 'hub-note-s', bits));
       add(cwrap, d);
     }
-  } else if (ids.size) {
+  } else if (ids.size && !shared) {
     for (const id of ids) add(cwrap, dv('span', 'hub-asset', id));
   } else add(cwrap, mk('span', 'hub-muted', 'None recorded', 'Ninguno registrado'));
   add(card, cwrap);
@@ -193,7 +213,9 @@ async function archiveProject(ctx, btn) {
     return;
   }
   btn.disabled = true;
-  const next = archiving ? 'archived' : (p.closed_at ? 'closed' : 'prospect');
+  // Wave 7 (S14): the Vault noted the status at archive time; Restore puts it back (an old archive without the note falls back as before).
+  const before = p.register && typeof p.register.status_before_archive === 'string' ? p.register.status_before_archive : null;
+  const next = archiving ? 'archived' : (before && before !== 'archived' ? before : (p.closed_at ? 'closed' : 'prospect'));
   const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ status: next }) });
   btn.disabled = false;
   btn.removeAttribute('data-confirm');
@@ -237,17 +259,20 @@ function renderToolbar(ctx, cat) {
   const byId = new Map(tools.map((t) => [t.id, t]));
   const siteRoot = new URL('../', location.href);
   const list = tools.filter((t) => t.lifecycle === 'production' && t.hub && (t.hub.context || []).includes('project')).sort((a, b) => (a.hub.toolbar ?? 999) - (b.hub.toolbar ?? 999));
+  let external = 0;
   for (const t of list) {
     const target = openTarget(t, byId, siteRoot);
     const u = new URL(target.href);
-    u.searchParams.set(t.hub.param || 'project', ctx.project.id);
-    const a = mk('a', null, null, null, { href: u.href, 'data-toolbar-tool': t.id });
+    // Wave 7 (S28): only a browser tool reads ?project=; an external app opens as itself.
+    if (!target.external) u.searchParams.set(t.hub.param || 'project', ctx.project.id); else external++;
+    const a = mk('a', null, null, null, { href: u.href, 'data-toolbar-tool': t.id, 'data-external': target.external ? '1' : '0' });
     a.insertAdjacentHTML('afterbegin', svgIcon('<path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>'));
     add(a, dv('span', null, t.name));
     if (target.external) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
-    add(host, a);
+    add(host, armOnOpen(a));                                    // wave 7 (S13): the legacy portal check is satisfied before the tool opens
   }
-  add(host, list.length ? mk('span', 'hub-muted', 'open in this project', 'se abren en este proyecto') : mk('span', 'hub-muted', 'No tool declares a project context yet.', 'Ninguna herramienta declara aún un contexto de proyecto.'));
+  if (!list.length) add(host, mk('span', 'hub-muted', 'No tool declares a project context yet.', 'Ninguna herramienta declara aún un contexto de proyecto.'));
+  else add(host, mk('span', 'hub-muted', external ? 'open in this project; the external apps open as themselves' : 'open in this project', external ? 'se abren en este proyecto; las apps externas se abren por sí mismas' : 'se abren en este proyecto'));
 }
 
 /** Wave 4: licence types on the register, bilingual (value, English, Spanish). */
@@ -1340,7 +1365,7 @@ async function init() {
   showVault(true);
   const project = pr.body;
 
-  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo, rsR] = await Promise.all([
+  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo, rsR, ctR] = await Promise.all([
     api('/api/projects/' + enc + '/timeline'),
     api('/api/projects/' + enc + '/vintages'),
     api('/api/projects/' + enc + '/lineage'),
@@ -1352,6 +1377,7 @@ async function init() {
     loadCatalog(),
     loadGeo(),
     api('/api/projects/' + enc + '/research'),
+    api('/api/projects/' + enc + '/contacts'),                 // wave 7 (S15): the list Write to… uses
   ]);
   const names = new Map();
   if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
@@ -1370,12 +1396,13 @@ async function init() {
   const lessonsOk = lessonR.ok && lessonR.status !== 404 && lessonR.status !== 501;
   const lessons = lessonsOk ? listOf(lessonR.body, 'lessons', 'items') : [];
   const now = Date.now();
-  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names, person: me };
+  const contactsList = ctR.ok && ctR.body && Array.isArray(ctR.body.contacts) ? ctR.body.contacts : null;
+  const ctx = { project, org, orgFile, entries, vintages, lineage, runs, basis, now, names, person: me, contactsList };
 
   renderHeader(ctx);
   renderToolbar(ctx, cat);
   const researchOk = rsR.ok && rsR.status !== 404 && rsR.status !== 501;
-  renderOpportunity(ctx);
+  if (isHoldingProject(project)) { const opp = $('#p-opportunity'); if (opp) opp.setAttribute('hidden', ''); } else renderOpportunity(ctx);
   await renderFields(ctx);
   renderHeader(ctx);                                       // the asset chips now carry names
   setupUpload(project);

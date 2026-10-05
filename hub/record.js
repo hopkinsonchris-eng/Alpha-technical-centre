@@ -12,7 +12,7 @@
      node   the lineage node, entry the timeline entry (either may be absent)
      ctx    { project, entryById, lineage, versionsOf(id), open(ref, title) }
    ============================================================ */
-import { mk, dv, add, fmtShortDate, num, RUN_STATUS } from './hub.js';
+import { mk, dv, add, fmtShortDate, num, RUN_STATUS, api } from './hub.js';
 import { firstReason } from './components/stale-badge.js';
 import { buildViewer } from './viewer.js';
 
@@ -147,6 +147,65 @@ function draftView(rec, ctx) {
   return host;
 }
 
+/* ── field dossiers and papers (wave 7, S20, S26) ────────────────────── */
+
+const DOSSIER_SKIP = new Set(['kind', 'asset_id', 'source', 'source_url', 'summary', 'manifest', 'ingest', 'attribution', 'chunks', 'text_chars', 'pages', 'format']);
+const FACT_LABEL = {
+  asset_name: ['Field', 'Campo'], owners: ['Owners', 'Titulares'], operator: ['Operator', 'Operador'], status: ['Status', 'Estado'], lat: ['Latitude', 'Latitud'], lon: ['Longitude', 'Longitud'],
+  country: ['Country', 'País'], basin: ['Basin', 'Cuenca'], label: ['Name', 'Nombre'], admin1: ['Region', 'Región'], feature_code: ['Feature', 'Tipo'], id: ['Record id', 'Id del registro'],
+  discovered: ['Discovered', 'Descubierto'], production_start: ['Production start', 'Inicio de producción'], fuel: ['Fuel', 'Hidrocarburo'],
+};
+const SOURCE_NAME = { gem: 'Global Energy Monitor', wikidata: 'Wikidata', geonames: 'GeoNames', vault: 'Vault' };
+const factText = (v) => (Array.isArray(v) ? v.map(factText).join(', ') : v && typeof v === 'object' ? Object.entries(v).map(([k, x]) => k + ' ' + factText(x)).join(' · ') : String(v));
+
+/** The GEM, Wikidata or GeoNames facts that justified attaching the field, as a key-value card with the source and its attribution. */
+function dossierView(rec) {
+  const ex = rec.extracted || {};
+  const host = mk('div', 'hub-rp-dossier', null, null, { 'data-dossier': ex.asset_id || '' });
+  if (ex.summary) add(host, dv('p', null, ex.summary));
+  const dl = mk('dl', 'hub-kv');
+  const keys = ['asset_name', ...Object.keys(ex).filter((k) => k !== 'asset_name' && !DOSSIER_SKIP.has(k) && ex[k] !== null && ex[k] !== undefined && ex[k] !== '')];
+  for (const k of keys) {
+    if (ex[k] === null || ex[k] === undefined || ex[k] === '') continue;
+    const lab = FACT_LABEL[k] || [k.replace(/_/g, ' '), k.replace(/_/g, ' ')];
+    add(dl, mk('dt', null, lab[0], lab[1]), dv('dd', null, factText(ex[k]), { 'data-fact': k }));
+  }
+  add(host, dl);
+  const src = mk('p', 'hub-muted hub-note-s', null, null, { 'data-dossier-source': ex.source || '' });
+  add(src, mk('span', null, 'Source: ', 'Fuente: '), ex.source_url ? dv('a', 'hub-inline-link', SOURCE_NAME[ex.source] || ex.source || 'source', { href: ex.source_url, target: '_blank', rel: 'noopener noreferrer' }) : dv('span', null, SOURCE_NAME[ex.source] || ex.source || '—'));
+  if (ex.attribution) add(src, dv('span', null, ' · ' + ex.attribution));
+  add(host, src);
+  return host;
+}
+
+/** Authors, year, DOI and the abstract: from extracted (the ingest now carries abstract, doi and authors on the item) or, for an older
+ *  paper, from the stored bibliographic record (metadata and abstract only, never full text). No Download: the original is the metadata. */
+async function paperView(rec) {
+  const host = mk('div', 'hub-rp-paper', null, null, { 'data-paper': rec.id });
+  const ex0 = rec.extracted || {};
+  let meta = typeof ex0.abstract === 'string' && ex0.abstract.trim() ? { abstract: ex0.abstract, doi: ex0.doi, authors: ex0.authors, authored_at: ex0.authored_at || ex0.year } : null;
+  if (!meta && rec.storage_key) {
+    try {
+      const res = await fetch('/api/items/' + encodeURIComponent(rec.id) + '/original', { headers: { accept: 'application/json' }, credentials: 'same-origin' });
+      if (res.ok && /json/.test(res.headers.get('content-type') || '')) meta = await res.json();
+    } catch (e) { meta = null; }
+  }
+  const authors = (meta && Array.isArray(meta.authors) && meta.authors.length ? meta.authors : rec.authors) || [];
+  const when = (meta && meta.authored_at) || rec.authored_at;
+  const year = when ? String(when).slice(0, 4) : '';
+  const doi = (rec.extracted && rec.extracted.doi) || (meta && meta.doi) || '';
+  const line = mk('p', 'hub-note-s', null, null, { 'data-paper-meta': '' });
+  if (authors.length) add(line, dv('span', null, authors.join(', ')));
+  if (year) add(line, document.createTextNode(authors.length ? ' · ' : ''), dv('span', null, year));
+  if (doi) add(line, document.createTextNode(' · '), dv('a', 'hub-inline-link mono', 'doi:' + doi, { href: 'https://doi.org/' + doi, target: '_blank', rel: 'noopener noreferrer' }));
+  else if (rec.origin && rec.origin.url) add(line, document.createTextNode(' · '), dv('a', 'hub-inline-link', rec.origin.source || 'source', { href: rec.origin.url, target: '_blank', rel: 'noopener noreferrer' }));
+  add(host, line);
+  const abstract = meta && typeof meta.abstract === 'string' && meta.abstract.trim() ? meta.abstract.trim() : (meta && typeof meta.text === 'string' && meta.text.trim() ? meta.text.trim() : '');
+  if (abstract) add(host, dv('p', 'hub-rp-abstract', abstract, { 'data-paper-abstract': '' }));
+  else add(host, mk('p', 'hub-muted', 'No abstract was stored for this paper.', 'No se guardó resumen de este artículo.', { 'data-paper-abstract': '' }));
+  return host;
+}
+
 /* ── documents ───────────────────────────────────────────────────────── */
 
 async function renderDoc({ ref, rec, node, entry, ctx }) {
@@ -180,7 +239,22 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
     if (ex.text_chars) { bits.push(num(ex.text_chars) + ' characters'); bitsEs.push(num(ex.text_chars) + ' caracteres'); }
     indexed = mk('span', null, bits.join(' · '), bitsEs.join(' · '));
   } else if (ex.ingest && INGEST_WORD[ex.ingest.status]) indexed = mk('span', null, INGEST_WORD[ex.ingest.status][0], INGEST_WORD[ex.ingest.status][1]);
-  else indexed = mk('span', 'hub-muted', 'not indexed yet', 'aún no indexado');
+  else {
+    indexed = mk('span');
+    add(indexed, mk('span', 'hub-muted', 'not indexed yet', 'aún no indexado'));
+    // Wave 7 (S27): a record filed by a tool or the API waits for the ingest cron; offer to index it now.
+    if (rec && rec.id) {
+      const b = mk('button', 'btn btn-outline btn-sm hub-index-now', 'Index now', 'Indexar ahora', { type: 'button', 'data-index-now': rec.id });
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        const r = await api('/api/ingest/reindex/' + encodeURIComponent(rec.id), { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: '{}' });
+        indexed.textContent = '';
+        if (r.ok) add(indexed, mk('span', null, 'indexing now; Find reaches it in a minute', 'indexando ahora; Buscar lo alcanza en un minuto'));
+        else { add(indexed, mk('span', 'hub-muted', 'could not index', 'no se pudo indexar'), document.createTextNode(' '), dv('span', 'hub-muted', (r.body && r.body.error && r.body.error.message) || (r.status ? 'HTTP ' + r.status : ''))); }
+      });
+      add(indexed, document.createTextNode(' '), b);
+    }
+  }
   h(dl, 'indexed', 'Indexed', 'Indexado', indexed);
   h(dl, 'stale', 'Stale', 'Obsoleto', staleNode(entry, node, rec));
   add(frag, dl);
@@ -190,10 +264,14 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
   // View (wave 5): the original itself, when the store has it; a record filed without one, or whose original
   // predates durable storage, says so instead.
   // A draft written in the Hub has no original file: the draft itself is the record, with the review as saved.
+  // Wave 7 (S20, S26): a field dossier is its facts, a paper is its abstract; neither has a file worth a viewer.
   const viewBody = ex.kind === 'draft' && Array.isArray(ex.paragraphs) ? draftView(rec, ctx)
+    : ex.kind === 'dossier' ? dossierView(rec)
+    : type === 'paper' || type === 'research' || ex.kind === 'paper' || ex.kind === 'research' ? await paperView(rec)
     : rec.storage_key && !(ex.ingest && ex.ingest.status === 'no_original') ? buildViewer(rec)
     : mk('p', 'hub-muted', rec.storage_key ? 'Original missing: upload it again.' : 'Filed without an original.', rec.storage_key ? 'Falta el original: súbalo de nuevo.' : 'Registrado sin original.');
-  add(frag, add(mk('div', 'hub-rp-card hub-rp-view', null, null, { 'data-view': '' }), mk('h4', null, ex.kind === 'draft' ? 'The draft' : 'View', ex.kind === 'draft' ? 'El borrador' : 'Ver'), viewBody));
+  const viewTitle = ex.kind === 'draft' ? ['The draft', 'El borrador'] : ex.kind === 'dossier' ? ['Facts', 'Datos'] : type === 'paper' || type === 'research' || ex.kind === 'paper' || ex.kind === 'research' ? ['Abstract', 'Resumen'] : ['View', 'Ver'];
+  add(frag, add(mk('div', 'hub-rp-card hub-rp-view', null, null, { 'data-view': '' }), mk('h4', null, viewTitle[0], viewTitle[1]), viewBody));
 
   // Related: versions, cites, cited by, original.
   const rel = mk('div', 'hub-rp-related');

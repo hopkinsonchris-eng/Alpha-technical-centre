@@ -86,15 +86,45 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     return { status: 201, body: await projectView(x, created) };
   });
 
+  /**
+   * Wave 7 (S2): every row carries run_count, item_count, stale_count and last_activity_at, counting
+   * only the records the caller may see; ?mine=1 keeps the projects the caller is a member of or
+   * wrote a run or document in during the last 90 days.
+   */
   route(app, 'GET', '/api/projects', 'project.list', async (x) => {
     const acc = await loadAccess(x.db, x.person, x.now);
-    const status = x.c.req.query('status'), client = x.c.req.query('client');
-    const list = [...acc.projects.values()]
+    const status = x.c.req.query('status'), client = x.c.req.query('client'), mine = x.c.req.query('mine') === '1';
+    const visible = [...acc.projects.values()]
       .filter(p => canSee(acc, p.default_legal_tag, p.id) && (!status || p.status === status) && (!client || p.client_id === client))
       .sort((a, b) => a.name.localeCompare(b.name));
-    x.a.scope = 'firm'; x.a.refs = list.map(p => `project:${p.id}`); x.a.detail = { count: list.length };
+    const ids = visible.map(p => p.id);
+    const since = new Date(x.now.getTime() - 90 * 864e5).toISOString();
+    const runRows = ids.length ? (await x.db.query<any>('SELECT project_id, legal_tag, author, created_at, stale, status FROM runs WHERE project_id = ANY($1::text[]) AND NOT hidden', [ids])).rows : [];
+    const itemRows = ids.length ? (await x.db.query<any>('SELECT project_id, legal_tag, authors, created_at, stale FROM items WHERE project_id = ANY($1::text[]) AND NOT hidden', [ids])).rows : [];
+    const counts = new Map<string, { runs: number; items: number; stale: number; last: string | null; wrote: boolean }>();
+    const at = (id: string) => counts.get(id) ?? counts.set(id, { runs: 0, items: 0, stale: 0, last: null, wrote: false }).get(id)!;
+    const bump = (c: { last: string | null }, when: string) => { if (!c.last || c.last < when) c.last = when; };
+    for (const r of runRows) {
+      if (!canSee(acc, r.legal_tag, r.project_id)) continue;
+      const c = at(r.project_id), when = iso(r.created_at)!;
+      c.runs++; if (r.stale && r.status !== 'superseded') c.stale++; bump(c, when);
+      if (r.author === x.person.id && when >= since) c.wrote = true;
+    }
+    for (const i of itemRows) {
+      if (!canSee(acc, i.legal_tag, i.project_id)) continue;
+      const c = at(i.project_id), when = iso(i.created_at)!;
+      c.items++; if (i.stale) c.stale++; bump(c, when);
+      if ((i.authors ?? []).includes(x.person.id) && when >= since) c.wrote = true;
+    }
+    const lastStage = (p: ProjectRow) => (p.stage_history?.length ? p.stage_history[p.stage_history.length - 1].at : null);
+    const list = visible.filter(p => !mine || p.members.includes(x.person.id) || at(p.id).wrote);
+    x.a.scope = 'firm'; x.a.refs = list.map(p => `project:${p.id}`); x.a.detail = { count: list.length, mine };
     const contacts = (await x.db.query<{ project_id: string; contact_id: string }>('SELECT project_id, contact_id FROM project_contacts ORDER BY contact_id')).rows;
-    return { body: { projects: list.map(p => ({ ...p, contacts: contacts.filter(c => c.project_id === p.id).map(c => c.contact_id) })) } };
+    return { body: { projects: list.map(p => {
+      const c = at(p.id);
+      const last = [c.last, lastStage(p), iso(p.created_at)].filter((s): s is string => !!s).sort().pop() ?? null;
+      return { ...p, contacts: contacts.filter(k => k.project_id === p.id).map(k => k.contact_id), run_count: c.runs, item_count: c.items, stale_count: c.stale, last_activity_at: last };
+    }) } };
   });
 
   route(app, 'GET', '/api/projects/:id', 'project.read', async (x) => {
