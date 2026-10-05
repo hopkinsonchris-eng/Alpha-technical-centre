@@ -1,6 +1,121 @@
 {
-  "$comment": "The country opening pack's source registry (wave 7 PR4). Reviewed in pull requests like the reference sets. Every source carries its licence and attribution line and the domains the fetch may touch; a {year} in a url is a series resolved to the current edition at build time. Builders J and K fill the generic set and the per-country entries from docs/vault-hub/wave7/04-step-changes.md P1 and 00-practice-scan-research.md; this skeleton fixes the shape (vault/src/country/types.ts CountryRegistry).",
-  "generic": [],
+  "$comment": "The country opening pack's source registry (wave 7 PR4). Reviewed in pull requests like the reference sets. Every source carries its licence and attribution line and the domains the fetch may touch; a {year} in a url is a series resolved to the current edition at build time. Builders J and K fill the generic set and the per-country entries from docs/vault-hub/wave7/04-step-changes.md P1 and 00-practice-scan-research.md; this skeleton fixes the shape (vault/src/country/types.ts CountryRegistry). Placeholders: {year} the edition (current year, then the previous), {cc} the ISO alpha-2 code, {cc_lower} the same in lower case, {country} the country's name as a slug. Never IEA datasets, never OnePetro, never OpenCorporates, never LinkedIn (Choice Sheet D67 and the hard constraints).",
+  "generic": [
+    {
+      "id": "chambers-oil-gas",
+      "section": "legal",
+      "url": "https://practiceguides.chambers.com/practice-guides/oil-gas-{year}/{country}",
+      "access": "html",
+      "licence": "Readable without login (Chambers and Partners); law-firm chapter quoted with attribution, orientation not advice",
+      "attribution": "Chambers Global Practice Guides, Oil & Gas {year}, Law and Practice chapter (Chambers and Partners)",
+      "allowed_domains": ["practiceguides.chambers.com", "chambers.com"],
+      "note": "Editions roll over yearly: the series is resolved to the current edition at build time (the 2025 index answered 'no longer available'). Orientation for screening; verify against the instrument in force."
+    },
+    {
+      "id": "legal500-energy-oil-gas",
+      "section": "legal",
+      "url": "https://www.legal500.com/guides/chapter/{country}-energy-oil-gas/",
+      "access": "html",
+      "licence": "Free (Legal 500 Country Comparative Guides); law-firm chapter quoted with attribution, orientation not advice",
+      "attribution": "The Legal 500 Country Comparative Guides, Energy: Oil & Gas (Legalease)",
+      "allowed_domains": ["www.legal500.com", "legal500.com"],
+      "note": "Twenty fixed questions per country; Q9 covers how the government derives value. Orientation for screening; verify against the instrument in force."
+    },
+    {
+      "id": "eiti-country-page",
+      "section": "legal",
+      "url": "https://eiti.org/countries/{country}",
+      "access": "html",
+      "licence": "CC BY 4.0 (EITI open data policy: preferably Creative Commons Attribution 4.0)",
+      "attribution": "Extractive Industries Transparency Initiative (EITI), eiti.org",
+      "allowed_domains": ["eiti.org", "www.eiti.org"],
+      "note": "The 'Extractive sector management' block: tax framework, licences and contracts, beneficial ownership. Only EITI-implementing countries have a page."
+    },
+    {
+      "id": "eiti-summary-data",
+      "section": "fiscal",
+      "url": "https://eiti.org/api/v1.0/summary_data?country={cc}",
+      "access": "json",
+      "licence": "CC BY 4.0 (EITI open data policy: preferably Creative Commons Attribution 4.0)",
+      "attribution": "Extractive Industries Transparency Initiative (EITI) summary data, eiti.org/open-data",
+      "allowed_domains": ["eiti.org", "www.eiti.org"],
+      "note": "Financial data, reporting entities, government revenues and project-level data. The API page returned only the site shell when read; the bulk download is the dependable route if this stays unreachable."
+    },
+    {
+      "id": "eiti-companies",
+      "section": "companies",
+      "url": "https://eiti.org/countries/{country}",
+      "access": "html",
+      "licence": "CC BY 4.0 (EITI open data policy: preferably Creative Commons Attribution 4.0)",
+      "attribution": "Extractive Industries Transparency Initiative (EITI), eiti.org",
+      "allowed_domains": ["eiti.org", "www.eiti.org"],
+      "note": "Top paying companies and the company lists on the country page."
+    },
+    {
+      "id": "resourcecontracts-search",
+      "section": "fiscal",
+      "url": "https://api.resourcecontracts.org/contracts/search?country_code={cc_lower}&resource=Hydrocarbons",
+      "access": "json",
+      "licence": "CC BY-SA 4.0 (ResourceContracts.org; anything derived carries the same licence and stays public)",
+      "attribution": "ResourceContracts.org, Natural Resource Governance Institute with the Columbia Center on Sustainable Investment and the World Bank, CC BY-SA 4.0",
+      "allowed_domains": ["api.resourcecontracts.org", "resourcecontracts.org", "www.resourcecontracts.org"],
+      "note": "GET-only, published contracts; no documented key or rate limit, so one request a second."
+    },
+    {
+      "id": "resourcecontracts-text",
+      "section": "fiscal",
+      "url": "resourcecontracts-text",
+      "access": "adapter",
+      "licence": "CC BY-SA 4.0 (ResourceContracts.org; anything derived carries the same licence and stays public)",
+      "attribution": "ResourceContracts.org, Natural Resource Governance Institute with the Columbia Center on Sustainable Investment and the World Bank, CC BY-SA 4.0",
+      "allowed_domains": ["api.resourcecontracts.org", "resourcecontracts.org", "www.resourcecontracts.org"],
+      "options": { "search": "https://api.resourcecontracts.org/contracts/search?country_code={cc_lower}&resource=Hydrocarbons", "text": "https://api.resourcecontracts.org/contract/{id}/text?page={page}", "max_contracts": 3, "max_pages": 2 },
+      "note": "The text of the newest published hydrocarbon contracts, a few pages each, cached by contract id."
+    },
+    {
+      "id": "gem-extraction-tracker",
+      "section": "companies",
+      "url": "gem-fields",
+      "access": "adapter",
+      "licence": "CC BY 4.0 (Global Energy Monitor: all tracker data freely available under a Creative Commons Attribution 4.0 International Public License unless otherwise noted)",
+      "attribution": "Global Energy Monitor, Global Oil and Gas Extraction Tracker, March 2026 release, CC BY 4.0",
+      "allowed_domains": ["globalenergymonitor.org"],
+      "ttl_days": 30,
+      "note": "Read from the imported release in vault/master/gem-fields.json (no fetch): the country's extraction areas with operator and ownership."
+    },
+    {
+      "id": "eia-international",
+      "section": "production",
+      "url": "https://api.eia.gov/v2/international/data/?frequency=annual&data[0]=value&facets[countryRegionId][]={cc}&facets[activityId][]=1&facets[productId][]=53&sort[0][column]=period&sort[0][direction]=desc&length=60",
+      "access": "json",
+      "licence": "Public domain (U.S. government publications are in the public domain; EIA copyright and reuse page)",
+      "attribution": "Source: U.S. Energy Information Administration, International Energy Data (dated at fetch)",
+      "allowed_domains": ["api.eia.gov", "eia.gov", "www.eia.gov"],
+      "options": { "api_key_env": "EIA_API_KEY", "api_key_param": "api_key" },
+      "note": "Needs EIA_API_KEY (free registration); skipped as 'not configured' without it. Throttled per second and per hour."
+    },
+    {
+      "id": "jodi-oil-monthly",
+      "section": "production",
+      "url": "https://www.jodidata.org/_resources/files/downloads/oil-data/world_primary_csv.zip",
+      "access": "csv",
+      "licence": "Free download (JODI-Oil World Database); no public API, ICE resells a feed",
+      "attribution": "JODI-Oil World Database, Joint Organisations Data Initiative, jodidata.org",
+      "allowed_domains": ["www.jodidata.org", "jodidata.org"],
+      "ttl_days": 31,
+      "note": "Complete series from January 2002 for every country, updated around the 20th of each month; the zip holds one CSV."
+    },
+    {
+      "id": "pwc-tax-summaries",
+      "section": "fiscal",
+      "url": "https://taxsummaries.pwc.com/{country}",
+      "access": "html",
+      "licence": "Free (PwC Worldwide Tax Summaries); quoted with attribution",
+      "attribution": "PwC Worldwide Tax Summaries, taxsummaries.pwc.com",
+      "allowed_domains": ["taxsummaries.pwc.com"],
+      "note": "150+ territories; the oil and gas special regimes under corporate taxes. Orientation for screening; verify against the instrument in force."
+    }
+  ],
   "countries": {
     "GB": {
       "name": "United Kingdom",
