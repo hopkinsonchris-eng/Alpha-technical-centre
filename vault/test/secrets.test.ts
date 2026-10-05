@@ -16,10 +16,15 @@ test('seal and open round-trip; a different key or a tampered ciphertext is refu
   assert.throws(() => openSecret('plain', key), /unknown shape/);
 });
 
-test('the key comes from VAULT_TOKEN_KEY as base64 or hex and must be 32 bytes', () => {
+test('the key comes from VAULT_TOKEN_KEY as base64 or hex, or is derived from any secret of 32 characters or more; shorter is refused', () => {
   const key = randomBytes(32);
   assert.deepEqual(tokenKeyFromEnv({ VAULT_TOKEN_KEY: key.toString('base64') }), key);
   assert.deepEqual(tokenKeyFromEnv({ VAULT_TOKEN_KEY: key.toString('hex') }), key);
   assert.equal(tokenKeyFromEnv({}), null);
-  assert.throws(() => tokenKeyFromEnv({ VAULT_TOKEN_KEY: 'short' }), /32 bytes/);
+  const generated = 'Ab3dEf7hIj9kLm1nOp3qRs5tUv7wXy9zAb3dEf7h';          // the shape Render's Generate button produces
+  const derived = tokenKeyFromEnv({ VAULT_TOKEN_KEY: generated })!;
+  assert.equal(derived.length, 32);
+  assert.deepEqual(tokenKeyFromEnv({ VAULT_TOKEN_KEY: generated }), derived, 'the same secret always gives the same key');
+  assert.equal(openSecret(sealSecret('rt-1', derived), derived), 'rt-1');
+  assert.throws(() => tokenKeyFromEnv({ VAULT_TOKEN_KEY: 'short' }), /at least 32 characters/);
 });
