@@ -13,6 +13,7 @@ import {
 } from './common.ts';
 import { DEFAULT_STAGE, readOpportunityFields, stageEntry } from '../opportunities.ts';
 import { triggerResearch } from './research.routes.ts';
+import { triggerPack } from './country-pack.routes.ts';
 import { linkRegisterCounterparties } from './organisations.routes.ts';
 
 const SLUG = /^[a-z0-9][a-z0-9-]{1,63}$/;
@@ -97,6 +98,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     x.a.scope = scopeLabel(b.id); x.a.refs = [`project:${b.id}`];
     // Wave 4: a new project with a country or a real name queues a research run (§1.3).
     if (opp.country || !/^(new project|untitled|test|project)$/i.test(b.name.trim())) await triggerResearch(x.db, b.id, x.person.id, [b.name.trim()]);
+    await triggerPack(x.db, opp.country, x.person.id); // wave 7 PR4: a country queues its pack (§1.8); never fails the create
     const fresh = await loadAccess(x.db, x.person, x.now);
     return { status: 201, body: await projectView(x, fresh, fresh.projects.get(b.id)!) };
   });

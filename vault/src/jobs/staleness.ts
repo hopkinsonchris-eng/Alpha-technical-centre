@@ -20,6 +20,7 @@
  */
 import type { Db } from '../db/client.ts';
 import { linkGemBasins } from '../assets/hierarchy.ts';
+import { markStale as markPackSections, type MarkSummary } from '../country/refresh.ts';
 
 export interface StaleReason { rule: 'R1' | 'R2' | 'R3' | 'R4' | 'CITES'; ref: string; detail: string }
 export interface AgeFlag { rule: 'G1' | 'G2' | 'G4'; ref: string; detail: string }
@@ -31,7 +32,7 @@ export interface AgeSummary {
 }
 export interface StalenessSummary {
   runs_checked: number; runs_stale: number; items_checked: number; items_stale: number; expired: number; by_project: Record<string, { runs: number; items: number }>;
-  age?: AgeSummary; gem_basins?: { linked: number; basins_created: number };
+  age?: AgeSummary; gem_basins?: { linked: number; basins_created: number }; country_packs?: MarkSummary;
 }
 
 interface ToolRow { id: string; manifest: any }
@@ -277,6 +278,8 @@ export async function runStalenessJob(db: Db, now = new Date()): Promise<Stalene
     summary.age = await computeAgeFlags(db, now);
     // Wave 7 PR3 (S6): GEM units seeded without their basin are linked on the same night (a no-op once done).
     summary.gem_basins = await linkGemBasins(db);
+    // Wave 7 PR5 (W7-AC20): a pack section past its TTL is due; one whose source item has a newer version is stale.
+    summary.country_packs = await markPackSections(db, now);
     await db.query("UPDATE jobs SET finished_at=now(), status='ok', summary=$2::jsonb WHERE id=$1", [rows[0].id, JSON.stringify(summary)]);
     await db.query("INSERT INTO audit_events (person_id, action, scope, detail) VALUES ('job:nightly-staleness','staleness.run','firm',$1::jsonb)", [JSON.stringify(summary)]);
     return summary;

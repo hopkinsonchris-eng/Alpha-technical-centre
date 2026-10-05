@@ -12,6 +12,7 @@ import { createGlobe } from './globe.js';
 import { vault } from '../js/vault-client.js';
 import { mountStatusStrip } from './components/status-strip.js';
 import { stateline } from './components/stateline.js';
+import { packController, packLine, orderedSections, shortWord, fmtDayMonth } from './components/country-pack.js';
 
 /* ── language and DOM helpers ────────────────────────────────────────── */
 
@@ -622,6 +623,32 @@ async function renderGlobe(person) {
   // Wave 3: the point under the last tap (or the country's centre when chosen from the register) feeds "Create a project here".
   let tapped = null;
   let briefUi = null;                                                        // wave 7 PR3 (H5): reads the cached brief on selection
+  // Wave 7 PR5 (M, W7-AC19): the pack line under the risk line ("Pack: assembled 5 Oct · 9 of 10 · 1 stale") and the button when none exists.
+  let packCtl = null;
+  const packEl = (() => {
+    let el = $('#country-pack');
+    if (!el) { el = mk('p', 'hub-note-s hub-pack-line', null, null, { id: 'country-pack', hidden: '', 'data-pack-state': 'loading', 'aria-live': 'polite' }); const after = $('#country-risk') || $('#country-sub'); if (after) after.insertAdjacentElement('afterend', el); else if (panel) panel.prepend(el); }
+    return el;
+  })();
+  const packNote = (() => {
+    let el = $('#country-pack-note');
+    if (!el) { el = mk('span', 'hub-muted', 'Creating a project here also assembles its country pack.', 'Crear un proyecto aquí también arma su paquete del país.', { id: 'country-pack-note', hidden: '' }); const row = $('#country-create-row'); if (row) add(row, el); }
+    return el;
+  })();
+  function showPack(code) {
+    if (packCtl) { packCtl.stop(); packCtl = null; }
+    packEl.setAttribute('hidden', ''); packEl.textContent = ''; packEl.setAttribute('data-pack-state', code ? 'loading' : 'off');
+    packNote.setAttribute('hidden', '');
+    if (!code) return;
+    const ctl = packController(code, (pack, state, info) => {
+      if (sec.getAttribute('data-country') !== code) return;                 // another country was chosen meanwhile
+      if (state === 'unavailable') { packEl.setAttribute('hidden', ''); packEl.textContent = ''; packEl.setAttribute('data-pack-state', 'unavailable'); packNote.setAttribute('hidden', ''); return; }
+      packNote.removeAttribute('hidden');
+      packLine(packEl, pack, { state, failed: !!(info && info.failed), onAssemble: person ? async (b) => { b.disabled = true; await ctl.assemble(); } : null });
+    });
+    packCtl = ctl;
+    ctl.load();
+  }
   function select(code, write, point) {
     const c = data && data.countries.find((x) => x.code === code);
     sec.setAttribute('data-country', code || '');
@@ -631,6 +658,7 @@ async function renderGlobe(person) {
     if (!code) {
       panel.setAttribute('hidden', ''); reg.removeAttribute('hidden'); if (filters) filters.removeAttribute('hidden'); unplaced.style.display = '';
       const intel = $('#country-intel'); if (intel) { intel.setAttribute('hidden', ''); intel.textContent = ''; intelFor = null; }
+      showPack(null);
       if (globe) globe.select(null);
       return;
     }
@@ -647,6 +675,7 @@ async function renderGlobe(person) {
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
     reg.setAttribute('hidden', ''); if (filters) filters.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
     renderIntel(code, names);
+    showPack(code);
     if (briefUi) briefUi.loadCached(code);
     if (globe) globe.select(code, { fly: true });
   }
@@ -1255,12 +1284,14 @@ function citedSentence(host, text, records, projectId) {
   }
   if (last < text.length) add(host, dv('span', null, text.slice(last)));
 }
+let activitySince = null;         // the stored last-seen stamp the activity card reads, so the pack lines measure from the same moment
 async function renderActivity(person, strip) {
   const card = $('#card-activity');
   if (!card || !person) return false;
   const r = await api('/api/me/activity');
   if (!r.ok || !r.body || !r.body.counts) { if (strip) { strip.set('need', null); strip.set('came', null); } return false; }
   const b = r.body, c = b.counts;
+  activitySince = b.since || null;
   if (strip) { strip.set('need', Number(c.review || 0)); strip.set('came', Number(c.records || 0)); }
   const sec = $('#sec-activity'); if (sec) sec.removeAttribute('hidden');
   card.removeAttribute('hidden');
@@ -1315,6 +1346,46 @@ async function renderActivity(person, strip) {
     else { seen.disabled = false; setText($('#activity-status'), 'Could not save.', 'No se pudo guardar.'); }
   };
   return true;
+}
+
+/* Wave 7 PR5 (M, W7-AC19): one line in What came in per country whose pack landed or whose section changed since the person last
+   looked ("Brazil: licensing changed; bids 7 Oct 2026", from the section's headline), read from GET /api/countries/:code/pack once
+   per country with an active project and compared with the activity card's last-seen stamp; the activity feed does not know packs. */
+const isBuiltSection = (s) => !!s.built_at && Number(s.version || 0) > 0 && s.status !== 'empty';
+async function renderPackLines(person, projects, info, since) {
+  const card = $('#card-activity'), host = $('#activity-projects');
+  if (!card || !host || !person || !since) return 0;
+  const sinceMs = Date.parse(since);
+  if (!Number.isFinite(sinceMs)) return 0;
+  const byCode = new Map();
+  for (const p of projects || []) if (p && p.country && p.id !== 'firm' && p.status !== 'archived' && p.status !== 'closed' && !byCode.has(p.country)) byCode.set(p.country, p);
+  const results = await Promise.all([...byCode.keys()].map(async (code) => [code, await api('/api/countries/' + encodeURIComponent(code) + '/pack')]));
+  let shown = 0;
+  for (const [code, r] of results) {
+    if (!r.ok || !r.body || !Array.isArray(r.body.sections)) continue;
+    const pack = r.body, p = byCode.get(code);
+    const name = (info && info.names && info.names.get(code)) || { en: code, es: code };
+    const built = orderedSections(pack).filter(isBuiltSection);
+    const changed = built.filter((s) => Date.parse(s.built_at) > sinceMs && (Number(s.version || 0) > 1 || (Array.isArray(s.body && s.body.changed_since) && s.body.changed_since.length)));
+    const landed = !changed.length && pack.assembled_at && Date.parse(pack.assembled_at) > sinceMs;
+    if (!changed.length && !landed) continue;
+    const line = mk('p', 'hub-activity-line hub-pack-line', null, null, { 'data-activity-pack': code, 'data-pack-change': landed ? 'landed' : changed[0].section });
+    const a = mk('a', 'hub-cite hub-pack-cite', null, null, { href: projectHref(p.id) + '#pack' + (landed ? '' : '-' + changed[0].section) });
+    if (landed) {
+      const d = fmtDayMonth(pack.assembled_at), total = orderedSections(pack).length;
+      add(a, mk('span', null, name.en + ': country pack assembled ' + d.en + ' · ', name.es + ': paquete del país armado el ' + d.es + ' · '), dv('span', 'hub-num', String(built.length)), mk('span', null, ' of ', ' de '), dv('span', 'hub-num', String(total)));
+    } else {
+      const s = changed[0], w = shortWord(s.section), h = (s.body && s.body.headline) || {};
+      add(a, mk('span', null, name.en + ': ' + w.en + ' changed' + (h.en ? '; ' + h.en : ''), name.es + ': ' + w.es + ' cambió' + (h.es || h.en ? '; ' + (h.es || h.en) : '')));
+      if (changed.length > 1) add(a, mk('span', 'hub-muted', ' · +' + (changed.length - 1) + ' more', ' · +' + (changed.length - 1) + ' más'));
+    }
+    add(line, a); add(host, line); shown++;
+  }
+  if (shown && card.getAttribute('data-empty') === '1') {
+    card.removeAttribute('data-empty');
+    const counts = $('#activity-counts'); if (counts) { counts.textContent = ''; add(counts, mk('span', 'hub-muted', 'Nothing new in the files, but a country pack changed.', 'Nada nuevo en los expedientes, pero un paquete del país cambió.')); }
+  }
+  return shown;
 }
 
 /** The four counters: each starts at zero in one line (R12) and expands when its source answers with items; the strip reads the same figures. */
@@ -1483,6 +1554,7 @@ async function initToday() {
   const want = new URLSearchParams(location.search).get('country');
   if (info && info.select && want && /^[A-Z]{2}$/.test(want)) info.select(want, false);
   await Promise.all([renderActivity(person, strip).catch(() => false), renderAttention(projects, strip), renderRuns(projects)]);
+  try { await renderPackLines(person, projects, info, activitySince); } catch (e) { /* the pack lines are optional */ }   // wave 7 PR5 (M)
   for (const sk of document.querySelectorAll('.hub-skel')) sk.remove();   // R12: the skeleton leaves with data-ready
   document.body.setAttribute('data-ready', '1');
 }

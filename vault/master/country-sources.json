@@ -1,0 +1,1113 @@
+{
+  "$comment": "The country opening pack's source registry (wave 7 PR4). Reviewed in pull requests like the reference sets. Every source carries its licence and attribution line and the domains the fetch may touch; a {year} in a url is a series resolved to the current edition at build time. Builders J and K fill the generic set and the per-country entries from docs/vault-hub/wave7/04-step-changes.md P1 and 00-practice-scan-research.md; this skeleton fixes the shape (vault/src/country/types.ts CountryRegistry). Placeholders: {year} the edition (current year, then the previous), {cc} the ISO alpha-2 code, {cc_lower} the same in lower case, {country} the country's name as a slug. Never IEA datasets, never OnePetro, never OpenCorporates, never LinkedIn (Choice Sheet D67 and the hard constraints).",
+  "generic": [
+    {
+      "id": "chambers-oil-gas",
+      "section": "legal",
+      "url": "https://practiceguides.chambers.com/practice-guides/oil-gas-{year}/{country}",
+      "access": "html",
+      "licence": "Readable without login (Chambers and Partners); law-firm chapter quoted with attribution, orientation not advice",
+      "attribution": "Chambers Global Practice Guides, Oil & Gas {year}, Law and Practice chapter (Chambers and Partners)",
+      "allowed_domains": ["practiceguides.chambers.com", "chambers.com"],
+      "note": "Editions roll over yearly: the series is resolved to the current edition at build time (the 2025 index answered 'no longer available'). Orientation for screening; verify against the instrument in force."
+    },
+    {
+      "id": "legal500-energy-oil-gas",
+      "section": "legal",
+      "url": "https://www.legal500.com/guides/chapter/{country}-energy-oil-gas/",
+      "access": "html",
+      "licence": "Free (Legal 500 Country Comparative Guides); law-firm chapter quoted with attribution, orientation not advice",
+      "attribution": "The Legal 500 Country Comparative Guides, Energy: Oil & Gas (Legalease)",
+      "allowed_domains": ["www.legal500.com", "legal500.com"],
+      "note": "Twenty fixed questions per country; Q9 covers how the government derives value. Orientation for screening; verify against the instrument in force."
+    },
+    {
+      "id": "eiti-country-page",
+      "section": "legal",
+      "url": "https://eiti.org/countries/{country}",
+      "access": "html",
+      "licence": "CC BY 4.0 (EITI open data policy: preferably Creative Commons Attribution 4.0)",
+      "attribution": "Extractive Industries Transparency Initiative (EITI), eiti.org",
+      "allowed_domains": ["eiti.org", "www.eiti.org"],
+      "note": "The 'Extractive sector management' block: tax framework, licences and contracts, beneficial ownership. Only EITI-implementing countries have a page."
+    },
+    {
+      "id": "eiti-summary-data",
+      "section": "fiscal",
+      "url": "https://eiti.org/api/v1.0/summary_data?country={cc}",
+      "access": "json",
+      "licence": "CC BY 4.0 (EITI open data policy: preferably Creative Commons Attribution 4.0)",
+      "attribution": "Extractive Industries Transparency Initiative (EITI) summary data, eiti.org/open-data",
+      "allowed_domains": ["eiti.org", "www.eiti.org"],
+      "note": "Financial data, reporting entities, government revenues and project-level data. The API page returned only the site shell when read; the bulk download is the dependable route if this stays unreachable."
+    },
+    {
+      "id": "eiti-companies",
+      "section": "companies",
+      "url": "https://eiti.org/countries/{country}",
+      "access": "html",
+      "licence": "CC BY 4.0 (EITI open data policy: preferably Creative Commons Attribution 4.0)",
+      "attribution": "Extractive Industries Transparency Initiative (EITI), eiti.org",
+      "allowed_domains": ["eiti.org", "www.eiti.org"],
+      "note": "Top paying companies and the company lists on the country page."
+    },
+    {
+      "id": "resourcecontracts-search",
+      "section": "fiscal",
+      "url": "https://api.resourcecontracts.org/contracts/search?country_code={cc_lower}&resource=Hydrocarbons",
+      "access": "json",
+      "licence": "CC BY-SA 4.0 (ResourceContracts.org; anything derived carries the same licence and stays public)",
+      "attribution": "ResourceContracts.org, Natural Resource Governance Institute with the Columbia Center on Sustainable Investment and the World Bank, CC BY-SA 4.0",
+      "allowed_domains": ["api.resourcecontracts.org", "resourcecontracts.org", "www.resourcecontracts.org"],
+      "note": "GET-only, published contracts; no documented key or rate limit, so one request a second."
+    },
+    {
+      "id": "resourcecontracts-text",
+      "section": "fiscal",
+      "url": "resourcecontracts-text",
+      "access": "adapter",
+      "licence": "CC BY-SA 4.0 (ResourceContracts.org; anything derived carries the same licence and stays public)",
+      "attribution": "ResourceContracts.org, Natural Resource Governance Institute with the Columbia Center on Sustainable Investment and the World Bank, CC BY-SA 4.0",
+      "allowed_domains": ["api.resourcecontracts.org", "resourcecontracts.org", "www.resourcecontracts.org"],
+      "options": { "search": "https://api.resourcecontracts.org/contracts/search?country_code={cc_lower}&resource=Hydrocarbons", "text": "https://api.resourcecontracts.org/contract/{id}/text?page={page}", "max_contracts": 3, "max_pages": 2 },
+      "note": "The text of the newest published hydrocarbon contracts, a few pages each, cached by contract id."
+    },
+    {
+      "id": "gem-extraction-tracker",
+      "section": "companies",
+      "url": "gem-fields",
+      "access": "adapter",
+      "licence": "CC BY 4.0 (Global Energy Monitor: all tracker data freely available under a Creative Commons Attribution 4.0 International Public License unless otherwise noted)",
+      "attribution": "Global Energy Monitor, Global Oil and Gas Extraction Tracker, March 2026 release, CC BY 4.0",
+      "allowed_domains": ["globalenergymonitor.org"],
+      "ttl_days": 30,
+      "note": "Read from the imported release in vault/master/gem-fields.json (no fetch): the country's extraction areas with operator and ownership."
+    },
+    {
+      "id": "eia-international",
+      "section": "production",
+      "url": "https://api.eia.gov/v2/international/data/?frequency=annual&data[0]=value&facets[countryRegionId][]={cc}&facets[activityId][]=1&facets[productId][]=53&sort[0][column]=period&sort[0][direction]=desc&length=60",
+      "access": "json",
+      "licence": "Public domain (U.S. government publications are in the public domain; EIA copyright and reuse page)",
+      "attribution": "Source: U.S. Energy Information Administration, International Energy Data (dated at fetch)",
+      "allowed_domains": ["api.eia.gov", "eia.gov", "www.eia.gov"],
+      "options": { "api_key_env": "EIA_API_KEY", "api_key_param": "api_key" },
+      "note": "Needs EIA_API_KEY (free registration); skipped as 'not configured' without it. Throttled per second and per hour."
+    },
+    {
+      "id": "jodi-oil-monthly",
+      "section": "production",
+      "url": "https://www.jodidata.org/_resources/files/downloads/oil-data/world_primary_csv.zip",
+      "access": "csv",
+      "licence": "Free download (JODI-Oil World Database); no public API, ICE resells a feed",
+      "attribution": "JODI-Oil World Database, Joint Organisations Data Initiative, jodidata.org",
+      "allowed_domains": ["www.jodidata.org", "jodidata.org"],
+      "ttl_days": 31,
+      "note": "Complete series from January 2002 for every country, updated around the 20th of each month; the zip holds one CSV."
+    },
+    {
+      "id": "pwc-tax-summaries",
+      "section": "fiscal",
+      "url": "https://taxsummaries.pwc.com/{country}",
+      "access": "html",
+      "licence": "Free (PwC Worldwide Tax Summaries); quoted with attribution",
+      "attribution": "PwC Worldwide Tax Summaries, taxsummaries.pwc.com",
+      "allowed_domains": ["taxsummaries.pwc.com"],
+      "note": "150+ territories; the oil and gas special regimes under corporate taxes. Orientation for screening; verify against the instrument in force."
+    }
+  ],
+  "countries": {
+    "GB": {
+      "name": "United Kingdom",
+      "regulator": "North Sea Transition Authority (NSTA)",
+      "accounts_note": "NSTA Open Data needs no account and no key (no stated rate limit; many datasets update daily). The UK National Data Repository (ndr.nstauthority.co.uk) is a separate portal with its own API (OGC WMS, GeoService, GeoJSON; an NDR API through Microsoft Graph for project and file metadata) and is not open data: registration with the NDR is required, and licensees report to it under the data regulations. Costs: not published; ask.",
+      "sources": [
+        {
+          "id": "nsta-licences",
+          "section": "licensing",
+          "url": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+          "access": "arcgis",
+          "licence": "NSTA Open User Licence (NSTA User Agreement, June 2023): a free, perpetual, non-exclusive right to copy, publish, distribute and transmit, adapt and exploit the information commercially and non-commercially, on condition of the attribution line; excludes personal data, logos and third-party rights; supplied as is with no guarantee of continued supply",
+          "attribution": "Contains information provided by the North Sea Transition Authority and/or other third parties",
+          "allowed_domains": [
+            "open-data-ukcs-transition.hub.arcgis.com",
+            "services-eu1.arcgis.com"
+          ],
+          "options": {
+            "catalogue": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+            "dataset": "UKCS-transition::ukcs-offshore-petroleum-licences-wgs84",
+            "max_records": 5000
+          },
+          "note": "Current offshore petroleum licences, modified daily (5 Oct 2026 10:09 UTC on the day read); resolved through the DCAT catalogue to the hosted layer, paged at its maxRecordCount of 2,000."
+        },
+        {
+          "id": "nsta-licence-blocks",
+          "section": "licensing",
+          "url": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+          "access": "arcgis",
+          "licence": "NSTA Open User Licence (NSTA User Agreement, June 2023): a free, perpetual, non-exclusive right to copy, publish, distribute and transmit, adapt and exploit the information commercially and non-commercially, on condition of the attribution line; excludes personal data, logos and third-party rights; supplied as is with no guarantee of continued supply",
+          "attribution": "Contains information provided by the North Sea Transition Authority and/or other third parties",
+          "allowed_domains": [
+            "open-data-ukcs-transition.hub.arcgis.com",
+            "services-eu1.arcgis.com"
+          ],
+          "options": {
+            "catalogue": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+            "dataset": "UKCS-transition::ukcs-offshore-petroleum-licence-blocks-wgs84",
+            "max_records": 8000
+          },
+          "note": "Licensed blocks with licence reference, type, round and status; modified daily."
+        },
+        {
+          "id": "nsta-33rd-round-blocks-on-offer",
+          "section": "licensing",
+          "url": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+          "access": "arcgis",
+          "licence": "NSTA Open User Licence (NSTA User Agreement, June 2023): a free, perpetual, non-exclusive right to copy, publish, distribute and transmit, adapt and exploit the information commercially and non-commercially, on condition of the attribution line; excludes personal data, logos and third-party rights; supplied as is with no guarantee of continued supply",
+          "attribution": "Contains information provided by the North Sea Transition Authority and/or other third parties",
+          "allowed_domains": [
+            "open-data-ukcs-transition.hub.arcgis.com",
+            "services-eu1.arcgis.com"
+          ],
+          "options": {
+            "catalogue": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+            "dataset": "UKCS-transition::ukcs-33rd-offshore-petroleum-licencing-rounds-blocks-on-offer-wgs84",
+            "max_records": 5000
+          },
+          "note": "The current (33rd) round's blocks on offer; the 'previous offshore petroleum licencing rounds' datasets in the same catalogue hold the earlier rounds."
+        },
+        {
+          "id": "nsta-33rd-round-provisional-awards",
+          "section": "licensing",
+          "url": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+          "access": "arcgis",
+          "licence": "NSTA Open User Licence (NSTA User Agreement, June 2023): a free, perpetual, non-exclusive right to copy, publish, distribute and transmit, adapt and exploit the information commercially and non-commercially, on condition of the attribution line; excludes personal data, logos and third-party rights; supplied as is with no guarantee of continued supply",
+          "attribution": "Contains information provided by the North Sea Transition Authority and/or other third parties",
+          "allowed_domains": [
+            "open-data-ukcs-transition.hub.arcgis.com",
+            "services-eu1.arcgis.com"
+          ],
+          "options": {
+            "catalogue": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+            "dataset": "UKCS-transition::ukcs-33rd-offshore-petroleum-licencing-rounds-provisional-awards-wgs84",
+            "max_records": 5000
+          },
+          "note": "Provisional awards of the 33rd round."
+        },
+        {
+          "id": "nsta-licensing-rounds-page",
+          "section": "licensing",
+          "url": "https://www.nstauthority.co.uk/licensing-consents/licensing-rounds/",
+          "access": "html",
+          "licence": "NSTA Open User Licence (NSTA User Agreement, June 2023): a free, perpetual, non-exclusive right to copy, publish, distribute and transmit, adapt and exploit the information commercially and non-commercially, on condition of the attribution line; excludes personal data, logos and third-party rights; supplied as is with no guarantee of continued supply",
+          "attribution": "Contains information provided by the North Sea Transition Authority and/or other third parties",
+          "allowed_domains": [
+            "www.nstauthority.co.uk"
+          ],
+          "note": "The regulator's own round page: stages, dates and documents of the current and past rounds."
+        },
+        {
+          "id": "nsta-subareas-by-equity",
+          "section": "companies",
+          "url": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+          "access": "arcgis",
+          "licence": "NSTA Open User Licence (NSTA User Agreement, June 2023): a free, perpetual, non-exclusive right to copy, publish, distribute and transmit, adapt and exploit the information commercially and non-commercially, on condition of the attribution line; excludes personal data, logos and third-party rights; supplied as is with no guarantee of continued supply",
+          "attribution": "Contains information provided by the North Sea Transition Authority and/or other third parties",
+          "allowed_domains": [
+            "open-data-ukcs-transition.hub.arcgis.com",
+            "services-eu1.arcgis.com"
+          ],
+          "options": {
+            "catalogue": "https://open-data-ukcs-transition.hub.arcgis.com/data.json",
+            "dataset": "UKCS-transition::ukcs-offshore-petroleum-licence-subareas-by-equity-group-holder-wgs84",
+            "max_records": 5000
+          },
+          "note": "Operator, licence organisation and equity group holder per subarea (OPORG, LICORG, EQORG, EQUITY); 1,801 rows on 5 Oct 2026; modified daily."
+        },
+        {
+          "id": "nsta-ndr",
+          "section": "regulator",
+          "url": "https://www.nstauthority.co.uk/data-and-insights/data/uk-national-data-repository/",
+          "access": "html",
+          "licence": "NSTA Open User Licence (NSTA User Agreement, June 2023): a free, perpetual, non-exclusive right to copy, publish, distribute and transmit, adapt and exploit the information commercially and non-commercially, on condition of the attribution line; excludes personal data, logos and third-party rights; supplied as is with no guarantee of continued supply",
+          "attribution": "Contains information provided by the North Sea Transition Authority and/or other third parties",
+          "allowed_domains": [
+            "www.nstauthority.co.uk"
+          ],
+          "note": "The NDR (ndr.nstauthority.co.uk) is a separate portal with its own API and is not open data; registration required."
+        },
+        {
+          "id": "nsta-user-agreement",
+          "section": "regulator",
+          "url": "https://www.nstauthority.co.uk/footer/access-to-information/",
+          "access": "html",
+          "licence": "NSTA Open User Licence (NSTA User Agreement, June 2023): a free, perpetual, non-exclusive right to copy, publish, distribute and transmit, adapt and exploit the information commercially and non-commercially, on condition of the attribution line; excludes personal data, logos and third-party rights; supplied as is with no guarantee of continued supply",
+          "attribution": "Contains information provided by the North Sea Transition Authority and/or other third parties",
+          "allowed_domains": [
+            "www.nstauthority.co.uk"
+          ],
+          "note": "The NSTA Open User Licence terms (User Agreement, June 2023): the attribution line is mandatory on every reuse."
+        }
+      ]
+    },
+    "NO": {
+      "name": "Norway",
+      "regulator": "Sokkeldirektoratet (Norwegian Offshore Directorate); licences are awarded by the Ministry of Energy",
+      "accounts_note": "FactPages and FactMaps need no account; every page carries the time of last synchronisation (daily). Reports, core images and logs may carry third-party rights (the NLOD caveat), and transactions after a licence's expiry do not appear. The national data repository is Diskos (diskos.no), which answered 403 to a scripted fetch on 5 Oct 2026; its membership and fee terms were not read: ask.",
+      "sources": [
+        {
+          "id": "sodir-licences",
+          "section": "licensing",
+          "url": "https://factpages.sodir.no/public?/Factpages/external/tableview/licence&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false",
+          "access": "csv",
+          "licence": "Norwegian Licence for Open Government Data (NLOD) 1.0, as stated on FactPages and FactMaps; reports, core images and logs etc. may carry third-party rights and are not covered",
+          "attribution": "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by the Norwegian Offshore Directorate (Sokkeldirektoratet), factpages.sodir.no",
+          "allowed_domains": [
+            "factpages.sodir.no"
+          ],
+          "options": {
+            "expect_header": [
+              "prlName",
+              "prlStatus",
+              "prlDateGranted",
+              "prlDateValidTo",
+              "prlPhaseCurrent"
+            ],
+            "freshness_column": "DatesyncNPD",
+            "title": "Sodir FactPages: production licences (table export, CSV)",
+            "description": "All production licences on the Norwegian continental shelf with status, dates granted and valid to, area and current phase; the CSV export of the licence table view."
+          },
+          "note": "The Export CSV link of the licence table view (1,815 lines on 5 Oct 2026); the DatesyncNPD column is the time of last synchronisation and is the freshness of the section."
+        },
+        {
+          "id": "sodir-licence-overview",
+          "section": "licensing",
+          "url": "https://factpages.sodir.no/en/licence/TableView/Overview",
+          "access": "html",
+          "licence": "Norwegian Licence for Open Government Data (NLOD) 1.0, as stated on FactPages and FactMaps; reports, core images and logs etc. may carry third-party rights and are not covered",
+          "attribution": "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by the Norwegian Offshore Directorate (Sokkeldirektoratet), factpages.sodir.no",
+          "allowed_domains": [
+            "factpages.sodir.no"
+          ],
+          "note": "Server-rendered licence table with the 'Time of last synchronization with Norwegian Offshore Directorate's internal systems' timestamp; the technical-information page sits behind a JavaScript challenge and is not fetched."
+        },
+        {
+          "id": "sodir-licensees",
+          "section": "companies",
+          "url": "https://factpages.sodir.no/public?/Factpages/external/tableview/licence_licensee_hst&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false",
+          "access": "csv",
+          "licence": "Norwegian Licence for Open Government Data (NLOD) 1.0, as stated on FactPages and FactMaps; reports, core images and logs etc. may carry third-party rights and are not covered",
+          "attribution": "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by the Norwegian Offshore Directorate (Sokkeldirektoratet), factpages.sodir.no",
+          "allowed_domains": [
+            "factpages.sodir.no"
+          ],
+          "options": {
+            "expect_header": [
+              "prlName",
+              "cmpLongName",
+              "prlLicenseeInterest",
+              "prlLicenseeDateValidFrom"
+            ],
+            "freshness_column": "DatesyncNPD",
+            "title": "Sodir FactPages: licensees per licence (history, CSV)",
+            "description": "Every licensee of every production licence with interest and validity dates."
+          },
+          "note": "About 3.5 MB; the company behind every licence share."
+        },
+        {
+          "id": "sodir-operators",
+          "section": "companies",
+          "url": "https://factpages.sodir.no/public?/Factpages/external/tableview/licence_oper_hst&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false",
+          "access": "csv",
+          "licence": "Norwegian Licence for Open Government Data (NLOD) 1.0, as stated on FactPages and FactMaps; reports, core images and logs etc. may carry third-party rights and are not covered",
+          "attribution": "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by the Norwegian Offshore Directorate (Sokkeldirektoratet), factpages.sodir.no",
+          "allowed_domains": [
+            "factpages.sodir.no"
+          ],
+          "options": {
+            "expect_header": [
+              "prlName",
+              "cmpLongName",
+              "prlOperDateValidFrom"
+            ],
+            "freshness_column": "DatesyncNPD",
+            "title": "Sodir FactPages: operators per licence (history, CSV)",
+            "description": "The operator of every production licence with validity dates."
+          }
+        },
+        {
+          "id": "sodir-field-production-monthly",
+          "section": "production",
+          "url": "https://factpages.sodir.no/public?/Factpages/external/tableview/field_production_monthly&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false",
+          "access": "csv",
+          "licence": "Norwegian Licence for Open Government Data (NLOD) 1.0, as stated on FactPages and FactMaps; reports, core images and logs etc. may carry third-party rights and are not covered",
+          "attribution": "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by the Norwegian Offshore Directorate (Sokkeldirektoratet), factpages.sodir.no",
+          "allowed_domains": [
+            "factpages.sodir.no"
+          ],
+          "ttl_days": 31,
+          "options": {
+            "expect_header": [
+              "prfInformationCarrier",
+              "prfYear",
+              "prfMonth",
+              "prfPrdOilNetMillSm3",
+              "prfPrdGasNetBillSm3"
+            ],
+            "title": "Sodir FactPages: saleable production by field and month (CSV)",
+            "description": "Net saleable oil, gas, NGL, condensate and oil-equivalent production per field per month, million Sm3."
+          },
+          "note": "About 2 MB; no sync column on this export, so the Last-Modified header is the freshness."
+        },
+        {
+          "id": "sodir-factpages",
+          "section": "regulator",
+          "url": "https://factpages.sodir.no/en",
+          "access": "html",
+          "licence": "Norwegian Licence for Open Government Data (NLOD) 1.0, as stated on FactPages and FactMaps; reports, core images and logs etc. may carry third-party rights and are not covered",
+          "attribution": "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by the Norwegian Offshore Directorate (Sokkeldirektoratet), factpages.sodir.no",
+          "allowed_domains": [
+            "factpages.sodir.no"
+          ],
+          "note": "Licence, field, discovery, wellbore, company and survey tables; synchronised daily with the Directorate's internal systems."
+        }
+      ]
+    },
+    "CO": {
+      "name": "Colombia",
+      "regulator": "Agencia Nacional de Hidrocarburos (ANH)",
+      "accounts_note": "The geovisor and the Mapa de Tierras need no account. Technical data (seismic, wells, reports) sits in the ANH's Banco de Información Petrolera (EPIS), whose host did not answer a scripted fetch on 5 Oct 2026; access terms and fees not read: ask the ANH. The land map's reuse terms are in a copyright and authorisation PDF linked from the Mapa de Tierras page that has not been read.",
+      "sources": [
+        {
+          "id": "anh-tierras",
+          "section": "licensing",
+          "url": "https://geovisor.anh.gov.co/server/rest/services/Vista_Tierras_Version_Vigente_Geovisor/FeatureServer/0",
+          "access": "arcgis",
+          "licence": "Not stated on the geovisor service; the Mapa de Tierras page links a copyright and authorisation PDF that has not been read, so reuse terms are unverified until it is; base map credited to IGAC",
+          "attribution": "Fuente: Agencia Nacional de Hidrocarburos (ANH), Mapa de Tierras, geovisor.anh.gov.co",
+          "allowed_domains": [
+            "geovisor.anh.gov.co"
+          ],
+          "options": {
+            "layer": "https://geovisor.anh.gov.co/server/rest/services/Vista_Tierras_Version_Vigente_Geovisor/FeatureServer/0",
+            "max_records": 6000,
+            "title": "ANH Mapa de Tierras: áreas (Vista_Tierras_Version_Vigente_Geovisor, capa 0)",
+            "description": "Every area on the ANH land map with contract number, area name, signature date, contract type, status, operator, basin and hectares."
+          },
+          "note": "The FeatureServer caps a page at 2,000 records (maxRecordCount), so the query pages; spatial reference 9377 (reproject to WGS84 for the globe). The published land map is dated 27 Nov 2024, the service layer 2025-02-14, and a newer 'Tierras 2026-08-06' layer exists, so the stored original records the layer name and the fetch date."
+        },
+        {
+          "id": "anh-ppaa",
+          "section": "licensing",
+          "url": "https://www.anh.gov.co/es/hidrocarburos/oportunidades-disponibles/ppaa-proceso-permanente-de-asignaci%C3%B3n-de-%C3%A1reas/",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the Agencia Nacional de Hidrocarburos (ANH)",
+          "attribution": "Agencia Nacional de Hidrocarburos (ANH), anh.gov.co",
+          "allowed_domains": [
+            "www.anh.gov.co",
+            "anh.gov.co"
+          ],
+          "note": "Proceso Permanente de Asignación de Áreas: five stages; the schedule arrives as an addendum PDF."
+        },
+        {
+          "id": "anh-ppaa-cronograma",
+          "section": "licensing",
+          "url": "https://www.anh.gov.co/documents/3074/Adenda-No.-14.-Cronograma-PPAA.pdf",
+          "access": "pdf",
+          "licence": "No licence statement on the page; official publication of the Agencia Nacional de Hidrocarburos (ANH)",
+          "attribution": "Agencia Nacional de Hidrocarburos (ANH), anh.gov.co",
+          "allowed_domains": [
+            "www.anh.gov.co",
+            "anh.gov.co"
+          ],
+          "note": "Adenda No. 14, the PPAA schedule as read on 5 Oct 2026; a later addendum supersedes it and the page above names the current one."
+        },
+        {
+          "id": "anh-reglamento-asignacion",
+          "section": "legal",
+          "url": "https://www.anh.gov.co/es/hidrocarburos/contratos-y-reglamentaci%C3%B3n/reglamento-de-asignaci%C3%B3n-de-%C3%A1reas/",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the Agencia Nacional de Hidrocarburos (ANH)",
+          "attribution": "Agencia Nacional de Hidrocarburos (ANH), anh.gov.co",
+          "allowed_domains": [
+            "www.anh.gov.co",
+            "anh.gov.co"
+          ],
+          "note": "The area-assignment regulation (reglamento) and the contract models it points to."
+        },
+        {
+          "id": "anh-tierras-operadores",
+          "section": "companies",
+          "url": "https://geovisor.anh.gov.co/server/rest/services/Vista_Tierras_Version_Vigente_Geovisor/FeatureServer/0",
+          "access": "arcgis",
+          "licence": "Not stated on the geovisor service; the Mapa de Tierras page links a copyright and authorisation PDF that has not been read, so reuse terms are unverified until it is; base map credited to IGAC",
+          "attribution": "Fuente: Agencia Nacional de Hidrocarburos (ANH), Mapa de Tierras, geovisor.anh.gov.co",
+          "allowed_domains": [
+            "geovisor.anh.gov.co"
+          ],
+          "options": {
+            "layer": "https://geovisor.anh.gov.co/server/rest/services/Vista_Tierras_Version_Vigente_Geovisor/FeatureServer/0",
+            "out_fields": [
+              "CONTRAT_ID",
+              "CONTRATO_N",
+              "AREA_NOMBR",
+              "OPERADOR",
+              "OPR_ABR",
+              "TIPO_CONTR",
+              "SUBTIPO",
+              "ESTAD_AREA",
+              "CUENCA_SED",
+              "FECHA_FIRM",
+              "AREA_HA"
+            ],
+            "max_records": 6000,
+            "title": "ANH Mapa de Tierras: operador por área",
+            "description": "Operator, contract type and status per area, from the land map."
+          },
+          "note": "The same layer as anh-tierras with the operator columns only, so the who-works-there section cites a small original."
+        },
+        {
+          "id": "anh-mapa-de-tierras",
+          "section": "regulator",
+          "url": "https://www.anh.gov.co/es/hidrocarburos/mapa-de-tierras/",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the Agencia Nacional de Hidrocarburos (ANH)",
+          "attribution": "Agencia Nacional de Hidrocarburos (ANH), anh.gov.co",
+          "allowed_domains": [
+            "www.anh.gov.co",
+            "anh.gov.co"
+          ],
+          "note": "The land map page (dated 'LAND MAP, November 27th 2024' when read), the geovisor link and the copyright and authorisation PDF."
+        },
+        {
+          "id": "anh-produccion-campos",
+          "section": "production",
+          "url": "https://www.datos.gov.co/resource/fdvb-hsrf.json?$limit=5000&$order=vigencia%20DESC%2Cmes%20DESC",
+          "access": "json",
+          "licence": "Datos Abiertos Colombia (datos.gov.co), terms as the dataset page states them; the anh-co miner files the full series monthly",
+          "attribution": "Fuente: ANH a través de Datos Abiertos Colombia (datos.gov.co), recurso fdvb-hsrf",
+          "allowed_domains": [
+            "www.datos.gov.co"
+          ],
+          "ttl_days": 31,
+          "note": "Oil production by field and month (bbl), newest 5,000 rows; the anh-co miner holds the monthly snapshots."
+        }
+      ]
+    },
+    "AR": {
+      "name": "Argentina",
+      "regulator": "Secretaría de Energía de la Nación Argentina",
+      "accounts_note": "datos.energia.gob.ar needs no account (CKAN, CC-BY-4.0); it answers only over plain HTTP (HTTPS redirects back to HTTP), which the allow-list permits explicitly. No national data room with published terms was found in the research of 5 Oct 2026; technical data sits with the operators and the provincial authorities: ask.",
+      "sources": [
+        {
+          "id": "ar-permisos-exploracion",
+          "section": "licensing",
+          "url": "http://datos.energia.gob.ar/api/3/action/package_show?id=exploracion-hidrocarburos-permisos-de-exploracion",
+          "access": "ckan",
+          "licence": "CC-BY-4.0",
+          "attribution": "Secretaría de Energía de la Nación Argentina, datos.energia.gob.ar, CC BY 4.0",
+          "allowed_domains": [
+            "http://datos.energia.gob.ar"
+          ],
+          "options": {
+            "package": "exploracion-hidrocarburos-permisos-de-exploracion",
+            "resource_format": "CSV"
+          },
+          "note": "Exploration permits with operator, consortium shares and polygon (geojson column); modified 1 Oct 2026; plain HTTP only."
+        },
+        {
+          "id": "ar-concesiones-explotacion",
+          "section": "companies",
+          "url": "http://datos.energia.gob.ar/api/3/action/package_show?id=produccion-hidrocarburos-concesiones-de-explotacion",
+          "access": "ckan",
+          "licence": "CC-BY-4.0",
+          "attribution": "Secretaría de Energía de la Nación Argentina, datos.energia.gob.ar, CC BY 4.0",
+          "allowed_domains": [
+            "http://datos.energia.gob.ar"
+          ],
+          "options": {
+            "package": "produccion-hidrocarburos-concesiones-de-explotacion",
+            "resource_format": "CSV"
+          },
+          "note": "Exploitation concessions with operator; modified 1 Oct 2026."
+        },
+        {
+          "id": "ar-produccion-por-cuenca",
+          "section": "production",
+          "url": "http://datos.energia.gob.ar/api/3/action/package_show?id=produccion-de-petroleo-y-gas-por-pozo",
+          "access": "ckan",
+          "licence": "CC-BY-4.0",
+          "attribution": "Secretaría de Energía de la Nación Argentina, datos.energia.gob.ar, CC BY 4.0",
+          "allowed_domains": [
+            "http://datos.energia.gob.ar"
+          ],
+          "ttl_days": 31,
+          "options": {
+            "package": "produccion-de-petroleo-y-gas-por-pozo",
+            "resource_format": "CSV",
+            "resource_match": "serie-hist.*petr.*cuenca"
+          },
+          "note": "Historic oil production by basin and resource sub-type (Capítulo IV); the per-well files in the same package are large and the ar-energia miner files production by company monthly from datos.gob.ar."
+        },
+        {
+          "id": "ar-reservas",
+          "section": "production",
+          "url": "http://datos.energia.gob.ar/api/3/action/package_show?id=reservas-de-petroleo-y-gas",
+          "access": "ckan",
+          "licence": "CC-BY-4.0",
+          "attribution": "Secretaría de Energía de la Nación Argentina, datos.energia.gob.ar, CC BY 4.0",
+          "allowed_domains": [
+            "http://datos.energia.gob.ar"
+          ],
+          "ttl_days": 365,
+          "options": {
+            "package": "reservas-de-petroleo-y-gas",
+            "resource_format": "ZIP",
+            "resource_match": "reservas_al_31-12-20"
+          },
+          "note": "The newest year-end reserves archive (31 Dec 2025 when read, modified 18 Sep 2026); a zip, stored as the original without a row count."
+        },
+        {
+          "id": "ar-secretaria-energia-hidrocarburos",
+          "section": "regulator",
+          "url": "https://www.argentina.gob.ar/economia/energia/hidrocarburos",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the Secretaría de Energía on argentina.gob.ar",
+          "attribution": "Secretaría de Energía de la Nación Argentina, argentina.gob.ar",
+          "allowed_domains": [
+            "www.argentina.gob.ar"
+          ],
+          "note": "The Secretaría's hydrocarbons page: who regulates and where the open data lives."
+        }
+      ]
+    },
+    "BR": {
+      "name": "Brazil",
+      "regulator": "Agência Nacional do Petróleo, Gás Natural e Biocombustíveis (ANP)",
+      "accounts_note": "The round CSVs and pages need no account. The technical data package (pacote de dados técnicos) for the Oferta Permanente is behind e-BID registration (inscrição de licitantes), and BDEP (Banco de Dados de Exploração e Produção) is the ANP's data bank; fees not published on the pages read: ask.",
+      "sources": [
+        {
+          "id": "anp-blocos-ofertados",
+          "section": "licensing",
+          "url": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos/rlpgn/blocos-ofertados-rodadas.csv",
+          "access": "csv",
+          "licence": "No licence statement on the page; published as dados abertos through dados.gov.br (Brazilian federal open data)",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "options": {
+            "expect_header": [
+              "Rodada de Licitações",
+              "Bacia",
+              "Setor",
+              "Bloco"
+            ],
+            "encoding": "latin1",
+            "delimiter": ";",
+            "title": "ANP dados abertos: blocos ofertados nas rodadas de licitações (CSV)",
+            "description": "Blocks offered in bid rounds 9 to 17 with basin, sector, minimum qualification, minimum bonus, location and whether the block was awarded."
+          },
+          "note": "Windows-1252, semicolon separated, decimal comma; \"atualizado em 6/3/2026\" on the page; 1,682 lines when read."
+        },
+        {
+          "id": "anp-rodadas-dados-abertos",
+          "section": "licensing",
+          "url": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/rodadas-de-licitacoes-de-petroleo-e-gas-natural",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the ANP on gov.br",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "note": "The open-data page for the rounds: the three CSVs, their metadata PDFs and the update dates."
+        },
+        {
+          "id": "anp-oferta-permanente",
+          "section": "licensing",
+          "url": "https://www.gov.br/anp/pt-br/rodadas-anp/oferta-permanente",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the ANP on gov.br",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "note": "Oferta Permanente (OPC concession and OPP production-sharing cycles; CNPE 17/2017 and 27/2021), each cycle with a published schedule; a separate mechanism from the numbered rounds."
+        },
+        {
+          "id": "anp-opc",
+          "section": "licensing",
+          "url": "https://www.gov.br/anp/pt-br/rodadas-anp/oferta-permanente/opc",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the ANP on gov.br",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "note": "Oferta Permanente de Concessão: the current cycle and its documents."
+        },
+        {
+          "id": "anp-opc6-cronograma",
+          "section": "licensing",
+          "url": "https://www.gov.br/anp/pt-br/rodadas-anp/oferta-permanente/opc/6o-ciclo-da-oferta-permanente-de-concessao/cronograma-do-6o-ciclo-da-oferta-permanente-de-concessao",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the ANP on gov.br",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "note": "The 6th OPC cycle schedule (indicative schedule published in the DOU on 22 May 2026 per the cycle page; the public session was set for 7 Oct 2026 when researched on 5 Oct 2026). Replace with the next cycle's schedule page when it opens."
+        },
+        {
+          "id": "anp-opp",
+          "section": "licensing",
+          "url": "https://www.gov.br/anp/pt-br/rodadas-anp/oferta-permanente/opp",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the ANP on gov.br",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "note": "Oferta Permanente de Partilha de Produção: the current cycle (4th when read) and its documents."
+        },
+        {
+          "id": "anp-ofertas-vencedoras",
+          "section": "companies",
+          "url": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos/rlpgn/ofertas-vencedoras-rodadas.csv",
+          "access": "csv",
+          "licence": "No licence statement on the page; published as dados abertos through dados.gov.br (Brazilian federal open data)",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "options": {
+            "expect_header": [
+              "Rodada de Licitações",
+              "Bacia",
+              "Bloco",
+              "Empresa/Consórcio"
+            ],
+            "encoding": "latin1",
+            "delimiter": ";",
+            "title": "ANP dados abertos: ofertas vencedoras nas rodadas de licitações (CSV)",
+            "description": "Winning offers in rounds 9 to 17: company or consortium with the operator marked, bonus, local content and minimum exploration programme."
+          },
+          "note": "Who won what, with consortium shares; header cells contain line breaks; \"atualizado em 6/3/2026\"."
+        },
+        {
+          "id": "anp-cessao-contratos",
+          "section": "companies",
+          "url": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos/rlpgn/processos-cessao-contratos.csv",
+          "access": "csv",
+          "licence": "No licence statement on the page; published as dados abertos through dados.gov.br (Brazilian federal open data)",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "options": {
+            "expect_header": [
+              "Tipo de solicita",
+              "Rodada",
+              "Contrato",
+              "Cedente",
+              "Cession"
+            ],
+            "encoding": "latin1",
+            "delimiter": ";",
+            "title": "ANP dados abertos: processos de cessão de contratos (CSV)",
+            "description": "Contract assignments 2001 to 2026: assignor, assignee, shares before and after, board decision and approval date."
+          },
+          "note": "Contract assignments, updated 1 July 2026; about 360 kB."
+        },
+        {
+          "id": "anp-acesso-dados-tecnicos",
+          "section": "regulator",
+          "url": "https://www.gov.br/anp/pt-br/rodadas-anp/acesso-dados-tecnicos",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the ANP on gov.br",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "note": "How to reach the technical data package: behind e-BID registration; BDEP is named on the Oferta Permanente pages."
+        },
+        {
+          "id": "anp-dados-tecnicos-bdep",
+          "section": "regulator",
+          "url": "https://www.gov.br/anp/pt-br/assuntos/exploracao-e-producao-de-oleo-e-gas/dados-tecnicos",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the ANP on gov.br",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "note": "The ANP's technical data page (BDEP, the exploration and production data bank)."
+        },
+        {
+          "id": "anp-dados-abertos",
+          "section": "production",
+          "url": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos",
+          "access": "html",
+          "licence": "No licence statement on the page; official publication of the ANP on gov.br",
+          "attribution": "Fonte: ANP, Agência Nacional do Petróleo, Gás Natural e Biocombustíveis, Dados Abertos (gov.br/anp)",
+          "allowed_domains": [
+            "www.gov.br"
+          ],
+          "ttl_days": 31,
+          "note": "The open-data index; monthly production by well is filed by the anp-br miner from the zips linked here."
+        }
+      ]
+    },
+    "US": {
+      "name": "United States (offshore)",
+      "regulator": "Bureau of Ocean Energy Management (BOEM), U.S. Department of the Interior, for the Outer Continental Shelf; BLM onshore",
+      "accounts_note": "BOEM Data Center downloads (ASCII, PDF, shapefile, geodatabase) need no account but carry a disclaimer to read first; \"Active Lease Polygons\" was updated 1 Oct 2026, most other layers 11 Feb 2025. The ArcGIS REST listing at gis.boem.gov sits behind a DOI warning banner in a browser, but its JSON endpoints answer a scripted query. BLM's NFLSS rendered nothing without JavaScript; onshore sale parcel lists were not read. Lease and well data is public; proprietary seismic is not.",
+      "sources": [
+        {
+          "id": "boem-oil-gas-leases",
+          "section": "licensing",
+          "url": "https://gis.boem.gov/arcgis/rest/services/BOEM_BSEE/MMC_Layers/FeatureServer/15",
+          "access": "arcgis",
+          "licence": "U.S. Government work, public domain; the BOEM Data Center disclaimer is to be read before use",
+          "attribution": "Source: U.S. Bureau of Ocean Energy Management (BOEM) and BSEE, gis.boem.gov (copyright text on the layer: MarineCadastre.gov)",
+          "allowed_domains": [
+            "gis.boem.gov"
+          ],
+          "options": {
+            "layer": "https://gis.boem.gov/arcgis/rest/services/BOEM_BSEE/MMC_Layers/FeatureServer/15",
+            "max_records": 5000,
+            "title": "BOEM Oil and Gas Leases (MMC_Layers, layer 15)",
+            "description": "Blocks currently leased from the federal government by industry for oil or gas, with lease number, sale number, effective and expiry dates, status, royalty rate and area; state waters excluded."
+          },
+          "note": "1,829 active leases on 5 Oct 2026; the layer caps a page at 10,000 so one request suffices."
+        },
+        {
+          "id": "boem-lease-sales",
+          "section": "licensing",
+          "url": "https://www.boem.gov/oil-gas-energy/lease-sales",
+          "access": "html",
+          "licence": "U.S. Government work, public domain; the BOEM Data Center disclaimer is to be read before use",
+          "attribution": "Source: U.S. Bureau of Ocean Energy Management (BOEM), boem.gov and data.boem.gov",
+          "allowed_domains": [
+            "www.boem.gov"
+          ],
+          "note": "The lease sales index: the Gulf of America sales under the 2025 schedule (BBG1, BBG2, BBG3) and the numbered sales, each with its page."
+        },
+        {
+          "id": "boem-bbg2",
+          "section": "licensing",
+          "url": "https://www.boem.gov/oil-gas-energy/leasing/big-beautiful-gulf-2-bbg2-oil-gas-lease-sale",
+          "access": "html",
+          "licence": "U.S. Government work, public domain; the BOEM Data Center disclaimer is to be read before use",
+          "attribution": "Source: U.S. Bureau of Ocean Energy Management (BOEM), boem.gov and data.boem.gov",
+          "allowed_domains": [
+            "www.boem.gov"
+          ],
+          "note": "Big Beautiful Gulf 2 (BBG2) lease sale page: notice of sale, dates, documents and results as published."
+        },
+        {
+          "id": "boem-bbg3",
+          "section": "licensing",
+          "url": "https://www.boem.gov/oil-gas-energy/leasing/big-beautiful-gulf-3-bbg3-oil-gas-lease-sale",
+          "access": "html",
+          "licence": "U.S. Government work, public domain; the BOEM Data Center disclaimer is to be read before use",
+          "attribution": "Source: U.S. Bureau of Ocean Energy Management (BOEM), boem.gov and data.boem.gov",
+          "allowed_domains": [
+            "www.boem.gov"
+          ],
+          "note": "Big Beautiful Gulf 3 (BBG3) lease sale page."
+        },
+        {
+          "id": "boem-lease-sale-statistics",
+          "section": "licensing",
+          "url": "https://www.boem.gov/oil-gas-energy/leasing/outer-continental-shelf-lease-sale-statistics",
+          "access": "html",
+          "licence": "U.S. Government work, public domain; the BOEM Data Center disclaimer is to be read before use",
+          "attribution": "Source: U.S. Bureau of Ocean Energy Management (BOEM), boem.gov and data.boem.gov",
+          "allowed_domains": [
+            "www.boem.gov"
+          ],
+          "note": "Bids, high bids and acreage per sale."
+        },
+        {
+          "id": "boem-data-center-leasing",
+          "section": "regulator",
+          "url": "https://www.data.boem.gov/Main/Leasing.aspx",
+          "access": "html",
+          "licence": "U.S. Government work, public domain; the BOEM Data Center disclaimer is to be read before use",
+          "attribution": "Source: U.S. Bureau of Ocean Energy Management (BOEM), boem.gov and data.boem.gov",
+          "allowed_domains": [
+            "www.data.boem.gov"
+          ],
+          "note": "BOEM Data Center, leasing: lease owner and lease area block queries, scanned lease documents."
+        },
+        {
+          "id": "boem-data-center-mapping",
+          "section": "regulator",
+          "url": "https://www.data.boem.gov/Main/Mapping.aspx",
+          "access": "html",
+          "licence": "U.S. Government work, public domain; the BOEM Data Center disclaimer is to be read before use",
+          "attribution": "Source: U.S. Bureau of Ocean Energy Management (BOEM), boem.gov and data.boem.gov",
+          "allowed_domains": [
+            "www.data.boem.gov"
+          ],
+          "note": "Shapefile and geodatabase downloads ('Active Lease Polygons' updated 1 Oct 2026; lease lines, protraction diagrams)."
+        },
+        {
+          "id": "boem-data-center-raw-data",
+          "section": "companies",
+          "url": "https://www.data.boem.gov/Main/RawData.aspx",
+          "access": "html",
+          "licence": "U.S. Government work, public domain; the BOEM Data Center disclaimer is to be read before use",
+          "attribution": "Source: U.S. Bureau of Ocean Energy Management (BOEM), boem.gov and data.boem.gov",
+          "allowed_domains": [
+            "www.data.boem.gov"
+          ],
+          "note": "Company and lease-owner raw data (CompanyRawData.zip, LeaseOwnerRawData.zip) are fixed-width ASCII with a layout file, not CSV: read by hand until an adapter exists."
+        }
+      ]
+    },
+    "MX": {
+      "name": "Mexico",
+      "regulator": "Comisión Nacional de Hidrocarburos (CNH); Secretaría de Energía (SENER) publishes Rondas México",
+      "seeded_by_hand": true,
+      "accounts_note": "No open regulator feed. CNIH (Centro Nacional de Información de Hidrocarburos, hidrocarburos.gob.mx) holds the national hydrocarbon data under user licences; its hosts returned 522/523 on 5 Oct 2026 and did not resolve from the build sandbox. Rondas México describes rounds and contracts but publishes no dataset on its front page. Access terms and fees: not read; ask the CNH.",
+      "sources": [
+        {
+          "id": "rondas-mexico-rondas",
+          "section": "licensing",
+          "url": "https://rondasmexico.energia.gob.mx/esp/rondas/",
+          "access": "html",
+          "licence": "No open dataset; official pages of CNH and SENER (Rondas México); CNIH data is under user licences",
+          "attribution": "Comisión Nacional de Hidrocarburos (CNH) / Secretaría de Energía (SENER), Rondas México",
+          "allowed_domains": [
+            "rondasmexico.energia.gob.mx"
+          ],
+          "note": "No open regulator feed: the rounds page describes Rondas 1 to 3 and their contracts but exposes no dataset; seeded by hand on 5 Oct 2026."
+        },
+        {
+          "id": "rondas-mexico-home",
+          "section": "licensing",
+          "url": "https://rondasmexico.energia.gob.mx/",
+          "access": "html",
+          "licence": "No open dataset; official pages of CNH and SENER (Rondas México); CNIH data is under user licences",
+          "attribution": "Comisión Nacional de Hidrocarburos (CNH) / Secretaría de Energía (SENER), Rondas México",
+          "allowed_domains": [
+            "rondasmexico.energia.gob.mx"
+          ],
+          "note": "The Rondas México front page: announcements and the calendar widget."
+        },
+        {
+          "id": "rondas-mexico-contratos",
+          "section": "companies",
+          "url": "https://rondasmexico.energia.gob.mx/esp/contratos/",
+          "access": "html",
+          "licence": "No open dataset; official pages of CNH and SENER (Rondas México); CNIH data is under user licences",
+          "attribution": "Comisión Nacional de Hidrocarburos (CNH) / Secretaría de Energía (SENER), Rondas México",
+          "allowed_domains": [
+            "rondasmexico.energia.gob.mx"
+          ],
+          "note": "Contracts awarded, by round, with the contractor and operator named on the page."
+        },
+        {
+          "id": "sener-asignaciones-y-contratos",
+          "section": "companies",
+          "url": "https://asignacionesycontratos-hidrocarburos.energia.gob.mx/",
+          "access": "html",
+          "licence": "No open dataset; official pages of CNH and SENER (Rondas México); CNIH data is under user licences",
+          "attribution": "Comisión Nacional de Hidrocarburos (CNH) / Secretaría de Energía (SENER), Rondas México",
+          "allowed_domains": [
+            "asignacionesycontratos-hidrocarburos.energia.gob.mx"
+          ],
+          "note": "SENER's assignments and contracts site (an 8.5 kB page when read; may need JavaScript)."
+        },
+        {
+          "id": "cnh-gob-mx",
+          "section": "regulator",
+          "url": "https://www.gob.mx/cnh",
+          "access": "html",
+          "licence": "No open dataset; official pages of CNH and SENER (Rondas México); CNIH data is under user licences",
+          "attribution": "Comisión Nacional de Hidrocarburos (CNH) / Secretaría de Energía (SENER), Rondas México",
+          "allowed_domains": [
+            "www.gob.mx"
+          ],
+          "note": "The CNH's gob.mx page, which answered a 1.9 kB shell on 5 Oct 2026 (the content loads by script)."
+        },
+        {
+          "id": "cnh-cnih",
+          "section": "regulator",
+          "url": "https://hidrocarburos.gob.mx/",
+          "access": "html",
+          "licence": "No open dataset; official pages of CNH and SENER (Rondas México); CNIH data is under user licences",
+          "attribution": "Comisión Nacional de Hidrocarburos (CNH) / Secretaría de Energía (SENER), Rondas México",
+          "allowed_domains": [
+            "hidrocarburos.gob.mx"
+          ],
+          "note": "CNIH, the national hydrocarbon information centre: data under user licences; host returned 522/523 on 5 Oct 2026 and did not resolve from the build sandbox."
+        }
+      ]
+    },
+    "NA": {
+      "name": "Namibia",
+      "regulator": "Ministry of Industries, Mines and Energy (MME), Directorate of Petroleum Affairs",
+      "seeded_by_hand": true,
+      "accounts_note": "No open regulator feed and no download found: the April 2025 Landfolio cadastre portal has a public map but no stated download; the data position (what the Directorate of Petroleum Affairs and NAMCOR hold, and on what terms) is to be confirmed with the Directorate. The local-content policy was approved by Cabinet on 4 Aug 2026 but is not gazetted. The MME host did not resolve from the research session or the build sandbox on 5 Oct 2026, so every source here is unverified until the job reaches it.",
+      "sources": [
+        {
+          "id": "mme-petroleum-upstream",
+          "section": "licensing",
+          "url": "https://www.mme.gov.na/petroleum/upstream/",
+          "access": "html",
+          "licence": "No licence statement; official page of the Ministry of Industries, Mines and Energy, Namibia (the host did not resolve from the research session or the build sandbox on 5 Oct 2026)",
+          "attribution": "Ministry of Industries, Mines and Energy, Republic of Namibia, mme.gov.na",
+          "allowed_domains": [
+            "mme.gov.na"
+          ],
+          "note": "No open regulator feed. Open licensing since 1999 (applications in duplicate, inter-ministerial negotiating team). A search summary reports a 1 March 2025 notice closing the application window 'until further notice'; the pack must quote the notice from mme.gov.na itself before it says so. Seeded by hand on 5 Oct 2026; the host did not resolve from the research session or the build sandbox."
+        },
+        {
+          "id": "mme-home",
+          "section": "regulator",
+          "url": "https://www.mme.gov.na/",
+          "access": "html",
+          "licence": "No licence statement; official page of the Ministry of Industries, Mines and Energy, Namibia (the host did not resolve from the research session or the build sandbox on 5 Oct 2026)",
+          "attribution": "Ministry of Industries, Mines and Energy, Republic of Namibia, mme.gov.na",
+          "allowed_domains": [
+            "mme.gov.na"
+          ],
+          "note": "The Ministry's home page: directorates, notices and contacts."
+        }
+      ]
+    },
+    "GY": {
+      "name": "Guyana",
+      "regulator": "Ministry of Natural Resources, Petroleum Management Programme (petroleum.gov.gy)",
+      "seeded_by_hand": true,
+      "accounts_note": "No open regulator feed. The Data Centre page on petroleum.gov.gy lists what the Ministry holds (well activities, production charts); the 2022 round's virtual data room cost US$20,000 per block as reported by the press, not by a regulator page. The Block S4 and S7 petroleum agreements, the Liza production licence and the Local Content Register are published; no licence statement on the site.",
+      "sources": [
+        {
+          "id": "gy-petroleum-activities-act-2023",
+          "section": "legal",
+          "url": "https://petroleum.gov.gy/wp-content/uploads/2024/10/Petroleum-Activities-Act-No.-17-of-2023.pdf",
+          "access": "pdf",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "note": "Petroleum Activities Act No. 17 of 2023, the PDF the Ministry publishes."
+        },
+        {
+          "id": "gy-legislation",
+          "section": "legal",
+          "url": "https://petroleum.gov.gy/documents-categories/legislation/",
+          "access": "html",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "note": "The legislation list: Petroleum Activities Act 2023 and its Gazette, Petroleum Act 1992, Local Content Act 2021, Natural Resource Fund Act 2019, Environmental Protection Act."
+        },
+        {
+          "id": "gy-model-deepwater-psa-2023",
+          "section": "fiscal",
+          "url": "https://petroleum.gov.gy/wp-content/uploads/2024/10/Guyana-Deepwater-PSA_-30-12-2023_Public-update.pdf",
+          "access": "pdf",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "note": "The 2023 model deepwater production sharing agreement (30 Dec 2023 public update); the pack quotes royalty, cost-recovery ceiling, profit split and tax from this text, with the Stabroek contract excepted."
+        },
+        {
+          "id": "gy-draft-model-psa-page",
+          "section": "fiscal",
+          "url": "https://petroleum.gov.gy/docs-and-pubs/draft-model-deepwater-petroleum-agreement/",
+          "access": "html",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "note": "The page that publishes the model agreement and its date."
+        },
+        {
+          "id": "gy-agreements",
+          "section": "companies",
+          "url": "https://petroleum.gov.gy/documents-categories/agreements/",
+          "access": "html",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "note": "Published petroleum agreements (Blocks S4 and S7, the Liza Phase 1 licence) naming the contractors."
+        },
+        {
+          "id": "gy-home",
+          "section": "licensing",
+          "url": "https://petroleum.gov.gy/",
+          "access": "html",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "note": "No open regulator feed; no round open on the page on 5 Oct 2026. The 2022 round's terms (US$20,000 data-room fee per block, model PSA of 8 Mar 2023, bids 14 Apr 2023, minimum signature bonuses) are known from the press, not from a regulator dataset. Seeded by hand."
+        },
+        {
+          "id": "gy-local-content-register",
+          "section": "service",
+          "url": "https://lcregister.petroleum.gov.gy/",
+          "access": "html",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "lcregister.petroleum.gov.gy",
+            "localcontent.gov.gy"
+          ],
+          "note": "The Local Content Register (over 350 certificates issued per the Secretariat); redirects to localcontent.gov.gy, which the allow-list permits."
+        },
+        {
+          "id": "gy-local-content-act-2021",
+          "section": "service",
+          "url": "https://petroleum.gov.gy/docs-and-pubs/local-content-act-2021/",
+          "access": "html",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "note": "The Local Content Act 2021 page and its PDF."
+        },
+        {
+          "id": "gy-data-centre",
+          "section": "regulator",
+          "url": "https://petroleum.gov.gy/data-centre/",
+          "access": "html",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "note": "The Ministry's Data Centre page: what is held and how it is reached; no licence statement."
+        },
+        {
+          "id": "gy-well-activities",
+          "section": "production",
+          "url": "https://petroleum.gov.gy/well-activities/",
+          "access": "html",
+          "licence": "No licence statement on petroleum.gov.gy; official publications of the Ministry of Natural Resources, Government of Guyana",
+          "attribution": "Ministry of Natural Resources, Co-operative Republic of Guyana, petroleum.gov.gy",
+          "allowed_domains": [
+            "petroleum.gov.gy"
+          ],
+          "ttl_days": 31,
+          "note": "The well-activities database and production charts the Ministry publishes."
+        }
+      ]
+    }
+  }
+}

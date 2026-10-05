@@ -21,7 +21,7 @@ test('health needs no token', async () => {
   const { app, db } = await setup();
   const r = await app.request('/api/health');
   assert.equal(r.status, 200);
-  const j = await r.json(); assert.equal(j.ok, true); assert.equal(j.migrations, 8);
+  const j = await r.json(); assert.equal(j.ok, true); assert.equal(j.migrations, 10);
   await db.close();
 });
 

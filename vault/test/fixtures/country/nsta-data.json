@@ -1,0 +1,366 @@
+{
+  "@context": "https://project-open-data.cio.gov/v1.1/schema/catalog.jsonld",
+  "@type": "dcat:Catalog",
+  "conformsTo": "https://project-open-data.cio.gov/v1.1/schema",
+  "describedBy": "https://project-open-data.cio.gov/v1.1/schema/catalog.json",
+  "dataset": [
+    {
+      "@type": "dcat:Dataset",
+      "identifier": "https://www.arcgis.com/home/item.html?id=41be574c2592470a984d7dd7f5e3cffb",
+      "landingPage": "https://open-data-ukcs-transition.hub.arcgis.com/documents/UKCS-transition::q-170",
+      "title": "Q 170",
+      "description": "PDF map of quadrant 170",
+      "keyword": [
+        "NSTA",
+        "Quadrant Map"
+      ],
+      "issued": "2025-02-25T15:28:00.000Z",
+      "modified": "2025-09-30T08:41:29.000Z",
+      "publisher": {
+        "name": "North Sea Transition Authority"
+      },
+      "contactPoint": {
+        "@type": "vcard:Contact",
+        "fn": "NSTA_GIS",
+        "hasEmail": "mailto:gis@ntsauthority.co.uk"
+      },
+      "accessLevel": "public",
+      "spatial": "-12.0000,60.0000,-11.0000,61.0000",
+      "license": "<a href='https://www.nstauthority.co.uk/footer/access-to-information/' rel='nofollow ugc'>NSTA Open User Licence</a> <p><a href='https://www.nstauthority.co.uk/footer/access-to-information/' target='_blank' rel='nofollow ugc noopener noreferrer'>NSTA Open User Licence</a></p>",
+      "distribution": [
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS Hub Dataset",
+          "format": "Web Page",
+          "mediaType": "text/html",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/documents/UKCS-transition::q-170"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS GeoService",
+          "format": "ArcGIS GeoServices REST API",
+          "mediaType": "application/json",
+          "accessURL": "https://datanstauthority.blob.core.windows.net/external/quadmaps/Q_170.pdf"
+        }
+      ],
+      "theme": [
+        "geospatial"
+      ]
+    },
+    {
+      "@type": "dcat:Dataset",
+      "identifier": "https://www.arcgis.com/home/item.html?id=e4e489b088b44e29af1c848468403988&sublayer=0",
+      "landingPage": "https://open-data-ukcs-transition.hub.arcgis.com/datasets/UKCS-transition::ukcs-offshore-petroleum-licences-wgs84",
+      "title": "UKCS offshore petroleum licences (WGS84)",
+      "description": "<p>A Licence is a geographically defined area for prospecting, exploration or extraction of petroleum resources. The North Sea Transition Authority's licensing system covers oil and gas within Great Britain, its territorial sea and on the UK Continental Shelf (UKCS).<br />The Petroleum Act 1998 vests all rights to the nation's petroleum resources in the Crown, but the NSTA can grant licences that ",
+      "keyword": [
+        ""
+      ],
+      "issued": "2025-03-03T11:17:42.000Z",
+      "modified": "2026-10-05T10:09:58.165Z",
+      "publisher": {
+        "name": "North Sea Transition Authority"
+      },
+      "contactPoint": {
+        "@type": "vcard:Contact",
+        "fn": "NSTA_GIS",
+        "hasEmail": "mailto:gis@ntsauthority.co.uk"
+      },
+      "accessLevel": "public",
+      "spatial": "-4.6019,50.5764,3.1408,62.1662",
+      "license": "<p><a href='https://www.nstauthority.co.uk/footer/access-to-information/' target='_blank' rel='nofollow ugc noopener noreferrer'>NSTA Open User Licence</a></p>",
+      "distribution": [
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS Hub Dataset",
+          "format": "Web Page",
+          "mediaType": "text/html",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/datasets/UKCS-transition::ukcs-offshore-petroleum-licences-wgs84"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS GeoService",
+          "format": "ArcGIS GeoServices REST API",
+          "mediaType": "application/json",
+          "accessURL": "https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS%20offshore%20petroleum%20licences%20WGS84/FeatureServer/0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "CSV",
+          "format": "CSV",
+          "mediaType": "text/csv",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/csv?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Shapefile",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/shapefile?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoJSON",
+          "format": "GeoJSON",
+          "mediaType": "application/vnd.geo+json",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/geojson?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "KML",
+          "format": "KML",
+          "mediaType": "application/vnd.google-earth.kml+xml",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/kml?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "File Geodatabase",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/filegdb?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Feature Collection",
+          "format": "TXT",
+          "mediaType": "text/plain",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/featureCollection?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Excel",
+          "format": "XLSX",
+          "mediaType": "application/vnd.ms-excel",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/excel?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoPackage",
+          "format": "GPKG",
+          "mediaType": "application/geopackage+sqlite3",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/geoPackage?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "SQLite Geodatabase",
+          "format": "GDB",
+          "mediaType": "application/geopackage+sqlite3",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/e4e489b088b44e29af1c848468403988/sqlite?layers=0"
+        }
+      ],
+      "theme": [
+        "geospatial"
+      ]
+    },
+    {
+      "@type": "dcat:Dataset",
+      "identifier": "https://www.arcgis.com/home/item.html?id=9bcc2890ad99466f89cbcd7c4fc3ded9&sublayer=0",
+      "landingPage": "https://open-data-ukcs-transition.hub.arcgis.com/datasets/UKCS-transition::ukcs-33rd-offshore-petroleum-licencing-rounds-blocks-on-offer-wgs84",
+      "title": "UKCS 33rd offshore petroleum licencing rounds blocks on offer (WGS84)",
+      "description": "",
+      "keyword": [
+        ""
+      ],
+      "issued": "2025-03-24T11:48:31.000Z",
+      "modified": "2026-01-27T16:47:15.875Z",
+      "publisher": {
+        "name": "North Sea Transition Authority"
+      },
+      "contactPoint": {
+        "@type": "vcard:Contact",
+        "fn": "NSTA_GIS",
+        "hasEmail": "mailto:gis@ntsauthority.co.uk"
+      },
+      "accessLevel": "public",
+      "spatial": "-14.0000,48.1667,3.3986,63.1662",
+      "license": "",
+      "distribution": [
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS Hub Dataset",
+          "format": "Web Page",
+          "mediaType": "text/html",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/datasets/UKCS-transition::ukcs-33rd-offshore-petroleum-licencing-rounds-blocks-on-offer-wgs84"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS GeoService",
+          "format": "ArcGIS GeoServices REST API",
+          "mediaType": "application/json",
+          "accessURL": "https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS%2033rd%20offshore%20petroleum%20licencing%20rounds%20blocks%20on%20offer%20WGS84/FeatureServer/0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "CSV",
+          "format": "CSV",
+          "mediaType": "text/csv",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/csv?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Shapefile",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/shapefile?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoJSON",
+          "format": "GeoJSON",
+          "mediaType": "application/vnd.geo+json",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/geojson?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "KML",
+          "format": "KML",
+          "mediaType": "application/vnd.google-earth.kml+xml",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/kml?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "File Geodatabase",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/filegdb?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Feature Collection",
+          "format": "TXT",
+          "mediaType": "text/plain",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/featureCollection?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Excel",
+          "format": "XLSX",
+          "mediaType": "application/vnd.ms-excel",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/excel?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoPackage",
+          "format": "GPKG",
+          "mediaType": "application/geopackage+sqlite3",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/geoPackage?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "SQLite Geodatabase",
+          "format": "GDB",
+          "mediaType": "application/geopackage+sqlite3",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/9bcc2890ad99466f89cbcd7c4fc3ded9/sqlite?layers=0"
+        }
+      ],
+      "theme": [
+        "geospatial"
+      ]
+    },
+    {
+      "@type": "dcat:Dataset",
+      "identifier": "https://www.arcgis.com/home/item.html?id=40c65d96a1a14da8b066f2abbb345fed&sublayer=0",
+      "landingPage": "https://open-data-ukcs-transition.hub.arcgis.com/datasets/UKCS-transition::ukcs-offshore-petroleum-licence-subareas-by-equity-group-holder-wgs84",
+      "title": "UKCS offshore petroleum licence subareas by equity group holder (WGS84)",
+      "description": "A Licence is a geographically defined area for prospecting, exploration or extraction of petroleum resources. The North Sea Transition Authority's licensing system covers oil and gas within Great Britain, its territorial sea and on the UK Continental Shelf (UKCS).<br />The Petroleum Act 1998 vests all rights to the nation's petroleum resources in the Crown, but the  NSTA can grant licences that co",
+      "keyword": [
+        ""
+      ],
+      "issued": "2025-03-03T11:38:25.000Z",
+      "modified": "2026-10-05T11:14:28.137Z",
+      "publisher": {
+        "name": "North Sea Transition Authority"
+      },
+      "contactPoint": {
+        "@type": "vcard:Contact",
+        "fn": "NSTA_GIS",
+        "hasEmail": "mailto:gis@ntsauthority.co.uk"
+      },
+      "accessLevel": "public",
+      "spatial": "-4.6019,50.5764,3.1408,61.9995",
+      "license": "<p><a href='https://www.nstauthority.co.uk/footer/access-to-information/' target='_blank' rel='nofollow ugc noopener noreferrer'>NSTA Open User Licence</a></p>",
+      "distribution": [
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS Hub Dataset",
+          "format": "Web Page",
+          "mediaType": "text/html",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/datasets/UKCS-transition::ukcs-offshore-petroleum-licence-subareas-by-equity-group-holder-wgs84"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS GeoService",
+          "format": "ArcGIS GeoServices REST API",
+          "mediaType": "application/json",
+          "accessURL": "https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS%20offshore%20petroleum%20licence%20subareas%20by%20equity%20group%20holder%20WGS84/FeatureServer/0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "CSV",
+          "format": "CSV",
+          "mediaType": "text/csv",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/csv?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Shapefile",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/shapefile?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoJSON",
+          "format": "GeoJSON",
+          "mediaType": "application/vnd.geo+json",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/geojson?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "KML",
+          "format": "KML",
+          "mediaType": "application/vnd.google-earth.kml+xml",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/kml?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "File Geodatabase",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/filegdb?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Feature Collection",
+          "format": "TXT",
+          "mediaType": "text/plain",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/featureCollection?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Excel",
+          "format": "XLSX",
+          "mediaType": "application/vnd.ms-excel",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/excel?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoPackage",
+          "format": "GPKG",
+          "mediaType": "application/geopackage+sqlite3",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/geoPackage?layers=0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "SQLite Geodatabase",
+          "format": "GDB",
+          "mediaType": "application/geopackage+sqlite3",
+          "accessURL": "https://open-data-ukcs-transition.hub.arcgis.com/api/download/v1/items/40c65d96a1a14da8b066f2abbb345fed/sqlite?layers=0"
+        }
+      ],
+      "theme": [
+        "geospatial"
+      ]
+    }
+  ]
+}

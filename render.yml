@@ -192,6 +192,36 @@ services:
       - key: S2_API_KEY
         sync: false
 
+  # Country pack (wave 7 PR4): finishes the pack builds the API server queued but a restart left behind, and the
+  # weekly refresh of stale sections for countries with active projects. Fetches public sources only; the same
+  # keys as the research cron (storage for the originals, the model for drafting, EIA_API_KEY for production data).
+  - type: cron
+    name: atc-vault-country-pack
+    runtime: node
+    rootDir: vault
+    schedule: "0 4 * * 0"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/country-pack.ts
+    envVars:
+      - key: VAULT_STORAGE
+        value: supabase
+      - key: VAULT_STORAGE_BUCKET
+        value: vault
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: WORLD_MONITOR_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: S2_API_KEY
+        sync: false
+      - key: EIA_API_KEY
+        sync: false
+
   # Miners (M11): papers weekly; regulator feeds in the first week of the month.
   - type: cron
     name: atc-vault-miners
@@ -212,6 +242,23 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: S2_API_KEY
+        sync: false
+
+  # Weekly country pack refresh (wave 7 PR5, W7-AC20): rebuilds the due and stale pack sections of countries with an
+  # active project under PACK_BUDGET_GBP per country; the nightly staleness job marks them.
+  - type: cron
+    name: atc-vault-country-pack-refresh
+    runtime: node
+    rootDir: vault
+    schedule: "0 5 * * 1"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/country-pack-refresh.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: PACK_BUDGET_GBP
         sync: false
 
   # Weekly dream (M15): proposes lessons into the review queue.

@@ -124,6 +124,9 @@
       <div id="p-body" hidden>
         <div class="hub-kpis" id="p-kpis"></div>
 
+        <!-- Wave 7 PR5 (M, W7-AC19): the Country pack card, between the standing strip and the File disclosure; ten rows from hub/components/country-pack.js. Hidden until the Vault answers; absent without a country. -->
+        <section class="card hub-pack-card" id="p-pack" aria-labelledby="h-pack" data-pack-state="loading" hidden></section>
+
         <!-- Wave 7 PR2 (R1, R6): the file, one tap away: the legal tag, contacts and ATC team, the Fields row and the register, behind one disclosure -->
         <details class="card hub-pfile-wrap" id="p-file-wrap">
           <summary id="p-file-summary"><span class="hub-pfile-word" data-en="File" data-es="Expediente">File</span><span class="hub-pfile-brief" id="p-file-brief"></span></summary>
@@ -216,6 +219,19 @@
 <!-- Wave 7 PR2 (R13): Write to… beside the file: a right-hand panel the width of the record panel, a bottom sheet below 1200 px -->
 <div class="hub-scrim" id="draft-scrim" hidden></div>
 <section class="hub-panel hub-draft-panel hub-draft" id="p-draft" role="dialog" aria-modal="false" aria-labelledby="h-draft" hidden></section>
+
+<!-- Wave 7 PR5 (M): one section of the country pack as a bottom sheet (the wave 2 record-sheet pattern): the sentences with a chip per citation, what changed, the questions, the sources and the caveat -->
+<div class="hub-scrim" id="pack-scrim" hidden></div>
+<section class="hub-sheet hub-pack-sheet" id="pack-sheet" role="dialog" aria-modal="false" aria-labelledby="h-pack-sheet" data-section="" hidden>
+  <div class="hub-sheet-head">
+    <div>
+      <span class="label" data-en="Country pack" data-es="Paquete del país">Country pack</span>
+      <h3 id="h-pack-sheet"></h3>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" id="pack-close" data-en="Close" data-es="Cerrar">Close</button>
+  </div>
+  <div class="hub-sheet-body" id="pack-sheet-body"></div>
+</section>
 
 <!-- Record panel: opened from a lineage node or a timeline row. A side panel on wide screens, a bottom sheet over the scrim below 1200 px. -->
 <div class="hub-scrim" id="record-scrim" hidden></div>

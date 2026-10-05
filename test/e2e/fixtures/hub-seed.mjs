@@ -65,6 +65,16 @@ const evalRun = (date, f, p) => ({ date, questions: 26, k: 5, thresholds: { fait
 const RULES = [{ n: 1, id: 'tool-version', name: 'Every final run uses the current tool version' }, { n: 2, id: 'basis-note', name: 'Every evaluation has a basis note' }];
 const SCORECARDS = { as_of: iso(0), rules: RULES, summary: { green: 1, amber: 0, red: 0, grey: 0 }, projects: [{ id: PID, name: PROJECTS[0].name, client_id: 'frontera', client_name: 'Frontera Energy', status: 'active', rag: 'green', pass: 2, fail: 0, not_measurable: 0, rules: RULES.map((r) => ({ n: r.n, id: r.id, status: 'pass' })) }] };
 
+const packSection = (section, title, status, builtAgo, headline, sentences, sources) => ({ section, title, version: 1, status, stale_reason: null, built_at: iso(builtAgo), ttl_days: 90, due_at: new Date(NOW - builtAgo + 90 * DAY).toISOString().slice(0, 10), body: { headline, sentences, questions: [], changed_since: [] }, sources });
+const PACK_SRC = { id: 'chambers-oil-gas', url: 'https://practiceguides.chambers.com/practice-guides/oil-gas-2026/colombia', licence: 'Chambers and Partners, free to read', attribution: 'Chambers Global Practice Guides, Oil & Gas 2026, Colombia', fetched_at: iso(DAY), item_id: u(930), reachable: true };
+export const PACK_CO = {
+  country: 'CO', assembled_at: iso(DAY), spend_gbp: 0.9, job: { id: 5, status: 'ok', started_at: iso(DAY) }, counts: { built: 2, fresh: 2, due: 0, stale: 0, unreachable: 0, empty: 8 },
+  sections: [
+    packSection('legal', { en: 'Legal framework', es: 'Marco legal' }, 'fresh', DAY, { en: 'The ANH awards acreage under the 2003 concession regime.', es: 'La ANH adjudica áreas bajo el régimen de concesión de 2003.' }, [{ en: 'The ANH awards acreage under the 2003 concession regime.', es: 'La ANH adjudica áreas bajo el régimen de concesión de 2003.', cites: ['doc:' + u(930)] }], [PACK_SRC]),
+    packSection('fiscal', { en: 'Fiscal terms', es: 'Términos fiscales' }, 'fresh', DAY, { en: 'Royalty 8 to 25 % on a sliding scale by production.', es: 'Regalía del 8 al 25 % en escala móvil según la producción.' }, [{ en: 'Royalty runs from 8 to 25 % on a sliding scale by production.', es: 'La regalía va del 8 al 25 % en escala móvil según la producción.', cites: ['doc:' + u(930)] }], [PACK_SRC]),
+  ],
+};
+
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
 /** Seed every route the Hub pages ask for. Returns the log of requests that were answered 404. */
@@ -81,6 +91,8 @@ export async function seedHub(page) {
     if (p === '/api/organisations') return json(route, { organisations: ORGS });
     if (p === '/api/countries') return json(route, COUNTRIES);
     if (/^\/api\/countries\/[A-Z]{2}\/intel$/.test(p)) return json(route, { country: p.split('/')[3], name: { en: 'Country', es: 'País' }, world_monitor: { status: 'not_connected', reason: 'not connected' }, sections: {} });
+    // Wave 7 PR5 (W7-AC19): Colombia has a pack with two sections drafted, so the project page shows the card and its rows; the rest never built.
+    if (/^\/api\/countries\/[A-Z]{2}\/pack$/.test(p)) return json(route, p.split('/')[3] === 'CO' ? PACK_CO : { country: p.split('/')[3], assembled_at: null, sections: [], counts: { built: 0, fresh: 0, due: 0, stale: 0, unreachable: 0, empty: 10 }, job: null, spend_gbp: 0 });
     if (p === '/api/me/mailbox') return json(route, { prompt: false, connected: false, configured: false });
     if (p === '/api/me/activity') return json(route, { since: iso(DAY), counts: { records: 0 }, projects: [], brief_available: false });
     if (p === '/api/me/connections') return json(route, { connections: [] });
