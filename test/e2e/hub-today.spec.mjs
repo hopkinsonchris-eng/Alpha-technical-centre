@@ -66,17 +66,21 @@ async function stubApi(page, handlers) {
 
 const baseHandlers = (cat) => ({
   '/api/me': (u, r) => json(r, PARTNER),
+  '/api/health': (u, r) => json(r, { ok: true, version: '0.7.0', migrations: 7, backend: 'pg' }),
   '/api/catalog': (u, r) => json(r, cat),
-  '/api/projects': (u, r) => json(r, { projects: [{ id: 'llanos-waterflood', name: 'Llanos Basin waterflood screening', client_name: 'Frontera Energy', last_activity_at: new Date().toISOString(), run_count: 9, item_count: 31, stale_count: 3 }] }),
+  '/api/projects': (u, r) => json(r, { projects: [{ id: 'llanos-waterflood', name: 'Llanos Basin waterflood screening', client_name: 'Frontera Energy', country: 'CO', stage: 'Technical review', register: { next: 'Issue screening letter', owner: 'Chris' }, last_activity_at: new Date().toISOString(), run_count: 9, item_count: 31, stale_count: 3 }] }),
 });
 
 const ready = (page) => page.locator('body[data-ready="1"]').waitFor();
 
-test('(a) every catalog tool appears once with its current version and an Open link to the manifest entry', async ({ page, baseURL }) => {
+// Wave 7 PR2 (R4, idea A): the catalog is no longer on Today; hub/tool.html without a tool id is the Tools index.
+test('(a) the Tools index lists every catalog tool once with its current version and an Open link to the manifest entry', async ({ page, baseURL }) => {
   const cat = seededCatalog();
   await stubApi(page, baseHandlers(cat));
-  await page.goto('/hub/index.html');
+  await page.goto('/hub/tool.html');
   await ready(page);
+  await expect(page.locator('h1')).toHaveText('Tools');
+  await expect(page.locator('#t-body')).toBeHidden();                       // the single-tool page stays out of sight
 
   const want = expectedFor(cat, baseURL + '/');
   await expect(page.locator('[data-tool-id]')).toHaveCount(cat.tools.length);
@@ -121,15 +125,31 @@ test('(a) every catalog tool appears once with its current version and an Open l
   await expect(reg.locator('.hub-changelog')).toContainText('2.2.0');
   await expect(reg.locator('.hub-changelog')).toContainText('AI Run Advisor');
 
-  // Session; the register lists the project (wave 7, S2: the My projects cards are gone); sections whose endpoints are 404 stay out of sight.
+  // Session in the sidebar; the Today-only sections are not on the Tools index.
   await expect(page.locator('#me-name')).toHaveText('Chris Hopkinson');
   await expect(page.locator('#me-role')).toHaveText('PARTNER');
+  await expect(page.locator('#sec-globe')).toHaveCount(0);
+  await expect(page.locator('.hub-notice')).toHaveCount(0);
+});
+
+test('(a1) Today lists the project in the live register and keeps the catalog off the page; sections whose endpoints are 404 stay out of sight', async ({ page }) => {
+  const cat = seededCatalog();
+  await stubApi(page, baseHandlers(cat));
+  await page.goto('/hub/index.html');
+  await ready(page);
   await expect(page.locator('#sec-projects')).toHaveCount(0);
   await expect(page.locator('[data-project-id]')).toHaveCount(0);
-  await expect(page.locator('#register-body tr[data-register-row="llanos-waterflood"]')).toContainText('Frontera Energy');
-  await expect(page.locator('#sec-attention')).toBeHidden();
+  await expect(page.locator('#sec-tools')).toHaveCount(0);
+  await expect(page.locator('[data-tool-id]')).toHaveCount(0);
+  await expect(page.locator('#register [data-register-row="llanos-waterflood"] .hub-stateline[data-stateline="row"]')).toContainText('Technical review');
   await expect(page.locator('#sec-runs')).toBeHidden();
   await expect(page.locator('.hub-notice')).toHaveCount(0);
+  // No "nothing waiting" cards: the counters read zero in one line each (R12).
+  for (const id of ['#card-stale', '#card-filing', '#card-lessons', '#card-rerun']) {
+    await expect(page.locator(id)).toHaveAttribute('data-empty', '1');
+    await expect(page.locator(id + ' .hub-num')).toHaveText('0');
+    await expect(page.locator(id)).not.toContainText('Nothing waiting');
+  }
 });
 
 test('(a2) unbuilt endpoints answering 501 render nothing and no error', async ({ page }) => {
@@ -141,15 +161,17 @@ test('(a2) unbuilt endpoints answering 501 render nothing and no error', async (
   await stubApi(page, h);
   await page.goto('/hub/index.html');
   await ready(page);
-  await expect(page.locator('#sec-attention')).toBeHidden();
+  await expect(page.locator('#card-filing')).toHaveAttribute('data-empty', '1');
   await expect(page.locator('#sec-runs')).toBeHidden();
   await expect(page.locator('.hub-notice')).toHaveCount(0);
+  await page.goto('/hub/tool.html');
+  await ready(page);
   await expect(page.locator('[data-tool-id]')).toHaveCount(cat.tools.length);
 });
 
-test('(b) with the API answering 500 the catalog still renders from hub/catalog.json and says the Vault is unreachable', async ({ page }) => {
+test('(b) with the API answering 500 the Tools index still renders from hub/catalog.json and says the Vault is unreachable; Today shows the globe and no register', async ({ page }) => {
   await page.route('**/api/**', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"boom"}' }));
-  await page.goto('/hub/index.html');
+  await page.goto('/hub/tool.html');
   await ready(page);
   await expect(page.locator('[data-tool-id]')).toHaveCount(STATIC_CATALOG.tools.length);
   for (const t of STATIC_CATALOG.tools) {
@@ -157,9 +179,14 @@ test('(b) with the API answering 500 the catalog still renders from hub/catalog.
     if (t.kind !== 'external-app') await expect(page.locator(`[data-tool-id="${t.id}"] [data-version]`)).toHaveText(t.aliases.current);
   }
   await expect(page.locator('.hub-notice.warn')).toContainText('The Vault is unreachable');
-  await expect(page.locator('.hub-notice.warn')).toContainText('hub/catalog.json');
+  await expect(page.locator('.hub-notice.warn')).not.toContainText('catalog.json');     // R11: no file names in user copy
   await expect(page.locator('#me-name')).toHaveText('Signed out · local catalog');
-  for (const id of ['#sec-register', '#sec-attention', '#sec-runs']) await expect(page.locator(id)).toBeHidden();
+  await expect(page.locator('#hub-strip')).toHaveAttribute('data-state', 'off');
+  await page.goto('/hub/index.html');
+  await ready(page);
+  await expect(page.locator('.hub-notice.bad')).toContainText('The Vault is unreachable');
+  await expect(page.locator('#register [data-register-row]')).toHaveCount(0);
+  for (const id of ['#sec-runs']) await expect(page.locator(id)).toBeHidden();
 });
 
 /** Rich seed used for the accessibility check, the bilingual check and the screenshot. */
@@ -167,10 +194,10 @@ function richHandlers(cat) {
   const now = Date.now();
   const iso = (msAgo) => new Date(now - msAgo).toISOString();
   const projects = [
-    { id: 'llanos-waterflood', name: 'Llanos Basin waterflood screening', client_name: 'Frontera Energy · CO', last_activity_at: iso(2 * 3600e3), run_count: 9, item_count: 31, stale_count: 3 },
-    { id: 'middle-magdalena', name: 'Middle Magdalena infill screening', client_name: 'Ecopetrol · CO', last_activity_at: iso(DAY), run_count: 12, item_count: 40, stale_count: 2 },
-    { id: 'talara-brownfield', name: 'Talara brownfield redevelopment', client_name: 'Costa Norte Petróleos · PE', last_activity_at: iso(6 * DAY), run_count: 8, item_count: 28, stale_count: 0 },
-    { id: 'reconcavo', name: 'Recôncavo late-life economics', client_name: 'Bahía Oil & Gas · BR', last_activity_at: iso(21 * DAY), run_count: 5, item_count: 19, stale_count: 1 },
+    { id: 'llanos-waterflood', name: 'Llanos Basin waterflood screening', client_name: 'Frontera Energy · CO', country: 'CO', stage: 'Technical review', register: { next: 'Issue screening letter to Frontera', owner: 'Chris', risk: 'amber', risk_score: 54 }, last_activity_at: iso(2 * 3600e3), run_count: 9, item_count: 31, stale_count: 3 },
+    { id: 'middle-magdalena', name: 'Middle Magdalena infill screening', client_name: 'Ecopetrol · CO', country: 'CO', stage: 'Qualified', register: {}, last_activity_at: iso(DAY), run_count: 12, item_count: 40, stale_count: 2 },
+    { id: 'talara-brownfield', name: 'Talara brownfield redevelopment', client_name: 'Costa Norte Petróleos · PE', country: 'PE', stage: 'Commercial review', register: { next: 'Data room visit', owner: 'Tom' }, last_activity_at: iso(6 * DAY), run_count: 8, item_count: 28, stale_count: 0 },
+    { id: 'reconcavo', name: 'Recôncavo late-life economics', client_name: 'Bahía Oil & Gas · BR', country: 'BR', stage: 'Negotiation', register: { next: 'Sign the farm-in' }, last_activity_at: iso(21 * DAY), run_count: 5, item_count: 19, stale_count: 1 },
   ];
   const run = (i, job, ver, proj, status, out, stale) => ({
     id: '00000000-0000-4000-8000-00000000000' + i, job, tool_version: ver, project_id: proj, status, author: i % 2 ? 'geoscience' : 'commercial',
@@ -184,9 +211,14 @@ function richHandlers(cat) {
     run(5, 'opportunity-register', '2.0.0', 'middle-magdalena', 'final', { uplift_bopd: { value: 38000, unit: 'bopd' } }, true),
     run(6, 'plan-your-job', '1.0.0', 'talara-brownfield', 'final', { cost_estimate: { value: 1.84, unit: 'USD MM' } }),
   ];
+  const CC = { CO: ['Colombia', 4.1, -72.9], PE: ['Peru', -4.6, -81.3], BR: ['Brazil', -12.5, -38.5] };
+  const countries = Object.keys(CC).map((code) => ({ code, name: { en: CC[code][0], es: CC[code][0] }, projects: projects.filter((p) => p.country === code).map((p, i) => ({ id: p.id, name: p.name, status: 'active', stage: p.stage, client_id: null, client_name: p.client_name, lat: CC[code][1] + i * 0.4, lon: CC[code][2] + i * 0.4, last_run_at: p.last_activity_at, attention: { stale: p.stale_count, filing: 0, expiring_days: null }, assets: [] })), counts: { projects: projects.filter((p) => p.country === code).length, stale: 0, filing: 0, expiring: 0 }, risk: code === 'CO' ? { score: 71.2, level: 'exercise caution', computed_at: iso(3600e3), fetched_at: iso(3600e3) } : null }));
   return {
     ...baseHandlers(cat),
     '/api/projects': (u, r) => json(r, { projects }),
+    '/api/countries': (u, r) => json(r, { countries, unplaced: [], generated_at: iso(0), world_monitor: { status: 'live', notes: [] } }),
+    '/api/me/mailbox': (u, r) => json(r, { configured: true, connected: true, prompt: false, connection: { id: 'mb1', address: PARTNER.email, status: 'connected', privacy: 'full', connected_at: iso(10 * DAY), last_poll_at: iso(4 * 60e3), last_error: null }, counts: { messages: 10, filed: 8, waiting: 1, hidden_internal: 1, hidden_bulk: 0 }, firm_domains: ['alpha-technical-centre.com'] }),
+    '/api/me/activity': (u, r) => json(r, { since: iso(DAY), counts: { records: 12, messages_filed: 5, ready: 2, review: 3, invoices: 0, files: 4, organisations_proposed: 1, bulk_hidden: 0 }, projects: [{ id: 'llanos-waterflood', name: 'Llanos Basin waterflood screening', records: [{ ref: 'doc:00000000-0000-4000-8000-000000000301', title: 'RE: Cubiro screening letter', type: 'email' }, { ref: 'run:00000000-0000-4000-8000-000000000401', title: 'Cubiro screen, base case', type: 'run' }] }], brief_available: false }),
     '/api/projects/llanos-waterflood/stale': (u, r) => json(r, { runs: [{ id: 'r1', job: 'opportunity-register', tool_version: '2.0.0', stale_reasons: [{ rule: 'R1', detail: 'cites potential.js 2.0.0, now 2.1.0 (breaking)' }] }], items: [{ id: 'i1', title: 'Letter ATC-2026-0139 to Frontera cites the Cubiro base run', stale_reasons: [{ rule: 'R3', detail: 'run superseded on 2026-09-28' }] }] }),
     '/api/projects/middle-magdalena/stale': (u, r) => json(r, []),
     '/api/projects/talara-brownfield/stale': (u, r) => json(r, []),
@@ -221,15 +253,22 @@ async function seededPage(page) {
   return cat;
 }
 
-test('seeded sections: needs attention, recent runs, and the screenshot', async ({ page }) => {
-  const cat = await seededPage(page);
-  await expect(page.locator('[data-tool-id]')).toHaveCount(cat.tools.length);
-  await expect(page.locator('#register-body tr[data-register-row]')).toHaveCount(4);
+test('seeded sections: the four counters expand when non-zero, recent runs, and the screenshot', async ({ page }) => {
+  await seededPage(page);
+  await expect(page.locator('[data-tool-id]')).toHaveCount(0);
+  await expect(page.locator('#register [data-register-row]')).toHaveCount(4);
   await expect(page.locator('#card-stale')).toContainText('Stale runs and documents');
+  await expect(page.locator('#card-stale .hub-num')).toHaveText('3');
+  await expect(page.locator('#card-stale')).not.toHaveAttribute('data-empty', /.+/);
   await expect(page.locator('#card-stale .hub-item')).toHaveCount(3);
   await expect(page.locator('#card-filing .hub-item')).toHaveCount(2);
   await expect(page.locator('#card-lessons .hub-item')).toHaveCount(1);
   await expect(page.locator('#card-rerun .hub-item')).toHaveCount(1);
+  // The strip reads the same counts the counters do (idea C).
+  await expect(page.locator('#hub-strip a[data-figure="file"]')).toHaveText('2 to file');
+  await expect(page.locator('#hub-strip a[data-figure="stale"]')).toHaveText('3 stale');
+  await expect(page.locator('#hub-strip a[data-figure="lessons"]')).toHaveText('1 lesson to confirm');
+  await expect(page.locator('aside.hub-side a[data-nav="queue"] [data-nav-count]')).toHaveText('3');
   const rows = page.locator('#runs-wrap tbody tr');
   await expect(rows).toHaveCount(6);
   await expect(rows.first()).toContainText('apex-reservoir-3d@2.2.0');
@@ -265,12 +304,158 @@ test('(c) every element with data-en also has data-es, and rendered text follows
 
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(page.locator('h1')).toHaveText('Hoy');
-  await expect(page.locator('#sec-tools h2')).toHaveText('Catálogo');
-  await expect(page.locator('[data-tool-id="apex-reservoir-3d"] a[data-open]')).toHaveText('Abrir versión actual');
   await expect(page.locator('#card-filing h3')).toHaveText('Cola de archivo');
+  await expect(page.locator('#hub-strip [data-figure="vault"]')).toContainText('Vault sincronizado');
   const es = await check();
   expect(es.missing).toEqual([]);
 });
+
+/* ── Wave 7 PR2 (R4, idea A, W7-AC7): the globe is the door ───────────── */
+
+/** Seventeen projects in five countries, Venezuela the tallest group and last by name, so the register column scrolls at 1440×900. `door.ve` places its first dot. */
+const door = { ve: null };
+function doorHandlers(cat) {
+  const now = Date.now();
+  const iso = (msAgo) => new Date(now - msAgo).toISOString();
+  const CC = [['CO', 'Colombia', 4.1, -72.9, 3], ['PE', 'Peru', -4.6, -81.3, 3], ['BR', 'Brazil', -12.5, -38.5, 3], ['AR', 'Argentina', -38.9, -68.1, 3], ['VE', 'Venezuela', 8.1, -69.3, 5]];
+  const build = () => {
+    const projects = [], countries = [];
+    CC.forEach(([code, name, lat, lon, n], ci) => {
+      const list = [];
+      for (let i = 0; i < n; i++) {
+        const id = code.toLowerCase() + '-' + i;
+        const at = code === 'VE' && i === 0 && door.ve ? door.ve : { lat: lat + i * 0.3, lon: lon + i * 0.3 };
+        const p = { id, name: name + ' project ' + i, status: 'active', country: code, lat: at.lat, lon: at.lon, stage: 'Technical review', stage_history: [{ stage: 'Technical review', at: iso(12 * DAY), by: 'chris' }], register: { next: 'Next step ' + i, owner: 'Chris', risk: i ? 'amber' : 'green', risk_score: 40 + i }, last_activity_at: iso((ci * 5 + i + 1) * 3600e3), run_count: i, item_count: i * 2, stale_count: 0 };
+        projects.push(p);
+        list.push({ id, name: p.name, status: 'active', stage: p.stage, client_id: null, client_name: null, lat: p.lat, lon: p.lon, last_run_at: null, attention: { stale: 0, filing: 0, expiring_days: null }, assets: [] });
+      }
+      countries.push({ code, name: { en: name, es: name }, projects: list, counts: { projects: list.length, stale: 0, filing: 0, expiring: 0 }, risk: code === 'CO' ? { score: 71.2, level: 'exercise caution', computed_at: iso(3600e3), fetched_at: iso(3600e3) } : null });
+    });
+    return { projects, countries };
+  };
+  return {
+    ...baseHandlers(cat),
+    '/api/projects': (u, r) => json(r, { projects: build().projects }),
+    '/api/countries': (u, r) => json(r, { countries: build().countries, unplaced: [], generated_at: iso(0), world_monitor: { status: 'live', notes: [] } }),
+    '/api/me/activity': (u, r) => json(r, { since: iso(DAY), counts: { records: 2, messages_filed: 1, ready: 0, review: 1, invoices: 0, files: 1, organisations_proposed: 0, bulk_hidden: 0 }, projects: [{ id: 'co-0', name: 'Colombia project 0', records: [{ ref: 'doc:00000000-0000-4000-8000-000000000301', title: 'Data room index', type: 'email' }, { ref: 'run:00000000-0000-4000-8000-000000000401', title: 'Base case screen', type: 'run' }] }], brief_available: false }),
+    '/api/queue/filing': (u, r) => json(r, { items: [] }),
+    '/api/lessons': (u, r) => json(r, { lessons: [] }),
+    '/api/queue/review': (u, r) => json(r, { items: [] }),
+    '/api/runs': (u, r) => json(r, { runs: [] }),
+  };
+}
+const globeReady = (page) => page.locator('#sec-globe[data-globe="ready"]').waitFor();
+const fits = async (page, sel, height) => {
+  const box = await page.locator(sel).first().boundingBox();
+  expect(box, sel).not.toBeNull();
+  expect(box.y, sel + ' starts on the first screen').toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height, sel + ' ends on the first screen').toBeLessThanOrEqual(height + 1);
+};
+
+for (const vp of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }]) {
+  test(`W7-AC7 (${vp.width}×${vp.height}): the first screen is the strip, the globe and the live register; What came in is the next band; no catalog on Today`, async ({ page }) => {
+    await page.setViewportSize(vp);
+    const cat = seededCatalog();
+    await stubApi(page, doorHandlers(cat));
+    await page.goto('/hub/index.html');
+    await ready(page); await globeReady(page);
+    await fits(page, '#hub-strip', vp.height);
+    await fits(page, '#globe', vp.height);
+    await fits(page, '#register [data-register-row]', vp.height);
+    await fits(page, '#register [data-country-group] .hub-country', vp.height);
+    // The globe takes 55 % of the row, the register the rest, scrolling inside its column.
+    const row = await page.locator('.hub-globe').boundingBox();
+    const globe = await page.locator('.hub-globe-wrap').boundingBox();
+    expect(globe.width / row.width).toBeGreaterThan(0.5);
+    expect(globe.width / row.width).toBeLessThan(0.6);
+    const reg = page.locator('#register');
+    expect(await reg.evaluate((el) => el.scrollHeight > el.clientHeight && /auto|scroll/.test(getComputedStyle(el).overflowY))).toBe(true);
+    // One stateline row per project, grouped by country, with "Create a project here" as an outline action at the end of each group.
+    await expect(reg.locator('[data-register-row]')).toHaveCount(17);
+    const groups = reg.locator('[data-country-group]');
+    await expect(groups).toHaveCount(5);
+    await expect(groups.first().locator('[data-register-row] .hub-stateline[data-stateline="row"]')).toHaveCount(3);
+    const create = groups.first().locator('[data-create-here]');
+    await expect(create).toHaveText('Create a project here');
+    await expect(create).toHaveClass(/btn-outline/);
+    await expect(create).not.toHaveClass(/btn-primary/);
+    expect(await groups.first().evaluate((g) => g.lastElementChild.hasAttribute('data-create-here'))).toBe(true);
+    // R11: both risks are labelled where they appear.
+    await expect(reg.locator('[data-country-group="CO"] .hub-country')).toContainText('World Monitor 71');
+    await expect(reg.locator('[data-register-row="co-1"] [data-risk-tag]')).toHaveText('our execution risk Amber 41');
+    // What came in is the next band, full width, with chips as links and figures as a grid; the catalog is gone.
+    expect(await page.locator('#sec-globe').evaluate((el) => el.nextElementSibling.id)).toBe('sec-activity');
+    const band = await page.locator('#sec-activity').boundingBox();
+    expect(band.width / row.width).toBeGreaterThan(0.98);
+    await expect(page.locator('#activity-counts [data-count] .hub-num').first()).toHaveText('1');
+    await expect(page.locator('#activity-counts [data-count] .hub-unit').first()).toHaveText('messages filed');
+    await expect(page.locator('#card-activity a.hub-cite')).toHaveCount(2);
+    await expect(page.locator('#card-activity a.hub-cite').first()).toHaveAttribute('href', '/hub/project.html?id=co-0&doc=00000000-0000-4000-8000-000000000301');
+    expect(await page.locator('#sec-activity').evaluate((el) => el.nextElementSibling.id)).toBe('sec-counters');
+    await expect(page.locator('#sec-tools')).toHaveCount(0);
+    await expect(page.locator('[data-tool-id]')).toHaveCount(0);
+    await expect(page.locator('#sec-counters [data-empty="1"]')).toHaveCount(4);   // all four collapse at zero
+    for (const id of ['#card-filing', '#card-lessons', '#card-rerun', '#card-stale']) {
+      const b = await page.locator(id).boundingBox();
+      expect(b.height, id + ' is one line').toBeLessThan(64);
+    }
+    // The skeleton is gone once data-ready is set.
+    await expect(page.locator('.hub-skel')).toHaveCount(0);
+  });
+}
+
+test('W7-AC7: scrolling the register turns the globe to the country in view; tapping a dot highlights its row and scrolls it into view', async ({ page }) => {
+  const cat = seededCatalog();
+  await stubApi(page, doorHandlers(cat));
+  // Venezuela's first dot sits at the country's centre (computed in the page from the same polygons the globe draws), so the flight there ends with the dot at the canvas centre.
+  await page.goto('/hub/index.html');
+  await ready(page);
+  door.ve = await page.evaluate(async () => {
+    const g = await (await fetch('/hub/geo/countries-110m.json')).json();
+    const f = g.features.find((x) => x.properties.iso2 === 'VE');
+    const [lon, lat] = window.d3.geoCentroid(f);
+    return { lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 };
+  });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  const sec = page.locator('#sec-globe');
+  await expect(sec).not.toHaveAttribute('data-target', /.+/);
+  const reg = page.locator('#register');
+  await reg.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  await expect(sec).toHaveAttribute('data-target', 'VE');
+  await reg.evaluate((el) => { el.scrollTop = 0; });
+  await expect(sec).toHaveAttribute('data-target', 'AR');
+  await expect(page).not.toHaveURL(/country=/);                        // scroll-linking is not a selection
+  await expect(page.locator('#country-panel')).toBeHidden();
+  await reg.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  await expect(sec).toHaveAttribute('data-target', 'VE');
+  await page.waitForTimeout(1200);                                     // the flight
+  const box = await page.locator('#globe').boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  const row = page.locator('[data-register-row="ve-0"]');
+  await expect(row).toHaveAttribute('data-hot', '1');
+  await expect(page.locator('[data-register-row][data-hot="1"]')).toHaveCount(1);
+  await expect(page.locator('#country-panel')).toBeHidden();           // a dot is a project, not a country
+  expect(await row.evaluate((el) => { const r = el.getBoundingClientRect(), c = el.closest('#register').getBoundingClientRect(); return r.top >= c.top - 1 && r.bottom <= c.bottom + 1; })).toBe(true);
+  // The row's tokens are the stateline's links.
+  await expect(row.locator('a[data-token="name"]')).toHaveAttribute('href', '/hub/project.html?id=ve-0');
+  await expect(row.locator('a[data-token="stage"]')).toHaveAttribute('href', '/hub/project.html?id=ve-0#stage');
+  door.ve = null;
+});
+
+for (const [name, vp] of [['desk', { width: 1440, height: 900 }], ['ipadl', { width: 1024, height: 768 }], ['ipadp', { width: 820, height: 1180 }], ['phone', { width: 390, height: 844 }]]) {
+  test(`W7-AC7 evidence: w7-today-${name}.png`, async ({ page }) => {
+    await page.setViewportSize(vp);
+    const cat = seededCatalog();
+    await stubApi(page, richHandlers(cat));
+    await page.goto('/hub/index.html');
+    await ready(page);
+    try { await page.locator('#sec-globe[data-globe="ready"]').waitFor({ timeout: 5000 }); } catch (e) { /* no geo: still a page */ }
+    await page.waitForTimeout(600);
+    mkdirSync(path.join(ROOT, 'docs/vault-hub/wave7/evidence'), { recursive: true });
+    await page.screenshot({ path: path.join(ROOT, 'docs/vault-hub/wave7/evidence', `w7-today-${name}.png`) });
+  });
+}
 
 test('(d) accessibility: axe finds no WCAG 2 A/AA violations on the seeded page', async ({ page }) => {
   await seededPage(page);
@@ -296,48 +481,7 @@ test('not indexable: noindex meta, no analytics snippet, listed in robots.txt, a
   expect(await (await request.get('/sitemap.xml')).text()).not.toMatch(/\/hub\//);
 });
 
-test('settings: one-time import of browser rates, save through the API, fallback to the browser copy', async ({ page }) => {
-  const saved = [];
-  let stored = null;
-  const cfg = { rates: { Principal: 15000, Senior: 12000, 'Mid-level': 9000, Junior: 6000 }, swMult: 110, miscMult: 100, dataMult: 100, margin: 5 };
-  await page.addInitScript((c) => { try { if (!localStorage.getItem('atc_admin_config')) localStorage.setItem('atc_admin_config', JSON.stringify(c)); } catch (e) {} }, cfg);
-  await stubApi(page, {
-    '/api/me': (u, r) => json(r, PARTNER),
-    '/api/catalog': (u, r) => json(r, seededCatalog()),
-    '/api/settings/day-rates': (u, r) => {
-      const req = r.request();
-      if (req.method() === 'GET') return stored ? json(r, { key: 'day-rates', value: stored }) : notFound(r);
-      const body = JSON.parse(req.postData());
-      saved.push(body.value);
-      stored = body.value;
-      return json(r, { key: 'day-rates', value: stored });
-    },
-  });
-  await page.goto('/hub/settings.html');
-  await expect(page.locator('#r-principal')).toHaveValue('15000');
-  await expect.poll(() => saved.length).toBe(1);                       // imported once
-  expect(saved[0].rates.Principal).toBe(15000);
-  await expect(page.locator('#d-principal')).toHaveText('$3,000');
-  await page.locator('#r-senior').fill('12500');
-  await page.getByRole('button', { name: 'Save and apply' }).click();
-  await expect(page.locator('#save-status')).toContainText('Saved to the Vault');
-  expect(saved.length).toBe(2);
-  expect(saved[1].rates.Senior).toBe(12500);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('atc_admin_config')).rates.Senior)).toBe(12500);
-  await page.reload();
-  await expect(page.locator('#r-senior')).toHaveValue('12500');
-  expect(saved.length).toBe(2);                                        // not imported again
-});
-
-test('settings: Vault down falls back to this browser', async ({ page }) => {
-  await page.addInitScript(() => { try { localStorage.setItem('atc_admin_config', JSON.stringify({ rates: { Principal: 14000, Senior: 11000, 'Mid-level': 8000, Junior: 5500 } })); } catch (e) {} });
-  await page.route('**/api/**', (route) => route.fulfill({ status: 500, body: 'x' }));
-  await page.goto('/hub/settings.html');
-  await expect(page.locator('#r-principal')).toHaveValue('14000');
-  await expect(page.locator('.hub-notice')).toContainText('The Vault is unreachable');
-  await page.getByRole('button', { name: 'Save and apply' }).click();
-  await expect(page.locator('#save-status')).toContainText('this browser only');
-});
+// Wave 7 PR2: the Settings page's own checks live in hub-settings.spec.mjs (builder F).
 
 test('plan-your-job reads day rates from the API first, then from localStorage', async ({ page }) => {
   const apiCfg = { rates: { Principal: 20000, Senior: 16000, 'Mid-level': 12000, Junior: 8000 } };
@@ -370,7 +514,7 @@ test('new project: a partner creates a project from Today; the form posts to POS
 
   // The button sits with the register for a partner (wave 7, S2: the My projects section is gone); the form is closed until asked for.
   await expect(page.locator('#sec-projects')).toHaveCount(0);
-  await expect(page.locator('#sec-register')).toBeVisible();
+  await expect(page.locator('#register')).toBeVisible();
   const btn = page.getByRole('button', { name: 'New project' });
   await expect(btn).toBeVisible();
   await expect(page.locator('#new-project')).toBeHidden();
@@ -463,10 +607,10 @@ function lifecycleCatalog() {
 }
 const visibleIds = (page) => page.locator('[data-tool-id]:visible').evaluateAll((els) => els.map((e) => e.getAttribute('data-tool-id')).sort());
 
-test('AC7: production tools by default; Experimental and Older chips reveal the rest; retired never; the choice persists', async ({ page }) => {
+test('AC7: on the Tools index, production tools by default; Experimental and Older chips reveal the rest; retired never; the choice persists', async ({ page }) => {
   const cat = lifecycleCatalog();
   await stubApi(page, baseHandlers(cat));
-  await page.goto('/hub/index.html');
+  await page.goto('/hub/tool.html');
   await ready(page);
   const prod = cat.tools.filter((t) => t.lifecycle === 'production').map((t) => t.id).sort();
   const exp = cat.tools.filter((t) => t.lifecycle === 'experimental').map((t) => t.id);
@@ -482,7 +626,7 @@ test('AC7: production tools by default; Experimental and Older chips reveal the 
   await expect(chips.nth(1)).toHaveText('Experimental ' + exp.length);
   await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'false');
   await expect(chips.nth(2)).toHaveText('Older ' + dep.length);
-  await expect(page.locator('#today-sub')).toContainText(prod.length + ' in production');
+  await expect(page.locator('#tools-sub')).toContainText(prod.length + ' in production');
 
   await chips.nth(1).click();
   expect(await visibleIds(page)).toEqual([...prod, ...exp].sort());
@@ -515,7 +659,7 @@ test('AC7: production tools by default; Experimental and Older chips reveal the 
 test('AC8 (wave 7, S6): an external app shows the version it publishes; one that publishes nothing yet shows no version line; a browser tool shows its manifest version', async ({ page }) => {
   const cat = lifecycleCatalog();
   await stubApi(page, baseHandlers(cat));
-  await page.goto('/hub/index.html');
+  await page.goto('/hub/tool.html');
   await ready(page);
   const ai = page.locator('[data-tool-id="apex-asset-intelligence"]');
   await expect(ai.locator('[data-version]')).toHaveText('4.2.0');

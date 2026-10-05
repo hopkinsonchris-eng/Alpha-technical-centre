@@ -91,7 +91,9 @@ async function seed(page, { rerun, draft } = {}) {
   const project = () => state.projects.find((p) => p.id === PID);
   await page.route('**/api/**', (route) => {
     const req = route.request(), url = new URL(req.url()), p = url.pathname, m = req.method();
+    if (p === '/api/health') return json(route, { ok: true, version: '0.7.0', migrations: 7, backend: 'pg' });
     if (p === '/api/me') return json(route, PARTNER);
+    if (p === '/api/search') return json(route, { hits: [], scope: url.searchParams.get('scope'), took_ms: 1 });
     if (p === '/api/catalog') return json(route, CATALOG);
     const rs = /^\/api\/tools\/([^/]+)\/resolve$/.exec(p);
     if (rs) { const t = CATALOG.tools.find((x) => x.id === rs[1]); return t ? json(route, { id: t.id, version: t.aliases.current, entry: t.entry }) : json(route, { error: { code: 'not_found', message: 'no tool' } }, 404); }
@@ -162,22 +164,40 @@ for (const vp of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }]) {
     await ready(page);
     expect(errors).toEqual([]);
     expect(log.notFound).toEqual([]);
-    await expect(page.locator('#register-body tr[data-register-row]')).toHaveCount(2);
-    await expect(page.locator('tr[data-register-row="firm"]')).toHaveCount(0);
+    await expect(page.locator('#register [data-register-row]')).toHaveCount(2);
+    await expect(page.locator('[data-register-row="firm"]')).toHaveCount(0);
     await expect(page.locator('#sec-projects')).toHaveCount(0);                      // My projects is gone (S2)
     await expect(page.locator('#country-unplaced')).toBeHidden();
-    await page.locator('#country-list [data-country="CO"]').click();
+    // Wave 7 PR2 (idea C): the strip is live and the sidebar carries no Vault footer.
+    await expect(page.locator('#hub-strip')).toHaveAttribute('data-state', 'synced');
+    await expect(page.locator('.hub-side-foot')).toHaveCount(0);
+    await page.locator('#register [data-country="CO"]').click();
     await expect(page.locator('#country-panel')).toBeVisible();
     await expect(page.locator('#country-intel')).toBeHidden();                       // S9
     await expect(page.locator('#country-intel')).toHaveAttribute('data-state', 'not_connected');
-    const cards = page.locator('[data-tool-id]');
-    await expect(cards.first()).toBeVisible();
-    await expect(page.locator('.hub-pill', { hasText: 'Version unverified' })).toHaveCount(0);   // S6
-    await expect(page.locator('[data-tool-id="insight-radar"] a[data-open]')).toHaveCount(0);  // S7
-    await expect(page.locator('[data-tool-id="apex-3d-model"] a[data-open]')).toHaveAttribute('href', /apex-3d-model/);   // the card still links the app (W7-AC5)
+    await expect(page.locator('#country-panel [data-country-project] .hub-stateline[data-stateline="row"]')).toHaveCount(1);   // W7-AC6
+    await expect(page.locator('[data-tool-id]')).toHaveCount(0);                     // the catalog lives on the Tools index now (R4)
     if (vp.width === 1440) { mkdirSync(EVIDENCE, { recursive: true }); await page.screenshot({ path: path.join(EVIDENCE, 'w7-clearance-today.png') }); }
   });
 }
+
+test('check 1b: the Tools index (hub/tool.html without an id) lists the catalog with the PR1 removals still applied', async ({ page }) => {
+  const errors = watchErrors(page);
+  const log = await seed(page);
+  await page.goto('/hub/tool.html');
+  await ready(page);
+  expect(errors).toEqual([]);
+  expect(log.notFound).toEqual([]);
+  await expect(page.locator('h1')).toHaveText('Tools');
+  const cards = page.locator('[data-tool-id]');
+  await expect(cards.first()).toBeVisible();
+  await expect(page.locator('.hub-pill', { hasText: 'Version unverified' })).toHaveCount(0);   // S6
+  await expect(page.locator('[data-tool-id="insight-radar"] a[data-open]')).toHaveCount(0);  // S7
+  await expect(page.locator('[data-tool-id="apex-3d-model"] a[data-open]')).toHaveAttribute('href', /apex-3d-model/);   // the card still links the app (W7-AC5)
+  await expect(page.locator('[data-tool-id="opportunity-register"] a[data-open]')).toHaveAttribute('href', /opportunity-register\.html$/);
+  // R11: the catalog's source is said in plain words, never as a file name.
+  await expect(page.locator('body')).not.toContainText('catalog.json');
+});
 
 test('check 2: the sidebar is identical on every page and marks the current page from data-page', async ({ page }) => {
   await seed(page);

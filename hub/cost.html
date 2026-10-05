@@ -84,19 +84,20 @@
     <nav aria-label="Hub">
       <span class="hub-nav-group" data-en="Work" data-es="Trabajo">Work</span>
       <div class="hub-nav">
-        <a href="/hub/index.html" data-nav="today">
+        <a href="/hub/index.html" data-nav="today" data-bar="today">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
           <span data-en="Today" data-es="Hoy">Today</span>
         </a>
-        <a href="/hub/index.html#register" data-nav="projects">
+        <a href="/hub/index.html#register" data-nav="projects" data-bar="projects">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
           <span data-en="Projects" data-es="Proyectos">Projects</span>
         </a>
-        <a href="/hub/queue.html" data-nav="queue">
+        <a href="/hub/queue.html" data-nav="queue" data-bar="queue">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
           <span data-en="Queues" data-es="Colas">Queues</span>
+          <span class="hub-nav-count" data-nav-count="queue" hidden></span>
         </a>
-        <a href="/hub/search.html" data-nav="find">
+        <a href="/hub/search.html" data-nav="find" data-bar="find">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <span data-en="Find" data-es="Buscar">Find</span>
         </a>
@@ -108,15 +109,15 @@
           <span data-en="Settings" data-es="Ajustes">Settings</span>
         </a>
       </div>
+      <button type="button" class="hub-more-btn" id="hub-more" data-bar="more" aria-expanded="false" aria-controls="me">
+        <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        <span data-en="More" data-es="Más">More</span>
+      </button>
     </nav>
 
     <div class="nav-lang" role="group" aria-label="Language">
       <button type="button" data-lang="en" class="active">EN</button>
       <button type="button" data-lang="es">ES</button>
-    </div>
-
-    <div class="hub-side-foot">
-      <span class="hub-dot off" id="vault-dot" aria-hidden="true"></span><span id="vault-state" data-en="Vault not checked" data-es="Vault sin comprobar">Vault not checked</span>
     </div>
   </aside>
 
@@ -127,6 +128,7 @@
       <form class="hub-find" role="search" action="/hub/search.html" method="get">
         <label class="sr-only" for="find-q" data-en="Find across the Vault" data-es="Buscar en el Vault">Find across the Vault</label>
         <input id="find-q" name="q" type="search" autocomplete="off" data-en-ph="Find across the Vault" data-es-ph="Buscar en el Vault" placeholder="Find across the Vault">
+        <input type="hidden" name="scope" value="firm">
         <button type="submit" data-en="Find" data-es="Buscar">Find</button>
       </form>
     </header>

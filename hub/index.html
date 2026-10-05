@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hub Today — Alpha Technical Centre</title>
-<meta name="description" content="Staff dashboard: where the firm works, the opportunity register, what needs attention, recent runs and the tool catalog.">
+<meta name="description" content="Staff dashboard: the globe and the live register of where the firm works, what came in, what needs a decision and the latest runs.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/hub/hub.css">
@@ -42,19 +42,20 @@
     <nav aria-label="Hub">
       <span class="hub-nav-group" data-en="Work" data-es="Trabajo">Work</span>
       <div class="hub-nav">
-        <a href="/hub/index.html" data-nav="today">
+        <a href="/hub/index.html" data-nav="today" data-bar="today">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
           <span data-en="Today" data-es="Hoy">Today</span>
         </a>
-        <a href="/hub/index.html#register" data-nav="projects">
+        <a href="/hub/index.html#register" data-nav="projects" data-bar="projects">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
           <span data-en="Projects" data-es="Proyectos">Projects</span>
         </a>
-        <a href="/hub/queue.html" data-nav="queue">
+        <a href="/hub/queue.html" data-nav="queue" data-bar="queue">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
           <span data-en="Queues" data-es="Colas">Queues</span>
+          <span class="hub-nav-count" data-nav-count="queue" hidden></span>
         </a>
-        <a href="/hub/search.html" data-nav="find">
+        <a href="/hub/search.html" data-nav="find" data-bar="find">
           <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <span data-en="Find" data-es="Buscar">Find</span>
         </a>
@@ -66,15 +67,15 @@
           <span data-en="Settings" data-es="Ajustes">Settings</span>
         </a>
       </div>
+      <button type="button" class="hub-more-btn" id="hub-more" data-bar="more" aria-expanded="false" aria-controls="me">
+        <svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        <span data-en="More" data-es="Más">More</span>
+      </button>
     </nav>
 
     <div class="nav-lang" role="group" aria-label="Language">
       <button type="button" data-lang="en" class="active">EN</button>
       <button type="button" data-lang="es">ES</button>
-    </div>
-
-    <div class="hub-side-foot">
-      <span class="hub-dot off" id="vault-dot" aria-hidden="true"></span><span id="vault-state" data-en="Vault not checked" data-es="Vault sin comprobar">Vault not checked</span>
     </div>
   </aside>
 
@@ -85,18 +86,21 @@
       <form class="hub-find" role="search" action="/hub/search.html" method="get">
         <label class="sr-only" for="find-q" data-en="Find across the Vault" data-es="Buscar en el Vault">Find across the Vault</label>
         <input id="find-q" name="q" type="search" autocomplete="off" data-en-ph="Find across the Vault" data-es-ph="Buscar en el Vault" placeholder="Find across the Vault">
+        <input type="hidden" name="scope" value="firm">
         <button type="submit" data-en="Find" data-es="Buscar">Find</button>
       </form>
     </header>
 
     <main class="hub-content" id="main">
-      <div class="hub-head">
+      <div class="hub-head hub-head-today">
         <div>
           <span class="label" id="today-date" data-en="Today" data-es="Hoy">Today</span>
           <h1 data-en="Today" data-es="Hoy">Today</h1>
-          <p id="today-sub" data-en="Loading the catalog…" data-es="Cargando el catálogo…">Loading the catalog…</p>
         </div>
-        <div class="hub-status" id="status-strip"></div>
+        <div class="hub-actions-row">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-new-opportunity" hidden data-en="Add opportunity" data-es="Añadir oportunidad">Add opportunity</button>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-new-project" hidden aria-expanded="false" aria-controls="new-project" data-en="New project" data-es="Nuevo proyecto">New project</button>
+        </div>
       </div>
 
       <div id="notices" role="status"></div>
@@ -116,34 +120,149 @@
         </div>
       </section>
 
-      <!-- WHERE WE WORK: the globe (wave 2) -->
+      <!-- NEW PROJECT (partners): opened by Add opportunity, New project or Create a project here -->
+      <form class="card hub-newproj" id="new-project" hidden novalidate>
+        <div class="hub-card-head">
+          <div>
+            <h3 data-en="New project" data-es="Nuevo proyecto">New project</h3>
+            <span class="hub-muted" data-en="A project file holds every run, document, letter and email for one piece of work. An internal project carries the firm tag; a client project carries the client's NDA tag." data-es="La ficha de un proyecto guarda cada ejecución, documento, carta y correo de un trabajo. Un proyecto interno lleva la etiqueta de la firma; un proyecto de cliente lleva la etiqueta del NDA del cliente.">A project file holds every run, document, letter and email for one piece of work. An internal project carries the firm tag; a client project carries the client's NDA tag.</span>
+          </div>
+        </div>
+        <div id="np-notices" role="status"></div>
+        <div class="hub-form-grid">
+          <div class="hub-field">
+            <label for="np-name" data-en="Name" data-es="Nombre">Name</label>
+            <input id="np-name" type="text" required autocomplete="off">
+            <span class="hint" data-en="As it should appear on letters and reports" data-es="Tal como debe aparecer en cartas e informes">As it should appear on letters and reports</span>
+          </div>
+          <div class="hub-field">
+            <label for="np-id" data-en="Project id" data-es="Id del proyecto">Project id</label>
+            <input id="np-id" type="text" required autocomplete="off" pattern="[a-z0-9][a-z0-9-]{1,63}">
+            <span class="hint" data-en="Lowercase letters, digits and hyphens. Used in addresses and citations; it cannot change later." data-es="Minúsculas, dígitos y guiones. Se usa en direcciones y citas; no se puede cambiar después.">Lowercase letters, digits and hyphens. Used in addresses and citations; it cannot change later.</span>
+          </div>
+          <div class="hub-field">
+            <label for="np-client" data-en="Client" data-es="Cliente">Client</label>
+            <select id="np-client">
+              <option value="" data-en="Internal (no client)" data-es="Interno (sin cliente)">Internal (no client)</option>
+            </select>
+            <span class="hint" data-en="From the organisations in the Vault" data-es="De las organizaciones del Vault">From the organisations in the Vault</span>
+          </div>
+          <div class="hub-field" id="np-tag-field" hidden>
+            <label for="np-tag-pick" data-en="NDA tag" data-es="Etiqueta del NDA">NDA tag</label>
+            <select id="np-tag-pick">
+              <option value="new" data-en="Create a new NDA tag" data-es="Crear una etiqueta de NDA nueva">Create a new NDA tag</option>
+            </select>
+            <span class="hint" data-en="Every record in the project inherits the client's NDA tag; only people on the project can see them." data-es="Cada registro del proyecto hereda la etiqueta del NDA del cliente; solo las personas del proyecto pueden verlos.">Every record in the project inherits the client's NDA tag; only people on the project can see them.</span>
+          </div>
+          <div class="hub-field" id="np-tag-new" hidden>
+            <label for="np-tag-name" data-en="NDA name" data-es="Nombre del NDA">NDA name</label>
+            <input id="np-tag-name" type="text" autocomplete="off" placeholder="Frontera NDA 2026">
+            <label for="np-tag" data-en="Tag id" data-es="Id de la etiqueta">Tag id</label>
+            <input id="np-tag" type="text" autocomplete="off" placeholder="lt-frontera-nda-2026">
+            <label for="np-tag-expires" data-en="NDA expires" data-es="El NDA vence">NDA expires</label>
+            <input id="np-tag-expires" type="date">
+            <span class="hint" data-en="The tag is created with the project. Lowercase letters, digits and hyphens, starting lt-." data-es="La etiqueta se crea con el proyecto. Minúsculas, dígitos y guiones, empezando por lt-.">The tag is created with the project. Lowercase letters, digits and hyphens, starting lt-.</span>
+          </div>
+        </div>
+        <details class="hub-opp" id="np-opp">
+          <summary data-en="Opportunity fields: country, stage, production and risk" data-es="Campos de oportunidad: país, etapa, producción y riesgo">Opportunity fields: country, stage, production and risk</summary>
+          <div class="hub-form-grid">
+            <div class="hub-field">
+              <label for="np-country" data-en="Country" data-es="País">Country</label>
+              <select id="np-country"><option value="" data-en="Not placed yet" data-es="Sin ubicar todavía">Not placed yet</option></select>
+              <span class="hint" data-en="Puts the opportunity on the globe" data-es="Sitúa la oportunidad en el globo">Puts the opportunity on the globe</span>
+            </div>
+            <div class="hub-field">
+              <label for="np-stage" data-en="Stage" data-es="Etapa">Stage</label>
+              <select id="np-stage"><option value="" data-en="Initial screen" data-es="Cribado inicial">Initial screen</option></select>
+            </div>
+            <div class="hub-field">
+              <label for="np-lat" data-en="Latitude" data-es="Latitud">Latitude</label>
+              <input id="np-lat" type="number" min="-90" max="90" step="0.01" inputmode="decimal" autocomplete="off">
+            </div>
+            <div class="hub-field">
+              <label for="np-lon" data-en="Longitude" data-es="Longitud">Longitude</label>
+              <input id="np-lon" type="number" min="-180" max="180" step="0.01" inputmode="decimal" autocomplete="off">
+            </div>
+            <div class="hub-field">
+              <label for="np-source" data-en="Source" data-es="Origen">Source</label>
+              <input id="np-source" type="text" autocomplete="off">
+              <span class="hint" data-en="Who brought it: Tennor, intermediary, government, Alpha" data-es="Quién la trajo: Tennor, intermediario, gobierno, Alpha">Who brought it: Tennor, intermediary, government, Alpha</span>
+            </div>
+            <div class="hub-field">
+              <label for="np-owner" data-en="Lead at the firm" data-es="Responsable en la firma">Lead at the firm</label>
+              <input id="np-owner" type="text" autocomplete="off">
+            </div>
+            <div class="hub-field">
+              <label for="np-current" data-en="Fact today, kboe/d" data-es="Hecho hoy, kboe/d">Fact today, kboe/d</label>
+              <input id="np-current" type="number" min="0" step="0.1" inputmode="decimal" autocomplete="off">
+            </div>
+            <div class="hub-field">
+              <label for="np-plan" data-en="Operator's plan, kboe/d" data-es="Plan del operador, kboe/d">Operator's plan, kboe/d</label>
+              <input id="np-plan" type="number" min="0" step="0.1" inputmode="decimal" autocomplete="off">
+            </div>
+            <div class="hub-field">
+              <label for="np-risk" data-en="Execution risk" data-es="Riesgo de ejecución">Execution risk</label>
+              <select id="np-risk">
+                <option value="" data-en="Not assessed" data-es="Sin evaluar">Not assessed</option>
+                <option value="green" data-en="Green: managed" data-es="Verde: gestionado">Green: managed</option>
+                <option value="amber" data-en="Amber: elevated" data-es="Ámbar: elevado">Amber: elevated</option>
+                <option value="red" data-en="Red: high" data-es="Rojo: alto">Red: high</option>
+              </select>
+            </div>
+          </div>
+        </details>
+        <div class="hub-actions">
+          <button type="submit" class="btn btn-primary btn-sm" id="np-submit" data-en="Create project" data-es="Crear proyecto">Create project</button>
+          <button type="button" class="btn btn-outline btn-sm" id="np-cancel" data-en="Cancel" data-es="Cancelar">Cancel</button>
+        </div>
+      </form>
+
+      <!-- THE GLOBE IS THE DOOR (wave 2 globe; wave 7 PR2 idea A): the globe and the live register beside it -->
       <section id="sec-globe" aria-labelledby="h-globe" data-globe="loading">
         <div class="hub-globe">
           <div class="hub-globe-wrap">
-            <canvas id="globe" role="img" aria-label="Globe of where the firm works. Use the country list beside it." data-en-aria="Globe of where the firm works. Use the country list beside it." data-es-aria="Globo de dónde trabaja la firma. Use la lista de países al lado."></canvas>
+            <canvas id="globe" role="img" aria-label="Globe of where the firm works. Use the register beside it." data-en-aria="Globe of where the firm works. Use the register beside it." data-es-aria="Globo de dónde trabaja la firma. Use el registro al lado."></canvas>
             <div class="hub-globe-tip" id="globe-tip" hidden aria-hidden="true"></div>
-            <p class="hub-globe-hint" data-en="Drag to turn · scroll or pinch to zoom · tap a country" data-es="Arrastre para girar · desplace o pellizque para acercar · toque un país">Drag to turn · scroll or pinch to zoom · tap a country</p>
+            <p class="hub-globe-hint" data-en="Drag to turn · pinch to zoom · tap a country or a dot" data-es="Arrastre para girar · pellizque para acercar · toque un país o un punto">Drag to turn · pinch to zoom · tap a country or a dot</p>
           </div>
-          <div class="hub-globe-side">
-            <div class="hub-sec-head">
+          <div class="hub-globe-side" id="register-column">
+            <div class="hub-sec-head hub-reg-head">
               <div>
                 <span class="label" data-en="Where we work" data-es="Dónde trabajamos">Where we work</span>
-                <h2 id="h-globe" data-en="Opportunities by country" data-es="Oportunidades por país">Opportunities by country</h2>
+                <h2 id="h-globe" data-en="The register" data-es="El registro">The register</h2>
                 <p class="hub-muted" id="globe-count" data-en="Loading…" data-es="Cargando…">Loading…</p>
               </div>
             </div>
-            <div id="country-list" role="list"></div>
+            <div class="hub-reg-filters" id="reg-filters" hidden>
+              <label class="sr-only" for="reg-stage" data-en="Stage" data-es="Etapa">Stage</label>
+              <select id="reg-stage" class="hub-select"><option value="" data-en="All stages" data-es="Todas las etapas">All stages</option></select>
+              <label class="sr-only" for="reg-risk" data-en="Risk" data-es="Riesgo">Risk</label>
+              <select id="reg-risk" class="hub-select">
+                <option value="" data-en="All risk levels" data-es="Todos los niveles de riesgo">All risk levels</option>
+                <option value="green" data-en="Green" data-es="Verde">Green</option>
+                <option value="amber" data-en="Amber" data-es="Ámbar">Amber</option>
+                <option value="red" data-en="Red" data-es="Rojo">Red</option>
+              </select>
+              <label class="sr-only" for="reg-country" data-en="Country" data-es="País">Country</label>
+              <select id="reg-country" class="hub-select"><option value="" data-en="All countries" data-es="Todos los países">All countries</option></select>
+              <span class="hub-muted" id="register-count"></span>
+            </div>
+            <div id="register" class="hub-register-live" aria-label="Live register">
+              <div class="hub-skel" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            </div>
+            <p class="hub-empty" id="register-empty" hidden data-en="No opportunities match these filters." data-es="Ninguna oportunidad coincide con estos filtros.">No opportunities match these filters.</p>
             <p class="hub-muted hub-unplaced" id="country-unplaced" hidden></p>
             <div id="country-panel" hidden>
               <button type="button" class="btn btn-outline btn-sm" id="country-back" data-en="All countries" data-es="Todos los países">All countries</button>
               <h3 id="country-name"></h3>
               <p class="hub-muted" id="country-sub"></p>
               <p class="hub-note-s" id="country-risk" hidden></p>
+              <ul class="hub-country-projects" id="country-projects"></ul>
               <div class="hub-actions-row hub-create-here" id="country-create-row" hidden>
-                <button type="button" class="btn btn-primary btn-sm" id="country-create" data-en="Create a project here" data-es="Crear un proyecto aquí">Create a project here</button>
+                <button type="button" class="btn btn-outline btn-sm" id="country-create" data-en="Create a project here" data-es="Crear un proyecto aquí">Create a project here</button>
                 <span class="hub-muted" data-en="Opens the project form with this country and the point you tapped." data-es="Abre el formulario del proyecto con este país y el punto que tocó.">Opens the project form with this country and the point you tapped.</span>
               </div>
-              <ul class="hub-country-projects" id="country-projects"></ul>
               <div class="hub-actions-row hub-brief-actions">
                 <button type="button" class="btn btn-primary btn-sm" id="country-brief-btn" data-en="Brief this country" data-es="Resumen del país">Brief this country</button>
                 <span class="hub-muted" data-en="A cited summary of everything the Vault holds here, in your scope." data-es="Un resumen citado de todo lo que el Vault guarda aquí, en su alcance.">A cited summary of everything the Vault holds here, in your scope.</span>
@@ -155,157 +274,9 @@
         </div>
       </section>
 
-      <!-- OPPORTUNITY REGISTER (wave 2) -->
-      <section id="sec-register" aria-labelledby="h-register" hidden>
-        <div class="hub-sec-head">
-          <div>
-            <span class="label" data-en="Opportunity register" data-es="Registro de oportunidades">Opportunity register</span>
-            <h2 id="h-register" data-en="Every opportunity and project in your scope" data-es="Cada oportunidad y proyecto en su alcance">Every opportunity and project in your scope</h2>
-          </div>
-          <div class="hub-actions-row">
-            <label class="sr-only" for="reg-stage" data-en="Stage" data-es="Etapa">Stage</label>
-            <select id="reg-stage" class="hub-select"><option value="" data-en="All stages" data-es="Todas las etapas">All stages</option></select>
-            <label class="sr-only" for="reg-risk" data-en="Risk" data-es="Riesgo">Risk</label>
-            <select id="reg-risk" class="hub-select">
-              <option value="" data-en="All risk levels" data-es="Todos los niveles de riesgo">All risk levels</option>
-              <option value="green" data-en="Managed" data-es="Gestionado">Managed</option>
-              <option value="amber" data-en="Elevated" data-es="Elevado">Elevated</option>
-              <option value="red" data-en="High" data-es="Alto">High</option>
-            </select>
-            <label class="sr-only" for="reg-country" data-en="Country" data-es="País">Country</label>
-            <select id="reg-country" class="hub-select"><option value="" data-en="All countries" data-es="Todos los países">All countries</option></select>
-            <span class="hub-muted" id="register-count"></span>
-            <button type="button" class="btn btn-primary btn-sm" id="btn-new-opportunity" hidden data-en="Add opportunity" data-es="Añadir oportunidad">Add opportunity</button>
-            <button type="button" class="btn btn-outline btn-sm" id="btn-new-project" hidden aria-expanded="false" aria-controls="new-project" data-en="New project" data-es="Nuevo proyecto">New project</button>
-          </div>
-        </div>
-        <form class="card hub-newproj" id="new-project" hidden novalidate>
-          <div class="hub-card-head">
-            <div>
-              <h3 data-en="New project" data-es="Nuevo proyecto">New project</h3>
-              <span class="hub-muted" data-en="A project file holds every run, document, letter and email for one piece of work. An internal project carries the firm tag; a client project carries the client's NDA tag." data-es="La ficha de un proyecto guarda cada ejecución, documento, carta y correo de un trabajo. Un proyecto interno lleva la etiqueta de la firma; un proyecto de cliente lleva la etiqueta del NDA del cliente.">A project file holds every run, document, letter and email for one piece of work. An internal project carries the firm tag; a client project carries the client's NDA tag.</span>
-            </div>
-          </div>
-          <div id="np-notices" role="status"></div>
-          <div class="hub-form-grid">
-            <div class="hub-field">
-              <label for="np-name" data-en="Name" data-es="Nombre">Name</label>
-              <input id="np-name" type="text" required autocomplete="off">
-              <span class="hint" data-en="As it should appear on letters and reports" data-es="Tal como debe aparecer en cartas e informes">As it should appear on letters and reports</span>
-            </div>
-            <div class="hub-field">
-              <label for="np-id" data-en="Project id" data-es="Id del proyecto">Project id</label>
-              <input id="np-id" type="text" required autocomplete="off" pattern="[a-z0-9][a-z0-9-]{1,63}">
-              <span class="hint" data-en="Lowercase letters, digits and hyphens. Used in addresses and citations; it cannot change later." data-es="Minúsculas, dígitos y guiones. Se usa en direcciones y citas; no se puede cambiar después.">Lowercase letters, digits and hyphens. Used in addresses and citations; it cannot change later.</span>
-            </div>
-            <div class="hub-field">
-              <label for="np-client" data-en="Client" data-es="Cliente">Client</label>
-              <select id="np-client">
-                <option value="" data-en="Internal (no client)" data-es="Interno (sin cliente)">Internal (no client)</option>
-              </select>
-              <span class="hint" data-en="From the organisations in the Vault" data-es="De las organizaciones del Vault">From the organisations in the Vault</span>
-            </div>
-            <div class="hub-field" id="np-tag-field" hidden>
-              <label for="np-tag-pick" data-en="NDA tag" data-es="Etiqueta del NDA">NDA tag</label>
-              <select id="np-tag-pick">
-                <option value="new" data-en="Create a new NDA tag" data-es="Crear una etiqueta de NDA nueva">Create a new NDA tag</option>
-              </select>
-              <span class="hint" data-en="Every record in the project inherits the client's NDA tag; only people on the project can see them." data-es="Cada registro del proyecto hereda la etiqueta del NDA del cliente; solo las personas del proyecto pueden verlos.">Every record in the project inherits the client's NDA tag; only people on the project can see them.</span>
-            </div>
-            <div class="hub-field" id="np-tag-new" hidden>
-              <label for="np-tag-name" data-en="NDA name" data-es="Nombre del NDA">NDA name</label>
-              <input id="np-tag-name" type="text" autocomplete="off" placeholder="Frontera NDA 2026">
-              <label for="np-tag" data-en="Tag id" data-es="Id de la etiqueta">Tag id</label>
-              <input id="np-tag" type="text" autocomplete="off" placeholder="lt-frontera-nda-2026">
-              <label for="np-tag-expires" data-en="NDA expires" data-es="El NDA vence">NDA expires</label>
-              <input id="np-tag-expires" type="date">
-              <span class="hint" data-en="The tag is created with the project. Lowercase letters, digits and hyphens, starting lt-." data-es="La etiqueta se crea con el proyecto. Minúsculas, dígitos y guiones, empezando por lt-.">The tag is created with the project. Lowercase letters, digits and hyphens, starting lt-.</span>
-            </div>
-          </div>
-          <details class="hub-opp" id="np-opp">
-            <summary data-en="Opportunity fields: country, stage, production and risk" data-es="Campos de oportunidad: país, etapa, producción y riesgo">Opportunity fields: country, stage, production and risk</summary>
-            <div class="hub-form-grid">
-              <div class="hub-field">
-                <label for="np-country" data-en="Country" data-es="País">Country</label>
-                <select id="np-country"><option value="" data-en="Not placed yet" data-es="Sin ubicar todavía">Not placed yet</option></select>
-                <span class="hint" data-en="Puts the opportunity on the globe" data-es="Sitúa la oportunidad en el globo">Puts the opportunity on the globe</span>
-              </div>
-              <div class="hub-field">
-                <label for="np-stage" data-en="Stage" data-es="Etapa">Stage</label>
-                <select id="np-stage"><option value="" data-en="Initial screen" data-es="Cribado inicial">Initial screen</option></select>
-              </div>
-              <div class="hub-field">
-                <label for="np-lat" data-en="Latitude" data-es="Latitud">Latitude</label>
-                <input id="np-lat" type="number" min="-90" max="90" step="0.01" inputmode="decimal" autocomplete="off">
-              </div>
-              <div class="hub-field">
-                <label for="np-lon" data-en="Longitude" data-es="Longitud">Longitude</label>
-                <input id="np-lon" type="number" min="-180" max="180" step="0.01" inputmode="decimal" autocomplete="off">
-              </div>
-              <div class="hub-field">
-                <label for="np-source" data-en="Source" data-es="Origen">Source</label>
-                <input id="np-source" type="text" autocomplete="off">
-                <span class="hint" data-en="Who brought it: Tennor, intermediary, government, Alpha" data-es="Quién la trajo: Tennor, intermediario, gobierno, Alpha">Who brought it: Tennor, intermediary, government, Alpha</span>
-              </div>
-              <div class="hub-field">
-                <label for="np-owner" data-en="Lead at the firm" data-es="Responsable en la firma">Lead at the firm</label>
-                <input id="np-owner" type="text" autocomplete="off">
-              </div>
-              <div class="hub-field">
-                <label for="np-current" data-en="Fact today, kboe/d" data-es="Hecho hoy, kboe/d">Fact today, kboe/d</label>
-                <input id="np-current" type="number" min="0" step="0.1" inputmode="decimal" autocomplete="off">
-              </div>
-              <div class="hub-field">
-                <label for="np-plan" data-en="Operator's plan, kboe/d" data-es="Plan del operador, kboe/d">Operator's plan, kboe/d</label>
-                <input id="np-plan" type="number" min="0" step="0.1" inputmode="decimal" autocomplete="off">
-              </div>
-              <div class="hub-field">
-                <label for="np-risk" data-en="Execution risk" data-es="Riesgo de ejecución">Execution risk</label>
-                <select id="np-risk">
-                  <option value="" data-en="Not assessed" data-es="Sin evaluar">Not assessed</option>
-                  <option value="green" data-en="Managed" data-es="Gestionado">Managed</option>
-                  <option value="amber" data-en="Elevated" data-es="Elevado">Elevated</option>
-                  <option value="red" data-en="High" data-es="Alto">High</option>
-                </select>
-              </div>
-            </div>
-          </details>
-          <div class="hub-actions">
-            <button type="submit" class="btn btn-primary btn-sm" id="np-submit" data-en="Create project" data-es="Crear proyecto">Create project</button>
-            <button type="button" class="btn btn-outline btn-sm" id="np-cancel" data-en="Cancel" data-es="Cancelar">Cancel</button>
-          </div>
-        </form>
-        <div class="card">
-          <div class="hub-table-wrap">
-            <table class="hub-table hub-register">
-              <thead><tr>
-                <th data-en="Opportunity" data-es="Oportunidad">Opportunity</th>
-                <th data-en="Country" data-es="País">Country</th>
-                <th data-en="Client" data-es="Cliente">Client</th>
-                <th data-en="Stage" data-es="Etapa">Stage</th>
-                <th class="right" data-en="Fact → plan, kboe/d" data-es="Hecho → plan, kboe/d">Fact → plan, kboe/d</th>
-                <th data-en="Risk" data-es="Riesgo">Risk</th>
-                <th data-en="Holder" data-es="Titular">Holder</th>
-                <th data-en="Lead" data-es="Responsable">Lead</th>
-                <th data-en="Updated" data-es="Actualizado">Updated</th>
-              </tr></thead>
-              <tbody id="register-body"></tbody>
-            </table>
-          </div>
-          <p class="hub-empty" id="register-empty" hidden data-en="No opportunities match these filters." data-es="Ninguna oportunidad coincide con estos filtros.">No opportunities match these filters.</p>
-        </div>
-      </section>
-
-      <!-- NEEDS ATTENTION -->
-      <section id="sec-attention" aria-labelledby="h-attn" hidden>
-        <div class="hub-sec-head">
-          <div>
-            <span class="label" data-en="Needs attention" data-es="Requiere atención">Needs attention</span>
-            <h2 id="h-attn" data-en="Waiting on a partner" data-es="A la espera de un socio">Waiting on a partner</h2>
-          </div>
-        </div>
-        <!-- WHAT CAME IN (wave 6, Option A): since the person last looked, with a cited sentence per opportunity -->
-        <article class="card hub-activity" id="card-activity" hidden aria-labelledby="h-activity">
+      <!-- WHAT CAME IN (wave 6, Option A; wave 7 PR2 R4: a full-width band under the globe) -->
+      <section id="sec-activity" aria-labelledby="h-activity" hidden>
+        <article class="card hub-activity" id="card-activity" aria-labelledby="h-activity">
           <div class="hub-card-head">
             <div>
               <h3 id="h-activity" data-en="What came in" data-es="Qué llegó">What came in</h3>
@@ -313,7 +284,7 @@
             </div>
             <span class="hub-count" id="activity-count" aria-hidden="true">0</span>
           </div>
-          <p class="hub-activity-counts" id="activity-counts"></p>
+          <div class="hub-activity-counts" id="activity-counts"></div>
           <div id="activity-projects"></div>
           <div class="hub-actions">
             <a class="btn btn-outline btn-sm" href="/hub/queue.html" data-en="Open the queue" data-es="Abrir la cola">Open the queue</a>
@@ -321,11 +292,15 @@
             <span class="hub-muted" id="activity-status" role="status"></span>
           </div>
         </article>
-        <div class="hub-attn">
-          <article class="card" id="card-stale" hidden></article>
-          <article class="card" id="card-filing" hidden></article>
-          <article class="card" id="card-lessons" hidden></article>
-          <article class="card" id="card-rerun" hidden></article>
+      </section>
+
+      <!-- THE FOUR COUNTERS (wave 7 PR2 R4, R12): one line each at zero, open when there is something -->
+      <section id="sec-counters" aria-label="Filing, lessons, re-runs and stale records">
+        <div class="hub-counters">
+          <article class="card hub-counter" id="card-filing" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>
+          <article class="card hub-counter" id="card-lessons" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>
+          <article class="card hub-counter" id="card-rerun" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>
+          <article class="card hub-counter" id="card-stale" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>
         </div>
       </section>
 
@@ -340,23 +315,6 @@
         <div class="card">
           <div class="hub-table-wrap" id="runs-wrap"></div>
         </div>
-      </section>
-
-      <!-- TOOLS -->
-      <section id="sec-tools" aria-labelledby="h-tools">
-        <div class="hub-sec-head">
-          <div>
-            <span class="label" data-en="Tools" data-es="Herramientas">Tools</span>
-            <h2 id="h-tools" data-en="Catalog" data-es="Catálogo">Catalog</h2>
-          </div>
-          <div class="hub-chips" id="tools-filter" role="group" aria-label="Show tools by lifecycle"></div>
-        </div>
-        <div class="hub-tools" id="tools-grid"></div>
-        <p class="hub-empty" id="tools-empty" hidden data-en="No tools match the chips above. Switch one on to see the catalog." data-es="Ninguna herramienta coincide con los filtros. Active uno para ver el catálogo.">No tools match the chips above. Switch one on to see the catalog.</p>
-        <details class="hub-older" id="tools-older" hidden>
-          <summary id="tools-older-sum" data-en="Older tools" data-es="Herramientas antiguas">Older tools</summary>
-          <div class="hub-tools" id="tools-older-grid"></div>
-        </details>
       </section>
 
       <p class="hub-foot" data-en="Internal · Strictly confidential" data-es="Interno · Estrictamente confidencial">Internal · Strictly confidential</p>
