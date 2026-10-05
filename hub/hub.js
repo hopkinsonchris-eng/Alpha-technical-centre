@@ -157,6 +157,36 @@ export function showVault(reachable) {
   else setText(st, 'Vault unreachable', 'Vault no accesible');
 }
 
+/* ── the one sidebar (wave 7, S3) ────────────────────────────────────── */
+
+/** Which nav entry a page belongs to; the markup is identical on every page, the script marks the current one. */
+const NAV_OF = { today: 'today', project: 'projects', queue: 'queue', find: 'find', settings: 'settings', cost: 'settings' };
+export function markNav() {
+  const page = document.body && document.body.getAttribute('data-page');
+  const key = NAV_OF[page];
+  for (const a of document.querySelectorAll('.hub-nav a[data-nav]')) {
+    if (key && a.getAttribute('data-nav') === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  }
+}
+
+/* ── opening a tool from the Hub (wave 7, S13) ───────────────────────── */
+
+/**
+ * The public reservoir-simulator page keeps a legacy Staff Portal check on sessionStorage
+ * ("atc_auth"), and that page must stay byte-identical. The Hub sits behind Cloudflare Access,
+ * so it sets the flag before any tool target opens; the page then opens straight to the tool
+ * with its ?project= intact. Called on every Hub page load and again on each tool link click.
+ */
+export function armLegacyGate() {
+  try { sessionStorage.setItem('atc_auth', '1'); } catch (e) { /* no storage: the tool page falls back to its own gate */ }
+}
+/** Arms the gate when a tool link is followed (click, Enter, middle click). */
+export function armOnOpen(el) {
+  if (!el) return el;
+  for (const ev of ['click', 'auxclick', 'keydown']) el.addEventListener(ev, armLegacyGate);
+  return el;
+}
+
 /* ── catalog logic ───────────────────────────────────────────────────── */
 
 const STATIC_CATALOG = '../hub/catalog.json';
@@ -223,22 +253,19 @@ function toolCard(tool, byId, siteRoot, now) {
   if (tool.description) add(card, dv('p', 'hub-desc', tool.description));
 
   const version = dep ? ((tool.versions && tool.versions[0] && tool.versions[0].version) || (tool.aliases && tool.aliases.current)) : (tool.aliases && tool.aliases.current);
-  // Wave 2: an external app's real version comes from the version.json it publishes (sidecar version_url, read by the Vault);
-  // until it publishes one, the manifest version is a placeholder and the card says so.
+  // Wave 2: an external app's real version comes from the version.json it publishes (sidecar version_url, read by the Vault).
+  // Wave 7 (S6, D65): until it publishes one, the manifest version is a stated placeholder, so the card carries no version line.
   const live = tool.hub && tool.hub.live_version && tool.hub.live_version.version ? tool.hub.live_version : null;
-  const unverified = !live && tool.hub && tool.hub.version_url;
-  const ver = mk('div', 'hub-ver', null, null, { 'data-version-source': live ? 'live' : unverified ? 'unverified' : 'manifest' });
-  add(ver, dv('b', null, live ? live.version : version, { 'data-version': '' }));
-  if (live) {
-    const rd = live.released_at ? fmtShortDate(live.released_at) : null;
-    add(ver, add(mk('span'), mk('span', null, 'published by the app', 'publicada por la app'), rd ? mk('span', null, ' · ' + rd.en, ' · ' + rd.es) : null));
-  } else if (dep) add(ver, mk('span', null, 'last version', 'última versión'));
-  else add(ver, mk('span', null, 'current', 'actual'));
-  add(card, ver);
-  if (unverified) {
-    add(card, add(mk('div', 'hub-tool-meta'),
-      mk('span', 'hub-pill warn', 'Version unverified', 'Versión sin verificar'),
-      mk('span', null, 'the app publishes no version.json yet', 'la app aún no publica version.json')));
+  const external = tool.kind === 'external-app';
+  if (live || !external) {
+    const ver = mk('div', 'hub-ver', null, null, { 'data-version-source': live ? 'live' : 'manifest' });
+    add(ver, dv('b', null, live ? live.version : version, { 'data-version': '' }));
+    if (live) {
+      const rd = live.released_at ? fmtShortDate(live.released_at) : null;
+      add(ver, add(mk('span'), mk('span', null, 'published by the app', 'publicada por la app'), rd ? mk('span', null, ' · ' + rd.en, ' · ' + rd.es) : null));
+    } else if (dep) add(ver, mk('span', null, 'last version', 'última versión'));
+    else add(ver, mk('span', null, 'current', 'actual'));
+    add(card, ver);
   }
 
   if (dep) {
@@ -247,11 +274,14 @@ function toolCard(tool, byId, siteRoot, now) {
   }
 
   const foot = mk('div', 'hub-tool-foot');
-  if (tool.lifecycle !== 'retired') {
+  if (tool.kind === 'skill') {
+    // Wave 7 (S7): a skill runs in Claude Code, not in a browser; its output is on the Insights page.
+    add(foot, mk('a', 'btn btn-outline btn-sm', 'Published insights', 'Insights publicados', { href: new URL('insights.html', siteRoot).href, 'aria-describedby': 'tn-' + tool.id, 'data-insights': tool.id }));
+  } else if (tool.lifecycle !== 'retired') {
     const t = openTarget(tool, byId, siteRoot);
     const open = mk('a', 'btn btn-primary btn-sm', 'Open current', 'Abrir versión actual', { href: t.href, 'aria-describedby': 'tn-' + tool.id, 'data-open': tool.id });
     if (t.external) { open.setAttribute('target', '_blank'); open.setAttribute('rel', 'noopener noreferrer'); }
-    add(foot, open);
+    add(foot, armOnOpen(open));
   }
   const cl = mk('button', 'btn btn-outline btn-sm', 'Changelog', 'Registro de cambios', { type: 'button', 'aria-expanded': 'false', 'aria-controls': 'cl-' + tool.id, 'aria-describedby': 'tn-' + tool.id });
   add(foot, cl);
@@ -395,40 +425,9 @@ const projectHref = (id) => '/hub/project.html?id=' + encodeURIComponent(id);
 
 function projectName(p) { return p.name || p.title || p.id; }
 function clientName(p) { return p.client_name || (p.client && (p.client.name || p.client)) || p.client_id || ''; }
-function pick(p, ...keys) { for (const k of keys) { const v = k.split('.').reduce((o, x) => (o == null ? o : o[x]), p); if (v !== undefined && v !== null) return v; } return undefined; }
-
-async function renderProjects(person) {
-  const res = await api('/api/projects?mine=1');
-  if (!res.ok) return [];
-  const list = listOf(res.body, 'projects', 'items').filter((p) => p && p.status !== 'archived');
-  const sec = $('#sec-projects'), grid = $('#projects-grid');
-  sec.removeAttribute('hidden');
-  const now = Date.now();
-  if (!list.length) {
-    if (person && person.role === 'partner') add(grid, mk('div', 'hub-empty', 'No project activity in the last 90 days. Use New project to open one.', 'Sin actividad en proyectos en los últimos 90 días. Use Nuevo proyecto para abrir uno.'));
-    else add(grid, mk('div', 'hub-empty', 'No project activity in the last 90 days.', 'Sin actividad en proyectos en los últimos 90 días.'));
-    return [];
-  }
-  for (const p of list) {
-    const card = mk('a', 'card hub-proj', null, null, { href: projectHref(p.id), 'data-project-id': p.id });
-    add(card, dv('h3', null, projectName(p)));
-    const cl = clientName(p);
-    if (cl) add(card, dv('span', 'hub-muted', cl));
-    const last = pick(p, 'last_activity_at', 'last_activity', 'updated_at');
-    const a = last ? ago(last, now) : null;
-    add(card, add(mk('div', 'hub-row'), mk('span', null, 'Last activity', 'Última actividad'), a ? mk('b', null, a.en, a.es) : dv('b', null, '—')));
-    const runs = pick(p, 'run_count', 'runs_count', 'counts.runs', 'runs');
-    const items = pick(p, 'item_count', 'items_count', 'counts.items', 'items');
-    add(card, add(mk('div', 'hub-row'), mk('span', null, 'Runs · items', 'Ejecuciones · elementos'),
-      dv('b', null, (typeof runs === 'number' ? runs : '—') + ' · ' + (typeof items === 'number' ? items : '—'))));
-    const stale = pick(p, 'stale_count', 'counts.stale', 'stale');
-    const n = typeof stale === 'number' ? stale : (Array.isArray(stale) ? stale.length : 0);
-    add(card, add(mk('div', 'hub-row'), mk('span', null, 'Stale', 'Obsoletos'),
-      mk('span', 'hub-stale' + (n ? '' : ' zero'), n + ' stale', n + ' obsoletos')));
-    add(grid, card);
-  }
-  return list;
-}
+/** Wave 7 (S4): the internal holding project is not an opportunity; it never appears in the register, on the globe or on a card. */
+const isOpportunity = (p) => p && p.status !== 'archived' && p.id !== 'firm';
+// Wave 7 (S2, D65): the "My projects" cards are gone; the register above them lists the same projects with counts.
 
 /* ── Today: the globe and the register (wave 2) ──────────────────────── */
 
@@ -652,11 +651,9 @@ async function renderIntel(code, names) {
   }
   const S = res.body.sections, wm = res.body.world_monitor || {};
   host.setAttribute('data-state', wm.status === 'live' ? 'live' : 'not_connected');
+  // Wave 7 (S9, D65): without World Monitor there is nothing to show, so the card stays hidden rather than announcing it on every country.
+  if (wm.status !== 'live') { host.setAttribute('hidden', ''); return; }
   add(host, add(mk('div', 'hub-card-head'), add(mk('div'), mk('span', 'label', 'World Monitor', 'World Monitor'), mk('h3', null, 'Country intelligence: ' + n.en, 'Inteligencia del país: ' + n.es))));
-  if (wm.status !== 'live') {
-    add(host, notice('warn', 'World Monitor is not connected.', 'World Monitor no está conectado.', wm.reason || 'Set WORLD_MONITOR_API_KEY on the Vault service.', wm.reason || 'Configure WORLD_MONITOR_API_KEY en el servicio del Vault.'));
-    return;
-  }
   const meta = mk('p', 'hub-muted hub-note-s', null, null, { id: 'intel-meta' });
   const w = fmtWhen(wm.fetched_at);
   add(meta, mk('span', null, 'Live' + (w ? ', fetched ' + w.en : ''), 'En vivo' + (w ? ', obtenido ' + w.es : '')));
@@ -813,7 +810,7 @@ function setupBrief(currentCode, names) {
     host.textContent = '';
     if (!res.ok || !res.body || !Array.isArray(res.body.paragraphs)) {
       const msg = (res.body && res.body.error && res.body.error.message) || '';
-      if (res.status === 501) add(host, notice('warn', 'The brief needs the drafting provider.', 'El resumen necesita el proveedor de redacción.', (msg ? msg + '. ' : '') + 'Set ANTHROPIC_API_KEY on the Vault service (SETUP.md §3).', (msg ? msg + '. ' : '') + 'Configure ANTHROPIC_API_KEY en el servicio del Vault (SETUP.md §3).'));
+      if (res.status === 501 || (res.status === 503 && res.body && res.body.error && res.body.error.code === 'not_configured')) add(host, notice('warn', 'The drafting assistant is not connected.', 'El asistente de redacción no está conectado.', 'The brief cannot be written until it is. Ask Chris.', 'El resumen no se puede escribir hasta entonces. Pregunte a Chris.'));
       else if (res.status === 0) add(host, notice('bad', 'The Vault is unreachable.', 'El Vault no es accesible.', 'The brief was not written.', 'No se escribió el resumen.'));
       else add(host, notice('bad', 'The brief was not written.', 'No se escribió el resumen.', msg || 'HTTP ' + res.status, msg || 'HTTP ' + res.status));
       return;
@@ -856,7 +853,7 @@ function setupBrief(currentCode, names) {
       const hm = t && !isNaN(t) ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
       add(wmLine, mk('span', null, 'World Monitor: live' + (hm ? ', fetched ' + hm : ''), 'World Monitor: en vivo' + (hm ? ', obtenido a las ' + hm : '')));
       for (const n of wm.notes || []) add(wmLine, document.createTextNode(' · '), dv('span', null, n));
-    } else add(wmLine, mk('span', null, 'World Monitor: not connected (set WORLD_MONITOR_API_KEY on the Vault service)', 'World Monitor: no conectado (configure WORLD_MONITOR_API_KEY en el servicio del Vault)'), wm.reason && !/WORLD_MONITOR_API_KEY/.test(wm.reason) ? dv('span', null, ' · ' + wm.reason) : null);
+    } else add(wmLine, mk('span', null, 'World Monitor: not connected', 'World Monitor: no conectado'));
     add(meta, document.createTextNode(' · '), wmLine);
   });
 }
@@ -867,7 +864,7 @@ async function renderRegister(person, names) {
   if (!sec) return [];
   const [res, orgR] = await Promise.all([api('/api/projects'), api('/api/organisations')]);
   if (!res.ok) return [];
-  const list = listOf(res.body, 'projects', 'items').filter((p) => p && p.status !== 'archived');   // archived: hidden, never deleted
+  const list = listOf(res.body, 'projects', 'items').filter(isOpportunity);   // archived: hidden, never deleted; the internal project: not an opportunity
   const orgName = new Map(orgR.ok ? listOf(orgR.body, 'organisations').map((o) => [o.id, o.name || o.id]) : []);
   for (const p of list) if (!p.client_name && p.client_id) p.client_name = orgName.get(p.client_id) || p.client_id;
   sec.removeAttribute('hidden');
@@ -876,7 +873,8 @@ async function renderRegister(person, names) {
   for (const st of STAGES) add(stageSel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
   const codes = [...new Set(list.map((p) => p.country).filter(Boolean))].sort();
   for (const code of codes) { const n = (names && names.get(code)) || { en: code, es: code }; add(countrySel, mk('option', null, n.en, n.es, { value: code })); }
-  const updated = (p) => (p.stage_history && p.stage_history.length ? p.stage_history[p.stage_history.length - 1].at : p.created_at);
+  // Wave 7 (S5): "Updated" is the project's last activity (a run, a document, a stage change), so a row moves when work happens.
+  const updated = (p) => p.last_activity_at || (p.stage_history && p.stage_history.length ? p.stage_history[p.stage_history.length - 1].at : p.created_at);
   for (const p of list.slice().sort((a, b) => (updated(a) < updated(b) ? 1 : -1))) {
     const reg = p.register || {};
     const tr = mk('tr', null, null, null, { 'data-register-row': p.id, 'data-stage': p.stage || '', 'data-risk': reg.risk || '', 'data-country': p.country || '' });
@@ -937,6 +935,23 @@ function setupNewProject(person) {
   if (!btn || !form || !person || person.role !== 'partner') return;
   btn.removeAttribute('hidden');
   const name = $('#np-name'), id = $('#np-id'), client = $('#np-client'), tagField = $('#np-tag-field'), tag = $('#np-tag'), notices = $('#np-notices');
+  // Wave 7 (S1, W7-AC1): a client project is created under the client's NDA tag. The picker lists the client's
+  // existing tags from GET /api/legal-tags?client= and offers to create a new one; the tag is posted first, then
+  // the project under it, so confidentiality is structural from the first record.
+  const tagPick = $('#np-tag-pick'), tagNew = $('#np-tag-new'), tagName = $('#np-tag-name'), tagExpires = $('#np-tag-expires');
+  const showTagNew = () => { if (!tagNew) return; if (!tagPick || tagPick.value === 'new') tagNew.removeAttribute('hidden'); else tagNew.setAttribute('hidden', ''); };
+  const loadTags = async (clientId) => {
+    if (!tagPick) return;
+    for (const o of Array.from(tagPick.options)) if (o.value !== 'new') o.remove();
+    const r = await api('/api/legal-tags?client=' + encodeURIComponent(clientId));
+    const tags = r.ok ? listOf(r.body, 'tags').filter((t) => t && t.id && t.client_id === clientId) : [];
+    for (const t of tags) tagPick.insertBefore(dv('option', null, (t.name || t.id) + (t.expires_at ? ' · ' + t.expires_at : ''), { value: t.id }), tagPick.firstChild);
+    tagPick.value = tags.length ? tags[0].id : 'new';
+    if (tag && !tag.value) tag.value = 'lt-' + slugify(clientId) + '-nda-' + new Date().getFullYear();
+    showTagNew();
+  };
+  if (tagPick) tagPick.addEventListener('change', showTagNew);
+  if (tagName && tag) tagName.addEventListener('input', () => { const v = slugify(tagName.value); if (v) tag.value = 'lt-' + v; });
   let idTouched = false, orgsLoaded = false, mode = 'project';
   // Wave 2: the opportunity fields (country, stage, production, risk). Countries come from the globe's polygons.
   const opp = $('#np-opp'), country = $('#np-country'), stage = $('#np-stage'), submit = $('#np-submit');
@@ -967,7 +982,10 @@ function setupNewProject(person) {
   };
   name.addEventListener('input', () => { if (!idTouched) id.value = slugify(name.value); });
   id.addEventListener('input', () => { idTouched = id.value.trim() !== ''; });
-  client.addEventListener('change', () => { if (client.value) tagField.removeAttribute('hidden'); else tagField.setAttribute('hidden', ''); });
+  client.addEventListener('change', () => {
+    if (client.value) { tagField.removeAttribute('hidden'); loadTags(client.value); }
+    else { tagField.setAttribute('hidden', ''); if (tagNew) tagNew.setAttribute('hidden', ''); }
+  });
   const open = async () => {
     form.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); name.focus();
     if (orgsLoaded) return;
@@ -982,7 +1000,8 @@ function setupNewProject(person) {
     ev.preventDefault();
     notices.textContent = '';
     const body = { id: id.value.trim(), name: name.value.trim(), client_id: client.value || null };
-    if (client.value) body.default_legal_tag = tag.value.trim();
+    const creatingTag = !!client.value && (!tagPick || tagPick.value === 'new');
+    if (client.value) body.default_legal_tag = creatingTag ? tag.value.trim() : tagPick.value;
     // Opportunity fields ride along only when given, so a plain project posts exactly what it did before.
     if (mode === 'opportunity') body.status = 'prospect';
     if (country && country.value) body.country = country.value;
@@ -1007,8 +1026,22 @@ function setupNewProject(person) {
       add(notices, notice('bad', 'Check the form.', 'Revise el formulario.', 'A client project needs the id of its legal tag.', 'Un proyecto de cliente necesita el id de su etiqueta legal.'));
       return;
     }
+    if (creatingTag && (!/^lt-[a-z0-9-]{3,64}$/.test(body.default_legal_tag) || !(tagName && tagName.value.trim()) || !(tagExpires && tagExpires.value))) {
+      add(notices, notice('bad', 'Check the form.', 'Revise el formulario.', 'A new NDA tag needs a name, an id starting lt- and the date the NDA expires.', 'Una etiqueta de NDA nueva necesita un nombre, un id que empiece por lt- y la fecha en que vence el NDA.'));
+      return;
+    }
     const sb = form.querySelector('button[type="submit"]');
     sb.disabled = true;
+    if (creatingTag) {
+      const tagBody = { id: body.default_legal_tag, name: tagName.value.trim(), client_id: client.value, expires_at: tagExpires.value };
+      const tr = await api('/api/legal-tags', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(tagBody) });
+      if (!tr.ok && tr.status !== 409) {
+        sb.disabled = false;
+        const msg = (tr.body && tr.body.error && tr.body.error.message) || '';
+        add(notices, notice('bad', 'The NDA tag was not created.', 'La etiqueta del NDA no se creó.', msg || 'The Vault refused it.', msg || 'El Vault la rechazó.'));
+        return;
+      }
+    }
     const res = await api('/api/projects', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
     sb.disabled = false;
     if (res.ok && res.body && res.body.id) { location.href = projectHref(res.body.id); return; }
@@ -1088,21 +1121,30 @@ async function renderActivity(person) {
   const host = $('#activity-projects'); host.textContent = '';
   const projects = b.projects || [];
   const blocks = new Map();
+  // Wave 7 (S12): the first four record links always show, so the card leads to the records with or without a brief.
+  const recordLinks = (host, records, projectId) => {
+    for (const rec of (records || []).slice(0, 4)) {
+      const id = rec.ref.slice(rec.ref.indexOf(':') + 1);
+      const href = '/hub/project.html?id=' + encodeURIComponent(projectId) + (rec.ref.startsWith('run:') ? '&run=' : '&doc=') + encodeURIComponent(id);
+      add(host, dv('a', 'hub-cite', rec.title, { href, 'data-ref': rec.ref }), document.createTextNode(' '));
+    }
+  };
   for (const p of projects) {
     const block = mk('div', 'hub-activity-project', null, null, { 'data-activity-project': p.id });
     add(block, dv('a', 'hub-activity-name', p.name, { href: projectHref(p.id) }));
     const line = mk('p', 'hub-activity-line', null, null, { 'data-activity-line': '' });
     add(line, mk('span', 'hub-muted', (p.records || []).length + ' new ' + ((p.records || []).length === 1 ? 'record' : 'records'), (p.records || []).length + ((p.records || []).length === 1 ? ' registro nuevo' : ' registros nuevos')));
-    add(block, line); add(host, block); blocks.set(p.id, { block, line, records: p.records || [] });
+    const links = mk('p', 'hub-activity-records', null, null, { 'data-activity-records': '' });
+    recordLinks(links, p.records, p.id);
+    add(block, line, links); add(host, block); blocks.set(p.id, { block, line, links, records: p.records || [] });
   }
   if (projects.length && b.brief_available) {
     const br = await api('/api/me/activity/brief', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ since: b.since, language: document.documentElement.lang === 'es' ? 'es' : 'en' }), signal: AbortSignal.timeout(60000) });
     if (br.ok && br.body && Array.isArray(br.body.projects)) {
       for (const p of br.body.projects) {
         const blk = blocks.get(p.project_id); if (!blk) continue;
-        blk.line.textContent = '';
-        if (p.sentence) { blk.line.setAttribute('data-cited', String((p.citations || []).length)); citedSentence(blk.line, p.sentence, p.records || blk.records, p.project_id); }
-        else { for (const rec of blk.records.slice(0, 4)) { add(blk.line, dv('a', 'hub-cite', rec.title, { href: '/hub/project.html?id=' + encodeURIComponent(p.project_id) + '&doc=' + encodeURIComponent(rec.ref.slice(4)), 'data-ref': rec.ref }), document.createTextNode(' ')); } }
+        // A cited sentence carries its own chips to the records, so the plain links step aside for it.
+        if (p.sentence) { blk.line.textContent = ''; blk.line.setAttribute('data-cited', String((p.citations || []).length)); citedSentence(blk.line, p.sentence, p.records || blk.records, p.project_id); blk.links.remove(); }
       }
       card.setAttribute('data-brief', br.body.provider || 'none');
     }
@@ -1246,7 +1288,7 @@ async function renderMailboxPrompt(person) {
     const c = await api('/api/me/mailbox/connect', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: '{}' });
     if (c.ok && c.body && c.body.url) { location.href = c.body.url; return; }
     connect.disabled = false;
-    setText(status, c.status === 503 ? 'Not set up on the server yet (SETUP.md §7).' : 'Could not start the connection.', c.status === 503 ? 'Aún no configurado en el servidor (SETUP.md §7).' : 'No se pudo iniciar la conexión.');
+    setText(status, c.status === 503 ? 'Mail capture is not switched on for this Vault yet. Ask Chris.' : 'Could not start the connection.', c.status === 503 ? 'La captura de correo aún no está activada en este Vault. Pregunte a Chris.' : 'No se pudo iniciar la conexión.');
   });
   later.addEventListener('click', async () => {
     later.disabled = true;
@@ -1264,8 +1306,8 @@ async function initToday() {
   setupNewProject(person);
   let globe = null;
   try { globe = await renderGlobe(person); } catch (e) { const sec = $('#sec-globe'); if (sec) sec.setAttribute('data-globe', 'failed'); }
-  try { await renderRegister(person, globe && globe.names); } catch (e) { /* the register is optional; the rest of Today still renders */ }
-  const projects = await renderProjects(person);
+  let projects = [];
+  try { projects = await renderRegister(person, globe && globe.names); } catch (e) { /* the register is optional; the rest of Today still renders */ }
   await Promise.all([renderActivity(person).catch(() => false), renderAttention(projects), renderRuns(projects)]);
   document.body.setAttribute('data-ready', '1');
 }
@@ -1277,5 +1319,6 @@ async function initSettingsShell() {
 }
 
 const page = document.body && document.body.getAttribute('data-page');
+if (document.body) { markNav(); armLegacyGate(); }
 if (page === 'today') initToday();
 else if (page === 'settings') initSettingsShell();

@@ -208,11 +208,11 @@
 .hub-changelog li { margin-top: 2px; }
 .hub-changelog .sec { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-family: var(--font-label); color: var(--muted); margin-top: 4px; display: block; }
 
-/* ---------- projects ---------- */
-.hub-projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 16px; }
-.hub-proj { padding: 16px 18px !important; display: flex; flex-direction: column; gap: 10px; }
-a.hub-proj:hover { border-color: #CDBB85; }
-.hub-proj h3 { font-size: 1rem; }
+/* ---------- re-run list (wave 7, S36) ---------- */
+.hub-rerun-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.hub-rerun-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; }
+.hub-rerun-state { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.hub-next, .hub-last { white-space: nowrap; }
 .hub-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .hub-row b { color: var(--navy); font-weight: 500; }
 

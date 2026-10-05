@@ -82,12 +82,9 @@ test('AC9/AC15 draft: every factual sentence cites a record in scope; a fabricat
   await db.close();
 });
 
-test('without a provider the fallback draft still cites the last letter, the run and the NDA', async () => {
+test('wave 7 (S19): without a provider the drafter refuses with 503 instead of a silent template', async () => {
   const db = await seed();
-  const r = await draft(db, PARTNER, { kind: 'email', project_id: 'orinoco-partnership', brief: 'Chase the data room index.', organisation_id: 'petrolera-del-orinoco', language: 'es' }, null, {});
-  assert.ok(r.citations.some(c => c.startsWith('doc:')) && r.citations.includes(`run:${RUN_ID}`));
-  assert.match(r.draft, /Con referencia/);
-  assert.match(r.draft, /QUESTION FOR YOU/);
+  await assert.rejects(draft(db, PARTNER, { kind: 'email', project_id: 'orinoco-partnership', brief: 'Chase the data room index.', organisation_id: 'petrolera-del-orinoco', language: 'es' }, null, {}), (e: any) => e.status === 503 && e.code === 'not_configured');
   await db.close();
 });
 

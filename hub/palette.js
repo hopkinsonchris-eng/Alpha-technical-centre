@@ -6,7 +6,10 @@
    Enter; Escape closes. No model behind it: with under a few hundred
    projects a local match is faster, offline and exact.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, loadCatalog, loadGeo, openTarget, lang } from './hub.js';
+import { api, listOf, mk, dv, add, setText, loadCatalog, loadGeo, openTarget, lang, armLegacyGate } from './hub.js';
+
+/** Wave 7 (S10): a row shows only on a word-start or contiguous match (label 1 or 2, key 2 or 3); a bare subsequence ("nodal" in "French Southern and Antarctic Lands") no longer qualifies. */
+const SHOW_BELOW = 4;
 
 const PAGES = [
   ['/hub/index.html', 'Today', 'Hoy'], ['/hub/search.html', 'Find across the Vault', 'Buscar en el Vault'], ['/hub/queue.html', 'Filing queue', 'Cola de archivo'],
@@ -52,7 +55,7 @@ async function loadItems() {
       for (const t of tools.filter((t) => t.hub && (t.hub.context || []).includes('project')).sort((a, b) => (a.hub.toolbar ?? 999) - (b.hub.toolbar ?? 999))) {
         const target = openTarget(t, byId, siteRoot);
         const u = new URL(target.href); u.searchParams.set(t.hub.param || 'project', projectId);
-        out.push({ group: 'context', label: { en: 'Open ' + t.name + ' in this project', es: 'Abrir ' + t.name + ' en este proyecto' }, href: u.href, blank: target.external });
+        out.push({ group: 'context', label: { en: 'Open ' + t.name + ' in this project', es: 'Abrir ' + t.name + ' en este proyecto' }, href: u.href, blank: target.external, tool: true });
       }
       out.push({ group: 'context', label: { en: 'Add documents', es: 'Añadir documentos' }, action: () => { const el = document.querySelector('#up-files'); if (el) { el.closest('section').scrollIntoView({ block: 'start' }); el.focus(); } } });
       out.push({ group: 'context', label: { en: 'Change stage', es: 'Cambiar etapa' }, action: () => { const el = document.querySelector('#p-stage'); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); } } });
@@ -69,7 +72,7 @@ async function loadItems() {
     const heldCodes = new Set(held.map((c) => c.code));
     for (const c of held) { const n = names.get(c.code) || c.name; out.push({ group: 'countries', label: n, sub: { en: c.counts.projects + (c.counts.projects === 1 ? ' project' : ' projects'), es: c.counts.projects + (c.counts.projects === 1 ? ' proyecto' : ' proyectos') }, keys: [c.code], href: '/hub/index.html?country=' + c.code }); }
     for (const [code, n] of [...names.entries()].sort((a, b) => a[1].en.localeCompare(b[1].en))) if (!heldCodes.has(code)) out.push({ group: 'countries', label: n, keys: [code], href: '/hub/index.html?country=' + code, quiet: true });
-    for (const t of tools) { const target = openTarget(t, byId, siteRoot); out.push({ group: 'tools', label: { en: t.name, es: t.name }, sub: { en: t.aliases.current, es: t.aliases.current }, keys: [t.id], href: target.href, blank: target.external }); }
+    for (const t of tools) { const target = openTarget(t, byId, siteRoot); out.push({ group: 'tools', label: { en: t.name, es: t.name }, sub: { en: t.aliases.current, es: t.aliases.current }, keys: [t.id], href: target.href, blank: target.external, tool: true }); }
     for (const [href, en, es] of PAGES) out.push({ group: 'pages', label: { en, es }, href });
     out.forEach((it, i) => { it.order = i; });          // insertion order wins among equal matches (toolbar order, name order)
     return out;
@@ -115,7 +118,7 @@ function render() {
     let best = -1;
     for (const t of [it.label.en, it.label.es]) { const s = fuzzy(q, String(t)); if (s >= 0 && (best < 0 || s < best)) best = s; }
     for (const t of it.keys || []) { const s = fuzzy(q, String(t)); if (s >= 0) { const k = s + 1; if (best < 0 || k < best) best = k; } }   // a match on the name beats one on its keys
-    if (best < 0) continue;
+    if (best < 0 || (q && best >= SHOW_BELOW)) continue;
     scored.push({ it, s: best });
   }
   const order = ['context', 'projects', 'countries', 'tools', 'pages'];
@@ -145,6 +148,7 @@ function paint() {
 function go(it) {
   close();
   if (it.action) { it.action(); return; }
+  if (it.tool) armLegacyGate();                                   // wave 7 (S13): a tool target opens past the legacy portal check
   if (it.blank) window.open(it.href, '_blank', 'noopener'); else location.href = it.href;
 }
 async function show() {

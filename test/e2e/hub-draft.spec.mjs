@@ -25,7 +25,7 @@ const DRAFT = (tone) => ({ id: DRAFT_ID, draft: '', paragraphs: [
   'Our screening gives a technical potential of 41,000 bopd [run:' + RUN + '].',
   '[QUESTION FOR YOU: this sentence carries a figure with no record in scope to cite: "The pipeline repair cost USD 2.3 million."]',
   'We would welcome the repair report when convenient.',
-], citations: ['doc:' + LETTER, 'doc:' + FINDING, 'run:' + RUN], questions: ['The pipeline repair cost USD 2.3 million.'], warnings: [], who_to_ask: [{ person: 'lars', last: '2026-09-20', on: 'opportunity-register' }],
+], citations: ['doc:' + LETTER, 'doc:' + FINDING, 'run:' + RUN], questions: ['The pipeline repair cost USD 2.3 million.'], warnings: [], who_to_ask: [{ person: 'lars', last: '2026-09-20', on: 'opportunity-register' }], model: 'fake-1',
   sources: [{ ref: 'doc:' + FINDING, title: 'PDVSA restarts Apure production after pipeline repair', why: 'research finding', snippet: 'PDVSA restarted Apure production this week after a pipeline repair.' }, { ref: 'run:' + RUN, title: 'Waterflood screen, base case', why: 'Our screening' }],
   context: { organisation: { id: 'zuata', name: 'Petrolera Zuata S.A.' }, contacts: [], dispatches: [{ item_id: LETTER, title: 'Letter ATC-2026-0131: clarification', direction: 'out', occurred_at: '2026-07-08T09:00:00.000Z', reference_no: 'ATC-2026-0131' }], contracts: [], runs: [{ id: RUN, title: 'Waterflood screen, base case', job: 'opportunity-register' }], lessons: [], sub_queries: [], letterhead: null } });
 const ITEM = (id, title) => ({ id, type: 'note', title, created_at: '2026-10-01T12:30:00.000Z', authored_at: '2026-09-30T00:00:00.000Z', authors: ['research'], client_id: null, project_id: PID, asset_ids: [], organisation_ids: [], legal_tag: 'lt-public', origin: { source: 'research' }, storage_key: null, mime: null, content_hash: 'sha256:' + 'a'.repeat(64), version: 1, supersedes: null, cites: [], filing: {}, extracted: { kind: 'research', quote: 'PDVSA restarted Apure production this week after a pipeline repair.' }, stale: false, tags: [] });
@@ -317,4 +317,51 @@ test('W6-AC9: with a connected mailbox that may send, Write to… ends with Send
   await expect(result.locator('#dr-send')).toBeHidden();
   await expect(result.locator('#dr-send-hint')).toContainText('Connect your mailbox to send from here');
   await expect(result.locator('#dr-sent')).toBeVisible();
+});
+
+test('W7-AC4 (S19): Write to… without a provider refuses clearly in the form, bilingual, and shows no template and no "does not know" box', async ({ page }) => {
+  const calls = await stubApi(page);
+  await page.route('**/api/draft', (route) => { calls.drafts.push(JSON.parse(route.request().postData())); return json(route, { error: { code: 'not_configured', message: 'the drafting assistant is not connected on this Vault' } }, 503); });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('#p-draft-btn').click();
+  const panel = page.locator('#p-draft');
+  await panel.locator('#dr-to').selectOption('maria-fernandez');
+  await panel.locator('#dr-brief').fill('Tell her the waterflood screen result and ask for the data room index.');
+  await panel.locator('#dr-go').click();
+  await expect.poll(() => calls.drafts.length).toBe(1);
+  const notice = panel.locator('#dr-notices .hub-notice.bad[data-no-provider]');
+  await expect(notice).toHaveCount(1);
+  await expect(notice).toContainText('The drafting assistant is not connected, so no draft was made.');
+  await expect(notice).not.toContainText(/[A-Z]{3,}_[A-Z_]+|SETUP\.md|\.ts\b/);
+  await expect(panel.locator('#dr-result')).toBeHidden();
+  await expect(panel.locator('.hub-dr-unknown')).toHaveCount(0);
+  await expect(panel.locator('.hub-dr-para')).toHaveCount(0);
+  await expect(panel.locator('#dr-go')).toBeEnabled();
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.screenshot({ path: path.join(EVIDENCE, 'w7-write-to-no-provider.png'), fullPage: false });
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await expect(notice).toContainText('El asistente de redacción no está conectado, así que no se hizo ningún borrador.');
+});
+
+test('W7 (D65): the "What this draft does not know" box is shown only when a provider drafted, never with "Nothing" on a template', async ({ page }) => {
+  // A template saved before the refusal existed: no model drafted it, so the box that claims every figure found its record is not shown.
+  await stubDraftNote(page, { review: REVIEW, model: null, explanation_source: 'fallback', questions: [] });
+  await page.goto('/hub/project.html?id=' + PID + '&draft=' + DRAFT_ID);
+  await ready(page);
+  const result = page.locator('#dr-result');
+  await expect(result).toHaveAttribute('data-loaded', DRAFT_ID);
+  await expect(result.locator('.hub-dr-unknown')).toHaveCount(0);
+  await expect(result.locator('.hub-dr-para')).toHaveCount(4);
+  expect(await result.evaluate((el) => el.firstElementChild.className)).toBe('hub-dr-paras');
+  // The same draft as a provider wrote it: the box is first, and with no questions it says so.
+  await stubDraftNote(page, { review: REVIEW, model: 'fake-1', explanation_source: 'llm', questions: [] });
+  await page.goto('/hub/project.html?id=' + PID + '&draft=' + DRAFT_ID);
+  await ready(page);
+  await expect(result).toHaveAttribute('data-loaded', DRAFT_ID);
+  const unknown = result.locator('.hub-dr-unknown');
+  await expect(unknown).toHaveCount(1);
+  await expect(unknown).toHaveAttribute('data-questions', '0');
+  await expect(unknown).toContainText('Nothing: every figure found its record.');
+  expect(await result.evaluate((el) => el.firstElementChild.className)).toBe('hub-dr-unknown');
 });

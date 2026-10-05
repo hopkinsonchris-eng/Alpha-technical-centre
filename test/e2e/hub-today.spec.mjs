@@ -86,9 +86,13 @@ test('(a) every catalog tool appears once with its current version and an Open l
     const card = page.locator(`[data-tool-id="${t.id}"]`);
     await expect(card, t.id + ' appears exactly once').toHaveCount(1);
     await expect(card.locator('h3')).toHaveText(t.name);
-    await expect(card.locator('[data-version]')).toHaveText(want.get(t.id).version);
+    // Wave 7 (S6): an external app shows a version only when it publishes one; the manifest's is a stated placeholder.
+    if (t.kind === 'external-app') await expect(card.locator('[data-version]')).toHaveCount(0);
+    else await expect(card.locator('[data-version]')).toHaveText(want.get(t.id).version);
     await expect(card.locator('[data-lifecycle]')).toHaveAttribute('data-lifecycle', t.lifecycle);
     const open = card.locator('a[data-open]');
+    // Wave 7 (S7): a skill runs in Claude Code; its card links the published insights instead of a raw file.
+    if (t.kind === 'skill') { await expect(open).toHaveCount(0); await expect(card.locator('a[data-insights]')).toHaveAttribute('href', new URL('insights.html', baseURL + '/').href); continue; }
     if (want.get(t.id).retired) { await expect(open).toHaveCount(0); continue; }
     await expect(open, t.id + ' Open current').toHaveAttribute('href', want.get(t.id).href);
     if (want.get(t.id).external) {
@@ -117,13 +121,12 @@ test('(a) every catalog tool appears once with its current version and an Open l
   await expect(reg.locator('.hub-changelog')).toContainText('2.2.0');
   await expect(reg.locator('.hub-changelog')).toContainText('AI Run Advisor');
 
-  // Session, my projects, and sections whose endpoints are 404 stay out of sight.
+  // Session; the register lists the project (wave 7, S2: the My projects cards are gone); sections whose endpoints are 404 stay out of sight.
   await expect(page.locator('#me-name')).toHaveText('Chris Hopkinson');
   await expect(page.locator('#me-role')).toHaveText('PARTNER');
-  await expect(page.locator('#sec-projects')).toBeVisible();
-  await expect(page.locator('[data-project-id]')).toHaveCount(1);
-  await expect(page.locator('[data-project-id]')).toContainText('Frontera Energy');
-  await expect(page.locator('[data-project-id]')).toContainText('9 · 31');
+  await expect(page.locator('#sec-projects')).toHaveCount(0);
+  await expect(page.locator('[data-project-id]')).toHaveCount(0);
+  await expect(page.locator('#register-body tr[data-register-row="llanos-waterflood"]')).toContainText('Frontera Energy');
   await expect(page.locator('#sec-attention')).toBeHidden();
   await expect(page.locator('#sec-runs')).toBeHidden();
   await expect(page.locator('.hub-notice')).toHaveCount(0);
@@ -151,12 +154,12 @@ test('(b) with the API answering 500 the catalog still renders from hub/catalog.
   await expect(page.locator('[data-tool-id]')).toHaveCount(STATIC_CATALOG.tools.length);
   for (const t of STATIC_CATALOG.tools) {
     await expect(page.locator(`[data-tool-id="${t.id}"]`)).toHaveCount(1);
-    await expect(page.locator(`[data-tool-id="${t.id}"] [data-version]`)).toHaveText(t.aliases.current);
+    if (t.kind !== 'external-app') await expect(page.locator(`[data-tool-id="${t.id}"] [data-version]`)).toHaveText(t.aliases.current);
   }
   await expect(page.locator('.hub-notice.warn')).toContainText('The Vault is unreachable');
   await expect(page.locator('.hub-notice.warn')).toContainText('hub/catalog.json');
   await expect(page.locator('#me-name')).toHaveText('Signed out · local catalog');
-  for (const id of ['#sec-projects', '#sec-attention', '#sec-runs']) await expect(page.locator(id)).toBeHidden();
+  for (const id of ['#sec-register', '#sec-attention', '#sec-runs']) await expect(page.locator(id)).toBeHidden();
 });
 
 /** Rich seed used for the accessibility check, the bilingual check and the screenshot. */
@@ -221,7 +224,7 @@ async function seededPage(page) {
 test('seeded sections: needs attention, recent runs, and the screenshot', async ({ page }) => {
   const cat = await seededPage(page);
   await expect(page.locator('[data-tool-id]')).toHaveCount(cat.tools.length);
-  await expect(page.locator('[data-project-id]')).toHaveCount(4);
+  await expect(page.locator('#register-body tr[data-register-row]')).toHaveCount(4);
   await expect(page.locator('#card-stale')).toContainText('Stale runs and documents');
   await expect(page.locator('#card-stale .hub-item')).toHaveCount(3);
   await expect(page.locator('#card-filing .hub-item')).toHaveCount(2);
@@ -365,9 +368,9 @@ test('new project: a partner creates a project from Today; the form posts to POS
   await page.goto('/hub/index.html');
   await ready(page);
 
-  // Empty state names the button; the button is there for a partner; the form is closed until asked for.
-  await expect(page.locator('#sec-projects')).toBeVisible();
-  await expect(page.locator('#projects-grid .hub-empty')).toContainText('New project');
+  // The button sits with the register for a partner (wave 7, S2: the My projects section is gone); the form is closed until asked for.
+  await expect(page.locator('#sec-projects')).toHaveCount(0);
+  await expect(page.locator('#sec-register')).toBeVisible();
   const btn = page.getByRole('button', { name: 'New project' });
   await expect(btn).toBeVisible();
   await expect(page.locator('#new-project')).toBeHidden();
@@ -388,11 +391,15 @@ test('new project: a partner creates a project from Today; the form posts to POS
   expect(posted).toEqual({ id: 'cubiro-2027-review-phase-2', name: 'Cubiro 2027 Review (Phase 2)', client_id: null });
 });
 
-test('new project: a client project asks for its legal tag; an API refusal is shown in the form; associates get no button', async ({ page }) => {
+test('new project (W7-AC1): a client project creates its NDA tag first, then the project under it; an API refusal is shown in the form; associates get no button', async ({ page }) => {
   const cat = seededCatalog();
   const h = baseHandlers(cat);
-  let posted = null;
+  let posted = null, tagPosted = null;
   h['/api/organisations'] = (u, r) => json(r, { organisations: [{ id: 'frontera-energy', name: 'Frontera Energy', kind: 'operator' }] });
+  h['/api/legal-tags'] = (u, r) => {
+    if (r.request().method() === 'POST') { tagPosted = JSON.parse(r.request().postData()); return json(r, { ...tagPosted, classification: 'client-nda' }, 201); }
+    return json(r, { tags: [] });
+  };
   h['/api/projects'] = (u, r) => {
     if (r.request().method() === 'POST') { posted = JSON.parse(r.request().postData()); return json(r, { error: { code: 'unknown_legal_tag', message: 'legal tag "lt-frontera-nda-2026" does not exist' } }, 400); }
     return json(r, { projects: [] });
@@ -405,18 +412,38 @@ test('new project: a client project asks for its legal tag; an API refusal is sh
   await form.locator('#np-name').fill('Cubiro waterflood');
   await form.locator('#np-client').selectOption('frontera-energy');
   await expect(form.locator('#np-tag-field')).toBeVisible();
-  await form.locator('#np-tag').fill('lt-frontera-nda-2026');
+  await expect(form.locator('#np-tag-pick')).toHaveValue('new');          // no tag exists for this client yet
+  await expect(form.locator('#np-tag-new')).toBeVisible();
+  await form.locator('#np-tag-name').fill('Frontera NDA 2026');
+  await expect(form.locator('#np-tag')).toHaveValue('lt-frontera-nda-2026');  // the id follows the name
+  await form.locator('#np-tag-expires').fill('2027-03-31');
   await form.getByRole('button', { name: 'Create project' }).click();
   await expect(form.locator('.hub-notice.bad')).toContainText('legal tag "lt-frontera-nda-2026" does not exist');
+  expect(tagPosted).toEqual({ id: 'lt-frontera-nda-2026', name: 'Frontera NDA 2026', client_id: 'frontera-energy', expires_at: '2027-03-31' });
   expect(posted).toEqual({ id: 'cubiro-waterflood', name: 'Cubiro waterflood', client_id: 'frontera-energy', default_legal_tag: 'lt-frontera-nda-2026' });
   expect(page.url()).toContain('/hub/index.html');   // still here, nothing lost
+
+  // A client with an existing tag: the picker offers it first and no tag is posted.
+  tagPosted = null; posted = null;
+  h['/api/legal-tags'] = (u, r) => json(r, { tags: [{ id: 'lt-frontera-nda-2025', name: 'Frontera NDA 2025', client_id: 'frontera-energy', expires_at: '2026-12-31', classification: 'client-nda' }] });
+  await page.goto('/hub/index.html');
+  await ready(page);
+  await page.getByRole('button', { name: 'New project' }).click();
+  await form.locator('#np-name').fill('Cubiro phase 2');
+  await form.locator('#np-client').selectOption('frontera-energy');
+  await expect(form.locator('#np-tag-pick')).toHaveValue('lt-frontera-nda-2025');
+  await expect(form.locator('#np-tag-new')).toBeHidden();
+  await form.getByRole('button', { name: 'Create project' }).click();
+  await expect(form.locator('.hub-notice.bad')).toBeVisible();
+  expect(tagPosted).toBeNull();
+  expect(posted.default_legal_tag).toBe('lt-frontera-nda-2025');
 
   // An associate cannot create projects (the API requires a partner), so the button is not offered.
   h['/api/me'] = (u, r) => json(r, { ...PARTNER, role: 'associate' });
   await page.goto('/hub/index.html');
   await ready(page);
   await expect(page.getByRole('button', { name: 'New project' })).toHaveCount(0);
-  await expect(page.locator('#projects-grid .hub-empty')).not.toContainText('New project');
+  await expect(page.locator('#btn-new-project')).toBeHidden();
 });
 
 /* ── wave 2, PR 1: catalog lifecycle defaults (AC7) and live versions (AC8) ── */
@@ -485,7 +512,7 @@ test('AC7: production tools by default; Experimental and Older chips reveal the 
   await expect(page.locator('#tools-empty')).toContainText('No tools match');
 });
 
-test('AC8: an external app shows the version it publishes; one that publishes nothing yet says so; a browser tool shows its manifest version', async ({ page }) => {
+test('AC8 (wave 7, S6): an external app shows the version it publishes; one that publishes nothing yet shows no version line; a browser tool shows its manifest version', async ({ page }) => {
   const cat = lifecycleCatalog();
   await stubApi(page, baseHandlers(cat));
   await page.goto('/hub/index.html');
@@ -496,15 +523,15 @@ test('AC8: an external app shows the version it publishes; one that publishes no
   await expect(ai.locator('.hub-ver')).toContainText('published by the app');
   await expect(ai.locator('.hub-ver')).toContainText('12 Sept 2026');
   const m3 = page.locator('[data-tool-id="apex-3d-model"]');
-  await expect(m3.locator('[data-version]')).toHaveText('1.0.0');
-  await expect(m3.locator('[data-version-source]')).toHaveAttribute('data-version-source', 'unverified');
-  await expect(m3.locator('.hub-pill.warn')).toHaveText('Version unverified');
-  await expect(m3).toContainText('publishes no version.json yet');
+  await expect(m3.locator('[data-version]')).toHaveCount(0);
+  await expect(m3.locator('.hub-ver')).toHaveCount(0);
+  await expect(m3.locator('.hub-pill.warn')).toHaveCount(0);
+  await expect(m3).not.toContainText('version.json');
+  await expect(m3.locator('a[data-open]')).toHaveAttribute('href', 'https://apex-3d-model.uk/');   // the card still links the app (W7-AC5)
   const reg = page.locator('[data-tool-id="opportunity-register"]');
   await expect(reg.locator('[data-version-source]')).toHaveAttribute('data-version-source', 'manifest');
   await expect(reg.locator('.hub-ver')).toContainText('current');
   // Spanish follows.
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(ai.locator('.hub-ver')).toContainText('publicada por la app');
-  await expect(m3.locator('.hub-pill.warn')).toHaveText('Versión sin verificar');
 });

@@ -72,11 +72,13 @@ before(async () => {
 });
 after(async () => { await db.close(); });
 
-test('AC16: without a provider the brief answers 501 with the same wording as the assistant', async () => {
+test('AC16 (wave 7): without a provider the brief answers 503 not_configured with a plain sentence, the same refusal Write to… gives', async () => {
   configureBrief({ provider: null });
   const r = await post(partner, '/api/countries/KZ/brief');
-  assert.equal(r.status, 501);
-  assert.match(r.body.error.message, /no LLM provider configured/);
+  assert.equal(r.status, 503);
+  assert.equal(r.body.error.code, 'not_configured');
+  assert.match(r.body.error.message, /not connected/);
+  assert.doesNotMatch(r.body.error.message, /_KEY|provider configured/);
 });
 
 test('AC16: a bad code is 400; a country with nothing in scope is 404', async () => {

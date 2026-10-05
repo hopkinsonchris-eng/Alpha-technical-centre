@@ -17,7 +17,7 @@
 |---|---|---|---|
 | M00 Ontology, schemas, master and reference data | wave-0 commit | `vault/npm test`: legal (6, property-based), schemas (10, 42 fixtures + AC15 seed), db (3) green | n/a (no surface) |
 | M01 Infrastructure, auth, CI | wave-0 commit | auth (5) green; CI workflow with AC12 and AC13 checks; Access checklist in `vault/README.md` awaiting the Cloudflare and Supabase steps only Chris can do | n/a |
-| Mockups (all nine Hub screens) | ea47d2b | n/a | `docs/vault-hub/mockups/*.png`; `hub/mockups/index.html` clickable |
+| Mockups (all nine Hub screens) | ea47d2b | n/a | `docs/vault-hub/mockups/*.png`; `docs/vault-hub/mockups/hub/index.html` clickable (moved out of `hub/` in wave 7, S47) |
 | M03 Tool registry and catalog | 775a37d | catalog (14) green; register pins follow `tool.json` | n/a |
 | M04 Vault client library | 5224720 | vault-client (9) green; e2e smoke loads it in Chromium | n/a |
 | M08 Staleness rules (engine only; re-run and delta note follow M05/M13) | ab151f5 | staleness (6) green incl. AC4 set and idempotence | n/a |

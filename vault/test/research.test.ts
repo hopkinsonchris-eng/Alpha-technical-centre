@@ -112,15 +112,17 @@ test('W4-AC1: the queries come from the project, its fields, their operators and
   assert.ok(gdelt.includes('"High Tech Electronica" Venezuela'), 'the project name is searched');
   assert.equal(q.gdelt.find(g => g.label === 'Guafita')!.field_id, 'field:ve:guafita');
   assert.deepEqual(q.companies, ['PDVSA', 'Petróleos de Venezuela', 'High Tech Electronica', 'Petrolera Zuata', 'MinPetróleo', 'Chevron Venezuela'], 'W4-AC15: holder, government and partners are companies; the lead at the firm is not');
-  assert.ok(q.literature.some(x => x.id === 'research:hte-apure:co:petrolera-zuata'));
+  // Wave 7 (S17): companies are looked up by World Monitor, never searched in the literature.
+  assert.ok(!q.literature.some(x => x.id.includes(':co:')), 'no per-company literature topic');
+  assert.ok(!/Petrolera Zuata|PDVSA|Chevron|High Tech Electronica|MinPetróleo/.test(JSON.stringify(q.literature)), 'no organisation name in any literature query, keyword or context');
   assert.deepEqual(operatorNames('Ecopetrol [50%]; Frontera Energy [50%]'), ['Ecopetrol', 'Frontera Energy']);
   const lit = q.literature.find(x => x.id === 'research:hte-apure:field:ve:guafita')!;
   assert.equal(lit.query, 'Guafita field Venezuela reservoir');
   assert.equal(lit.strict, true, 'research literature topics are strict: the name as a phrase and an oil and gas word');
-  assert.ok(lit.context!.includes('Venezuela') && lit.context!.includes('reservoir') && lit.context!.includes('PDVSA'));
+  assert.ok(lit.context!.includes('Venezuela') && lit.context!.includes('reservoir'));
   assert.deepEqual(lit.keywords, ['Guafita', 'Guafita Oil Field']);
   assert.deepEqual(nameKeywords(['Trico — Oficina', 'OFICINA NORTE —TRICO', 'B-3']), ['Trico — Oficina', 'Trico', 'Oficina', 'OFICINA NORTE —TRICO', 'OFICINA NORTE', 'TRICO', 'B-3'].filter((v, i, a) => a.findIndex(x => x.toLowerCase() === v.toLowerCase()) === i));
-  assert.ok(q.literature.some(x => x.id === 'research:hte-apure:co:pdvsa'));
+  assert.equal(q.literature.length, 2, 'one literature topic per field and none per company');
   const all = JSON.stringify(q);
   assert.ok(!/ZEBRAWORD|call the ministry|Tom|Lars/.test(all), 'the register free text and the lead at the firm are never a query');
   // A placeholder project name is not searched; a project without fields still searches its own name.

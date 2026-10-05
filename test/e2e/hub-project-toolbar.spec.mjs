@@ -73,7 +73,9 @@ test('AC9: the toolbar lists the production tools that take a project, in toolba
   await expect(links.nth(0)).toHaveAttribute('href', new URL('opportunity-register.html?project=' + PID, baseURL + '/').href);
   await expect(links.nth(1)).toHaveAttribute('href', new URL('nodal-analysis-tool.html?project=' + PID, baseURL + '/').href);
   await expect(links.nth(0)).not.toHaveAttribute('target', /.+/);
-  await expect(links.nth(3)).toHaveAttribute('href', 'https://apex-app2.onrender.com/?project=' + PID);
+  // Wave 7 (S28): an external app does not read ?project=, so it opens as itself.
+  await expect(links.nth(3)).toHaveAttribute('href', 'https://apex-app2.onrender.com/');
+  await expect(links.nth(3)).toHaveAttribute('data-external', '1');
   await expect(links.nth(3)).toHaveAttribute('target', '_blank');
   await expect(links.nth(3)).toHaveAttribute('rel', /noopener/);
   await expect(links.nth(0)).toContainText('Opportunity Register');
@@ -81,6 +83,24 @@ test('AC9: the toolbar lists the production tools that take a project, in toolba
   // The header shows the country and stage.
   await expect(page.locator('#p-sub')).toContainText('Kazakhstan');
   await expect(page.locator('#p-stage')).toHaveValue('Qualified');
+});
+
+test('W7-AC3: Opportunity Register and APEX Reservoir 3D open from the toolbar with ?project= intact and no login wall', async ({ page }) => {
+  await stubApi(page);
+  const cat = JSON.parse(JSON.stringify(CATALOG));
+  cat.tools.push(tool('apex-reservoir-3d', 'APEX Reservoir 3D', 'production', 'browser-tool', 'reservoir-simulator.html', { context: ['project'], param: 'project', toolbar: 40, live_version: null }));
+  await page.route('**/api/catalog', (route) => json(route, cat));
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  for (const [id, file] of [['opportunity-register', 'opportunity-register.html'], ['apex-reservoir-3d', 'reservoir-simulator.html']]) {
+    await page.goto('/hub/project.html?id=' + PID);
+    await ready(page);
+    await page.locator(`#p-toolbar a[data-toolbar-tool="${id}"]`).click();
+    await page.waitForURL(new RegExp(file.replace('.', '\\.') + '\\?project=' + PID + '$'));
+    expect(page.url(), id).not.toMatch(/admin\.html/);
+    await expect(page.locator('html'), id + ' is not hidden by the legacy gate').not.toHaveAttribute('style', /display:\s*none/);
+    expect(await page.evaluate(() => sessionStorage.getItem('atc_auth')), id).toBe('1');
+  }
 });
 
 test('AC10: changing the stage patches the project, updates the header and puts the change on the timeline', async ({ page }) => {

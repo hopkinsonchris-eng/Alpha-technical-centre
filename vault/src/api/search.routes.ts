@@ -4,13 +4,17 @@
  *   GET /api/search?q=&scope=&k=&types=   {hits, scope, took_ms}; 400 without q or scope, 403 outside the caller's scope
  *   GET /api/search/people?q=&scope=      {people, scope, took_ms}; colleagues who worked the topic, most recent first
  *   GET /api/search/runs?scope=&job=&since=&k=   {runs, scope}; structured retrieval for the drafting assistant
+ *   POST /api/search/reindex-runs?limit=        {indexed, run_ids}; partners only: chunks runs saved before runs were
+ *                                               indexed (wave 7, S31). Idempotent: a run that has chunks is left alone.
  * Every call is audited by the route wrapper with the scope, a hash of the query (never the text) and the returned refs.
  */
 import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
 import type { RouteDeps } from './index.ts';
-import { ApiError, bad, intParam, route, sha256Hex, sinceParam, type Ctx } from './common.ts';
+import { ApiError, bad, intParam, requirePartner, route, sha256Hex, sinceParam, type Ctx } from './common.ts';
 import { configureDraft } from './draft.routes.ts';
+import { openEmbedder } from '../ingest/embed.ts';
+import { indexPendingRuns } from '../ingest/index.ts';
 import { hybridSearch, loadProjects, peopleWhoWorked, resolveScope, runsFor, ScopeError, searchDeps, type ResolvedScope, type SearchHit } from '../gateway/index.ts';
 
 export interface FoundHit extends SearchHit { type: string; date: string | null; authors: string[]; stale: boolean }
@@ -94,5 +98,14 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     x.a.refs = runs.map(r => r.ref);
     x.a.detail = { ...x.a.detail, job: job ?? null, since: since ?? null, count: runs.length };
     return { body: { runs, scope: scope.label } };
+  });
+
+  route(app, 'POST', '/api/search/reindex-runs', 'search.reindex_runs', async (x) => {
+    requirePartner(x.person, 'indexing runs');
+    let embedder;
+    try { embedder = openEmbedder(); } catch (e) { throw new ApiError(503, 'embedder_unavailable', (e as Error).message); }
+    const r = await indexPendingRuns(x.db, embedder, { limit: intParam(x.c, 'limit', 200, 1000) });
+    x.a.scope = 'firm'; x.a.refs = r.run_ids.map(id => `run:${id}`); x.a.detail = { ...x.a.detail, indexed: r.indexed };
+    return { body: { indexed: r.indexed, run_ids: r.run_ids } };
   });
 }

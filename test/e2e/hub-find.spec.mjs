@@ -72,7 +72,7 @@ test('results render with type icon, highlighted snippet, source path, legal tag
   const first = results(page).nth(0);
   await expect(first.locator('.r-ico svg')).toHaveCount(1);
   await expect(first.locator('.r-title a')).toContainText('Waterflood performance and voidage management');
-  await expect(first.locator('.r-title a')).toHaveAttribute('href', '/hub/project.html?id=' + PROJECT);
+  await expect(first.locator('.r-title a')).toHaveAttribute('href', '/hub/project.html?id=' + PROJECT + '&doc=00000000-0000-4000-8000-000000000001');
   await expect(first.locator('.r-title mark')).toHaveText(['Waterflood', 'voidage']);
   await expect(first.locator('.snip mark')).toHaveText(['Voidage', 'waterflood']);
   await expect(first.locator('.snip')).toContainText('<0.5', { useInnerText: true });   // a "<" in the Vault's text is text, never markup
@@ -96,6 +96,50 @@ test('results render with type icon, highlighted snippet, source path, legal tag
   expect(new URL(page.url()).searchParams.get('scope')).toBe(SCOPE);
   mkdirSync(path.dirname(EVIDENCE), { recursive: true });
   await page.screenshot({ path: EVIDENCE, fullPage: true });
+});
+
+// Wave 7 PR1 (S31, S32, W7-AC2): a document hit links to the project page with ?doc= and the record panel opens on it;
+// run hits are in the same list with their own chip (the Vault indexes runs, so they arrive as ordinary hits of type run).
+test('W7-AC2: a document hit opens the project page on that record; run hits have their own chip and link with ?run=', async ({ page }) => {
+  const DOC = '00000000-0000-4000-8000-000000000001', RUN = '00000000-0000-4000-8000-000000000002';
+  const project = { id: PROJECT, client_id: 'frontera', name: 'Llanos Basin waterflood screening', status: 'active', default_legal_tag: 'lt-frontera-nda-2026', asset_ids: [], members: ['chris'], contacts: [], created_at: '2026-09-30T09:00:00.000Z', closed_at: null, country: 'CO', stage: 'Initial screen', stage_history: [], register: {} };
+  const timeline = { project_id: PROJECT, count: 2, entries: [
+    { kind: 'item', ref: 'doc:' + DOC, id: DOC, at: ago(19), title: 'Waterflood performance and voidage management in Llanos Basin Cretaceous sandstones', type: 'paper', version: 1, legal_tag: 'lt-onepetro-sub-2026', stale: false, stale_reasons: [], supersedes: null },
+    { kind: 'run', ref: 'run:' + RUN, id: RUN, at: ago(2), title: 'Cubiro waterflood: base (re-run on 2.1.0)', job: 'nodal', tool_version: '2.1.0', status: 'final', legal_tag: 'lt-frontera-nda-2026', stale: false, stale_reasons: [], supersedes: null },
+  ] };
+  const item = { id: DOC, type: 'paper', title: 'Waterflood performance and voidage management in Llanos Basin Cretaceous sandstones', created_at: ago(19), authored_at: ago(19), authors: ['gs'], client_id: 'frontera', project_id: PROJECT, asset_ids: [], organisation_ids: [], legal_tag: 'lt-onepetro-sub-2026', origin: { source: 'upload' }, storage_key: null, mime: 'application/pdf', content_hash: 'sha256:' + 'a'.repeat(64), version: 1, supersedes: null, cites: [], filing: {}, extracted: {}, stale: false, tags: [] };
+  const empty = { project_id: PROJECT, assets: [], vintages: [], nodes: [], edges: [], runs: [], items: [], lessons: [], rules: [], findings: [], enabled: false };
+  await stub(page, {
+    ['/api/projects/' + PROJECT]: (u, r) => json(r, project),
+    ['/api/projects/' + PROJECT + '/timeline']: (u, r) => json(r, timeline),
+    ['/api/items/' + DOC]: (u, r) => json(r, item),
+    ['/api/items/' + DOC + '/versions']: (u, r) => json(r, { item_id: DOC, versions: [] }),
+    ...Object.fromEntries(['/assets', '/vintages', '/lineage', '/stale', '/lessons', '/scorecard', '/basis', '/research', '/standing', '/contacts'].map((t) => ['/api/projects/' + PROJECT + t, (u, r) => json(r, empty)])),
+    '/api/countries': (u, r) => json(r, { countries: [] }), '/api/items': (u, r) => json(r, { items: [] }), '/api/runs': (u, r) => json(r, { runs: [] }),
+  });
+  await openPage(page, '?q=waterflood&scope=' + encodeURIComponent(SCOPE));
+  await expect(results(page)).toHaveCount(5);
+  // Every document hit carries doc=<item_id>; the run hit carries run=<run_id>; neither carries the other.
+  const docLinks = page.locator('#find-results .result:not([data-type="run"]) .r-title a');
+  await expect(docLinks).toHaveCount(4);
+  for (const href of await docLinks.evaluateAll((as) => as.map((a) => a.getAttribute('href')))) {
+    expect(href).toMatch(new RegExp('^/hub/project\\.html\\?id=' + PROJECT + '&doc=00000000-0000-4000-8000-00000000000[0-9]$'));
+  }
+  const runChip = page.locator('#find-types .find-chip[data-type="run"]');
+  await expect(runChip).toHaveText('Runs (1)');
+  await runChip.click();
+  await expect(results(page)).toHaveCount(1);
+  await expect(results(page).first()).toHaveAttribute('data-type', 'run');
+  await expect(results(page).first().locator('.r-title a')).toHaveAttribute('href', '/hub/project.html?id=' + PROJECT + '&run=' + RUN);
+  await page.locator('#find-types .find-chip[data-type="all"]').click();
+  // Following the document link lands on the project page with the record panel open on that document.
+  await results(page).first().locator('.r-title a').click();
+  await expect(page).toHaveURL(new RegExp('project\\.html\\?id=' + PROJECT + '&doc=' + DOC));
+  await page.locator('body[data-ready="1"]').waitFor();
+  const rp = page.locator('#record-panel');
+  await expect(rp).toBeVisible();
+  await expect(rp.locator('#rp-title')).toHaveText('Waterflood performance and voidage management in Llanos Basin Cretaceous sandstones');
+  await expect(page.locator('.hub-tl-item[data-id="' + DOC + '"]')).toHaveClass(/hilite/);
 });
 
 test('scope is mandatory: nothing is sent without one, the state says so, and the choice is remembered', async ({ page }) => {

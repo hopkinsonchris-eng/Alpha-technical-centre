@@ -7,9 +7,11 @@
 
      GET /api/projects                 scope choices: project:<id>
      GET /api/clients                  scope choices: client:<id>
-     GET /api/search?q=&scope=&k=50    hits {ref, title, snippet, type, date, authors, legal_tag, project_id, stale}
+     GET /api/search?q=&scope=&k=50    hits {ref, item_id, run_id, title, snippet, type, date, authors, legal_tag, project_id, stale}
      GET /api/search/people?q=&scope=  colleagues who worked the topic, most recent first
 
+   Runs are indexed by the Vault (wave 7, S31), so they arrive in the same list as documents, typed "run", and get
+   the Runs chip; a document hit links to the project page with ?doc=<item_id>, a run hit with ?run=<run_id> (S32).
    Type and date filters apply to the hits already returned. The chosen scope is
    remembered in localStorage; ?q= and ?scope= in the address take precedence and
    are kept in step with the page. Every string a person reads carries data-en and
@@ -112,8 +114,8 @@ async function loadScopes(wanted) {
 export function scopeNote(scope) {
   const kind = String(scope || '').split(':')[0];
   const note = {
-    project: bi('This project and the same client\'s records you may see, plus firm and public records.', 'Este proyecto y los registros del mismo cliente que usted puede ver, más los registros de la firma y públicos.'),
-    client: bi('Every project of this client you may see, plus firm and public records.', 'Todos los proyectos de este cliente que usted puede ver, más los registros de la firma y públicos.'),
+    project: bi('This project and the same client\'s records you may see, plus the firm\'s own knowledge and public records. Never another client\'s project.', 'Este proyecto y los registros del mismo cliente que usted puede ver, más el conocimiento propio de la firma y los registros públicos. Nunca el proyecto de otro cliente.'),
+    client: bi('Every project of this client you may see, plus the firm\'s own knowledge and public records. Never another client\'s project.', 'Todos los proyectos de este cliente que usted puede ver, más el conocimiento propio de la firma y los registros públicos. Nunca el proyecto de otro cliente.'),
     firm: bi('Firm records (lessons, templates) and public records. No client records.', 'Registros de la firma (lecciones, plantillas) y públicos. Ningún registro de cliente.'),
     public: bi('Public records only: regulators, papers, feeds.', 'Solo registros públicos: reguladores, artículos, fuentes.'),
   }[kind];
@@ -153,9 +155,11 @@ function avatar(id) {
   return dv('span', 'find-av', initials(personName(id)), { title: personName(id), 'data-person': id });
 }
 
+/** The project page opens the record the hit names: ?run= for a run, ?doc= for a document (S32). */
 function hitHref(h) {
   const p = new URLSearchParams({ id: h.project_id });
   if (h.run_id) p.set('run', h.run_id);
+  else if (h.item_id) p.set('doc', h.item_id);
   return '/hub/project.html?' + p.toString();
 }
 

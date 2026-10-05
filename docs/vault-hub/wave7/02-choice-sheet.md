@@ -1,0 +1,16 @@
+# Wave 7 — Choice Sheet (Gate 1)
+
+Tooler phase 2, 5 October 2026. Four questions put to Chris Hopkinson after the Practice Scan (`01-practice-scan.md`) and the four team reports; the answers are quoted verbatim. Numbering continues from wave 6 (D60 to D63).
+
+| # | Question | Answer (verbatim) | What it binds |
+|---|---|---|---|
+| D64 | The team found 2 blockers and 15 major snags, a UI that never states stage · next · last in one line, runs that can never become final, and no country pack. In what order should Wave 7 build? | "Clear first, then build (Recommended)" | PR1 clearance: every blocker and major snag fixed, the remove/hide list applied, a hub-health smoke on every push (P69). PR2 UI. PR3 data. PR4 to PR6 the country opening pack and the licence-round watch. |
+| D65 | The snag list recommends removing or hiding eleven things: the Staff Portal login on two tool pages, the blank My projects section, the internal firm project from the register and globe, the country intelligence card when World Monitor is not configured, Cost from the main nav (kept under Settings), Analogues until rows carry reservoir properties, the external APEX tool pages and their unverified version lines, Open current on the Insight Radar card, the inert Re-run all button, hub/mockups, and the "does not know: Nothing" box. Approve? | "Remove or hide all eleven (Recommended)" | Nothing is deleted from the repository except `hub/mockups/` and the login gate on the non-public tool page; the rest is hidden until it has something to show and returns when its data or adapter exists. |
+| D66 | The UI expert proposes four signature moves beyond the fixes: A the globe is the door; B one stateline component in the project header, the register row and the Find result; C a live status strip under the top bar on every page; D numbers as data. Which? | "All four (Recommended)" | Today, the project file, Find and every page change together in PR2 so the Hub reads as one instrument; A, B and D need no backend work; C reads endpoints that exist. |
+| D67 | The country opening pack has a free, server-reachable, licensed source for nine of its ten sections; the service industry has no structured public source anywhere. What may the pack draw on? | "Public licensed sources only (Recommended)" | Regulator open data, ResourceContracts and EITI, the free Chambers and Legal 500 chapters, GEM, EIA, the existing World Monitor card. Every sentence cites a stored original; an empty section says "no public register"; no model web search for gaps, no paid feeds. |
+
+Practices adopted by these answers: P61 to P73 all, with P62 limited to the five countries with open feeds today plus manual seeding, and P65's "verify this" deferred to the passage anchor only. Downstream artifacts that cite these numbers: `03-gap-statement.md`, `04-innovation-options.md`, `05-markup.md`.
+
+## Gate 2
+
+5 October 2026, on `05-markup.md` as written: **"Approved, build it as written (Recommended)"**. Building starts with PR1 Clearance.

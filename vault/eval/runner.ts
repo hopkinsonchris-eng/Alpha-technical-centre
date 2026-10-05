@@ -209,7 +209,7 @@ export async function runEval(opts: EvalOptions = {}): Promise<EvalResult> {
     const corpus = await seedEval(db);
     const fake = new FakeEmbedder();
     const gr = new GoldReranker();
-    configureSearch({ embed: async t => (await fake.embed([t]))[0], reranker: regress === 'no-rerank' ? passthroughReranker : gr });
+    configureSearch({ embed: async t => (await fake.embed([t]))[0], maxDistance: fake.maxDistance, reranker: regress === 'no-rerank' ? passthroughReranker : gr });
     const deps = searchDeps();
     const projects = await loadProjects(db);
     const tags = new Map((await db.query<any>('SELECT id, classification, client_id FROM legal_tags')).rows.map(t => [t.id, t]));

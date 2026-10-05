@@ -102,9 +102,10 @@ function renderKpis(cost) {
   const infra = cost.infrastructure, over = infra.total_usd > infra.ceiling_usd;
   add(host,
     kpi('llm', 'Tokens (LLM)', 'Tokens (LLM)', 'USD ' + usd(cost.llm.cost_usd), cost.llm.calls + ' calls', cost.llm.calls + ' llamadas'),
+    // Wave 7 (S39): planning defaults are said to be defaults; no acceptance-criterion ids in what a partner reads.
     kpi('infra', 'Infrastructure', 'Infraestructura', 'USD ' + usd(infra.total_usd),
-      over ? 'above the ' + infra.ceiling_usd + ' ceiling (AC14)' : 'within the ' + infra.ceiling_usd + ' ceiling (AC14)',
-      over ? 'por encima del techo de ' + infra.ceiling_usd + ' (AC14)' : 'dentro del techo de ' + infra.ceiling_usd + ' (AC14)', over ? 'bad' : ''),
+      (over ? 'above the ' + infra.ceiling_usd + ' ceiling' : 'within the ' + infra.ceiling_usd + ' ceiling') + (infra.source === 'settings' ? '' : ' · planning defaults, no invoices entered'),
+      (over ? 'por encima del techo de ' + infra.ceiling_usd : 'dentro del techo de ' + infra.ceiling_usd) + (infra.source === 'settings' ? '' : ' · valores de planificación, sin facturas'), over ? 'bad' : ''),
     kpi('total', 'Total', 'Total', 'USD ' + usd(cost.total_usd), 'tokens plus infrastructure', 'tokens más infraestructura'),
     kpi('cache', 'Cache hit rate', 'Tasa de aciertos de caché', pct(cost.llm.cache_hit_rate), 'cached share of input tokens', 'parte de tokens de entrada en caché'));
   if (cost.llm.unpriced_calls) {

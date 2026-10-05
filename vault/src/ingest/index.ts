@@ -7,6 +7,9 @@
  * the query. Older versions' chunks are kept and marked current=false. Legal and finance types also get typed
  * facts with evidence quotes in `items.extracted`, and an NDA's expiry is proposed in the review queue.
  * Idempotent per (item, version) unless `force`.
+ *
+ * indexRun (wave 7, S31): a run's title, assumptions and outputs become chunks the same way (run_id instead of
+ * item_id), so Find sees runs under the same scope predicate; retireRunChunks when a run is superseded.
  */
 import type { Db } from '../db/client.ts';
 import type { Storage } from '../storage.ts';
@@ -127,4 +130,72 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
     } catch { /* proposals are best effort; the document is indexed either way */ }
   }
   return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}), asset_proposals: assetProposals };
+}
+
+/* ── runs (wave 7, S31) ──────────────────────────────────────────────── */
+
+export interface RunIndexResult { run_id: string; status: 'ok' | 'skipped' | 'not_found' | 'empty'; chunks: number }
+
+const label = (k: string) => k.replace(/[_-]+/g, ' ').trim();
+const num = (v: unknown) => typeof v === 'number' ? (Number.isInteger(v) ? String(v) : String(Math.round(v * 1e6) / 1e6)) : v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+
+/** The text Find sees for a run: its title, then each assumption and each output with unit, range and source. */
+export function runText(run: { title?: string | null; job: string; tool_version: string; record: any }): string {
+  const rec = run.record ?? {};
+  const lines: string[] = [run.title || rec.title || `${run.job} ${run.tool_version}`];
+  const assumptions = Object.entries(rec.assumptions ?? {});
+  if (assumptions.length) {
+    lines.push('', 'Assumptions:');
+    for (const [k, a] of assumptions as [string, any][]) lines.push(`${label(k)}: ${num(a?.value)}${a?.unit ? ' ' + a.unit : ''}${a?.source ? ` (source: ${a.source})` : ''}`);
+  }
+  const outputs = Object.entries(rec.outputs ?? {});
+  if (outputs.length) {
+    lines.push('', 'Outputs:');
+    for (const [k, o] of outputs as [string, any][]) lines.push(`${label(k)}: ${num(o?.value)}${o?.unit ? ' ' + o.unit : ''}${o?.low != null || o?.high != null ? ` (range ${num(o?.low)} to ${num(o?.high)})` : ''}`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Chunks one run (title, assumptions, outputs) into `chunks` rows carrying the run's legal_tag / client_id / project_id
+ * and the tag's partners_only / expires_at, so the gateway filters them inside the query exactly as a document's.
+ * Idempotent per run unless `force`; a hidden or superseded run is never indexed (its chunks, if any, are retired).
+ */
+export async function indexRun(db: Db, runId: string, embedder: Embedder, opts: { force?: boolean } = {}): Promise<RunIndexResult> {
+  const run = (await db.query<any>('SELECT id, job, tool_version, title, status, hidden, legal_tag, client_id, project_id, record FROM runs WHERE id = $1', [runId])).rows[0];
+  if (!run) return { run_id: runId, status: 'not_found', chunks: 0 };
+  const have = Number((await db.query<{ n: number }>('SELECT count(*)::int AS n FROM chunks WHERE run_id = $1', [run.id])).rows[0].n);
+  if (run.hidden || run.status === 'superseded') { if (have) await retireRunChunks(db, run.id); return { run_id: run.id, status: 'skipped', chunks: 0 }; }
+  if (have && !opts.force) return { run_id: run.id, status: 'skipped', chunks: have };
+  const raw = chunkText(runText(run), []);
+  if (!raw.length) return { run_id: run.id, status: 'empty', chunks: 0 };
+  const context = `Run "${run.title || run.job}" (${run.job} ${run.tool_version}, ${run.status})`;
+  const chunks = raw.map(c => ({ ...c, context }));
+  const vectors = await embedder.embed(chunks.map(c => `${c.context}\n\n${c.text}`), 'document');
+  if (vectors.length !== chunks.length) throw new Error(`embedder returned ${vectors.length} vectors for ${chunks.length} chunks`);
+  const tag = (await db.query<{ expires_at: string | null; partners_only: boolean }>(`SELECT to_char(expires_at,'YYYY-MM-DD') AS expires_at, partners_only FROM legal_tags WHERE id = $1`, [run.legal_tag])).rows[0];
+  if (have) await db.query('DELETE FROM chunks WHERE run_id = $1', [run.id]);   // forced re-index of derived rows only
+  for (let i = 0; i < chunks.length; i++) {
+    const c = chunks[i];
+    await db.query(
+      `INSERT INTO chunks (item_id, run_id, item_version, ordinal, anchor, context, text, legal_tag, client_id, project_id, partners_only, expires_at, current, embedding)
+       VALUES (NULL, $1, NULL, $2, NULL, $3, $4, $5, $6, $7, $8, $9::date, true, $10::vector)`,
+      [run.id, c.ordinal, c.context, c.text, run.legal_tag, run.client_id ?? null, run.project_id, !!tag?.partners_only, tag?.expires_at ?? null, vectorLiteral(vectors[i])]);
+  }
+  return { run_id: run.id, status: 'ok', chunks: chunks.length };
+}
+
+/** A superseded (or hidden) run leaves Find: its chunks stop being current. The rows stay (nothing derived is deleted either). */
+export async function retireRunChunks(db: Db, runId: string): Promise<void> {
+  await db.query('UPDATE chunks SET current = false WHERE run_id = $1 AND current', [runId]);
+}
+
+/** Runs saved before runs were indexed: every visible, non-superseded run without chunks, oldest first. */
+export async function indexPendingRuns(db: Db, embedder: Embedder, opts: { limit?: number } = {}): Promise<{ indexed: number; run_ids: string[] }> {
+  const rows = (await db.query<{ id: string }>(
+    `SELECT r.id::text AS id FROM runs r WHERE NOT r.hidden AND r.status <> 'superseded' AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.run_id = r.id)
+      ORDER BY r.created_at, r.id LIMIT $1`, [Math.max(1, Math.min(opts.limit ?? 200, 1000))])).rows;
+  const run_ids: string[] = [];
+  for (const r of rows) if ((await indexRun(db, r.id, embedder)).status === 'ok') run_ids.push(r.id);
+  return { indexed: run_ids.length, run_ids };
 }

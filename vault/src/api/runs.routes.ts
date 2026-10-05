@@ -1,8 +1,9 @@
 /**
  * Runs (M02). POST validates against run-record, resolves the legal tag
  * (project default ∪ posted tag ∪ every run/document input and parent), dedupes on
- * (job, tool_version, input_hash), inserts and audits. Runs are immutable:
- * PUT/PATCH/DELETE answer 409, supersede creates a new run and marks the old one.
+ * (job, tool_version, input_hash), inserts, indexes the run for Find (wave 7, S31)
+ * and audits. Runs are immutable: PUT/PATCH/DELETE answer 409, supersede creates a
+ * new run, marks the old one and retires its chunks.
  */
 import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
@@ -13,6 +14,8 @@ import {
 } from './common.ts';
 
 import { emitIfEvaluation } from '../analogues/emit.ts';
+import { openEmbedder } from '../ingest/embed.ts';
+import { indexRun, retireRunChunks } from '../ingest/index.ts';
 
 const RUN_COLS = 'id, job, tool_version, project_id, legal_tag, status, supersedes, hidden, created_at, record';
 
@@ -76,7 +79,12 @@ export async function createRun(x: Ctx, rec: any, supersedesId: string | null) {
     await db.query('INSERT INTO run_inputs (run_id, ref, kind, version, hash, role) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING',
       [stored.id, i.ref, i.kind, i.version == null ? null : String(i.version), i.hash ?? null, i.role ?? null]);
   }
-  if (supersedesId) await db.query("UPDATE runs SET status = 'superseded' WHERE id = $1 AND status <> 'superseded'", [supersedesId]);
+  if (supersedesId) {
+    await db.query("UPDATE runs SET status = 'superseded' WHERE id = $1 AND status <> 'superseded'", [supersedesId]);
+    await retireRunChunks(db, supersedesId);   // Find shows the current run, as it shows the current version of a document
+  }
+  // Wave 7 (S31): the run's title, assumptions and outputs are chunked under its own legal tag so Find sees it. Never blocks the save.
+  try { await indexRun(db, stored.id, openEmbedder()); } catch (e) { console.warn('[runs] index failed for', stored.id, (e as Error).message); }
   // Analogue memory (M16): evaluation runs also become a row in the analogue table. Never blocks the save.
   // Only reviewed and final runs enter the analogue table; drafts would be noise. Superseding removes the old row.
   if (stored.status === 'reviewed' || stored.status === 'final') { try { await emitIfEvaluation(db, stored.id); } catch (e) { console.warn('[analogues] emit failed for', stored.id, (e as Error).message); } }

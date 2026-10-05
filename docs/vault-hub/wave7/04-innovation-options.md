@@ -1,0 +1,23 @@
+# Wave 7 — Innovation Options
+
+Tooler phase 4, 5 October 2026. Three responses to the gap statement, each run through the AI-leverage checklist: (a) an LLM reasoning over the firm's own data, (b) pattern recognition the eye would miss, (c) optimisation of parameters set by habit, (d) first drafts a human then edits. The Choice Sheet fixes the order (D64: clear first), the remove list (D65), the UI direction (D66) and the pack's sources (D67); the options differ in how far the outward half goes in this wave and how the public pack and the private record are joined.
+
+## Option A — Clear, state, then the pack and the watch (RECOMMENDED)
+
+Six pull requests in the order D64 chose. PR1 clears every blocker and major snag and applies the remove list, with a hub-health smoke that runs the ten daily-use checks on every push (P69). PR2 makes the Hub an instrument: the stateline in three places (P66, idea B), Today as the globe and the live register with a status strip (P68, ideas A and C), the record panel that shows the record with the passage anchor (P65, R5), numbers as data (idea D), a stable sidebar, a scoped Find, the touch and type pass. PR3 makes the data flow the way engineers think: runs become final by a status route, `project_figures` with unit, as-of and source, `project_milestones` for dated obligations, `project_organisations` for counterparties, a standing endpoint that the stateline and the Claude connector both read, foreground and background in the timeline, the asset hierarchy populated so a nodal run names a well, freshness as a property of the source (P67, P70). PR4 and PR5 build the country opening pack: the source registry and the two generic adapters, snapshots as originals, ten sections drafted only from stored originals with citations enforced, per-section TTLs, the card on the project page, the globe panel line, the Today line, the MCP resource (P61, P62, P64, P71, P72). PR6 adds the licence-round watch with a bid calendar and the confirm-before-it-counts queue (P63), and "have we seen this before" on project creation if a pull request is spare.
+
+AI leverage: (a) the standing strip and the "what changed" lines read the firm's own records; (d) every pack section is a first draft from stored originals that a person can correct, and every round date is a proposal until confirmed; (b) the seen-before check matches a new approach against the firm's own organisations, gazetteer names and embeddings; (c) the age rules G1 to G7 replace the habit of trusting the last number on the page. Cost: PR1 to PR3 are Hub and Vault work with no provider spend; the pack is one to two pounds per country and thirty pence per refresh under a budget. Why recommended: it is the order the owner chose, each pull request leaves the Hub better than it found it, and the pack arrives on a Hub that can hold it.
+
+## Option B — The pack first, on the Hub as it is
+
+Build PR4 to PR6 immediately after a minimal PR1 that fixes only the two blockers and the Find leak, and leave the stateline, Today, the data changes and the remove list to a later wave. AI leverage is the same for the pack. Faster to the new capability by two to three weeks. Rejected by D64 and for a reason of its own: the pack would land on a project page whose "Next step" is a thousand pixels down, beside figures that can never become final, in a Find that cannot see runs; the first live use would judge the pack by the page around it.
+
+## Option C — Clear and state only, pack as Wave 8
+
+PR1 to PR3 as in Option A, then stop; the pack and the watch become Wave 8 after the Hub has run clean for a fortnight. AI leverage is limited to (a) and (c). The cheapest and safest wave, and the one that leaves the gap statement's first half untouched: the Monday morning in a new country stays in Safari. Rejected by D64, which asked for the pack in this wave; kept here as the fallback if PR1 to PR3 uncover more than the snag list found.
+
+## Option D — Model web search to fill the pack's gaps
+
+Option A plus the provider's web search for any section the registry cannot source, with those sections marked unverified until a person confirms them. AI leverage adds (b) over the open web. Rejected by D67: the pack's value is that every sentence opens a dated stored original from a licensed source; an unverified section from a search is the thing the AlphaSense practice (P65) exists to prevent, and the provider's fetch tool warns of exfiltration beside sensitive data. If a country has no public source for a section, the honest answer is "no public register" and the firm's own contacts.
+
+The Markup (`05-markup.md`) specifies Option A.

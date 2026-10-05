@@ -12,13 +12,13 @@ import type { Person } from '../auth.ts';
 import { openEmbedder, type Embedder } from '../ingest/embed.ts';
 import { openReranker } from './rerank.ts';
 import { buildPredicate, type ProjectInfo, type ResolvedScope } from './scope.ts';
-import { hybridSearch, type Reranker, type SearchDeps, type SearchHit } from './search.ts';
+import { maxDistance, hybridSearch, type Reranker, type SearchDeps, type SearchHit } from './search.ts';
 
 export { hybridSearch, passthroughReranker, type SearchDeps, type SearchHit, type Reranker } from './search.ts';
 export { resolveScope, ScopeError, type ProjectInfo, type ResolvedScope } from './scope.ts';
 export { VoyageReranker, openReranker } from './rerank.ts';
 
-export interface SearchOverrides { embed?: (text: string) => Promise<number[]>; reranker?: Reranker }
+export interface SearchOverrides { embed?: (text: string) => Promise<number[]>; reranker?: Reranker; maxDistance?: number }
 let overrides: SearchOverrides = {};
 let embedder: Embedder | undefined;
 let reranker: Reranker | undefined;
@@ -37,6 +37,8 @@ export function searchDeps(): Required<SearchDeps> {
   return {
     embed: (text) => overrides.embed ? overrides.embed(text) : currentEmbedder().embed([text], 'query').then(r => r[0]),
     reranker: { rerank: (q, hits, k) => (overrides.reranker ?? currentReranker()).rerank(q, hits, k) },
+    // The ceiling travels with the embedder: an injected embed() without one keeps the environment default.
+    maxDistance: overrides.maxDistance ?? (overrides.embed ? maxDistance() : currentEmbedder().maxDistance),
   };
 }
 
