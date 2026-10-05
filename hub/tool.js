@@ -41,7 +41,7 @@ function failPage(res, source) {
   const st = res ? res.status : 0;
   let t, en, es;
   if (!toolId) { t = bi('No tool selected', 'Ninguna herramienta seleccionada'); en = 'Open a tool from Today, or add ?id=<tool> to the address.'; es = 'Abra una herramienta desde Hoy, o añada ?id=<herramienta> a la dirección.'; }
-  else if (source === 'none') { t = bi('The Vault is unreachable', 'El Vault no es accesible'); en = 'The catalog could not be loaded from the API or from hub/catalog.json.'; es = 'No se pudo cargar el catálogo desde la API ni desde hub/catalog.json.'; showVault(false); }
+  else if (source === 'none') { t = bi('The Vault is unreachable', 'El Vault no es accesible'); en = 'The catalog could not be loaded from the Vault or from the built-in copy.'; es = 'No se pudo cargar el catálogo desde el Vault ni desde la copia incorporada.'; showVault(false); }
   else { t = bi('Tool not found', 'Herramienta no encontrada'); en = 'There is no tool "' + toolId + '" in the catalog.'; es = 'No existe la herramienta "' + toolId + '" en el catálogo.'; }
   setText($('#t-title'), t.en, t.es);
   add($('#notices'), notice('bad', t.en + '.', t.es + '.', en, es));
@@ -91,7 +91,7 @@ function chips(values) {
 }
 
 function renderManifest(tool) {
-  setText($('#t-path'), 'tools/' + tool.id + '/tool.json');
+  setText($('#t-path'), tool.id);
   const dl = $('#t-manifest');
   dl.textContent = '';
   const row = (en, es, node) => add(dl, mk('dt', null, en, es), node);
@@ -102,8 +102,6 @@ function renderManifest(tool) {
   row('Lifecycle', 'Ciclo de vida', add(mk('dd'), mk('span', 'hub-pill ' + life[2], life[0], life[1])));
   row('Kind', 'Tipo', dv('dd', 'mono', tool.kind));
   row('Entry', 'Entrada', dv('dd', 'mono', tool.entry));
-  if (tool.changelog) row('Changelog', 'Registro de cambios', dv('dd', 'mono', tool.changelog));
-  if (tool.docs) row('Docs', 'Documentación', dv('dd', 'mono', tool.docs));
   row('Produces', 'Produce', chips(tool.produces));
   row('Consumes', 'Consume', chips(tool.consumes));
   const al = mk('dd');
@@ -271,7 +269,7 @@ function renderVersions(tool, byVer) {
       add(mk('td'), v.breaking ? mk('span', 'hub-pill bad', 'Breaking', 'Incompatible') : mk('span', 'hub-pill ghost', 'No', 'No')),
       dv('td', 'mono wrap', (v.modules || []).join(', ')),
       dv('td', 'num', String(byVer.get(v.version) || 0)),
-      dv('td', 'notes', v.notes || firstLine(rel.get(v.version))));
+      dv('td', 'notes', v.notes || firstLine(rel.get(v.version)), { 'data-source-text': 'notes' }));
     add(tb, tr);
   }
   add(table, tb);
@@ -281,6 +279,7 @@ function renderVersions(tool, byVer) {
 function renderChangelog(tool) {
   const host = $('#t-changelog');
   host.textContent = '';
+  host.setAttribute('data-source-text', 'changelog');   // the tool's own release notes, quoted verbatim
   const byV = new Map((tool.versions || []).map((v) => [v.version, v]));
   const rels = (tool.releases || []).filter((r) => r && r.version !== 'Unreleased' && (Object.keys(r.sections || {}).length || r.date));
   if (!rels.length) return void add(host, mk('p', 'hub-muted', 'No changelog entries.', 'Sin entradas en el registro de cambios.'));
@@ -353,7 +352,7 @@ async function init() {
   const tool = byId.get(toolId);
   if (!tool) return failPage(null, source);
   showVault(source === 'api');
-  if (source !== 'api') add($('#notices'), notice('warn', 'The Vault is unreachable.', 'El Vault no es accesible.', 'Showing hub/catalog.json; runs are not available.', 'Se muestra hub/catalog.json; las ejecuciones no están disponibles.'));
+  if (source !== 'api') add($('#notices'), notice('warn', 'The Vault is unreachable.', 'El Vault no es accesible.', 'Showing the built-in catalog; runs are not available.', 'Se muestra el catálogo incorporado; las ejecuciones no están disponibles.'));
 
   const siteRoot = new URL('../', location.href);
   const versions = tool.versions || [];

@@ -67,7 +67,7 @@ test('results render with type icon, highlighted snippet, source path, legal tag
   expect(calls.search[0].get('scope')).toBe(SCOPE);
   expect(calls.people[0].get('scope')).toBe(SCOPE);
   await expect(page.locator('#find-scope')).toHaveValue(SCOPE);
-  await expect(page.locator('#find-count')).toContainText('5 results for “waterflood voidage” in project:' + PROJECT);
+  await expect(page.locator('#find-count')).toContainText('5 results for “waterflood voidage” in Llanos Basin waterflood screening');
 
   const first = results(page).nth(0);
   await expect(first.locator('.r-ico svg')).toHaveCount(1);
@@ -76,7 +76,8 @@ test('results render with type icon, highlighted snippet, source path, legal tag
   await expect(first.locator('.r-title mark')).toHaveText(['Waterflood', 'voidage']);
   await expect(first.locator('.snip mark')).toHaveText(['Voidage', 'waterflood']);
   await expect(first.locator('.snip')).toContainText('<0.5', { useInnerText: true });   // a "<" in the Vault's text is text, never markup
-  await expect(first.locator('.path')).toHaveText(/Llanos Basin waterflood screening · Paper · \d{1,2} \w{3,4} \d{4}/);
+  await expect(first.locator('.r-meta .r-when')).toHaveText(/^\d{1,2} \w{3,4} \d{4}$/);
+  await expect(page.locator('#find-results .find-group[data-project="' + PROJECT + '"] .find-group-name')).toHaveText('Llanos Basin waterflood screening');
   await expect(first.locator('[data-legal-tag="lt-onepetro-sub-2026"]')).toBeVisible();
   await expect(first.locator('.hub-pill')).toHaveText('Paper');
   await expect(first.locator('.find-av')).toHaveCount(1);
@@ -142,29 +143,39 @@ test('W7-AC2: a document hit opens the project page on that record; run hits hav
   await expect(page.locator('.hub-tl-item[data-id="' + DOC + '"]')).toHaveClass(/hilite/);
 });
 
-test('scope is mandatory: nothing is sent without one, the state says so, and the choice is remembered', async ({ page }) => {
+// Wave 7 PR2 (R2, W7-AC6 Find part): a missing scope is a neutral state. The header form on every page carries
+// a hidden scope, so the page rarely sees none; when it does, it searches the firm and says so in one muted
+// line, never a red error. A chosen scope is still remembered and ?scope= still wins.
+test('R2: no scope is a neutral state, the search runs in the firm, one muted line says so, the choice is remembered', async ({ page }) => {
   const calls = await stub(page);
   await page.addInitScript(() => { try { if (!sessionStorage.getItem('e2e-cleared')) { localStorage.removeItem('atc-hub-find-scope'); sessionStorage.setItem('e2e-cleared', '1'); } } catch (e) { /* */ } });
-  await openPage(page);
-  await expect(page.locator('#find-scope')).toHaveValue('');
+  await openPage(page, '?q=' + encodeURIComponent('waterflood voidage'));
+  await expect(results(page)).toHaveCount(5);
+  await expect(page.locator('#find-scope')).toHaveValue('firm');
   await expect(page.locator('#find-scope option')).toHaveText([
-    'Choose a scope…', 'Project: Llanos Basin waterflood screening', 'Project: Orinoco partnership', 'Client: Frontera Energy (all projects)',
+    'Project: Llanos Basin waterflood screening', 'Project: Orinoco partnership', 'Client: Frontera Energy (all projects)',
     'Firm: lessons, templates, firm-tagged', 'Public: regulators, papers, feeds',
   ]);
-  await page.locator('#find-q').fill('waterflood voidage');
-  await page.getByRole('button', { name: 'Find' }).click();
-  await expect(page.locator('#notices [role="alert"]')).toContainText('Scope required.');
-  await expect(page.locator('#find-scope')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.locator('#find-results')).toContainText('Choose a scope');
-  expect(calls.search).toHaveLength(0);
-  expect(calls.people).toHaveLength(0);
+  expect(calls.search.map((s) => s.get('scope'))).toEqual(['firm']);
+  // One neutral line, no alert, no invalid select, no error colour, nothing that reads as SQL.
+  await expect(page.locator('#notices [role="alert"]')).toHaveCount(0);
+  await expect(page.locator('#find-scope')).not.toHaveAttribute('aria-invalid', 'true');
+  const pred = page.locator('#scope-pred');
+  await expect(pred).toHaveAttribute('data-scope-state', 'default');
+  await expect(pred).toContainText('Searching the firm. Change scope ▾');
+  await expect(pred).not.toContainText('scope =');
+  const color = await pred.evaluate((el) => getComputedStyle(el).color);
+  expect(color).not.toBe('rgb(165, 48, 31)');                              // not --bad
+  await expect(page.locator('.find-state')).toHaveCount(0);                 // no "Choose a scope" state card
+  // "Change scope" takes the person to the select.
+  await pred.getByRole('button', { name: /Change scope/ }).click();
+  await expect(page.locator('#find-scope')).toBeFocused();
 
   await page.locator('#find-scope').selectOption('client:frontera');
   await expect(results(page)).toHaveCount(5);
-  await expect(page.locator('#notices [role="alert"]')).toHaveCount(0);
-  await expect(page.locator('#find-scope')).not.toHaveAttribute('aria-invalid', 'true');
-  expect(calls.search.map((s) => s.get('scope'))).toEqual(['client:frontera']);
-  await expect(page.locator('#scope-pred')).toContainText('scope = client:frontera');
+  expect(calls.search.map((s) => s.get('scope'))).toEqual(['firm', 'client:frontera']);
+  await expect(pred).toHaveAttribute('data-scope-state', 'chosen');
+  await expect(pred).toContainText('Across every Frontera Energy project you may see, plus firm and public records.');
   expect(new URL(page.url()).searchParams.get('scope')).toBe('client:frontera');
 
   // A fresh visit without ?scope= restores the remembered scope; ?scope= wins over it.
@@ -172,9 +183,76 @@ test('scope is mandatory: nothing is sent without one, the state says so, and th
   await ready(page);
   await expect(page.locator('#find-scope')).toHaveValue('client:frontera');
   await expect(results(page)).toHaveCount(5);
-  await page.goto('/hub/search.html?q=waterflood&scope=firm');
+  await page.goto('/hub/search.html?q=waterflood&scope=' + encodeURIComponent(SCOPE));
   await ready(page);
-  await expect(page.locator('#find-scope')).toHaveValue('firm');
+  await expect(page.locator('#find-scope')).toHaveValue(SCOPE);
+  await expect(pred).toHaveText('Inside Llanos Basin waterflood screening, plus firm and public records.');
+  await page.locator('#find-scope').selectOption('public');
+  await expect(pred).toContainText('Public records only');
+});
+
+// Wave 7 PR2 (W7-AC6 Find part, R2): results are grouped under the project they belong to, each group headed by the
+// stateline card so the same facts read the same as on the project page and Today; every hit has Open record, which
+// opens the record panel in place, beside the project link that carries ?doc= or ?run=.
+test('W7-AC6: hits are grouped under a stateline card per project; Open record opens the panel in place', async ({ page }) => {
+  const DOC = '00000000-0000-4000-8000-000000000001', RUN = '00000000-0000-4000-8000-000000000002';
+  const project = { id: PROJECT, client_id: 'frontera', name: 'Llanos Basin waterflood screening', status: 'active', default_legal_tag: 'lt-frontera-nda-2026', asset_ids: [], members: ['chris'], contacts: [], created_at: ago(30), closed_at: null, country: 'CO', stage: 'Technical review', stage_history: [{ stage: 'Technical review', at: ago(12), by: 'chris' }], register: { next: 'Issue screening letter', owner: 'Chris' }, last_activity_at: ago(2), run_count: 3, item_count: 6, stale_count: 1 };
+  const item = { id: DOC, type: 'paper', title: 'Waterflood performance and voidage management in Llanos Basin Cretaceous sandstones', created_at: ago(19), authored_at: ago(19), authors: ['gs'], client_id: 'frontera', project_id: PROJECT, asset_ids: [], organisation_ids: [], legal_tag: 'lt-onepetro-sub-2026', origin: { source: 'upload' }, storage_key: null, mime: 'application/pdf', content_hash: 'sha256:' + 'a'.repeat(64), version: 1, supersedes: null, cites: [], filing: {}, extracted: {}, stale: false, tags: [] };
+  const runRec = { id: RUN, job: 'nodal', tool_version: '2.1.0', tool_commit: 'abc1234', author: 'chris', created_at: ago(2), project_id: PROJECT, legal_tag: 'lt-frontera-nda-2026', title: 'Cubiro waterflood: base (re-run on 2.1.0)', status: 'final', supersedes: null, inputs: [], outputs: { npv10_musd: { value: 171.1, unit: 'MUSD' } }, assumptions: {}, params: {}, stale: false, stale_reasons: [] };
+  const other = { ...HITS[4], ref: 'doc:00000000-0000-4000-8000-000000000009', item_id: '00000000-0000-4000-8000-000000000009', project_id: 'orinoco-partnership', title: 'Orinoco injectors', snippet: '## Page 1\nVoidage in Orinoco.' };
+  const fetched = [];
+  await stub(page, {
+    '/api/projects': (u, r) => json(r, { projects: [project, { id: 'orinoco-partnership', name: 'Orinoco partnership', client_id: 'pdo', stage: 'Qualified', register: {}, run_count: 0, item_count: 1, stale_count: 0 }] }),
+    '/api/search': (u, r) => json(r, { hits: [...HITS, other], scope: u.searchParams.get('scope'), took_ms: 4 }),
+    ['/api/items/' + DOC]: (u, r) => { fetched.push('item'); return json(r, item); },
+    ['/api/items/' + DOC + '/versions']: (u, r) => json(r, { item_id: DOC, versions: [] }),
+    ['/api/runs/' + RUN]: (u, r) => { fetched.push('run'); return json(r, runRec); },
+  });
+  await openPage(page, '?q=waterflood&scope=' + encodeURIComponent(SCOPE));
+  await expect(results(page)).toHaveCount(6);
+  // One group per project, in order of first appearance, each headed by the card-size stateline from the same component.
+  const groups = page.locator('#find-results .find-group');
+  await expect(groups).toHaveCount(2);
+  await expect(groups.nth(0)).toHaveAttribute('data-project', PROJECT);
+  await expect(groups.nth(1)).toHaveAttribute('data-project', 'orinoco-partnership');
+  await expect(groups.nth(0).locator('.result')).toHaveCount(5);
+  await expect(groups.nth(1).locator('.result')).toHaveCount(1);
+  const sl = groups.nth(0).locator('[data-stateline="card"]');
+  await expect(sl).toHaveCount(1);
+  await expect(sl).toHaveAttribute('data-project', PROJECT);
+  await expect(sl.locator('[data-token="stage"]')).toContainText('Technical review');
+  await expect(sl.locator('[data-token="next"]')).toContainText('Issue screening letter');
+  await expect(sl.locator('[data-token="runs"]')).toHaveText('3 runs');
+  await expect(sl.locator('[data-token="stale"]')).toHaveText('1 stale');
+  await expect(sl.locator('[data-token="stage"]')).toHaveAttribute('href', '/hub/project.html?id=' + PROJECT + '#stage');
+  await expect(groups.nth(0).locator('.find-group-name')).toHaveAttribute('href', '/hub/project.html?id=' + PROJECT);
+  // Markdown heading markers from the chunker never reach the page.
+  await expect(groups.nth(1).locator('.snip')).toHaveText('Voidage in Orinoco.');
+  await expect(groups.nth(1).locator('.snip')).not.toContainText('#');
+  // Every hit keeps its project link with ?doc= / ?run= and gains Open record.
+  const first = results(page).nth(0);
+  await expect(first.locator('.r-title a')).toHaveAttribute('href', '/hub/project.html?id=' + PROJECT + '&doc=' + DOC);
+  await expect(first.locator('[data-open-record]')).toHaveText('Open record');
+  await expect(page.locator('#record-panel')).toBeHidden();
+  await first.locator('[data-open-record]').click();
+  const rp = page.locator('#record-panel');
+  await expect(rp).toBeVisible();
+  await expect(rp).toHaveAttribute('data-ref', 'doc:' + DOC);
+  await expect(rp.locator('#rp-title')).toHaveText('Waterflood performance and voidage management in Llanos Basin Cretaceous sandstones');
+  await expect(rp.locator('[data-highlights]')).toBeVisible();
+  await expect(rp.locator('.hub-rp-details summary')).toHaveText('Full record');
+  expect(fetched).toEqual(['item']);
+  expect(page.url()).toContain('/hub/search.html');                                     // in place, not the project page
+  // A run hit opens the run; Escape closes the panel and the focus goes back to the trigger.
+  await results(page).nth(1).locator('[data-open-record]').click();
+  await expect(rp).toHaveAttribute('data-ref', 'run:' + RUN);
+  await expect(rp.locator('#rp-title')).toHaveText('Cubiro waterflood: base (re-run on 2.1.0)');
+  await expect(rp.locator('[data-h="status"] [data-status]')).toHaveAttribute('data-status', 'final');
+  await page.keyboard.press('Escape');
+  await expect(rp).toBeHidden();
+  await expect(results(page).nth(1).locator('[data-open-record]')).toBeFocused();
+  // No file names, module ids or acceptance-criterion ids anywhere on the page.
+  expect(await page.locator('body').innerText()).not.toMatch(/SETUP\.md|_KEY\b|\bAC\d+\b|\bM\d\d\b|\.json\b|\.md\b/);
 });
 
 test('a query is needed too: an empty query shows the prompt and sends nothing', async ({ page }) => {
@@ -268,7 +346,8 @@ test('bilingual: every data-en has its data-es, no bare text, and the toggle kee
   await expect(page.locator('label[for="find-scope"]')).toContainText('Alcance');
   await expect(page.locator('#find-q')).toHaveAttribute('placeholder', /voidage de inyección/);
   await expect(page.locator('#find-types [data-type="all"]')).toContainText('Todos los tipos (5)');
-  await expect(results(page).first().locator('.path')).toContainText('Artículo');
+  await expect(results(page).first().locator('.hub-pill')).toHaveText('Artículo');
+  await expect(results(page).first().locator('[data-open-record]')).toHaveText('Abrir registro');
   await expect(page.locator('#find-count')).toContainText('resultados para');
   const es = await audit();
   expect(es.missing).toEqual([]); expect(es.bare).toEqual([]);
@@ -295,11 +374,14 @@ test('accessibility: axe finds no WCAG 2 A/AA violations (results, empty, scope 
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await axe('spanish');
   await page.locator('.nav-lang button[data-lang="en"]').click();
-  await page.locator('#find-scope').selectOption('');
-  await page.locator('#find-q').fill('x');
-  await page.getByRole('button', { name: 'Find' }).click();
-  await expect(page.locator('#notices [role="alert"]')).toBeVisible();
-  await axe('scope error');
+  // The neutral no-scope state (R2) and the record panel open from a hit (W7-AC6).
+  await page.goto('/hub/search.html?q=waterflood');
+  await ready(page);
+  await expect(results(page)).toHaveCount(5);
+  await axe('neutral scope');
+  await results(page).first().locator('[data-open-record]').click();
+  await expect(page.locator('#record-panel')).toBeVisible();
+  await axe('record panel');
 });
 
 test('not indexable: noindex meta, listed in robots.txt, absent from the sitemap, no keys in the page', async ({ page, request }) => {

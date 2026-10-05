@@ -834,3 +834,124 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-sl-flag[data-tone="warn"], .hub-sl-token[data-tone="warn"] { color: #b45309; }
 .hub-stateline .hub-sl-token:nth-child(2) { font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .hub-stateline-full { font-size: 14px; } .hub-sl-title { max-width: 18ch; } }
+
+/* ── Wave 7 PR2 F: type, touch, Find, Settings, Cost ── */
+/* R14: the three families ship with the Hub (hub/fonts/, latin subset, SIL OFL) so a blocked font CDN never
+   drops every label into the system font. style.css keeps its Google Fonts import for the public site; these
+   declarations come later in the cascade and win on the Hub. */
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/playfair-display-400.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/playfair-display-600.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/playfair-display-700.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: italic; font-weight: 400; font-display: swap; src: url('fonts/playfair-display-400-italic.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-style: italic; font-weight: 600; font-display: swap; src: url('fonts/playfair-display-600-italic.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 300; font-display: swap; src: url('fonts/barlow-300.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/barlow-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url('fonts/barlow-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/barlow-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 300; font-display: swap; src: url('fonts/barlow-condensed-300.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/barlow-condensed-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url('fonts/barlow-condensed-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/barlow-condensed-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/barlow-condensed-700.woff2') format('woff2'); }
+
+/* Idea D, numbers as data. Playfair is the page H1 and nothing else; every other heading is Barlow 600, card
+   titles at 15 px. A figure carries .hub-num (Barlow Condensed 600, tabular) and its unit .hub-unit (11 px small
+   caps after it); a delta is a signed figure with a triangle, never a sentence. */
+.hub h2, .hub h3, .hub h4, .hub h5, .hub-panel-head h2, .hub-head h2, #country-panel h3 { font-family: var(--font-body); font-weight: 600; letter-spacing: -.005em; }
+.hub-sec-head h2 { font-size: 1.3rem; }
+.hub h3, .hub-card-head h3, .hub .card h3, .hub-basis h3, .hub-rule h3 { font-size: 15px; line-height: 1.35; }
+.hub-head h1, .hub h1 { font-family: var(--font-display); }
+.hub-num, .hub-kpi .v, .hub-summary .big, .hub-opp-grid .v.big, .hub-preview-grid b, .hub-vint-n, .hub-runbar b, .hub-vgroup-head b, .hub-register td.num, .hub-vintages .num, .hub-ibar .v {
+  font-family: var(--font-label); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: .01em; text-transform: none;
+}
+.hub-kpi .v { font-size: 26px; line-height: 1.2; }
+.hub-unit { font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: .08em; font-variant-caps: all-small-caps; color: var(--muted); margin-left: .3em; vertical-align: baseline; text-transform: none; }
+.hub-num > .hub-unit, .hub-kpi .v .hub-unit { font-size: 11px; }
+.hub-delta { white-space: nowrap; }
+.hub-delta.up { color: var(--ok); } .hub-delta.down { color: var(--bad); }
+.hub-delta.up::before { content: '\25B2\00A0'; font-size: .7em; } .hub-delta.down::before { content: '\25BC\00A0'; font-size: .7em; }
+
+/* R8: labels and pills are 12 px with .14em tracking, everywhere. */
+.hub .label, .hub-pill, .hub-table th, .hub-partners th, .hub-field label, .hub-kv dt, .hub-crumb, .hub-kpi .k, .hub-flag, .hub-kind, .hub-stale, .hub-count, .hub-nav-group,
+.hub-opp-grid .k, .hub-rp-card h4, .hub-brief-block h4, .hub-intel-sec h4, .hub-palette-group h4, .hub-tabs .n, .hub-research-group h4 .n, .hub-tl-date span, .hub-foot, .skip-link,
+.hub-rp-details summary, .hub-opp summary, .hub-mailbox fieldset legend, .hub-dr-send h4, .hub-draft-result h4, .hub-globe-hint, .hub-globe-tip, .hub-src, .hub-changelog-full h5,
+.hub-sl-label, .find-field label, .find-date label, .hub-find button, .hub-palette-btn kbd, .hub-chip-tag, .hub-asset, .hub-lt { font-size: 12px; }
+.hub .label, .hub-pill, .hub-table th, .hub-partners th, .hub-field label, .hub-kv dt, .hub-kpi .k, .hub-flag, .hub-kind, .hub-stale, .hub-nav-group, .hub-opp-grid .k, .hub-rp-card h4,
+.hub-brief-block h4, .hub-intel-sec h4, .hub-palette-group h4, .hub-sl-label, .find-field label, .find-date label, .hub-mailbox fieldset legend, .hub-rp-details summary, .hub-opp summary { letter-spacing: .14em; }
+.hub-pill { padding: 2px 10px; }
+.hub-stateline-card .hub-sl-label, .hub-stateline-row .hub-sl-label { font-size: 12px; }
+
+/* R8: EN/ES is a 36 px segmented control, in the sidebar and in Settings → Language. */
+.hub .nav-lang { display: inline-flex; gap: 2px; padding: 3px; margin: 14px 12px 0; border: 1px solid rgba(255,255,255,.28); border-left: 1px solid rgba(255,255,255,.28); border-top: 1px solid rgba(255,255,255,.28); border-radius: 999px; background: rgba(255,255,255,.04); }
+.hub .nav-lang button { min-height: 36px; min-width: 48px; padding: 0 14px; font-size: 12px; letter-spacing: .14em; border-radius: 999px; color: rgba(255,255,255,.78); transition: background .15s, color .15s; }
+.hub .nav-lang button.active { background: var(--gold); color: var(--navy); }
+.hub .nav-lang button:hover:not(.active) { color: var(--gold); }
+.hub .nav-lang button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hub-lang-seg { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--navy); border-radius: 999px; background: var(--white); }
+.hub-lang-seg button { min-height: 36px; min-width: 48px; padding: 0 14px; border: none; border-radius: 999px; background: none; cursor: pointer; font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .14em; color: var(--navy-mid); transition: background .15s, color .15s; }
+.hub-lang-seg button.active { background: var(--navy); color: var(--white); }
+.hub-lang-seg button:hover:not(.active) { color: var(--gold-ink); }
+
+/* R8: one responsive table pattern. The wrap scrolls sideways, the first column stays put and the right edge fades
+   so a cut-off column reads as "more to the right". Used by the register, headline numbers, partner assignment,
+   the scorecard, the infrastructure lines and the runs table. */
+.hub-table-wrap {
+  position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%;   /* relative: absolutely positioned helpers inside (sr-only) stay inside the scroll box */
+  background:
+    linear-gradient(to right, var(--white) 30%, rgba(255,255,255,0)) left / 48px 100% no-repeat local,
+    linear-gradient(to left, var(--white) 30%, rgba(255,255,255,0)) right / 48px 100% no-repeat local,
+    linear-gradient(to right, rgba(11,31,58,.14), rgba(11,31,58,0)) left / 14px 100% no-repeat scroll,
+    linear-gradient(to left, rgba(11,31,58,.14), rgba(11,31,58,0)) right / 14px 100% no-repeat scroll;
+}
+.hub-table-wrap > table { background: transparent; }
+.hub-table-wrap > table th:first-child, .hub-table-wrap > table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--white); box-shadow: inset -1px 0 0 var(--rule); }
+.hub-table-wrap > table thead th:first-child { background: #FBFAF6; z-index: 2; }
+.hub-table-wrap > table tr:hover td:first-child { background: #FCFBF7; }
+.hub-partners td { white-space: nowrap; }
+.hub-partners input { min-width: 160px; }
+
+/* R9: the sticky Save bar on Settings, shown only while a field is dirty. */
+.hub-savebar {
+  position: sticky; bottom: 0; z-index: 30; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 24px -36px -32px; padding: 12px 36px; background: rgba(255,255,255,.96); border-top: 1px solid var(--gold);
+  box-shadow: 0 -8px 24px rgba(11,31,58,.08); backdrop-filter: blur(6px);
+}
+.hub-savebar .btn-primary { min-height: 44px; }
+.hub-savebar .btn-outline { min-height: 44px; }
+.hub-savebar[data-state="saved"] { border-top-color: var(--ok-line); }
+.hub-sec-you, .hub-sec-firm { margin-top: 28px; }
+.hub-sec-you > .hub-sec-head, .hub-sec-firm > .hub-sec-head { border-bottom: 1px solid var(--gold); padding-bottom: 8px; margin-bottom: 16px; }
+.hub-sec-you .card, .hub-sec-firm .card { margin-bottom: 16px; }
+.hub-sec-firm form .card { margin-bottom: 16px; }
+.hub-lang-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px 20px; }
+#connections-empty, #mailbox-off > p, #sec-plan-your-job > .hub-sec-head p { margin: 0; }
+#connections-empty, #mailbox-off > p { padding: 14px 20px 16px; }
+#mailbox-off > .hub-actions:has(> [hidden]) { padding: 0; }
+
+/* R8: touch. Below 1024 px every control has a 36 px hit area (44 for primary actions and row taps), through
+   padding, not font size. Links inside running prose keep their line. */
+@media (max-width: 1024px) {
+  .hub button, .hub .btn, .hub input:not([type="radio"]):not([type="checkbox"]), .hub select, .hub textarea, .hub summary,
+  .hub-nav a, .hub-chip, .find-chip, .hub-tabs button, .hub-toolbar a, .hub-sl-token, .hub-country, .hub-country-project, .hub-palette-btn,
+  .hub-viewer-tab, .hub-cite, .hub-rp-pivot, .hub-field-pt, .hub-flag, .hub-select, .hub-stage-ctl select, .hub-find, .hub-find input, .hub-find button { min-height: 36px; box-sizing: border-box; }
+  .hub .btn-sm { padding-top: 6px; padding-bottom: 6px; }
+  .hub-tabs button { padding-top: 8px; padding-bottom: 8px; }
+  .hub-stateline-row .hub-sl-token, .hub-stateline-card .hub-sl-token { min-height: 36px; padding: 4px 4px; }
+  .hub-linkbtn, .hub-rp-pivot, .hub-cite { display: inline-block; vertical-align: middle; padding-top: 6px; padding-bottom: 6px; }
+  .hub-crumb a { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; min-width: 36px; padding: 0 4px; margin: 0 -4px; }
+  .hub-find { height: auto; padding: 2px 2px 2px 14px; }
+  .hub-find button { padding: 0 14px; border-radius: 999px; }
+  .hub-side .nav-lang button { min-height: 36px; }
+  .hub-rp-details summary, .hub-opp summary { display: flex; align-items: center; }
+  /* primary actions and row taps */
+  .hub .btn-primary, .hub [type="submit"], .hub-tl-item .hub-tl-title, [data-register-row] a, .hub-tl-item > a, .hub-tl-item > button { min-height: 44px; }
+  .hub-tl-item .hub-tl-title { display: inline-block; vertical-align: middle; padding-top: 12px; padding-bottom: 12px; }
+  [data-register-row] a { display: inline-flex; align-items: center; }
+}
+@media (max-width: 900px) { .hub-savebar { margin: 20px -16px -28px; padding: 10px 16px; } }
+@media (max-width: 640px) {
+  .hub-top { height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px 12px; padding-top: 8px; padding-bottom: 8px; }
+  .hub-find { flex: 1 1 180px; width: auto; min-width: 0; }
+  .hub-palette-btn { margin-left: 0; }
+}
+@media (max-width: 640px) { .hub-kpi .v { font-size: 22px; } }

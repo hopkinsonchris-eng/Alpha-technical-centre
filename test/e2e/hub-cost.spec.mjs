@@ -188,7 +188,7 @@ test('(c) RAGAS: latest scores against their targets, the change since the last 
   await expect(p.locator('svg circle')).toHaveCount(EVAL.length);
   await expect(page.locator('[data-metric="context_recall"] b')).toHaveText('0.96');
   await expect(page.locator('[data-metric="response_relevancy"] b')).toHaveText('0.67');
-  await expect(page.locator('#ragas-note')).toContainText('26 gold questions');
+  await expect(page.locator('#ragas-note')).toContainText('26 reference questions');
 });
 
 test('(c2) a run below target is shown as below target; no runs shows how to make one', async ({ page }) => {
@@ -204,7 +204,88 @@ test('(c2) a run below target is shown as below target; no runs shows how to mak
   await page2.goto('/hub/cost.html');
   await ready(page2);
   await expect(page2.locator('#ragas')).toContainText('No evaluation has run yet');
+  await expect(page2.locator('#ragas')).not.toContainText('npx');
   await expect(page2.locator('[data-metric]')).toHaveCount(0);
+});
+
+/* ── Wave 7 PR2 (R10, R8, R11, idea D): the page fits an iPad, charts need two points, figures are data ── */
+
+test('R10: at 1024×768 nothing overflows the viewport; the scorecard and infrastructure tables scroll inside their wrap with a sticky first column', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await open(page);
+  await expect(page.locator('#sc-table tbody tr')).toHaveCount(PROJECTS.length);
+  const widths = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, win: window.innerWidth, body: document.body.scrollWidth }));
+  expect(widths.doc).toBeLessThanOrEqual(widths.win);
+  expect(widths.body).toBeLessThanOrEqual(widths.win);
+  for (const id of ['#sc-table', '#infra-table']) {
+    const wrap = page.locator(id).locator('xpath=..');
+    await expect(wrap).toHaveClass(/hub-table-wrap/);
+    expect(await wrap.evaluate((el) => getComputedStyle(el).overflowX)).toBe('auto');
+    expect(await page.locator(id + ' tbody td').first().evaluate((el) => getComputedStyle(el).position)).toBe('sticky');
+  }
+  mkdirSync(path.join(ROOT, 'docs/vault-hub/wave7/evidence'), { recursive: true });
+  await page.screenshot({ path: path.join(ROOT, 'docs/vault-hub/wave7/evidence/w7-cost-ipadl.png') });
+});
+
+test('R10: with one evaluation and one week there is a sentence, not a chart; Cache hit rate is hidden until there is a value', async ({ page }) => {
+  const one = evalRun('2026-09-29', 1, 1, 0.9, 0.6);
+  const w0 = monday(monthStart);
+  await open(page, {
+    '/api/eval/results': (u, r) => json(r, { results: [one] }),
+    '/api/cost': (u, r) => json(r, costBody({ weekly: [{ week: w0, calls: 10, tokens_in: 1, tokens_cached: 0, tokens_out: 1, cost_usd: 12, by_feature: {} }], llm: { calls: 442, tokens_in: 14_100_000, tokens_cached: 0, tokens_out: 1_550_000, cost_usd: LLM_TOTAL, cache_hit_rate: null, unpriced_calls: 0 } })),
+  });
+  await expect(page.locator('#ragas svg')).toHaveCount(0);
+  await expect(page.locator('[data-metric="faithfulness"] [data-value]')).toHaveText('1.00');
+  await expect(page.locator('#ragas [data-first-eval]')).toHaveText(/^First evaluation 29 Sept?: faithfulness 1\.00, precision 1\.00\.$/);
+  await expect(page.locator('#weeks [data-week]')).toHaveCount(0);
+  await expect(page.locator('#weeks [data-weeks-note]')).toContainText('One week so far');
+  await expect(page.locator('#weeks [data-weeks-note]')).toContainText('12.00');
+  await expect(page.locator('[data-kpi="cache"]')).toHaveCount(0);
+  await expect(page.locator('[data-kpi]')).toHaveCount(3);
+});
+
+test('R10: with five evaluations and several weeks the charts render, and Cache hit rate shows its value', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#ragas svg')).toHaveCount(2);
+  await expect(page.locator('#ragas [data-first-eval]')).toHaveCount(0);
+  expect(await page.locator('#weeks [data-week]').count()).toBeGreaterThanOrEqual(1);
+  await expect(page.locator('[data-kpi="cache"] [data-value]')).toContainText('35%');
+});
+
+test('idea D: every figure is Barlow Condensed 600 tabular (.hub-num) with its unit in small caps (.hub-unit); the H1 is the only Playfair; labels are 12 px', async ({ page }) => {
+  await open(page);
+  const font = (sel) => page.locator(sel).first().evaluate((el) => { const s = getComputedStyle(el); return { family: s.fontFamily, weight: s.fontWeight, numeric: s.fontVariantNumeric, size: s.fontSize, caps: s.fontVariantCaps }; });
+  for (const sel of ['[data-kpi="total"] .hub-num', '[data-feature="draft"] .c-feat-top .hub-num', '[data-infra-total] .hub-num', '[data-metric="faithfulness"] [data-value]', '[data-score]']) {
+    const f = await font(sel);
+    expect(f.family, sel).toMatch(/Barlow Condensed/);
+    expect(f.weight, sel).toBe('600');
+    expect(f.numeric, sel).toBe('tabular-nums');
+  }
+  const unit = await font('[data-kpi="total"] .hub-unit');
+  expect(unit.size).toBe('11px');
+  expect(unit.caps).toMatch(/small-caps/);
+  expect(await page.locator('[data-kpi="total"] .hub-unit').textContent()).toBe('USD');
+  // Playfair only on the H1.
+  expect((await font('h1')).family).toMatch(/Playfair/);
+  const playfair = await page.evaluate(() => [...document.querySelectorAll('body *')].filter((el) => el.tagName !== 'H1' && el.offsetParent !== null && /Playfair/.test(getComputedStyle(el).fontFamily) && el.childNodes.length && [...el.childNodes].some((n) => n.nodeType === 3 && n.nodeValue.trim())).map((el) => el.tagName + '.' + el.className));
+  expect(playfair).toEqual([]);
+  // Labels and pills are at least 12 px with .14em tracking.
+  const small = await page.evaluate(() => [...document.querySelectorAll('.label, .hub-pill, .hub-table th, .hub-kpi .k, .hub-crumb')].filter((el) => el.offsetParent !== null && parseFloat(getComputedStyle(el).fontSize) < 12).map((el) => el.className + ':' + getComputedStyle(el).fontSize));
+  expect(small).toEqual([]);
+  // Deltas are signed figures with a triangle, not sentences.
+  await expect(page.locator('[data-metric="faithfulness"] [data-delta]')).toHaveClass(/hub-num/);
+  await expect(page.locator('[data-metric="faithfulness"] [data-delta]')).toHaveText(/^\+0\.02/);
+  // The fonts come from hub/fonts, not Google, for the Hub.
+  const faces = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family + ' ' + f.weight));
+  expect(faces).toContain('Barlow Condensed 600');
+  expect(faces).toContain('Playfair Display 700');
+});
+
+test('R11: no file name, environment variable name or id in what a partner reads on Cost & health', async ({ page }) => {
+  await open(page, { '/api/cost': (u, r) => json(r, costBody({ infrastructure: { lines: INFRA, total_usd: INFRA_TOTAL, ceiling_usd: 60, source: 'default', ignored: [] } })) });
+  await expect(page.locator('#notices')).toContainText('planning defaults');
+  const text = await page.locator('body').innerText();
+  expect(text).not.toMatch(/SETUP\.md|_KEY\b|\bAC\d+\b|\bM\d\d\b|\.json\b|\.md\b|infra_costs|RAGAS|gold set/);
 });
 
 test('(d) scorecard grid: a row per project, a cell per rule, and the RAG the server gave', async ({ page }) => {
@@ -283,7 +364,7 @@ test('(g) every element with data-en also has data-es, and rendered text follows
   await page.locator('.nav-lang button[data-lang="es"]').click();
   await expect(page.locator('.hub-crumb b')).toHaveText('Coste y salud');
   await expect(page.locator('#h-cost')).toHaveText('Gasto de tokens por función');
-  await expect(page.locator('[data-feature="draft"] .c-feat-top span')).toContainText('Redacción');
+  await expect(page.locator('[data-feature="draft"] .c-feat-top > span')).toContainText('Redacción');
   await expect(page.locator('#h-alerts')).toHaveText('Alertas de presupuesto');
   await expect(page.locator('[data-alert="draft"]')).toContainText('supera su presupuesto mensual');
   await expect(page.locator('[data-project="putumayo"] td[data-rule="tool-version"] .sr-only')).toHaveText('No medible');

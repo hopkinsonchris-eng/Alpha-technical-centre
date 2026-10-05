@@ -94,201 +94,236 @@
         <div>
           <span class="label" data-en="Hub" data-es="Hub">Hub</span>
           <h1 data-en="Settings" data-es="Ajustes">Settings</h1>
-          <p data-en="Your connected apps and mailbox, then the firm's figures for Plan Your Job." data-es="Sus aplicaciones conectadas y su buzón, y luego las cifras de la firma para Plan Your Job.">Your connected apps and mailbox, then the firm's figures for Plan Your Job.</p>
+          <p data-en="You first: your mailbox, the apps that use the Vault as you, your language. Then the firm's figures for Plan Your Job." data-es="Primero usted: su buzón, las aplicaciones que usan el Vault como usted, su idioma. Luego las cifras de la firma para Plan Your Job.">You first: your mailbox, the apps that use the Vault as you, your language. Then the firm's figures for Plan Your Job.</p>
         </div>
         <div class="hub-status" id="status-strip"></div>
       </div>
 
       <div id="notices" role="status"></div>
 
-      <section class="card hub-connections" id="sec-connections" aria-labelledby="h-connections">
-        <div class="hub-card-head">
-          <div>
-            <h3 id="h-connections" data-en="Connected apps" data-es="Aplicaciones conectadas">Connected apps</h3>
-            <span class="hub-muted" data-en="Apps that use the Vault as you: the Claude app, Claude Code. Each call they make is scoped to what you may see and recorded under your name." data-es="Aplicaciones que usan el Vault como usted: la app de Claude, Claude Code. Cada llamada queda limitada a lo que usted puede ver y registrada a su nombre.">Apps that use the Vault as you: the Claude app, Claude Code. Each call they make is scoped to what you may see and recorded under your name.</span>
-          </div>
-        </div>
-        <ul class="hub-rp-list" id="connections-list"></ul>
-        <p class="hub-muted" id="connections-empty" hidden data-en="No app is connected. In the Claude app: Settings → Connectors → Add custom connector, URL https://www.alpha-technical-centre.com/mcp." data-es="Ninguna aplicación conectada. En la app de Claude: Ajustes → Conectores → Añadir conector personalizado, URL https://www.alpha-technical-centre.com/mcp.">No app is connected. In the Claude app: Settings → Connectors → Add custom connector, URL https://www.alpha-technical-centre.com/mcp.</p>
-      </section>
-
-      <!-- YOUR MAILBOX (wave 6, D60, D61, P58): what the firm holds from your mailbox, your rules, disconnect -->
-      <section class="card hub-mailbox" id="sec-mailbox" aria-labelledby="h-mailbox" hidden>
-        <div class="hub-card-head">
-          <div>
-            <h3 id="h-mailbox" data-en="Your mailbox" data-es="Su buzón">Your mailbox</h3>
-            <p class="hub-muted" id="mailbox-sub" data-en="Mail about the firm's opportunities, both directions, filed into their project files." data-es="El correo sobre las oportunidades de la firma, en ambos sentidos, archivado en sus expedientes.">Mail about the firm's opportunities, both directions, filed into their project files.</p>
-          </div>
-        </div>
-        <div id="mailbox-off" hidden>
-          <p class="hub-muted" id="mailbox-off-text" data-en="No mailbox is connected." data-es="Ningún buzón conectado.">No mailbox is connected.</p>
-          <div class="hub-actions"><button class="btn btn-primary btn-sm" type="button" id="mailbox-connect" data-en="Connect my mailbox" data-es="Conectar mi buzón">Connect my mailbox</button><span class="hub-muted" id="mailbox-connect-status" role="status"></span></div>
-        </div>
-        <div id="mailbox-on" hidden>
-          <dl class="hub-kv" id="mailbox-facts"></dl>
-          <p id="mailbox-held" data-mailbox-held></p>
-          <fieldset>
-            <legend data-en="What the firm sees" data-es="Lo que ve la firma">What the firm sees</legend>
-            <div class="hub-radios" id="mailbox-privacy">
-              <label><input type="radio" name="privacy" value="all"> <span data-en="Everything" data-es="Todo">Everything</span></label>
-              <label><input type="radio" name="privacy" value="subjects"> <span data-en="Subjects only" data-es="Solo asuntos">Subjects only</span></label>
-              <label><input type="radio" name="privacy" value="none"> <span data-en="Nothing" data-es="Nada">Nothing</span></label>
-            </div>
-            <p class="hub-muted" data-en="Lowering this applies to everything already held: Subjects only removes the bodies and attachments; Nothing hides the messages." data-es="Bajar este nivel se aplica a todo lo ya guardado: Solo asuntos elimina cuerpos y adjuntos; Nada oculta los mensajes.">Lowering this applies to everything already held: Subjects only removes the bodies and attachments; Nothing hides the messages.</p>
-            <span class="hub-muted" id="mailbox-privacy-status" role="status"></span>
-          </fieldset>
-          <div class="hub-rules">
-            <fieldset>
-              <legend data-en="Blocked (yours)" data-es="Bloqueados (suyos)">Blocked (yours)</legend>
-              <textarea id="mailbox-blocked" aria-label="Blocked addresses and domains, one per line" placeholder="family@example.com&#10;mybank.com"></textarea>
-              <p class="hub-muted" data-en="Addresses or domains, one per line. Mail with any of them on it is never kept from your mailbox." data-es="Direcciones o dominios, uno por línea. El correo con cualquiera de ellos nunca se guarda desde su buzón.">Addresses or domains, one per line. Mail with any of them on it is never kept from your mailbox.</p>
-              <div class="hub-actions"><button class="btn btn-outline btn-sm" type="button" id="mailbox-rules-save" data-en="Save my rules" data-es="Guardar mis reglas">Save my rules</button><span class="hub-muted" id="mailbox-rules-status" role="status"></span></div>
-            </fieldset>
-            <fieldset id="firm-rules" hidden>
-              <legend data-en="Firm rules (partners)" data-es="Reglas de la firma (socios)">Firm rules (partners)</legend>
-              <p class="hub-muted" id="firm-inherent"></p>
-              <label for="firm-protected" data-en="Protected: hidden when everyone on the message is protected" data-es="Protegidos: oculto cuando todos en el mensaje están protegidos">Protected: hidden when everyone on the message is protected</label>
-              <textarea id="firm-protected" placeholder="partnerfirm.example"></textarea>
-              <label for="firm-blocked" data-en="Blocked: hidden whoever else is on it" data-es="Bloqueados: oculto esté quien esté">Blocked: hidden whoever else is on it</label>
-              <textarea id="firm-blocked" placeholder="recruiter.example"></textarea>
-              <div class="hub-actions"><button class="btn btn-outline btn-sm" type="button" id="firm-rules-save" data-en="Save firm rules" data-es="Guardar reglas de la firma">Save firm rules</button><span class="hub-muted" id="firm-rules-status" role="status"></span></div>
-            </fieldset>
-          </div>
-          <form class="hub-export" id="mailbox-export" novalidate>
-            <label for="export-contact" data-en="Download what is held about a contact" data-es="Descargar lo que se guarda de un contacto">Download what is held about a contact</label>
-            <input id="export-contact" type="text" placeholder="contact id, e.g. maria-fernandez" aria-label="Contact id">
-            <button class="btn btn-outline btn-sm" type="submit" data-en="Download" data-es="Descargar">Download</button>
-          </form>
-          <div class="hub-actions">
-            <button class="btn btn-outline btn-sm" type="button" id="mailbox-disconnect" data-en="Disconnect and hide my synced mail" data-es="Desconectar y ocultar mi correo sincronizado">Disconnect and hide my synced mail</button>
-            <span class="hub-muted" id="mailbox-disconnect-status" role="status"></span>
-          </div>
-        </div>
-      </section>
-
-      <!-- PLAN YOUR JOB (wave 7, S34): the day rates and cost components the public Plan Your Job page reads -->
-      <section id="sec-plan-your-job" aria-labelledby="h-pyj">
+      <!-- YOU: what is yours on this Vault -->
+      <section class="hub-sec-you" id="sec-you" aria-labelledby="h-you">
         <div class="hub-sec-head">
           <div>
-            <span class="label" data-en="Plan Your Job" data-es="Plan Your Job">Plan Your Job</span>
-            <h2 id="h-pyj" data-en="Day rates and cost components" data-es="Tarifas diarias y componentes de coste">Day rates and cost components</h2>
-            <p class="hub-muted" data-en="Saved to the Vault so every machine sees the same rates; this browser keeps a copy as a fallback. Partners change them." data-es="Se guardan en el Vault para que todos los equipos vean las mismas tarifas; este navegador conserva una copia de respaldo. Los socios las cambian.">Saved to the Vault so every machine sees the same rates; this browser keeps a copy as a fallback. Partners change them.</p>
+            <span class="label" data-en="Yours" data-es="Suyo">Yours</span>
+            <h2 id="h-you" data-en="You" data-es="Usted">You</h2>
           </div>
         </div>
-      <form id="rates-form" novalidate>
-        <section aria-labelledby="h-rates">
-          <div class="card">
-            <div class="hub-card-head">
-              <h3 id="h-rates" data-en="Weekly labour rates (USD)" data-es="Tarifas semanales de personal (USD)">Weekly labour rates (USD)</h3>
-              <span class="hub-muted" data-en="per resource, per week" data-es="por recurso, por semana">per resource, per week</span>
+
+        <!-- YOUR MAILBOX (wave 6, D60, D61, P58): what the firm holds from your mailbox, your rules, disconnect -->
+        <section class="card hub-mailbox" id="sec-mailbox" aria-labelledby="h-mailbox" hidden>
+          <div class="hub-card-head">
+            <div>
+              <h3 id="h-mailbox" data-en="Your mailbox" data-es="Su buzón">Your mailbox</h3>
+              <p class="hub-muted" id="mailbox-sub" data-en="Mail about the firm's opportunities, both directions, filed into their project files." data-es="El correo sobre las oportunidades de la firma, en ambos sentidos, archivado en sus expedientes.">Mail about the firm's opportunities, both directions, filed into their project files.</p>
             </div>
-            <div class="hub-form-grid">
-              <div class="hub-field">
-                <label for="r-principal" data-en="Principal" data-es="Principal">Principal</label>
-                <input id="r-principal" type="number" min="0" step="500">
-                <span class="hint" data-en="Technical directors, competent persons, deal leads" data-es="Directores técnicos, personas competentes, líderes de operación">Technical directors, competent persons, deal leads</span>
+          </div>
+          <div id="mailbox-off" hidden>
+            <p class="hub-muted" id="mailbox-off-text" data-en="No mailbox is connected." data-es="Ningún buzón conectado.">No mailbox is connected.</p>
+            <div class="hub-actions"><button class="btn btn-primary btn-sm" type="button" id="mailbox-connect" data-en="Connect my mailbox" data-es="Conectar mi buzón" hidden>Connect my mailbox</button><span class="hub-muted" id="mailbox-connect-status" role="status"></span></div>
+          </div>
+          <div id="mailbox-on" hidden>
+            <dl class="hub-kv" id="mailbox-facts"></dl>
+            <p id="mailbox-held" data-mailbox-held></p>
+            <fieldset>
+              <legend data-en="What the firm sees" data-es="Lo que ve la firma">What the firm sees</legend>
+              <div class="hub-radios" id="mailbox-privacy">
+                <label><input type="radio" name="privacy" value="all"> <span data-en="Everything" data-es="Todo">Everything</span></label>
+                <label><input type="radio" name="privacy" value="subjects"> <span data-en="Subjects only" data-es="Solo asuntos">Subjects only</span></label>
+                <label><input type="radio" name="privacy" value="none"> <span data-en="Nothing" data-es="Nada">Nothing</span></label>
               </div>
-              <div class="hub-field">
-                <label for="r-senior" data-en="Senior" data-es="Senior">Senior</label>
-                <input id="r-senior" type="number" min="0" step="500">
-                <span class="hint" data-en="Lead engineers, discipline heads" data-es="Ingenieros líderes, jefes de disciplina">Lead engineers, discipline heads</span>
-              </div>
-              <div class="hub-field">
-                <label for="r-mid" data-en="Mid-level" data-es="Nivel medio">Mid-level</label>
-                <input id="r-mid" type="number" min="0" step="250">
-                <span class="hint" data-en="Supporting engineers, scribes, analysts" data-es="Ingenieros de apoyo, redactores, analistas">Supporting engineers, scribes, analysts</span>
-              </div>
-              <div class="hub-field">
-                <label for="r-junior" data-en="Junior" data-es="Junior">Junior</label>
-                <input id="r-junior" type="number" min="0" step="250">
-                <span class="hint" data-en="Graduate and junior support roles" data-es="Graduados y roles de apoyo junior">Graduate and junior support roles</span>
-              </div>
+              <p class="hub-muted" data-en="Lowering this applies to everything already held: Subjects only removes the bodies and attachments; Nothing hides the messages." data-es="Bajar este nivel se aplica a todo lo ya guardado: Solo asuntos elimina cuerpos y adjuntos; Nada oculta los mensajes.">Lowering this applies to everything already held: Subjects only removes the bodies and attachments; Nothing hides the messages.</p>
+              <span class="hub-muted" id="mailbox-privacy-status" role="status"></span>
+            </fieldset>
+            <div class="hub-rules">
+              <fieldset>
+                <legend data-en="Blocked (yours)" data-es="Bloqueados (suyos)">Blocked (yours)</legend>
+                <textarea id="mailbox-blocked" aria-label="Blocked addresses and domains, one per line" placeholder="family@example.com&#10;mybank.com"></textarea>
+                <p class="hub-muted" data-en="Addresses or domains, one per line. Mail with any of them on it is never kept from your mailbox." data-es="Direcciones o dominios, uno por línea. El correo con cualquiera de ellos nunca se guarda desde su buzón.">Addresses or domains, one per line. Mail with any of them on it is never kept from your mailbox.</p>
+                <div class="hub-actions"><button class="btn btn-outline btn-sm" type="button" id="mailbox-rules-save" data-en="Save my rules" data-es="Guardar mis reglas">Save my rules</button><span class="hub-muted" id="mailbox-rules-status" role="status"></span></div>
+              </fieldset>
+              <fieldset id="firm-rules" hidden>
+                <legend data-en="Firm rules (partners)" data-es="Reglas de la firma (socios)">Firm rules (partners)</legend>
+                <p class="hub-muted" id="firm-inherent"></p>
+                <label for="firm-protected" data-en="Protected: hidden when everyone on the message is protected" data-es="Protegidos: oculto cuando todos en el mensaje están protegidos">Protected: hidden when everyone on the message is protected</label>
+                <textarea id="firm-protected" placeholder="partnerfirm.example"></textarea>
+                <label for="firm-blocked" data-en="Blocked: hidden whoever else is on it" data-es="Bloqueados: oculto esté quien esté">Blocked: hidden whoever else is on it</label>
+                <textarea id="firm-blocked" placeholder="recruiter.example"></textarea>
+                <div class="hub-actions"><button class="btn btn-outline btn-sm" type="button" id="firm-rules-save" data-en="Save firm rules" data-es="Guardar reglas de la firma">Save firm rules</button><span class="hub-muted" id="firm-rules-status" role="status"></span></div>
+              </fieldset>
             </div>
-            <div class="hub-preview" aria-live="polite">
-              <span class="label" data-en="Implied day rates (÷ 5 working days)" data-es="Tarifas diarias implícitas (÷ 5 días laborables)">Implied day rates (÷ 5 working days)</span>
-              <div class="hub-preview-grid">
-                <div><b id="d-principal">—</b><span class="hub-muted" data-en="Principal / day" data-es="Principal / día">Principal / day</span></div>
-                <div><b id="d-senior">—</b><span class="hub-muted" data-en="Senior / day" data-es="Senior / día">Senior / day</span></div>
-                <div><b id="d-mid">—</b><span class="hub-muted" data-en="Mid-level / day" data-es="Nivel medio / día">Mid-level / day</span></div>
-                <div><b id="d-junior">—</b><span class="hub-muted" data-en="Junior / day" data-es="Junior / día">Junior / day</span></div>
-              </div>
+            <form class="hub-export" id="mailbox-export" novalidate>
+              <label for="export-contact" data-en="Download what is held about a contact" data-es="Descargar lo que se guarda de un contacto">Download what is held about a contact</label>
+              <input id="export-contact" type="text" placeholder="contact id, e.g. maria-fernandez" aria-label="Contact id">
+              <button class="btn btn-outline btn-sm" type="submit" data-en="Download" data-es="Descargar">Download</button>
+            </form>
+            <div class="hub-actions">
+              <button class="btn btn-outline btn-sm" type="button" id="mailbox-disconnect" data-en="Disconnect and hide my synced mail" data-es="Desconectar y ocultar mi correo sincronizado">Disconnect and hide my synced mail</button>
+              <span class="hub-muted" id="mailbox-disconnect-status" role="status"></span>
             </div>
           </div>
         </section>
 
-        <section aria-labelledby="h-adj">
-          <div class="card">
-            <div class="hub-card-head">
-              <h3 id="h-adj" data-en="Cost components: global adjustments" data-es="Componentes de coste: ajustes globales">Cost components: global adjustments</h3>
-              <span class="hub-muted" data-en="applied to all services" data-es="se aplican a todos los servicios">applied to all services</span>
+        <!-- CONNECTED APPS (wave 5): the apps connected through the Vault's own OAuth -->
+        <section class="card hub-connections" id="sec-connections" aria-labelledby="h-connections">
+          <div class="hub-card-head">
+            <div>
+              <h3 id="h-connections" data-en="Connected apps" data-es="Aplicaciones conectadas">Connected apps</h3>
+              <span class="hub-muted" data-en="Apps that use the Vault as you: the Claude app, Claude Code. Each call they make is scoped to what you may see and recorded under your name." data-es="Aplicaciones que usan el Vault como usted: la app de Claude, Claude Code. Cada llamada queda limitada a lo que usted puede ver y registrada a su nombre.">Apps that use the Vault as you: the Claude app, Claude Code. Each call they make is scoped to what you may see and recorded under your name.</span>
             </div>
-            <div class="hub-form-grid">
-              <div class="hub-field">
-                <label for="sw-mult" data-en="Software / tools uplift (%)" data-es="Incremento de software / herramientas (%)">Software / tools uplift (%)</label>
-                <input id="sw-mult" type="number" min="0" max="500" step="5">
-                <span class="hint" data-en="100 = no change · 120 = +20% on all software line items" data-es="100 = sin cambio · 120 = +20% en todas las partidas de software">100 = no change · 120 = +20% on all software line items</span>
-              </div>
-              <div class="hub-field">
-                <label for="misc-mult" data-en="Misc / expenses uplift (%)" data-es="Incremento de varios / gastos (%)">Misc / expenses uplift (%)</label>
-                <input id="misc-mult" type="number" min="0" max="500" step="5">
-                <span class="hint" data-en="100 = no change · 80 = -20% on all misc line items" data-es="100 = sin cambio · 80 = -20% en todas las partidas varias">100 = no change · 80 = -20% on all misc line items</span>
-              </div>
-              <div class="hub-field">
-                <label for="data-mult" data-en="Data / research uplift (%)" data-es="Incremento de datos / investigación (%)">Data / research uplift (%)</label>
-                <input id="data-mult" type="number" min="0" max="500" step="5">
-                <span class="hint" data-en="100 = no change" data-es="100 = sin cambio">100 = no change</span>
-              </div>
-              <div class="hub-field">
-                <label for="margin" data-en="Contractor margin (%)" data-es="Margen del contratista (%)">Contractor margin (%)</label>
-                <input id="margin" type="number" min="0" max="100" step="1">
-                <span class="hint" data-en="Applied on top of all costs; 0 = cost-plus only" data-es="Se aplica sobre todos los costes; 0 = solo coste más">Applied on top of all costs; 0 = cost-plus only</span>
-              </div>
+          </div>
+          <ul class="hub-rp-list" id="connections-list"></ul>
+          <p class="hub-muted" id="connections-empty" hidden data-en="No app is connected. In the Claude app: Settings → Connectors → Add custom connector, URL https://www.alpha-technical-centre.com/mcp." data-es="Ninguna aplicación conectada. En la app de Claude: Ajustes → Conectores → Añadir conector personalizado, URL https://www.alpha-technical-centre.com/mcp.">No app is connected. In the Claude app: Settings → Connectors → Add custom connector, URL https://www.alpha-technical-centre.com/mcp.</p>
+        </section>
+
+        <!-- LANGUAGE (wave 7, R8, R9): the same toggle as the sidebar, as a segmented control -->
+        <section class="card" id="sec-language" aria-labelledby="h-language">
+          <div class="hub-card-head">
+            <div>
+              <h3 id="h-language" data-en="Language" data-es="Idioma">Language</h3>
+              <span class="hub-muted" data-en="Every Hub page on this device, remembered in this browser." data-es="Todas las páginas del Hub en este dispositivo, recordado en este navegador.">Every Hub page on this device, remembered in this browser.</span>
+            </div>
+          </div>
+          <div class="hub-lang-card">
+            <span data-en="Read the Hub in" data-es="Leer el Hub en">Read the Hub in</span>
+            <div class="hub-lang-seg" id="lang-seg" role="group" aria-label="Language">
+              <button type="button" data-lang="en" class="active" aria-label="English">EN</button>
+              <button type="button" data-lang="es" aria-label="Español">ES</button>
             </div>
           </div>
         </section>
-
-        <section aria-labelledby="h-partners">
-          <div class="card">
-            <div class="hub-card-head">
-              <h3 id="h-partners" data-en="Partner assignment" data-es="Asignación de socios">Partner assignment</h3>
-              <span class="hub-muted" data-en="initials shown on scope-of-work documents" data-es="iniciales que figuran en los documentos de alcance">initials shown on scope-of-work documents</span>
-            </div>
-            <div class="hub-table-wrap">
-              <table class="hub-partners">
-                <thead>
-                  <tr>
-                    <th scope="col" data-en="Initials" data-es="Iniciales">Initials</th>
-                    <th scope="col" data-en="Role" data-es="Cargo">Role</th>
-                    <th scope="col" data-en="Partner" data-es="Socio">Partner</th>
-                    <th scope="col" data-en="Charged at" data-es="Facturado a">Charged at</th>
-                  </tr>
-                </thead>
-                <tbody id="partner-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <div class="hub-actions" style="padding-left:0">
-          <button type="submit" class="btn btn-primary" data-en="Save and apply" data-es="Guardar y aplicar">Save and apply</button>
-          <button type="button" class="btn btn-outline" id="reset" data-en="Reset to defaults" data-es="Restablecer valores">Reset to defaults</button>
-          <span id="save-status" role="status" class="hub-muted"></span>
-        </div>
-      </form>
       </section>
 
-      <!-- COST & HEALTH (wave 7, S40): operations telemetry, out of the main navigation, for partners -->
-      <section class="card" id="sec-cost" aria-labelledby="h-cost" hidden>
-        <div class="hub-card-head">
+      <!-- FIRM: the figures Plan Your Job reads; partners change them -->
+      <section class="hub-sec-firm" id="sec-firm" aria-labelledby="h-firm">
+        <div class="hub-sec-head">
           <div>
-            <h3 id="h-cost" data-en="Cost &amp; health" data-es="Coste y salud">Cost &amp; health</h3>
-            <span class="hub-muted" data-en="Token spend by feature, the infrastructure ceiling, retrieval quality and the project scorecards. For partners." data-es="Gasto en tokens por función, el techo de infraestructura, la calidad de recuperación y las fichas de proyecto. Para socios.">Token spend by feature, the infrastructure ceiling, retrieval quality and the project scorecards. For partners.</span>
+            <span class="label" data-en="Firm" data-es="Firma">Firm</span>
+            <h2 id="h-firm" data-en="Firm" data-es="Firma">Firm</h2>
           </div>
         </div>
-        <div class="hub-actions"><a class="btn btn-outline btn-sm" href="/hub/cost.html" data-en="Open Cost &amp; health" data-es="Abrir Coste y salud">Open Cost &amp; health</a></div>
+
+        <!-- PLAN YOUR JOB (wave 7, S34): the day rates and cost components the public Plan Your Job page reads -->
+        <div id="sec-plan-your-job" aria-labelledby="h-pyj">
+          <div class="hub-sec-head">
+            <div>
+              <span class="label" data-en="Plan Your Job" data-es="Plan Your Job">Plan Your Job</span>
+              <h3 id="h-pyj" data-en="Rates and cost components" data-es="Tarifas y componentes de coste">Rates and cost components</h3>
+              <p class="hub-muted" data-en="Saved to the Vault so every machine sees the same figures; this browser keeps a copy as a fallback. Partners change them." data-es="Se guardan en el Vault para que todos los equipos vean las mismas cifras; este navegador conserva una copia de respaldo. Los socios las cambian.">Saved to the Vault so every machine sees the same figures; this browser keeps a copy as a fallback. Partners change them.</p>
+              <p class="hub-muted" id="rates-readonly" hidden></p>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" id="reset" data-en="Reset to defaults" data-es="Restablecer valores">Reset to defaults</button>
+          </div>
+          <form id="rates-form" novalidate>
+            <div class="card" aria-labelledby="h-rates">
+              <div class="hub-card-head">
+                <h3 id="h-rates" data-en="Weekly labour rates (USD)" data-es="Tarifas semanales de personal (USD)">Weekly labour rates (USD)</h3>
+                <span class="hub-muted" data-en="per resource, per week" data-es="por recurso, por semana">per resource, per week</span>
+              </div>
+              <div class="hub-form-grid">
+                <div class="hub-field">
+                  <label for="r-principal" data-en="Principal" data-es="Principal">Principal</label>
+                  <input id="r-principal" type="number" min="0" step="500">
+                  <span class="hint" data-en="Technical directors, competent persons, deal leads" data-es="Directores técnicos, personas competentes, líderes de operación">Technical directors, competent persons, deal leads</span>
+                </div>
+                <div class="hub-field">
+                  <label for="r-senior" data-en="Senior" data-es="Senior">Senior</label>
+                  <input id="r-senior" type="number" min="0" step="500">
+                  <span class="hint" data-en="Lead engineers, discipline heads" data-es="Ingenieros líderes, jefes de disciplina">Lead engineers, discipline heads</span>
+                </div>
+                <div class="hub-field">
+                  <label for="r-mid" data-en="Mid-level" data-es="Nivel medio">Mid-level</label>
+                  <input id="r-mid" type="number" min="0" step="250">
+                  <span class="hint" data-en="Supporting engineers, scribes, analysts" data-es="Ingenieros de apoyo, redactores, analistas">Supporting engineers, scribes, analysts</span>
+                </div>
+                <div class="hub-field">
+                  <label for="r-junior" data-en="Junior" data-es="Junior">Junior</label>
+                  <input id="r-junior" type="number" min="0" step="250">
+                  <span class="hint" data-en="Graduate and junior support roles" data-es="Graduados y roles de apoyo junior">Graduate and junior support roles</span>
+                </div>
+              </div>
+              <div class="hub-preview" aria-live="polite">
+                <span class="label" data-en="Implied day rates (÷ 5 working days)" data-es="Tarifas diarias implícitas (÷ 5 días laborables)">Implied day rates (÷ 5 working days)</span>
+                <div class="hub-preview-grid">
+                  <div><b class="hub-num" id="d-principal">—</b><span class="hub-muted" data-en="Principal / day" data-es="Principal / día">Principal / day</span></div>
+                  <div><b class="hub-num" id="d-senior">—</b><span class="hub-muted" data-en="Senior / day" data-es="Senior / día">Senior / day</span></div>
+                  <div><b class="hub-num" id="d-mid">—</b><span class="hub-muted" data-en="Mid-level / day" data-es="Nivel medio / día">Mid-level / day</span></div>
+                  <div><b class="hub-num" id="d-junior">—</b><span class="hub-muted" data-en="Junior / day" data-es="Junior / día">Junior / day</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" aria-labelledby="h-adj">
+              <div class="hub-card-head">
+                <h3 id="h-adj" data-en="Cost components: global adjustments" data-es="Componentes de coste: ajustes globales">Cost components: global adjustments</h3>
+                <span class="hub-muted" data-en="applied to all services" data-es="se aplican a todos los servicios">applied to all services</span>
+              </div>
+              <div class="hub-form-grid">
+                <div class="hub-field">
+                  <label for="sw-mult" data-en="Software / tools uplift (%)" data-es="Incremento de software / herramientas (%)">Software / tools uplift (%)</label>
+                  <input id="sw-mult" type="number" min="0" max="500" step="5">
+                  <span class="hint" data-en="100 = no change · 120 = +20% on all software line items" data-es="100 = sin cambio · 120 = +20% en todas las partidas de software">100 = no change · 120 = +20% on all software line items</span>
+                </div>
+                <div class="hub-field">
+                  <label for="misc-mult" data-en="Misc / expenses uplift (%)" data-es="Incremento de varios / gastos (%)">Misc / expenses uplift (%)</label>
+                  <input id="misc-mult" type="number" min="0" max="500" step="5">
+                  <span class="hint" data-en="100 = no change · 80 = -20% on all misc line items" data-es="100 = sin cambio · 80 = -20% en todas las partidas varias">100 = no change · 80 = -20% on all misc line items</span>
+                </div>
+                <div class="hub-field">
+                  <label for="data-mult" data-en="Data / research uplift (%)" data-es="Incremento de datos / investigación (%)">Data / research uplift (%)</label>
+                  <input id="data-mult" type="number" min="0" max="500" step="5">
+                  <span class="hint" data-en="100 = no change" data-es="100 = sin cambio">100 = no change</span>
+                </div>
+                <div class="hub-field">
+                  <label for="margin" data-en="Contractor margin (%)" data-es="Margen del contratista (%)">Contractor margin (%)</label>
+                  <input id="margin" type="number" min="0" max="100" step="1">
+                  <span class="hint" data-en="Applied on top of all costs; 0 = cost-plus only" data-es="Se aplica sobre todos los costes; 0 = solo coste más">Applied on top of all costs; 0 = cost-plus only</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" aria-labelledby="h-partners">
+              <div class="hub-card-head">
+                <h3 id="h-partners" data-en="Partner assignment" data-es="Asignación de socios">Partner assignment</h3>
+                <span class="hub-muted" data-en="initials shown on scope-of-work documents" data-es="iniciales que figuran en los documentos de alcance">initials shown on scope-of-work documents</span>
+              </div>
+              <div class="hub-table-wrap">
+                <table class="hub-partners">
+                  <thead>
+                    <tr>
+                      <th scope="col" data-en="Initials" data-es="Iniciales">Initials</th>
+                      <th scope="col" data-en="Role" data-es="Cargo">Role</th>
+                      <th scope="col" data-en="Partner" data-es="Socio">Partner</th>
+                      <th scope="col" data-en="Charged at" data-es="Facturado a">Charged at</th>
+                    </tr>
+                  </thead>
+                  <tbody id="partner-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- COST & HEALTH (wave 7, S40): operations telemetry, out of the main navigation, for partners -->
+        <section class="card" id="sec-cost" aria-labelledby="h-cost" hidden>
+          <div class="hub-card-head">
+            <div>
+              <h3 id="h-cost" data-en="Cost &amp; health" data-es="Coste y salud">Cost &amp; health</h3>
+              <span class="hub-muted" data-en="Token spend by feature, the infrastructure ceiling, retrieval quality and the project scorecards. For partners." data-es="Gasto en tokens por función, el techo de infraestructura, la calidad de recuperación y las fichas de proyecto. Para socios.">Token spend by feature, the infrastructure ceiling, retrieval quality and the project scorecards. For partners.</span>
+            </div>
+          </div>
+          <div class="hub-actions"><a class="btn btn-outline btn-sm" href="/hub/cost.html" data-en="Open Cost &amp; health" data-es="Abrir Coste y salud">Open Cost &amp; health</a></div>
+        </section>
       </section>
 
       <p class="hub-foot" data-en="Internal · Strictly confidential" data-es="Interno · Estrictamente confidencial">Internal · Strictly confidential</p>
+
+      <!-- The sticky Save bar (wave 7, R9): shown only while a field above is dirty -->
+      <div class="hub-savebar" id="save-bar" hidden>
+        <button type="submit" form="rates-form" class="btn btn-primary" data-en="Save and apply" data-es="Guardar y aplicar">Save and apply</button>
+        <button type="button" class="btn btn-outline" id="discard" data-en="Discard changes" data-es="Descartar cambios">Discard changes</button>
+        <span id="save-status" role="status" class="hub-muted"></span>
+      </div>
     </main>
   </div>
 </div>
@@ -322,7 +357,22 @@ const setStatus = (en, es, bad) => {
   const el = $('save-status');
   setText(el, en, es);
   el.style.color = bad ? 'var(--bad)' : 'var(--ok)';
+  if (en) showBar(bad ? 'error' : 'saved');
 };
+
+/* Wave 7 (R9): the Save bar appears when a field is dirty and goes away once the save is in. */
+let dirty = false, lastFilled = null, hideTimer = null;
+const bar = () => $('save-bar');
+function showBar(state) {
+  clearTimeout(hideTimer);
+  bar().removeAttribute('hidden');
+  bar().setAttribute('data-state', state);
+  if (state === 'saved') hideTimer = setTimeout(() => { if (!dirty) hideBar(); }, 4000);
+}
+function hideBar() { clearTimeout(hideTimer); bar().setAttribute('hidden', ''); bar().removeAttribute('data-state'); $('save-status').textContent = ''; }
+function markDirty() { if (!partnerHere && vaultUp) return; dirty = true; $('save-status').textContent = ''; showBar('dirty'); }
+$('rates-form').addEventListener('input', markDirty);
+$('discard').addEventListener('click', () => { dirty = false; fill(lastFilled); hideBar(); });
 const banner = (en, es) => { $('notices').textContent = ''; if (en) add($('notices'), add(mk('div', 'hub-notice warn'), mk('span', null, en, es))); };
 
 /* Vault first; the API answers {key, value, ...}. Wave 7 (S34): the Vault answers 200 with `defaults: true` until a partner
@@ -342,6 +392,7 @@ async function writeVault(cfg) {
 }
 
 function fill(cfg) {
+  lastFilled = cfg ? JSON.parse(JSON.stringify(cfg)) : null;
   const r = (cfg && cfg.rates) || DEFAULTS.rates;
   $('r-principal').value = r.Principal ?? DEFAULTS.rates.Principal;
   $('r-senior').value = r.Senior ?? DEFAULTS.rates.Senior;
@@ -365,8 +416,10 @@ function renderPartners(partners) {
     const tr = mk('tr', 'partner-row', null, null, { 'data-code': p.code, 'data-level': p.level });
     const nameCell = mk('td');
     add(nameCell, mk('input', 'p-name', null, null, { type: 'text', value: p.name, 'aria-label': 'Partner name ' + p.code }));
-    add(tr, dv('td', null, p.code), dv('td', 'p-role', p.role), nameCell,
-      dv('td', null, p.level + (rate ? ' · $' + rate.toLocaleString('en-GB') + '/wk' : '')));
+    const charged = mk('td');
+    add(charged, dv('span', null, p.level));
+    if (rate) add(charged, document.createTextNode(' · '), add(dv('span', 'hub-num', rate.toLocaleString('en-GB')), mk('span', 'hub-unit', 'USD/wk', 'USD/sem')));
+    add(tr, dv('td', null, p.code), dv('td', 'p-role', p.role), nameCell, charged);
     add(tb, tr);
   }
 }
@@ -374,7 +427,8 @@ function renderPartners(partners) {
 function preview() {
   for (const [id, key] of [['principal', 'r-principal'], ['senior', 'r-senior'], ['mid', 'r-mid'], ['junior', 'r-junior']]) {
     const daily = Math.round((parseFloat($(key).value) || 0) / 5);
-    $('d-' + id).textContent = daily ? '$' + daily.toLocaleString('en-GB') : '—';
+    const cell = $('d-' + id); cell.textContent = '';
+    if (daily) add(cell, document.createTextNode(daily.toLocaleString('en-GB')), mk('span', 'hub-unit', 'USD/day', 'USD/día')); else cell.textContent = '—';
   }
 }
 for (const id of ['r-principal', 'r-senior', 'r-mid', 'r-junior']) $(id).addEventListener('input', preview);
@@ -408,8 +462,9 @@ async function loadRole() {
   partnerHere = !!(me.ok && me.body && me.body.role === 'partner');
   if (partnerHere) { $('sec-cost').removeAttribute('hidden'); return; }
   if (!me.ok) return;                                           // the Vault is down: the browser copy stays editable as before
-  for (const el of document.querySelectorAll('#rates-form input, #rates-form button')) el.disabled = true;
-  setStatus('Rates are set by a partner. You can read them here.', 'Las tarifas las fija un socio. Puede consultarlas aquí.');
+  for (const el of document.querySelectorAll('#rates-form input, #rates-form button, #reset, #save-bar button')) el.disabled = true;
+  $('rates-readonly').removeAttribute('hidden');
+  setText($('rates-readonly'), 'Rates are set by a partner. You can read them here.', 'Las tarifas las fija un socio. Puede consultarlas aquí.');
 }
 
 async function load() {
@@ -452,11 +507,13 @@ $('rates-form').addEventListener('submit', async (e) => {
   const cfg = collect();
   const local = lsSet(cfg);
   const remote = vaultUp ? await writeVault(cfg) : false;
+  dirty = false;
   if (remote) setStatus('Saved to the Vault. Plan Your Job will use these rates on next load.', 'Guardado en el Vault. Plan Your Job usará estas tarifas en la próxima carga.');
   else if (vaultUp && lastWrite && lastWrite.status === 403) setStatus('Not saved: ' + ((lastWrite.body && lastWrite.body.error && lastWrite.body.error.message) || 'changing settings is restricted to partners') + '.', 'No guardado: cambiar los ajustes está reservado a los socios.', true);
   else if (local) setStatus('Saved in this browser only; the Vault could not be reached.', 'Guardado solo en este navegador; no se pudo acceder al Vault.', true);
   else setStatus('Save failed.', 'Error al guardar.', true);
   renderPartners(cfg.partners);
+  lastFilled = cfg;
 });
 
 $('reset').addEventListener('click', async () => {
@@ -465,10 +522,18 @@ $('reset').addEventListener('click', async () => {
   try { localStorage.removeItem(STORAGE_KEY); localStorage.setItem(IMPORTED_KEY, '1'); } catch (e) { /* ignore */ }
   if (vaultUp) await api(API_PATH, { method: 'DELETE' });
   fill(null);
+  dirty = false;
   setStatus('Reset to defaults.', 'Valores restablecidos.');
 });
 
 load().finally(() => document.body.setAttribute('data-ready', '1'));
+
+/* Wave 7 (R9): Settings → Language is the sidebar toggle (main.js) as a segmented control; one source of truth. */
+const segButtons = document.querySelectorAll('#lang-seg button');
+const syncSeg = () => { const l = document.documentElement.getAttribute('lang') || 'en'; for (const b of segButtons) b.classList.toggle('active', b.getAttribute('data-lang') === l); };
+for (const b of segButtons) b.addEventListener('click', () => { const side = document.querySelector('aside .nav-lang button[data-lang="' + b.getAttribute('data-lang') + '"]'); if (side) side.click(); syncSeg(); });
+new MutationObserver(syncSeg).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+syncSeg();
 
 /* Wave 5: the apps connected through the Vault's own OAuth (docs/vault-hub/wave5/05-markup.md §1.4). */
 async function loadConnections() {
@@ -506,7 +571,7 @@ async function loadMailbox() {
   if (!m.connected) {
     $('mailbox-on').setAttribute('hidden', ''); $('mailbox-off').removeAttribute('hidden');
     setText($('mailbox-off-text'), m.configured ? 'No mailbox is connected.' : 'Mail capture is not switched on for this Vault yet. Ask Chris.', m.configured ? 'Ningún buzón conectado.' : 'La captura de correo aún no está activada en este Vault. Pregunte a Chris.');
-    $('mailbox-connect').disabled = !m.configured;
+    if (m.configured) $('mailbox-connect').removeAttribute('hidden'); else $('mailbox-connect').setAttribute('hidden', '');
     return;
   }
   $('mailbox-off').setAttribute('hidden', ''); $('mailbox-on').removeAttribute('hidden');
