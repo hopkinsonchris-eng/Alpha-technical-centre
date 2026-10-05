@@ -10,3 +10,7 @@ Tooler phase 2, 5 October 2026. Four questions put to Chris Hopkinson after the 
 | D67 | The country opening pack has a free, server-reachable, licensed source for nine of its ten sections; the service industry has no structured public source anywhere. What may the pack draw on? | "Public licensed sources only (Recommended)" | Regulator open data, ResourceContracts and EITI, the free Chambers and Legal 500 chapters, GEM, EIA, the existing World Monitor card. Every sentence cites a stored original; an empty section says "no public register"; no model web search for gaps, no paid feeds. |
 
 Practices adopted by these answers: P61 to P73 all, with P62 limited to the five countries with open feeds today plus manual seeding, and P65's "verify this" deferred to the passage anchor only. Downstream artifacts that cite these numbers: `03-gap-statement.md`, `04-innovation-options.md`, `05-markup.md`.
+
+## Gate 2
+
+5 October 2026, on `05-markup.md` as written: **"Approved, build it as written (Recommended)"**. Building starts with PR1 Clearance.
