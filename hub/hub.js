@@ -935,6 +935,23 @@ function setupNewProject(person) {
   if (!btn || !form || !person || person.role !== 'partner') return;
   btn.removeAttribute('hidden');
   const name = $('#np-name'), id = $('#np-id'), client = $('#np-client'), tagField = $('#np-tag-field'), tag = $('#np-tag'), notices = $('#np-notices');
+  // Wave 7 (S1, W7-AC1): a client project is created under the client's NDA tag. The picker lists the client's
+  // existing tags from GET /api/legal-tags?client= and offers to create a new one; the tag is posted first, then
+  // the project under it, so confidentiality is structural from the first record.
+  const tagPick = $('#np-tag-pick'), tagNew = $('#np-tag-new'), tagName = $('#np-tag-name'), tagExpires = $('#np-tag-expires');
+  const showTagNew = () => { if (!tagNew) return; if (!tagPick || tagPick.value === 'new') tagNew.removeAttribute('hidden'); else tagNew.setAttribute('hidden', ''); };
+  const loadTags = async (clientId) => {
+    if (!tagPick) return;
+    for (const o of Array.from(tagPick.options)) if (o.value !== 'new') o.remove();
+    const r = await api('/api/legal-tags?client=' + encodeURIComponent(clientId));
+    const tags = r.ok ? listOf(r.body, 'tags').filter((t) => t && t.id && t.client_id === clientId) : [];
+    for (const t of tags) tagPick.insertBefore(dv('option', null, (t.name || t.id) + (t.expires_at ? ' · ' + t.expires_at : ''), { value: t.id }), tagPick.firstChild);
+    tagPick.value = tags.length ? tags[0].id : 'new';
+    if (tag && !tag.value) tag.value = 'lt-' + slugify(clientId) + '-nda-' + new Date().getFullYear();
+    showTagNew();
+  };
+  if (tagPick) tagPick.addEventListener('change', showTagNew);
+  if (tagName && tag) tagName.addEventListener('input', () => { const v = slugify(tagName.value); if (v) tag.value = 'lt-' + v; });
   let idTouched = false, orgsLoaded = false, mode = 'project';
   // Wave 2: the opportunity fields (country, stage, production, risk). Countries come from the globe's polygons.
   const opp = $('#np-opp'), country = $('#np-country'), stage = $('#np-stage'), submit = $('#np-submit');
@@ -965,7 +982,10 @@ function setupNewProject(person) {
   };
   name.addEventListener('input', () => { if (!idTouched) id.value = slugify(name.value); });
   id.addEventListener('input', () => { idTouched = id.value.trim() !== ''; });
-  client.addEventListener('change', () => { if (client.value) tagField.removeAttribute('hidden'); else tagField.setAttribute('hidden', ''); });
+  client.addEventListener('change', () => {
+    if (client.value) { tagField.removeAttribute('hidden'); loadTags(client.value); }
+    else { tagField.setAttribute('hidden', ''); if (tagNew) tagNew.setAttribute('hidden', ''); }
+  });
   const open = async () => {
     form.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); name.focus();
     if (orgsLoaded) return;
@@ -980,7 +1000,8 @@ function setupNewProject(person) {
     ev.preventDefault();
     notices.textContent = '';
     const body = { id: id.value.trim(), name: name.value.trim(), client_id: client.value || null };
-    if (client.value) body.default_legal_tag = tag.value.trim();
+    const creatingTag = !!client.value && (!tagPick || tagPick.value === 'new');
+    if (client.value) body.default_legal_tag = creatingTag ? tag.value.trim() : tagPick.value;
     // Opportunity fields ride along only when given, so a plain project posts exactly what it did before.
     if (mode === 'opportunity') body.status = 'prospect';
     if (country && country.value) body.country = country.value;
@@ -1005,8 +1026,22 @@ function setupNewProject(person) {
       add(notices, notice('bad', 'Check the form.', 'Revise el formulario.', 'A client project needs the id of its legal tag.', 'Un proyecto de cliente necesita el id de su etiqueta legal.'));
       return;
     }
+    if (creatingTag && (!/^lt-[a-z0-9-]{3,64}$/.test(body.default_legal_tag) || !(tagName && tagName.value.trim()) || !(tagExpires && tagExpires.value))) {
+      add(notices, notice('bad', 'Check the form.', 'Revise el formulario.', 'A new NDA tag needs a name, an id starting lt- and the date the NDA expires.', 'Una etiqueta de NDA nueva necesita un nombre, un id que empiece por lt- y la fecha en que vence el NDA.'));
+      return;
+    }
     const sb = form.querySelector('button[type="submit"]');
     sb.disabled = true;
+    if (creatingTag) {
+      const tagBody = { id: body.default_legal_tag, name: tagName.value.trim(), client_id: client.value, expires_at: tagExpires.value };
+      const tr = await api('/api/legal-tags', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(tagBody) });
+      if (!tr.ok && tr.status !== 409) {
+        sb.disabled = false;
+        const msg = (tr.body && tr.body.error && tr.body.error.message) || '';
+        add(notices, notice('bad', 'The NDA tag was not created.', 'La etiqueta del NDA no se creó.', msg || 'The Vault refused it.', msg || 'El Vault la rechazó.'));
+        return;
+      }
+    }
     const res = await api('/api/projects', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
     sb.disabled = false;
     if (res.ok && res.body && res.body.id) { location.href = projectHref(res.body.id); return; }

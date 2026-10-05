@@ -206,9 +206,20 @@
               <span class="hint" data-en="From the organisations in the Vault" data-es="De las organizaciones del Vault">From the organisations in the Vault</span>
             </div>
             <div class="hub-field" id="np-tag-field" hidden>
-              <label for="np-tag" data-en="Legal tag" data-es="Etiqueta legal">Legal tag</label>
-              <input id="np-tag" type="text" autocomplete="off">
-              <span class="hint" data-en="The id of the client's NDA tag, for example lt-frontera-nda-2026. Every record in the project inherits it." data-es="El id de la etiqueta del NDA del cliente, por ejemplo lt-frontera-nda-2026. Cada registro del proyecto la hereda.">The id of the client's NDA tag, for example lt-frontera-nda-2026. Every record in the project inherits it.</span>
+              <label for="np-tag-pick" data-en="NDA tag" data-es="Etiqueta del NDA">NDA tag</label>
+              <select id="np-tag-pick">
+                <option value="new" data-en="Create a new NDA tag" data-es="Crear una etiqueta de NDA nueva">Create a new NDA tag</option>
+              </select>
+              <span class="hint" data-en="Every record in the project inherits the client's NDA tag; only people on the project can see them." data-es="Cada registro del proyecto hereda la etiqueta del NDA del cliente; solo las personas del proyecto pueden verlos.">Every record in the project inherits the client's NDA tag; only people on the project can see them.</span>
+            </div>
+            <div class="hub-field" id="np-tag-new" hidden>
+              <label for="np-tag-name" data-en="NDA name" data-es="Nombre del NDA">NDA name</label>
+              <input id="np-tag-name" type="text" autocomplete="off" placeholder="Frontera NDA 2026">
+              <label for="np-tag" data-en="Tag id" data-es="Id de la etiqueta">Tag id</label>
+              <input id="np-tag" type="text" autocomplete="off" placeholder="lt-frontera-nda-2026">
+              <label for="np-tag-expires" data-en="NDA expires" data-es="El NDA vence">NDA expires</label>
+              <input id="np-tag-expires" type="date">
+              <span class="hint" data-en="The tag is created with the project. Lowercase letters, digits and hyphens, starting lt-." data-es="La etiqueta se crea con el proyecto. Minúsculas, dígitos y guiones, empezando por lt-.">The tag is created with the project. Lowercase letters, digits and hyphens, starting lt-.</span>
             </div>
           </div>
           <details class="hub-opp" id="np-opp">

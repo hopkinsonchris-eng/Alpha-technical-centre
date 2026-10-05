@@ -391,11 +391,15 @@ test('new project: a partner creates a project from Today; the form posts to POS
   expect(posted).toEqual({ id: 'cubiro-2027-review-phase-2', name: 'Cubiro 2027 Review (Phase 2)', client_id: null });
 });
 
-test('new project: a client project asks for its legal tag; an API refusal is shown in the form; associates get no button', async ({ page }) => {
+test('new project (W7-AC1): a client project creates its NDA tag first, then the project under it; an API refusal is shown in the form; associates get no button', async ({ page }) => {
   const cat = seededCatalog();
   const h = baseHandlers(cat);
-  let posted = null;
+  let posted = null, tagPosted = null;
   h['/api/organisations'] = (u, r) => json(r, { organisations: [{ id: 'frontera-energy', name: 'Frontera Energy', kind: 'operator' }] });
+  h['/api/legal-tags'] = (u, r) => {
+    if (r.request().method() === 'POST') { tagPosted = JSON.parse(r.request().postData()); return json(r, { ...tagPosted, classification: 'client-nda' }, 201); }
+    return json(r, { tags: [] });
+  };
   h['/api/projects'] = (u, r) => {
     if (r.request().method() === 'POST') { posted = JSON.parse(r.request().postData()); return json(r, { error: { code: 'unknown_legal_tag', message: 'legal tag "lt-frontera-nda-2026" does not exist' } }, 400); }
     return json(r, { projects: [] });
@@ -408,11 +412,31 @@ test('new project: a client project asks for its legal tag; an API refusal is sh
   await form.locator('#np-name').fill('Cubiro waterflood');
   await form.locator('#np-client').selectOption('frontera-energy');
   await expect(form.locator('#np-tag-field')).toBeVisible();
-  await form.locator('#np-tag').fill('lt-frontera-nda-2026');
+  await expect(form.locator('#np-tag-pick')).toHaveValue('new');          // no tag exists for this client yet
+  await expect(form.locator('#np-tag-new')).toBeVisible();
+  await form.locator('#np-tag-name').fill('Frontera NDA 2026');
+  await expect(form.locator('#np-tag')).toHaveValue('lt-frontera-nda-2026');  // the id follows the name
+  await form.locator('#np-tag-expires').fill('2027-03-31');
   await form.getByRole('button', { name: 'Create project' }).click();
   await expect(form.locator('.hub-notice.bad')).toContainText('legal tag "lt-frontera-nda-2026" does not exist');
+  expect(tagPosted).toEqual({ id: 'lt-frontera-nda-2026', name: 'Frontera NDA 2026', client_id: 'frontera-energy', expires_at: '2027-03-31' });
   expect(posted).toEqual({ id: 'cubiro-waterflood', name: 'Cubiro waterflood', client_id: 'frontera-energy', default_legal_tag: 'lt-frontera-nda-2026' });
   expect(page.url()).toContain('/hub/index.html');   // still here, nothing lost
+
+  // A client with an existing tag: the picker offers it first and no tag is posted.
+  tagPosted = null; posted = null;
+  h['/api/legal-tags'] = (u, r) => json(r, { tags: [{ id: 'lt-frontera-nda-2025', name: 'Frontera NDA 2025', client_id: 'frontera-energy', expires_at: '2026-12-31', classification: 'client-nda' }] });
+  await page.goto('/hub/index.html');
+  await ready(page);
+  await page.getByRole('button', { name: 'New project' }).click();
+  await form.locator('#np-name').fill('Cubiro phase 2');
+  await form.locator('#np-client').selectOption('frontera-energy');
+  await expect(form.locator('#np-tag-pick')).toHaveValue('lt-frontera-nda-2025');
+  await expect(form.locator('#np-tag-new')).toBeHidden();
+  await form.getByRole('button', { name: 'Create project' }).click();
+  await expect(form.locator('.hub-notice.bad')).toBeVisible();
+  expect(tagPosted).toBeNull();
+  expect(posted.default_legal_tag).toBe('lt-frontera-nda-2025');
 
   // An associate cannot create projects (the API requires a partner), so the button is not offered.
   h['/api/me'] = (u, r) => json(r, { ...PARTNER, role: 'associate' });
