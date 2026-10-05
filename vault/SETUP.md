@@ -211,14 +211,15 @@ the connector in the Claude app. Custom connectors need a Pro, Max, Team or
 Enterprise plan; on Team and Enterprise an Owner adds it and each person then
 connects.
 
-1. **Cloudflare Zero Trust → Access → Applications.** Edit **ATC Hub** and
-   remove the `mcp` path (keep `hub` and `api`). Then **Add an application →
-   Self-hosted** twice:
-   - **ATC Connector login**: domain `www.alpha-technical-centre.com`, path
-     `oauth/authorize`; policy `Staff`, Allow, emails ending in the company
-     domain. (The consent page: the Vault itself also refuses this page to
-     anyone Access did not sign in.)
-   - **ATC Connector**: the same domain with the paths `mcp`, `oauth/token`,
+1. **Cloudflare Zero Trust → Access → Applications.** Edit **ATC Hub**:
+   remove the `mcp` path, keep `hub` and `api`, and add the path
+   `oauth/authorize` (hostname `www`). The consent page then signs people in
+   under the same application tag the Vault already checks (`CF_ACCESS_AUD`).
+   If you would rather keep the consent page as its own application, add its
+   AUD tag to `CF_ACCESS_AUD` on Render, comma separated; otherwise the
+   consent page answers "Sign in first". Then **Add an application →
+   Self-hosted** once:
+   - **ATC Connector**: domain `www.alpha-technical-centre.com` with the paths `mcp`, `oauth/token`,
      `oauth/register`, `.well-known/oauth-authorization-server` and
      `.well-known/oauth-protected-resource`; one policy, action **Bypass**,
      Include **Everyone**. The Vault checks its own tokens there, and nothing on

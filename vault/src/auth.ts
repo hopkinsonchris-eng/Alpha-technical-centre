@@ -14,7 +14,7 @@ export interface Person { id: string; email: string; name: string; role: 'partne
 
 export interface AuthConfig {
   teamDomain?: string;      // e.g. alphatc.cloudflareaccess.com
-  audience?: string;        // Access application AUD tag
+  audience?: string;        // Access application AUD tag(s), comma separated when the connector login is its own application
   allowedEmailDomain: string; // alpha-technical-centre.com
   devUserEmail?: string;
   jwks?: JWTVerifyGetKey;   // injected in tests
@@ -38,7 +38,8 @@ export async function verifyAccessJwt(token: string, cfg: AuthConfig): Promise<s
   if (!cfg.jwks || !cfg.audience) throw new AuthError('Access is not configured');
   let payload;
   try {
-    ({ payload } = await jwtVerify(token, cfg.jwks, { audience: cfg.audience, issuer: cfg.teamDomain ? `https://${cfg.teamDomain}` : undefined }));
+    const audience = cfg.audience.split(',').map(a => a.trim()).filter(Boolean);
+    ({ payload } = await jwtVerify(token, cfg.jwks, { audience, issuer: cfg.teamDomain ? `https://${cfg.teamDomain}` : undefined }));
   } catch (e) {
     throw new AuthError(`invalid Access token: ${(e as Error).message}`);
   }
