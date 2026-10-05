@@ -68,6 +68,20 @@ test('W5-AC8: discovery documents name the resource and the server; an unauthent
   await db.close();
 });
 
+test('the service log shows one line per connector request: method, path and status, never the query string', async () => {
+  const { db } = await setup();
+  const lines: string[] = [];
+  const app = await createApp({ db, auth: { allowedEmailDomain: DOMAIN, devUserEmail: `chris@${DOMAIN}` }, version: 'test', log: l => lines.push(l) });
+  await app.request('/.well-known/oauth-authorization-server');
+  await app.request('/oauth/authorize?client_id=nobody&state=secret-state');
+  await app.request('/api/health');
+  assert.equal(lines.length, 2, lines.join('\n'));
+  assert.match(lines[0], /^GET \/\.well-known\/oauth-authorization-server 200 \d+ms$/);
+  assert.match(lines[1], /^GET \/oauth\/authorize 400 \d+ms$/);
+  assert.ok(!lines.join(' ').includes('secret-state'));
+  await db.close();
+});
+
 test('W5-AC9: a public client registers with Claude\'s callback or a loopback; anything else is refused', async () => {
   const { db, anonymous } = await setup();
   const ok = await anonymous.request('/oauth/register', json({ client_name: 'Claude', redirect_uris: ['https://claude.ai/api/mcp/auth_callback', 'http://localhost:3118/callback'], token_endpoint_auth_method: 'none' }));
