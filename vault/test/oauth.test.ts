@@ -36,6 +36,8 @@ async function connect(app: Awaited<ReturnType<typeof createApp>>, clientId: str
   const pageRes = await app.request('/oauth/authorize?' + q);
   const html = await pageRes.text();
   assert.equal(pageRes.status, 200, html.slice(0, 300));
+  // The browser applies form-action to the redirect after Allow too; the client's origin must be allowed.
+  assert.match(pageRes.headers.get('content-security-policy') ?? '', new RegExp(`form-action 'self' ${new URL(redirect).origin.replace(/[.]/g, '\\.')}(;|$)`));
   const nonce = /name="nonce" value="([^"]+)"/.exec(html)![1];
   const allow = await app.request('/oauth/authorize', form({ ...Object.fromEntries(q), nonce, decision: 'allow' }));
   assert.equal(allow.status, 302, await allow.text());
