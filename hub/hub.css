@@ -1080,7 +1080,7 @@ body[data-ready] .hub-project #p-skeleton { display: none; }
 
 /* R8: EN/ES is a 36 px segmented control, in the sidebar and in Settings → Language. */
 .hub .nav-lang { display: inline-flex; gap: 2px; padding: 3px; margin: 14px 12px 0; border: 1px solid rgba(255,255,255,.28); border-left: 1px solid rgba(255,255,255,.28); border-top: 1px solid rgba(255,255,255,.28); border-radius: 999px; background: rgba(255,255,255,.04); }
-.hub .nav-lang button { min-height: 36px; min-width: 48px; padding: 0 14px; font-size: 12px; letter-spacing: .14em; border-radius: 999px; color: rgba(255,255,255,.78); }
+.hub .nav-lang button { min-height: 36px; min-width: 48px; padding: 0 14px; font-size: 12px; letter-spacing: .14em; border-radius: 999px; color: rgba(255,255,255,.78); transition: none; }
 .hub .nav-lang button.active { background: var(--gold); color: var(--navy); }
 .hub .nav-lang button:hover:not(.active) { color: var(--gold); }
 .hub .nav-lang button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
