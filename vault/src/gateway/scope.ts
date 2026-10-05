@@ -6,18 +6,28 @@
  *
  * Scope grammar: project:<id> | client:<id> | firm | public.
  *   public          → public chunks only
- *   firm            → public + firm
- *   client:<id>     → public + firm + that client's client-nda chunks
- *   project:<id>    → same as client:<client of project>, restricted for
- *                     associates to projects they are members of
+ *   firm            → public + every firm-tagged chunk in the Vault
+ *   client:<id>     → public + firm-tagged chunks of that client's projects and of
+ *                     the firm's internal project + that client's client-nda chunks
+ *   project:<id>    → public + firm-tagged chunks of that project and of the firm's
+ *                     internal project + the client's client-nda chunks, restricted
+ *                     for associates to projects they are members of
  * Always: current chunks only, unexpired tags only, partners-only chunks only
  * for partners, multi-client (conflict) tags never.
+ *
+ * Wave 7 (S18, S30): a firm-tagged record filed in one client's project is firm
+ * knowledge in firm scope, but it is not another client's context. Project and
+ * client scope therefore admit firm-tagged chunks by project, not firm-wide; the
+ * firm's own project (lessons, reference sets, papers) stays visible everywhere.
  */
 import type { Person } from '../auth.ts';
 
 export interface ResolvedScope { kind: 'public' | 'firm' | 'client' | 'project'; client_id?: string; project_id?: string; label: string }
 export interface ProjectInfo { id: string; client_id: string | null; members: string[] }
 export interface Predicate { sql: string; params: unknown[] }
+
+/** The firm's internal project: firm-wide records (lessons, reference sets, papers) live here and are context for every project. */
+export const FIRM_PROJECT = 'firm';
 
 export class ScopeError extends Error { constructor(public status: 400 | 403, msg: string) { super(msg); } }
 
@@ -63,13 +73,16 @@ export function buildPredicate(scope: ResolvedScope, person: Person, now: Date, 
     case 'client':
     case 'project': {
       const cid = scope.client_id;
-      if (!cid) { terms.push(`(${isPublic} OR ${isFirm})`); break; }
+      // Firm-tagged chunks: this project's (or this client's projects') plus the firm's own, never another project's.
+      const own = scope.kind === 'project' ? [scope.project_id!] : [...projects.values()].filter(x => x.client_id === cid).map(x => x.id);
+      const firmHere = `(${isFirm} AND c.project_id = ANY(${p([...new Set([FIRM_PROJECT, ...own])])}::text[]))`;
+      if (!cid) { terms.push(`(${isPublic} OR ${firmHere})`); break; }
       let nda = `(lt.classification = 'client-nda' AND lt.client_id = ${p(cid)} AND c.client_id = ${p(cid)})`;
       if (person.role !== 'partner') {
         const mine = [...projects.values()].filter(x => x.client_id === cid && x.members.includes(person.id)).map(x => x.id);
         nda = `(${nda} AND c.project_id = ANY(${p(mine)}::text[]))`;
       }
-      terms.push(`(${isPublic} OR ${isFirm} OR ${nda})`);
+      terms.push(`(${isPublic} OR ${firmHere} OR ${nda})`);
       break;
     }
   }
