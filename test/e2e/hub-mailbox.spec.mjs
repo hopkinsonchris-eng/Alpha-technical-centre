@@ -103,7 +103,7 @@ test('W6-AC3: Your mailbox on Settings shows the connection, what is held, the p
   await page.screenshot({ path: path.join(EVIDENCE, 'w6-your-mailbox.png'), fullPage: false });
   // Privacy: cancel keeps the level; confirm sends it.
   page.once('dialog', (d) => d.dismiss());
-  await sec.locator('#mailbox-privacy input[value="subjects"]').check();
+  await sec.locator('#mailbox-privacy input[value="subjects"]').click();   // click, not check: a cancelled confirm puts the radio straight back
   await expect(sec.locator('#mailbox-privacy input[value="all"]')).toBeChecked();
   expect(calls.patch.length).toBe(0);
   page.once('dialog', (d) => d.accept());

@@ -563,6 +563,7 @@ const ago = (iso) => { const d = new Date(iso); if (isNaN(d)) return ''; const m
 const lines = (t) => t.split(/\r?\n|,/).map((x) => x.trim()).filter(Boolean);
 const jsonInit = (method, body) => ({ method, headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
 let mailboxMe = null;
+let mailboxPrivacy = 'all';   // the level the Vault holds; a cancelled confirm puts the radio back to it at once, no reload
 async function loadMailbox() {
   const sec = $('sec-mailbox');
   const r = await api('/api/me/mailbox');
@@ -587,6 +588,7 @@ async function loadMailbox() {
   row('send', 'Sending', 'Envío', c.can_send ? mk('span', null, 'from this address', 'desde esta dirección') : mk('span', 'hub-muted', 'not granted: reconnect to allow', 'no concedido: reconecte para permitirlo'));
   setText($('mailbox-held'), 'Held from this mailbox: ' + (k.messages || 0) + ' messages · ' + (k.filed || 0) + ' filed · ' + (k.waiting || 0) + ' waiting · ' + (k.hidden_internal || 0) + ' internal (hidden) · ' + (k.hidden_bulk || 0) + ' bulk (hidden)',
     'Guardado de este buzón: ' + (k.messages || 0) + ' mensajes · ' + (k.filed || 0) + ' archivados · ' + (k.waiting || 0) + ' en espera · ' + (k.hidden_internal || 0) + ' internos (ocultos) · ' + (k.hidden_bulk || 0) + ' masivos (ocultos)');
+  mailboxPrivacy = c.privacy;
   for (const i of document.querySelectorAll('#mailbox-privacy input')) i.checked = i.value === c.privacy;
   const rules = await api('/api/me/mailbox/rules');
   if (rules.ok && rules.body) {
@@ -609,7 +611,10 @@ $('mailbox-connect').addEventListener('click', async () => {
 });
 $('mailbox-privacy').addEventListener('change', async (ev) => {
   const level = ev.target.value;
-  if (level !== 'all' && !confirm(document.documentElement.lang === 'es' ? (level === 'none' ? '¿Ocultar todo lo guardado de su buzón? Se eliminan los originales.' : '¿Eliminar cuerpos y adjuntos de todo lo guardado de su buzón?') : (level === 'none' ? 'Hide everything held from your mailbox? The originals are removed.' : 'Remove the bodies and attachments of everything held from your mailbox?'))) { await loadMailbox(); return; }
+  if (level !== 'all' && !confirm(document.documentElement.lang === 'es' ? (level === 'none' ? '¿Ocultar todo lo guardado de su buzón? Se eliminan los originales.' : '¿Eliminar cuerpos y adjuntos de todo lo guardado de su buzón?') : (level === 'none' ? 'Hide everything held from your mailbox? The originals are removed.' : 'Remove the bodies and attachments of everything held from your mailbox?'))) {
+    for (const i of document.querySelectorAll('#mailbox-privacy input')) i.checked = i.value === mailboxPrivacy;
+    return;
+  }
   const r = await api('/api/me/mailbox', jsonInit('PATCH', { privacy: level }));
   if (r.ok) { const a = r.body.applied || {}; await loadMailbox(); setText($('mailbox-privacy-status'), 'Saved. ' + (a.hidden || 0) + ' hidden, ' + (a.originals_purged || 0) + ' originals removed.', 'Guardado. ' + (a.hidden || 0) + ' ocultos, ' + (a.originals_purged || 0) + ' originales eliminados.'); }
   else setText($('mailbox-privacy-status'), 'Could not save.', 'No se pudo guardar.');
