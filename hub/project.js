@@ -751,7 +751,9 @@ function renderOpportunity(ctx) {
     setOrDrop('risk_score', numOrNull($('#op-risk-score')));
     setOrDrop('thesis', thesis.value.trim());
     setOrDrop('next', next.value.trim());
-    setOrDrop('next_due', $('#op-next-due').value.trim());
+    // The date is a request to the milestone, not a register field: send it only when one is given.
+    const nextDueVal = $('#op-next-due').value.trim();
+    if (nextDueVal) register.next_due = nextDueVal;
     const body = { country: country.value || null, lat: numOrNull($('#op-lat')), lon: numOrNull($('#op-lon')), register };
     save.disabled = true;
     const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
