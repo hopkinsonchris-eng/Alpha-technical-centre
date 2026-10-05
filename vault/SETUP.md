@@ -276,6 +276,26 @@ needed). The Vault reads it hourly and the Hub then shows the app's real
 version instead of "Version unverified"; see
 `docs/vault-hub/wave2/hub-sidecar.md`.
 
+## 7.5 The country opening pack and the round watch (wave 7, about 5 minutes once)
+
+The pack assembles itself when a project is created with a country, and the watch reads the regulators' round
+pages weekly. Both draft only from stored public originals; nothing runs without the drafting key.
+
+1. **The key on the crons.** The blueprint adds three cron jobs, `atc-vault-country-pack`, `atc-vault-country-pack-refresh`
+   and `atc-vault-round-watch`. Apply the blueprint (step 2) so they exist, then confirm each is linked to the
+   `vault-storage` environment group or carries `ANTHROPIC_API_KEY` and `DATABASE_URL` itself. The API service already has both.
+2. **Optional keys.** `EIA_API_KEY` (free, eia.gov/opendata) fills the production section; without it that section says
+   "not configured". `PACK_BUDGET_GBP` caps one build (default 2); `S2_API_KEY` and `OPENALEX_KEY` from §5 feed the
+   literature section.
+3. **Try it.** Open a project with a country (or create one): the Country pack card shows ten rows; press **Assemble the
+   pack**; within the hour the rows fill with a headline sentence each and a freshness dot. Tap a row for the sentences,
+   each with a chip that opens the original at the cited passage. The globe's country panel shows the same summary.
+4. **Round dates.** Each Monday the watch files any regulator page that changed and proposes dated stages with the
+   sentence that states them; they wait under Queues as "Round date" until someone presses **Confirm the date**.
+   Confirmed deadlines appear on Today under "Deadlines in the next 90 days" and ring the country on the globe.
+5. **Sources.** `vault/master/country-sources.json` lists every source with its licence and attribution line; add a
+   country or a regulator page there by pull request. Mexico, Namibia and Guyana are seeded by hand and say so on the card.
+
 ## 8. The pull request
 
 Pull request #15 is open. Review it on GitHub, then **Merge**. Render
