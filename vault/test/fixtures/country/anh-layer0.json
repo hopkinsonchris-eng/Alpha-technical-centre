@@ -1,0 +1,158 @@
+{
+  "currentVersion": 11.1,
+  "id": 0,
+  "name": "GDB.Tierras_Version_Vigente_Geovisor_Vista",
+  "type": "Feature Layer",
+  "displayField": "CONTRAT_ID",
+  "description": "",
+  "copyrightText": "",
+  "geometryType": "esriGeometryPolygon",
+  "objectIdField": "OBJECTID",
+  "capabilities": "Query",
+  "maxRecordCount": 2000,
+  "supportedQueryFormats": "JSON, geoJSON, PBF",
+  "extent": {
+    "xmin": 3683735.023,
+    "ymin": 1090467.2918999996,
+    "xmax": 5684465.2776,
+    "ymax": 3223408.6084000003,
+    "spatialReference": {
+      "wkid": 9377,
+      "latestWkid": 9377,
+      "xyTolerance": 0.001,
+      "zTolerance": 0.001,
+      "mTolerance": 0.001,
+      "falseX": -618700,
+      "falseY": -8436100,
+      "xyUnits": 10000,
+      "falseZ": -100000,
+      "zUnits": 10000,
+      "falseM": -100000,
+      "mUnits": 10000
+    }
+  },
+  "fields": [
+    {
+      "name": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "alias": "OBJECTID"
+    },
+    {
+      "name": "CONTRAT_ID",
+      "type": "esriFieldTypeString",
+      "alias": "CONTRAT_ID",
+      "length": 4
+    },
+    {
+      "name": "CONTRATO_N",
+      "type": "esriFieldTypeString",
+      "alias": "CONTRATO_N",
+      "length": 50
+    },
+    {
+      "name": "AREA_NOMBR",
+      "type": "esriFieldTypeString",
+      "alias": "AREA_NOMBR",
+      "length": 30
+    },
+    {
+      "name": "FECHA_FIRM",
+      "type": "esriFieldTypeDate",
+      "alias": "FECHA_FIRM",
+      "length": 8
+    },
+    {
+      "name": "CLASIFICAC",
+      "type": "esriFieldTypeString",
+      "alias": "CLASIFICAC",
+      "length": 20
+    },
+    {
+      "name": "TIPO_CONTR",
+      "type": "esriFieldTypeString",
+      "alias": "TIPO_CONTR",
+      "length": 254
+    },
+    {
+      "name": "ESTAD_AREA",
+      "type": "esriFieldTypeString",
+      "alias": "ESTAD_AREA",
+      "length": 50
+    },
+    {
+      "name": "SUBTIPO",
+      "type": "esriFieldTypeString",
+      "alias": "SUBTIPO",
+      "length": 30
+    },
+    {
+      "name": "OPERADOR",
+      "type": "esriFieldTypeString",
+      "alias": "OPERADOR",
+      "length": 70
+    },
+    {
+      "name": "OPR_ABR",
+      "type": "esriFieldTypeString",
+      "alias": "OPR_ABR",
+      "length": 30
+    },
+    {
+      "name": "AREA_HA",
+      "type": "esriFieldTypeDouble",
+      "alias": "AREA_HA"
+    },
+    {
+      "name": "CUENCA_SED",
+      "type": "esriFieldTypeString",
+      "alias": "CUENCA_SED",
+      "length": 20
+    },
+    {
+      "name": "SUPERFICIE",
+      "type": "esriFieldTypeString",
+      "alias": "SUPERFICIE",
+      "length": 20
+    },
+    {
+      "name": "YACIMIENTO",
+      "type": "esriFieldTypeString",
+      "alias": "YACIMIENTO",
+      "length": 20
+    },
+    {
+      "name": "PROCESO",
+      "type": "esriFieldTypeString",
+      "alias": "PROCESO",
+      "length": 50
+    },
+    {
+      "name": "LEYENDA",
+      "type": "esriFieldTypeString",
+      "alias": "LEYENDA",
+      "length": 100
+    },
+    {
+      "name": "URL_MINUTA",
+      "type": "esriFieldTypeString",
+      "alias": "URL_MINUTA",
+      "length": 254
+    },
+    {
+      "name": "GlobalID",
+      "type": "esriFieldTypeGUID",
+      "alias": "GlobalID",
+      "length": 38
+    },
+    {
+      "name": "GDB_GEOMATTR_DATA",
+      "type": "esriFieldTypeBlob",
+      "alias": "GDB_GEOMATTR_DATA"
+    },
+    {
+      "name": "AREA_HA_OC",
+      "type": "esriFieldTypeDouble",
+      "alias": "AREA_HA_OC"
+    }
+  ]
+}

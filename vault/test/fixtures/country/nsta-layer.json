@@ -1,0 +1,226 @@
+{
+  "currentVersion": 12,
+  "id": 0,
+  "name": "PETROLEUM_LICENCE_SUBAREAS_BY_EQUITY_ED50_PROD_A",
+  "type": "Feature Layer",
+  "serviceItemId": "7fbe40788f52431e8b6f3980ffd349ce",
+  "displayField": "SUBSHORTNM",
+  "description": "",
+  "copyrightText": "",
+  "defaultVisibility": true,
+  "editingInfo": {
+    "lastEditDate": 1791198833230,
+    "schemaLastEditDate": 1791198956345,
+    "dataLastEditDate": 1791198956345
+  },
+  "geometryType": "esriGeometryPolygon",
+  "objectIdField": "OBJECTID",
+  "uniqueIdField": {
+    "name": "OBJECTID",
+    "isSystemMaintained": true
+  },
+  "globalIdField": "",
+  "capabilities": "Query,Extract",
+  "maxRecordCount": 2000,
+  "standardMaxRecordCount": 2000,
+  "supportedQueryFormats": "JSON, geoJSON, PBF",
+  "extent": {
+    "xmin": -4.6,
+    "ymin": 50.5773549277135,
+    "xmax": 3.14219888888889,
+    "ymax": 62,
+    "spatialReference": {
+      "wkid": 4230,
+      "latestWkid": 4230
+    }
+  },
+  "fields": [
+    {
+      "name": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "alias": "OBJECTID"
+    },
+    {
+      "name": "SUBAREAID",
+      "type": "esriFieldTypeInteger",
+      "alias": "Subarea id"
+    },
+    {
+      "name": "SUBSHORTNM",
+      "type": "esriFieldTypeString",
+      "alias": "Subarea short name",
+      "length": 50
+    },
+    {
+      "name": "SUBAREANAM",
+      "type": "esriFieldTypeString",
+      "alias": "Subarea name",
+      "length": 200
+    },
+    {
+      "name": "BLOCKREF",
+      "type": "esriFieldTypeString",
+      "alias": "Block reference",
+      "length": 100
+    },
+    {
+      "name": "BLCKSTRTDT",
+      "type": "esriFieldTypeDate",
+      "alias": "Block start date",
+      "length": 8
+    },
+    {
+      "name": "LICTYPE",
+      "type": "esriFieldTypeString",
+      "alias": "Licence type",
+      "length": 50
+    },
+    {
+      "name": "LICNO",
+      "type": "esriFieldTypeInteger",
+      "alias": "Licence number"
+    },
+    {
+      "name": "LICREF",
+      "type": "esriFieldTypeString",
+      "alias": "Licence reference",
+      "length": 50
+    },
+    {
+      "name": "LICSUBTYPE",
+      "type": "esriFieldTypeString",
+      "alias": "Licence sub type",
+      "length": 50
+    },
+    {
+      "name": "LICSTARTDT",
+      "type": "esriFieldTypeDate",
+      "alias": "Licence start date",
+      "length": 8
+    },
+    {
+      "name": "INITENDDT",
+      "type": "esriFieldTypeDate",
+      "alias": "Licence initial term end date",
+      "length": 8
+    },
+    {
+      "name": "SECENDDT",
+      "type": "esriFieldTypeDate",
+      "alias": "Licence second term end date",
+      "length": 8
+    },
+    {
+      "name": "LICENDDT",
+      "type": "esriFieldTypeDate",
+      "alias": "Licence end date",
+      "length": 8
+    },
+    {
+      "name": "LICSTATUS",
+      "type": "esriFieldTypeString",
+      "alias": "Licence status",
+      "length": 100
+    },
+    {
+      "name": "RNDTYPE",
+      "type": "esriFieldTypeString",
+      "alias": "Round type",
+      "length": 50
+    },
+    {
+      "name": "RNDNO",
+      "type": "esriFieldTypeInteger",
+      "alias": "Round number"
+    },
+    {
+      "name": "LOCATION",
+      "type": "esriFieldTypeString",
+      "alias": "Location",
+      "length": 200
+    },
+    {
+      "name": "ADMORG",
+      "type": "esriFieldTypeString",
+      "alias": "Administrative organisation",
+      "length": 200
+    },
+    {
+      "name": "ADMORGGRP",
+      "type": "esriFieldTypeString",
+      "alias": "Admin organisation group",
+      "length": 200
+    },
+    {
+      "name": "LICORG",
+      "type": "esriFieldTypeString",
+      "alias": "Licensee organisation",
+      "length": 2048
+    },
+    {
+      "name": "LICORGGRP",
+      "type": "esriFieldTypeString",
+      "alias": "Licensee organisation group",
+      "length": 2048
+    },
+    {
+      "name": "OPORG",
+      "type": "esriFieldTypeString",
+      "alias": "Operator organisation",
+      "length": 200
+    },
+    {
+      "name": "OPORGGRP",
+      "type": "esriFieldTypeString",
+      "alias": "Operator organisation group",
+      "length": 200
+    },
+    {
+      "name": "EQORGGRP",
+      "type": "esriFieldTypeString",
+      "alias": "Organisation groups with equity",
+      "length": 2048
+    },
+    {
+      "name": "EQORG",
+      "type": "esriFieldTypeString",
+      "alias": "Organisations with equity",
+      "length": 2048
+    },
+    {
+      "name": "RNDSTARTDT",
+      "type": "esriFieldTypeDate",
+      "alias": "Round start date",
+      "length": 8
+    },
+    {
+      "name": "RNDENDDT",
+      "type": "esriFieldTypeDate",
+      "alias": "Round end date",
+      "length": 8
+    },
+    {
+      "name": "EQGRPHOLD",
+      "type": "esriFieldTypeString",
+      "alias": "Equity group holder",
+      "length": 200
+    },
+    {
+      "name": "EQUITY",
+      "type": "esriFieldTypeDouble",
+      "alias": "Equity percentage"
+    },
+    {
+      "name": "ORIGIDATUM",
+      "type": "esriFieldTypeString",
+      "alias": "Original datum",
+      "length": 50
+    },
+    {
+      "name": "OPEN_DATA",
+      "type": "esriFieldTypeString",
+      "alias": "Open data",
+      "length": 200
+    }
+  ]
+}
