@@ -22,6 +22,8 @@
      GET /api/projects/:id/standing      wave 7 PR3 (H1, W7-AC12): the "Where it stands" strip under the stateline: the figure per
                                          job with unit, as-of and status, open decisions, counterparties, deadlines, since you opened
      GET /api/assets/:id/file            wave 7 PR3 (H3, W7-AC14): the asset panel (runs, documents, analogues, wells) and the counts
+     GET/POST /api/countries/:code/pack  wave 7 PR5 (M, W7-AC19): the Country pack card (ten sections, dots, Assemble or Refresh, the job
+                                         polled while it runs) and the section sheet whose chips open the original at the cited sentence
      POST /api/runs/:id/status           wave 7 PR3 (H6, W7-AC11): Mark reviewed (members) and Mark final (partners), from the run panel
    Every string a person reads carries data-en and data-es.
    ============================================================ */
@@ -36,6 +38,7 @@ import { annotate, fmtPct } from './components/vintage-table.js';
 import './components/vintage-table.js';
 import './components/lineage-graph.js';
 import { stateline } from './components/stateline.js';
+import { packController, packCard, packSheetBody, orderedSections } from './components/country-pack.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const DAY = 864e5;
@@ -1697,7 +1700,7 @@ function showTimelineFiltered(filter) {
   if (tl) { tl.filter = filter; tl.scrollIntoView({ block: 'start' }); }
 }
 /** The address's hash: a tab, or (wave 7 R1) one of the stateline's targets, which is acted on and then folded back to the tab. */
-const ACTION_HASH = /^(stage|next|file|tab-runs|tab-docs|stale|rec=.+)$/;
+const ACTION_HASH = /^(stage|next|file|tab-runs|tab-docs|stale|rec=.+|pack(-[a-z]+)?)$/;
 let currentTab = 'timeline';
 function routeHash() {
   const h = (location.hash || '#timeline').slice(1);
@@ -1709,6 +1712,11 @@ function routeHash() {
   else if (h === 'tab-runs') showTimelineFiltered('run');
   else if (h === 'tab-docs') showTimelineFiltered('docs');
   else if (h === 'stale') showTimelineFiltered('stale');
+  else if (h === 'pack' || h.startsWith('pack-')) {
+    // Wave 7 PR5 (M): the card into view; #pack-<section> opens that section's sheet (the Today line lands here).
+    const card = $('#p-pack');
+    if (card && !card.hasAttribute('hidden')) { card.scrollIntoView({ block: 'start' }); if (h.length > 5) openPackSection(h.slice(5)); else { const b = card.querySelector('[data-pack-assemble]'); if (b) b.focus(); } }
+  }
   else if (h.startsWith('rec=')) {
     const ref = decodeURIComponent(h.slice(4));
     showTab('timeline');
@@ -1815,6 +1823,72 @@ async function openRecord({ ref, title, node, entry, trigger, passage, highlight
   // The passage anchor: the first highlighted match (or the cited passage) scrolled into view inside the panel.
   const anchor = body.querySelector('[data-anchor]');
   if (anchor) anchor.scrollIntoView({ block: 'center' });
+}
+
+/* ── wave 7 PR5 (M, W7-AC19): the country pack card and its section sheet ── */
+
+let packUi = null;              // { ctl } for the project's country, so a re-render or a hash can reach the loaded pack
+let packSheetClose = null;
+
+/** The section sheet: title, status and as-of, the sentences with a chip per citation, what changed, the questions, the sources, the caveat. */
+function openPackSheet(section, trigger) {
+  const sheet = $('#pack-sheet'), scrim = $('#pack-scrim');
+  if (!sheet || !section) return;
+  closePackSheet();
+  const t = section.title || {};
+  setText($('#h-pack-sheet'), t.en || section.section, t.es || t.en || section.section);
+  sheet.setAttribute('data-section', section.section);
+  const body = $('#pack-sheet-body'); body.textContent = '';
+  add(body, packSheetBody(section, {
+    // A chip opens the record panel on the original with the sentence as the highlight (what Find does with ?q=) and as the cited passage.
+    onCite: ({ itemId, sentence, source }) => {
+      const back = trigger;
+      closePackSheet();
+      const text = String(sentence || '').replace(/[.!?\u3002]+\s*$/, '');
+      openRecord({ ref: 'doc:' + itemId, title: source ? source.attribution : undefined, trigger: back, highlight: text || null, passage: sentence || null });
+    },
+  }));
+  packSheetClose = openSheet(sheet, scrim, trigger, () => { packSheetClose = null; });
+  const closeBtn = $('#pack-close'); if (closeBtn) closeBtn.onclick = () => closePackSheet();
+}
+function closePackSheet() { if (packSheetClose) { const c = packSheetClose; packSheetClose = null; c(); } }
+
+/** Opens the sheet for a section id from the loaded pack (the #pack-<section> hash the Today line lands on). */
+function openPackSection(id) {
+  const host = $('#p-pack');
+  if (!packUi || !packUi.ctl.pack || !host || host.hasAttribute('hidden')) return false;
+  const s = orderedSections(packUi.ctl.pack).find((x) => x.section === id);
+  if (!s) return false;
+  openPackSheet(s, host.querySelector('[data-pack-open="' + id + '"]'));
+  return true;
+}
+
+/**
+ * The Country pack card: ten rows in section order with the headline and the freshness dot, the header line and
+ * Assemble the pack (never built) or Refresh (built). The card is hidden when the Vault has no pack route (404 or 501)
+ * and absent when the project has no country; a running job is polled every ten seconds until it ends.
+ */
+function renderPack(ctx) {
+  const host = $('#p-pack');
+  if (!host) return Promise.resolve(null);
+  if (packUi) { packUi.ctl.stop(); packUi = null; }
+  const p = ctx.project;
+  if (!p.country || isHoldingProject(p)) { host.textContent = ''; host.setAttribute('hidden', ''); host.setAttribute('data-pack-state', 'no-country'); return Promise.resolve(null); }
+  const ctl = packController(p.country, (pack, state, info) => {
+    if (state === 'unavailable') { host.textContent = ''; host.setAttribute('hidden', ''); host.setAttribute('data-pack-state', 'unavailable'); return; }
+    host.removeAttribute('hidden');
+    packCard(host, pack, {
+      state, failed: !!(info && info.failed),
+      onOpen: (s, b) => openPackSheet(s, b),
+      onAssemble: async (b) => {
+        b.disabled = true;
+        const r = await ctl.assemble();
+        if (!(r.ok || r.status === 202)) add(pnotices(), notice(r.status === 403 ? 'warn' : 'bad', 'The pack was not queued.', 'El paquete no se puso en cola.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.')));
+      },
+    });
+  });
+  packUi = { ctl };
+  return ctl.load();
 }
 
 /* ── tab contents ────────────────────────────────────────────────────── */
@@ -2047,6 +2121,7 @@ async function init() {
   renderResearch(ctx, researchOk ? rsR : null);              // after the tabs exist: the status line, the Research tab and its count
   if (canWriteProject(ctx)) draftUi = mountDraft(ctx, { openRecord });  // wave 5: Write to… beside Research
   ctx.refreshTimeline = () => refreshTimeline(ctx);
+  await renderPack(ctx);                                     // wave 7 PR5 (M): the Country pack card, before the hash can land on a section
   $('#p-body').removeAttribute('hidden');
   const sk = $('#p-skeleton'); if (sk) sk.setAttribute('hidden', '');
   routeHash();

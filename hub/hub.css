@@ -1350,3 +1350,68 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 .hub .hub-brief-date { font-variant-numeric: tabular-nums; }
 .hub .hub-brief .hub-notice[data-brief-due] { margin-top: 10px; }
 .hub .hub-country-project .flags .hub-risk-tag { padding: 0; }
+
+/* ── Wave 7 PR5 M: the country pack ── */
+/* The card on the project page (W7-AC19): between the standing strip and the File disclosure; ten rows in two columns, one tap each */
+.hub-project .hub-pack-card { margin-top: 14px; padding: 14px 20px 12px !important; }
+.hub-project .hub-pack-card[hidden] { display: none; }
+.hub .hub-pack-head { align-items: flex-start; gap: 12px; }
+.hub .hub-pack-head h3 { margin-bottom: 2px; }
+.hub .hub-pack-summary { font-size: 13px; color: var(--muted); display: inline; line-height: 1.5; }
+.hub .hub-pack-summary .hub-num, .hub .hub-pack-line .hub-num { font-family: var(--font-label); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--navy); font-size: 14px; }
+.hub .hub-pack-summary .hub-unit, .hub .hub-pack-line .hub-unit { font-family: var(--font-body); font-size: 13px; font-weight: 400; letter-spacing: 0; text-transform: none; font-variant: normal; color: var(--muted); }
+.hub .hub-pack-sep { color: var(--gold); }
+.hub .hub-pack-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 12px; }
+.hub .hub-pack-job { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.hub .hub-pack-job[data-failed] { color: var(--bad); }
+.hub .hub-pack-job[hidden] { display: none; }
+.hub .hub-pack-rows { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+.hub .hub-pack-row { border-top: 1px solid var(--rule); min-width: 0; }
+.hub .hub-pack-open { display: grid; grid-template-columns: 12px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 1px; align-items: center; width: 100%; min-height: 44px; margin: 0; padding: 7px 6px; border: 0; background: none; text-align: left; font: inherit; color: var(--navy); cursor: pointer; border-radius: var(--r); }
+.hub .hub-pack-open:hover, .hub .hub-pack-open:focus-visible { background: var(--cream); outline: none; box-shadow: inset 0 0 0 2px var(--gold); }
+.hub .hub-pack-dot { grid-row: 1 / span 2; width: 10px; height: 10px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--gold); background: var(--gold); }
+.hub .hub-pack-dot[data-status="fresh"] { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.22); }
+.hub .hub-pack-dot[data-status="due"] { background: #D9912A; border-color: #D9912A; }
+.hub .hub-pack-dot[data-status="stale"] { background: #C0392B; border-color: #C0392B; }
+.hub .hub-pack-dot[data-status="unreachable"] { background: transparent; border-color: #9CA3AF; }
+.hub .hub-pack-dot[data-status="empty"] { background: #C7CDD6; border-color: #C7CDD6; }
+.hub .hub-pack-title { font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); line-height: 1.3; }
+.hub .hub-pack-headline { font-size: 13.5px; line-height: 1.35; color: var(--navy); overflow-wrap: anywhere; }
+.hub .hub-pack-headline.hub-muted { color: var(--muted); }
+.hub .hub-pack-caveat { margin: -4px 6px 8px 28px; font-size: 12px; line-height: 1.35; color: var(--gold-ink); font-style: italic; max-width: none; }
+.hub .hub-pack-spend { margin: 8px 0 0; }
+.hub .hub-pack-spend .hub-num { font-size: 12px; }
+/* The section sheet: the sentences as prose, each chip the source's attribution and fetch date, the blocks beneath */
+.hub .hub-pack-sheet .hub-sheet-head h3 { margin-top: 2px; }
+.hub .hub-pack-sheet .hub-sheet-body { padding: 12px 20px 22px; }
+.hub .hub-pack-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0 0 10px; font-size: 12.5px; color: var(--muted); max-width: none; }
+.hub .hub-pack-meta .hub-pill { font-size: 12px; }
+.hub .hub-pack-sentences { display: flex; flex-direction: column; gap: 8px; }
+.hub .hub-pack-sentence { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--navy); max-width: none; }
+.hub button.hub-pack-chip { font-family: var(--font-body); font-size: 12px; line-height: 1.3; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: 1px; cursor: pointer; }
+.hub button.hub-pack-chip:hover, .hub button.hub-pack-chip:focus-visible { background: var(--gold); color: var(--navy); outline: none; }
+.hub .hub-pack-block { margin-top: 14px; }
+.hub .hub-pack-block h4 { font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+.hub .hub-pack-block ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.45; color: var(--navy-mid); }
+.hub .hub-pack-block ul.hub-pack-sources { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: 4px; }
+.hub .hub-pack-sources li { overflow-wrap: anywhere; }
+.hub .hub-pack-sources li .hub-pill { font-size: 12px; vertical-align: middle; }
+.hub .hub-pack-sheet .hub-pack-caveat { margin: 14px 0 0; padding-top: 10px; border-top: 1px dashed var(--rule); }
+.hub .hub-pack-sheet [data-no-sentences] { margin: 0; max-width: none; }
+@media (min-width: 1200px) { .hub #pack-scrim:not([hidden]) { display: block !important; } }
+/* The globe's country panel: the pack line under the risk line, and the Today line in What came in */
+.hub .hub-pack-line { display: block; line-height: 1.6; max-width: none; }
+.hub .hub-pack-line[hidden] { display: none; }
+.hub .hub-pack-line .hub-pill { font-size: 12px; }
+.hub .hub-pack-worst { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; }
+.hub #country-pack-assemble { margin-left: 4px; }
+.hub .hub-activity-line.hub-pack-line { margin-top: 8px; }
+.hub .hub-pack-cite { text-decoration: none; white-space: normal; max-width: none; overflow: visible; padding: 2px 10px; line-height: 1.4; }
+.hub .hub-pack-cite .hub-num { font-family: var(--font-label); font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 1100px) { .hub .hub-pack-rows { grid-template-columns: 1fr; } }
+@media (max-width: 1024px) {
+  .hub .hub-pack-open { min-height: 44px; }
+  .hub button.hub-pack-chip { white-space: normal; min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
+  .hub #country-pack-assemble, .hub .hub-pack-cite { min-height: 36px; display: inline-flex; align-items: center; }
+}
+@media (max-width: 640px) { .hub-project .hub-pack-card { padding: 12px 14px 10px !important; } .hub .hub-pack-head { flex-direction: column; } .hub .hub-pack-actions { justify-content: flex-start; } }
