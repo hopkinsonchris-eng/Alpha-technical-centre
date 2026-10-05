@@ -4,17 +4,22 @@
  * base64 or hex; the sealed form is `v1.<iv>.<ciphertext>.<tag>` in base64url. A missing key is a configuration
  * error reported where the token would be stored, never a silent fallback to plaintext.
  */
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
 const b64url = (b: Buffer) => b.toString('base64url');
 const fromB64url = (s: string) => Buffer.from(s, 'base64url');
 
+/**
+ * The key: 32 bytes as hex (64 characters) or base64 (44 characters), or any other secret of at least 32 characters
+ * (Render's Generate button makes one), from which the 32-byte key is derived by SHA-256. Shorter values are refused.
+ */
 export function tokenKeyFromEnv(env: NodeJS.ProcessEnv = process.env): Buffer | null {
   const raw = env.VAULT_TOKEN_KEY?.trim();
   if (!raw) return null;
-  const key = /^[0-9a-fA-F]{64}$/.test(raw) ? Buffer.from(raw, 'hex') : Buffer.from(raw, 'base64');
-  if (key.length !== 32) throw new Error('VAULT_TOKEN_KEY must be 32 bytes (base64 or hex)');
-  return key;
+  if (/^[0-9a-fA-F]{64}$/.test(raw)) return Buffer.from(raw, 'hex');
+  if (/^[A-Za-z0-9+/]{43}=$/.test(raw)) { const b = Buffer.from(raw, 'base64'); if (b.length === 32) return b; }
+  if (raw.length < 32) throw new Error('VAULT_TOKEN_KEY must be at least 32 characters (Render: Generate a value)');
+  return createHash('sha256').update(raw, 'utf8').digest();
 }
 
 export function sealSecret(plain: string, key: Buffer): string {
