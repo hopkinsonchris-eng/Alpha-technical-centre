@@ -214,6 +214,23 @@ services:
       - key: S2_API_KEY
         sync: false
 
+  # Weekly country pack refresh (wave 7 PR5, W7-AC20): rebuilds the due and stale pack sections of countries with an
+  # active project under PACK_BUDGET_GBP per country; the nightly staleness job marks them.
+  - type: cron
+    name: atc-vault-country-pack-refresh
+    runtime: node
+    rootDir: vault
+    schedule: "0 5 * * 1"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/country-pack-refresh.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: PACK_BUDGET_GBP
+        sync: false
+
   # Weekly dream (M15): proposes lessons into the review queue.
   - type: cron
     name: atc-vault-weekly-dream

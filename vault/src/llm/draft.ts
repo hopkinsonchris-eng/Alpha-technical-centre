@@ -31,6 +31,8 @@ export interface Source { ref: string; title: string; why: string; snippet?: str
 export interface DraftContext {
   scope: string; project: any; organisation?: any; contacts?: any[]; dispatches?: any[]; contracts?: any[]; counterparties?: Counterparties | null;
   runs: any[]; sources: Source[]; lessons: any[]; who_to_ask: Array<{ person: string; last: string; on: string }>; sub_queries: string[]; house_style: string; letterhead?: string;
+  /** Wave 7 PR5 (W7-AC19): the country pack's stored originals for the project's country (public, under the firm project), citable like any source. */
+  pack_sources?: Source[];
 }
 /** Wave 7 (S19): no drafting provider means no draft, said plainly; never a silent template. The route answers 503 with this. */
 export class NoProviderError extends Error {
@@ -204,6 +206,9 @@ export async function assembleContext(db: Db, person: Person, req: DraftRequest,
   const scored = findings.map((f: any) => { const text = `${f.title} ${f.extracted?.quote ?? ''}`.toLowerCase(); let n = 0; for (const w of words) if (text.includes(w)) n++; return { f, n }; }).filter(x => x.n >= 2).sort((a, b) => b.n - a.n);
   for (const { f } of scored.slice(0, 5)) if (!seen.has(`doc:${f.id}`)) seen.set(`doc:${f.id}`, { ref: `doc:${f.id}`, title: f.title, why: 'research finding', snippet: f.extracted?.quote ?? undefined, date: ymd(f.authored_at ?? f.created_at) });
   ctx.sources = [...seen.values()].slice(0, 12);
+  // Wave 7 PR5 (W7-AC19): the pack's originals are sources the drafter may cite when the project's country has a pack.
+  // They are public by construction (lt-public under the firm project, checked again here), so every scope admits them.
+  ctx.pack_sources = await packSources(db, project.country, req.brief);
   // Colleagues who last worked the topic: authors of the runs and sources.
   const authors = (await db.query<any>(`SELECT author AS person, max(created_at) AS last, max(job) AS on FROM runs WHERE project_id = $1 AND NOT hidden GROUP BY author ORDER BY last DESC LIMIT 3`, [req.project_id])).rows;
   ctx.who_to_ask = authors.filter(a => a.person !== person.id).map(a => ({ person: a.person, last: new Date(a.last).toISOString().slice(0, 10), on: a.on }));
@@ -211,10 +216,46 @@ export async function assembleContext(db: Db, person: Person, req: DraftRequest,
   return ctx;
 }
 
+/**
+ * The stored originals the country's pack was built from (the head version of each section), as sources: title,
+ * section, fetch date and the passage that best matches the brief. Only public, visible items under the firm project.
+ */
+export async function packSources(db: Db, country: string | null | undefined, brief: string, limit = 8): Promise<Source[]> {
+  const cc = typeof country === 'string' ? country.trim().toUpperCase() : '';
+  if (!cc) return [];
+  const heads = (await db.query<any>('SELECT section, source_items, built_at FROM country_packs WHERE country = $1 AND superseded_by IS NULL ORDER BY section, version DESC', [cc])).rows;
+  const seenSection = new Set<string>(), sectionOf = new Map<string, string>();
+  for (const h of heads) {
+    if (seenSection.has(h.section)) continue;
+    seenSection.add(h.section);
+    for (const id of h.source_items ?? []) if (!sectionOf.has(id)) sectionOf.set(id, h.section);
+  }
+  const ids = [...sectionOf.keys()];
+  if (!ids.length) return [];
+  const items = (await db.query<any>(`SELECT i.id::text AS id, i.title, i.extracted, coalesce(i.authored_at, i.created_at) AS at, i.origin->>'fetched_at' AS fetched_at FROM items i JOIN legal_tags lt ON lt.id = i.legal_tag
+      WHERE i.id = ANY($1::uuid[]) AND NOT i.hidden AND lt.classification = 'public' AND i.project_id = 'firm'`, [ids])).rows;
+  const chunks = (await db.query<any>('SELECT item_id::text AS item_id, text FROM chunks WHERE item_id = ANY($1::uuid[]) AND current ORDER BY item_id, ordinal', [ids])).rows;
+  const textOf = new Map<string, string[]>();
+  for (const c of chunks) (textOf.get(c.item_id) ?? textOf.set(c.item_id, []).get(c.item_id)!).push(c.text);
+  const words = brief.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 4);
+  const titles: Record<string, string> = { legal: 'Legal framework', licensing: 'Licensing and the current round', fiscal: 'Fiscal terms', companies: 'Who works there', service: 'The service industry', regulator: 'Regulator and data room', production: 'Production, reserves and market', risk: 'Risk and context', literature: 'Technical literature', questions: 'What no source answered' };
+  const out: Array<Source & { score: number }> = [];
+  for (const it of items) {
+    const parts = textOf.get(it.id) ?? [String(it.extracted?.text ?? '')];
+    // The passage with the most brief words, else the opening.
+    let best = parts[0] ?? '', bestN = -1;
+    for (const p of parts) { const l = p.toLowerCase(); let n = 0; for (const w of words) if (l.includes(w)) n++; if (n > bestN) { bestN = n; best = p; } }
+    const section = sectionOf.get(it.id) ?? '';
+    out.push({ ref: `doc:${it.id}`, title: it.title, why: `country pack: ${titles[section] ?? section}`, snippet: best.replace(/\s+/g, ' ').trim().slice(0, 400), date: ymd(it.fetched_at ?? it.at), score: bestN });
+  }
+  return out.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)).slice(0, limit).map(({ score: _s, ...s }) => s);
+}
+
 export function allowedRefs(ctx: DraftContext): Set<string> {
   const s = new Set<string>();
   for (const r of ctx.runs) s.add(`run:${r.id}`);
   for (const x of ctx.sources) s.add(x.ref);
+  for (const x of ctx.pack_sources ?? []) s.add(x.ref);
   for (const l of ctx.lessons) s.add(`lesson:${l.id}`);
   for (const d of ctx.dispatches ?? []) s.add(`doc:${d.item_id}`);
   for (const c of ctx.contracts ?? []) s.add(`doc:${c.id}`);
@@ -256,6 +297,7 @@ export function userPrompt(req: DraftRequest, ctx: DraftContext): string {
   }
   lines.push(`RUNS: ${ctx.runs.map(r => `${r.title ?? r.job} (${r.job}@${r.tool_version}, ${r.status}${r.stale ? ', STALE' : ''}) outputs ${JSON.stringify(r.outputs)} [run:${r.id}]`).join(' | ') || 'none'}`);
   lines.push(`SOURCES: ${ctx.sources.map(s => `"${s.title}" — ${s.snippet ?? ''} [${s.ref}]`).join(' | ') || 'none'}`);
+  if (ctx.pack_sources?.length) lines.push(`COUNTRY PACK ORIGINALS (public, ${String(ctx.project.country ?? '').trim()}): ${ctx.pack_sources.map(s => `"${s.title}" (${s.why}${s.date ? `, fetched ${s.date}` : ''}) — ${s.snippet ?? ''} [${s.ref}]`).join(' | ')}`);
   lines.push(`LESSONS: ${ctx.lessons.map(l => `${l.claim} [lesson:${l.id}]`).join(' | ') || 'none'}`);
   if (ctx.who_to_ask.length) lines.push(`COLLEAGUES WHO WORKED THIS: ${ctx.who_to_ask.map(w => `${w.person} (${w.on}, ${w.last})`).join('; ')}`);
   return lines.join('\n');
@@ -284,5 +326,6 @@ export async function draft(db: Db, person: Person, req: DraftRequest, provider:
   }
   if (!ctx.sources.length && !ctx.runs.length) warnings.push('no runs or documents were found in scope; the draft is skeletal');
   const questions = [...checked.questions, ...figures.questions];
-  return { draft: figures.paragraphs.join('\n\n'), paragraphs: figures.paragraphs, citations: checked.citations, sources: ctx.sources, who_to_ask: ctx.who_to_ask, warnings, questions, usage, model, context: ctx };
+  // The pack's originals are offered with the sources, so a cited Act gets its chip like any other record.
+  return { draft: figures.paragraphs.join('\n\n'), paragraphs: figures.paragraphs, citations: checked.citations, sources: [...ctx.sources, ...(ctx.pack_sources ?? [])], who_to_ask: ctx.who_to_ask, warnings, questions, usage, model, context: ctx };
 }

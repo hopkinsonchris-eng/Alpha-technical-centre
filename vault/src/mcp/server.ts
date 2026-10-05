@@ -33,6 +33,8 @@ import { randomUUID } from 'node:crypto';
 import { hybridSearch, loadProjects, resolveScope, runsFor, ScopeError, searchDeps, type SearchHit } from '../gateway/index.ts';
 import { firmDir } from '../jobs/lessons-index.ts';
 import { buildCatalog, resolve, type Catalog } from '../catalog.ts';
+import { countriesWithPack, loadPack, packHeadlines, packMarkdown } from '../llm/country-pack.ts';
+import { isCountryCode } from '../opportunities.ts';
 
 export interface McpDeps { db: Db; person: Person; now?: () => Date }
 
@@ -340,7 +342,12 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     const cp = counterpartiesOf(reg);
     const lines = cp ? ['', '## Counterparties (from the register)', '', ...(cp.holder ? [`- Current owner: ${cp.holder}`] : []), ...(cp.government ? [`- Government: ${cp.government}`] : []), ...(cp.licence ? [`- Licence: ${cp.licence}`] : []), ...(cp.partners.length ? [`- JV partners: ${cp.partners.join(', ')}`] : [])] : [];
     const open = (await db.query<any>("SELECT count(*)::int AS n FROM review_queue WHERE status = 'open' AND payload->>'project_id' = $1", [project_id])).rows[0]?.n ?? 0;
-    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, markdown: sum.markdown + lines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
+    // Wave 7 PR5 (W7-AC19): the country pack's headlines for the project's country, when a pack exists (public scope).
+    const country = (await db.query<any>('SELECT country FROM projects WHERE id = $1', [project_id])).rows[0]?.country?.trim?.() ?? null;
+    const packRead = country ? await loadPack(db, country) : null;
+    const pack = packRead ? { country: packRead.country, assembled_at: packRead.assembled_at, headlines: packHeadlines(packRead) } : null;
+    const packLines = pack ? ['', `## Country pack (${pack.country})`, '', `- Assembled: ${pack.assembled_at ? pack.assembled_at.slice(0, 10) : 'not yet'}; the full pack is vault://countries/${pack.country}/pack.md`, ...pack.headlines.map(h => `- ${h.section} (${h.status}${h.due_at ? `, due ${h.due_at}` : ''}): ${h.en || 'not built'}`)] : [];
+    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, pack, markdown: sum.markdown + lines.join('\n') + packLines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
   }));
 
   server.registerTool('get_item', {
@@ -442,6 +449,20 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     return readResource(uri, `project:${id}`.slice(0, 200), async () => {
       const s = await projectSummary(db, person, id, now());
       return { body: s.markdown, lastModified: s.lastModified, refs: [`project:${id}`] };
+    });
+  });
+
+  // Wave 7 PR5 (W7-AC19): the country opening pack, public scope, built from public sources only.
+  server.registerResource('country-pack', new ResourceTemplate('vault://countries/{cc}/pack.md', {
+    list: async () => ({ resources: (await countriesWithPack(db)).map(cc => ({ uri: `vault://countries/${cc}/pack.md`, name: `Country pack ${cc}`, mimeType: 'text/markdown' })) }),
+  }), { title: 'Country pack', description: 'The country opening pack: ten sections drafted only from stored public originals, every sentence cited as [doc:<id>], with the status, as-of and caveat per section. Public scope.', mimeType: 'text/markdown' },
+  (uri, vars) => {
+    const raw = String(vars.cc).toUpperCase(), cc = raw.slice(0, 2);
+    return readResource(uri, 'public', async () => {
+      if (raw.length !== 2 || !isCountryCode(cc)) throw notFound(`unknown country "${raw.slice(0, 8)}"`);
+      const p = await loadPack(db, cc);
+      if (!p) throw notFound(`no pack has been assembled for ${cc}`);
+      return { body: packMarkdown(p), lastModified: p.assembled_at ?? now().toISOString(), refs: [`country:${cc}`, ...p.sections.flatMap(s => s.sources.filter(x => x.item_id).map(x => `doc:${x.item_id}`))] };
     });
   });
 
