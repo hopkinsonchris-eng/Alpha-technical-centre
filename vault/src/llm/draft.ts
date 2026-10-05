@@ -32,6 +32,11 @@ export interface DraftContext {
   scope: string; project: any; organisation?: any; contacts?: any[]; dispatches?: any[]; contracts?: any[]; counterparties?: Counterparties | null;
   runs: any[]; sources: Source[]; lessons: any[]; who_to_ask: Array<{ person: string; last: string; on: string }>; sub_queries: string[]; house_style: string; letterhead?: string;
 }
+/** Wave 7 (S19): no drafting provider means no draft, said plainly; never a silent template. The route answers 503 with this. */
+export class NoProviderError extends Error {
+  status = 503; code = 'not_configured';
+  constructor() { super('the drafting assistant is not connected on this Vault, so nothing was drafted'); }
+}
 export interface DraftResult { draft: string; paragraphs: string[]; citations: string[]; sources: Source[]; who_to_ask: DraftContext['who_to_ask']; warnings: string[]; questions: string[]; usage?: { input: number; cached: number; output: number }; model?: string; context: DraftContext }
 
 const CITE_RE = /\[(run|doc|lesson|ref|wm):[^\]]+\]/g;   // wm: World Monitor live risk, conflict events and headlines (wave 3)
@@ -173,33 +178,13 @@ export async function draft(db: Db, person: Person, req: DraftRequest, provider:
   const ctx = await assembleContext(db, person, req, search, now);
   const language = req.language ?? 'en';
   const allowed = allowedRefs(ctx);
-  let text: string; let usage; let model;
-  if (provider) {
-    const r = await provider.complete({ system: systemPrompt(req.kind, language, ctx.house_style), messages: [{ role: 'user', content: userPrompt(req, ctx) }], maxTokens: 1500 });
-    text = r.text; usage = r.usage; model = r.model;
-  } else {
-    text = fallbackDraft(req, ctx, language);
-  }
+  if (!provider) throw new NoProviderError();
+  const r = await provider.complete({ system: systemPrompt(req.kind, language, ctx.house_style), messages: [{ role: 'user', content: userPrompt(req, ctx) }], maxTokens: 1500 });
+  const text = r.text, usage = r.usage, model = r.model;
   const paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
   const checked = checkCitations(paragraphs, allowed);
   const warnings = [...checked.warnings];
   if (checked.questions.length) warnings.push(`${checked.questions.length} sentence(s) had no citation and were turned into questions for you`);
   if (!ctx.sources.length && !ctx.runs.length) warnings.push('no runs or documents were found in scope; the draft is skeletal');
   return { draft: checked.paragraphs.join('\n\n'), paragraphs: checked.paragraphs, citations: checked.citations, sources: ctx.sources, who_to_ask: ctx.who_to_ask, warnings, questions: checked.questions, usage, model, context: ctx };
-}
-
-/** No provider configured: a skeleton that still cites everything it can, so the pipeline works end to end. */
-function fallbackDraft(req: DraftRequest, ctx: DraftContext, language: 'en' | 'es'): string {
-  const es = language === 'es';
-  const p: string[] = [];
-  const last = (ctx.dispatches ?? []).filter(d => d.direction === 'out').at(-1);
-  if (last) p.push(es ? `Con referencia a nuestra comunicación del ${ymd(last.occurred_at)} (${last.reference_no ?? ''}) [doc:${last.item_id}].` : `Further to our ${last.channel === 'email' ? 'email' : 'letter'} of ${ymd(last.occurred_at)} (${last.reference_no ?? ''}) [doc:${last.item_id}].`);
-  p.push(`[QUESTION FOR YOU: ${req.brief}]`);
-  for (const r of ctx.runs.slice(0, 2)) {
-    const first = Object.entries(r.outputs ?? {})[0];
-    if (first) p.push(es ? `Nuestro cálculo "${r.title ?? r.job}" indica ${first[0]} = ${(first[1] as any).value} ${(first[1] as any).unit ?? ''} [run:${r.id}].` : `Our calculation "${r.title ?? r.job}" gives ${first[0]} = ${(first[1] as any).value} ${(first[1] as any).unit ?? ''} [run:${r.id}].`);
-  }
-  const nda = (ctx.contracts ?? []).find(c => c.type === 'nda');
-  if (nda) p.push(es ? `Este intercambio se realiza bajo el acuerdo de confidencialidad vigente [doc:${nda.id}].` : `This exchange falls under the confidentiality agreement in force [doc:${nda.id}].`);
-  return p.join('\n\n');
 }

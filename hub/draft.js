@@ -7,6 +7,8 @@
    chip per citation (opens the record with the passage), the uncited sentences
    amber, Keep / Keep with a note / Drop per paragraph, tone buttons, Save (the
    review), Render (DOCX on letterhead, PDF when the server can), Mark as sent.
+   Wave 7 (S19, D65): without a drafting provider the Vault refuses and the form
+   says so; the "does not know" box is shown only when a provider drafted.
    ============================================================ */
 import { mk, dv, add, api, setText, fmtShortDate } from './hub.js';
 
@@ -16,7 +18,9 @@ const CP_WORD = { client: ['client', 'cliente'], holder: ['current owner', 'titu
 const QUESTION_RE = /^\[QUESTION FOR YOU: ?(.*)\]$/s;
 const CITE_RE = /\[((?:run|doc|lesson|ref|wm):[^\]]+)\]/g;
 
-function notice(kind, en, es) { return add(mk('div', 'hub-notice ' + kind, null, null, { role: 'status' }), mk('span', null, en, es)); }
+function notice(kind, en, es, attrs) { return add(mk('div', 'hub-notice ' + kind, null, null, Object.assign({ role: 'status' }, attrs || {})), mk('span', null, en, es)); }
+/** The Vault said no drafting provider is connected (503 not_configured, or the older 501). */
+const noProvider = (r) => (r.status === 503 && r.body && r.body.error && r.body.error.code === 'not_configured') || r.status === 501;
 
 export function mountDraft(ctx, { openRecord }) {
   const host = document.getElementById('p-draft'), toolbar = document.getElementById('p-toolbar');
@@ -138,7 +142,13 @@ export function mountDraft(ctx, { openRecord }) {
     if (tone && state.draft) { body.tone = tone; body.previous = state.draft.paragraphs.join('\n\n'); }
     const r = await post('/api/draft', body, 180000);
     go.disabled = false; setText(go.querySelector('span') || go, 'Draft', 'Redactar');
-    if (!r.ok) { add(notices, notice('bad', r.status === 501 ? 'Drafting needs the assistant provider on the server.' : r.status === 0 ? 'The draft took too long or the connection dropped. Try again.' : 'The draft could not be made.' + (r.body && r.body.error ? ' ' + r.body.error.message : ''), r.status === 501 ? 'La redacción necesita el proveedor del asistente en el servidor.' : r.status === 0 ? 'El borrador tardó demasiado o se perdió la conexión. Inténtelo de nuevo.' : 'No se pudo hacer el borrador.')); return; }
+    if (noProvider(r)) {
+      // Nothing was drafted: there is no template to review, so the result stays hidden and the form says why.
+      state.draft = null; result.textContent = ''; result.setAttribute('hidden', '');
+      add(notices, notice('bad', 'The drafting assistant is not connected, so no draft was made. Ask a partner to connect it; the brief you wrote is still here.', 'El asistente de redacción no está conectado, así que no se hizo ningún borrador. Pida a un socio que lo conecte; el encargo que escribió sigue aquí.', { 'data-no-provider': '' }));
+      return;
+    }
+    if (!r.ok) { add(notices, notice('bad', r.status === 0 ? 'The draft took too long or the connection dropped. Try again.' : 'The draft could not be made.' + (r.body && r.body.error ? ' ' + r.body.error.message : ''), r.status === 0 ? 'El borrador tardó demasiado o se perdió la conexión. Inténtelo de nuevo.' : 'No se pudo hacer el borrador.')); return; }
     // A tone re-draft continues the same review: the citations opened and the clock carry over; a fresh draft starts both.
     state.draft = r.body; state.decisions = r.body.paragraphs.map((p) => (QUESTION_RE.test(p) ? null : 'keep')); state.notes = {}; state.sent = null; state.rendered = null; state.loadedReview = null;
     if (!tone) { state.citationsOpened = 0; state.startedAt = Date.now(); }
@@ -212,7 +222,8 @@ export function mountDraft(ctx, { openRecord }) {
   function renderResult() {
     result.textContent = ''; result.removeAttribute('hidden');
     const d = state.draft;
-    // What this draft does not know, first.
+    // What this draft does not know, first: only when a provider drafted (D65). A template nobody drafted cannot
+    // claim that every figure found its record, so an older template note shows no box at all.
     const unknown = mk('section', 'hub-dr-unknown', null, null, { 'data-questions': String(d.questions.length) });
     add(unknown, mk('h4', null, 'What this draft does not know', 'Lo que este borrador no sabe'));
     if (!d.questions.length) add(unknown, mk('p', 'hub-muted', 'Nothing: every figure found its record.', 'Nada: cada cifra encontró su registro.'));
@@ -227,7 +238,7 @@ export function mountDraft(ctx, { openRecord }) {
       });
       add(unknown, ul);
     }
-    add(result, unknown);
+    if (d.model) add(result, unknown);
     // The draft, paragraph by paragraph.
     const paras = mk('section', 'hub-dr-paras', null, null, { id: 'dr-paras' });
     add(paras, mk('h4', null, 'The draft', 'El borrador'));
@@ -376,7 +387,8 @@ export function mountDraft(ctx, { openRecord }) {
     if (ex.draft_kind && KINDS.some((k) => k[0] === ex.draft_kind)) kind.value = ex.draft_kind;
     if (ex.language === 'es' || ex.language === 'en') language.value = ex.language;
     brief.value = ex.brief || '';
-    state.draft = { id: rec.id, draft: ex.draft || '', paragraphs: ex.paragraphs, citations: ex.citations || [], questions: ex.questions || [], warnings: ex.warnings || [], who_to_ask: ex.who_to_ask || [], sources: ex.sources || [], context: null };
+    state.draft = { id: rec.id, draft: ex.draft || '', paragraphs: ex.paragraphs, citations: ex.citations || [], questions: ex.questions || [], warnings: ex.warnings || [], who_to_ask: ex.who_to_ask || [], sources: ex.sources || [], context: null,
+      model: ex.model || (ex.explanation_source === 'llm' ? 'llm' : null) };
     const review = ex.review && Array.isArray(ex.review.decisions) && ex.review.decisions.length === ex.paragraphs.length ? ex.review : null;
     // A question paragraph offers no plain Keep: a saved 'keep' there means it was never decided.
     state.decisions = ex.paragraphs.map((p, i) => { const d = review ? review.decisions[i] : null; return QUESTION_RE.test(p) ? (d === 'keep-note' || d === 'drop' ? d : null) : (d || 'keep'); });

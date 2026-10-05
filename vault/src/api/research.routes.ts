@@ -4,7 +4,9 @@
  *   GET  /api/projects/:id/research   the latest runs and the findings grouped by source
  * Writes need a writable project; a project the caller cannot see answers 404. The API server
  * runs a queued job in the background at once (tests call runQueued themselves); the cron
- * `research-sync` finishes what a restart left.
+ * `research-sync` finishes what a restart left. Wave 7 (S16): a run past its budget is reaped
+ * by the GET the toolbar polls and by the POST, not only by the cron, so a stuck run never reads
+ * "running" for long and never blocks the button; a queued run the poll finds is kicked too.
  */
 import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
@@ -50,8 +52,10 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const acc = await loadAccess(x.db, x.person, x.now);
     const p = visibleProject(acc, x.c.req.param('id')!);
     x.a.scope = scopeLabel(p.id); x.a.refs = [`project:${p.id}`];
-    const view = await researchView(x.db, p.id);
-    x.a.detail = { runs: view.runs.length, findings: view.findings.length };
+    const view = await researchView(x.db, p.id, 5, x.now);
+    // A job still waiting (a restart dropped the in-process runner) starts on the next poll, not the next cron.
+    if (view.runs[0]?.status === 'queued' && researchEnabled() && shouldAutorun()) kickResearch(x.db, runOpts);
+    x.a.detail = { runs: view.runs.length, findings: view.findings.length, reaped: view.runs.filter(r => r.reaped).length };
     return { body: { ...view, enabled: researchEnabled() } };
   });
 }
