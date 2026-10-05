@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cost &amp; health — Alpha Technical Centre</title>
-<meta name="description" content="Staff view of model token spend per feature, infrastructure costs, retrieval quality on the gold set and every project's scorecard.">
+<meta name="description" content="Staff view of model token spend per feature, infrastructure costs, retrieval quality and every project's scorecard.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/hub/hub.css">
@@ -14,22 +14,25 @@
   .c-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .c-feat { padding: 8px 0; }
   .c-feat-top { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
-  .c-feat-top b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .c-feat-top b { white-space: nowrap; }
   .c-feat .hub-bar { margin: 6px 0 4px; height: 10px; }
   .c-feat .hub-bar.over > i { background: var(--bad); }
   .c-note { font-size: 12px; color: var(--muted); display: block; }
   .c-total { display: flex; justify-content: space-between; border-top: 1.5px solid var(--rule); padding-top: 10px; margin-top: 6px; font-weight: 600; }
   .c-weeks { display: flex; align-items: flex-end; gap: 8px; height: 96px; margin-top: 6px; }
-  .c-week { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; font-size: 11px; color: var(--muted); }
+  .c-week { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; font-size: 12px; color: var(--muted); }
+  .c-weeks-note { margin: 0; font-size: 13.5px; color: var(--navy-mid); }
+  .c-weeks.is-note { height: auto; align-items: flex-start; }
   .c-week i { display: block; width: 100%; max-width: 44px; background: var(--navy); border-radius: 3px 3px 0 0; min-height: 2px; }
   .c-week.now i { background: var(--gold); }
   .c-week span { margin-top: 4px; white-space: nowrap; }
-  .hub-table td.r, .hub-table th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .hub-table td.r, .hub-table th.r { text-align: right; }
   .hub-table tr.sum td { background: var(--cream); font-weight: 600; }
   .hub-table tr.grand td { background: #F6EED6; font-weight: 600; }
   .c-ragas { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; }
   .c-metric-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .c-metric-top .big { font-family: var(--font-display); font-size: 2rem; font-weight: 600; color: var(--navy); }
+  .c-metric-top .big { font-size: 2rem; color: var(--navy); }
+  .c-first { margin: 0 0 14px; font-size: 14px; color: var(--navy-mid); }
   .c-spark { width: 100%; height: 96px; display: block; margin-top: 8px; }
   .c-spark .thr { stroke: var(--bad); stroke-dasharray: 4 3; stroke-width: 1; }
   .c-spark .ln { fill: none; stroke: var(--navy); stroke-width: 2; }
@@ -37,7 +40,7 @@
   .c-spark text { font-size: 10px; fill: var(--muted); font-family: var(--font-body); }
   .c-delta.up { color: var(--ok); } .c-delta.down { color: var(--bad); }
   .c-others { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--rule); display: flex; gap: 28px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); }
-  .c-others b { color: var(--navy); font-variant-numeric: tabular-nums; }
+  .c-others b { color: var(--navy); }
   .c-dot { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; }
   .c-dot.pass { background: var(--ok); }
   .c-dot.fail { border: 2px solid var(--bad); background: var(--bad-bg); }
@@ -133,7 +136,7 @@
         <div>
           <span class="label" data-en="Cost &amp; health" data-es="Coste y salud">Cost &amp; health</span>
           <h1 id="c-title" data-en="This month" data-es="Este mes">This month</h1>
-          <p id="c-sub" data-en="Token spend per feature, infrastructure costs, retrieval quality on the gold set and every project's scorecard." data-es="Gasto de tokens por función, costes de infraestructura, calidad de recuperación sobre el conjunto de referencia y la ficha de cada proyecto.">Token spend per feature, infrastructure costs, retrieval quality on the gold set and every project's scorecard.</p>
+          <p id="c-sub" data-en="Token spend per feature, infrastructure costs, retrieval quality against the reference questions and every project's scorecard." data-es="Gasto de tokens por función, costes de infraestructura, calidad de recuperación frente a las preguntas de referencia y la ficha de cada proyecto.">Token spend per feature, infrastructure costs, retrieval quality against the reference questions and every project's scorecard.</p>
         </div>
         <div class="hub-status" id="status-strip"></div>
       </div>
@@ -178,8 +181,8 @@
       <section id="sec-ragas" aria-labelledby="h-ragas" style="margin-top:32px">
         <div class="hub-sec-head">
           <div>
-            <span class="label" data-en="Retrieval quality" data-es="Calidad de recuperación">Retrieval quality</span>
-            <h2 id="h-ragas" data-en="RAGAS on the gold set" data-es="RAGAS sobre el conjunto de referencia">RAGAS on the gold set</h2>
+            <span class="label" data-en="Evaluation" data-es="Evaluación">Evaluation</span>
+            <h2 id="h-ragas" data-en="Retrieval quality" data-es="Calidad de recuperación">Retrieval quality</h2>
           </div>
           <span class="hub-muted" id="ragas-note"></span>
         </div>

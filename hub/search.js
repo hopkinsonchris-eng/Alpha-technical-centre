@@ -1,29 +1,36 @@
 /* ============================================================
-   ALPHA TECHNICAL CENTRE — HUB FIND PAGE (M12)
+   ALPHA TECHNICAL CENTRE — HUB FIND PAGE
    hub/search.html[?q=<query>][&scope=<scope>]
 
-   Scope-aware search over the Vault. The scope is mandatory: with none chosen
-   the page says so and sends nothing. Reads only:
+   Scope-aware search over the Vault. Every search runs inside a scope; the header
+   form on every page carries one (the project being read, else the remembered
+   scope, else the firm), and when none arrives the page searches the firm and
+   says so in one muted line (wave 7, R2): a missing scope is a neutral state,
+   never an error. Reads only:
 
-     GET /api/projects                 scope choices: project:<id>
+     GET /api/projects                 scope choices: project:<id>, and the stateline facts per project
      GET /api/clients                  scope choices: client:<id>
      GET /api/search?q=&scope=&k=50    hits {ref, item_id, run_id, title, snippet, type, date, authors, legal_tag, project_id, stale}
      GET /api/search/people?q=&scope=  colleagues who worked the topic, most recent first
+     GET /api/items/:id, /api/runs/:id the record behind a hit, for the panel
 
-   Runs are indexed by the Vault (wave 7, S31), so they arrive in the same list as documents, typed "run", and get
-   the Runs chip; a document hit links to the project page with ?doc=<item_id>, a run hit with ?run=<run_id> (S32).
-   Type and date filters apply to the hits already returned. The chosen scope is
-   remembered in localStorage; ?q= and ?scope= in the address take precedence and
-   are kept in step with the page. Every string a person reads carries data-en and
-   data-es; text that comes from the Vault is set through dv()/setText(), which
-   never lets a "<" in a title or snippet become markup.
+   Runs are indexed by the Vault, so they arrive in the same list as documents, typed "run". Hits are grouped under
+   the project they belong to, each group headed by the stateline card (hub/components/stateline.js, W7-AC6), and
+   every hit has Open record, which opens the record panel in place (hub/record.js builds the body), beside the
+   project link that carries ?doc=<item_id> or ?run=<run_id>. Type and date filters apply to the hits already
+   returned. The chosen scope is remembered in localStorage; ?q= and ?scope= in the address take precedence and
+   are kept in step with the page. Every string a person reads carries data-en and data-es; text that comes from
+   the Vault is set through dv()/setText(), which never lets a "<" in a title or snippet become markup.
    ============================================================ */
 import { api, listOf, mk, dv, add, setText, showSession, showVault, fmtShortDate } from './hub.js';
+import { stateline } from './components/stateline.js';
+import { renderRecord, detailsNode } from './record.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const SCOPE_KEY = 'atc-hub-find-scope';
 const DAY = 864e5;
 const K = 50;
+const DEFAULT_SCOPE = 'firm';
 
 const bi = (en, es) => ({ en, es: es === undefined ? en : es });
 
@@ -39,7 +46,6 @@ const TYPES = [
   ['report', 'Reports', 'Informes'], ['spreadsheet', 'Spreadsheets & data', 'Hojas de cálculo y datos'], ['paper', 'Papers', 'Artículos'],
   ['feed', 'Feeds & regulator', 'Fuentes y reguladores'], ['lesson', 'Lessons', 'Lecciones'], ['note', 'Notes', 'Notas'], ['other', 'Other', 'Otros'],
 ];
-const TYPE_LABEL = new Map(TYPES.map(([k, en, es]) => [k, bi(en, es)]));
 const SINGULAR = { run: bi('Run', 'Ejecución'), letter: bi('Letter', 'Carta'), email: bi('Email', 'Correo'), report: bi('Report', 'Informe'), spreadsheet: bi('Spreadsheet', 'Hoja de cálculo'), paper: bi('Paper', 'Artículo'), feed: bi('Feed', 'Fuente'), lesson: bi('Lesson', 'Lección'), note: bi('Note', 'Nota'), other: bi('Other', 'Otro') };
 
 /** The filter group of a hit's type. */
@@ -68,7 +74,10 @@ const LOCK = svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 1
 
 /* ── state ───────────────────────────────────────────────────────────── */
 
-const state = { q: '', scope: '', hits: null, people: [], type: 'all', date: 'any', projectNames: new Map(), personNames: new Map(), seq: 0 };
+const state = {
+  q: '', scope: '', defaulted: false, hits: null, people: [], type: 'all', date: 'any', seq: 0,
+  projects: new Map(), projectNames: new Map(), clientNames: new Map(), personNames: new Map(),
+};
 
 /* ── notices and states ──────────────────────────────────────────────── */
 
@@ -100,8 +109,9 @@ async function loadScopes(wanted) {
   const sel = $('#find-scope');
   const [pr, cl] = await Promise.all([api('/api/projects'), api('/api/clients')]);
   const projects = listOf(pr.body, 'projects'), clients = listOf(cl.body, 'clients');
-  for (const p of projects) state.projectNames.set(p.id, p.name || p.id);
-  const have = new Set(['']);
+  for (const p of projects) { state.projects.set(p.id, p); state.projectNames.set(p.id, p.name || p.id); }
+  for (const c of clients) state.clientNames.set(c.id, c.name || c.id);
+  const have = new Set();
   const push = (v, en, es) => { if (have.has(v)) return; have.add(v); add(sel, option(v, en, es)); };
   for (const p of projects) push('project:' + p.id, 'Project: ' + (p.name || p.id), 'Proyecto: ' + (p.name || p.id));
   for (const c of clients) push('client:' + c.id, 'Client: ' + (c.name || c.id) + ' (all projects)', 'Cliente: ' + (c.name || c.id) + ' (todos los proyectos)');
@@ -111,12 +121,25 @@ async function loadScopes(wanted) {
   if (!pr.ok && !cl.ok && (pr.status === 0 || cl.status === 0)) showVault(false); else showVault(pr.ok || cl.ok);
 }
 
+/** What a scope is called when a person reads it: the project's or client's name, the firm, public records. */
+export function scopeLabel(scope) {
+  const s = String(scope || '');
+  const kind = s.split(':')[0], id = s.slice(kind.length + 1);
+  if (kind === 'project') { const n = state.projectNames.get(id) || id; return bi(n, n); }
+  if (kind === 'client') { const n = state.clientNames.get(id) || id; return bi(n, n); }
+  if (kind === 'firm') return bi('the firm', 'la firma');
+  if (kind === 'public') return bi('public records', 'los registros públicos');
+  return bi(s, s);
+}
+
+/** The plain-English sentence for a chosen scope (R2): what the search covers, never a predicate. */
 export function scopeNote(scope) {
   const kind = String(scope || '').split(':')[0];
+  const name = scopeLabel(scope);
   const note = {
-    project: bi('This project and the same client\'s records you may see, plus the firm\'s own knowledge and public records. Never another client\'s project.', 'Este proyecto y los registros del mismo cliente que usted puede ver, más el conocimiento propio de la firma y los registros públicos. Nunca el proyecto de otro cliente.'),
-    client: bi('Every project of this client you may see, plus the firm\'s own knowledge and public records. Never another client\'s project.', 'Todos los proyectos de este cliente que usted puede ver, más el conocimiento propio de la firma y los registros públicos. Nunca el proyecto de otro cliente.'),
-    firm: bi('Firm records (lessons, templates) and public records. No client records.', 'Registros de la firma (lecciones, plantillas) y públicos. Ningún registro de cliente.'),
+    project: bi('Inside ' + name.en + ', plus firm and public records.', 'Dentro de ' + name.es + ', más los registros de la firma y públicos.'),
+    client: bi('Across every ' + name.en + ' project you may see, plus firm and public records.', 'En todos los proyectos de ' + name.es + ' que usted puede ver, más los registros de la firma y públicos.'),
+    firm: bi('Firm records and public records. No client records.', 'Registros de la firma y públicos. Ningún registro de cliente.'),
     public: bi('Public records only: regulators, papers, feeds.', 'Solo registros públicos: reguladores, artículos, fuentes.'),
   }[kind];
   return note || null;
@@ -125,10 +148,19 @@ export function scopeNote(scope) {
 function renderPred() {
   const el = $('#scope-pred');
   el.textContent = '';
+  if (state.defaulted) {
+    // No scope arrived and none is remembered: the firm is searched, and one muted line says so.
+    el.setAttribute('data-scope-state', 'default');
+    add(el, mk('span', null, 'Searching the firm. ', 'Buscando en la firma. '));
+    const b = mk('button', 'hub-linkbtn find-change-scope', 'Change scope ▾', 'Cambiar alcance ▾', { type: 'button' });
+    b.addEventListener('click', () => { const sel = $('#find-scope'); sel.focus(); if (typeof sel.showPicker === 'function') { try { sel.showPicker(); } catch (e) { /* needs a gesture */ } } });
+    add(el, b);
+    return;
+  }
+  el.setAttribute('data-scope-state', 'chosen');
   const n = scopeNote(state.scope);
-  if (!n) { setText(el, 'Choose a scope: search never runs without one.', 'Elija un alcance: la búsqueda nunca se ejecuta sin uno.'); return; }
-  const code = dv('code', null, 'scope = ' + state.scope);
-  add(el, code, document.createTextNode('  AND  legal_tag.expires_at > now()  → '), mk('span', null, n.en, n.es));
+  if (n) add(el, mk('span', null, n.en, n.es));
+  else add(el, mk('span', null, 'Inside this scope, plus firm and public records.', 'Dentro de este alcance, más los registros de la firma y públicos.'));
 }
 
 /* ── highlighting ────────────────────────────────────────────────────── */
@@ -146,6 +178,33 @@ export function highlight(parent, text, terms) {
   return parent;
 }
 
+/** A snippet as a person should read it: the chunker's markdown heading markers go, line breaks become spaces (R11). */
+export function cleanSnippet(s) {
+  return String(s == null ? '' : s)
+    .replace(/(^|[\s…])#{1,6}[ \t]+(Page|Página)[ \t]+\d+[ \t]*(?=$|[\r\n])/gi, '$1')   // the chunker's page heading is noise
+    .replace(/(^|[\s…])#{1,6}[ \t]+/g, '$1')                                             // any other heading keeps its words
+    .replace(/\s*[\r\n]+\s*/g, ' ').replace(/[ \t]{2,}/g, ' ').trim();
+}
+
+/**
+ * The language toggle (main.js) writes data-en/data-es as the element's whole text, which would wipe the children
+ * of a composed element such as a stateline token. Wrap the element's own text in a span that carries the pair and
+ * drop the pair from the parent, so the toggle translates the words and leaves the dot, the label and the date alone.
+ */
+function bilingualSafe(root) {
+  for (const el of root.querySelectorAll('[data-en]')) {
+    if (!el.children.length) continue;
+    const en = el.getAttribute('data-en'), es = el.getAttribute('data-es');
+    el.removeAttribute('data-en'); el.removeAttribute('data-es');
+    const texts = [...el.childNodes].filter((n) => n.nodeType === 3 && n.nodeValue.trim());
+    if (!texts.length || !en) continue;
+    const span = mk('span', null, en, es == null ? en : es);
+    el.insertBefore(span, texts[0]);
+    for (const t of texts) t.remove();
+  }
+  return root;
+}
+
 /* ── results ─────────────────────────────────────────────────────────── */
 
 const initials = (name) => String(name || '?').split(/[\s.@-]+/).filter(Boolean).slice(0, 2).map((s) => s[0].toUpperCase()).join('') || '?';
@@ -155,7 +214,7 @@ function avatar(id) {
   return dv('span', 'find-av', initials(personName(id)), { title: personName(id), 'data-person': id });
 }
 
-/** The project page opens the record the hit names: ?run= for a run, ?doc= for a document (S32). */
+/** The project page opens the record the hit names: ?run= for a run, ?doc= for a document. */
 function hitHref(h) {
   const p = new URLSearchParams({ id: h.project_id });
   if (h.run_id) p.set('run', h.run_id);
@@ -172,29 +231,32 @@ function resultItem(h, terms) {
   const body = mk('div');
   const title = mk('div', 'r-title');
   const link = mk('a', null, null, null, { href: hitHref(h) });
-  highlight(link, h.title || h.ref, terms);
+  add(link, highlight(mk('span'), h.title || h.ref, terms));
   add(body, add(title, link));
-  if (h.snippet) add(body, highlight(mk('div', 'snip'), h.snippet, terms));
+  const snippet = cleanSnippet(h.snippet);
+  if (snippet) add(body, highlight(mk('div', 'snip'), snippet, terms));
 
-  const pname = state.projectNames.get(h.project_id) || h.project_id;
   const t = SINGULAR[group] || SINGULAR.other;
   const when = h.date ? fmtShortDate(h.date) : null;
-  const path = mk('div', 'path');
-  add(path, dv('span', null, pname), document.createTextNode(' · '), mk('span', null, t.en, t.es));
-  if (when) add(path, document.createTextNode(' · '), mk('span', null, when.en, when.es));
-  add(body, path);
-
   const meta = mk('div', 'r-meta');
+  add(meta, mk('span', 'hub-pill ghost', t.en, t.es));
+  if (when) add(meta, mk('span', 'r-when', when.en, when.es));
   const lt = mk('span', 'hub-lt', null, null, { 'data-legal-tag': h.legal_tag });
   lt.insertAdjacentHTML('afterbegin', LOCK);
   add(lt, dv('span', null, h.legal_tag));
-  add(meta, lt, mk('span', 'hub-pill ghost', t.en, t.es));
+  add(meta, lt);
   if (h.stale) add(meta, mk('span', 'hub-stale', 'Stale', 'Obsoleta'));
   add(body, meta);
+
+  // Actions: Open record (the panel, in place) and the project page on that record.
+  const act = mk('div', 'r-actions');
+  const open = mk('button', 'hub-linkbtn find-open', 'Open record', 'Abrir registro', { type: 'button', 'data-open-record': h.ref });
+  open.addEventListener('click', () => openRecord({ ref: h.ref, title: h.title, trigger: open, hit: h }));
+  add(act, open, mk('a', 'find-in-project', 'In the project file', 'En el expediente', { href: hitHref(h) }));
+  add(body, act);
   add(li, body);
 
   const side = mk('div', 'r-side');
-  if (when) add(side, mk('span', null, when.en, when.es));
   const authors = (h.authors || []).filter(Boolean);
   if (authors.length) {
     const who = mk('div');
@@ -203,6 +265,21 @@ function resultItem(h, terms) {
   }
   add(li, side);
   return li;
+}
+
+/** The group head for a project: its name, then the stateline card from the same component as the project header and Today (W7-AC6). */
+function groupHead(pid) {
+  const p = state.projects.get(pid);
+  const head = mk('div', 'find-group-head');
+  if (p) {
+    add(head, mk('a', 'find-group-name', p.name || p.id, p.name || p.id, { href: '/hub/project.html?id=' + encodeURIComponent(p.id) }));
+    add(head, bilingualSafe(stateline(p, { size: 'card' })));
+  } else if (pid) {
+    add(head, mk('a', 'find-group-name', pid, pid, { href: '/hub/project.html?id=' + encodeURIComponent(pid) }));
+  } else {
+    add(head, mk('span', 'find-group-name', 'Firm and public records', 'Registros de la firma y públicos'));
+  }
+  return head;
 }
 
 const inDate = (h, now) => state.date === 'any' || (h.date && (now - Date.parse(h.date)) / DAY <= Number(state.date));
@@ -216,7 +293,7 @@ function renderChips(dated) {
     const n = k === 'all' ? dated.length : counts.get(k) || 0;
     if (k !== 'all' && !n) continue;
     const b = mk('button', 'find-chip', null, null, { type: 'button', 'data-type': k, 'aria-pressed': String(state.type === k) });
-    add(b, mk('span', null, en, es), document.createTextNode(' '), dv('span', 'n', '(' + n + ')'));
+    add(b, mk('span', null, en, es), document.createTextNode(' '), dv('span', 'n hub-num', '(' + n + ')'));
     b.addEventListener('click', () => { state.type = k; renderResults(); });
     add(box, b);
   }
@@ -245,11 +322,11 @@ function renderResults() {
   const shown = state.type === 'all' ? dated : dated.filter((h) => typeGroup(h.type) === state.type);
   const terms = termsOf(state.q);
   $('#find-date-wrap').hidden = false;
-  const label = state.scope;
+  const label = scopeLabel(state.scope);
   const n = shown.length;
   const c = $('#find-count'); c.textContent = '';
-  add(c, dv('b', null, String(n), { 'data-count': String(n) }), document.createTextNode(' '), mk('span', null, n === 1 ? 'result for' : 'results for', n === 1 ? 'resultado para' : 'resultados para'),
-    document.createTextNode(' “'), dv('span', null, state.q), document.createTextNode('” '), mk('span', null, 'in', 'en'), document.createTextNode(' '), dv('b', null, label));
+  add(c, dv('b', 'hub-num', String(n), { 'data-count': String(n) }), document.createTextNode(' '), mk('span', null, n === 1 ? 'result for' : 'results for', n === 1 ? 'resultado para' : 'resultados para'),
+    document.createTextNode(' “'), dv('span', null, state.q), document.createTextNode('” '), mk('span', null, 'in', 'en'), document.createTextNode(' '), mk('b', null, label.en, label.es));
   renderChips(dated);
   renderWho();
   const out = $('#find-results'); out.textContent = '';
@@ -260,9 +337,93 @@ function renderResults() {
       filtered ? 'Quite el filtro de tipo o de fecha, o amplíe el alcance.' : (state.scope === 'public' ? 'Pruebe otros términos.' : 'Pruebe otros términos, o amplíe el alcance.')));
     return;
   }
-  const ol = mk('ol', 'find-list');
-  for (const h of shown) add(ol, resultItem(h, terms));
-  add(out, ol);
+  // One group per project, in order of first appearance; the hits keep the server's ranking inside each group.
+  const groups = new Map();
+  for (const h of shown) {
+    const key = h.project_id || '';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(h);
+  }
+  const ul = mk('ul', 'find-groups');
+  for (const [pid, hits] of groups) {
+    const li = mk('li', 'find-group', null, null, { 'data-project': pid });
+    add(li, groupHead(pid));
+    const ol = mk('ol', 'find-list');
+    for (const h of hits) add(ol, resultItem(h, terms));
+    add(li, ol);
+    add(ul, li);
+  }
+  add(out, ul);
+}
+
+/* ── the record panel, in place ──────────────────────────────────────── */
+
+let panelTrigger = null;
+const versionsCache = new Map();
+
+function closePanel() {
+  const p = $('#record-panel');
+  if (!p || p.hasAttribute('hidden')) return;
+  p.setAttribute('hidden', '');
+  const scrim = $('#record-scrim'); if (scrim) scrim.setAttribute('hidden', '');
+  document.body.classList.remove('has-panel');
+  if (panelTrigger && panelTrigger.isConnected) panelTrigger.focus();
+  panelTrigger = null;
+}
+
+/**
+ * Opens the side panel (a bottom sheet below 1200 px) for a hit's record (run:<uuid> or doc:<uuid>): the same
+ * highlights, related cards and closed Full record disclosure the project page shows, built by hub/record.js.
+ */
+async function openRecord({ ref, title, trigger, hit }) {
+  const panel = $('#record-panel'), body = $('#rp-body');
+  if (!panel) return;
+  const first = panel.hasAttribute('hidden');
+  if (first || hit) panelTrigger = trigger || document.activeElement;   // a pivot inside the panel keeps the hit that opened it
+  const kind = ref.startsWith('run:') ? 'run' : ref.startsWith('doc:') ? 'doc' : 'ref';
+  const kindLabel = { run: ['Run', 'Ejecución'], doc: ['Document', 'Documento'], ref: ['Reference set', 'Conjunto de referencia'] }[kind];
+  setText($('#rp-kind'), kindLabel[0], kindLabel[1]);
+  setText($('#rp-title'), title || ref);
+  panel.setAttribute('data-ref', ref);
+  panel.removeAttribute('hidden');
+  const scrim = $('#record-scrim'); if (scrim) scrim.removeAttribute('hidden');
+  document.body.classList.add('has-panel');
+  body.textContent = '';
+  add(body, mk('p', 'hub-muted', 'Loading the record…', 'Cargando el registro…'));
+  $('#rp-title').focus();
+
+  let rec = null, res = null;
+  const uuid = ref.slice(ref.indexOf(':') + 1);
+  if (kind === 'run') res = await api('/api/runs/' + encodeURIComponent(uuid));
+  else if (kind === 'doc') res = await api('/api/items/' + encodeURIComponent(uuid));
+  if (panel.getAttribute('data-ref') !== ref) return;          // another record was opened meanwhile
+  if (res && res.ok && res.body) rec = res.body;
+  if (rec && rec.title) setText($('#rp-title'), rec.title);
+  const pid = (rec && rec.project_id) || (hit && hit.project_id);
+  // What the hit knows stands in for the timeline entry the project page would have.
+  const entry = hit ? { kind: kind === 'run' ? 'run' : 'item', ref, id: uuid, at: hit.date, title: hit.title, type: hit.type, legal_tag: hit.legal_tag, stale: !!hit.stale, stale_reasons: [] } : null;
+  const ctx = {
+    project: pid ? state.projects.get(pid) || { id: pid, name: state.projectNames.get(pid) || pid } : null,
+    entryById: new Map(), lineage: null,
+    versionsOf: async (id) => {
+      if (!versionsCache.has(id)) {
+        const r = await api('/api/items/' + encodeURIComponent(id) + '/versions');
+        versionsCache.set(id, r.ok ? listOf(r.body, 'versions') : null);
+      }
+      return versionsCache.get(id);
+    },
+    open: (r, t, b) => openRecord({ ref: r, title: t, trigger: b }),
+    openDraft: null,
+  };
+  const content = await renderRecord({ kind, ref, rec, node: null, entry, ctx });
+  if (panel.getAttribute('data-ref') !== ref) return;
+  body.textContent = '';
+  add(body, content);
+  if (!rec && kind !== 'ref') {
+    const msg = res && res.body && res.body.error && res.body.error.message;
+    add(body, notice('warn', 'Full record unavailable.', 'Registro completo no disponible.', 'Showing what the search knows' + (msg ? ' (' + msg + ')' : '') + '.', 'Se muestra lo que conoce la búsqueda' + (msg ? ' (' + msg + ')' : '') + '.'));
+  }
+  add(body, detailsNode(rec || { hit: hit || null }));
 }
 
 /* ── search ──────────────────────────────────────────────────────────── */
@@ -278,7 +439,7 @@ function syncUrl() {
   try {
     const u = new URL(location.href);
     if (state.q) u.searchParams.set('q', state.q); else u.searchParams.delete('q');
-    if (state.scope) u.searchParams.set('scope', state.scope); else u.searchParams.delete('scope');
+    if (state.scope && !state.defaulted) u.searchParams.set('scope', state.scope); else u.searchParams.delete('scope');
     history.replaceState(null, '', u.pathname + u.search);
   } catch (e) { /* no history */ }
 }
@@ -286,23 +447,15 @@ function syncUrl() {
 async function run() {
   const sel = $('#find-scope');
   state.q = $('#find-q').value.trim();
-  state.scope = sel.value;
+  state.scope = sel.value || DEFAULT_SCOPE;
   syncUrl();
   renderPred();
   setNotice(null);
-  sel.removeAttribute('aria-invalid');
-  if (!state.scope) {
-    sel.setAttribute('aria-invalid', 'true');
-    setNotice(notice('bad', 'Scope required.', 'Alcance obligatorio.', 'Choose a scope before searching. Nothing is sent without one.', 'Elija un alcance antes de buscar. No se envía nada sin uno.'));
-    state.hits = null;
-    showState(stateBlock('Choose a scope', 'Elija un alcance', 'Search only runs inside a project, a client, the firm or public records.', 'La búsqueda solo se ejecuta dentro de un proyecto, un cliente, la firma o los registros públicos.'));
-    sel.focus();
-    return;
-  }
-  remember(state.scope);
+  closePanel();
+  if (!state.defaulted) remember(state.scope);
   if (!state.q) {
     state.hits = null;
-    showState(stateBlock('Enter a query', 'Escriba una consulta', 'Scope is set. Search never runs without a query.', 'El alcance está fijado. La búsqueda nunca se ejecuta sin una consulta.'));
+    showState(stateBlock('Enter a query', 'Escriba una consulta', 'Search never runs without a query.', 'La búsqueda nunca se ejecuta sin una consulta.'));
     $('#find-q').focus();
     return;
   }
@@ -333,19 +486,24 @@ async function init() {
   const params = new URLSearchParams(location.search);
   const q = (params.get('q') || '').trim();
   const fromUrl = (params.get('scope') || '').trim();
-  const wanted = fromUrl || remembered();
+  const kept = remembered();
+  const wanted = fromUrl || kept || DEFAULT_SCOPE;
+  state.defaulted = !fromUrl && !kept;
   $('#find-q').value = q;
   showSession();
   await loadScopes(wanted);
   const sel = $('#find-scope');
-  sel.value = wanted && [...sel.options].some((o) => o.value === wanted) ? wanted : '';
+  sel.value = [...sel.options].some((o) => o.value === wanted) ? wanted : DEFAULT_SCOPE;
   state.scope = sel.value; state.q = q;
   renderPred();
   $('#find-form').addEventListener('submit', (ev) => { ev.preventDefault(); run(); });
-  sel.addEventListener('change', () => { state.scope = sel.value; renderPred(); sel.removeAttribute('aria-invalid'); if (sel.value) remember(sel.value); if ($('#find-q').value.trim()) run(); });
+  sel.addEventListener('change', () => { state.defaulted = false; state.scope = sel.value; remember(sel.value); renderPred(); syncUrl(); if ($('#find-q').value.trim()) run(); });
   $('#find-date').addEventListener('change', (ev) => { state.date = ev.target.value; renderResults(); });
+  const close = $('#rp-close'); if (close) close.addEventListener('click', closePanel);
+  const scrim = $('#record-scrim'); if (scrim) scrim.addEventListener('click', closePanel);
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closePanel(); });
   if (q) await run();
-  else showState(stateBlock('Enter a query', 'Escriba una consulta', state.scope ? 'Scope is set. Search never runs without a query.' : 'Choose a scope and type a query. Search never runs without both.', state.scope ? 'El alcance está fijado. La búsqueda nunca se ejecuta sin una consulta.' : 'Elija un alcance y escriba una consulta. La búsqueda nunca se ejecuta sin ambos.'));
+  else showState(stateBlock('Enter a query', 'Escriba una consulta', 'Type what you are looking for; the scope above says where it is searched.', 'Escriba lo que busca; el alcance de arriba indica dónde se busca.'));
   document.body.setAttribute('data-ready', '1');
 }
 
