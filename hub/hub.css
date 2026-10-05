@@ -812,3 +812,25 @@ a.hub-cite:hover { background: var(--gold); color: var(--navy); }
 .hub-research-sources { list-style: none; margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--cream); font-size: 12.5px; display: grid; gap: 4px; }
 .hub-research-sources b { font-weight: 600; color: var(--navy); }
 .hub-research-sources .hub-pill { font-size: 11px; vertical-align: middle; }
+
+/* ── Wave 7 PR2: the stateline (hub/components/stateline.js), one line in three sizes ── */
+.hub-stateline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-weight: 600; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--navy); line-height: 1.4; }
+.hub-stateline-full { padding: 10px 0; border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold); margin: 6px 0 14px; font-size: 16px; }
+.hub-stateline-row { font-size: 13.5px; gap: 4px 6px; padding: 8px 0; border-bottom: 1px solid var(--rule); text-transform: none; letter-spacing: .01em; }
+.hub-stateline-card { font-size: 12.5px; gap: 2px 6px; }
+.hub-sl-token { color: inherit; text-decoration: none; display: inline-flex; align-items: baseline; gap: 5px; min-height: 36px; padding: 4px 2px; border-radius: 4px; }
+.hub-stateline-row .hub-sl-token, .hub-stateline-card .hub-sl-token { min-height: 28px; padding: 2px 2px; }
+.hub-sl-token:hover, .hub-sl-token:focus-visible { background: var(--cream); outline: none; box-shadow: 0 0 0 2px var(--gold); }
+.hub-sl-token[data-empty] { color: var(--muted, #6b7280); font-weight: 500; }
+.hub-sl-label { font-size: .72em; letter-spacing: .14em; color: var(--muted, #6b7280); text-transform: uppercase; }
+.hub-sl-sep { color: var(--gold); font-weight: 400; }
+.hub-sl-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted, #9ca3af); align-self: center; flex: 0 0 auto; }
+.hub-stateline[data-tone="live"] .hub-sl-dot { background: var(--gold); box-shadow: 0 0 0 3px rgba(201,162,39,.25); }
+.hub-stateline[data-tone="won"] .hub-sl-dot { background: #2f855a; }
+.hub-stateline[data-tone="closed"] .hub-sl-dot { background: #9ca3af; }
+.hub-sl-since, .hub-sl-when, .hub-sl-owner { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink, #111827); }
+.hub-sl-title { text-transform: none; letter-spacing: 0; font-weight: 600; max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-sl-name { flex: 1 1 100%; font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--navy); text-decoration: none; }
+.hub-sl-flag[data-tone="warn"], .hub-sl-token[data-tone="warn"] { color: #b45309; }
+.hub-stateline .hub-sl-token:nth-child(2) { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .hub-stateline-full { font-size: 14px; } .hub-sl-title { max-width: 18ch; } }
