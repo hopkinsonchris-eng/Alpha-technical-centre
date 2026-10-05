@@ -10,10 +10,22 @@ import { ensureAppPerson, verifyAppToken } from './app-tokens.ts';
 
 export type Env = { Variables: { person: Person; db: Db } };
 
-export interface AppDeps { db: Db; auth?: AuthConfig; version?: string; fetch?: typeof fetch }
+export interface AppDeps { db: Db; auth?: AuthConfig; version?: string; fetch?: typeof fetch; log?: (line: string) => void }
 
-export async function createApp({ db, auth = configFromEnv(), version = process.env.RENDER_GIT_COMMIT ?? 'dev', fetch: fetchImpl }: AppDeps) {
+export async function createApp({ db, auth = configFromEnv(), version = process.env.RENDER_GIT_COMMIT ?? 'dev', fetch: fetchImpl, log }: AppDeps) {
   const app = new Hono<Env>();
+
+  // The connector paths are reached by the Claude app and by claude.ai's
+  // servers, not by the Hub, so the only place to see them is the service
+  // log: one line per request, method, path and status, never the query
+  // string (it carries codes and state) and never a body.
+  if (log) app.use('*', async (c, next) => {
+    const p = c.req.path;
+    if (!(p.startsWith('/oauth/') || p === '/mcp' || p.startsWith('/mcp/') || p.startsWith('/.well-known/'))) return next();
+    const t = Date.now();
+    await next();
+    log(`${c.req.method} ${p} ${c.res.status} ${Date.now() - t}ms`);
+  });
 
   app.get('/api/health', async (c) => {
     const { rows } = await db.query('SELECT count(*)::int AS n FROM schema_migrations');
