@@ -8,9 +8,54 @@ import type { Hono } from 'hono';
 import type { Env } from '../app.ts';
 import type { RouteDeps } from './index.ts';
 import {
-  DISPATCH_SELECT, bad, canSee, conflict, dispatchView, jsonBody, loadAccess, notFound, requirePartner, route,
+  DISPATCH_SELECT, assertVisible, bad, canSee, conflict, dispatchView, jsonBody, loadAccess, notFound, requirePartner, requireWritableProject, route, scopeLabel,
+  type Access, type Ctx, type ProjectRow,
 } from './common.ts';
 import type { Db } from '../db/client.ts';
+
+/* ── wave 7 PR3 (S3): the counterparties of a project as links to organisations ── */
+
+export const PROJECT_ORG_ROLES = ['holder', 'government', 'partner', 'operator', 'regulator', 'counsel', 'vendor'] as const;
+const PROJECT_ORG_COLS = `po.organisation_id, o.name, o.kind, po.role, to_char(po.since,'YYYY-MM-DD') AS since, po.note`;
+
+export async function projectOrganisations(db: Db, projectId: string) {
+  return (await db.query<any>(`SELECT ${PROJECT_ORG_COLS} FROM project_organisations po JOIN organisations o ON o.id = po.organisation_id WHERE po.project_id = $1 ORDER BY po.organisation_id, po.role`, [projectId])).rows
+    .map(r => ({ organisation_id: r.organisation_id, name: r.name, kind: r.kind, role: r.role, since: r.since ?? null, note: r.note ?? null }));
+}
+
+/**
+ * The register names its counterparties as text (holder, government, partners). When a name matches an
+ * organisation (case-insensitive, legal form ignored) the join row is written; nothing is removed and the text
+ * stays. Returns the links written as org:<id>:<role>.
+ */
+export async function linkRegisterCounterparties(db: Db, projectId: string, register: Record<string, unknown> | null | undefined): Promise<string[]> {
+  if (!register) return [];
+  const wanted: Array<{ name: string; role: string }> = [];
+  if (typeof register.holder === 'string' && register.holder.trim()) wanted.push({ name: register.holder, role: 'holder' });
+  if (typeof register.government === 'string' && register.government.trim()) wanted.push({ name: register.government, role: 'government' });
+  if (Array.isArray(register.partners)) for (const p of register.partners) if (typeof p === 'string' && p.trim()) wanted.push({ name: p, role: 'partner' });
+  if (!wanted.length) return [];
+  const orgs = (await db.query<{ id: string; name: string }>('SELECT id, name FROM organisations')).rows;
+  const exact = new Map(orgs.map(o => [ascii(o.name).trim(), o.id]));
+  const loose = new Map(orgs.map(o => [normaliseOrgName(o.name), o.id]));
+  const written: string[] = [];
+  for (const w of wanted) {
+    const id = exact.get(ascii(w.name).trim()) ?? loose.get(normaliseOrgName(w.name));
+    if (!id) continue;
+    const r = await db.query('INSERT INTO project_organisations (project_id, organisation_id, role) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING RETURNING organisation_id', [projectId, id, w.role]);
+    if (r.rows.length) written.push(`org:${id}:${w.role}`);
+  }
+  return written;
+}
+
+async function loadProject(x: Ctx, acc: Access): Promise<ProjectRow> {
+  const id = x.c.req.param('id')!;
+  const p = acc.projects.get(id);
+  if (!p) throw notFound(`project "${id}" not found`);
+  x.a.scope = scopeLabel(id);
+  assertVisible(acc, p.default_legal_tag, p.id, `project "${id}"`);
+  return p;
+}
 
 const KINDS = ['client', 'partner', 'operator', 'regulator', 'vendor', 'counsel', 'other'];
 const LEGAL_SUFFIX = new Set(['sa', 'sas', 'sac', 'saa', 'ltd', 'ltda', 'limited', 'inc', 'incorporated', 'llc', 'llp', 'plc', 'corp', 'corporation', 'co', 'company', 'gmbh', 'ag', 'srl', 'sl', 'spa', 'bv', 'nv', 'cv']);
@@ -218,5 +263,43 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
 
     x.a.detail = { dispatches: dispatches.length, contracts: contracts.length };
     return { body: { organisation: org, contacts, contracts_in_force: contracts, dispatches, projects, open_invoices: invoices, generated_at: x.now.toISOString() } };
+  });
+
+  /* ── wave 7 PR3 (S3): GET/PUT /api/projects/:id/organisations ── */
+
+  route(app, 'GET', '/api/projects/:id/organisations', 'project.organisations.read', async (x) => {
+    const acc = await loadAccess(x.db, x.person, x.now);
+    const p = await loadProject(x, acc);
+    const organisations = await projectOrganisations(x.db, p.id);
+    x.a.refs = [`project:${p.id}`, ...organisations.map(o => `org:${o.organisation_id}`)]; x.a.detail = { count: organisations.length };
+    return { body: { project_id: p.id, organisations } };
+  });
+
+  route(app, 'PUT', '/api/projects/:id/organisations', 'project.organisations.replace', async (x) => {
+    const acc = await loadAccess(x.db, x.person, x.now);
+    const p = await loadProject(x, acc);
+    requireWritableProject(acc, p.id, '/id');
+    const b = await jsonBody(x.c);
+    if (!Array.isArray(b.organisations)) throw bad('organisations must be a list of {organisation_id, role, since?, note?}', '/organisations');
+    const seen = new Set<string>();
+    const rows: Array<{ organisation_id: string; role: string; since: string | null; note: string | null }> = [];
+    for (const [i, o] of (b.organisations as any[]).entries()) {
+      const path = `/organisations/${i}`;
+      if (!o || typeof o !== 'object') throw bad('each entry must be an object', path);
+      if (typeof o.organisation_id !== 'string' || !o.organisation_id) throw bad('organisation_id is required', `${path}/organisation_id`);
+      if (!(PROJECT_ORG_ROLES as readonly unknown[]).includes(o.role)) throw bad(`role must be one of ${PROJECT_ORG_ROLES.join(', ')}`, `${path}/role`);
+      if (o.since != null && !(typeof o.since === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.since) && !Number.isNaN(Date.parse(o.since)))) throw bad('since must be a date, YYYY-MM-DD', `${path}/since`);
+      if (o.note != null && typeof o.note !== 'string') throw bad('note must be text', `${path}/note`);
+      const key = `${o.organisation_id}:${o.role}`;
+      if (seen.has(key)) throw bad(`"${o.organisation_id}" is listed twice as ${o.role}`, path);
+      seen.add(key);
+      if (!(await x.db.query('SELECT 1 FROM organisations WHERE id = $1', [o.organisation_id])).rows[0]) throw bad(`organisation "${o.organisation_id}" does not exist`, `${path}/organisation_id`, 'unknown_organisation');
+      rows.push({ organisation_id: o.organisation_id, role: o.role, since: o.since ?? null, note: o.note ?? null });
+    }
+    await x.db.query('DELETE FROM project_organisations WHERE project_id = $1', [p.id]);
+    for (const r of rows) await x.db.query('INSERT INTO project_organisations (project_id, organisation_id, role, since, note) VALUES ($1,$2,$3,$4,$5)', [p.id, r.organisation_id, r.role, r.since, r.note]);
+    const organisations = await projectOrganisations(x.db, p.id);
+    x.a.refs = [`project:${p.id}`, ...organisations.map(o => `org:${o.organisation_id}`)]; x.a.detail = { count: organisations.length };
+    return { body: { project_id: p.id, organisations } };
   });
 }

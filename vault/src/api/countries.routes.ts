@@ -138,28 +138,69 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     if (!projects.length) throw notFound(`no projects in ${name.en} (${code}) in your scope`);
     const ctx = await withLiveRisk(await assembleCountryContext(x.db, acc, code, projects));
     const liveMeta = (l: LiveRisk | undefined) => (l ? { status: l.status, reason: l.reason ?? null, fetched_at: l.fetched_at, notes: l.notes } : { status: 'not_connected', reason: NOT_CONNECTED, fetched_at: null, notes: [] });
-    const view = (body: any, cached: boolean, created_at: string, model: string | null) => ({
-      country: code, name, language, cached, generated_at: created_at, model,
+    // Wave 7 PR3 (S8, W7-AC15): a brief ages. Past max_age_days it is still served (its sources are unchanged) but
+    // `due` tells the Hub to show its date and offer Regenerate.
+    const view = (body: any, cached: boolean, created_at: string, model: string | null, maxAgeDays: number) => ({
+      country: code, name, language, cached, generated_at: created_at, model, max_age_days: maxAgeDays, due: briefDue(created_at, maxAgeDays, x.now),
       projects: projects.map(p => ({ id: p.id, name: p.name, stage: p.stage, status: p.status, client_id: p.client_id })),
       world_monitor: liveMeta(ctx.live),
       ...body,
     });
-    const hit = (await x.db.query<any>('SELECT body, model, created_at FROM country_briefs WHERE country = $1 AND language = $2 AND scope_hash = $3 AND source_hash = $4 ORDER BY id DESC LIMIT 1',
+    const hit = (await x.db.query<any>('SELECT body, model, created_at, max_age_days FROM country_briefs WHERE country = $1 AND language = $2 AND scope_hash = $3 AND source_hash = $4 ORDER BY id DESC LIMIT 1',
       [code, language, ctx.scope_hash, ctx.source_hash])).rows[0];
     if (hit) {
-      x.a.detail = { country: code, cached: true, language };
-      return { body: view(hit.body, true, iso(hit.created_at)!, hit.model ?? null) };
+      x.a.detail = { country: code, cached: true, language, due: briefDue(iso(hit.created_at)!, hit.max_age_days, x.now) };
+      return { body: view(hit.body, true, iso(hit.created_at)!, hit.model ?? null, hit.max_age_days) };
     }
     const provider = briefProvider();
     if (!provider) throw new ApiError(503, 'not_configured', 'The drafting assistant is not connected. Ask Chris.');
     const r = await writeBrief(ctx, name[language], language, provider);
     const body = { paragraphs: r.paragraphs, citations: r.citations, sources: ctx.sources, warnings: r.warnings, questions: r.questions };
-    await x.db.query('INSERT INTO country_briefs (country, language, scope_hash, source_hash, tags, body, model, created_by, created_at) VALUES ($1,$2,$3,$4,$5::text[],$6::jsonb,$7,$8,$9)',
-      [code, language, ctx.scope_hash, ctx.source_hash, ctx.tags, JSON.stringify(body), r.model ?? null, x.person.id, x.now.toISOString()]);
+    const ins = (await x.db.query<{ max_age_days: number }>('INSERT INTO country_briefs (country, language, scope_hash, source_hash, tags, body, model, created_by, created_at) VALUES ($1,$2,$3,$4,$5::text[],$6::jsonb,$7,$8,$9) RETURNING max_age_days',
+      [code, language, ctx.scope_hash, ctx.source_hash, ctx.tags, JSON.stringify(body), r.model ?? null, x.person.id, x.now.toISOString()])).rows[0];
     if (r.usage) await x.db.query("INSERT INTO audit_events (person_id, action, scope, refs, detail, tokens_in, tokens_cached, tokens_out) VALUES ($1,'llm.brief',$2,$3::text[],$4::jsonb,$5,$6,$7)",
       [x.person.id, 'firm', x.a.refs, JSON.stringify({ country: code, model: r.model, language }), r.usage.input, r.usage.cached, r.usage.output]);
     x.a.detail = { country: code, cached: false, language, citations: r.citations.length, questions: r.questions.length, model: r.model ?? null, world_monitor: ctx.live?.status ?? 'not_connected' };
     x.a.refs = [...x.a.refs, ...r.citations];
-    return { body: view(body, false, x.now.toISOString(), r.model ?? null) };
+    return { body: view(body, false, x.now.toISOString(), r.model ?? null, ins?.max_age_days ?? DEFAULT_BRIEF_MAX_AGE_DAYS) };
   });
+
+  /**
+   * GET /api/countries/:code/brief?language= → the cached brief for the caller's scope with generated_at,
+   * max_age_days and due, never asking the provider (wave 7 PR3, S8). The latest brief for the scope is served
+   * even when its sources changed since (then `due` is true and `stale_sources` says why); 404 when none exists.
+   */
+  route(app, 'GET', '/api/countries/:code/brief', 'country.brief.read', async (x) => {
+    const code = x.c.req.param('code')!;
+    if (!isCountryCode(code)) throw bad('code must be an ISO 3166-1 alpha-2 code in capitals (e.g. "CO")', '/code');
+    const language: 'en' | 'es' = x.c.req.query('language') === 'es' ? 'es' : 'en';
+    const name = countryName(code);
+    const acc = await loadAccess(x.db, x.person, x.now);
+    const projects = [...acc.projects.values()].filter(p => p.country === code && p.status !== 'archived' && canSee(acc, p.default_legal_tag, p.id)).sort((a, c) => a.name.localeCompare(c.name));
+    x.a.scope = 'firm'; x.a.refs = projects.map(p => `project:${p.id}`);
+    if (!projects.length) throw notFound(`no projects in ${name.en} (${code}) in your scope`);
+    const ctx = await withLiveRisk(await assembleCountryContext(x.db, acc, code, projects));
+    const live = ctx.live;
+    // The brief built from today's sources when there is one; otherwise the latest for the scope, flagged.
+    const hit = (await x.db.query<any>('SELECT body, model, created_at, max_age_days, source_hash FROM country_briefs WHERE country = $1 AND language = $2 AND scope_hash = $3 ORDER BY (source_hash = $4) DESC, id DESC LIMIT 1',
+      [code, language, ctx.scope_hash, ctx.source_hash])).rows[0];
+    if (!hit) throw notFound(`no brief for ${name.en} (${code}) yet; POST to write one`);
+    const staleSources = hit.source_hash !== ctx.source_hash;
+    const generated = iso(hit.created_at)!;
+    const due = staleSources || briefDue(generated, hit.max_age_days, x.now);
+    x.a.detail = { country: code, cached: true, language, due, stale_sources: staleSources };
+    return { body: {
+      country: code, name, language, cached: true, generated_at: generated, model: hit.model ?? null, max_age_days: hit.max_age_days, due, stale_sources: staleSources,
+      projects: projects.map(p => ({ id: p.id, name: p.name, stage: p.stage, status: p.status, client_id: p.client_id })),
+      world_monitor: live ? { status: live.status, reason: live.reason ?? null, fetched_at: live.fetched_at, notes: live.notes } : { status: 'not_connected', reason: NOT_CONNECTED, fetched_at: null, notes: [] },
+      ...hit.body,
+    } };
+  });
+}
+
+const DEFAULT_BRIEF_MAX_AGE_DAYS = 90;
+/** True when the brief is older than its max_age_days. */
+export function briefDue(generatedAt: string, maxAgeDays: number, now: Date): boolean {
+  const t = Date.parse(generatedAt);
+  return !Number.isNaN(t) && now.getTime() - t > (maxAgeDays ?? DEFAULT_BRIEF_MAX_AGE_DAYS) * DAY;
 }
