@@ -33,10 +33,19 @@ const link = (project, hash, token, en, es, extra) => {
 const label = (en, es) => mk('span', 'hub-sl-label', en, es);
 const sep = () => mk('span', 'hub-sl-sep', '·', '·', { 'aria-hidden': 'true' });
 
+/** Wave 7 PR3 (H1, H8): `stage_changed_at` from the Vault first; the last stage_history entry when an older Vault has no column. */
 function stageSince(project) {
+  if (project.stage_changed_at) return project.stage_changed_at;
   const h = Array.isArray(project.stage_history) ? project.stage_history : [];
   const last = h.length ? h[h.length - 1] : null;
   return last && last.at ? last.at : null;
+}
+/** The next action: the standing endpoint's dated milestone ({title, due_at, owner}) when the page has it, else the register's text. */
+function nextAction(project) {
+  const reg = project.register || {};
+  const m = project.next && typeof project.next === 'object' ? project.next : null;
+  const title = m && m.title ? String(m.title) : reg.next ? String(reg.next) : '';
+  return { title, due: m && m.due_at ? String(m.due_at) : null, owner: m && m.owner ? String(m.owner) : reg.owner ? String(reg.owner) : '' };
 }
 
 /**
@@ -68,17 +77,19 @@ export function stateline(project, opts) {
   const since = stageSince(project);
   if (o.size === 'full' && since) {
     const d = fmtShortDate(since);
+    st.setAttribute('data-since', String(since).slice(0, 10));
     add(st, mk('span', 'hub-sl-since', ' since ' + d.en, ' desde ' + d.es));
   }
   add(el, st);
 
-  // NEXT  action · owner
-  const next = project.register && project.register.next ? String(project.register.next) : '';
-  const owner = project.register && project.register.owner ? String(project.register.owner) : '';
+  // NEXT  action · by date · owner   (wave 7 PR3, H1: the due date reads from the standing endpoint's milestone)
+  const na = nextAction(project);
+  const next = na.title, owner = na.owner;
   if (next || o.size === 'full') {
     add(el, sep());
     const nx = link(project, 'next', 'next', next || 'No next step', next || 'Sin siguiente paso', next ? {} : { 'data-empty': '1' });
     nx.insertBefore(label('Next', 'Siguiente'), nx.firstChild);
+    if (next && na.due) { const d = fmtShortDate(na.due); nx.setAttribute('data-due', na.due.slice(0, 10)); add(nx, mk('span', 'hub-sl-due', ' by ' + d.en, ' para el ' + d.es)); }
     if (next && owner && o.size !== 'card') add(nx, mk('span', 'hub-sl-owner', ' · ' + owner, ' · ' + owner));
     add(el, nx);
   }

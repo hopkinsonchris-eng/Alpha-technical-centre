@@ -1278,3 +1278,75 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 }
 /* labels never below 12 px, whatever the size of the line they sit in (W7-AC9) */
 .hub .hub-sl-label, .hub-stateline .hub-sl-label, .hub-stateline-row .hub-sl-label, .hub-stateline-card .hub-sl-label, .hub .label, .hub-head .label { font-size: 12px; }
+
+/* ── Wave 7 PR3 I: standing strip, background, assets, units ── */
+/* "Where it stands" (H1, W7-AC12): one quiet band directly under the stateline; groups wrap, each a label and its rows */
+.hub-project .hub-standing { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: flex-start; margin: 0 0 12px; padding: 8px 0 10px; border-bottom: 1px solid var(--rule); font-family: var(--font-body); font-size: 13.5px; }
+.hub-project .hub-standing[hidden] { display: none; }
+.hub-project .hub-st-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; max-width: 100%; }
+.hub-project .hub-st-label { font-size: 12px; display: block; }
+.hub-project .hub-st-body { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.hub-project .hub-st-fig { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; min-height: 36px; padding: 2px 0; }
+.hub-project .hub-st-fig-label { color: var(--muted); font-size: 12.5px; }
+.hub-project .hub-st-fig .hub-num { font-family: var(--font-label); font-weight: 600; font-size: 20px; line-height: 1; color: var(--navy); font-variant-numeric: tabular-nums; }
+.hub-project .hub-st-fig .hub-unit { font-family: var(--font-label); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hub .hub-asof { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.hub .hub-asof-date { font-variant-numeric: tabular-nums; }
+.hub .hub-src-chip { font-size: 12px; line-height: 1; }
+.hub button.hub-src-chip { cursor: pointer; min-height: 28px; padding: 4px 9px; font-family: var(--font-label); letter-spacing: .08em; text-transform: uppercase; }
+.hub button.hub-src-chip:hover, .hub button.hub-src-chip:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--gold); }
+@media (max-width: 1024px) { .hub button.hub-src-chip { min-height: 36px; padding: 8px 10px; } }
+.hub-project .hub-st-chip { text-decoration: none; min-height: 36px; display: inline-flex; align-items: center; }
+.hub-project .hub-st-chip.bad { color: var(--bad); border-color: var(--bad-line); background: var(--bad-bg); }
+.hub-project .hub-st-chip.warn { color: var(--warn); border-color: var(--warn-line); background: var(--warn-bg); }
+.hub-project .hub-st-cp, .hub-project .hub-st-deadline, .hub-project .hub-st-since { color: var(--navy); text-decoration: none; display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0 2px; min-height: 36px; padding: 2px 4px; border-radius: 4px; }
+.hub-project .hub-st-cp:hover, .hub-project .hub-st-deadline:hover, .hub-project .hub-st-since:hover, .hub-project .hub-st-cp:focus-visible, .hub-project .hub-st-deadline:focus-visible, .hub-project .hub-st-since:focus-visible { background: var(--cream); outline: none; box-shadow: 0 0 0 2px var(--gold); }
+.hub-project .hub-st-role { font-family: var(--font-label); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hub-project .hub-st-deadline.is-overdue, .hub-project .hub-st-deadline.is-overdue .hub-st-due, .hub-project .hub-st-deadline.is-overdue .hub-st-role { color: var(--bad); }
+.hub-project .hub-st-deadline.is-overdue { font-weight: 600; }
+.hub-project .hub-st-empty { font-size: 13px; }
+.hub .hub-sl-due { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--gold-ink); }
+@media (max-width: 640px) { .hub-project .hub-standing { gap: 8px 18px; font-size: 13px; } .hub-project .hub-st-fig .hub-num { font-size: 18px; } }
+/* the timeline's Background toggle (H2, W7-AC13): one row at the foot, the rows it opens stay in date order */
+.hub .hub-tl-bg-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 14px; border-top: 1px dashed var(--rule); }
+.hub .hub-tl-bg-toggle { min-height: 36px; }
+.hub .hub-tl-bg-note { font-size: 12px; }
+.hub .hub-tl-item.is-background { background: var(--cream); }
+.hub .hub-tl-item.is-background .hub-tl-title { color: var(--navy-mid); }
+.hub .hub-tl-item[hidden] { display: none; }
+/* the register's two figures (H4): value · unit · as-of · source, the arrow between */
+.hub-project .hub-reg-figures { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.hub-project .hub-reg-fig { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.hub-project .hub-reg-fig .hub-figure { display: inline-flex; align-items: baseline; gap: 4px; }
+.hub-project .hub-reg-fig .hub-num { font-family: var(--font-label); font-weight: 600; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
+.hub-project .hub-reg-fig .hub-unit { font-family: var(--font-label); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hub-project .hub-reg-arrow { color: var(--gold-ink); }
+.hub-project .hub-kpi .d .hub-asof { white-space: normal; }
+/* the Fields row counts and the asset panel (H3, W7-AC14) */
+.hub-project .hub-pfile-wrap .hub-field-row .hub-field-counts { font-family: var(--font-label); letter-spacing: .04em; text-transform: none; font-size: 11.5px; min-height: 28px; font-variant-numeric: tabular-nums; }
+@media (max-width: 1024px) { .hub-project .hub-pfile-wrap .hub-field-row .btn, .hub-project .hub-pfile-wrap .hub-field-row .hub-field-counts { min-height: 36px; padding-top: 6px; padding-bottom: 6px; } }
+.hub-project .hub-fld-pickers { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; }
+.hub-project .hub-fld-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.hub-project .hub-fld-pick select { min-height: 36px; padding: 4px 8px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--white); font: inherit; color: var(--navy); }
+.hub .hub-asset-counts { font-variant-numeric: tabular-nums; }
+.hub .hub-asset-file .hub-asset-sec { margin-top: 12px; }
+.hub .hub-asset-file h4 { font-family: var(--font-label); font-size: 11.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+.hub .hub-asset-file .hub-rp-list li { min-height: 36px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+/* the run panel's status actions and the as-of column (H4, H6) */
+.hub .hub-rp-table td.hub-rp-asof { white-space: nowrap; color: var(--muted); font-size: 12px; }
+.hub .hub-rp-table td.hub-rp-asof .hub-pill { vertical-align: middle; }
+.hub .hub-ok { color: var(--ok); }
+.hub .hub-age-flags { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: 12.5px; }
+/* the queue's create-a-project sheet (H7, W7-AC16) */
+.hub .hub-q-create { grid-column: 1 / -1; margin-top: 10px; padding: 12px 14px; border: 1px solid var(--gold); border-radius: var(--r-lg); background: var(--white); }
+.hub .hub-q-create-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; }
+.hub .hub-q-create-field { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-label); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.hub .hub-q-create-field input, .hub .hub-q-create-field select { min-height: 36px; padding: 6px 10px; border: 1px solid var(--rule); border-radius: var(--r); font: inherit; font-family: var(--font-body); font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--navy); background: var(--white); }
+.hub .hub-q-create-field input[readonly] { background: var(--cream); }
+.hub .hub-q-create-field input:focus, .hub .hub-q-create-field select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.18); }
+.hub .hub-q-create .q-msg { margin: 8px 0 0; }
+.hub .hub-q-create .q-controls { margin-top: 10px; }
+/* Today: the brief's date and Regenerate (H5, W7-AC15) */
+.hub .hub-brief-date { font-variant-numeric: tabular-nums; }
+.hub .hub-brief .hub-notice[data-brief-due] { margin-top: 10px; }
+.hub .hub-country-project .flags .hub-risk-tag { padding: 0; }

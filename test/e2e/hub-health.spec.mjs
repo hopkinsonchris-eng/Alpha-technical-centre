@@ -121,6 +121,8 @@ async function seed(page, { rerun, draft } = {}) {
       }
       return json(route, project());
     }
+    // Wave 7 PR3 (W7-AC12): the standing route, in the shape builder G serves, from the same seed.
+    if (p === '/api/projects/' + PID + '/standing') return json(route, { project: { id: PID, name: project().name, status: project().status, stage: project().stage, stage_since: project().stage_history[project().stage_history.length - 1].at, country: 'CO', client_id: 'frontera' }, next: { title: 'Issue screening letter to Frontera', due_at: null, owner: 'Chris', ref: null }, figures: [], open: { proposals: {}, filing: 0, questions_in_drafts: 0, unanswered_inbound: 0, unacknowledged_dispatches: 0 }, counterparties: [], deadlines: [], since: null, stale_counts: { runs: 0, items: 0 }, last_activity: null });
     if (p === '/api/projects/' + PID + '/timeline') return json(route, { project_id: PID, count: TIMELINE.length, entries: TIMELINE });
     if (p === '/api/projects/' + PID + '/vintages') return json(route, { project_id: PID, vintages: [] });
     if (p === '/api/projects/' + PID + '/lineage') return json(route, { project_id: PID, nodes: [], edges: [] });

@@ -414,3 +414,26 @@ test('W7 (D65): the "What this draft does not know" box is shown only when a pro
   await expect(unknown).toContainText('Nothing: every figure found its record.');
   expect(await result.evaluate((el) => el.firstElementChild.className)).toBe('hub-dr-unknown');
 });
+
+test('W7 PR3 (A6): the Vault\'s warnings on weak citations show in the review as warnings naming the record, and the chip opens it', async ({ page }) => {
+  await stubApi(page);
+  await page.route('**/api/draft', (route) => route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ...DRAFT(null), warnings: ['cites draft run ' + RUN, 'cites run older than document ' + FINDING, 'something else the Vault noticed'] }) }));
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('#p-draft-btn').click();
+  const panel = page.locator('#p-draft');
+  await panel.locator('#dr-to').selectOption('maria-fernandez');
+  await panel.locator('#dr-brief').fill('Tell her production restarted.');
+  await panel.locator('#dr-go').click();
+  const warn = panel.locator('#dr-result .hub-dr-warnings');
+  await expect(warn).toHaveAttribute('data-warnings', '3');
+  const rows = warn.locator('[data-warning]');
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText('Cites a draft run.');
+  await expect(rows.nth(0).locator('[data-pivot="run:' + RUN + '"]')).toHaveText('Waterflood screen, base case');
+  await expect(rows.nth(1)).toContainText('Cites a run older than a newer document.');
+  await expect(rows.nth(1).locator('[data-pivot="doc:' + FINDING + '"]')).toHaveText('PDVSA restarts Apure production after pipeline repair');
+  await expect(rows.nth(2)).toContainText('something else the Vault noticed');
+  await rows.nth(0).locator('[data-pivot]').click();
+  await expect(page.locator('#record-panel')).toHaveAttribute('data-ref', 'run:' + RUN);
+});

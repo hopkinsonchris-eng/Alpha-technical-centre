@@ -265,6 +265,33 @@ export function mountDraft(ctx, { openRecord }) {
       add(unknown, ul);
     }
     if (d.model) add(result, unknown);
+    // Wave 7 PR3 (A6): the Vault's warnings on weak citations ("cites draft run …", "cites run older than document …") as warnings
+    // in the review, each naming the record it is about, so the figure is checked before the letter goes.
+    const warnings = Array.isArray(d.warnings) ? d.warnings.filter((w) => typeof w === 'string' && w.trim()) : [];
+    if (warnings.length) {
+      const warn = mk('section', 'hub-dr-warnings', null, null, { 'data-warnings': String(warnings.length) });
+      add(warn, mk('h4', null, 'Check before it goes', 'Compruebe antes de enviarlo'));
+      const ul = mk('ul', 'hub-dr-warning-list');
+      for (const w of warnings) {
+        const li = mk('li', 'hub-notice warn', null, null, { 'data-warning': '' });
+        const inner = mk('span');
+        const m = /^cites (draft run|run older than document) ([0-9a-f-]{36})/i.exec(w);
+        if (m) {
+          const ref = (m[1] === 'draft run' ? 'run:' : 'doc:') + m[2];
+          const title = (d.sources || []).find((s) => s.ref === ref || s.ref === 'run:' + m[2] || s.ref === 'doc:' + m[2]);
+          const name = title ? title.title : m[2].slice(0, 8) + '…';
+          add(inner, mk('b', null, m[1] === 'draft run' ? 'Cites a draft run.' : 'Cites a run older than a newer document.', m[1] === 'draft run' ? 'Cita una ejecución en borrador.' : 'Cita una ejecución anterior a un documento más reciente.'), document.createTextNode(' '));
+          if (m[1] === 'draft run') add(inner, mk('span', null, 'Mark the run reviewed or final before the letter quotes it: ', 'Marque la ejecución como revisada o final antes de que la carta la cite: '));
+          else add(inner, mk('span', null, 'Check the run\'s inputs against the newer document: ', 'Compruebe las entradas de la ejecución frente al documento más reciente: '));
+          const b = dv('button', 'hub-cite hub-rp-pivot', name, { type: 'button', 'data-pivot': ref, title: ref });
+          b.addEventListener('click', () => { if (typeof openRecord === 'function') openRecord({ ref, title: name, trigger: b }); });
+          add(inner, b);
+        } else add(inner, dv('span', null, w));
+        add(li, inner); add(ul, li);
+      }
+      add(warn, ul);
+      add(result, warn);
+    }
     // The draft, paragraph by paragraph.
     const paras = mk('section', 'hub-dr-paras', null, null, { id: 'dr-paras' });
     add(paras, mk('h4', null, 'The draft', 'El borrador'));

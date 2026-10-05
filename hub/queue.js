@@ -11,10 +11,13 @@
      Review queue   GET  /api/queue/review           (NDA expiries, organisation proposals and fields named in documents; ?kind= adds one more kind)
                     POST /api/organisations          (accepting an organisation proposal adds it to the registry first)
                     POST /api/queue/review/:id/accept | /reject
+     Wave 7 PR3 (H7, W7-AC16), partners:
+                    POST /api/queue/filing/:id/create-project {name, id, country, organisation_id?}   "Create a project from this": the project
+                                       takes the sender's organisation and country, origin_ref the message, and the row is filed to it
    Projects for the assign list: GET /api/projects. Every string a person reads carries data-en and data-es.
    No secrets, no provider calls: this file only talks to /api/* on the same origin (behind Cloudflare Access).
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, fmtStamp } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, fmtStamp, loadGeo, slugify } from './hub.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const JSON_HEADERS = { accept: 'application/json', 'content-type': 'application/json' };
@@ -25,7 +28,97 @@ const pct = (c) => (typeof c === 'number' ? Math.round(c * 100) + ' %' : '');
 const kindParam = new URLSearchParams(location.search).get('kind') || '';
 
 let projects = [];           // [{id, name}]
+let person = null;           // the caller, from /api/me (partners may create a project from a row)
+let countryNames = null;     // Map<code, {en, es}> from the shared polygons, for the create sheet's country list
 const projectName = (id) => { const p = projects.find((x) => x.id === id); return p ? p.name : id; };
+
+/* ── wave 7 PR3 (H7, W7-AC16): a project from a filing row ───────────── */
+
+/** "RE: Fwd: Cubiro water injection data request" → "Cubiro water injection data request". */
+export function subjectToName(subject) {
+  let s = String(subject || '').trim();
+  for (let i = 0; i < 6; i++) { const t = s.replace(/^(re|fw|fwd|aw|rv|sv)\s*:\s*/i, '').replace(/^\[[^\]]{1,40}\]\s*/, ''); if (t === s) break; s = t.trim(); }
+  return s;
+}
+/** "andinolabs.co" → "Andinolabs", the guess the sheet shows when the row names no organisation. */
+const orgGuess = (address) => {
+  const domain = String(address || '').replace(/^.*@/, '').toLowerCase();
+  const parts = domain.split('.').filter(Boolean);
+  const generic = new Set(['co', 'com', 'org', 'net', 'gov', 'edu', 'ac']);
+  let core = parts.slice(0, -1);
+  while (core.length > 1 && generic.has(core[core.length - 1])) core = core.slice(0, -1);
+  const label = core[core.length - 1] || parts[0] || '';
+  return label.split(/[-_]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+};
+
+/**
+ * The small sheet under the row: name, id, organisation and country prefilled from the message; Create posts to the Vault, which
+ * builds the project from the sender's organisation and files the row to it. A sender the registry does not know is said so, with
+ * the way out (accept the organisation proposal, or name an organisation id).
+ */
+function createSheet(it, row, list) {
+  const org = it.organisation && typeof it.organisation === 'object' ? it.organisation : null;
+  const sheet = mk('form', 'hub-q-create', null, null, { 'data-create-sheet': it.id, novalidate: '' });
+  const sid = 'qc-' + it.id;
+  const grid = mk('div', 'hub-q-create-grid');
+  const fld = (key, en, es, input) => { input.id = sid + '-' + key; add(grid, add(mk('label', 'hub-q-create-field'), mk('span', null, en, es), input)); return input; };
+  const name = fld('name', 'Project name', 'Nombre del proyecto', mk('input', null, null, null, { type: 'text', value: subjectToName(it.subject), 'data-create-name': '', autocomplete: 'off' }));
+  const id = fld('id', 'Project id', 'Id del proyecto', mk('input', null, null, null, { type: 'text', value: slugify(subjectToName(it.subject)), 'data-create-id': '', autocomplete: 'off', spellcheck: 'false' }));
+  let idTouched = false;
+  id.addEventListener('input', () => { idTouched = true; });
+  name.addEventListener('input', () => { if (!idTouched) id.value = slugify(name.value); });
+  const orgIn = fld('org', 'Organisation', 'Organización', mk('input', null, null, null, { type: 'text', value: org ? org.name || org.id || '' : orgGuess(it.from_address || it.from), 'data-create-org': '', readonly: '', 'aria-describedby': sid + '-org-note' }));
+  if (org && org.id) orgIn.setAttribute('data-organisation-id', org.id);
+  const country = fld('country', 'Country', 'País', mk('select', null, null, null, { 'data-create-country': '' }));
+  add(country, mk('option', null, 'From the organisation', 'Según la organización', { value: '' }));
+  if (countryNames) for (const [code, n] of [...countryNames.entries()].sort((a, b) => a[1].en.localeCompare(b[1].en))) add(country, mk('option', null, n.en, n.es, { value: code }));
+  if (org && org.country && countryNames && countryNames.has(org.country)) country.value = org.country;
+  add(sheet, grid);
+  add(sheet, mk('p', 'hub-note-s', org ? 'The project takes this organisation as holder and its country; this message is filed to it and its sender becomes a contact.' : 'The Vault looks the sender up in the registry: the project takes that organisation as holder and its country. If the sender is not there yet, add the organisation first (the review queue proposes it).',
+    org ? 'El proyecto toma esta organización como titular y su país; este mensaje se archiva en él y su remitente pasa a ser contacto.' : 'El Vault busca al remitente en el registro: el proyecto toma esa organización como titular y su país. Si el remitente aún no está, añada primero la organización (la cola de revisión la propone).', { id: sid + '-org-note' }));
+  const msg = mk('p', 'q-msg', null, null, { role: 'status', hidden: '' });
+  const actions = mk('div', 'q-controls');
+  const go = mk('button', 'btn btn-primary btn-sm', 'Create project', 'Crear proyecto', { type: 'submit', 'data-action': 'create-project-go' });
+  const cancel = mk('button', 'btn btn-outline btn-sm', 'Cancel', 'Cancelar', { type: 'button', 'data-action': 'create-project-cancel' });
+  cancel.addEventListener('click', () => { sheet.remove(); const opener = row.querySelector('[data-action="create-project"]'); if (opener) { opener.setAttribute('aria-expanded', 'false'); opener.focus(); } });
+  add(actions, go, cancel);
+  add(sheet, msg, actions);
+  sheet.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    msg.setAttribute('hidden', ''); msg.textContent = ''; msg.className = 'q-msg';
+    const nm = name.value.trim();
+    if (!nm) { name.focus(); return; }
+    const body = { name: nm };
+    if (id.value.trim()) body.id = id.value.trim();
+    if (country.value) body.country = country.value;
+    if (org && org.id) body.organisation_id = org.id;
+    go.disabled = cancel.disabled = true;
+    const res = await post('/api/queue/filing/' + encodeURIComponent(it.id) + '/create-project', body);
+    go.disabled = cancel.disabled = false;
+    if (res.ok && res.body && res.body.project) {
+      const p = res.body.project;
+      projects.push({ id: p.id, name: p.name }); projects.sort((a, b) => a.name.localeCompare(b.name));
+      // The rows still waiting can be filed to the new project too.
+      for (const sel of document.querySelectorAll('select[data-project-select]')) if (![...sel.options].some((o) => o.value === p.id)) add(sel, dv('option', null, p.name, { value: p.id }));
+      row.remove();
+      const left = list.querySelectorAll('.q-row').length;
+      setCount('#n-filing', left);
+      if (!left) empty(list);
+      const live = $('#live'); live.textContent = '';
+      add(live, mk('span', null, 'Project created and the message filed to it: ', 'Proyecto creado y el mensaje archivado en él: '), dv('a', 'hub-inline-link', p.name, { href: '/hub/project.html?id=' + encodeURIComponent(p.id), 'data-created-project': p.id }));
+      return;
+    }
+    msg.removeAttribute('hidden'); msg.className = 'q-msg bad';
+    const code = res.body && res.body.error && res.body.error.code;
+    if (res.status === 403) add(msg, mk('b', null, 'Only partners create projects.', 'Solo los socios crean proyectos.'));
+    else if (code === 'unknown_organisation') add(msg, mk('b', null, 'The sender is not in the registry yet.', 'El remitente aún no está en el registro.'), document.createTextNode(' '), mk('span', null, 'Add the organisation from the review queue below, then try again.', 'Añada la organización desde la cola de revisión de abajo e inténtelo de nuevo.'));
+    else if (res.status === 409 && code === 'conflict') add(msg, mk('b', null, 'That project id is taken.', 'Ese id de proyecto ya existe.'), document.createTextNode(' '), mk('span', null, 'Change the id and try again.', 'Cambie el id e inténtelo de nuevo.'));
+    else if (res.status === 409) add(msg, mk('b', null, 'Already dealt with.', 'Ya resuelto.'), document.createTextNode(' '), mk('span', null, 'Someone else filed or created from this message.', 'Otra persona archivó o creó a partir de este mensaje.'));
+    else if (res.status === 404 || res.status === 501) add(msg, mk('b', null, 'This Vault cannot create a project from the queue yet.', 'Este Vault aún no puede crear un proyecto desde la cola.'));
+    else add(msg, mk('b', null, 'Not created.', 'No creado.'), document.createTextNode(' '), dv('span', null, errText(res) || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.')));
+  });
+  return sheet;
+}
 
 /* ── shared bits ─────────────────────────────────────────────────────── */
 
@@ -132,6 +225,18 @@ function filingRow(it, list) {
     () => post('/api/queue/filing/' + encodeURIComponent(it.id) + '/dismiss'),
     () => announce('Kept in the firm inbox, not filed to a project.', 'Conservado en la bandeja de la firma, sin archivar en un proyecto.')));
   add(controls, no);
+  // Wave 7 PR3 (H7, W7-AC16): a partner can start a project from a message the firm received.
+  if (person && person.role === 'partner' && it.direction !== 'out') {
+    const cp = mk('button', 'btn btn-outline btn-sm', 'Create a project from this', 'Crear un proyecto a partir de esto', { type: 'button', 'data-action': 'create-project', 'aria-expanded': 'false', 'aria-describedby': tid });
+    cp.addEventListener('click', () => {
+      const open = body.querySelector('[data-create-sheet]');
+      if (open) { open.remove(); cp.setAttribute('aria-expanded', 'false'); return; }
+      const sheet = createSheet(it, row, list);
+      add(body, sheet); cp.setAttribute('aria-expanded', 'true');
+      const first = sheet.querySelector('input'); if (first) first.focus();
+    });
+    add(controls, cp);
+  }
   add(body, controls);
   add(row, body);
   return row;
@@ -301,12 +406,13 @@ async function renderReview() {
 /* ── page ────────────────────────────────────────────────────────────── */
 
 async function init() {
-  await showSession();
-  const pr = await api('/api/projects');
+  person = await showSession();
+  const [pr, geo] = await Promise.all([api('/api/projects'), person && person.role === 'partner' ? loadGeo() : Promise.resolve(null)]);
   showVault(pr.ok || pr.status > 0);
   projects = listOf(pr.body, 'projects', 'items').filter((p) => p && p.id && p.id !== 'firm').map((p) => ({ id: p.id, name: p.name || p.title || p.id }));
   projects.sort((a, b) => a.name.localeCompare(b.name));
+  if (geo && Array.isArray(geo.features)) { countryNames = new Map(); for (const f of geo.features) if (f.properties && f.properties.iso2 && !countryNames.has(f.properties.iso2)) countryNames.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es }); }
   await Promise.all([renderFiling(), renderLessons(), renderReview()]);
   document.body.setAttribute('data-ready', '1');
 }
-init();
+if (document.body && document.body.getAttribute('data-page') !== 'test') init();

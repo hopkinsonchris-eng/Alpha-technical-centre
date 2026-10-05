@@ -360,3 +360,75 @@ test('W6-AC5: rows the capture marked ready sit in a Ready group with Accept all
   expect(post.body).toEqual({ ids: ['f1', 'f2'] });
   await expect(list.locator('.q-group-head[data-group="ready"]')).toHaveCount(0);
 });
+
+// ── Wave 7 PR3 (H7, W7-AC16 Hub side): a project from a filing row ────────────────────────────────────────────
+const EVIDENCE7 = path.join(ROOT, 'docs/vault-hub/wave7/evidence');
+const ASSOCIATE = { id: 'ana', name: 'Ana Pérez', email: 'ana@alpha-technical-centre.com', role: 'associate' };
+
+test('W7-AC16 (Hub): a partner creates a project from a received message: the sheet prefills the name, id, organisation and country; Create posts to the Vault, the row goes and the new project is linked', async ({ page }) => {
+  const rows = [FILING[0], { ...FILING[1], organisation: { id: 'laboratorio-andino', name: 'Laboratorio Andino S.A.S.', country: 'CO' } }, FILING[2]];
+  const h = full().filter((x) => !(x[0] === 'GET' && String(x[1]).includes('filing')));
+  h.push(['GET', /^\/api\/queue\/filing$/, (u, r) => json(r, { items: rows })]);
+  h.push(['POST', /^\/api\/queue\/filing\/([^/]+)\/create-project$/, (u, r, m) => {
+    const b = JSON.parse(r.request().postData());
+    return json(r, { project: { id: b.id, name: b.name, status: 'prospect', country: b.country || 'CO', origin_ref: 'doc:i' + m[1].slice(1), register: { holder: 'Laboratorio Andino S.A.S.' }, contacts: ['lab-andino'], organisations: [{ organisation_id: 'laboratorio-andino', name: 'Laboratorio Andino S.A.S.', role: 'holder' }] }, assigned: { id: m[1], status: 'assigned', project_id: b.id, contacts: [{ contact_id: 'lab-andino', organisation_id: 'laboratorio-andino', created: true }] } }, 201);
+  }]);
+  const calls = await open(page, h);
+  // Received rows offer it; the one the firm sent does not.
+  await expect(page.locator('[data-queue-id="f1"] [data-action="create-project"]')).toHaveText('Create a project from this');
+  await expect(page.locator('[data-queue-id="f2"] [data-action="create-project"]')).toHaveCount(1);
+  await expect(page.locator('[data-queue-id="f3"] [data-action="create-project"]')).toHaveCount(0);
+  // The sheet, prefilled from the message: the subject without its RE:, the id from it, the organisation the row names with its country.
+  const row = page.locator('[data-queue-id="f2"]');
+  await row.locator('[data-action="create-project"]').click();
+  const sheet = row.locator('[data-create-sheet="f2"]');
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator('[data-create-name]')).toHaveValue('Updated PVT report, Cubiro-14 sample');
+  await expect(sheet.locator('[data-create-id]')).toHaveValue('updated-pvt-report-cubiro-14-sample');
+  await expect(sheet.locator('[data-create-org]')).toHaveValue('Laboratorio Andino S.A.S.');
+  await expect(sheet.locator('[data-create-org]')).toHaveAttribute('data-organisation-id', 'laboratorio-andino');
+  await expect(sheet.locator('[data-create-country]')).toHaveValue('CO');
+  await expect(sheet.locator('[data-create-country] option[value="CO"]')).toHaveText('Colombia');
+  // A row without an organisation on it guesses the name from the sender's domain and leaves the country to the Vault.
+  const row1 = page.locator('[data-queue-id="f1"]');
+  await row1.locator('[data-action="create-project"]').click();
+  await expect(row1.locator('[data-create-org]')).toHaveValue('Andinolabs');
+  await expect(row1.locator('[data-create-country]')).toHaveValue('');
+  await expect(row1.locator('[data-create-name]')).toHaveValue('Cubiro water injection data request');
+  mkdirSync(EVIDENCE7, { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.screenshot({ path: path.join(EVIDENCE7, 'w7-create-from-queue.png'), fullPage: false });
+  await row1.locator('[data-action="create-project-cancel"]').click();
+  await expect(row1.locator('[data-create-sheet]')).toHaveCount(0);
+  // The name can be changed; the id follows until edited by hand.
+  await sheet.locator('[data-create-name]').fill('Cubiro-14 PVT review');
+  await expect(sheet.locator('[data-create-id]')).toHaveValue('cubiro-14-pvt-review');
+  await sheet.locator('[data-action="create-project-go"]').click();
+  await expect(row).toHaveCount(0);
+  await expect(page.locator('#filing-list .q-row')).toHaveCount(2);
+  await expect(page.locator('#n-filing')).toHaveText('2');
+  await expect(page.locator('#live')).toContainText('Project created and the message filed to it');
+  await expect(page.locator('#live [data-created-project="cubiro-14-pvt-review"]')).toHaveAttribute('href', '/hub/project.html?id=cubiro-14-pvt-review');
+  const post = calls.find((c) => c.method === 'POST');
+  expect(post.path).toBe('/api/queue/filing/f2/create-project');
+  expect(post.body).toEqual({ name: 'Cubiro-14 PVT review', id: 'cubiro-14-pvt-review', country: 'CO', organisation_id: 'laboratorio-andino' });
+  // The new project joins the assign list of the rows still waiting.
+  await expect(page.locator('[data-queue-id="f1"] select option', { hasText: 'Cubiro-14 PVT review' })).toHaveCount(1);
+});
+
+test('W7-AC16 (Hub): an unknown sender is said so with the way out; an associate sees no Create a project', async ({ page }) => {
+  const h = [...full(), ['POST', /^\/api\/queue\/filing\/([^/]+)\/create-project$/, (u, r) => json(r, { error: { code: 'unknown_organisation', message: 'the sender is not in the registry yet' } }, 409)]];
+  await open(page, h);
+  const row = page.locator('[data-queue-id="f1"]');
+  await row.locator('[data-action="create-project"]').click();
+  await row.locator('[data-action="create-project-go"]').click();
+  await expect(row.locator('.q-msg.bad')).toContainText('The sender is not in the registry yet.');
+  await expect(row).toHaveCount(1);
+  await expect(page.locator('#filing-list .q-row')).toHaveCount(3);
+  // An associate: no such action on any row.
+  const asAna = full().filter((x) => !(x[0] === 'GET' && String(x[1]).includes('me$')));
+  asAna.unshift(['GET', /^\/api\/me$/, (u, r) => json(r, ASSOCIATE)]);
+  await open(page, asAna);
+  await expect(page.locator('#filing-list .q-row')).toHaveCount(3);
+  await expect(page.locator('[data-action="create-project"]')).toHaveCount(0);
+});

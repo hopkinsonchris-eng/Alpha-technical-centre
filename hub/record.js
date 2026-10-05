@@ -92,23 +92,38 @@ function card(key, titleEn, titleEs, body) {
   add(c, mk('h4', null, titleEn, titleEs), body);
   return c;
 }
-function listCard(key, titleEn, titleEs, refs, ctx) {
+function listCard(key, titleEn, titleEs, refs, ctx, titles) {
   const ul = mk('ul', 'hub-rp-list');
-  for (const r of refs) add(ul, refItem(r, ctx));
+  const c = titles && titles.size ? { ...ctx, entryById: new Map([...(ctx.entryById || new Map()), ...[...titles].map(([r, t]) => [idOf(r), { title: t }])]) } : ctx;
+  for (const r of refs) add(ul, refItem(r, c));
   return card(key, titleEn, titleEs, ul);
 }
 const h = (dl, key, en, es, valueNode) => add(dl, mk('dt', null, en, es), add(mk('dd', null, null, null, { 'data-h': key }), valueNode));
 
-/** Edges leaving this ref that mean "something used or quoted it": runs that took it as an input, documents that cite it. */
-function citedBy(ref, ctx) {
+/** Edges leaving this ref that mean "something used or quoted it": runs that took it as an input, documents that cite it.
+ *  Wave 7 PR3 (H6): the record's own `cited_by` (built on the server from item_cites, across projects) comes first when the route gives it. */
+function citedBy(ref, ctx, rec) {
+  const own = rec && Array.isArray(rec.cited_by) ? rec.cited_by.map((c) => (typeof c === 'string' ? c : c && (c.ref || (c.id ? 'doc:' + c.id : null)))).filter(Boolean) : [];
   const edges = (ctx.lineage && ctx.lineage.edges) || [];
-  return edges.filter((e) => e.from === ref && (e.type === 'cites' || e.type === 'input')).map((e) => e.to);
+  const fromLineage = edges.filter((e) => e.from === ref && (e.type === 'cites' || e.type === 'input')).map((e) => e.to);
+  return [...new Set([...own, ...fromLineage])];
+}
+/** Titles the server sends beside its cited_by refs, so a record outside the loaded project still reads as its title. */
+function citedTitles(rec) {
+  const m = new Map();
+  for (const c of (rec && Array.isArray(rec.cited_by)) ? rec.cited_by : []) if (c && typeof c === 'object' && (c.ref || c.id) && c.title) m.set(c.ref || 'doc:' + c.id, c.title);
+  return m;
 }
 
+/** Wave 7 PR3: a run's staleness and age flags sit under facets.vault (the Tier A record forbids them top level); an item keeps them top level. */
+const vaultFacet = (rec) => (rec && rec.facets && rec.facets.vault && typeof rec.facets.vault === 'object' ? rec.facets.vault : null);
+const recStale = (rec) => { const v = vaultFacet(rec); return v ? !!v.stale : !!(rec && rec.stale); };
+const recStaleReasons = (rec) => { const v = vaultFacet(rec); return v ? v.stale_reasons : rec && rec.stale_reasons; };
+const recAgeFlags = (rec) => { const v = vaultFacet(rec); const f = v && Array.isArray(v.age_flags) ? v.age_flags : rec && Array.isArray(rec.age_flags) ? rec.age_flags : []; return f.filter(Boolean); };
 function staleBadge(entry, node, rec) {
-  const stale = (entry && entry.stale) || (node && node.stale) || (rec && rec.stale);
+  const stale = (entry && entry.stale) || (node && node.stale) || recStale(rec);
   if (!stale) return null;
-  const why = firstReason((entry && entry.stale_reasons) || (rec && rec.stale_reasons));
+  const why = firstReason((entry && entry.stale_reasons) || recStaleReasons(rec));
   const s = mk('span', null, null, null, { 'data-m': 'stale' });
   add(s, mk('span', 'hub-stale', 'Stale', 'Obsoleta', { title: why || '' }), why ? dv('span', 'hub-muted', ' ' + why) : null);
   return s;
@@ -427,8 +442,8 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
   add(rel, card('versions', plural(list.length, 'version', 'versions'), plural(list.length, 'versión', 'versiones'), vul));
   const cites = Array.isArray(rec.cites) ? rec.cites : [];
   if (cites.length) add(rel, listCard('cites', 'Cites', 'Cita', cites, ctx));
-  const by = citedBy(ref, ctx);
-  if (by.length) add(rel, listCard('cited-by', 'Used by', 'Usado por', by, ctx));
+  const by = citedBy(ref, ctx, rec);
+  if (by.length) add(rel, listCard('cited-by', 'Used by', 'Usado por', by, ctx, citedTitles(rec)));
   add(frag, rel);
 
   // Technical, last: format, hash, storage key, the index state (with Index now when the cron has not reached it), ingested, the JSON.
@@ -492,12 +507,13 @@ function renderRun({ ref, rec, node, entry, ctx }) {
   const ver = src.tool_version || (entry && entry.tool_version);
   const tools = (ctx.catalog && ctx.catalog.tools) || [];
   const tool = tools.find((t) => t.id === job) || null;
-  const status = src.status || (node && node.status) || (entry && entry.status);
+  let status = src.status || (node && node.status) || (entry && entry.status);
   const st = RUN_STATUS[status] || [status, status, 'muted'];
   const when = src.created_at || (entry && entry.at);
   const d = when ? fmtShortDate(when) : null;
+  const statusPill = status ? mk('span', 'hub-pill ' + st[2], st[0], st[1], { 'data-status': status, 'data-m': 'status' }) : null;
   add(frag, metaLine([
-    status ? mk('span', 'hub-pill ' + st[2], st[0], st[1], { 'data-status': status, 'data-m': 'status' }) : null,
+    statusPill,
     job ? dv('a', 'hub-inline-link', (tool ? tool.name : job) + (ver ? ' ' + ver : ''), { href: '/hub/tool.html?id=' + encodeURIComponent(job), 'data-m': 'tool' }) : null,
     d ? mk('span', null, d.en, d.es, { 'data-m': 'date' }) : null,
     dv('span', 'hub-lt', src.legal_tag || (entry && entry.legal_tag), { 'data-m': 'tag' }),
@@ -512,16 +528,31 @@ function renderRun({ ref, rec, node, entry, ctx }) {
   const numeric = keys.filter((k) => outputs[k] && typeof outputs[k].value === 'number');
   const words = keys.filter((k) => outputs[k] && typeof outputs[k].value !== 'number' && outputs[k].value != null);
   add(view, mk('h4', null, 'Outputs', 'Resultados'));
+  // Wave 7 PR3 (H4): every number carries unit · as-of · source: the as-of column holds the run's date and the status pill the figure wears elsewhere.
+  const asOfCell = () => { const td = mk('td', 'hub-rp-asof', null, null, { 'data-asof': when ? String(when).slice(0, 10) : '' }); if (d) add(td, mk('span', null, d.en, d.es)); if (status) add(td, document.createTextNode(' '), mk('span', 'hub-pill ' + st[2] + ' hub-src-chip', st[0], st[1], { 'data-status': status })); return td; };
   if (numeric.length) {
     const t = mk('table', 'hub-table hub-rp-table', null, null, { 'data-outputs': '' });
-    add(t, add(mk('thead'), add(mk('tr'), mk('th', null, 'Output', 'Resultado'), mk('th', 'num', 'Value', 'Valor'))));
+    add(t, add(mk('thead'), add(mk('tr'), mk('th', null, 'Output', 'Resultado'), mk('th', 'num', 'Value', 'Valor'), mk('th', null, 'As of · source', 'Fecha · fuente'))));
     const tb = mk('tbody');
     for (const k of numeric) {
       const o = outputs[k], unit = unitOf(k, o), lab = labelFor(k, unit, tool);
-      add(tb, add(mk('tr', null, null, null, { 'data-output': k }), mk('th', null, lab.en, lab.es, { scope: 'row' }), add(mk('td', 'num'), figure(o.value, unit))));
+      add(tb, add(mk('tr', null, null, null, { 'data-output': k }), mk('th', null, lab.en, lab.es, { scope: 'row' }), add(mk('td', 'num'), figure(o.value, unit)), asOfCell()));
     }
     add(t, tb); add(view, wrapTable(t));
   } else add(view, mk('p', 'hub-muted', 'No numeric outputs on this run.', 'Sin resultados numéricos en esta ejecución.'));
+  // Wave 7 PR3 (G1 to G7): advisory age flags from facets.vault, a quiet line each, never the stale badge.
+  const flags = recAgeFlags(rec);
+  if (flags.length) {
+    const ul = mk('ul', 'hub-age-flags hub-note-s', null, null, { 'data-age-flags': String(flags.length) });
+    for (const fl of flags) {
+      const text = typeof fl === 'string' ? fl : fl.detail || fl.text || fl.rule || JSON.stringify(fl);
+      const li = mk('li', null, null, null, { 'data-age-rule': typeof fl === 'object' && fl.rule ? fl.rule : '' });
+      add(li, mk('span', 'hub-muted', 'Age: ', 'Antigüedad: '), dv('span', null, text));
+      if (typeof fl === 'object' && fl.ref && /^(run|doc):/.test(String(fl.ref))) { const b = dv('button', 'hub-linkbtn hub-rp-pivot', labelOf(fl.ref, ctx), { type: 'button', 'data-pivot': fl.ref }); b.addEventListener('click', () => ctx.open(fl.ref, labelOf(fl.ref, ctx), b)); add(li, document.createTextNode(' '), b); }
+      add(ul, li);
+    }
+    add(view, ul);
+  }
   if (outputs.method && outputs.method.value != null) add(view, add(mk('p', 'hub-note-s', null, null, { 'data-outputs-method': '' }), mk('span', null, 'Method: ', 'Método: '), dv('span', null, String(outputs.method.value))));
   for (const k of words) { const lab = labelFor(k, '', tool); add(view, add(mk('p', 'hub-note-s', null, null, { 'data-output': k }), mk('span', null, lab.en + ': ', lab.es + ': '), dv('span', null, String(outputs[k].value)))); }
   const cmpHost = mk('div', null, null, null, { 'data-compare-host': '' });
@@ -626,6 +657,46 @@ function renderRun({ ref, rec, node, entry, ctx }) {
     add(actions, cmp);
   }
   add(actions, citeButton('run:' + rec.id), rstate);
+  // Wave 7 PR3 (H6, W7-AC11): Mark reviewed (members and partners) and Mark final (partners) through POST /api/runs/:id/status.
+  // The record JSON is untouched; the row's status moves, the pill follows, and the page re-fetches its headline numbers.
+  const role = ctx.person && ctx.person.role;
+  const mayReview = !!role && (role === 'partner' || ctx.canWrite) && (status === 'draft' || status === 'reviewed' || !status);
+  if (mayReview && status !== 'final' && status !== 'superseded') {
+    const sstate = mk('span', 'hub-rerun-state', null, null, { 'data-status-state': '', role: 'status' });
+    const mark = (next, btn) => async () => {
+      btn.disabled = true; sstate.textContent = '';
+      const r = await api('/api/runs/' + encodeURIComponent(rec.id) + '/status', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ status: next }) });
+      if (r.ok) {
+        status = (r.body && r.body.status) || next;
+        const ns = RUN_STATUS[status] || [status, status, 'muted'];
+        if (statusPill) { statusPill.className = 'hub-pill ' + ns[2]; statusPill.setAttribute('data-status', status); statusPill.setAttribute('data-en', ns[0]); statusPill.setAttribute('data-es', ns[1]); statusPill.textContent = document.documentElement.getAttribute('lang') === 'es' ? ns[1] : ns[0]; }
+        for (const c of view.querySelectorAll('.hub-rp-asof .hub-pill')) { c.className = 'hub-pill ' + ns[2] + ' hub-src-chip'; c.setAttribute('data-status', status); c.setAttribute('data-en', ns[0]); c.setAttribute('data-es', ns[1]); c.textContent = document.documentElement.getAttribute('lang') === 'es' ? ns[1] : ns[0]; }
+        add(sstate, mk('span', 'hub-ok', next === 'final' ? 'Marked final: it now counts in the headline numbers.' : 'Marked reviewed.', next === 'final' ? 'Marcada final: ya cuenta en las cifras principales.' : 'Marcada revisada.', { 'data-status-done': status }));
+        if (next === 'reviewed' && reviewBtn) reviewBtn.setAttribute('hidden', '');
+        if (next === 'final') { if (reviewBtn) reviewBtn.setAttribute('hidden', ''); if (finalBtn) finalBtn.setAttribute('hidden', ''); }
+        if (typeof ctx.onRunStatus === 'function') ctx.onRunStatus(rec.id, status);
+        return;
+      }
+      btn.disabled = false;
+      const msg = (r.body && r.body.error && r.body.error.message) || '';
+      const code = (r.body && r.body.error && r.body.error.code) || '';
+      const en = r.status === 403 ? 'Not allowed: ' + (next === 'final' ? 'only a partner marks a run final.' : 'only a member of the project or a partner reviews a run.')
+        : r.status === 409 && code === 'superseded' ? 'This run is superseded: the newer run is the one to review.'
+        : r.status === 409 ? 'Not changed: ' + (msg || 'the run moved on; reopen it to see its status.')
+        : r.status === 404 || r.status === 501 ? 'This Vault does not record run status yet.'
+        : 'Not changed' + (msg ? ': ' + msg : r.status ? ' (HTTP ' + r.status + ')' : ' (the Vault is unreachable)') + '.';
+      const es = r.status === 403 ? 'No permitido: ' + (next === 'final' ? 'solo un socio marca una ejecución como final.' : 'solo un miembro del proyecto o un socio revisa una ejecución.')
+        : r.status === 409 && code === 'superseded' ? 'Esta ejecución está reemplazada: la más nueva es la que se revisa.'
+        : r.status === 409 ? 'Sin cambios: ' + (msg || 'la ejecución cambió; vuelva a abrirla para ver su estado.')
+        : r.status === 404 || r.status === 501 ? 'Este Vault aún no registra el estado de las ejecuciones.'
+        : 'Sin cambios' + (msg ? ': ' + msg : r.status ? ' (HTTP ' + r.status + ')' : ' (el Vault no es accesible)') + '.';
+      add(sstate, mk('span', 'hub-bad', en, es, { 'data-status-reason': String(r.status), 'data-status-code': code }));
+    };
+    let reviewBtn = null, finalBtn = null;
+    if (status !== 'reviewed') { reviewBtn = mk('button', 'btn btn-outline btn-sm', 'Mark reviewed', 'Marcar revisada', { type: 'button', 'data-action': 'mark-reviewed' }); reviewBtn.addEventListener('click', mark('reviewed', reviewBtn)); add(actions, reviewBtn); }
+    if (role === 'partner') { finalBtn = mk('button', 'btn btn-primary btn-sm', 'Mark final', 'Marcar final', { type: 'button', 'data-action': 'mark-final' }); finalBtn.addEventListener('click', mark('final', finalBtn)); add(actions, finalBtn); }
+    add(actions, sstate);
+  }
   add(frag, actions);
 
   // Related: supersession and who quotes it.
@@ -637,8 +708,8 @@ function renderRun({ ref, rec, node, entry, ctx }) {
     if (by) add(sul, refItem('run:' + by, ctx, mk('span', 'hub-muted', '· supersedes this run', '· reemplaza esta ejecución')));
     add(rel, card('supersedes', 'Supersession', 'Reemplazo', sul));
   }
-  const cb = citedBy(ref, ctx);
-  if (cb.length) add(rel, listCard('cited-by', 'Quoted by', 'Citada por', cb, ctx));
+  const cb = citedBy(ref, ctx, rec);
+  if (cb.length) add(rel, listCard('cited-by', 'Cited by', 'Citada por', cb, ctx, citedTitles(rec)));
   const pname = ctx.project && ctx.project.id === pid ? ctx.project.name : pid;
   if (!ctx.project || ctx.project.id !== pid) add(rel, card('project', 'Project', 'Proyecto', dv('a', 'hub-inline-link', pname, { href: '/hub/project.html?id=' + encodeURIComponent(pid) })));
   if (rel.childNodes.length) add(frag, rel);
