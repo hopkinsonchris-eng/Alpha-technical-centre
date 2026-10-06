@@ -29,7 +29,7 @@ import { confirmedRoundSentences } from '../rounds/store.ts';
 /* ── contracts shared with the job (builder J wires `opts.draft = draftSections`) ─────────────────────────── */
 
 /** A registry source as the job resolved it for this build: the stored original's item id and sha when it was reached. */
-export interface PackSourceRef { id: string; url: string; licence: string; attribution: string; fetched_at: string | null; item_id: string | null; sha256: string | null; reachable: boolean; /** reached, but the Vault's store refused to file it */ fault?: 'storage'; note?: string }
+export interface PackSourceRef { id: string; url: string; licence: string; attribution: string; fetched_at: string | null; item_id: string | null; sha256: string | null; reachable: boolean; /** reached, but the Vault's store refused to file it */ fault?: 'storage'; note?: string; /** the characters of text the drafter could read at this build: a scan OCR'd later by the ingest cron keeps its bytes but gains text, and that is a change */ text_chars?: number }
 export interface DraftCtx {
   db: Db; storage?: Storage; provider: LlmProvider | null; country: string; jobId: number; by: string; now: Date; budgetGbp: number;
   sections: { section: SectionId; sources: PackSourceRef[]; /** the registry's override for this country, else SECTIONS' */ ttl_days?: number }[];
@@ -51,6 +51,8 @@ const USD_PER_GBP = 1.28;
 /** Every original of the country travels in the cached system block; the longest are cut, the block is capped. */
 const MAX_CHARS_PER_ORIGINAL = 40_000;
 const MAX_CHARS_ALL = 240_000;
+/** Twelve bilingual pairs with a citation each run past 2,500 tokens (6 Oct 2026: the risk section's reply was cut mid-citation and the terms reply before its last term). */
+const SECTION_MAX_TOKENS = 6000, TERMS_MAX_TOKENS = 6000;
 const DAY = 86_400_000;
 export const PACK_AUDIT_ACTION = 'llm.country-pack';
 
@@ -142,7 +144,7 @@ const CITE_ALL_RE = /\s*\[(?:run|doc|lesson|ref|wm):[^\]]+\]/g;
 const DOC_CITE_RE = /\[doc:[^\]]+\]/g;
 /** The sentence without its citations, trimmed, with a final stop. */
 export function stripCites(s: string): string {
-  const t = s.replace(CITE_ALL_RE, '').replace(/\s+/g, ' ').trim();
+  const t = s.replace(CITE_ALL_RE, '').replace(/\s*\[(?:run|doc|lesson|ref|wm):[^\]]*$/, '').replace(/\s+/g, ' ').trim();   // a reply cut mid-citation leaves no half id
   return t && !/[.!?…]$/.test(t) ? `${t}.` : t;
 }
 /** `text. [doc:a]`: the sentence, its punctuation, then its citations, so every sentence ends with `]`. */
@@ -247,7 +249,7 @@ export async function draftSection(provider: LlmProvider | null, section: Sectio
   }
   if (!provider) return { ...none, status: 'due', body: emptyBody({ en: 'No drafting assistant is connected; the originals are stored and the section will be drafted when one is.', es: 'No hay asistente de redacción conectado; los originales están almacenados y la sección se redactará cuando lo haya.' }, [spec.question]), warnings: ['no provider'] };
   const allowed = new Set(readable.map(o => `doc:${o.id}`));
-  const r = await provider.complete({ system: packSystemPrompt(opts.country, readable), messages: [{ role: 'user', content: packUserPrompt(section, opts.country, originals.filter(o => o.text.trim().length > 0)) }], maxTokens: 2500 });
+  const r = await provider.complete({ system: packSystemPrompt(opts.country, readable), messages: [{ role: 'user', content: packUserPrompt(section, opts.country, originals.filter(o => o.text.trim().length > 0)) }], maxTokens: SECTION_MAX_TOKENS });
   const checked = checkPairs(parsePackReply(r.text), allowed);
   const warnings: string[] = [];
   if (checked.dropped) warnings.push(`${checked.dropped} sentence(s) did not cite an original of this section and were turned into questions`);
@@ -280,9 +282,9 @@ export async function loadOriginals(db: Db, refs: { item_id: string; source_id: 
 
 /* ── the rows ────────────────────────────────────────────────────────── */
 
-/** The same stored originals, byte for byte: every filed source's item and sha256 match (the risk section's World Monitor chip carries neither, so risk always redrafts). */
+/** The same stored originals, byte for byte and text for text: every filed source's item, sha256 and readable text length match (the risk section's World Monitor chip carries neither, so risk always redrafts). */
 function sameOriginals(prev: PackSourceRef[] | null | undefined, now: PackSourceRef[]): boolean {
-  const key = (xs: PackSourceRef[]) => JSON.stringify(xs.map(x => [x.id, x.item_id ?? null, x.sha256 ?? null, !!x.reachable]).sort());
+  const key = (xs: PackSourceRef[]) => JSON.stringify(xs.map(x => [x.id, x.item_id ?? null, x.sha256 ?? null, !!x.reachable, x.text_chars ?? null]).sort());
   if (!Array.isArray(prev)) return false;
   if (!prev.length && !now.length) return true;                       // a section with no sources of its own: nothing to change
   if (!prev.length || !now.length) return false;
@@ -344,6 +346,8 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
   const all = await loadOriginals(ctx.db, [...allRefs.values()]);
   const byId = new Map(all.map(o => [o.id, o]));
   const anyReadable = all.some(o => o.text.trim().length > 0);
+  // Each chip records how much text was readable at this build, so text that arrives later (OCR by the ingest cron) counts as a change.
+  for (const w of wanted) for (const s of w.sources ?? []) if (s.item_id && byId.has(s.item_id)) s.text_chars = byId.get(s.item_id)!.text.trim().length;
   // Did any section's own sources change since its last version? If none did, fresh sections (and the terms) are kept.
   const prevRows = new Map<SectionId, HeadRow | null>();
   let anyChanged = false;
@@ -427,7 +431,7 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
       if (!prevTerms) { const t = await insertTerms(ctx.db, { country, fields: emptyTerms(), questions: [], source_items: [], status: 'due', stale_reason: 'budget', built_at: ctx.now, built_by: ctx.by, model: null, spend_gbp: 0 }); summary.terms = { ...t, called: false, kept: false, spend_gbp: 0, missing: TERMS.filter(x => x.required).map(x => x.id) }; }
     } else {
       const allowed = new Set(readableAll.map(o => `doc:${o.id}`));
-      const r = await ctx.provider.complete({ system: packSystemPrompt(country, readableAll), messages: [{ role: 'user', content: termsUserPrompt(country) }], maxTokens: 3000 });
+      const r = await ctx.provider.complete({ system: packSystemPrompt(country, readableAll), messages: [{ role: 'user', content: termsUserPrompt(country) }], maxTokens: TERMS_MAX_TOKENS });
       const checked = checkTerms(parseTermsReply(r.text), allowed, id => { const o = byId.get(id); return o?.fetched_at ? ymd(o.fetched_at) : null; });
       const cost = costGbp(r.model, r.usage);
       summary.calls++; spent = round4(spent + cost);
