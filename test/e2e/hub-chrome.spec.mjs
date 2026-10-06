@@ -145,6 +145,27 @@ test('idea C: without a connected mailbox the mail figure is quiet; with the Vau
   await expect(strip.locator('[data-en]').first()).toHaveAttribute('data-es', /.+/);
 });
 
+test('the file store down: the strip shows one red alert naming the bucket (from GET /api/health → storage) that links to Settings; a healthy store shows nothing', async ({ page }) => {
+  await seed(page);
+  await page.route('**/api/health', (route) => json(route, { ok: true, version: '0.7.0', migrations: 11, backend: 'pg', storage: { ok: false, kind: 'supabase', bucket: 'vault', error: 'bucket "vault" does not exist in the Supabase project: create it under Storage, private, with that exact name, or set VAULT_STORAGE_BUCKET to the bucket that exists (vault/SETUP.md §1.5)', checked_at: '2026-10-06T12:00:00.000Z' } }));
+  await page.goto('/hub/queue.html');
+  const strip = page.locator('#hub-strip');
+  await expect(strip).toHaveAttribute('data-state', 'synced');                   // the Vault itself is up
+  const store = strip.locator('[data-figure="store"]');
+  await expect(store).toBeVisible();
+  await expect(store).toHaveText('file store down: bucket "vault" does not exist');
+  await expect(store).toHaveAttribute('data-es', 'almacén de archivos caído: el bucket "vault" no existe');
+  await expect(store).toHaveAttribute('href', '/hub/settings.html#storage');
+  await expect(store).toHaveAttribute('title', /SETUP\.md §1\.5/);
+  await expect(store).toHaveClass(/hub-strip-alert/);
+  await expect(strip.locator('[data-figure="need"]')).toHaveText('3 need you');   // the figures still show
+
+  await page.route('**/api/health', (route) => json(route, { ok: true, version: '0.7.0', migrations: 11, backend: 'pg', storage: { ok: true, kind: 'supabase', bucket: 'vault', checked_at: '2026-10-06T12:05:00.000Z' } }));
+  await page.goto('/hub/queue.html');
+  await expect(strip).toHaveAttribute('data-state', 'synced');
+  await expect(strip.locator('[data-figure="store"]')).toBeHidden();
+});
+
 test('R3: below 900 px the sidebar is a 56 px sticky bottom bar of five icons, Today · Projects · Find · Queues · More, and the user card lives in More', async ({ page }) => {
   await seed(page);
   await page.setViewportSize({ width: 390, height: 844 });

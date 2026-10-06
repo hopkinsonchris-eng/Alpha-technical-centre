@@ -46,7 +46,10 @@ export function mountStatusStrip() {
   const dot = mk('span', 'hub-strip-dot', '●', '●', { 'aria-hidden': 'true' });
   const vault = mk('span', 'hub-strip-fig', 'Vault not checked', 'Vault sin comprobar', { 'data-figure': 'vault', id: 'vault-state' });
   const mail = mk('span', 'hub-strip-fig', 'mail not connected', 'correo sin conectar', { 'data-figure': 'mail', 'data-zero': '1' });
-  add(el, dot, vault, sep(), mail);
+  // The file store (GET /api/health → storage): shown only when it is down, red, because nothing can be filed until it is fixed.
+  const storeSep = sep(); storeSep.setAttribute('hidden', '');
+  const store = mk('a', 'hub-strip-fig hub-strip-alert', null, null, { 'data-figure': 'store', href: '/hub/settings.html#storage', hidden: '', title: '' });
+  add(el, dot, vault, storeSep, store, sep(), mail);
   const links = new Map();
   for (const f of FIGURES) {
     const s = sep();
@@ -99,6 +102,15 @@ export function mountStatusStrip() {
       else if (st === 'fail') { if (state.vault === 'unknown') state.vault = 'off'; }
       paint();
     },
+    /** The `storage` object of GET /api/health: shown only when its ok is false; anything else clears the alert. */
+    storage(st) {
+      if (st && st.ok === false) {
+        const why = /does not exist/i.test(st.error || '') ? ['bucket "' + (st.bucket || 'vault') + '" does not exist', 'el bucket "' + (st.bucket || 'vault') + '" no existe']
+          : /key was refused/i.test(st.error || '') ? ['storage key refused', 'clave de almacenamiento rechazada'] : ['not reachable', 'no accesible'];
+        setText(store, 'file store down: ' + why[0], 'almacén de archivos caído: ' + why[1]);
+        store.setAttribute('title', st.error || ''); store.removeAttribute('hidden'); storeSep.removeAttribute('hidden');
+      } else { store.setAttribute('hidden', ''); storeSep.setAttribute('hidden', ''); }
+    },
     /** The mailbox body from GET /api/me/mailbox, or null when there is none for this person. */
     mail(body) {
       const conn = body && body.connected && body.connection ? body.connection : null;
@@ -113,7 +125,7 @@ export function mountStatusStrip() {
     async load(keys) {
       const want = new Set(keys || []);
       const jobs = [];
-      if (want.has('health')) jobs.push(api('/api/health').then((r) => ctrl.vault(r.ok && r.body && r.body.ok !== false ? 'synced' : 'fail')));
+      if (want.has('health')) jobs.push(api('/api/health').then((r) => { ctrl.vault(r.ok && r.body && r.body.ok !== false ? 'synced' : 'fail'); ctrl.storage(r.ok && r.body ? r.body.storage : null); }));
       if (want.has('mailbox')) jobs.push(api('/api/me/mailbox').then((r) => ctrl.mail(r.ok ? r.body : null)));
       if (want.has('activity')) jobs.push(api('/api/me/activity').then((r) => { const c = r.ok && r.body && r.body.counts; ctrl.set('need', c ? Number(c.review || 0) : null); ctrl.set('came', c ? Number(c.records || 0) : null); }));
       if (want.has('filing')) jobs.push(api('/api/queue/filing').then((r) => ctrl.set('file', r.ok ? listOf(r.body, 'items', 'queue', 'entries').length : null)));

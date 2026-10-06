@@ -41,8 +41,14 @@ export const STATUS = {
   due:         { en: 'due',         es: 'por vencer',   tone: 'warn',  rank: 2 },
   unreachable: { en: 'unreachable', es: 'inaccesible',  tone: 'muted', rank: 3 },
   stale:       { en: 'stale',       es: 'obsoleta',     tone: 'bad',   rank: 4 },
+  /** The sources answered but the Vault's own file store refused them: ours to fix, so it ranks with stale and reads red. */
+  unfiled:     { en: 'not filed',   es: 'sin archivar', tone: 'bad',   rank: 4 },
 };
-const statusOf = (s) => STATUS[s && s.status] || STATUS.empty;
+/** A section the store could not file: the Vault records it unreachable with a stale_reason that starts "storage:". */
+const isUnfiled = (s) => !!s && s.status === 'unreachable' && /^storage:/.test(String(s.stale_reason || ''));
+const statusOf = (s) => (isUnfiled(s) ? STATUS.unfiled : STATUS[s && s.status] || STATUS.empty);
+/** The owner's reason, from the stale_reason the Vault wrote ("storage:the storage bucket does not exist"). */
+const unfiledWhy = (s) => String((s && s.stale_reason) || '').replace(/^storage:/, '');
 const isBuilt = (s) => !!s && Number(s.version || 0) > 0 && s.status !== 'empty';
 
 /** The caveat under a section (the body's own when the drafter wrote one; the orientation line for legal and fiscal; the service section's honest "no public register"). */
@@ -99,10 +105,13 @@ export function packSummary(pack, opts) {
   const total = orderedSections(pack).length;
   const built = pack.counts && typeof pack.counts.built === 'number' ? pack.counts.built : orderedSections(pack).filter(isBuilt).length;
   add(el, mk('span', 'hub-pack-sep', ' · ', ' · ', { 'aria-hidden': 'true' }), add(mk('span', 'hub-fig', null, null, { 'data-count': 'built' }), dv('span', 'hub-num', String(built)), mk('span', null, ' of ', ' de '), dv('span', 'hub-num', String(total))));
+  // Sections the store could not file are counted apart from the publishers that did not answer.
+  const unfiled = orderedSections(pack).filter(isUnfiled).length;
   for (const [k, en, es] of [['stale', 'stale', 'obsoleta'], ['due', 'due', 'por vencer'], ['unreachable', 'unreachable', 'inaccesible']]) {
-    const v = n(pack, k);
+    const v = k === 'unreachable' ? Math.max(0, n(pack, k) - unfiled) : n(pack, k);
     if (v) add(el, mk('span', 'hub-pack-sep', ' · ', ' · ', { 'aria-hidden': 'true' }), fig(v, en, es));
   }
+  if (unfiled) { const f = fig(unfiled, 'not filed', 'sin archivar'); f.classList.add('bad'); add(el, mk('span', 'hub-pack-sep', ' · ', ' · ', { 'aria-hidden': 'true' }), f); }
   return el;
 }
 
@@ -112,9 +121,9 @@ function dot(section) {
   if (section.built_at) { const a = fmtShortDate(section.built_at); t.push('as of ' + a.en); }
   if (section.due_at) { const d = fmtShortDate(section.due_at); t.push('due ' + d.en); }
   const st = statusOf(section);
-  return mk('span', 'hub-pack-dot', null, null, { 'data-status': section.status || 'empty', title: t.length ? t.join(' · ') : st.en, 'aria-hidden': 'true' });
+  return mk('span', 'hub-pack-dot', null, null, { 'data-status': isUnfiled(section) ? 'unfiled' : section.status || 'empty', title: t.length ? t.join(' · ') : st.en, 'aria-hidden': 'true' });
 }
-const statusPill = (section) => { const st = statusOf(section); return mk('span', 'hub-pill ' + st.tone, st.en, st.es, { 'data-status': section.status || 'empty' }); };
+const statusPill = (section) => { const st = statusOf(section); return mk('span', 'hub-pill ' + st.tone, st.en, st.es, { 'data-status': isUnfiled(section) ? 'unfiled' : section.status || 'empty' }); };
 
 /**
  * The card on the project page. `opts`: onOpen(section, trigger), onAssemble(trigger), state ('ready' | 'none' |
@@ -144,7 +153,7 @@ export function packCard(host, pack, opts) {
   const list = mk('ol', 'hub-pack-rows');
   for (const s of orderedSections(pack)) {
     const t = titleOf(s);
-    const li = mk('li', 'hub-pack-row', null, null, { 'data-pack-row': s.section, 'data-status': s.status || 'empty', 'data-version': String(s.version || 0) });
+    const li = mk('li', 'hub-pack-row', null, null, { 'data-pack-row': s.section, 'data-status': isUnfiled(s) ? 'unfiled' : s.status || 'empty', 'data-version': String(s.version || 0) });
     const b = mk('button', 'hub-pack-open', null, null, { type: 'button', 'data-pack-open': s.section, 'aria-haspopup': 'dialog', 'aria-controls': 'pack-sheet' });
     add(b, dot(s), mk('span', 'hub-pack-title', t.en, t.es));
     const h = s.body && s.body.headline;
@@ -182,8 +191,14 @@ export function packSheetBody(section, opts) {
   add(meta, statusPill(section));
   if (section.built_at) { const d = fmtShortDate(section.built_at); add(meta, mk('span', 'hub-asof-date', ' · as of ' + d.en, ' · al ' + d.es)); }
   if (section.due_at) { const d = fmtShortDate(section.due_at); add(meta, mk('span', 'hub-asof-date', ' · due ' + d.en, ' · vence el ' + d.es)); }
-  if (section.stale_reason) add(meta, document.createTextNode(' · '), dv('span', 'hub-pack-reason', section.stale_reason));
+  if (section.stale_reason && !isUnfiled(section)) add(meta, document.createTextNode(' · '), dv('span', 'hub-pack-reason', section.stale_reason));
   add(body, meta);
+  // The store's fault is said in full, with where it is fixed, before anything else in the sheet.
+  if (isUnfiled(section)) {
+    const why = unfiledWhy(section);
+    add(body, mk('p', 'hub-notice bad', 'The sources answered but the Vault could not file them' + (why ? ': ' + why : '') + '. Nothing is drafted until the file store works; it is set up in vault/SETUP.md §1.5. Press Refresh once it is fixed.',
+      'Las fuentes respondieron pero la Bóveda no pudo archivarlas' + (why ? ': ' + why : '') + '. Nada se redacta hasta que el almacén de archivos funcione; se configura en vault/SETUP.md §1.5. Pulse Actualizar cuando esté corregido.', { 'data-unfiled': '' }));
+  }
 
   const byItem = sourcesByItem(section);
   const sentences = Array.isArray(section.body && section.body.sentences) ? section.body.sentences : [];
@@ -204,7 +219,8 @@ export function packSheetBody(section, opts) {
     add(list, p);
   }
   if (!sentences.length) {
-    const w = section.status === 'unreachable' ? ['No source reached: nothing is drafted until one answers.', 'No se alcanzó ninguna fuente: nada se redacta hasta que una responda.']
+    const w = isUnfiled(section) ? ['Reached, not filed: see the notice above.', 'Alcanzadas, sin archivar: vea el aviso de arriba.']
+      : section.status === 'unreachable' ? ['No source reached: nothing is drafted until one answers.', 'No se alcanzó ninguna fuente: nada se redacta hasta que una responda.']
       : isBuilt(section) ? ['Nothing to say yet beyond the headline.', 'Nada que decir todavía más allá del titular.']
         : ['This section is not drafted yet. Assemble the pack to write it.', 'Esta sección aún no está redactada. Arme el paquete para escribirla.'];
     add(list, mk('p', 'hub-muted', w[0], w[1], { 'data-no-sentences': '' }));
@@ -228,11 +244,12 @@ export function packSheetBody(section, opts) {
     add(b, mk('h4', null, 'Sources, licence and attribution', 'Fuentes, licencia y atribución'));
     const ul = mk('ul', 'hub-pack-sources');
     for (const s of sources) {
-      const li = mk('li', null, null, null, { 'data-source': s.id, 'data-reachable': String(s.reachable !== false) });
+      const li = mk('li', null, null, null, { 'data-source': s.id, 'data-reachable': String(s.reachable !== false), ...(s.fault ? { 'data-fault': s.fault } : {}) });
       add(li, s.url ? dv('a', 'hub-inline-link', s.attribution || s.id, { href: s.url, target: '_blank', rel: 'noopener noreferrer' }) : dv('span', null, s.attribution || s.id));
       if (s.licence) add(li, dv('span', 'hub-muted', ' · ' + s.licence));
       if (s.fetched_at) { const d = fmtShortDate(s.fetched_at); add(li, mk('span', 'hub-muted', ' · fetched ' + d.en, ' · obtenido el ' + d.es)); }
-      if (s.reachable === false) add(li, document.createTextNode(' '), mk('span', 'hub-pill muted', 'unreachable', 'inaccesible'));
+      if (s.fault === 'storage') add(li, document.createTextNode(' '), mk('span', 'hub-pill bad', 'reached, not filed', 'alcanzada, sin archivar'));
+      else if (s.reachable === false) add(li, document.createTextNode(' '), mk('span', 'hub-pill muted', 'unreachable', 'inaccesible'));
       if (s.note) add(li, dv('span', 'hub-muted', ' · ' + s.note));
       add(ul, li);
     }

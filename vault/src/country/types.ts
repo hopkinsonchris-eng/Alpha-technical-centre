@@ -84,7 +84,7 @@ export interface PackSectionView {
   /** built_at + ttl_days, ISO date. */
   due_at: string;
   body: PackSectionBody;
-  sources: { id: string; url: string; licence: string; attribution: string; fetched_at: string | null; item_id: string | null; reachable: boolean; note?: string }[];
+  sources: { id: string; url: string; licence: string; attribution: string; fetched_at: string | null; item_id: string | null; reachable: boolean; /** reached, but the Vault's store could not file it (the store's fault; the section says what to fix) */ fault?: 'storage'; note?: string }[];
 }
 export interface PackView {
   country: string;

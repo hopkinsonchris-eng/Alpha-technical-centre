@@ -28,7 +28,7 @@ import { confirmedRoundSentences } from '../rounds/store.ts';
 /* ── contracts shared with the job (builder J wires `opts.draft = draftSections`) ─────────────────────────── */
 
 /** A registry source as the job resolved it for this build: the stored original's item id and sha when it was reached. */
-export interface PackSourceRef { id: string; url: string; licence: string; attribution: string; fetched_at: string | null; item_id: string | null; sha256: string | null; reachable: boolean; note?: string }
+export interface PackSourceRef { id: string; url: string; licence: string; attribution: string; fetched_at: string | null; item_id: string | null; sha256: string | null; reachable: boolean; /** reached, but the Vault's store refused to file it */ fault?: 'storage'; note?: string }
 export interface DraftCtx {
   db: Db; storage?: Storage; provider: LlmProvider | null; country: string; jobId: number; by: string; now: Date; budgetGbp: number;
   sections: { section: SectionId; sources: PackSourceRef[]; /** the registry's override for this country, else SECTIONS' */ ttl_days?: number }[];
@@ -42,7 +42,7 @@ export interface DraftSummary {
 
 /** A stored original as the drafter reads it: the item id it will cite and the extracted text, nothing else. */
 export interface Original { id: string; title: string; source_id: string | null; fetched_at: string | null; text: string; version: number }
-export interface DraftSectionResult { status: PackStatus; body: PackSectionBody; citations: string[]; usage?: LlmUsage; model?: string; spend_gbp: number; warnings: string[]; called: boolean }
+export interface DraftSectionResult { status: PackStatus; body: PackSectionBody; citations: string[]; usage?: LlmUsage; model?: string; spend_gbp: number; warnings: string[]; called: boolean; /** set when the sources were reached but the store could not file them */ fault?: 'storage' }
 
 const USD_PER_GBP = 1.28;
 const MAX_CHARS_PER_ORIGINAL = 12_000;
@@ -199,16 +199,30 @@ export function diffSentences(prev: PackSentence[], next: PackSentence[]): { en:
 /* ── one section ─────────────────────────────────────────────────────── */
 
 const emptyBody = (headline: { en: string; es: string } | null, questions: { en: string; es: string }[] = []): PackSectionBody => ({ headline, sentences: [], questions, changed_since: [] });
+/** Why the store refused, in words the owner can act on (the raw error stays on the chip). */
+export function storageFault(note: string | undefined): { en: string; es: string } {
+  const n = note ?? '';
+  if (/NoSuchBucket|Bucket not found/i.test(n)) return { en: 'the storage bucket does not exist', es: 'el bucket de almacenamiento no existe' };
+  if (/jwt|unauthori|apikey|\b40[13]\b/i.test(n)) return { en: 'the storage key was refused', es: 'la clave de almacenamiento fue rechazada' };
+  const m = n.replace(/^could not be filed:\s*/i, '').slice(0, 90).trim();
+  return m ? { en: m, es: m } : { en: 'the file store refused the document', es: 'el almacén de archivos rechazó el documento' };
+}
+const NOT_FILED = (section: SectionId, n: number, why: { en: string; es: string }) => ({
+  en: `Reached ${n} source${n === 1 ? '' : 's'} for ${SECTION_SPECS[section].title.en} but the Vault could not file ${n === 1 ? 'it' : 'them'}: ${why.en}. Fix the file store (vault/SETUP.md §1.5) and press Refresh.`,
+  es: `Se alcanz${n === 1 ? 'ó' : 'aron'} ${n} fuente${n === 1 ? '' : 's'} para ${SECTION_SPECS[section].title.es} pero la Bóveda no pudo archivarla${n === 1 ? '' : 's'}: ${why.es}. Corrija el almacén de archivos (vault/SETUP.md §1.5) y pulse Actualizar.`,
+});
 const NO_SOURCE_REACHED = (section: SectionId, names: string[]) => ({ en: `No source reached for ${SECTION_SPECS[section].title.en}${names.length ? ` (${names.join(', ')})` : ''}; nothing was drafted.`, es: `Ninguna fuente alcanzada para ${SECTION_SPECS[section].title.es}${names.length ? ` (${names.join(', ')})` : ''}; no se redactó nada.` });
 
 /**
  * Drafts one section from its originals. No originals: an honest body without a model call ('empty'; the service
  * section names the firm's own contacts through `opts.contacts`). Every surviving sentence cites one of these originals.
  */
-export async function draftSection(provider: LlmProvider | null, section: SectionId, originals: Original[], opts: { country: string; contacts?: string[]; unreachable?: string[] }): Promise<DraftSectionResult> {
+export async function draftSection(provider: LlmProvider | null, section: SectionId, originals: Original[], opts: { country: string; contacts?: string[]; unreachable?: string[]; /** sources reached but not filed, and why the store refused */ unfiled?: { ids: string[]; why: { en: string; es: string } } }): Promise<DraftSectionResult> {
   const spec = SECTION_SPECS[section];
   const readable = originals.filter(o => o.text.trim().length > 0);
   const none: DraftSectionResult = { status: 'empty', body: emptyBody(null, [spec.question]), citations: [], spend_gbp: 0, warnings: [], called: false };
+  // Reached but not filed is the Vault's fault: said first, with the fix, never dressed as "no source reached".
+  if (!originals.length && opts.unfiled?.ids.length) return { ...none, status: 'unreachable', fault: 'storage', body: emptyBody(NOT_FILED(section, opts.unfiled.ids.length, opts.unfiled.why), [spec.question]) };
   if (!originals.length && opts.unreachable?.length) return { ...none, status: 'unreachable', body: emptyBody(NO_SOURCE_REACHED(section, opts.unreachable), [spec.question]) };
   if (!readable.length) {
     if (section === 'service') return { ...none, body: emptyBody(caveatFor('service', { contacts: opts.contacts ?? [] })!, [spec.question]) };
@@ -293,7 +307,7 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
   const wanted = [...ctx.sections].sort((a, b) => (order.get(a.section) ?? 99) - (order.get(b.section) ?? 99));
   const ttlOf = (s: SectionId, override?: number) => (Number.isFinite(override) && override! > 0 ? override! : SECTIONS.find(x => x.id === s)!.ttl_days);
   const openQuestions: { en: string; es: string }[] = [];
-  const unanswered: { section: SectionId; status: PackStatus }[] = [];
+  const unanswered: { section: SectionId; status: PackStatus; fault?: 'storage' }[] = [];
   const contacts = wanted.some(w => w.section === 'service') ? await vendorContacts(ctx.db, country) : [];
   let spent = 0;
 
@@ -301,7 +315,9 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
     if (w.section === 'questions') continue;        // derived last
     const sources = w.sources ?? [];
     const reached = sources.filter(s => s.reachable && s.item_id);
-    const unreachable = sources.filter(s => !(s.reachable && s.item_id)).map(s => s.id);
+    const unfiledSrc = sources.filter(s => s.fault === 'storage');
+    const unreachable = sources.filter(s => !(s.reachable && s.item_id) && s.fault !== 'storage').map(s => s.id);
+    const unfiled = { ids: unfiledSrc.map(s => s.id), why: storageFault(unfiledSrc[0]?.note) };
     const refs: { item_id: string; source_id: string | null }[] = reached.map(s => ({ item_id: s.item_id!, source_id: s.id }));
     if (w.section === 'literature') for (const x of await literatureOriginals(ctx.db, country)) if (!refs.some(r => r.item_id === x.id)) refs.push({ item_id: x.id, source_id: x.source_id });
     const originals = await loadOriginals(ctx.db, refs);
@@ -325,7 +341,7 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
       unanswered.push({ section: w.section, status: 'due' });
       continue;
     }
-    result = await draftSection(ctx.provider, w.section, originals, { country, contacts, unreachable });
+    result = await draftSection(ctx.provider, w.section, originals, { country, contacts, unreachable, unfiled });
     // Wave 7 PR6 (W7-AC22): the licensing section reads from round_events. Each confirmed event is one cited line added
     // from the table after drafting, never fed to the model, so the section stays true once the watch confirms a date.
     if (w.section === 'licensing') {
@@ -341,11 +357,11 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
     const changed = prev ? diffSentences(prev.body?.sentences ?? [], result.body.sentences) : [];
     if (prev && prev.status !== 'fresh' && result.status === 'fresh' && !changed.length && result.body.sentences.length) changed.push({ en: `Rebuilt: previously ${prev.status}${prev.stale_reason ? ` (${prev.stale_reason})` : ''}.`, es: `Reconstruida: antes ${prev.status}${prev.stale_reason ? ` (${prev.stale_reason})` : ''}.` });
     const body: PackSectionBody = { ...result.body, changed_since: changed };
-    const stale_reason = result.status === 'unreachable' ? `unreachable:${unreachable[0] ?? 'all'}` : result.status === 'due' ? 'no_provider' : null;
+    const stale_reason = result.fault === 'storage' ? `storage:${unfiled.why.en}` : result.status === 'unreachable' ? `unreachable:${unreachable[0] ?? 'all'}` : result.status === 'due' ? 'no_provider' : null;
     const { id, version } = await insertRow(ctx.db, { country, section: w.section, body, source_items: originals.map(o => o.id), sources: chips, ttl_days: ttl, status: result.status, stale_reason, built_at: ctx.now, built_by: ctx.by, model: result.model ?? null, spend_gbp: result.spend_gbp });
     summary.sections.push({ section: w.section, id, version, status: result.status, stale_reason, called: result.called, spend_gbp: result.spend_gbp, changed: changed.length });
     for (const q of body.questions) if (!openQuestions.some(x => x.en === q.en)) openQuestions.push(q);
-    if (result.status !== 'fresh') unanswered.push({ section: w.section, status: result.status });
+    if (result.status !== 'fresh') unanswered.push({ section: w.section, status: result.status, ...(result.fault ? { fault: result.fault } : {}) });
   }
 
   if (wanted.some(w => w.section === 'questions')) {
@@ -353,7 +369,7 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
     const questions = [...openQuestions.filter(q => !SECTION_IDS.some(s => SECTION_SPECS[s].question.en === q.en))];
     for (const u of unanswered) {
       const t = SECTION_SPECS[u.section].title;
-      const why = u.status === 'unreachable' ? { en: 'no source reached', es: 'ninguna fuente alcanzada' } : u.status === 'empty' ? { en: 'no source or no text', es: 'sin fuente o sin texto' } : { en: `not drafted (${u.status})`, es: `no redactada (${u.status})` };
+      const why = u.fault === 'storage' ? { en: 'reached but the Vault could not file it', es: 'alcanzada pero la Bóveda no pudo archivarla' } : u.status === 'unreachable' ? { en: 'no source reached', es: 'ninguna fuente alcanzada' } : u.status === 'empty' ? { en: 'no source or no text', es: 'sin fuente o sin texto' } : { en: `not drafted (${u.status})`, es: `no redactada (${u.status})` };
       questions.push({ en: `${t.en}: ${why.en}; ask the regulator or counsel.`, es: `${t.es}: ${why.es}; pregunte al regulador o al asesor legal.` });
     }
     const prev = await headRow(ctx.db, country, 'questions');
@@ -423,7 +439,7 @@ export function packMarkdown(p: PackRead): string {
     if (s.body.sentences.length) { lines.push('- Sentences:'); for (const x of s.body.sentences) lines.push(`  - ${x.en}`, `    - ES: ${x.es}`); }
     if (s.body.questions.length) { lines.push('- Questions:'); for (const q of s.body.questions) lines.push(`  - ${q.en}`, `    - ES: ${q.es}`); }
     if (s.body.changed_since.length) { lines.push('- What changed:'); for (const q of s.body.changed_since) lines.push(`  - ${q.en}`, `    - ES: ${q.es}`); }
-    if (s.sources.length) { lines.push('- Sources:'); for (const src of s.sources) lines.push(`  - ${src.id}: ${src.attribution} (${src.licence}); ${src.reachable ? `fetched ${src.fetched_at ? ymd(src.fetched_at) : 'undated'}` : 'unreachable'}${src.item_id ? ` [doc:${src.item_id}]` : ''}${src.note ? `; ${src.note}` : ''}`); }
+    if (s.sources.length) { lines.push('- Sources:'); for (const src of s.sources) lines.push(`  - ${src.id}: ${src.attribution} (${src.licence}); ${src.fault === 'storage' ? 'reached, not filed' : src.reachable ? `fetched ${src.fetched_at ? ymd(src.fetched_at) : 'undated'}` : 'unreachable'}${src.item_id ? ` [doc:${src.item_id}]` : ''}${src.note ? `; ${src.note}` : ''}`); }
     lines.push('');
   }
   return lines.join('\n');

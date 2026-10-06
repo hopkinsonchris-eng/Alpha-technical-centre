@@ -7,12 +7,13 @@ import type { Db } from './db/client.ts';
 import { authenticate, AuthError, configFromEnv, type AuthConfig, type Person } from './auth.ts';
 import { mountRoutes } from './api/index.ts';
 import { ensureAppPerson, verifyAppToken } from './app-tokens.ts';
+import type { StorageCheck } from './storage.ts';
 
 export type Env = { Variables: { person: Person; db: Db } };
 
-export interface AppDeps { db: Db; auth?: AuthConfig; version?: string; fetch?: typeof fetch; log?: (line: string) => void }
+export interface AppDeps { db: Db; auth?: AuthConfig; version?: string; fetch?: typeof fetch; log?: (line: string) => void; /** The store check (storageHealth); the health route carries its answer. */ storageCheck?: () => Promise<StorageCheck> }
 
-export async function createApp({ db, auth = configFromEnv(), version = process.env.RENDER_GIT_COMMIT ?? 'dev', fetch: fetchImpl, log }: AppDeps) {
+export async function createApp({ db, auth = configFromEnv(), version = process.env.RENDER_GIT_COMMIT ?? 'dev', fetch: fetchImpl, log, storageCheck }: AppDeps) {
   const app = new Hono<Env>();
 
   // The connector paths are reached by the Claude app and by claude.ai's
@@ -27,9 +28,12 @@ export async function createApp({ db, auth = configFromEnv(), version = process.
     log(`${c.req.method} ${p} ${c.res.status} ${Date.now() - t}ms`);
   });
 
+  // `ok` is the platform's probe (database up); `storage` is the owner's: the file store is checked separately
+  // and a failure there is reported, never hidden behind a green probe and never a reason to restart the service.
   app.get('/api/health', async (c) => {
     const { rows } = await db.query('SELECT count(*)::int AS n FROM schema_migrations');
-    return c.json({ ok: true, version, migrations: rows[0].n, backend: db.backend });
+    const storage = storageCheck ? await storageCheck().catch((e): StorageCheck => ({ ok: false, kind: 'filesystem', error: (e as Error).message, checked_at: new Date().toISOString() })) : undefined;
+    return c.json({ ok: true, version, migrations: rows[0].n, backend: db.backend, ...(storage ? { storage } : {}) });
   });
 
   app.use('/api/*', async (c, next) => {

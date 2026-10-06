@@ -42,10 +42,10 @@ export type { DraftCtx, DraftSummary, PackSourceRef };
 /** What the job records per source, on the section row and in the hook's context: L's PackSourceRef plus the section and how the filing went. */
 export interface PackSourceRecord extends PackSourceRef { section: SectionId; status?: 'created' | 'updated' | 'unchanged'; title?: string }
 export interface SectionSources { section: SectionId; sources: PackSourceRecord[]; /** The stored originals' item ids. */ items: string[]; ttl_days: number }
-export interface SectionCounts { sources: number; fetched: number; stored: number; unchanged: number; unreachable: number }
+export interface SectionCounts { sources: number; fetched: number; stored: number; unchanged: number; unreachable: number; /** reached, but the store refused to file it: the Vault's fault, counted apart */ unfiled: number }
 export interface PackSummary {
   country: string; name: string; status: 'ok' | 'failed'; started_at: string; finished_at: string | null; duration_ms: number;
-  sections: Record<SectionId, SectionCounts>; fetched: number; stored: number; unchanged: number; unreachable: number; spend_gbp: number;
+  sections: Record<SectionId, SectionCounts>; fetched: number; stored: number; unchanged: number; unreachable: number; unfiled: number; spend_gbp: number;
   budget_gbp: number; drafted: boolean; draft?: DraftSummary; warnings: string[]; note: string | null; error?: string; requested_by?: string; queued?: boolean;
 }
 
@@ -156,9 +156,9 @@ export async function writePackSection(db: Db, input: WriteRowInput): Promise<{ 
 /* ── fetch and file ──────────────────────────────────────────────────────────────────────────────────────────── */
 
 const round4 = (n: number) => Math.round(n * 10000) / 10000;
-const emptyCounts = (): SectionCounts => ({ sources: 0, fetched: 0, stored: 0, unchanged: 0, unreachable: 0 });
+const emptyCounts = (): SectionCounts => ({ sources: 0, fetched: 0, stored: 0, unchanged: 0, unreachable: 0, unfiled: 0 });
 
-export interface FetchedSections { sections: SectionSources[]; counts: Record<SectionId, SectionCounts>; fetched: number; stored: number; unchanged: number; unreachable: number; warnings: string[]; touched: string[] }
+export interface FetchedSections { sections: SectionSources[]; counts: Record<SectionId, SectionCounts>; fetched: number; stored: number; unchanged: number; unreachable: number; unfiled: number; warnings: string[]; touched: string[] }
 
 /**
  * Fetches and files every registry source of the country for the sections wanted (all ten by default), before any
@@ -177,7 +177,7 @@ export async function fetchAndFile(db: Db, country: string, sections: SectionId[
   const wanted = SECTION_IDS.filter(s => sections.includes(s));
   const per = new Map<SectionId, SectionSources>(wanted.map(s => [s, { section: s, sources: [], items: [], ttl_days: sectionTtl(s) }]));
   const counts = Object.fromEntries(wanted.map(s => [s, emptyCounts()])) as Record<SectionId, SectionCounts>;
-  const out: FetchedSections = { sections: [...per.values()], counts, fetched: 0, stored: 0, unchanged: 0, unreachable: 0, warnings, touched: [] };
+  const out: FetchedSections = { sections: [...per.values()], counts, fetched: 0, stored: 0, unchanged: 0, unreachable: 0, unfiled: 0, warnings, touched: [] };
   await ensureBase(db);
 
   for (const src of resolved.sources) {
@@ -215,8 +215,10 @@ export async function fetchAndFile(db: Db, country: string, sections: SectionId[
       if (st.status === 'unchanged') { c.unchanged++; out.unchanged++; }
       else { c.stored++; out.stored++; out.touched.push(`doc:${st.id}`); }
     } catch (e) {
-      rec.reachable = false; rec.fetched_at = null; rec.note = `could not be filed: ${(e as Error).message}`;
-      c.unreachable++; out.unreachable++;
+      // Reached, but the store refused it (a bucket that does not exist, a refused key): the Vault's fault, not the
+      // publisher's. The chip keeps the fetch, carries the fault, and the section says what to fix.
+      rec.fault = 'storage'; rec.item_id = null; rec.note = `could not be filed: ${(e as Error).message}`;
+      c.unfiled++; out.unfiled++;
       warnings.push(`${src.id}: ${rec.note}`);
     }
     if (onProgress) await onProgress(out);
@@ -249,7 +251,7 @@ export async function runPack(db: Db, country: string, opts: PackRunOptions = {}
   const budget = opts.budgetGbp ?? packBudget(env);
   const storage = opts.storage ?? openStorage();
   const sections = Object.fromEntries(SECTION_IDS.map(s => [s, emptyCounts()])) as Record<SectionId, SectionCounts>;
-  const summary: PackSummary = { country, name: resolved.name, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sections, fetched: 0, stored: 0, unchanged: 0, unreachable: 0, spend_gbp: 0, budget_gbp: budget, drafted: false, warnings: [], note: resolved.note, requested_by: by, queued: false };
+  const summary: PackSummary = { country, name: resolved.name, status: 'ok', started_at: started.toISOString(), finished_at: null, duration_ms: 0, sections, fetched: 0, stored: 0, unchanged: 0, unreachable: 0, unfiled: 0, spend_gbp: 0, budget_gbp: budget, drafted: false, warnings: [], note: resolved.note, requested_by: by, queued: false };
   await ensureBase(db);
   const job = jobId ?? (await db.query<{ id: number }>("INSERT INTO jobs (name, status, summary) VALUES ($1, 'running', $2::jsonb) RETURNING id", [JOB_NAME, JSON.stringify({ country, queued: false })])).rows[0].id;
   await db.query('UPDATE jobs SET started_at = $2, summary = $3::jsonb WHERE id = $1', [job, started.toISOString(), JSON.stringify(summary)]);
@@ -259,7 +261,7 @@ export async function runPack(db: Db, country: string, opts: PackRunOptions = {}
 
   try {
     // 1. Fetch and file every source, before any drafting.
-    const copyCounts = (f: FetchedSections) => { Object.assign(summary.sections, f.counts); summary.fetched = f.fetched; summary.stored = f.stored; summary.unchanged = f.unchanged; summary.unreachable = f.unreachable; };
+    const copyCounts = (f: FetchedSections) => { Object.assign(summary.sections, f.counts); summary.fetched = f.fetched; summary.stored = f.stored; summary.unchanged = f.unchanged; summary.unreachable = f.unreachable; summary.unfiled = f.unfiled; };
     const fetched = await fetchAndFile(db, country, SECTION_IDS, { ...opts, registry, storage, env, now }, async (f) => { copyCounts(f); await progress(); });
     copyCounts(fetched);
     summary.warnings.push(...fetched.warnings);
@@ -308,7 +310,7 @@ export async function runPack(db: Db, country: string, opts: PackRunOptions = {}
   summary.duration_ms = now().getTime() - started.getTime();
   await db.query('UPDATE jobs SET finished_at = $2, status = $3, summary = $4::jsonb WHERE id = $1', [job, summary.finished_at, summary.status, JSON.stringify(summary)]);
   await audit(db, by, 'country.pack.build', 'public', [`country:${country}`, ...touched.slice(0, 99)], { job_id: job, status: summary.status, fetched: summary.fetched, stored: summary.stored, unchanged: summary.unchanged, unreachable: summary.unreachable, spend_gbp: summary.spend_gbp });
-  log(`country-pack ${country}: ${summary.status}, ${summary.fetched} fetched, ${summary.stored} filed, ${summary.unchanged} unchanged, ${summary.unreachable} unreachable, £${summary.spend_gbp}${summary.error ? `, ${summary.error}` : ''}`);
+  log(`country-pack ${country}: ${summary.status}, ${summary.fetched} fetched, ${summary.stored} filed, ${summary.unchanged} unchanged, ${summary.unreachable} unreachable${summary.unfiled ? `, ${summary.unfiled} reached but NOT FILED (fix the file store: vault/SETUP.md §1.5)` : ''}, £${summary.spend_gbp}${summary.error ? `, ${summary.error}` : ''}`);
   return summary;
 }
 
@@ -321,7 +323,7 @@ function openIngestOrNull(env: NodeJS.ProcessEnv, warnings: string[]): IngestDep
 /* ── the view the Hub reads ──────────────────────────────────────────────────────────────────────────────────── */
 
 const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-const chip = (s: PackSourceRef) => ({ id: s.id, url: s.url, licence: s.licence, attribution: s.attribution, fetched_at: s.fetched_at ?? null, item_id: s.item_id ?? null, reachable: !!s.reachable, ...(s.note ? { note: s.note } : {}) });
+const chip = (s: PackSourceRef) => ({ id: s.id, url: s.url, licence: s.licence, attribution: s.attribution, fetched_at: s.fetched_at ?? null, item_id: s.item_id ?? null, reachable: !!s.reachable, ...(s.fault ? { fault: s.fault } : {}), ...(s.note ? { note: s.note } : {}) });
 
 function sectionView(section: typeof SECTIONS[number], row: any | undefined): PackSectionView {
   const title = { en: section.en, es: section.es };

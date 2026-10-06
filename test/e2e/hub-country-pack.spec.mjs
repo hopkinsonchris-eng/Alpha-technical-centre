@@ -456,3 +456,51 @@ test('W7-AC19 (Today): What came in shows one line per country whose pack landed
   await page.locator('aside .nav-lang button[data-lang="es"]').click();
   await expect(br).toContainText('Brasil: licencias cambió; Cambió el calendario de la Oferta Permanente; ofertas el 7 oct 2026.');
 });
+
+test('a store that could not file: the row and the sheet say "not filed" in red with the fix, the chips say "reached, not filed", the header counts them apart from unreachable, and the globe line shows the worst as not filed', async ({ page }) => {
+  // The Vault records a section the store refused as unreachable with stale_reason "storage:<why>" and the chips carrying fault 'storage'.
+  const pack = BRAZIL();
+  const why = 'the storage bucket does not exist';
+  const note = 'could not be filed: supabase storage put 400 for originals/9c/9c96f0: {"statusCode":"404","error":"Bucket not found","code":"NoSuchBucket"}';
+  pack.sections = pack.sections.map((s) => s.section !== 'legal' ? s : {
+    ...s, status: 'unreachable', stale_reason: 'storage:' + why,
+    body: { headline: { en: 'Reached 2 sources for Legal framework but the Vault could not file them: ' + why + '. Fix the file store (vault/SETUP.md §1.5) and press Refresh.', es: 'Se alcanzaron 2 fuentes para Marco legal pero la Bóveda no pudo archivarlas: el bucket de almacenamiento no existe. Corrija el almacén de archivos (vault/SETUP.md §1.5) y pulse Actualizar.' }, sentences: [], questions: s.body.questions, changed_since: [] },
+    sources: [{ ...SRC.chambers, item_id: null, fault: 'storage', note }, { ...SRC.chambers, id: 'legal500-energy-oil-gas', url: 'https://www.legal500.com/guides/chapter/brazil-energy-oil-gas/', attribution: 'The Legal 500, Energy: Oil & Gas, Brazil', item_id: null, fault: 'storage', note }],
+  });
+  pack.counts = { built: 9, fresh: 5, due: 1, stale: 1, unreachable: 2, empty: 1 };
+  await stubProject(page, { pack });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const c = card(page);
+  const row = c.locator('[data-pack-row="legal"]');
+  await expect(row).toHaveAttribute('data-status', 'unfiled');
+  await expect(row.locator('.hub-pack-dot')).toHaveAttribute('data-status', 'unfiled');
+  await expect(row.locator('.hub-pack-headline')).toContainText('could not file them: the storage bucket does not exist. Fix the file store (vault/SETUP.md §1.5) and press Refresh.');
+  // The header: the store's failures are counted apart from publishers that did not answer.
+  const sum = c.locator('[data-pack-summary]');
+  await expect(sum.locator('[data-count="not-filed"] .hub-num')).toHaveText('1');
+  await expect(sum.locator('[data-count="unreachable"] .hub-num')).toHaveText('1');
+  await expect(sum.locator('[data-count="not-filed"]')).toHaveClass(/bad/);
+  // The sheet: the status pill reads "not filed", the notice says what to fix, the chips say "reached, not filed".
+  await row.locator('[data-pack-open]').click();
+  const sheet = page.locator('#pack-sheet');
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator('[data-pack-meta] .hub-pill')).toHaveText('not filed');
+  await expect(sheet.locator('[data-pack-meta] .hub-pill')).toHaveClass(/bad/);
+  await expect(sheet.locator('[data-pack-meta] .hub-pack-reason')).toHaveCount(0);        // the raw reason is said in the notice, not as a code
+  await expect(sheet.locator('[data-unfiled]')).toHaveText('The sources answered but the Vault could not file them: the storage bucket does not exist. Nothing is drafted until the file store works; it is set up in vault/SETUP.md §1.5. Press Refresh once it is fixed.');
+  await expect(sheet.locator('[data-unfiled]')).toHaveAttribute('data-es', /no pudo archivarlas/);
+  await expect(sheet.locator('[data-no-sentences]')).toHaveText('Reached, not filed: see the notice above.');
+  const chips = sheet.locator('[data-sources] li');
+  await expect(chips).toHaveCount(2);
+  await expect(chips.first()).toHaveAttribute('data-fault', 'storage');
+  await expect(chips.first()).toHaveAttribute('data-reachable', 'true');
+  await expect(chips.first().locator('.hub-pill')).toHaveText('reached, not filed');
+  await expect(chips.first().locator('.hub-pill')).toHaveClass(/bad/);
+  await expect(chips.first()).toContainText('fetched 5 Oct 2026');
+  await page.keyboard.press('Escape');
+  // The language toggle keeps the state words.
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await expect(row.locator('.hub-pack-headline')).toContainText('no pudo archivarlas');
+  await expect(sum.locator('[data-count="not-filed"] .hub-unit')).toHaveText('sin archivar');
+});

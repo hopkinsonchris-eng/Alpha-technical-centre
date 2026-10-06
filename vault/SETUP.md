@@ -59,7 +59,12 @@ uploaded again.)
    API refuses to start on a production server without a durable store, and a
    deploy that fails to start leaves the previous one running.
 5. Check: after the deploy, the API log shows `storage: supabase bucket "vault"
-   at https://…supabase.co`. Upload a file to a project; it appears under
+   at https://…supabase.co` and, on the next line, `storage check: ok`. If the
+   bucket is missing or the key is wrong the line says `storage check: FAILED`
+   with what to fix, the Hub's status strip shows a red "file store down" alert
+   on every page, and a country pack built meanwhile marks its sections "not
+   filed" rather than drafting; press Refresh on the card once the store is
+   fixed. Upload a file to a project; it appears under
    Storage → vault → originals in Supabase.
 
 ## 2. Deploy the API (Render, about 15 minutes)

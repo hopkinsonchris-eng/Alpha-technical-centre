@@ -17,7 +17,12 @@ export interface Storage {
   exists(key: string): Promise<boolean>;
   /** Remove the bytes at key. Absent keys are not an error: a purge may run twice. */
   delete(key: string): Promise<void>;
+  /** Is the store there to write to? The boot log and GET /api/health report it (a missing bucket was silent until the first filing failed). */
+  check?(): Promise<StorageCheck>;
 }
+
+/** What the boot check and GET /api/health say about the store. `error` is written for the owner: what is wrong and where it is fixed. */
+export interface StorageCheck { ok: boolean; kind: 'supabase' | 'filesystem'; bucket?: string; error?: string; checked_at: string }
 
 const DEFAULT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.storage');
 
@@ -47,6 +52,11 @@ export function filesystemStorage(root = process.env.VAULT_STORAGE_DIR || DEFAUL
     async delete(key) {
       try { await unlink(abs(key)); }
       catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
+    },
+    async check() {
+      const checked_at = new Date().toISOString();
+      try { await mkdir(root, { recursive: true }); await stat(root); return { ok: true, kind: 'filesystem', checked_at }; }
+      catch (e) { return { ok: false, kind: 'filesystem', error: `storage directory ${root} cannot be used: ${(e as Error).message}`, checked_at }; }
     },
   };
 }
@@ -95,6 +105,40 @@ export function supabaseStorage(o: SupabaseStorageOptions): Storage {
       if (res.ok || await notFound(res)) return;
       await fail('delete', key, res);
     },
+    // GET /storage/v1/bucket/<id> answers the bucket's record, 404-shaped when there is none. The bucket name and the
+    // key are the two things an owner sets by hand, so each failure names the one to fix and where (SETUP.md §1.5).
+    async check() {
+      const checked_at = new Date().toISOString();
+      const where = 'vault/SETUP.md §1.5';
+      try {
+        const res = await f(`${o.url.replace(/\/+$/, '')}/storage/v1/bucket/${encodeURIComponent(bucket)}`, { headers: auth });
+        if (res.ok) return { ok: true, kind: 'supabase', bucket, checked_at };
+        const body = (await res.text().catch(() => '')).slice(0, 200);
+        let error: string;
+        if (res.status === 404 || /NoSuchBucket|Bucket not found/i.test(body)) error = `bucket "${bucket}" does not exist in the Supabase project: create it under Storage, private, with that exact name, or set VAULT_STORAGE_BUCKET to the bucket that exists (${where})`;
+        else if (/jwt|unauthori|apikey|invalid/i.test(body) || res.status === 401 || res.status === 403) error = `the service key was refused by Supabase Storage (${res.status}): SUPABASE_SERVICE_KEY must be the project's service_role key (${where})`;
+        else error = `Supabase Storage answered ${res.status} for bucket "${bucket}": ${body}`;
+        return { ok: false, kind: 'supabase', bucket, error, checked_at };
+      } catch (e) { return { ok: false, kind: 'supabase', bucket, error: `Supabase Storage could not be reached: ${(e as Error).message}`, checked_at }; }
+    },
+  };
+}
+
+/**
+ * The store check for the health route: a good answer is kept for `okMs` (five minutes), a bad one for `failMs`
+ * (a minute), so the platform's probe never hits Supabase on every call and the Hub clears soon after the owner
+ * fixes the store. A store without `check` is reported as fine.
+ */
+export function storageHealth(storage: Storage, okMs = 5 * 60_000, failMs = 60_000, clock: () => number = Date.now): () => Promise<StorageCheck> {
+  let last: StorageCheck | null = null, at = 0, pending: Promise<StorageCheck> | null = null;
+  return async () => {
+    if (last && clock() - at < (last.ok ? okMs : failMs)) return last;
+    if (!pending) {
+      const run = storage.check ? storage.check() : Promise.resolve<StorageCheck>({ ok: true, kind: 'filesystem', checked_at: new Date().toISOString() });
+      pending = run.catch((e): StorageCheck => ({ ok: false, kind: 'filesystem', error: (e as Error).message, checked_at: new Date().toISOString() }))
+        .then(r => { last = r; at = clock(); pending = null; return r; });
+    }
+    return pending;
   };
 }
 
