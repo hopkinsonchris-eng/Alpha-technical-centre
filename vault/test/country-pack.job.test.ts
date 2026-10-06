@@ -19,6 +19,7 @@ const { configurePack } = await import('../src/api/country-pack.routes.ts');
 const { enqueuePack, runQueuedPacks, runPack, reapStalePacks, packView, writePackSection, JOB_NAME } = await import('../src/jobs/country-pack.ts');
 const { buildZip, fakeFetch, mockClock, text } = await import('./miners.helpers.ts');
 const { FakeEmbedder } = await import('../src/ingest/embed.ts');
+const { FakeProvider } = await import('../src/llm/provider.ts');
 const { SECTIONS, SECTION_IDS } = await import('../src/country/types.ts');
 type Db = Awaited<ReturnType<typeof openDb>>;
 type DraftContext = import('../src/jobs/country-pack.ts').DraftContext;
@@ -411,4 +412,33 @@ test('a store that refuses to file (no bucket) is the Vault’s fault, not the p
   assert.equal(eia.reachable, false); assert.equal(eia.fault, undefined);
   const q = view.sections.find(x => x.section === 'questions')!;
   assert.ok(q.body.questions.some(x => x.en === 'Legal framework: reached but the Vault could not file it; ask the regulator or counsel.'), JSON.stringify(q.body.questions.map(x => x.en)));
+});
+
+test('a Refresh that finds the same originals keeps every fresh section without a model call; a page that changed re-drafts only its own section', async () => {
+  const first = await runPack(db, 'SR', { ...runOpts(gyFetch()), draft: undefined, provider: new FakeProvider() });
+  assert.equal(first.status, 'ok');
+  assert.ok((first.draft?.calls ?? 0) > 0, 'the first drafted build calls the model');
+  const v1 = Object.fromEntries((await packView(db, 'SR', NOW)).sections.map(s => [s.section, s.version]));
+  const second = await runPack(db, 'SR', { ...runOpts(gyFetch()), draft: undefined, provider: new FakeProvider() });
+  assert.equal(second.status, 'ok');
+  assert.equal(second.draft?.calls, 0, `nothing changed, nothing drafted: ${JSON.stringify(second.draft?.sections)}`);
+  const kept = second.draft!.sections.filter(s => s.kept).map(s => s.section);
+  assert.ok(kept.includes('legal') && kept.includes('fiscal') && kept.includes('production'), JSON.stringify(kept));
+  const v2 = Object.fromEntries((await packView(db, 'SR', NOW)).sections.map(s => [s.section, s.version]));
+  assert.equal(v2.legal, v1.legal, 'the kept section stays at its version');
+  assert.equal(v2.fiscal, v1.fiscal);
+  // One page changed: that section is re-drafted, the others stay.
+  const f = gyFetch();
+  const changed: typeof fetch = async (u, init) => {
+    const r = await f.fetch(u, init);
+    if (!/chambers/.test(String(u))) return r;
+    return new Response((await r.text()) + '<p>A new paragraph in the chapter.</p>', { status: r.status, headers: r.headers });
+  };
+  const third = await runPack(db, 'SR', { ...runOpts(f), fetch: changed, draft: undefined, provider: new FakeProvider() });
+  const legal = third.draft!.sections.find(s => s.section === 'legal')!, fiscal = third.draft!.sections.find(s => s.section === 'fiscal')!;
+  assert.equal(legal.called, true); assert.equal(legal.kept, undefined);
+  assert.equal(fiscal.kept, true);
+  assert.equal(third.draft?.calls, 1);
+  const v3 = Object.fromEntries((await packView(db, 'SR', NOW)).sections.map(s => [s.section, s.version]));
+  assert.equal(v3.legal, v1.legal + 1); assert.equal(v3.fiscal, v1.fiscal);
 });

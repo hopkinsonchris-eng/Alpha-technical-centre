@@ -8,6 +8,7 @@ import { authenticate, AuthError, configFromEnv, type AuthConfig, type Person } 
 import { mountRoutes } from './api/index.ts';
 import { ensureAppPerson, verifyAppToken } from './app-tokens.ts';
 import type { StorageCheck } from './storage.ts';
+import { spendToday } from './llm/spend-guard.ts';
 
 export type Env = { Variables: { person: Person; db: Db } };
 
@@ -33,7 +34,8 @@ export async function createApp({ db, auth = configFromEnv(), version = process.
   app.get('/api/health', async (c) => {
     const { rows } = await db.query('SELECT count(*)::int AS n FROM schema_migrations');
     const storage = storageCheck ? await storageCheck().catch((e): StorageCheck => ({ ok: false, kind: 'filesystem', error: (e as Error).message, checked_at: new Date().toISOString() })) : undefined;
-    return c.json({ ok: true, version, migrations: rows[0].n, backend: db.backend, ...(storage ? { storage } : {}) });
+    const llm = await spendToday().catch(() => null);                // the day's model spend against the cap, for the strip
+    return c.json({ ok: true, version, migrations: rows[0].n, backend: db.backend, ...(storage ? { storage } : {}), ...(llm ? { llm } : {}) });
   });
 
   app.use('/api/*', async (c, next) => {

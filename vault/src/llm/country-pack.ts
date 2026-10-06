@@ -36,7 +36,7 @@ export interface DraftCtx {
   refresh?: boolean;
 }
 export interface DraftSummary {
-  country: string; sections: { section: SectionId; id: string; version: number; status: PackStatus; stale_reason: string | null; called: boolean; spend_gbp: number; changed: number }[];
+  country: string; sections: { section: SectionId; id: string; version: number; status: PackStatus; stale_reason: string | null; called: boolean; spend_gbp: number; changed: number; /** the previous version stood: same originals, still fresh */ kept?: boolean }[];
   spend_gbp: number; calls: number; stopped_by: 'budget' | null;
 }
 
@@ -266,6 +266,13 @@ export async function loadOriginals(db: Db, refs: { item_id: string; source_id: 
 
 /* ── the rows ────────────────────────────────────────────────────────── */
 
+/** The same stored originals, byte for byte: every filed source's item and sha256 match (the risk section's World Monitor chip carries neither, so risk always redrafts). */
+function sameOriginals(prev: PackSourceRef[] | null | undefined, now: PackSourceRef[]): boolean {
+  const key = (xs: PackSourceRef[]) => JSON.stringify(xs.map(x => [x.id, x.item_id ?? null, x.sha256 ?? null, !!x.reachable]).sort());
+  if (!Array.isArray(prev) || !prev.length || !now.length) return false;
+  if (now.some(x => x.reachable && x.item_id && !x.sha256)) return false;
+  return key(prev) === key(now);
+}
 interface HeadRow { id: string; version: number; status: PackStatus; stale_reason: string | null; body: PackSectionBody; built_at: string; ttl_days: number; source_items: string[]; sources: PackSourceRef[] }
 async function headRow(db: Db, country: string, section: SectionId): Promise<HeadRow | null> {
   return (await db.query<HeadRow>('SELECT id::text AS id, version, status, stale_reason, body, built_at, ttl_days, source_items, sources FROM country_packs WHERE country = $1 AND section = $2 AND superseded_by IS NULL ORDER BY version DESC LIMIT 1', [country, section])).rows[0] ?? null;
@@ -326,6 +333,13 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
     const ttl = ttlOf(w.section, w.ttl_days);
     const needsCall = originals.some(o => o.text.trim().length > 0);
     const prev = await headRow(ctx.db, country, w.section);
+    // A fresh section whose originals are the same bytes as last time is kept, not re-drafted: a Refresh that found
+    // nothing new costs nothing (6 Oct 2026: every build re-drafted every section).
+    if (needsCall && prev && prev.status === 'fresh' && !ctx.refresh && sameOriginals(prev.sources, chips)) {
+      summary.sections.push({ section: w.section, id: prev.id, version: prev.version, status: 'fresh', stale_reason: null, called: false, spend_gbp: 0, changed: 0, kept: true });
+      for (const q of prev.body?.questions ?? []) if (!openQuestions.some(x => x.en === q.en)) openQuestions.push(q);
+      continue;
+    }
 
     let result: DraftSectionResult;
     if (needsCall && ctx.provider && spent >= ctx.budgetGbp) {

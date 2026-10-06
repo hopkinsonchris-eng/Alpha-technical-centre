@@ -1,3 +1,4 @@
+import { installSpendGuard } from '../llm/spend-guard.ts';
 /**
  * Database client (M00/M01). One interface, two backends:
  *  - DATABASE_URL set  → node-postgres against Supabase (or any Postgres 16 + pgvector)
@@ -62,6 +63,12 @@ export function pgPoolConfig(url: string, env: Record<string, string | undefined
 }
 
 export async function openDb(url = process.env.DATABASE_URL): Promise<Db> {
+  const db = await openDbRaw(url);
+  installSpendGuard(db);                                            // the daily model-spend cap, in every process that opens the Vault
+  return db;
+}
+
+async function openDbRaw(url: string | undefined): Promise<Db> {
   if (url) {
     const { default: pg } = await import('pg');
     const cfg = pgPoolConfig(url);

@@ -38,7 +38,7 @@ export async function briefActivity(provider: LlmProvider | null, projects: Acti
   const withRecords = projects.filter(p => p.records.length);
   if (!provider || !withRecords.length) return empty;
   const { system, user } = briefPrompt(withRecords, language);
-  const r = await provider.complete({ system, messages: [{ role: 'user', content: user }], maxTokens: 120 * withRecords.length + 100, temperature: 0 });
+  const r = await provider.complete({ system, messages: [{ role: 'user', content: user }], maxTokens: 120 * withRecords.length + 100, temperature: 0, purpose: 'brief.activity' });
   const lines = new Map<string, string>();
   for (const line of r.text.split(/\n+/)) { const m = /^\s*PROJECT\s+([^\s:]+)\s*:\s*(.+)$/i.exec(line); if (m) lines.set(m[1], (lines.get(m[1]) ? lines.get(m[1]) + ' ' : '') + m[2].trim()); }
   const out: ProjectBrief[] = projects.map(p => {

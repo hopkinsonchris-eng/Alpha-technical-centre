@@ -197,7 +197,7 @@ export async function contextualise(chunks: Chunk[], doc: ChunkDoc, provider: Ll
       const c = out[i];
       const user = `This chunk is from "${doc.title}", section ${c.anchor ?? 'start'}.\n<chunk>\n${c.text.slice(0, 6000)}\n</chunk>\nWrite the context for this chunk.`;
       try {
-        const r = await provider.complete({ system, messages: [{ role: 'user', content: user }], maxTokens: 220, temperature: 0 });
+        const r = await provider.complete({ system, messages: [{ role: 'user', content: user }], maxTokens: 220, temperature: 0, purpose: 'context' });
         c.context = clamp(clean(r.text)) || templateContext(doc, c);
       } catch { c.context = templateContext(doc, c); }
     }

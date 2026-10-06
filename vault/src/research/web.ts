@@ -42,7 +42,7 @@ export function webFindings(q: WebQuery, r: WebSearchResult): Finding[] {
 export async function searchWeb(provider: LlmProvider, q: WebQuery, countryName: string | null, maxUses: number): Promise<WebSearchResult> {
   if (!provider.search) return { text: '', usage: { input: 0, cached: 0, output: 0 }, model: provider.model, searches: 0, citations: [], results: [], error: 'the provider has no web search' };
   const prompt = `Research "${q.label}"${countryName ? ` in ${countryName}` : ''} (an oil and gas field, block or company). Search for: ${q.query}`;
-  return provider.search({ system: SYSTEM, prompt, maxUses });
+  return provider.search({ system: SYSTEM, prompt, maxUses, purpose: 'research.search' });
 }
 
 export type { WebCitation, LlmUsage };

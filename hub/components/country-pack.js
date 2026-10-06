@@ -51,6 +51,7 @@ const isDraftFailed = (s) => !!s && s.status === 'empty' && /^draft failed:/.tes
 /** The provider's error in the owner's words, with where it is fixed. */
 function draftFailureWhy(s) {
   const raw = String((s && s.stale_reason) || '').replace(/^draft failed:\s*/, '');
+  if (/model budget spent today/i.test(raw)) return { en: "the Vault's daily model budget is spent; it resets at 00:00 UTC, or raise VAULT_DAILY_BUDGET_GBP on the API service", es: 'el presupuesto diario del modelo de la Bóveda está agotado; se reinicia a las 00:00 UTC, o eleve VAULT_DAILY_BUDGET_GBP en el servicio de la API' };
   if (/credit balance|purchase credits/i.test(raw)) return { en: 'the Anthropic account has no credit; add credits under Plans & Billing at console.anthropic.com', es: 'la cuenta de Anthropic no tiene crédito; añada crédito en Plans & Billing en console.anthropic.com' };
   if (/\b429\b|rate.?limit/i.test(raw)) return { en: 'the drafting assistant is rate limited; try again in a few minutes', es: 'el asistente de redacción está limitado por tasa; inténtelo en unos minutos' };
   if (/\b401\b|authentication|api.?key|x-api-key/i.test(raw)) return { en: 'the drafting key was refused; check ANTHROPIC_API_KEY on the API service', es: 'la clave de redacción fue rechazada; revise ANTHROPIC_API_KEY en el servicio de la API' };

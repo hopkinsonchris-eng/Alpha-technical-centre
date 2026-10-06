@@ -380,7 +380,7 @@ export async function extractLegalFinance(text: string, type: LegalFinanceType, 
   const base = extractLegalFinanceHeuristic(text, type);
   if (!opts.provider) return base;
   try {
-    const r = await opts.provider.complete({ system: LLM_SYSTEM, messages: [{ role: 'user', content: `Document type: ${type}\n\n${text.slice(0, 20000)}` }], maxTokens: 1500, temperature: 0 });
+    const r = await opts.provider.complete({ system: LLM_SYSTEM, messages: [{ role: 'user', content: `Document type: ${type}\n\n${text.slice(0, 20000)}` }], maxTokens: 1500, temperature: 0, purpose: 'extract.legal-finance' });
     return mergeLlm(base, parseJsonObject(r.text), text).merged;
   } catch { return base; }
 }

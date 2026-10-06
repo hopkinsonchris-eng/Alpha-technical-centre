@@ -170,7 +170,7 @@ export async function extractPaperFacts(db: Db, opts: PaperFactsOptions): Promis
       const abstract: string = bytes ? JSON.parse(Buffer.from(bytes).toString('utf8')).abstract ?? '' : '';
       if (abstract.length < MIN_ABSTRACT_CHARS) { summary.skipped_short++; summary.considered--; return; }
       const res = await opts.provider.complete({
-        system: SYSTEM_PROMPT(), maxTokens: 2000, temperature: 0,
+        system: SYSTEM_PROMPT(), maxTokens: 2000, temperature: 0, purpose: 'extract.paper-facts',
         messages: [{ role: 'user', content: `PAPER_ID: ${it.id}\nTITLE: ${it.title}\nPUBLISHED: ${it.authored_at ? new Date(it.authored_at).toISOString().slice(0, 10) : 'unknown'}\nABSTRACT:\n${abstract}` }],
       });
       const a = assembleRow(parseModelJson(res.text), { docId: it.id, legalTag: it.legal_tag, abstract, authoredAt: it.authored_at ? new Date(it.authored_at).toISOString() : null, now, extractedBy, resolveAsset });
