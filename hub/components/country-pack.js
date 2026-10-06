@@ -43,10 +43,23 @@ export const STATUS = {
   stale:       { en: 'stale',       es: 'obsoleta',     tone: 'bad',   rank: 4 },
   /** The sources answered but the Vault's own file store refused them: ours to fix, so it ranks with stale and reads red. */
   unfiled:     { en: 'not filed',   es: 'sin archivar', tone: 'bad',   rank: 4 },
+  /** The originals are filed but the drafting assistant failed on the build (no credit, a refused key): ours to fix too. */
+  failed:      { en: 'not drafted', es: 'sin redactar', tone: 'bad',   rank: 4 },
 };
+/** A section left empty because the drafting failed: the Vault writes stale_reason "draft failed: <the provider's error>". */
+const isDraftFailed = (s) => !!s && s.status === 'empty' && /^draft failed:/.test(String(s.stale_reason || ''));
+/** The provider's error in the owner's words, with where it is fixed. */
+function draftFailureWhy(s) {
+  const raw = String((s && s.stale_reason) || '').replace(/^draft failed:\s*/, '');
+  if (/credit balance|purchase credits/i.test(raw)) return { en: 'the Anthropic account has no credit; add credits under Plans & Billing at console.anthropic.com', es: 'la cuenta de Anthropic no tiene crédito; añada crédito en Plans & Billing en console.anthropic.com' };
+  if (/\b429\b|rate.?limit/i.test(raw)) return { en: 'the drafting assistant is rate limited; try again in a few minutes', es: 'el asistente de redacción está limitado por tasa; inténtelo en unos minutos' };
+  if (/\b401\b|authentication|api.?key|x-api-key/i.test(raw)) return { en: 'the drafting key was refused; check ANTHROPIC_API_KEY on the API service', es: 'la clave de redacción fue rechazada; revise ANTHROPIC_API_KEY en el servicio de la API' };
+  if (/no provider|not.?configured/i.test(raw)) return { en: 'no drafting assistant is connected (vault/SETUP.md §5)', es: 'no hay asistente de redacción conectado (vault/SETUP.md §5)' };
+  const m = raw.slice(0, 120); return { en: m, es: m };
+}
 /** A section the store could not file: the Vault records it unreachable with a stale_reason that starts "storage:". */
 const isUnfiled = (s) => !!s && s.status === 'unreachable' && /^storage:/.test(String(s.stale_reason || ''));
-const statusOf = (s) => (isUnfiled(s) ? STATUS.unfiled : STATUS[s && s.status] || STATUS.empty);
+const statusOf = (s) => (isUnfiled(s) ? STATUS.unfiled : isDraftFailed(s) ? STATUS.failed : STATUS[s && s.status] || STATUS.empty);
 /** The owner's reason, from the stale_reason the Vault wrote ("storage:the storage bucket does not exist"). */
 const unfiledWhy = (s) => String((s && s.stale_reason) || '').replace(/^storage:/, '');
 const isBuilt = (s) => !!s && Number(s.version || 0) > 0 && s.status !== 'empty';
@@ -85,7 +98,7 @@ export function fmtDayMonth(iso) {
 /** The worst section of a pack by freshness (stale before unreachable before due), or null when nothing is built. */
 export function worstSection(pack) {
   let worst = null;
-  for (const s of orderedSections(pack)) if (isBuilt(s) || s.status === 'unreachable') if (!worst || statusOf(s).rank > statusOf(worst).rank) worst = s;
+  for (const s of orderedSections(pack)) if (isBuilt(s) || s.status === 'unreachable' || isDraftFailed(s)) if (!worst || statusOf(s).rank > statusOf(worst).rank) worst = s;
   return worst;
 }
 const n = (pack, k) => Number((pack && pack.counts && pack.counts[k]) || 0);
@@ -121,9 +134,9 @@ function dot(section) {
   if (section.built_at) { const a = fmtShortDate(section.built_at); t.push('as of ' + a.en); }
   if (section.due_at) { const d = fmtShortDate(section.due_at); t.push('due ' + d.en); }
   const st = statusOf(section);
-  return mk('span', 'hub-pack-dot', null, null, { 'data-status': isUnfiled(section) ? 'unfiled' : section.status || 'empty', title: t.length ? t.join(' · ') : st.en, 'aria-hidden': 'true' });
+  return mk('span', 'hub-pack-dot', null, null, { 'data-status': isUnfiled(section) ? 'unfiled' : isDraftFailed(section) ? 'failed' : section.status || 'empty', title: t.length ? t.join(' · ') : st.en, 'aria-hidden': 'true' });
 }
-const statusPill = (section) => { const st = statusOf(section); return mk('span', 'hub-pill ' + st.tone, st.en, st.es, { 'data-status': isUnfiled(section) ? 'unfiled' : section.status || 'empty' }); };
+const statusPill = (section) => { const st = statusOf(section); return mk('span', 'hub-pill ' + st.tone, st.en, st.es, { 'data-status': isUnfiled(section) ? 'unfiled' : isDraftFailed(section) ? 'failed' : section.status || 'empty' }); };
 
 /**
  * The card on the project page. `opts`: onOpen(section, trigger), onAssemble(trigger), state ('ready' | 'none' |
@@ -139,6 +152,13 @@ export function packCard(host, pack, opts) {
   const left = mk('div');
   add(left, mk('h3', null, 'Country pack', 'Paquete del país', { id: 'h-pack' }), packSummary(pack, { capital: true }));
   add(head, left);
+  // Drafting failed on the last build: said once, at the top, with where it is fixed; the rows below stay honest.
+  const failed = pack && Array.isArray(pack.sections) ? pack.sections.find(isDraftFailed) : null;
+  if (failed && !building) {
+    const why = draftFailureWhy(failed);
+    const nt = mk('p', 'hub-notice bad', 'Drafting failed on the last build: ' + why.en + '. The originals are filed; press Refresh once it is fixed.', 'La redacción falló en la última construcción: ' + why.es + '. Los originales están archivados; pulse Actualizar cuando esté corregido.', { 'data-draft-failed': '', title: String(failed.stale_reason || '') });
+    add(left, nt);
+  }
   const actions = mk('div', 'hub-pack-actions');
   const job = mk('span', 'hub-pack-job', null, null, { 'data-pack-job': '', role: 'status' });
   if (building) add(job, mk('span', 'hub-spin', null, null, { 'aria-hidden': 'true' }), mk('span', null, ' Assembling…', ' Armando…'));
@@ -153,12 +173,13 @@ export function packCard(host, pack, opts) {
   const list = mk('ol', 'hub-pack-rows');
   for (const s of orderedSections(pack)) {
     const t = titleOf(s);
-    const li = mk('li', 'hub-pack-row', null, null, { 'data-pack-row': s.section, 'data-status': isUnfiled(s) ? 'unfiled' : s.status || 'empty', 'data-version': String(s.version || 0) });
+    const li = mk('li', 'hub-pack-row', null, null, { 'data-pack-row': s.section, 'data-status': isUnfiled(s) ? 'unfiled' : isDraftFailed(s) ? 'failed' : s.status || 'empty', 'data-version': String(s.version || 0) });
     const b = mk('button', 'hub-pack-open', null, null, { type: 'button', 'data-pack-open': s.section, 'aria-haspopup': 'dialog', 'aria-controls': 'pack-sheet' });
     add(b, dot(s), mk('span', 'hub-pack-title', t.en, t.es));
     const h = s.body && s.body.headline;
     if (h && h.en) add(b, mk('span', 'hub-pack-headline', h.en, h.es || h.en));
     else if (s.status === 'unreachable') add(b, mk('span', 'hub-pack-headline hub-muted', 'No source reached.', 'No se alcanzó ninguna fuente.'));
+    else if (isDraftFailed(s)) add(b, mk('span', 'hub-pack-headline', 'Not drafted: the drafting assistant failed on the last build; see the notice above.', 'Sin redactar: el asistente de redacción falló en la última construcción; vea el aviso de arriba.'));
     else add(b, mk('span', 'hub-pack-headline hub-muted', 'This section is not drafted yet.', 'Esta sección aún no está redactada.'));
     if (o.onOpen) b.addEventListener('click', () => o.onOpen(s, b));
     add(li, b);
@@ -191,8 +212,12 @@ export function packSheetBody(section, opts) {
   add(meta, statusPill(section));
   if (section.built_at) { const d = fmtShortDate(section.built_at); add(meta, mk('span', 'hub-asof-date', ' · as of ' + d.en, ' · al ' + d.es)); }
   if (section.due_at) { const d = fmtShortDate(section.due_at); add(meta, mk('span', 'hub-asof-date', ' · due ' + d.en, ' · vence el ' + d.es)); }
-  if (section.stale_reason && !isUnfiled(section)) add(meta, document.createTextNode(' · '), dv('span', 'hub-pack-reason', section.stale_reason));
+  if (section.stale_reason && !isUnfiled(section) && !isDraftFailed(section)) add(meta, document.createTextNode(' · '), dv('span', 'hub-pack-reason', section.stale_reason));
   add(body, meta);
+  if (isDraftFailed(section)) {
+    const why = draftFailureWhy(section);
+    add(body, mk('p', 'hub-notice bad', 'Drafting failed on the last build: ' + why.en + '. The originals below are filed; press Refresh once it is fixed.', 'La redacción falló en la última construcción: ' + why.es + '. Los originales de abajo están archivados; pulse Actualizar cuando esté corregido.', { 'data-draft-failed': '', title: String(section.stale_reason || '') }));
+  }
   // The store's fault is said in full, with where it is fixed, before anything else in the sheet.
   if (isUnfiled(section)) {
     const why = unfiledWhy(section);
@@ -220,6 +245,7 @@ export function packSheetBody(section, opts) {
   }
   if (!sentences.length) {
     const w = isUnfiled(section) ? ['Reached, not filed: see the notice above.', 'Alcanzadas, sin archivar: vea el aviso de arriba.']
+      : isDraftFailed(section) ? ['Not drafted: see the notice above.', 'Sin redactar: vea el aviso de arriba.']
       : section.status === 'unreachable' ? ['No source reached: nothing is drafted until one answers.', 'No se alcanzó ninguna fuente: nada se redacta hasta que una responda.']
       : isBuilt(section) ? ['Nothing to say yet beyond the headline.', 'Nada que decir todavía más allá del titular.']
         : ['This section is not drafted yet. Assemble the pack to write it.', 'Esta sección aún no está redactada. Arme el paquete para escribirla.'];

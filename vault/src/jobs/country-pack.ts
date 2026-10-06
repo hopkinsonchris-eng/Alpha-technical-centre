@@ -210,6 +210,7 @@ export async function fetchAndFile(db: Db, country: string, sections: SectionId[
     try {
       const st = await storeOriginal(db, storage, src, r, country, { now: now(), ingest });
       rec.item_id = st.id; rec.sha256 = st.sha256; rec.status = st.status;
+      if (st.warning) warnings.push(`${src.id}: ${st.warning}`);
       if (!bucket.items.includes(st.id)) bucket.items.push(st.id);
       c.fetched++; out.fetched++;
       if (st.status === 'unchanged') { c.unchanged++; out.unchanged++; }

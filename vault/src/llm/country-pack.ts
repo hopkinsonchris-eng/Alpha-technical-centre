@@ -204,6 +204,7 @@ export function storageFault(note: string | undefined): { en: string; es: string
   const n = note ?? '';
   if (/NoSuchBucket|Bucket not found/i.test(n)) return { en: 'the storage bucket does not exist', es: 'el bucket de almacenamiento no existe' };
   if (/jwt|unauthori|apikey|\b40[13]\b/i.test(n)) return { en: 'the storage key was refused', es: 'la clave de almacenamiento fue rechazada' };
+  if (/voyage|embed/i.test(n)) return { en: 'the search index refused the text', es: 'el índice de búsqueda rechazó el texto' };
   const m = n.replace(/^could not be filed:\s*/i, '').slice(0, 90).trim();
   return m ? { en: m, es: m } : { en: 'the file store refused the document', es: 'el almacén de archivos rechazó el documento' };
 }

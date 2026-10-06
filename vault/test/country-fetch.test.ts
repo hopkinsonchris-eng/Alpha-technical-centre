@@ -274,3 +274,20 @@ test('a pdf source is a regulatory filing; a page or dataset is a feed snapshot;
   assert.equal(row.type, 'feed-snapshot');
   assert.ok(row.tags.includes('country-pack') && row.tags.includes('country:GY') && row.tags.includes('section:fiscal'));
 });
+
+test('an embedder that refuses (a rate limit, a key) does not un-file the original: the bytes and the row are saved, chunks stay for the ingest-sync cron, and the result carries the warning', async () => {
+  const { db, storage } = dbh;
+  const s = generic('pwc-tax-summaries');
+  const { ctx: c } = ctx([[/taxsummaries\.pwc\.com\/namibia$/, () => text('<!doctype html><html><head><title>Namibia - Corporate | PwC</title></head><body><p>Petroleum income tax is levied at 35 percent on taxable income from a licence area.</p></body></html>', 200, { 'content-type': 'text/html' })]]);
+  const fetched = await fetchSource(s, c) as FetchOk;
+  const refusing = { name: 'voyage', dims: 1024, maxDistance: 0.6, embed: async () => { throw new Error('voyage 429: {"detail":"You have not yet added your payment method in the billing page and will have reduced rate limits of 3 RPM and 10K TPM."}'); } };
+  const r = await storeOriginal(db, storage, s, fetched, 'NA', { now: NOW, ingest: { provider: null, embedder: refusing as any } });
+  assert.equal(r.status, 'created');
+  assert.equal(r.chunks, null);
+  assert.match(r.warning ?? '', /^filed, not indexed yet \(the ingest-sync cron will chunk it\): voyage 429/);
+  const row = (await db.query<any>('SELECT id, storage_key FROM items WHERE id = $1', [r.id])).rows[0];
+  assert.ok(row, 'the item row exists');
+  assert.equal(await storage.exists(row.storage_key), true, 'the bytes are in the store');
+  const chunks = (await db.query<any>('SELECT count(*)::int AS n FROM chunks WHERE item_id = $1', [r.id])).rows[0].n;
+  assert.equal(chunks, 0, 'nothing indexed yet: exactly what the ingest-sync cron looks for');
+});

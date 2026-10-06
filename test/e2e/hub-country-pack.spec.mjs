@@ -504,3 +504,39 @@ test('a store that could not file: the row and the sheet say "not filed" in red 
   await expect(row.locator('.hub-pack-headline')).toContainText('no pudo archivarlas');
   await expect(sum.locator('[data-count="not-filed"] .hub-unit')).toHaveText('sin archivar');
 });
+
+test('drafting failed on the last build: the card says why in the owner\'s words with the fix, every empty row says it is not drafted because of it, the sheet repeats the notice, and the globe line shows the worst as not drafted', async ({ page }) => {
+  // The Vault leaves every section empty with stale_reason "draft failed: <the provider's error>" when the drafting threw.
+  const pack = BRAZIL();
+  const err = 'draft failed: anthropic 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011"}';
+  pack.sections = pack.sections.map((s) => ({ ...s, status: 'empty', stale_reason: err, body: { headline: null, sentences: [], questions: s.body.questions || [], changed_since: [] } }));
+  pack.counts = { built: 10, fresh: 0, due: 0, stale: 0, unreachable: 0, empty: 10 };
+  await stubProject(page, { pack });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const c = card(page);
+  const notice = c.locator('.hub-pack-head [data-draft-failed]');
+  await expect(notice).toHaveText('Drafting failed on the last build: the Anthropic account has no credit; add credits under Plans & Billing at console.anthropic.com. The originals are filed; press Refresh once it is fixed.');
+  await expect(notice).toHaveAttribute('data-es', /la cuenta de Anthropic no tiene crédito/);
+  await expect(notice).toHaveAttribute('title', /credit balance is too low/);
+  await expect(notice).toHaveClass(/bad/);
+  const row = c.locator('[data-pack-row="legal"]');
+  await expect(row).toHaveAttribute('data-status', 'failed');
+  await expect(row.locator('.hub-pack-dot')).toHaveAttribute('data-status', 'failed');
+  await expect(row.locator('.hub-pack-headline')).toHaveText('Not drafted: the drafting assistant failed on the last build; see the notice above.');
+  await expect(c.locator('[data-pack-row][data-status="failed"]')).toHaveCount(10);
+  await row.locator('[data-pack-open]').click();
+  const sheet = page.locator('#pack-sheet');
+  await expect(sheet.locator('[data-pack-meta] .hub-pill')).toHaveText('not drafted');
+  await expect(sheet.locator('[data-pack-meta] .hub-pill')).toHaveClass(/bad/);
+  await expect(sheet.locator('[data-pack-meta] .hub-pack-reason')).toHaveCount(0);
+  await expect(sheet.locator('[data-draft-failed]')).toContainText('the Anthropic account has no credit');
+  await expect(sheet.locator('[data-no-sentences]')).toHaveText('Not drafted: see the notice above.');
+  await page.keyboard.press('Escape');
+  // A refused key and a rate limit are named too; anything else is quoted.
+  const why = await page.evaluate(async () => {
+    const m = await import('/hub/components/country-pack.js');
+    return m.STATUS.failed.en;
+  });
+  expect(why).toBe('not drafted');
+});
