@@ -2,10 +2,13 @@
 // reached with plain fetch and the service key; the store is shared by the API and every cron.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { openStorage, supabaseStorage, originalKey } from '../src/storage.ts';
+import { mkdtempSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { openStorage, supabaseStorage, filesystemStorage, originalKey, storageHealth, type Storage, type StorageCheck } from '../src/storage.ts';
 
 /** An in-memory Supabase Storage: the object routes, the service-key check and the not-found shape the real one answers. */
-function fakeSupabase(url = 'https://abc.supabase.co', key = 'service-key') {
+function fakeSupabase(url = 'https://abc.supabase.co', key = 'service-key', buckets = ['vault']) {
   const objects = new Map<string, { bytes: Uint8Array; mime: string }>();
   const calls: Array<{ method: string; url: string; headers: Record<string, string> }> = [];
   const notFound = () => new Response(JSON.stringify({ statusCode: '404', error: 'Not found', message: 'The resource was not found', code: 'NoSuchKey' }), { status: 400, headers: { 'cache-control': 'no-store', 'content-type': 'application/json' } });
@@ -13,6 +16,12 @@ function fakeSupabase(url = 'https://abc.supabase.co', key = 'service-key') {
     const u = String(input); const h: Record<string, string> = {};
     new Headers(init.headers as any).forEach((v, k) => { h[k] = v; });
     calls.push({ method: init.method ?? 'GET', url: u, headers: h });
+    // The bucket record (the boot check reads it): 404-shaped when there is no such bucket, like the real store.
+    if (u.startsWith(url + '/storage/v1/bucket/')) {
+      if (h.authorization !== `Bearer ${key}`) return new Response(JSON.stringify({ statusCode: '401', error: 'Unauthorized', message: 'invalid JWT', code: 'Unauthorized' }), { status: 400 });
+      const id = decodeURIComponent(u.slice((url + '/storage/v1/bucket/').length));
+      return buckets.includes(id) ? Response.json({ id, name: id, public: false }) : new Response(JSON.stringify({ statusCode: '404', error: 'Bucket not found', message: 'Bucket not found', code: 'NoSuchBucket' }), { status: 400 });
+    }
     if (!u.startsWith(url + '/storage/v1/object/')) return new Response('no route', { status: 404 });
     if (h.authorization !== `Bearer ${key}`) return new Response(JSON.stringify({ statusCode: '401', error: 'Unauthorized', message: 'invalid JWT', code: 'Unauthorized' }), { status: 400 });
     const rest = u.slice((url + '/storage/v1/object/').length);
@@ -60,4 +69,43 @@ test('W5-AC1: openStorage picks the backend from the environment and refuses a c
   assert.throws(() => openStorage({ NODE_ENV: 'production' } as NodeJS.ProcessEnv), /loses every original/);
   assert.ok(openStorage({ NODE_ENV: 'production', VAULT_STORAGE_DIR: '/var/data/vault' } as NodeJS.ProcessEnv), 'a persistent disk named on purpose is allowed');
   assert.ok(openStorage({} as NodeJS.ProcessEnv), 'development and tests default to the filesystem');
+});
+
+test('the boot check: the bucket there is ok; a missing bucket names it and the setup step; a refused key says which key; the filesystem store checks its directory', async () => {
+  const fx = fakeSupabase();
+  const open = (bucket: string, serviceKey = 'service-key') => supabaseStorage({ url: 'https://abc.supabase.co', serviceKey, bucket, fetch: fx.fetch });
+  const ok = await open('vault').check!();
+  assert.deepEqual({ ok: ok.ok, kind: ok.kind, bucket: ok.bucket }, { ok: true, kind: 'supabase', bucket: 'vault' });
+  assert.match(ok.checked_at, /^\d{4}-\d{2}-\d{2}T/);
+  const missing = await open('originals').check!();
+  assert.equal(missing.ok, false);
+  assert.match(missing.error!, /bucket "originals" does not exist/);
+  assert.match(missing.error!, /VAULT_STORAGE_BUCKET/);
+  assert.match(missing.error!, /vault\/SETUP\.md §1\.5/);
+  const refused = await open('vault', 'nope').check!();
+  assert.equal(refused.ok, false);
+  assert.match(refused.error!, /service key was refused/);
+  assert.match(refused.error!, /SUPABASE_SERVICE_KEY/);
+  const fs = await filesystemStorage(mkdtempSync(path.join(os.tmpdir(), 'vault-check-'))).check!();
+  assert.equal(fs.ok, true); assert.equal(fs.kind, 'filesystem');
+  // A store without a check is reported fine, so an injected fake never fails the health route.
+  const bare: Storage = { put: async () => undefined, get: async () => null, exists: async () => false, delete: async () => undefined };
+  assert.equal((await storageHealth(bare)()).ok, true);
+});
+
+test('storageHealth keeps a good answer for five minutes and a bad one for a minute, so the probe never hammers the store and the Hub clears soon after the fix', async () => {
+  let calls = 0;
+  const answers: StorageCheck[] = [
+    { ok: false, kind: 'supabase', bucket: 'vault', error: 'bucket "vault" does not exist', checked_at: 't0' },
+    { ok: true, kind: 'supabase', bucket: 'vault', checked_at: 't1' },
+    { ok: true, kind: 'supabase', bucket: 'vault', checked_at: 't2' },
+  ];
+  const s: Storage = { put: async () => undefined, get: async () => null, exists: async () => false, delete: async () => undefined, check: async () => answers[calls++] };
+  const clock = { t: 0 };
+  const health = storageHealth(s, 5 * 60_000, 60_000, () => clock.t);
+  assert.equal((await health()).ok, false);
+  clock.t = 30_000; assert.equal((await health()).ok, false); assert.equal(calls, 1);          // the failure is cached for a minute
+  clock.t = 61_000; assert.equal((await health()).ok, true); assert.equal(calls, 2);           // re-checked after it: the bucket is there now
+  clock.t = 61_000 + 4 * 60_000; assert.equal((await health()).checked_at, 't1'); assert.equal(calls, 2);   // a good answer lasts five minutes
+  clock.t = 61_000 + 5 * 60_000 + 1; assert.equal((await health()).checked_at, 't2'); assert.equal(calls, 3);
 });

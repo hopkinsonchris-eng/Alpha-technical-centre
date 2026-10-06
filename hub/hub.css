@@ -1166,6 +1166,11 @@ body[data-ready] .hub-project #p-skeleton { display: none; }
 .hub .hub-strip-fig[data-zero="1"] { color: rgba(201,168,76,.8); font-weight: 400; }   /* dimmed, still AA on the navy */
 .hub .hub-strip[data-state="off"] .hub-strip-fig { color: rgba(255,255,255,.6); }
 .hub .hub-strip-sep { color: rgba(201,168,76,.45); }
+/* the file-store alert: the one red thing on the strip, because nothing can be filed until it is fixed */
+.hub .hub-strip a.hub-strip-fig.hub-strip-alert { color: #F0A3A3; font-weight: 700; }
+.hub .hub-strip a.hub-strip-fig.hub-strip-alert:hover, .hub .hub-strip a.hub-strip-fig.hub-strip-alert:focus-visible { color: #FFC7C7; }
+.hub .hub-pack-dot[data-status="unfiled"] { background: var(--bad); border-color: var(--bad); }
+.hub .hub-pack-summary .hub-fig.bad .hub-num, .hub .hub-pack-summary .hub-fig.bad .hub-unit { color: var(--bad); }
 /* the Queues count in the sidebar (R3) */
 .hub .hub-nav-count { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--gold); color: var(--navy); font-family: var(--font-label); font-size: 11px; font-weight: 700; letter-spacing: 0; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
 .hub .hub-more-btn { display: none; }

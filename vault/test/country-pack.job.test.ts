@@ -371,3 +371,43 @@ test('creating a project with a country queues a pack for it, and the create nev
   assert.equal((await db.query<any>(`SELECT count(*)::int AS n FROM jobs WHERE name = '${JOB_NAME}'`)).rows[0].n, before, 'a project without a country queues no pack');
   assert.equal((await jobs('NA')).length, 1, 'still one build for Namibia');
 });
+
+test('a store that refuses to file (no bucket) is the Vault’s fault, not the publisher’s: the sources are "reached, not filed", the section says so with the fix, the chips keep the fetch, and the summary counts them apart from unreachable', async () => {
+  // The same pages with a changed byte, so nothing is "unchanged" from the builds above, and a store with no bucket.
+  const f = gyFetch();
+  const salted: typeof fetch = async (u, init) => {
+    const r = await f.fetch(u, init);
+    if (!/text\/html/.test(r.headers.get('content-type') ?? '')) return r;
+    return new Response((await r.text()) + '<!-- edition 2 -->', { status: r.status, headers: r.headers });
+  };
+  const broken = {
+    put: async () => { throw new Error('supabase storage put 400 for originals/ab/abcd: {"statusCode":"404","error":"Bucket not found","message":"Bucket not found","code":"NoSuchBucket"}'); },
+    get: async () => null, exists: async () => false, delete: async () => undefined,
+  };
+  const s = await runPack(db, 'SR', { ...runOpts(f), fetch: salted, draft: undefined, storage: broken });
+  assert.equal(s.status, 'ok');
+  assert.ok(s.unfiled >= 3, `the html pages were reached and refused by the store: unfiled ${s.unfiled}`);
+  assert.equal(s.stored, 0);
+  assert.equal(s.sections.legal.unfiled, 3, 'Chambers, Legal 500 and EITI: reached, not filed');
+  assert.equal(s.sections.legal.unreachable, 0);
+  assert.ok(s.sections.production.unreachable >= 1, 'EIA without a key stays unreachable: that is not the store');
+  assert.ok(s.warnings.some(w => /chambers-oil-gas: could not be filed: .*Bucket not found/.test(w)));
+
+  const view = await packView(db, 'SR', NOW);
+  const legal = view.sections.find(x => x.section === 'legal')!;
+  assert.equal(legal.status, 'unreachable');
+  assert.equal(legal.stale_reason, 'storage:the storage bucket does not exist');
+  assert.equal(legal.body.headline?.en, 'Reached 3 sources for Legal framework but the Vault could not file them: the storage bucket does not exist. Fix the file store (vault/SETUP.md §1.5) and press Refresh.');
+  assert.match(legal.body.headline?.es ?? '', /^Se alcanzaron 3 fuentes para Marco legal pero la Bóveda no pudo archivarlas: el bucket de almacenamiento no existe\./);
+  assert.equal(legal.body.sentences.length, 0);
+  const chambers = legal.sources.find(x => x.id === 'chambers-oil-gas')!;
+  assert.equal(chambers.reachable, true, 'the fetch succeeded and the chip says so');
+  assert.equal(chambers.fault, 'storage');
+  assert.equal(chambers.item_id, null);
+  assert.match(chambers.fetched_at ?? '', /^2026-10-05/);
+  assert.match(chambers.note ?? '', /^could not be filed: supabase storage put 400 .*Bucket not found/);
+  const eia = view.sections.find(x => x.section === 'production')!.sources.find(x => x.id === 'eia-international')!;
+  assert.equal(eia.reachable, false); assert.equal(eia.fault, undefined);
+  const q = view.sections.find(x => x.section === 'questions')!;
+  assert.ok(q.body.questions.some(x => x.en === 'Legal framework: reached but the Vault could not file it; ask the regulator or counsel.'), JSON.stringify(q.body.questions.map(x => x.en)));
+});
