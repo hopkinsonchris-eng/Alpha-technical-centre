@@ -391,7 +391,12 @@ export function packController(code, onChange, opts) {
     const r = await api(path);
     if (stopped) return null;
     if (r.status === 404 || r.status === 501) { pack = null; emit('unavailable'); return null; }
-    if (!r.ok || !r.body || typeof r.body !== 'object' || r.body.error) { emit(pack ? state() : 'unavailable'); return pack; }
+    if (!r.ok || !r.body || typeof r.body !== 'object' || r.body.error) {
+      // One failed poll (a tablet asleep, a timeout) must not end the polling: the card would say "Assembling…" until a reload (6 Oct 2026).
+      emit(pack ? state() : 'unavailable');
+      if (state() === 'building') schedule();
+      return pack;
+    }
     pack = r.body;
     failed = !!(pack.job && pack.job.status === 'failed') && !pack.assembled_at;
     const st = state();

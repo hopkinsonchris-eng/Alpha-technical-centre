@@ -43,6 +43,15 @@ test('checkCitations: uncited figures become questions, foreign citations are re
   assert.ok(r.warnings.some(w => /outside scope/.test(w)));
 });
 
+test('a citation written after the full stop belongs to the sentence before it (6 Oct 2026: every pack sentence with a figure in that form was turned into a question)', () => {
+  const allowed = new Set(['doc:b']);
+  const r = checkCitations(['The royalty is 30% of extracted volumes. [doc:b] Income tax is 50%. [doc:b] [doc:b]', 'Rates rose 8%. [doc:zz]'], allowed);
+  assert.equal(r.questions.length, 1, JSON.stringify(r));
+  assert.ok(!/QUESTION FOR YOU/.test(r.paragraphs[0]), r.paragraphs[0]);
+  assert.match(r.paragraphs[1], /QUESTION FOR YOU/);
+  assert.deepEqual(r.citations, ['doc:b']);
+});
+
 test('AC15 context: a letter to the prospective partner assembles all six dispatches, the NDA, the run and the lesson from the Vault alone', async () => {
   const db = await seed();
   const ctx = await assembleContext(db, PARTNER, { kind: 'letter', project_id: 'orinoco-partnership', brief: 'Propose the scope of a joint technical evaluation of extra-heavy oil options.', organisation_id: 'petrolera-del-orinoco' }, {});

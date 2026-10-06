@@ -225,7 +225,8 @@ test('W7-AC19 (card): Assemble the pack on a never-built pack POSTs, shows the j
     packGet: (route, code) => {
       if (!built) return json(route, NEVER(code));
       polls++;
-      if (polls < 3) return json(route, { ...NEVER(code), job: { id: 77, status: 'running', started_at: iso(0) } });
+      if (polls === 2) return route.abort('failed');            // an iPad asleep, a timeout: one failed poll must not end the polling (6 Oct 2026)
+      if (polls < 4) return json(route, { ...NEVER(code), job: { id: 77, status: 'running', started_at: iso(0) } });
       return json(route, BRAZIL());
     },
   });
@@ -246,7 +247,7 @@ test('W7-AC19 (card): Assemble the pack on a never-built pack POSTs, shows the j
   await expect(c.locator('[data-pack-job]')).toContainText('Assembling');
   await expect(btn).toBeDisabled();
   await expect(c).toHaveAttribute('data-pack-state', 'ready', { timeout: 5000 });
-  expect(polls).toBeGreaterThanOrEqual(3);                       // GET every interval while the job ran
+  expect(polls).toBeGreaterThanOrEqual(4);                       // GET every interval while the job ran, through the failed one
   await expect(c.locator('[data-pack-summary]')).toContainText('9 of 10');
   await expect(c.locator('[data-pack-row="legal"] .hub-pack-dot')).toHaveAttribute('data-status', 'fresh');
   await expect(btn).toHaveText('Refresh');

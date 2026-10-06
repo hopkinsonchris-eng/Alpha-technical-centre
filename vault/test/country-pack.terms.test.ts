@@ -122,4 +122,9 @@ test('W7-R1, R2: the terms card and every section are drafted from one shared, c
   const again = await draftSectionsWithSummary({ ...ctx, jobId: (await db.query("INSERT INTO jobs (name) VALUES ('country-pack') RETURNING id")).rows[0].id });
   assert.equal(again.calls, 0); assert.equal(again.terms?.kept, true);
   assert.equal((await loadTerms(db, 'VE'))!.version, 1);
+  // The same bytes, but text that arrived later (the ingest cron OCR'd a scan): the originals changed for the drafter, so the next build re-drafts.
+  await db.query(`UPDATE items SET extracted = jsonb_set(extracted, '{text}', to_jsonb($2::text)) WHERE id = $1`, [pwc, 'Income tax 50 % on hydrocarbon income. Royalty 30 % of extracted volumes. Cost recovery is capped at 60 % of revenue.']);
+  const third = await draftSectionsWithSummary({ ...ctx, jobId: (await db.query("INSERT INTO jobs (name) VALUES ('country-pack') RETURNING id")).rows[0].id });
+  assert.ok(third.calls >= 4, `text that arrived later re-drafts the sections and the terms: ${third.calls} calls`);
+  assert.equal((await loadTerms(db, 'VE'))!.version, 2);
 });

@@ -57,8 +57,9 @@ export function decompose(brief: string, extra: string[] = []): string[] {
 export function checkCitations(paragraphs: string[], allowed: Set<string>): { paragraphs: string[]; warnings: string[]; questions: string[]; citations: string[] } {
   const warnings: string[] = [], questions: string[] = [], citations = new Set<string>();
   const out = paragraphs.map((p, pi) => {
-    // Split on sentence ends without losing a character; bracketed questions stay whole.
-    const sentences = p.split(/(?<=[.!?])\s+(?![^\[]*\])/);
+    // Split on sentence ends without losing a character; bracketed questions stay whole, and a citation written after
+    // the full stop ("…is 30%. [doc:a]", the form the pack asks for) belongs to the sentence before it, never to the next.
+    const sentences = p.split(/(?<=[.!?])\s+(?!\[(?:run|doc|lesson|ref|wm):)(?![^\[]*\])/);
     return sentences.map(s => {
       const cites = [...s.matchAll(CITE_RE)].map(m => m[0].slice(1, -1));
       const unknown = cites.filter(c => !allowed.has(c));

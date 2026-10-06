@@ -24,8 +24,8 @@ function reply(req: LlmRequest): string {
     `HEADLINE ES: Los hidrocarburos pertenecen al Estado y se licencian bajo la Ley de Petróleo [doc:${a}]`,
     `EN: Ownership of petroleum in the ground vests in the state [doc:${a}].`,
     `ES: La propiedad del petróleo en el subsuelo corresponde al Estado [doc:${a}].`,
-    `EN: Royalty is 5 % of gross production [doc:${b}].`,
-    `ES: La regalía es el 5 % de la producción bruta [doc:${b}].`,
+    `EN: Royalty is 5 % of gross production. [doc:${b}]`,
+    `ES: La regalía es el 5 % de la producción bruta. [doc:${b}]`,
     `EN: Corporate tax is 35 % [doc:99999999-9999-4999-8999-999999999999].`,
     `ES: El impuesto corporativo es el 35 % [doc:99999999-9999-4999-8999-999999999999].`,
     `EN: Licences run for 25 years.`,
@@ -80,6 +80,7 @@ test('W7-AC18 draftSection: every sentence cites one of this section\'s original
   assert.equal(calls, 1, 'English and Spanish in one call');
   assert.equal(r.status, 'fresh');
   assert.ok(r.body.sentences.length >= 2);
+  assert.ok(r.body.sentences.some(s => /^Royalty is 5 % of gross production\. \[doc:/.test(s.en)), `a figure cited after its full stop (the format the model is asked for) stands: ${JSON.stringify(r.body.sentences)}`);
   for (const s of r.body.sentences) {
     assert.match(s.en, CITED, s.en); assert.match(s.es, CITED, s.es);
     assert.ok(s.cites.length && s.cites.every(c => c === `doc:${act.id}` || c === `doc:${guide.id}`), `cites only this section's originals: ${s.cites}`);
