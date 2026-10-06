@@ -1108,6 +1108,184 @@
           "note": "The well-activities database and production charts the Ministry publishes."
         }
       ]
+    },
+    "VE": {
+      "name": "Venezuela",
+      "regulator": "Ministerio del Poder Popular de Hidrocarburos (MinHidrocarburos, the Ministerio del Poder Popular de Petróleo until Decree 5.061 of 17 December 2024); PDVSA and its affiliate CVP hold the state's share of every empresa mixta",
+      "seeded_by_hand": true,
+      "accounts_note": "No open regulator feed and no licence rounds: areas are awarded by the National Executive through empresas mixtas (PDVSA majority) and, since the reform of the Ley Orgánica de Hidrocarburos in Gaceta Oficial N° 6.978 Extraordinario of 29 January 2026, through Contratos de Participación Productiva. The Ministry's site (minhidrocarburos.gob.ve, WordPress, read on 6 Oct 2026) publishes the legal framework with the law texts as PDFs, news with an RSS feed, and the PODE statistical yearbook whose newest edition is 2014; its adscribed-entities page is images only. pdvsa.com, the Gaceta Oficial host and the TSJ's gazette archive did not connect from the build sandbox on 6 Oct 2026 and are unverified until the job reaches them. Venezuela is not an EITI country and Legal 500 has no Venezuela chapter (both answer 404); the Chambers 2026 chapter answers. An ArcGIS Online layer 'Bloques_FPO' (a 2017 ministry map, copyright 'Ministerio del Poder Popular de Petróleo, PDVSA') exists on an account that does not identify its publisher, so it is not registered. US sanctions: OFAC's Venezuela programme page lists the general licences in force (the GL 46 series since 29 January 2026); work for US persons or in US dollars is screened against it before anything else.",
+      "sources": [
+        {
+          "id": "ve-minhidrocarburos-marco-legal",
+          "section": "legal",
+          "url": "https://www.minhidrocarburos.gob.ve/marco-legal/",
+          "access": "html",
+          "licence": "No licence statement; official publications of the Ministerio del Poder Popular de Hidrocarburos, Venezuela",
+          "attribution": "Ministerio del Poder Popular de Hidrocarburos, República Bolivariana de Venezuela, minhidrocarburos.gob.ve",
+          "allowed_domains": [
+            "minhidrocarburos.gob.ve"
+          ],
+          "note": "The Ministry's legal-framework page: the Constitution, the Ley Orgánica de Hidrocarburos (G.O. 38.493, 4 Aug 2006) and the sector laws, each with a PDF; the 2026 reform was not yet listed on 6 Oct 2026."
+        },
+        {
+          "id": "ve-ley-organica-hidrocarburos-2006",
+          "section": "legal",
+          "url": "https://www.minhidrocarburos.gob.ve/wp-content/documentos/marcolegal/LEY_DE_HIDROCARBUROS.pdf",
+          "access": "pdf",
+          "licence": "No licence statement; official publications of the Ministerio del Poder Popular de Hidrocarburos, Venezuela",
+          "attribution": "Ministerio del Poder Popular de Hidrocarburos, República Bolivariana de Venezuela, minhidrocarburos.gob.ve",
+          "allowed_domains": [
+            "minhidrocarburos.gob.ve"
+          ],
+          "note": "Ley Orgánica de Hidrocarburos as published in G.O. 38.493 of 4 August 2006 (2.2 MB), the text before the January 2026 partial reform; read the reform beside it."
+        },
+        {
+          "id": "ve-ley-participacion-actividades-primarias-2006",
+          "section": "legal",
+          "url": "https://www.minhidrocarburos.gob.ve/wp-content/documentos/marcolegal/LEY_DE_REGULACI%C3%93N_DE_LA_PARTICIPACI%C3%93N_EN_LAS_ACTIVIDADES_PRIMARIAS_PREVISTAS_EN_LA_LEY_ORG%C3%81NICA_DE_HIDROCARBUROS.pdf",
+          "access": "pdf",
+          "licence": "No licence statement; official publications of the Ministerio del Poder Popular de Hidrocarburos, Venezuela",
+          "attribution": "Ministerio del Poder Popular de Hidrocarburos, República Bolivariana de Venezuela, minhidrocarburos.gob.ve",
+          "allowed_domains": [
+            "minhidrocarburos.gob.ve"
+          ],
+          "note": "Ley de Regulación de la Participación en las Actividades Primarias (G.O. 38.419, 18 April 2006): how private capital takes part through empresas mixtas."
+        },
+        {
+          "id": "ve-an-reforma-loh-2026",
+          "section": "legal",
+          "url": "https://www.asambleanacional.gob.ve/noticias/an-sanciona-reforma-de-ley-organica-de-hidrocarburos",
+          "access": "html",
+          "licence": "No licence statement; official pages of the Asamblea Nacional de la República Bolivariana de Venezuela",
+          "attribution": "Asamblea Nacional de la República Bolivariana de Venezuela, asambleanacional.gob.ve",
+          "allowed_domains": [
+            "asambleanacional.gob.ve"
+          ],
+          "note": "The National Assembly's notice of the partial reform of the Ley Orgánica de Hidrocarburos sanctioned on 29 January 2026 and published in G.O. 6.978 Extraordinario: who may carry out primary activities, the new contract form and the fiscal changes, as the Assembly states them."
+        },
+        {
+          "id": "ve-gaceta-6978-reforma-loh-2026",
+          "section": "legal",
+          "url": "https://historico.tsj.gob.ve/gaceta_ext/enero/2912026/E-2912026-7622.pdf",
+          "access": "pdf",
+          "licence": "No licence statement; the Gaceta Oficial as reproduced in the Tribunal Supremo de Justicia's gazette archive (the host reset the connection from the build sandbox on 6 Oct 2026)",
+          "attribution": "Gaceta Oficial de la República Bolivariana de Venezuela N° 6.978 Extraordinario, 29 January 2026, via historico.tsj.gob.ve",
+          "allowed_domains": [
+            "historico.tsj.gob.ve"
+          ],
+          "note": "The reform's text as gazetted. Unverified until the job reaches the host; the Assembly's notice stands in until then."
+        },
+        {
+          "id": "ofac-venezuela-sanctions",
+          "section": "legal",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information/venezuela-related-sanctions",
+          "access": "html",
+          "licence": "Public domain (work of the United States Government, 17 U.S.C. §105)",
+          "attribution": "U.S. Department of the Treasury, Office of Foreign Assets Control, Venezuela-related sanctions",
+          "allowed_domains": [
+            "ofac.treasury.gov"
+          ],
+          "note": "The sanctions programme page: executive orders, the general licences in force (GL 46 and its amendments since 29 January 2026) and the FAQs. Orientation for screening; the licence text governs.",
+          "ttl_days": 7
+        },
+        {
+          "id": "ve-minhidrocarburos-noticias",
+          "section": "licensing",
+          "url": "https://www.minhidrocarburos.gob.ve/noticias/",
+          "access": "html",
+          "licence": "No licence statement; official publications of the Ministerio del Poder Popular de Hidrocarburos, Venezuela",
+          "attribution": "Ministerio del Poder Popular de Hidrocarburos, República Bolivariana de Venezuela, minhidrocarburos.gob.ve",
+          "allowed_domains": [
+            "minhidrocarburos.gob.ve"
+          ],
+          "note": "No open regulator feed and no licence rounds: the Ministry announces awards, empresas mixtas and Contratos de Participación Productiva as news. This page is the one the round watch reads for change. Seeded by hand on 6 Oct 2026."
+        },
+        {
+          "id": "ve-minhidrocarburos-feed",
+          "section": "licensing",
+          "url": "https://www.minhidrocarburos.gob.ve/feed/",
+          "access": "rss",
+          "licence": "No licence statement; official publications of the Ministerio del Poder Popular de Hidrocarburos, Venezuela",
+          "attribution": "Ministerio del Poder Popular de Hidrocarburos, República Bolivariana de Venezuela, minhidrocarburos.gob.ve",
+          "allowed_domains": [
+            "minhidrocarburos.gob.ve"
+          ],
+          "note": "The Ministry's RSS feed (WordPress, updated hourly): every announcement with its date, the dated record the news page lacks."
+        },
+        {
+          "id": "ve-an-contratos-participacion-productiva",
+          "section": "licensing",
+          "url": "https://www.asambleanacional.gob.ve/noticias/reforma-de-ley-de-hidrocarburos-incorpora-los-contratos-de-participacion-productiva",
+          "access": "html",
+          "licence": "No licence statement; official pages of the Asamblea Nacional de la República Bolivariana de Venezuela",
+          "attribution": "Asamblea Nacional de la República Bolivariana de Venezuela, asambleanacional.gob.ve",
+          "allowed_domains": [
+            "asambleanacional.gob.ve"
+          ],
+          "note": "The Assembly's note on the Contratos de Participación Productiva the 2026 reform introduces: the contract form through which private companies may now take part without an empresa mixta."
+        },
+        {
+          "id": "ve-minhidrocarburos-home",
+          "section": "regulator",
+          "url": "https://www.minhidrocarburos.gob.ve/",
+          "access": "html",
+          "licence": "No licence statement; official publications of the Ministerio del Poder Popular de Hidrocarburos, Venezuela",
+          "attribution": "Ministerio del Poder Popular de Hidrocarburos, República Bolivariana de Venezuela, minhidrocarburos.gob.ve",
+          "allowed_domains": [
+            "minhidrocarburos.gob.ve"
+          ],
+          "note": "The Ministry's home page: who it is, its vice-ministries (petróleo, gas, petroquímica), regional offices and the citizen's office. No data room: the PODE yearbook and the law texts are the only downloads."
+        },
+        {
+          "id": "ve-minhidrocarburos-entes-adscritos",
+          "section": "regulator",
+          "url": "https://www.minhidrocarburos.gob.ve/entes-adscritos/",
+          "access": "html",
+          "licence": "No licence statement; official publications of the Ministerio del Poder Popular de Hidrocarburos, Venezuela",
+          "attribution": "Ministerio del Poder Popular de Hidrocarburos, República Bolivariana de Venezuela, minhidrocarburos.gob.ve",
+          "allowed_domains": [
+            "minhidrocarburos.gob.ve"
+          ],
+          "note": "The adscribed entities (PDVSA and the others): the page carried only images on 6 Oct 2026, so it may read as empty."
+        },
+        {
+          "id": "pdvsa-home",
+          "section": "companies",
+          "url": "https://www.pdvsa.com/",
+          "access": "html",
+          "licence": "No licence statement; official site of Petróleos de Venezuela, S.A. (did not connect from the build sandbox on 6 Oct 2026)",
+          "attribution": "Petróleos de Venezuela, S.A. (PDVSA), pdvsa.com",
+          "allowed_domains": [
+            "pdvsa.com"
+          ],
+          "note": "PDVSA's site, the state party to every empresa mixta. Unverified until the job reaches it; no public register of empresas mixtas was found on a reachable page."
+        },
+        {
+          "id": "ve-pode",
+          "section": "production",
+          "url": "https://www.minhidrocarburos.gob.ve/pode/",
+          "access": "html",
+          "licence": "No licence statement; official publications of the Ministerio del Poder Popular de Hidrocarburos, Venezuela",
+          "attribution": "Ministerio del Poder Popular de Hidrocarburos, República Bolivariana de Venezuela, minhidrocarburos.gob.ve",
+          "allowed_domains": [
+            "minhidrocarburos.gob.ve"
+          ],
+          "note": "PODE, Petróleo y Otros Datos Estadísticos, the Ministry's statistical yearbook of production, reserves, refining and exports; the newest edition on the page is 2014, so it dates the historical series only.",
+          "ttl_days": 180
+        },
+        {
+          "id": "eia-venezuela-analysis",
+          "section": "production",
+          "url": "https://www.eia.gov/international/analysis/country/VEN",
+          "access": "html",
+          "licence": "Public domain (U.S. Energy Information Administration)",
+          "attribution": "U.S. Energy Information Administration, Country Analysis: Venezuela",
+          "allowed_domains": [
+            "eia.gov"
+          ],
+          "note": "EIA's country analysis page: current production, exports, reserves and the sanctions context, with its own update date; needs no key, unlike the EIA data API."
+        }
+      ]
     }
   }
 }

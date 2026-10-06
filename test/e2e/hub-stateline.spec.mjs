@@ -47,7 +47,8 @@ async function stubApi(page, { project = PROJECT, delayProject = 0 } = {}) {
         const b = JSON.parse(route.request().postData()); patched.push(b);
         const noted = b.status === 'archived' ? { status_before_archive: current.status } : {};     // the Vault notes the status at archive time (S14)
         current = { ...current, ...b, register: { ...current.register, ...noted, ...(b.register || {}) } };
-        if (b.stage && b.stage !== project.stage) current.stage_history = [...project.stage_history, { stage: b.stage, at: '2026-10-05T11:00:00.000Z', by: 'chris' }];
+        // The Vault (migration 008) returns stage_changed_at with the new history entry; without it the page would say "since today" and the test would drift with the calendar.
+        if (b.stage && b.stage !== project.stage) { current.stage_changed_at = '2026-10-05T11:00:00.000Z'; current.stage_history = [...project.stage_history, { stage: b.stage, at: '2026-10-05T11:00:00.000Z', by: 'chris' }]; }
         return json(route, current);
       }
       if (delayProject) await new Promise((r) => setTimeout(r, delayProject));
