@@ -298,7 +298,7 @@ pages weekly. Both draft only from stored public originals; nothing runs without
    sentence that states them; they wait under Queues as "Round date" until someone presses **Confirm the date**.
    Confirmed deadlines appear on Today under "Deadlines in the next 90 days" and ring the country on the globe.
 5. **Sources.** `vault/master/country-sources.json` lists every source with its licence and attribution line; add a
-   country or a regulator page there by pull request. Mexico, Namibia and Guyana are seeded by hand and say so on the card.
+   country or a regulator page there by pull request. Mexico, Namibia, Guyana and Venezuela are seeded by hand and say so on the card.
 
 ## 8. The pull request
 

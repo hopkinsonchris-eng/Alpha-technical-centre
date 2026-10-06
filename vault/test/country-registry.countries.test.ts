@@ -1,8 +1,8 @@
 /**
  * Wave 7 PR4 (K): the per-country entries of vault/master/country-sources.json. Every entry validates against
  * CountryRegistry (vault/src/country/types.ts), every source carries licence, attribution and allowed_domains that
- * cover its URL, the six regulator-feed countries have an adapter source for licensing, and the three countries with
- * no open feed are seeded by hand with their regulator pages. W7-AC17's registry half; J's test covers `generic`.
+ * cover its URL, the six regulator-feed countries have an adapter source for licensing, and the four countries with
+ * no open feed are seeded by hand with their regulator pages (Venezuela added after the first live pack build). W7-AC17's registry half; J's test covers `generic`.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,13 +18,13 @@ const registry: CountryRegistry = JSON.parse(readFileSync(REG, 'utf8'));
 const ACCESS: SourceAccess[] = ['html', 'pdf', 'json', 'csv', 'rss', 'arcgis', 'ckan', 'adapter'];
 const ADAPTER_ACCESS = Object.keys(ADAPTERS);
 const FEED = ['GB', 'NO', 'CO', 'AR', 'BR', 'US'];
-const HAND = ['MX', 'NA', 'GY'];
+const HAND = ['MX', 'NA', 'GY', 'VE'];
 const FORBIDDEN = [/(^|\.)iea\.org$/i, /(^|\.)onepetro\.org$/i, /(^|\.)opencorporates\.com$/i, /(^|\.)linkedin\.com$/i];
 
 const all = (): [string, CountrySource][] => Object.entries(registry.countries).flatMap(([cc, c]) => c.sources.map(s => [cc, s] as [string, CountrySource]));
 const hostOf = (u: string) => { try { return new URL(u).hostname; } catch { return ''; } };
 
-test('registry: the countries object holds the nine countries, keyed by ISO alpha-2, each named with its regulator and a data-room note', () => {
+test('registry: the countries object holds the ten countries, keyed by ISO alpha-2, each named with its regulator and a data-room note', () => {
   assert.deepEqual(Object.keys(registry.countries).sort(), [...FEED, ...HAND].sort());
   for (const [cc, c] of Object.entries(registry.countries)) {
     assert.match(cc, /^[A-Z]{2}$/, `${cc} is ISO 3166-1 alpha-2 upper case`);
@@ -79,7 +79,7 @@ test('registry: GB, NO, CO, AR, BR and US each have at least one adapter source 
   }
 });
 
-test('registry: MX, NA and GY are seeded by hand with their regulator pages and no adapter source', () => {
+test('registry: MX, NA, GY and VE are seeded by hand with their regulator pages and no adapter source', () => {
   for (const cc of HAND) {
     const c = registry.countries[cc];
     assert.equal(c.seeded_by_hand, true, `${cc} is seeded_by_hand`);
@@ -97,6 +97,15 @@ test('registry: MX, NA and GY are seeded by hand with their regulator pages and 
   assert.ok(gy.some(s => s.section === 'legal' && s.access === 'pdf' && /Petroleum-Activities-Act/.test(s.url)), 'GY: the Petroleum Activities Act 2023 PDF');
   assert.ok(gy.some(s => s.section === 'fiscal' && s.access === 'pdf' && /PSA/.test(s.url)), 'GY: the 2023 model PSA');
   assert.ok(gy.some(s => s.section === 'service' && /lcregister\.petroleum\.gov\.gy|localcontent\.gov\.gy/.test(s.url)), 'GY: the Local Content Register');
+  const ve = registry.countries.VE.sources;
+  assert.ok(ve.filter(s => /minhidrocarburos\.gob\.ve$/.test(hostOf(s.url))).length >= 6, 'VE: the Ministry of Hydrocarbons is the regulator and most sources are its own pages');
+  assert.ok(ve.some(s => s.section === 'legal' && s.access === 'pdf' && /LEY_DE_HIDROCARBUROS\.pdf$/.test(s.url)), 'VE: the Ley Orgánica de Hidrocarburos PDF from the Ministry');
+  assert.ok(ve.some(s => s.section === 'legal' && /asambleanacional\.gob\.ve$/.test(hostOf(s.url)) && /2026/.test(s.note ?? '')), 'VE: the National Assembly notice of the January 2026 reform');
+  assert.ok(ve.some(s => s.section === 'legal' && /ofac\.treasury\.gov$/.test(hostOf(s.url)) && /public domain/i.test(s.licence)), 'VE: the OFAC Venezuela programme page, public domain');
+  assert.ok(ve.some(s => s.section === 'licensing' && s.access === 'rss' && /minhidrocarburos\.gob\.ve$/.test(hostOf(s.url))), 'VE: the Ministry RSS feed is the dated record the round watch reads');
+  assert.ok(ve.some(s => s.section === 'licensing' && /no licence rounds/i.test(s.note ?? '')), 'VE: the licensing note says there are no licence rounds, only awards');
+  assert.ok(ve.some(s => s.section === 'production' && /eia\.gov$/.test(hostOf(s.url))), 'VE: EIA country analysis needs no key');
+  assert.match(registry.countries.VE.accounts_note ?? '', /6\.978/, 'VE: the data-room note names the reform gazette');
 });
 
 test('registry: licence and attribution lines are the ones the research recorded', () => {
