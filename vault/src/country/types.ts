@@ -50,7 +50,13 @@ export interface CountryRegistry {
   /** Sources that apply to every country (Chambers, Legal 500, EITI, ResourceContracts, GEM, EIA, JODI). */
   generic: CountrySource[];
   /** Per-country sources, keyed by ISO 3166-1 alpha-2 upper case; a country absent here gets the generic set and a note. */
-  countries: Record<string, { name: string; regulator?: string; accounts_note?: string; sources: CountrySource[]; seeded_by_hand?: boolean }>;
+  countries: Record<string, {
+    name: string; regulator?: string; accounts_note?: string; sources: CountrySource[]; seeded_by_hand?: boolean;
+    /** What {country} becomes in the generic URLs when the sites do not use the display name ("united-states" for "United States (offshore)"). */
+    slug?: string;
+    /** The same, per source id, where one site differs from the rest (Chambers files the USA chapter under "usa"). */
+    slugs?: Record<string, string>;
+  }>;
 }
 
 /** Stored-original conventions: every fetched payload is an immutable item under project 'firm', public scope. */

@@ -83,9 +83,11 @@ test('a ResourceContracts search and the EITI page: json and html are parsed onl
 
 test('the JODI CSV arrives zipped: the first CSV entry is the original; a plain CSV reads its header', async () => {
   const zip = buildZip([{ name: 'world_primary.csv', data: fx('jodi-oil-header.csv') }]);
-  const { ctx: c } = ctx([[/jodidata\.org/, () => new Response(new Uint8Array(zip), { status: 200, headers: { 'content-type': 'application/zip' } })]]);
+  const { calls, ctx: c } = ctx([[/jodidata\.org/, () => new Response(new Uint8Array(zip), { status: 200, headers: { 'content-type': 'application/zip' } })]]);
   const r = await fetchSource(generic('jodi-oil-monthly'), c) as FetchOk;
   assert.equal(r.unreachable, false);
+  // jodidata.org answers 406 to any Accept that does not admit */* (6 Oct 2026, from the live build): the csv request must carry it.
+  assert.match(new Headers((calls[0].init?.headers as any) ?? {}).get('accept') ?? '', /\*\/\*/, 'a CSV request accepts */* as well');
   assert.equal(r.mime, 'text/csv');
   assert.equal(sha(r.bytes), sha(fx('jodi-oil-header.csv')));
   assert.match(r.description, /7 columns/);

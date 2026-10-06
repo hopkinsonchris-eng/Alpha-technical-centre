@@ -103,6 +103,23 @@ test('placeholders: {cc}, {cc_lower} and {country} are filled from the country; 
   assert.equal(fillPlaceholders('https://x.org/{country}', { code: 'GB', name: 'United Kingdom' }), 'https://x.org/united-kingdom');
   assert.equal(fillPlaceholders('https://x.org/{country}', { code: 'CI', name: "Côte d'Ivoire" }), 'https://x.org/cote-divoire');
   assert.equal(fillPlaceholders('https://x.org/{country}', { code: 'TT', name: 'Trinidad & Tobago' }), 'https://x.org/trinidad-tobago');
+  assert.equal(fillPlaceholders('https://x.org/{country}', { code: 'US', name: 'United States (offshore)', slug: 'united-states' }), 'https://x.org/united-states', 'an entry may name the slug the sites use instead of its display name');
+});
+
+test('slug overrides: the United States entry names the slugs the law and tax sites use, per site where they differ; registryProblems rejects a slug that is not one or names no source', () => {
+  // 6 Oct 2026: "United States (offshore)" became "united-states-offshore-", so Chambers, Legal 500 and PwC all missed.
+  const reg = loadRegistry();
+  const us = sourcesFor(reg, 'US');
+  const url = (id: string) => us.sources.find(s => s.id === id)!.url;
+  assert.equal(url('chambers-oil-gas'), 'https://practiceguides.chambers.com/practice-guides/oil-gas-{year}/usa');
+  assert.equal(url('pwc-tax-summaries'), 'https://taxsummaries.pwc.com/united-states/corporate/taxes-on-corporate-income');
+  assert.equal(url('legal500-energy-oil-gas'), 'https://www.legal500.com/guides/chapter/united-states-energy-oil-gas/');
+  assert.equal(sourcesFor(reg, 'VE').sources.find(s => s.id === 'pwc-tax-summaries')!.url, 'https://taxsummaries.pwc.com/venezuela/corporate/taxes-on-corporate-income', 'a country without overrides keeps the name slug');
+  const bad = JSON.parse(JSON.stringify(reg));
+  bad.countries.US.slug = 'United States'; bad.countries.US.slugs = { 'no-such-source': 'usa' };
+  const problems = registryProblems(bad);
+  assert.ok(problems.some(p => /countries\.US: slug/.test(p)), problems.join('; '));
+  assert.ok(problems.some(p => /countries\.US: slugs "no-such-source"/.test(p)), problems.join('; '));
 });
 
 test('resolveSeries: {year} tries the current year, then the previous, and gives up after that', async () => {
