@@ -1371,6 +1371,17 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 .hub .hub-pack-job { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
 .hub .hub-pack-job[data-failed] { color: var(--bad); }
 .hub .hub-pack-job[hidden] { display: none; }
+/* the terms card: the fixed facts first, a two-column definition list on the desk, one on a phone */
+.hub .hub-pack-terms { margin: 12px 0 4px; padding: 12px 14px; background: var(--cream); border: 1px solid var(--rule); border-radius: 10px; }
+.hub .hub-pack-terms-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.hub .hub-pack-terms-head h4 { margin: 0; font-family: var(--font-label); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--navy); }
+.hub .hub-pack-terms .hub-notice { margin: 4px 0 8px; }
+.hub .hub-terms { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; align-items: baseline; }
+.hub .hub-terms dt { font-family: var(--font-label); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.hub .hub-terms dt[data-state="cited"] { color: var(--navy); }
+.hub .hub-terms dd { margin: 0; font-size: 13.5px; line-height: 1.4; color: var(--navy); overflow-wrap: anywhere; }
+.hub .hub-terms dd .hub-pack-chip { margin-top: 2px; }
+@media (max-width: 700px) { .hub .hub-terms { grid-template-columns: 1fr; gap: 2px 0; } .hub .hub-terms dd { margin-bottom: 8px; } }
 .hub .hub-pack-rows { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
 .hub .hub-pack-row { border-top: 1px solid var(--rule); min-width: 0; }
 .hub .hub-pack-open { display: grid; grid-template-columns: 12px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 1px; align-items: center; width: 100%; min-height: 44px; margin: 0; padding: 7px 6px; border: 0; background: none; text-align: left; font: inherit; color: var(--navy); cursor: pointer; border-radius: var(--r); }

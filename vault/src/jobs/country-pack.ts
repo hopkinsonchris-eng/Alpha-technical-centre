@@ -21,7 +21,13 @@ import { openStorage, type Storage } from '../storage.ts';
 import { openEmbedder } from '../ingest/embed.ts';
 import type { IngestDeps } from '../ingest/index.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
-import { draftSectionsWithSummary, type DraftCtx, type DraftSummary, type PackSourceRef } from '../llm/country-pack.ts';
+import { draftSectionsWithSummary, loadTerms, type DraftCtx, type DraftSummary, type PackSourceRef } from '../llm/country-pack.ts';
+import { packQuality } from '../country/terms.ts';
+import { countryRisk, worldMonitorConfigured } from '../intel/worldmonitor.ts';
+import { isBlockedHost } from '../country/registry.ts';
+import { createHash } from 'node:crypto';
+import type { CountrySource } from '../country/types.ts';
+import type { FetchOk } from '../country/fetch.ts';
 import { isCountryCode } from '../opportunities.ts';
 import type { Clock } from '../miners/util.ts';
 import { reapAfterMs } from '../research/run.ts';
@@ -47,6 +53,10 @@ export interface PackSummary {
   country: string; name: string; status: 'ok' | 'failed'; started_at: string; finished_at: string | null; duration_ms: number;
   sections: Record<SectionId, SectionCounts>; fetched: number; stored: number; unchanged: number; unreachable: number; unfiled: number; spend_gbp: number;
   budget_gbp: number; drafted: boolean; draft?: DraftSummary; warnings: string[]; note: string | null; error?: string; requested_by?: string; queued?: boolean;
+  /** The web search step: pages the model's search cited, fetched by the job and filed as originals. */
+  web?: WebSearchSummary;
+  /** The World Monitor reading filed as an original for the risk section, or why not. */
+  world_monitor?: string;
 }
 
 export interface WriteSectionInput {
@@ -77,6 +87,7 @@ export interface FetchOptions {
   maxBytes?: number; timeoutMs?: number; masterDir?: string;
 }
 export interface PackRunOptions extends FetchOptions {
+  /** false skips the web search step (tests; PACK_WEB_SEARCH=false in the environment does the same). */ webSearch?: boolean;
   /** The drafting hook. Default: L's draftSectionsWithSummary when vault/src/llm/country-pack.ts exists; otherwise every section is written 'empty'. */
   draft?: DraftHook | null;
   /** The model provider for the hook: openProvider() when ANTHROPIC_API_KEY is set, else null (the drafter then writes honest rows). */
@@ -269,9 +280,21 @@ export async function runPack(db: Db, country: string, opts: PackRunOptions = {}
     touched = fetched.touched; perSection = fetched.sections;
     await progress();
 
+    // 1b. The World Monitor reading, filed as an original so the risk section can cite it (pack rework).
+    const ingest = opts.ingest === undefined ? openIngestOrNull(env, summary.warnings) : opts.ingest;
+    summary.world_monitor = await fileWorldMonitor(db, storage, country, resolved.name, perSection, { now, ingest, onTouched: id => touched.push(`doc:${id}`) });
+    await progress();
+    // 1c. Web search: the model's search names pages, the job fetches and files them, the sections cite the stored copies (D67 kept: the model fetches nothing).
+    const provider0 = opts.provider === undefined ? (env.ANTHROPIC_API_KEY || env.LLM_PROVIDER ? openProvider(env) : null) : opts.provider;
+    if (opts.webSearch !== false && env.PACK_WEB_SEARCH !== 'false' && provider0?.search) {
+      summary.web = await webSearchOriginals(db, storage, country, resolved.name, provider0, perSection, { ...opts, now, env, ingest, log, onTouched: id => touched.push(`doc:${id}`) });
+      summary.warnings.push(...summary.web.skipped.map(x => `web: ${x}`));
+      await progress();
+    }
+
     // 2. Draft each section from the stored originals only (the hook), or record what was fetched.
     const before = new Map<SectionId, number>((await db.query<{ section: SectionId; v: number }>('SELECT section, max(version)::int AS v FROM country_packs WHERE country = $1 GROUP BY section', [country])).rows.map(r => [r.section, r.v]));
-    const provider = opts.provider === undefined ? (env.ANTHROPIC_API_KEY || env.LLM_PROVIDER ? openProvider(env) : null) : opts.provider;
+    const provider = provider0;
     const hook = opts.draft === undefined ? DEFAULT_DRAFT : opts.draft;
     const ctx: DraftContext = {
       db, storage, provider, country, jobId: job, by, now: now(), budgetGbp: budget, refresh: opts.refresh ?? false,
@@ -339,6 +362,89 @@ function sectionView(section: typeof SECTIONS[number], row: any | undefined): Pa
   };
 }
 
+/* ── the World Monitor original and the web search step (pack rework) ─────────────────────────────────────── */
+
+const WM_SOURCE = (country: string): CountrySource => ({ id: 'world-monitor-intel', section: 'risk', url: `https://worldmonitor.app/intelligence/country-risk/${country}`, access: 'json', licence: "World Monitor terms of service (the firm's subscription); figures quoted for screening", attribution: 'World Monitor, country risk and context', allowed_domains: ['worldmonitor.app'], note: 'The reading behind the country intel card, filed so the risk section can cite it.' });
+
+/** Files the World Monitor country reading as an original of the risk section; returns what happened, for the summary. */
+export async function fileWorldMonitor(db: Db, storage: Storage, country: string, name: string, perSection: SectionSources[], o: { now: () => Date; ingest: IngestDeps | null; onTouched?: (id: string) => void }): Promise<string> {
+  if (!worldMonitorConfigured()) return 'not connected';
+  const bucket = perSection.find(s => s.section === 'risk');
+  if (!bucket) return 'risk section not in this build';
+  let r: Awaited<ReturnType<typeof countryRisk>>;
+  try { r = await countryRisk(country); } catch (e) { return `failed: ${(e as Error).message}`; }
+  if (!r.ok) return r.reason;
+  const src = WM_SOURCE(country);
+  const payload = { country, name, fetched_at: r.fetched_at, risk: r.data };
+  const fetched: FetchOk = { unreachable: false, url: src.url, url_final: src.url, bytes: Buffer.from(JSON.stringify(payload, null, 2)), mime: 'application/json', fetched_at: r.fetched_at, status: 200, title: `World Monitor: ${name} risk and context`, description: `risk score ${r.data.score ?? 'n/a'}, ${r.data.level ?? 'no advisory'}, sanctions ${r.data.sanctions_active ? 'active' : 'none recorded'}` };
+  const rec: PackSourceRecord = { id: src.id, section: 'risk', url: src.url, licence: src.licence, attribution: src.attribution, fetched_at: r.fetched_at, item_id: null, sha256: null, reachable: true, note: src.note };
+  try {
+    const st = await storeOriginal(db, storage, src, fetched, country, { now: o.now(), ingest: o.ingest });
+    rec.item_id = st.id; rec.sha256 = st.sha256; rec.status = st.status;
+    if (!bucket.items.includes(st.id)) bucket.items.push(st.id);
+    bucket.sources.push(rec);
+    if (st.status !== 'unchanged') o.onTouched?.(st.id);
+    return `filed (${st.status})`;
+  } catch (e) { rec.fault = 'storage'; rec.note = `could not be filed: ${(e as Error).message}`; bucket.sources.push(rec); return `not filed: ${(e as Error).message}`; }
+}
+
+export interface WebSearchSummary { searches: number; pages: number; filed: number; unchanged: number; skipped: string[] }
+const WEB_MAX_PAGES = 8;
+const WEB_SYSTEM = 'You find public web pages that state, for one country, its hydrocarbon law and contract regime, fiscal terms (royalty, income tax, special taxes), how acreage is licensed and the current round, production and reserves, and sanctions. Prefer the regulator and ministry, law firm guides (Chambers, Legal 500), EITI, EIA, OPEC, the IMF and World Bank, and established trade press. Answer with one line per page: the URL and what it states. Never invent a URL.';
+export const webQueries = (name: string, year: number): { section: SectionId; q: string }[] => [
+  { section: 'fiscal', q: `${name} oil and gas fiscal terms royalty income tax ${year} hydrocarbons law contract regime` },
+  { section: 'licensing', q: `${name} oil gas licensing round ${year} acreage award regulator` },
+  { section: 'production', q: `${name} oil production reserves ${year} barrels per day` },
+  { section: 'risk', q: `${name} oil gas sector sanctions restrictions ${year}` },
+];
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+const sha8 = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 8);
+
+/**
+ * The web search step: for each query the provider's search names pages (the model reads only the search snippets);
+ * the job fetches each page itself under the pack's fetch rules, files it as an original of the section the query
+ * served, and the section's chips show it as found by web search. Blocked hosts and pages already registered are skipped.
+ */
+export async function webSearchOriginals(db: Db, storage: Storage, country: string, name: string, provider: LlmProvider, perSection: SectionSources[], o: FetchOptions & { now: () => Date; env: NodeJS.ProcessEnv; ingest: IngestDeps | null; log?: (line: string) => void; maxPages?: number; onTouched?: (id: string) => void }): Promise<WebSearchSummary> {
+  const out: WebSearchSummary = { searches: 0, pages: 0, filed: 0, unchanged: 0, skipped: [] };
+  const known = new Set(perSection.flatMap(s => s.sources.map(x => x.url)));
+  const pool = new HttpPool({ fetch: o.fetch, clock: o.clock });
+  const max = o.maxPages ?? WEB_MAX_PAGES;
+  for (const { section, q } of webQueries(name, o.now().getUTCFullYear())) {
+    if (out.pages >= max) break;
+    const bucket = perSection.find(s => s.section === section);
+    if (!bucket) continue;
+    let r;
+    try { r = await provider.search!({ system: WEB_SYSTEM, prompt: `Country: ${name} (${country}). Find: ${q}`, maxUses: 3, purpose: 'country-pack.search', scope: 'public', refs: [`country:${country}`] }); out.searches++; }
+    catch (e) { out.skipped.push(`search "${q}": ${(e as Error).message}`); continue; }
+    if (r.error) out.skipped.push(`search "${q}": ${r.error}`);
+    const urls = [...new Set([...r.citations.map(c => c.url), ...r.results.map(x => x.url)].filter(u => /^https?:\/\//i.test(u)))];
+    for (const url of urls) {
+      if (out.pages >= max) break;
+      let host: string;
+      try { host = new URL(url).hostname.toLowerCase(); } catch { continue; }
+      if (isBlockedHost(host)) { out.skipped.push(`${host}: never read`); continue; }
+      if (known.has(url)) continue;
+      known.add(url);
+      const src: CountrySource = { id: `web-${slug(host)}-${sha8(url)}`, section, url, access: /\.pdf(\?|$)/i.test(url) ? 'pdf' : 'html', licence: 'As published by the site; found by web search and quoted with attribution for screening, not advice', attribution: `${host} (found by web search)`, allowed_domains: [host], note: `Found by web search on ${o.now().toISOString().slice(0, 10)} for "${q}".` };
+      const rec: PackSourceRecord = { id: src.id, section, url, licence: src.licence, attribution: src.attribution, fetched_at: null, item_id: null, sha256: null, reachable: false, note: src.note };
+      out.pages++;
+      const f = await fetchSource(src, { country, name, fetch: o.fetch, clock: o.clock, now: o.now, env: o.env, pool, maxBytes: o.maxBytes ?? 1_500_000, timeoutMs: o.timeoutMs, onWarn: m => out.skipped.push(m) });
+      if (f.unreachable) { rec.note = `${src.note} ${f.reason}`; out.skipped.push(`${url}: ${f.reason}`); bucket.sources.push(rec); continue; }
+      rec.fetched_at = f.fetched_at; rec.reachable = true; rec.title = f.title;
+      try {
+        const st = await storeOriginal(db, storage, src, f, country, { now: o.now(), ingest: o.ingest });
+        rec.item_id = st.id; rec.sha256 = st.sha256; rec.status = st.status;
+        if (!bucket.items.includes(st.id)) bucket.items.push(st.id);
+        if (st.status === 'unchanged') out.unchanged++; else { out.filed++; o.onTouched?.(st.id); }
+      } catch (e) { rec.fault = 'storage'; rec.note = `could not be filed: ${(e as Error).message}`; out.skipped.push(`${url}: could not be filed`); }
+      bucket.sources.push(rec);
+    }
+  }
+  o.log?.(`country-pack ${country}: web search ${out.searches} queries, ${out.pages} pages, ${out.filed} filed, ${out.unchanged} unchanged${out.skipped.length ? `, ${out.skipped.length} skipped` : ''}`);
+  return out;
+}
+
 /** The current version of every section, the open or latest build, and the spend across every version built for the country. Reaps a stuck build first. */
 export async function packView(db: Db, country: string, now = new Date()): Promise<PackView> {
   assertCode(country);
@@ -351,7 +457,9 @@ export async function packView(db: Db, country: string, now = new Date()): Promi
   const newest = rows.map((r: any) => new Date(r.built_at).getTime()).sort((a: number, b: number) => b - a)[0];
   const job = (await db.query<any>("SELECT id, status, started_at FROM jobs WHERE name = $2 AND summary->>'country' = $1 ORDER BY (status = 'running') DESC, id DESC LIMIT 1", [country, JOB_NAME])).rows[0];
   const spend = (await db.query<{ gbp: string | null }>('SELECT sum(spend_gbp)::text AS gbp FROM country_packs WHERE country = $1', [country])).rows[0];
+  const terms = await loadTerms(db, country);
   return {
+    terms, quality: packQuality(terms),
     country, assembled_at: newest ? new Date(newest).toISOString() : null, sections, counts,
     job: job ? { id: job.id, status: job.status, started_at: new Date(job.started_at).toISOString() } : null,
     spend_gbp: round4(Number(spend?.gbp ?? 0)),

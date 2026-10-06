@@ -16,7 +16,8 @@ const ids = (prompt: string) => [...new Set([...prompt.matchAll(/\[doc:([0-9a-f-
 /** A reply that cites the originals it was given, adds one sentence with a fabricated id and one with no citation at all. */
 function reply(req: LlmRequest): string {
   const user = req.messages[0].content;
-  const given = ids(user);
+  // The originals travel in the cached system block (pack rework); the section's own are named in the message, read first.
+  const given = ids(user).length ? ids(user) : ids(req.system);
   const a = given[0], b = given[1] ?? given[0];
   return [
     `HEADLINE EN: Hydrocarbons belong to the state and are licensed under the Petroleum Act [doc:${a}]`,
@@ -122,17 +123,19 @@ test('W7-AC18 draftSections: an unreachable section says "no source reached" wit
   const rows = (await db.query('SELECT * FROM country_packs WHERE country = $1 ORDER BY section', ['NA'])).rows;
   const by = Object.fromEntries(rows.map((r: any) => [r.section, r]));
   assert.deepEqual(Object.keys(by).sort(), ['fiscal', 'legal', 'licensing', 'questions', 'service']);
-  // Model calls: legal and fiscal only.
-  assert.equal(prompts.length, 2);
+  // Model calls: legal, fiscal, licensing (its own source unreachable, it drafts from the shared originals) and the terms card.
+  assert.equal(prompts.length, 4);
+  assert.equal(new Set(prompts.map(p => p.system)).size, 1, 'one cached block of originals for every call of the build');
   assert.equal(by.legal.status, 'fresh'); assert.equal(by.fiscal.status, 'fresh');
   for (const s of [...by.legal.body.sentences, ...by.fiscal.body.sentences]) { assert.match(s.en, CITED); assert.match(s.es, CITED); }
   assert.deepEqual(by.legal.source_items, [act.id]); assert.equal(by.legal.ttl_days, 180); assert.equal(by.legal.version, 1);
   assert.equal(by.legal.built_by, 'chris'); assert.equal(by.legal.model, 'fake-1'); assert.equal(by.legal.sources[0].attribution, 'mme-petroleum-act (public)');
   assert.equal(by.fiscal.sources[0].licence, 'CC BY-SA 4.0');
-  // Unreachable: honest body, no sentences, no call.
-  assert.equal(by.licensing.status, 'unreachable'); assert.equal(by.licensing.stale_reason, 'unreachable:mme-licensing');
-  assert.match(by.licensing.body.headline.en, /no source reached/i); assert.match(by.licensing.body.headline.es, /ninguna fuente/i);
-  assert.deepEqual(by.licensing.body.sentences, []); assert.equal(by.licensing.ttl_days, 7);
+  // Its own source unreachable, the licensing section still drafts from the other originals of the country (pack rework, W7-R2); the chip says unreachable.
+  assert.equal(by.licensing.status, 'fresh'); assert.equal(by.licensing.stale_reason, null);
+  assert.equal(by.licensing.sources[0].reachable, false); assert.equal(by.licensing.sources[0].id, 'mme-licensing');
+  assert.ok(by.licensing.body.sentences.length >= 1); assert.equal(by.licensing.ttl_days, 7);
+  for (const s of by.licensing.body.sentences) assert.match(s.en, CITED);
   // Service: no public register; the firm's own vendors in Namibia, not the one in the UK; no sentence without a citation.
   assert.equal(by.service.status, 'empty');
   assert.match(by.service.body.headline.en, /no public register; the firm's contacts here are Walvis Bay Drilling/);
@@ -142,7 +145,6 @@ test('W7-AC18 draftSections: an unreachable section says "no source reached" wit
   assert.equal(by.questions.status, 'fresh');
   assert.ok(by.questions.body.questions.length >= 2);
   assert.ok(by.questions.body.questions.some((q: any) => /cost-recovery ceiling/.test(q.en)));
-  assert.ok(by.questions.body.questions.some((q: any) => /Licensing and the current round/.test(q.en) && /no source reached/i.test(q.en)));
   // Confidentiality: the client's record is in no prompt, nor is the NDA item id, nor the firm's vendor list in a non-service prompt.
   for (const p of prompts) {
     const t = `${p.system}\n${p.messages.map(m => m.content).join('\n')}`;
@@ -153,7 +155,7 @@ test('W7-AC18 draftSections: an unreachable section says "no source reached" wit
   }
   // Spend: one audit row per model call, under the feature's action, summed on the rows.
   const spend = (await db.query("SELECT action, tokens_in, tokens_out, detail FROM audit_events WHERE action = 'llm.country-pack' ORDER BY id")).rows;
-  assert.equal(spend.length, 2); assert.ok(spend.every((s: any) => s.tokens_in > 0 && s.detail.country === 'NA' && ['legal', 'fiscal'].includes(s.detail.section)));
+  assert.equal(spend.length, 4); assert.ok(spend.every((s: any) => s.tokens_in > 0 && s.detail.country === 'NA' && ['legal', 'fiscal', 'licensing', 'terms'].includes(s.detail.section)));
   assert.ok(rows.every((r: any) => r.spend_gbp !== null));
 
   // A rebuild writes version 2, points version 1 at it, keeps version 1, and says what changed.

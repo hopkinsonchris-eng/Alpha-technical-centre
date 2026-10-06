@@ -71,7 +71,7 @@ test('W7-AC20 refreshStale: rebuilds only the due and stale sections of countrie
   const provider = new FakeProvider((req) => { prompts.push(req); return reply('6 %')(req); });
   const r = await refreshStale(db, { provider, now, budgetGbp: 2, by: 'job:country-pack-refresh' });
   assert.deepEqual(r.countries.map(c => c.country).sort(), ['CO', 'NA'], 'GY (archived) is never refreshed');
-  assert.equal(prompts.length, 4, 'licensing and fiscal for each of the two countries; legal was fresh');
+  assert.equal(prompts.length, 6, 'licensing and fiscal for each of the two countries, plus the terms card per country; legal was fresh');
   for (const c of ['NA', 'CO']) {
     const h = await head(db, c);
     assert.equal(h.legal.version, 1); assert.equal(h.legal.status, 'fresh');
@@ -79,7 +79,7 @@ test('W7-AC20 refreshStale: rebuilds only the due and stale sections of countrie
     assert.equal(h.fiscal.version, 2); assert.equal(h.fiscal.status, 'fresh'); assert.equal(h.fiscal.stale_reason, null);
     assert.ok(h.fiscal.body.changed_since.some((x: any) => /^Changed: .*6 %/.test(x.en) && /^Cambió: /.test(x.es)), `what changed: ${JSON.stringify(h.fiscal.body.changed_since)}`);
     // The stale section was redrafted from the newest version of its source.
-    assert.ok(prompts.some(p => p.messages[0].content.includes('royalty 6 %')), 'the new text reached the drafter');
+    assert.ok(prompts.some(p => p.system.includes('royalty 6 %')), 'the new text reached the drafter (the originals travel in the cached system block)');
   }
   const g = await head(db, 'GY');
   assert.equal(g.fiscal.version, 1); assert.equal(g.fiscal.status, 'stale');
@@ -90,13 +90,13 @@ test('W7-AC20 refreshStale: rebuilds only the due and stale sections of countrie
   const job = (await db.query("SELECT name, status, summary FROM jobs WHERE name = 'country-pack-refresh' ORDER BY id DESC LIMIT 1")).rows[0];
   assert.equal(job.status, 'ok'); assert.equal(job.summary.rebuilt, 4);
   const spend = (await db.query("SELECT count(*)::int AS n FROM audit_events WHERE action = 'llm.country-pack' AND detail->>'refresh' = 'true'")).rows[0].n;
-  assert.equal(spend, 4);
+  assert.equal(spend, 6);
   assert.equal(featureOf('llm.country-pack'), 'country-pack');
   assert.deepEqual(r.changed.filter(c => c.country === 'NA' && c.section === 'fiscal').length, 1);
   assert.ok(r.spend_gbp >= 0);
   // Nothing left to do: a second run touches nothing.
   const r2 = await refreshStale(db, { provider, now: new Date('2026-10-05T06:00:00Z'), budgetGbp: 2, by: 'job:country-pack-refresh' });
-  assert.equal(r2.rebuilt, 0); assert.equal(prompts.length, 4);
+  assert.equal(r2.rebuilt, 0); assert.equal(prompts.length, 6);
   await db.close();
 });
 
