@@ -104,7 +104,10 @@ test('registry: MX, NA, GY and VE are seeded by hand with their regulator pages 
   assert.ok(ve.some(s => s.section === 'legal' && /ofac\.treasury\.gov$/.test(hostOf(s.url)) && /public domain/i.test(s.licence)), 'VE: the OFAC Venezuela programme page, public domain');
   assert.ok(ve.some(s => s.section === 'licensing' && s.access === 'rss' && /minhidrocarburos\.gob\.ve$/.test(hostOf(s.url))), 'VE: the Ministry RSS feed is the dated record the round watch reads');
   assert.ok(ve.some(s => s.section === 'licensing' && /no licence rounds/i.test(s.note ?? '')), 'VE: the licensing note says there are no licence rounds, only awards');
-  assert.ok(ve.some(s => s.section === 'production' && /eia\.gov$/.test(hostOf(s.url))), 'VE: EIA country analysis needs no key');
+  assert.ok(ve.some(s => s.section === 'legal' && s.access === 'pdf' && /faolex\.fao\.org\/docs\/pdf\/ven69660\.pdf$/.test(s.url)), 'VE: the FAOLEX text copy of the 2006 law (the Ministry\'s own is a scan)');
+  assert.ok(ve.some(s => s.section === 'service' && /faolex\.fao\.org\/docs\/pdf\/ven88234\.pdf$/.test(s.url)), 'VE: the 2009 law reserving oilfield services to the state');
+  assert.ok(ve.some(s => s.id === 've-ley-organica-hidrocarburos-2006' && /scan/.test(s.note ?? '') && /OCR/.test(s.note ?? '')), 'VE: the Ministry\'s scanned copy says it needs OCR');
+  assert.ok(!ve.some(s => /eia\.gov\/international\/analysis/.test(s.url)), 'VE: the script-rendered EIA analysis page is not registered');
   assert.match(registry.countries.VE.accounts_note ?? '', /6\.978/, 'VE: the data-room note names the reform gazette');
 });
 

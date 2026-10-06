@@ -48,7 +48,8 @@ function gyFetch() {
     [/api\.resourcecontracts\.org\/contracts\/search\?country_code=sr/, () => text(fx('resourcecontracts-search-gy.json').toString(), 200, { 'content-type': 'application/json' })],
     [/api\.resourcecontracts\.org\/contract\/8814\/text\?page=1$/, () => text(fx('resourcecontracts-text-8814-p1.json').toString(), 200, { 'content-type': 'application/json' })],
     [/api\.resourcecontracts\.org\/contract\/\d+\/text\?page=\d+$/, (u) => ({ contract_id: Number(/contract\/(\d+)/.exec(u)![1]), page: Number(/page=(\d+)/.exec(u)![1]), text: 'ARTICLE (page text)' })],
-    [/taxsummaries\.pwc\.com\/suriname$/, () => html('Suriname - Corporate - Taxes on corporate income | PwC', 'Petroleum operations are taxed at 25 percent under the Petroleum Activities Act.')],
+    [/taxsummaries\.pwc\.com\/suriname\/corporate\/taxes-on-corporate-income$/, () => html('Suriname - Corporate - Taxes on corporate income | PwC', 'Petroleum operations are taxed at 25 percent under the Petroleum Activities Act.')],
+    [/taxsummaries\.pwc\.com\/suriname\/corporate\/other-taxes$/, () => html('Suriname - Corporate - Other taxes | PwC', 'A royalty of 6.25 percent applies to petroleum production under the Petroleum Activities Act.')],
     [/jodidata\.org\/.*world_primary_csv\.zip$/, () => new Response(new Uint8Array(zip), { status: 200, headers: { 'content-type': 'application/zip' } })],
   ], clock);
   return { fetch: ff.fetch, calls: ff.calls, clock };
@@ -90,9 +91,9 @@ test('runQueuedPacks: every source is resolved, fetched and filed; ten section r
   const s = out[0];
   assert.equal(s.country, 'SR');
   assert.equal(s.status, 'ok');
-  assert.equal(s.fetched, 10, `ten sources answered (EIA is not configured): ${JSON.stringify(s.sections)}`);
+  assert.equal(s.fetched, 11, `eleven sources answered (EIA is not configured; PwC is two pages): ${JSON.stringify(s.sections)}`);
   assert.equal(s.unreachable, 1);
-  assert.equal(s.stored + s.unchanged, 10, 'everything fetched was filed or found unchanged');
+  assert.equal(s.stored + s.unchanged, 11, 'everything fetched was filed or found unchanged');
   assert.ok(s.stored >= 9);
   assert.equal(s.spend_gbp, 0, 'no model call in the fetch-and-file skeleton');
   assert.deepEqual(Object.keys(s.sections).sort(), [...SECTION_IDS].sort(), 'a count per section');
@@ -106,7 +107,7 @@ test('runQueuedPacks: every source is resolved, fetched and filed; ten section r
   assert.equal(j.status, 'ok');
   assert.ok(j.finished_at);
   assert.equal(j.summary.queued, false);
-  assert.equal(j.summary.fetched, 10);
+  assert.equal(j.summary.fetched, 11);
 
   const r = await rows('SR');
   assert.equal(r.length, 10, 'ten section rows');
@@ -153,7 +154,7 @@ test('runQueuedPacks: every source is resolved, fetched and filed; ten section r
 test('a second build with the same pages files nothing new and writes version 2 of each section, superseding version 1', async () => {
   const s = await runPack(db, 'SR', runOpts());
   assert.equal(s.stored, 0);
-  assert.equal(s.unchanged, 10);
+  assert.equal(s.unchanged, 11);
   const r = await rows('SR');
   assert.equal(r.length, 20);
   const legal = r.filter(x => x.section === 'legal');

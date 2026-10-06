@@ -19,7 +19,7 @@ test('the registry file validates and names the generic sources the proposal ver
   const reg = loadRegistry();
   assert.deepEqual(registryProblems(reg), []);
   const ids = reg.generic.map(s => s.id);
-  for (const id of ['chambers-oil-gas', 'legal500-energy-oil-gas', 'eiti-country-page', 'eiti-summary-data', 'resourcecontracts-search', 'resourcecontracts-text', 'gem-extraction-tracker', 'eia-international', 'jodi-oil-monthly', 'pwc-tax-summaries']) {
+  for (const id of ['chambers-oil-gas', 'legal500-energy-oil-gas', 'eiti-country-page', 'eiti-summary-data', 'resourcecontracts-search', 'resourcecontracts-text', 'gem-extraction-tracker', 'eia-international', 'jodi-oil-monthly', 'pwc-tax-summaries', 'pwc-tax-summaries-other-taxes']) {
     assert.ok(ids.includes(id), `generic source ${id} is registered`);
   }
   assert.equal(new Set(ids).size, ids.length, 'ids are unique');
@@ -32,6 +32,9 @@ test('the registry file validates and names the generic sources the proposal ver
   const by = Object.fromEntries(reg.generic.map(s => [s.id, s]));
   assert.match(by['resourcecontracts-search'].licence, /CC BY-SA 4\.0/);
   assert.match(by['gem-extraction-tracker'].licence, /CC BY 4\.0/);
+  assert.match(by['eia-international'].url, /facets\[countryRegionId\]\[\]=\{cc3\}/, 'the EIA country facet is the alpha-3 code');
+  assert.match(by['pwc-tax-summaries'].url, /\{country\}\/corporate\/taxes-on-corporate-income$/);
+  assert.equal(by['pwc-tax-summaries-other-taxes'].section, 'fiscal');
   assert.match(by['eia-international'].licence, /public domain/i);
   assert.match(by['eia-international'].attribution, /U\.S\. Energy Information Administration/);
   assert.equal(by['gem-extraction-tracker'].access, 'adapter', 'GEM is read from the imported master file, never fetched');
@@ -94,6 +97,9 @@ test('sourcesFor: the country entries come first, then the generic set; a countr
 
 test('placeholders: {cc}, {cc_lower} and {country} are filled from the country; the slug is the name in lower case with hyphens', () => {
   assert.equal(fillPlaceholders('https://eiti.org/api?country={cc}&c={cc_lower}', { code: 'GY', name: 'Guyana' }), 'https://eiti.org/api?country=GY&c=gy');
+  assert.equal(fillPlaceholders('https://api.eia.gov/v2/international/data/?facets[countryRegionId][]={cc3}', { code: 'VE', name: 'Venezuela' }), 'https://api.eia.gov/v2/international/data/?facets[countryRegionId][]=VEN', 'the EIA keys countries by ISO alpha-3');
+  assert.equal(fillPlaceholders('{cc3}', { code: 'GB', name: 'United Kingdom' }), 'GBR');
+  assert.equal(fillPlaceholders('{cc3}', { code: 'XX', name: 'Nowhere' }), 'XX', 'an unassigned code stays as it is');
   assert.equal(fillPlaceholders('https://x.org/{country}', { code: 'GB', name: 'United Kingdom' }), 'https://x.org/united-kingdom');
   assert.equal(fillPlaceholders('https://x.org/{country}', { code: 'CI', name: "Côte d'Ivoire" }), 'https://x.org/cote-divoire');
   assert.equal(fillPlaceholders('https://x.org/{country}', { code: 'TT', name: 'Trinidad & Tobago' }), 'https://x.org/trinidad-tobago');
