@@ -86,6 +86,39 @@ export interface PackSectionView {
   body: PackSectionBody;
   sources: { id: string; url: string; licence: string; attribution: string; fetched_at: string | null; item_id: string | null; reachable: boolean; /** reached, but the Vault's store could not file it (the store's fault; the section says what to fix) */ fault?: 'storage'; note?: string }[];
 }
+/**
+ * The terms card (pack rework, 07-pack-rework.md): the fixed facts first, each cited to stored originals and dated.
+ * `required` is the quality bar: a pack missing any of these is "below standard" and the card says so.
+ */
+export const TERMS = [
+  { id: 'regime',        required: true,  en: 'Contract regime',               es: 'Régimen contractual' },
+  { id: 'state_share',   required: false, en: 'State participation',           es: 'Participación del Estado' },
+  { id: 'royalty',       required: true,  en: 'Royalty',                       es: 'Regalía' },
+  { id: 'income_tax',    required: true,  en: 'Income tax',                    es: 'Impuesto sobre la renta' },
+  { id: 'special_taxes', required: false, en: 'Special taxes and levies',      es: 'Impuestos y gravámenes especiales' },
+  { id: 'cost_recovery', required: false, en: 'Cost recovery and ring-fencing', es: 'Recuperación de costos y cerco fiscal' },
+  { id: 'stability',     required: false, en: 'Stability and arbitration',     es: 'Estabilidad y arbitraje' },
+  { id: 'local_content', required: false, en: 'Local content',                 es: 'Contenido local' },
+  { id: 'regulator',     required: true,  en: 'Regulator',                     es: 'Regulador' },
+  { id: 'noc',           required: true,  en: 'National oil company',          es: 'Petrolera estatal' },
+  { id: 'awards',        required: true,  en: 'How acreage is awarded',        es: 'Cómo se adjudican las áreas' },
+  { id: 'sanctions',     required: true,  en: 'Sanctions and restrictions',    es: 'Sanciones y restricciones' },
+] as const;
+export type TermId = typeof TERMS[number]['id'];
+export const TERM_IDS: TermId[] = TERMS.map(t => t.id);
+/** One value on the card: both languages, the originals it comes from, the date the original carries. null: not published. */
+export interface TermValue { en: string; es: string; cites: string[]; as_of: string | null }
+export interface TermsCard {
+  version: number;
+  status: 'fresh' | 'due' | 'stale' | 'empty';
+  stale_reason: string | null;
+  built_at: string | null;
+  fields: Record<TermId, TermValue | null>;
+  questions: { en: string; es: string }[];
+}
+/** The quality bar: every required term carries a cited value. */
+export interface PackQuality { ok: boolean; missing: TermId[] }
+
 export interface PackView {
   country: string;
   assembled_at: string | null;          // the newest built_at across sections, or null when no section exists
@@ -93,6 +126,9 @@ export interface PackView {
   counts: { built: number; fresh: number; due: number; stale: number; unreachable: number; empty: number };
   job: { id: number; status: 'running' | 'ok' | 'failed'; started_at: string } | null;   // the open or latest country-pack job
   spend_gbp: number;
+  /** The terms card, or null before the first drafted build. */
+  terms: TermsCard | null;
+  quality: PackQuality;
 }
 
 /** The budget per build, pounds; PACK_BUDGET_GBP overrides. */

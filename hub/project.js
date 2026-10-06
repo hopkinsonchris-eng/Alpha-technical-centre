@@ -1880,6 +1880,8 @@ function renderPack(ctx) {
     packCard(host, pack, {
       state, failed: !!(info && info.failed),
       onOpen: (s, b) => openPackSheet(s, b),
+      // A terms chip opens the record panel on the original with the value as the highlight, as the sheet's chips do.
+      onCite: ({ itemId, sentence, source, trigger }) => openRecord({ ref: 'doc:' + itemId, title: source ? source.attribution : undefined, trigger, highlight: String(sentence || '').replace(/[.!?\u3002]+\s*$/, '') || null, passage: sentence || null }),
       onAssemble: async (b) => {
         b.disabled = true;
         const r = await ctl.assemble();

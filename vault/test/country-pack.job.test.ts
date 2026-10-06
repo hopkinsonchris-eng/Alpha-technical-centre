@@ -20,6 +20,8 @@ const { enqueuePack, runQueuedPacks, runPack, reapStalePacks, packView, writePac
 const { buildZip, fakeFetch, mockClock, text } = await import('./miners.helpers.ts');
 const { FakeEmbedder } = await import('../src/ingest/embed.ts');
 const { FakeProvider } = await import('../src/llm/provider.ts');
+const { configureWorldMonitor } = await import('../src/intel/worldmonitor.ts');
+const { webQueries } = await import('../src/jobs/country-pack.ts');
 const { SECTIONS, SECTION_IDS } = await import('../src/country/types.ts');
 type Db = Awaited<ReturnType<typeof openDb>>;
 type DraftContext = import('../src/jobs/country-pack.ts').DraftContext;
@@ -427,7 +429,7 @@ test('a Refresh that finds the same originals keeps every fresh section without 
   const v2 = Object.fromEntries((await packView(db, 'SR', NOW)).sections.map(s => [s.section, s.version]));
   assert.equal(v2.legal, v1.legal, 'the kept section stays at its version');
   assert.equal(v2.fiscal, v1.fiscal);
-  // One page changed: that section is re-drafted, the others stay.
+  // One page changed: every section that drafts is re-drafted, because any original may feed any section (pack rework), and the terms with them.
   const f = gyFetch();
   const changed: typeof fetch = async (u, init) => {
     const r = await f.fetch(u, init);
@@ -437,8 +439,60 @@ test('a Refresh that finds the same originals keeps every fresh section without 
   const third = await runPack(db, 'SR', { ...runOpts(f), fetch: changed, draft: undefined, provider: new FakeProvider() });
   const legal = third.draft!.sections.find(s => s.section === 'legal')!, fiscal = third.draft!.sections.find(s => s.section === 'fiscal')!;
   assert.equal(legal.called, true); assert.equal(legal.kept, undefined);
-  assert.equal(fiscal.kept, true);
-  assert.equal(third.draft?.calls, 1);
+  assert.equal(fiscal.called, true); assert.equal(fiscal.kept, undefined);
+  assert.ok(third.draft!.sections.every(s => !s.kept), 'nothing is kept once an original changed');
+  assert.equal(third.draft?.terms?.called, true, 'the terms card is rebuilt with the sections');
   const v3 = Object.fromEntries((await packView(db, 'SR', NOW)).sections.map(s => [s.section, s.version]));
-  assert.equal(v3.legal, v1.legal + 1); assert.equal(v3.fiscal, v1.fiscal);
+  assert.equal(v3.legal, v1.legal + 1); assert.equal(v3.fiscal, v1.fiscal + 1);
+});
+
+test('W7-R3, R4: the web search step files the pages the search cited as originals of the section its query served, skips a blocked host and a page already registered, caps the pages; World Monitor\'s reading is filed for the risk section; the sections cite the stored copies', async () => {
+  const f = gyFetch();
+  const pages: Record<string, string> = {
+    'https://www.staatsolie.com/en/fiscal-terms': '<html><head><title>Staatsolie fiscal terms</title></head><body><p>Production sharing contracts with a 6.25 percent royalty and 36 percent income tax.</p></body></html>',
+    'https://www.staatsolie.com/en/bid-round-2026': '<html><head><title>Bid round 2026</title></head><body><p>Shallow offshore bid round opens 1 March 2026.</p></body></html>',
+    'https://data.eia.gov/suriname-production': '<html><head><title>EIA Suriname</title></head><body><p>Production 15,000 barrels per day in 2025.</p></body></html>',
+  };
+  const web: typeof fetch = async (u, init) => {
+    const url = String(u);
+    if (pages[url]) return new Response(pages[url], { status: 200, headers: { 'content-type': 'text/html' } });
+    if (/worldmonitor/.test(url)) return Response.json({ cii: { combinedScore: 61, trend: 'rising', components: { conflict: 0.2 } }, advisoryLevel: 'exercise caution', sanctions: { active: true, count: 3 } });
+    return f.fetch(u, init);
+  };
+  const provider = new FakeProvider(undefined, (req) => {
+    const q = req.prompt;
+    if (/fiscal terms/.test(q)) return { text: 'Staatsolie fiscal terms', citations: [{ url: 'https://www.staatsolie.com/en/fiscal-terms', title: 'Fiscal', cited_text: '6.25 percent royalty', sentence: 'Royalty 6.25 percent' }, { url: 'https://www.onepetro.org/paper/1', title: 'blocked', cited_text: '', sentence: '' }], results: [{ url: 'https://taxsummaries.pwc.com/suriname/corporate/taxes-on-corporate-income', title: 'already registered', page_age: null }] };
+    if (/licensing round/.test(q)) return { text: 'Bid round', citations: [{ url: 'https://www.staatsolie.com/en/bid-round-2026', title: 'Round', cited_text: '', sentence: '' }], results: [] };
+    if (/production reserves/.test(q)) return { text: 'EIA', citations: [], results: [{ url: 'https://data.eia.gov/suriname-production', title: 'EIA', page_age: null }] };
+    return { text: 'Nothing found.', citations: [], results: [] };
+  });
+  configureWorldMonitor({ apiKey: 'wm-test', fetch: web });
+  try {
+    const s = await runPack(db, 'SR', { ...runOpts(f), fetch: web, draft: undefined, provider });
+    assert.equal(s.status, 'ok', JSON.stringify(s.warnings));
+    assert.equal(s.web?.searches, 4, 'one search per query');
+    assert.equal(s.web?.pages, 3, 'three pages fetched: the blocked host and the registered PwC page were skipped');
+    assert.ok(s.web!.skipped.some(x => /onepetro\.org: never read/.test(x)), JSON.stringify(s.web));
+    assert.equal(s.web!.filed + s.web!.unchanged, 3);
+    assert.match(s.world_monitor ?? '', /^filed/);
+    assert.deepEqual(webQueries('Suriname', 2026).map(q => q.section), ['fiscal', 'licensing', 'production', 'risk']);
+    const view = await packView(db, 'SR', NOW);
+    const fiscal = view.sections.find(x => x.section === 'fiscal')!;
+    const chip = fiscal.sources.find(x => /^web-www-staatsolie-com-/.test(x.id))!;
+    assert.ok(chip, JSON.stringify(fiscal.sources.map(x => x.id)));
+    assert.equal(chip.reachable, true); assert.ok(chip.item_id);
+    assert.match(chip.attribution, /found by web search/); assert.match(chip.note ?? '', /Found by web search on 2026-10-05 for "Suriname oil and gas fiscal terms/);
+    assert.ok(!fiscal.sources.some(x => /onepetro/.test(x.url)));
+    const risk = view.sections.find(x => x.section === 'risk')!;
+    const wm = risk.sources.find(x => x.id === 'world-monitor-intel')!;
+    assert.ok(wm && wm.item_id, 'the World Monitor reading is an original of the risk section');
+    assert.equal(risk.status, 'fresh', 'the risk section drafts from it');
+    const item = (await db.query<any>('SELECT title, extracted FROM items WHERE id = $1', [wm.item_id])).rows[0];
+    assert.equal(item.title, 'World Monitor: Suriname risk and context');
+    assert.equal(item.extracted.pack.source_id, 'world-monitor-intel');
+    const stored = (await db.query<any>('SELECT title FROM items WHERE id = $1', [chip.item_id])).rows[0];
+    assert.equal(stored.title, 'Staatsolie fiscal terms');
+    const off = await runPack(db, 'SR', { ...runOpts(gyFetch()), fetch: web, draft: undefined, provider, webSearch: false });
+    assert.equal(off.web, undefined);
+  } finally { configureWorldMonitor({ apiKey: null }); }
 });

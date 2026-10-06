@@ -305,9 +305,11 @@ pages weekly. Both draft only from stored public originals; nothing runs without
    set `VAULT_OCR_DOWNLOAD=1` and `VAULT_OCR_LANG=spa+eng` on `atc-vault-api`, `atc-vault-ingest-sync` and the three
    pack crons and the ingest reads them with OCR (tesseract fetches its language data once, into the container);
    without it such a PDF is filed and the section says its originals carried no text. `PACK_BUDGET_GBP` caps one build (default 2); `S2_API_KEY` and `OPENALEX_KEY` from §5 feed the
-   literature section.
-4. **Try it.** Open a project with a country (or create one): the Country pack card shows ten rows; press **Assemble the
-   pack**; within the hour the rows fill with a headline sentence each and a freshness dot. If the card instead shows a
+   literature section. The build also runs four web searches through the drafting provider and files the pages they
+   cite as originals ("found by web search" chips); `PACK_WEB_SEARCH=false` switches that step off.
+4. **Try it.** Open a project with a country (or create one): the Country pack card shows the terms card (contract
+   regime, royalty, income tax, regulator, national oil company, how acreage is awarded, sanctions, each cited) and
+   ten rows; press **Assemble the pack**; within the hour the rows fill with a headline sentence each and a freshness dot. If the card instead shows a
    red "Drafting failed on the last build" notice, it names the cause in plain words (no Anthropic credit, a refused
    key, a rate limit); the originals are filed, so fix the account and press Refresh. An embedder that refuses (Voyage
    without a payment method allows three requests a minute) never un-files an original: the ingest-sync cron indexes

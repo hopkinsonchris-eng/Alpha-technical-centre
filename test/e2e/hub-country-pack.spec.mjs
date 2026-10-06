@@ -540,3 +540,54 @@ test('drafting failed on the last build: the card says why in the owner\'s words
   });
   expect(why).toBe('not drafted');
 });
+
+test('the terms card first (W7-R5): the fixed facts with chips and as-of, "not published" where no original states one, "below standard" naming the missing required terms; a chip opens the original; the words toggle to Spanish', async ({ page }) => {
+  const pack = BRAZIL();
+  const v = (en, es, cites, as_of) => ({ en: en + ' ' + cites.map((c) => '[doc:' + c + ']').join(' '), es: es + ' ' + cites.map((c) => '[doc:' + c + ']').join(' '), cites: cites.map((c) => 'doc:' + c), as_of });
+  pack.terms = { version: 3, status: 'fresh', stale_reason: null, built_at: '2026-10-06T12:00:00.000Z', questions: [{ en: 'Sanctions and restrictions: not published in the originals.', es: 'Sanciones y restricciones: no publicado en los originales.' }],
+    fields: { regime: v('Concession contracts under the Petroleum Law and production sharing in the pre-salt.', 'Contratos de concesión bajo la Ley del Petróleo y reparto de producción en el presal.', [CHAMBERS], '2026-10-05'), state_share: null, royalty: v('Royalty of 10 % on production, reducible to 5 %.', 'Regalía del 10 % sobre la producción, reducible al 5 %.', [CHAMBERS, ANP], '2026-10-05'), income_tax: v('34 % corporate income tax and social contribution.', '34 % de impuesto a la renta y contribución social.', [CHAMBERS], null), special_taxes: null, cost_recovery: null, stability: null, local_content: null, regulator: v('ANP, the National Agency of Petroleum.', 'ANP, la Agencia Nacional del Petróleo.', [ANP], '2026-10-05'), noc: v('Petrobras.', 'Petrobras.', [CHAMBERS], '2026-10-05'), awards: v('Permanent Offer cycles run by the ANP.', 'Ciclos de Oferta Permanente de la ANP.', [ANP], '2026-10-05'), sanctions: null } };
+  pack.quality = { ok: false, missing: ['sanctions'] };
+  await stubProject(page, { pack });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  const c = card(page);
+  const terms = c.locator('[data-pack-terms]');
+  await expect(terms).toBeVisible();
+  await expect(terms).toHaveAttribute('data-quality', 'below');
+  await expect(terms.locator('[data-quality-pill]')).toHaveText('below standard');
+  await expect(terms.locator('[data-quality-notice]')).toHaveText('Below standard: no original states sanctions and restrictions. Press Refresh after adding a source, or ask counsel.');
+  const termsBox = await terms.boundingBox(), rowsBox = await c.locator('.hub-pack-rows').boundingBox();
+  expect(termsBox.y).toBeLessThan(rowsBox.y);
+  await expect(terms.locator('dt[data-term]')).toHaveCount(12);
+  await expect(terms.locator('dt[data-term="royalty"]')).toHaveAttribute('data-state', 'cited');
+  const royalty = terms.locator('[data-term-value="royalty"]');
+  await expect(royalty.locator('.hub-term-text')).toHaveText('Royalty of 10 % on production, reducible to 5 %.');
+  await expect(royalty.locator('.hub-pack-chip')).toHaveCount(2);
+  await expect(royalty.locator('.hub-pack-chip').nth(1)).toHaveText('ANP, Oferta Permanente');
+  await expect(royalty).toContainText('as of 5 Oct 2026');
+  await expect(terms.locator('dt[data-term="sanctions"]')).toHaveAttribute('data-state', 'missing');
+  await expect(terms.locator('[data-term-value="sanctions"]')).toHaveText('not published');
+  await expect(terms.locator('[data-term-value="income_tax"]')).not.toContainText('as of');
+  await royalty.locator('.hub-pack-chip').nth(1).click();
+  await expect(page.locator('#record-panel')).toBeVisible();
+  await expect(page.locator('#record-panel')).toHaveAttribute('data-ref', 'doc:' + ANP);
+  await page.keyboard.press('Escape');
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await expect(terms.locator('dt[data-term="royalty"]')).toHaveText('Regalía');
+  await expect(royalty.locator('.hub-term-text')).toHaveText('Regalía del 10 % sobre la producción, reducible al 5 %.');
+  await expect(terms.locator('[data-quality-pill]')).toHaveText('por debajo del estándar');
+  await page.locator('.nav-lang button[data-lang="en"]').click();                 // the choice persists across loads
+  const ok = BRAZIL(); ok.terms = { ...pack.terms, fields: { ...pack.terms.fields, sanctions: v('No sanctions touch the sector.', 'Ninguna sanción afecta al sector.', [CHAMBERS], '2026-10-05') } }; ok.quality = { ok: true, missing: [] };
+  await stubProject(page, { pack: ok });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await expect(card(page).locator('[data-pack-terms]')).toHaveAttribute('data-quality', 'ok');
+  await expect(card(page).locator('[data-quality-pill]')).toHaveText('meets the bar');
+  await expect(card(page).locator('[data-quality-notice]')).toHaveCount(0);
+  const none = BRAZIL(); none.terms = null; none.quality = { ok: false, missing: ['regime', 'royalty', 'income_tax', 'regulator', 'noc', 'awards', 'sanctions'] };
+  await stubProject(page, { pack: none });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await expect(card(page).locator('[data-pack-terms]')).toHaveAttribute('data-quality', 'none');
+  await expect(card(page).locator('[data-terms-empty]')).toHaveText('Not drafted yet: assemble the pack.');
+});

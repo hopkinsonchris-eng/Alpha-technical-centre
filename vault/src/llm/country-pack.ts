@@ -20,7 +20,8 @@ import type { LlmProvider, LlmUsage } from './provider.ts';
 import { checkCitations } from './draft.ts';
 import { costOf, DEFAULT_MODEL } from '../prices.ts';
 import { countryName } from '../opportunities.ts';
-import { SECTIONS, SECTION_IDS, type PackSectionBody, type PackSentence, type PackStatus, type SectionId } from '../country/types.ts';
+import { SECTIONS, SECTION_IDS, TERMS, type PackQuality, type PackSectionBody, type PackSentence, type PackStatus, type SectionId, type TermId, type TermValue, type TermsCard } from '../country/types.ts';
+import { checkTerms, packQuality, parseTermsReply, termsFormat, termsMarkdown } from '../country/terms.ts';
 import { SECTION_SPECS, caveatFor, literatureOriginals, vendorContacts } from '../country/sections.ts';
 import { countryRisk, worldMonitorConfigured, NOT_CONNECTED } from '../intel/worldmonitor.ts';
 import { confirmedRoundSentences } from '../rounds/store.ts';
@@ -38,6 +39,8 @@ export interface DraftCtx {
 export interface DraftSummary {
   country: string; sections: { section: SectionId; id: string; version: number; status: PackStatus; stale_reason: string | null; called: boolean; spend_gbp: number; changed: number; /** the previous version stood: same originals, still fresh */ kept?: boolean }[];
   spend_gbp: number; calls: number; stopped_by: 'budget' | null;
+  /** The terms card this build wrote or kept. */
+  terms?: { id: string; version: number; called: boolean; kept: boolean; spend_gbp: number; missing: TermId[] };
 }
 
 /** A stored original as the drafter reads it: the item id it will cite and the extracted text, nothing else. */
@@ -45,8 +48,9 @@ export interface Original { id: string; title: string; source_id: string | null;
 export interface DraftSectionResult { status: PackStatus; body: PackSectionBody; citations: string[]; usage?: LlmUsage; model?: string; spend_gbp: number; warnings: string[]; called: boolean; /** set when the sources were reached but the store could not file them */ fault?: 'storage' }
 
 const USD_PER_GBP = 1.28;
-const MAX_CHARS_PER_ORIGINAL = 12_000;
-const MAX_CHARS_PER_SECTION = 80_000;
+/** Every original of the country travels in the cached system block; the longest are cut, the block is capped. */
+const MAX_CHARS_PER_ORIGINAL = 40_000;
+const MAX_CHARS_ALL = 240_000;
 const DAY = 86_400_000;
 export const PACK_AUDIT_ACTION = 'llm.country-pack';
 
@@ -61,40 +65,48 @@ export function dueAt(builtAt: unknown, ttlDays: number): string { return ymd(ne
 
 /* ── prompts ─────────────────────────────────────────────────────────── */
 
-/** The rules, stable per section and country so the provider caches them; the originals travel in the user message. */
-export function packSystemPrompt(section: SectionId, country: string): string {
-  const spec = SECTION_SPECS[section];
+/**
+ * The rules and every original of the country, identical for all eleven calls of a build so the provider caches the
+ * block once (the section's question travels in the user message). No URL is ever written here.
+ */
+export function packSystemPrompt(country: string, originals: Original[]): string {
   const name = countryName(country);
-  return `You draft one section of the country opening pack of Alpha Technical Centre, an oil and gas technical consultancy, for ${name.en} (${country}).
-Section: ${spec.title.en} / ${spec.title.es}. The question it answers: ${spec.question.en}
+  const lines: string[] = [`You draft the country opening pack of Alpha Technical Centre, an oil and gas technical consultancy, for ${name.en} (${country}): the facts a petroleum engineer needs before working there.
 Rules that are checked mechanically after you answer:
-1. Write only from the ORIGINALS in the message. Each is a stored copy of a public source, identified by [doc:<id>]. Never fetch anything, never follow or mention a link, never add knowledge from memory, never guess: no fetching, no outside facts.
-2. Write short sentences, one fact each, and end EVERY sentence with the citation of the original it comes from, in the form [doc:<id>], taken only from the ORIGINALS. Never invent an id. A sentence you cannot cite must be given as a QUESTION line instead.
+1. Write only from the ORIGINALS below. Each is a stored copy of a public source, identified by [doc:<id>]. Use any original that answers the question, whichever section it was fetched for. Never fetch anything, never follow or mention a link, never add knowledge from memory, never guess: no fetching, no outside facts.
+2. Write short sentences, one fact each, with the figure, the rate, the name or the date in the sentence, and end EVERY sentence with the citation of the original it comes from, in the form [doc:<id>], taken only from the ORIGINALS. Never invent an id. A sentence you cannot cite must be given as a QUESTION line instead.
 3. English and Spanish in this one answer: every sentence is a pair of lines, the English first then its Spanish (Latin American, formal usted), each ending with the same citation.
-4. Name the instrument, the contract or the dataset a figure comes from, and the date the original carries when it has one. Say "not published" when the originals do not answer part of the question, as a QUESTION.
-5. Answer in this exact line format and nothing else:
-HEADLINE EN: <one sentence that answers the question> [doc:<id>]
-HEADLINE ES: <the same in Spanish> [doc:<id>]
-EN: <sentence> [doc:<id>]
-ES: <sentence> [doc:<id>]
-(repeat EN/ES pairs; at most twelve pairs)
-QUESTION EN: <what the originals did not answer>
-QUESTION ES: <the same in Spanish>`;
-}
-
-/** The originals' text with their ids, titles, source ids and fetch dates. No URL is ever written here. */
-export function packUserPrompt(section: SectionId, country: string, originals: Original[]): string {
-  const spec = SECTION_SPECS[section];
-  const lines: string[] = [`COUNTRY: ${countryName(country).en} (${country})`, `SECTION: ${spec.title.en}`, `QUESTION: ${spec.question.en}`, `ORIGINALS (${originals.length}):`];
-  let budget = MAX_CHARS_PER_SECTION;
+4. Name the instrument, the contract or the dataset a figure comes from, and the date the original carries when it has one. Say "not published" when the originals do not answer part of the question, as a QUESTION. Never quote what a person said as if it were the rule: state the rule, the rate or the name.
+5. Answer in the exact line format the message asks for and nothing else.`, '', `ORIGINALS (${originals.length}):`];
+  let budget = MAX_CHARS_ALL;
   for (const o of originals) {
     const cap = Math.max(0, Math.min(MAX_CHARS_PER_ORIGINAL, budget));
+    if (cap <= 0) break;
     const text = o.text.length > cap ? `${o.text.slice(0, cap)} [truncated]` : o.text;
     budget -= text.length;
     lines.push(`ORIGINAL [doc:${o.id}] "${o.title}"${o.source_id ? ` (source ${o.source_id}` : ' ('}${o.fetched_at ? `${o.source_id ? ', ' : ''}fetched ${ymd(o.fetched_at)}` : ''}):`, text, '');
-    if (budget <= 0) break;
   }
   return lines.join('\n');
+}
+
+/** The section's question and the answer format; `own` names the originals fetched for this section, which the model should read first. */
+export function packUserPrompt(section: SectionId, country: string, own: Original[] = []): string {
+  const spec = SECTION_SPECS[section];
+  return [`COUNTRY: ${countryName(country).en} (${country})`, `SECTION: ${spec.title.en} / ${spec.title.es}`, `QUESTION: ${spec.question.en}`,
+    own.length ? `ORIGINALS FETCHED FOR THIS SECTION (read first, then any other that answers): ${own.map(o => `[doc:${o.id}]`).join(' ')}` : 'ORIGINALS FETCHED FOR THIS SECTION: none; answer from any original that does.',
+    'FORMAT:',
+    'HEADLINE EN: <one sentence that answers the question with its key figure or name> [doc:<id>]',
+    'HEADLINE ES: <the same in Spanish> [doc:<id>]',
+    'EN: <sentence> [doc:<id>]',
+    'ES: <sentence> [doc:<id>]',
+    '(repeat EN/ES pairs; at most twelve pairs)',
+    'QUESTION EN: <what the originals did not answer>',
+    'QUESTION ES: <the same in Spanish>'].join('\n');
+}
+
+/** The terms card's call: the same cached system block, the fixed fields as the message. */
+export function termsUserPrompt(country: string): string {
+  return [`COUNTRY: ${countryName(country).en} (${country})`, 'TASK: the terms card, the fixed facts a petroleum engineer wants first, each from an original.', termsFormat()].join('\n');
 }
 
 /* ── the reply ───────────────────────────────────────────────────────── */
@@ -218,13 +230,15 @@ const NO_SOURCE_REACHED = (section: SectionId, names: string[]) => ({ en: `No so
  * Drafts one section from its originals. No originals: an honest body without a model call ('empty'; the service
  * section names the firm's own contacts through `opts.contacts`). Every surviving sentence cites one of these originals.
  */
-export async function draftSection(provider: LlmProvider | null, section: SectionId, originals: Original[], opts: { country: string; contacts?: string[]; unreachable?: string[]; /** sources reached but not filed, and why the store refused */ unfiled?: { ids: string[]; why: { en: string; es: string } } }): Promise<DraftSectionResult> {
+export async function draftSection(provider: LlmProvider | null, section: SectionId, originals: Original[], opts: { country: string; contacts?: string[]; unreachable?: string[]; /** sources reached but not filed, and why the store refused */ unfiled?: { ids: string[]; why: { en: string; es: string } }; /** every original of the country: any may answer; the service section reads only its own */ all?: Original[] }): Promise<DraftSectionResult> {
   const spec = SECTION_SPECS[section];
-  const readable = originals.filter(o => o.text.trim().length > 0);
+  const pool = section === 'service' || !opts.all?.length ? originals : opts.all;
+  const readable = pool.filter(o => o.text.trim().length > 0);
   const none: DraftSectionResult = { status: 'empty', body: emptyBody(null, [spec.question]), citations: [], spend_gbp: 0, warnings: [], called: false };
   // Reached but not filed is the Vault's fault: said first, with the fix, never dressed as "no source reached".
+  // Reached but not filed is the Vault's fault and is said first, whatever the other originals could answer.
   if (!originals.length && opts.unfiled?.ids.length) return { ...none, status: 'unreachable', fault: 'storage', body: emptyBody(NOT_FILED(section, opts.unfiled.ids.length, opts.unfiled.why), [spec.question]) };
-  if (!originals.length && opts.unreachable?.length) return { ...none, status: 'unreachable', body: emptyBody(NO_SOURCE_REACHED(section, opts.unreachable), [spec.question]) };
+  if (!readable.length && !originals.length && opts.unreachable?.length) return { ...none, status: 'unreachable', body: emptyBody(NO_SOURCE_REACHED(section, opts.unreachable), [spec.question]) };
   if (!readable.length) {
     if (section === 'service') return { ...none, body: emptyBody(caveatFor('service', { contacts: opts.contacts ?? [] })!, [spec.question]) };
     const why = originals.length ? { en: `The ${originals.length} original(s) reached carried no text; nothing was drafted.`, es: `Los ${originals.length} original(es) alcanzados no contenían texto; no se redactó nada.` }
@@ -233,7 +247,7 @@ export async function draftSection(provider: LlmProvider | null, section: Sectio
   }
   if (!provider) return { ...none, status: 'due', body: emptyBody({ en: 'No drafting assistant is connected; the originals are stored and the section will be drafted when one is.', es: 'No hay asistente de redacción conectado; los originales están almacenados y la sección se redactará cuando lo haya.' }, [spec.question]), warnings: ['no provider'] };
   const allowed = new Set(readable.map(o => `doc:${o.id}`));
-  const r = await provider.complete({ system: packSystemPrompt(section, opts.country), messages: [{ role: 'user', content: packUserPrompt(section, opts.country, readable) }], maxTokens: 2500 });
+  const r = await provider.complete({ system: packSystemPrompt(opts.country, readable), messages: [{ role: 'user', content: packUserPrompt(section, opts.country, originals.filter(o => o.text.trim().length > 0)) }], maxTokens: 2500 });
   const checked = checkPairs(parsePackReply(r.text), allowed);
   const warnings: string[] = [];
   if (checked.dropped) warnings.push(`${checked.dropped} sentence(s) did not cite an original of this section and were turned into questions`);
@@ -269,7 +283,9 @@ export async function loadOriginals(db: Db, refs: { item_id: string; source_id: 
 /** The same stored originals, byte for byte: every filed source's item and sha256 match (the risk section's World Monitor chip carries neither, so risk always redrafts). */
 function sameOriginals(prev: PackSourceRef[] | null | undefined, now: PackSourceRef[]): boolean {
   const key = (xs: PackSourceRef[]) => JSON.stringify(xs.map(x => [x.id, x.item_id ?? null, x.sha256 ?? null, !!x.reachable]).sort());
-  if (!Array.isArray(prev) || !prev.length || !now.length) return false;
+  if (!Array.isArray(prev)) return false;
+  if (!prev.length && !now.length) return true;                       // a section with no sources of its own: nothing to change
+  if (!prev.length || !now.length) return false;
   if (now.some(x => x.reachable && x.item_id && !x.sha256)) return false;
   return key(prev) === key(now);
 }
@@ -319,6 +335,26 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
   const contacts = wanted.some(w => w.section === 'service') ? await vendorContacts(ctx.db, country) : [];
   let spent = 0;
 
+  // Every original of the country, loaded once: any section may read any of them (the Chambers chapter answers the
+  // fiscal, licensing and regulator questions as well as the legal one), and the block is cached across the calls.
+  const literature = wanted.some(w => w.section === 'literature') ? await literatureOriginals(ctx.db, country) : [];
+  const allRefs = new Map<string, { item_id: string; source_id: string | null }>();
+  for (const w of wanted) for (const s of w.sources ?? []) if (s.reachable && s.item_id && !allRefs.has(s.item_id)) allRefs.set(s.item_id, { item_id: s.item_id, source_id: s.id });
+  for (const x of literature) if (!allRefs.has(x.id)) allRefs.set(x.id, { item_id: x.id, source_id: x.source_id });
+  const all = await loadOriginals(ctx.db, [...allRefs.values()]);
+  const byId = new Map(all.map(o => [o.id, o]));
+  const anyReadable = all.some(o => o.text.trim().length > 0);
+  // Did any section's own sources change since its last version? If none did, fresh sections (and the terms) are kept.
+  const prevRows = new Map<SectionId, HeadRow | null>();
+  let anyChanged = false;
+  for (const w of wanted) {
+    if (w.section === 'questions') continue;
+    const prev = await headRow(ctx.db, country, w.section); prevRows.set(w.section, prev);
+    const chips: PackSourceRef[] = w.section === 'risk' ? [...(w.sources ?? []), await worldMonitorChip(country)] : (w.sources ?? []);
+    if (!prev || !sameOriginals(prev.sources, chips)) anyChanged = true;
+  }
+  let anyCalled = false;
+
   for (const w of wanted) {
     if (w.section === 'questions') continue;        // derived last
     const sources = w.sources ?? [];
@@ -327,15 +363,15 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
     const unreachable = sources.filter(s => !(s.reachable && s.item_id) && s.fault !== 'storage').map(s => s.id);
     const unfiled = { ids: unfiledSrc.map(s => s.id), why: storageFault(unfiledSrc[0]?.note) };
     const refs: { item_id: string; source_id: string | null }[] = reached.map(s => ({ item_id: s.item_id!, source_id: s.id }));
-    if (w.section === 'literature') for (const x of await literatureOriginals(ctx.db, country)) if (!refs.some(r => r.item_id === x.id)) refs.push({ item_id: x.id, source_id: x.source_id });
-    const originals = await loadOriginals(ctx.db, refs);
+    if (w.section === 'literature') for (const x of literature) if (!refs.some(r => r.item_id === x.id)) refs.push({ item_id: x.id, source_id: x.source_id });
+    const originals = refs.map(r => byId.get(r.item_id)).filter((o): o is Original => !!o);
     const chips: PackSourceRef[] = w.section === 'risk' ? [...sources, await worldMonitorChip(country)] : sources;
     const ttl = ttlOf(w.section, w.ttl_days);
-    const needsCall = originals.some(o => o.text.trim().length > 0);
-    const prev = await headRow(ctx.db, country, w.section);
-    // A fresh section whose originals are the same bytes as last time is kept, not re-drafted: a Refresh that found
-    // nothing new costs nothing (6 Oct 2026: every build re-drafted every section).
-    if (needsCall && prev && prev.status === 'fresh' && !ctx.refresh && sameOriginals(prev.sources, chips)) {
+    const needsCall = w.section === 'service' ? originals.some(o => o.text.trim().length > 0) : anyReadable && !(originals.length === 0 && unfiled.ids.length > 0);
+    const prev = prevRows.get(w.section) ?? null;
+    // A fresh section is kept, not re-drafted, when no original of the country changed since the last build: a
+    // Refresh that found nothing new costs nothing (6 Oct 2026: every build re-drafted every section).
+    if (needsCall && prev && prev.status === 'fresh' && !ctx.refresh && !anyChanged) {
       summary.sections.push({ section: w.section, id: prev.id, version: prev.version, status: 'fresh', stale_reason: null, called: false, spend_gbp: 0, changed: 0, kept: true });
       for (const q of prev.body?.questions ?? []) if (!openQuestions.some(x => x.en === q.en)) openQuestions.push(q);
       continue;
@@ -356,7 +392,8 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
       unanswered.push({ section: w.section, status: 'due' });
       continue;
     }
-    result = await draftSection(ctx.provider, w.section, originals, { country, contacts, unreachable, unfiled });
+    result = await draftSection(ctx.provider, w.section, originals, { country, contacts, unreachable, unfiled, all });
+    if (result.called) anyCalled = true;
     // Wave 7 PR6 (W7-AC22): the licensing section reads from round_events. Each confirmed event is one cited line added
     // from the table after drafting, never fed to the model, so the section stays true once the watch confirms a date.
     if (w.section === 'licensing') {
@@ -377,6 +414,31 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
     summary.sections.push({ section: w.section, id, version, status: result.status, stale_reason, called: result.called, spend_gbp: result.spend_gbp, changed: changed.length });
     for (const q of body.questions) if (!openQuestions.some(x => x.en === q.en)) openQuestions.push(q);
     if (result.status !== 'fresh') unanswered.push({ section: w.section, status: result.status, ...(result.fault ? { fault: result.fault } : {}) });
+  }
+
+  // The terms card: one call over the same cached block, rebuilt when anything was re-drafted or none exists yet.
+  const prevTerms = await headTerms(ctx.db, country);
+  const readableAll = all.filter(o => o.text.trim().length > 0);
+  if (readableAll.length && (anyCalled || !prevTerms || prevTerms.status !== 'fresh' || ctx.refresh)) {
+    if (!ctx.provider) {
+      if (!prevTerms) { const t = await insertTerms(ctx.db, { country, fields: emptyTerms(), questions: [{ en: 'No drafting assistant is connected; the terms will be drafted when one is.', es: 'No hay asistente de redacción conectado; los términos se redactarán cuando lo haya.' }], source_items: [], status: 'due', stale_reason: 'no_provider', built_at: ctx.now, built_by: ctx.by, model: null, spend_gbp: 0 }); summary.terms = { ...t, called: false, kept: false, spend_gbp: 0, missing: TERMS.filter(x => x.required).map(x => x.id) }; }
+    } else if (spent >= ctx.budgetGbp) {
+      summary.stopped_by = 'budget';
+      if (!prevTerms) { const t = await insertTerms(ctx.db, { country, fields: emptyTerms(), questions: [], source_items: [], status: 'due', stale_reason: 'budget', built_at: ctx.now, built_by: ctx.by, model: null, spend_gbp: 0 }); summary.terms = { ...t, called: false, kept: false, spend_gbp: 0, missing: TERMS.filter(x => x.required).map(x => x.id) }; }
+    } else {
+      const allowed = new Set(readableAll.map(o => `doc:${o.id}`));
+      const r = await ctx.provider.complete({ system: packSystemPrompt(country, readableAll), messages: [{ role: 'user', content: termsUserPrompt(country) }], maxTokens: 3000 });
+      const checked = checkTerms(parseTermsReply(r.text), allowed, id => { const o = byId.get(id); return o?.fetched_at ? ymd(o.fetched_at) : null; });
+      const cost = costGbp(r.model, r.usage);
+      summary.calls++; spent = round4(spent + cost);
+      await ctx.db.query(`INSERT INTO audit_events (person_id, action, scope, refs, detail, tokens_in, tokens_cached, tokens_out, cost_usd) VALUES ($1,$2,'public',$3::text[],$4::jsonb,$5,$6,$7,$8)`,
+        [ctx.by, PACK_AUDIT_ACTION, checked.citations.slice(0, 100), JSON.stringify({ model: r.model ?? null, country, section: 'terms', job_id: ctx.jobId, refresh: ctx.refresh ? 'true' : 'false', spend_gbp: cost }), r.usage.input, r.usage.cached, r.usage.output, costOf(r.model, r.usage) ?? null]);
+      const t = await insertTerms(ctx.db, { country, fields: checked.fields, questions: checked.questions, source_items: checked.citations.map(c => c.slice(4)), status: 'fresh', stale_reason: null, built_at: ctx.now, built_by: ctx.by, model: r.model ?? null, spend_gbp: cost });
+      summary.terms = { ...t, called: true, kept: false, spend_gbp: cost, missing: packQuality({ version: t.version, status: 'fresh', stale_reason: null, built_at: ctx.now.toISOString(), fields: checked.fields, questions: checked.questions }).missing };
+      for (const q of checked.questions) if (!openQuestions.some(x => x.en === q.en)) openQuestions.push(q);
+    }
+  } else if (prevTerms) {
+    summary.terms = { id: prevTerms.id, version: prevTerms.version, called: false, kept: true, spend_gbp: 0, missing: packQuality(prevTerms).missing };
   }
 
   if (wanted.some(w => w.section === 'questions')) {
@@ -401,13 +463,38 @@ export async function draftSectionsWithSummary(ctx: DraftCtx): Promise<DraftSumm
   return summary;
 }
 
+/* ── the terms card rows ─────────────────────────────────────────────── */
+
+const emptyTerms = (): Record<TermId, TermValue | null> => Object.fromEntries(TERMS.map(t => [t.id, null])) as Record<TermId, TermValue | null>;
+interface TermsRow extends TermsCard { id: string; source_items: string[] }
+async function headTerms(db: Db, country: string): Promise<TermsRow | null> {
+  const r = (await db.query<any>('SELECT id::text AS id, version, status, stale_reason, built_at, fields, questions, source_items FROM country_terms WHERE country = $1 AND superseded_by IS NULL ORDER BY version DESC LIMIT 1', [country])).rows[0];
+  return r ? { id: r.id, version: Number(r.version), status: r.status, stale_reason: r.stale_reason ?? null, built_at: new Date(r.built_at).toISOString(), fields: { ...emptyTerms(), ...(r.fields ?? {}) }, questions: Array.isArray(r.questions) ? r.questions : [], source_items: r.source_items ?? [] } : null;
+}
+async function insertTerms(db: Db, row: { country: string; fields: Record<TermId, TermValue | null>; questions: { en: string; es: string }[]; source_items: string[]; status: TermsCard['status']; stale_reason: string | null; built_at: Date; built_by: string; model: string | null; spend_gbp: number }): Promise<{ id: string; version: number }> {
+  const prev = await headTerms(db, row.country);
+  const version = ((await db.query<{ v: number }>('SELECT coalesce(max(version), 0)::int AS v FROM country_terms WHERE country = $1', [row.country])).rows[0]?.v ?? 0) + 1;
+  const id = randomUUID();
+  await db.query(`INSERT INTO country_terms (id, country, version, fields, questions, source_items, status, stale_reason, built_at, built_by, model, spend_gbp) VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6::text[],$7,$8,$9,$10,$11,$12)`,
+    [id, row.country, version, JSON.stringify(row.fields), JSON.stringify(row.questions), row.source_items, row.status, row.stale_reason, row.built_at.toISOString(), row.built_by, row.model, row.spend_gbp]);
+  if (prev) await db.query('UPDATE country_terms SET superseded_by = $2 WHERE id = $1', [prev.id, id]);
+  return { id, version };
+}
+/** The head terms card of a country, or null before the first drafted build. */
+export async function loadTerms(db: Db, country: string): Promise<TermsCard | null> {
+  const r = await headTerms(db, country.toUpperCase());
+  if (!r) return null;
+  const { id: _id, source_items: _s, ...card } = r; void _id; void _s;
+  return card;
+}
+
 /** The hook as the job declares it (`opts.draft?: (ctx) => Promise<void>`). */
 export async function draftSections(ctx: DraftCtx): Promise<void> { await draftSectionsWithSummary(ctx); }
 
 /* ── reading a pack (the connector, get_project_context) ─────────────── */
 
 export interface PackSectionRead { section: SectionId; title: { en: string; es: string }; version: number; status: PackStatus; stale_reason: string | null; built_at: string | null; ttl_days: number; due_at: string | null; body: PackSectionBody; sources: PackSourceRef[]; caveat: { en: string; es: string } | null }
-export interface PackRead { country: string; name: { en: string; es: string }; assembled_at: string | null; sections: PackSectionRead[]; counts: Record<'built' | PackStatus, number> }
+export interface PackRead { country: string; name: { en: string; es: string }; assembled_at: string | null; sections: PackSectionRead[]; counts: Record<'built' | PackStatus, number>; terms: TermsCard | null; quality: PackQuality }
 
 /** The countries that have at least one pack row, upper-case codes, sorted. */
 export async function countriesWithPack(db: Db): Promise<string[]> {
@@ -433,7 +520,16 @@ export async function loadPack(db: Db, country: string): Promise<PackRead | null
     if (!assembled || built > assembled) assembled = built;
     return { section: s.id, title: { en: s.en, es: s.es }, version: Number(r.version), status: r.status, stale_reason: r.stale_reason, built_at: built, ttl_days: Number(r.ttl_days), due_at: dueAt(built, Number(r.ttl_days)), body: r.body, sources: r.sources ?? [], caveat };
   });
-  return { country: cc, name: countryName(cc), assembled_at: assembled, sections, counts };
+  const terms = await loadTerms(db, cc);
+  return { country: cc, name: countryName(cc), assembled_at: assembled, sections, counts, terms, quality: packQuality(terms) };
+}
+
+/** The terms as lines for get_project_context: the required facts first, each with its citation. */
+export function termsLines(p: PackRead): string[] {
+  if (!p.terms) return ['- Terms: not drafted yet'];
+  const lines = [`- Terms (version ${p.terms.version}, ${p.quality.ok ? 'meets the bar' : `below standard: missing ${p.quality.missing.join(', ')}`}):`];
+  for (const t of TERMS) { const v = p.terms.fields[t.id]; if (v) lines.push(`  - ${t.en}: ${v.en}${v.as_of ? ` (as of ${v.as_of})` : ''}`); }
+  return lines;
 }
 
 /** The headline per section for get_project_context. */
@@ -446,6 +542,7 @@ export function packMarkdown(p: PackRead): string {
   const c = p.counts;
   const lines: string[] = [`# Country pack: ${p.name.en} (${p.country})`, '', `${p.assembled_at ? `assembled ${ymd(p.assembled_at)}` : 'not assembled'}; ${c.built} of ${p.sections.length} sections built; fresh ${c.fresh}, due ${c.due}, stale ${c.stale}, unreachable ${c.unreachable}, empty ${c.empty}.`, '',
     'Public scope, built from public sources only. Every sentence cites the stored original it was drafted from, as [doc:<id>]; cite them the same way.', ''];
+  lines.push(...termsMarkdown(p.terms, p.quality));
   for (const s of p.sections) {
     lines.push(`## ${s.title.en} · ${s.title.es}`, '');
     lines.push(s.version ? `- Status: ${s.status}${s.stale_reason ? ` (${s.stale_reason})` : ''}; as of ${ymd(s.built_at)}; due ${s.due_at}; version ${s.version}` : '- Status: empty; not built');

@@ -34,6 +34,63 @@ export const SECTIONS = [
 ];
 const SECTION_BY_ID = new Map(SECTIONS.map((s) => [s.id, s]));
 
+/** The terms card's fields (vault/src/country/types.ts TERMS): the fixed facts first; `required` is the quality bar. */
+export const TERMS = [
+  { id: 'regime', required: true, en: 'Contract regime', es: 'Régimen contractual' },
+  { id: 'state_share', required: false, en: 'State participation', es: 'Participación del Estado' },
+  { id: 'royalty', required: true, en: 'Royalty', es: 'Regalía' },
+  { id: 'income_tax', required: true, en: 'Income tax', es: 'Impuesto sobre la renta' },
+  { id: 'special_taxes', required: false, en: 'Special taxes and levies', es: 'Impuestos y gravámenes especiales' },
+  { id: 'cost_recovery', required: false, en: 'Cost recovery and ring-fencing', es: 'Recuperación de costos y cerco fiscal' },
+  { id: 'stability', required: false, en: 'Stability and arbitration', es: 'Estabilidad y arbitraje' },
+  { id: 'local_content', required: false, en: 'Local content', es: 'Contenido local' },
+  { id: 'regulator', required: true, en: 'Regulator', es: 'Regulador' },
+  { id: 'noc', required: true, en: 'National oil company', es: 'Petrolera estatal' },
+  { id: 'awards', required: true, en: 'How acreage is awarded', es: 'Cómo se adjudican las áreas' },
+  { id: 'sanctions', required: true, en: 'Sanctions and restrictions', es: 'Sanciones y restricciones' },
+];
+const stripCites = (t) => String(t || '').replace(/\s*\[(?:run|doc|lesson|ref|wm):[^\]]+\]/g, '').trim();
+const citeIds = (v) => (v && Array.isArray(v.cites) ? v.cites : []).map(citeId).filter(Boolean);
+
+/**
+ * The terms card: the fixed facts first, each with its chips and as-of; a missing one says "not published" and, when
+ * the quality bar needs it, the card says the pack is below standard. `onCite` opens the original as the sheet's chips do.
+ */
+export function packTerms(host, pack, opts) {
+  const o = opts || {};
+  const terms = pack && pack.terms, q = (pack && pack.quality) || { ok: false, missing: TERMS.filter((t) => t.required).map((t) => t.id) };
+  const el = mk('div', 'hub-pack-terms', null, null, { 'data-pack-terms': '', 'data-quality': terms ? (q.ok ? 'ok' : 'below') : 'none' });
+  const head = mk('div', 'hub-pack-terms-head');
+  add(head, mk('h4', null, 'Terms', 'Términos'));
+  if (terms && !q.ok) {
+    const names = TERMS.filter((t) => q.missing.includes(t.id));
+    add(head, mk('span', 'hub-pill warn', 'below standard', 'por debajo del estándar', { 'data-quality-pill': '' }));
+    add(el, head, mk('p', 'hub-notice warn', 'Below standard: no original states ' + names.map((t) => t.en.toLowerCase()).join(', ') + '. Press Refresh after adding a source, or ask counsel.', 'Por debajo del estándar: ningún original indica ' + names.map((t) => t.es.toLowerCase()).join(', ') + '. Pulse Actualizar tras añadir una fuente, o consulte al asesor legal.', { 'data-quality-notice': '' }));
+  } else if (terms) { add(head, mk('span', 'hub-pill ok', 'meets the bar', 'cumple el estándar', { 'data-quality-pill': '' })); add(el, head); }
+  else { add(el, head, mk('p', 'hub-muted', 'Not drafted yet: assemble the pack.', 'Aún sin redactar: arme el paquete.', { 'data-terms-empty': '' })); add(host, el); return el; }
+  const dl = mk('dl', 'hub-terms');
+  for (const t of TERMS) {
+    const v = terms.fields ? terms.fields[t.id] : null;
+    const dt = mk('dt', null, t.en, t.es, { 'data-term': t.id, 'data-state': v ? 'cited' : 'missing', 'data-required': t.required ? '1' : '0' });
+    const dd = mk('dd', null, null, null, { 'data-term-value': t.id });
+    if (v) {
+      add(dd, mk('span', 'hub-term-text', stripCites(v.en), stripCites(v.es || v.en)));
+      for (const id of citeIds(v)) {
+        const src = (o.sourceById && o.sourceById.get(id)) || null;
+        const label = src ? src.attribution : 'original ' + id.slice(0, 8);
+        const chip = mk('button', 'hub-cite hub-pack-chip', label, label, { type: 'button', 'data-cite': 'doc:' + id, 'data-item': id, title: src ? src.licence : 'Open the original', 'aria-label': 'Open the original: ' + label });
+        if (o.onCite) chip.addEventListener('click', () => o.onCite({ itemId: id, sentence: stripCites(v.en), sentenceEs: stripCites(v.es || v.en), source: src, trigger: chip }));
+        add(dd, document.createTextNode(' '), chip);
+      }
+      if (v.as_of) { const d = fmtShortDate(v.as_of); add(dd, mk('span', 'hub-muted hub-asof-date', ' · as of ' + d.en, ' · al ' + d.es)); }
+    } else add(dd, mk('span', 'hub-muted', 'not published', 'no publicado'));
+    add(dl, dt, dd);
+  }
+  add(el, dl);
+  add(host, el);
+  return el;
+}
+
 /** The five freshness states: the word, its tone, and how bad it is (the panel shows the worst). */
 export const STATUS = {
   fresh:       { en: 'fresh',       es: 'vigente',      tone: 'ok',    rank: 0 },
@@ -171,6 +228,12 @@ export function packCard(host, pack, opts) {
   add(actions, job, btn);
   add(head, actions);
   add(host, head);
+  // The terms first: the fixed facts a petroleum engineer wants before reading the sections.
+  if (built && !building) {
+    const sourceById = new Map();
+    for (const s of orderedSections(pack)) for (const src of (Array.isArray(s.sources) ? s.sources : [])) if (src.item_id) sourceById.set(src.item_id, src);
+    packTerms(host, pack, { sourceById, onCite: o.onCite });
+  }
   const list = mk('ol', 'hub-pack-rows');
   for (const s of orderedSections(pack)) {
     const t = titleOf(s);
