@@ -52,13 +52,17 @@ test('W7-AC19: the pack resource lists the countries with a pack and renders the
   assert.match(md, /assembled 2026-10-05/);
   // Ten sections in order, each with its status and as-of.
   const heads = [...md.matchAll(/^## (.+)$/gm)].map(m => m[1]);
-  assert.equal(heads.length, 10);
-  assert.match(heads[0], /^Legal framework/); assert.match(heads[9], /^What no source answered/);
+  assert.equal(heads.length, 11, 'the terms card first (pack rework), then the ten sections');
+  assert.match(heads[0], /^Terms · Términos/);
+  assert.match(md, /## Terms · Términos\n\n- Status: fresh; .*below standard: missing regime, royalty, income_tax, regulator, noc, awards, sanctions/, 'the fake drafter cites no value, so the card says what is missing');
+  assert.match(md, /- Contract regime · Régimen contractual: not published/);
+  assert.match(heads[1], /^Legal framework/); assert.match(heads[10], /^What no source answered/);
   assert.match(md, /Legal framework[^\n]*\n+- Status: fresh; as of 2026-10-05; due 2027-04-03/);
   assert.match(md, new RegExp(`Royalty is 5 % of gross production\\. \\[doc:${act}\\]`));
   assert.match(md, /orientation for screening; verify against the instrument in force/);
   assert.match(md, /no public register; the firm's contacts here are/);
-  assert.match(md, /Licensing and the current round[^\n]*\n+- Status: unreachable/); assert.match(md, /no source reached/i);
+  // Its own source unreachable, licensing drafts from the other originals of the country (pack rework); its chip still says unreachable.
+  assert.match(md, /Licensing and the current round[^\n]*\n+- Status: fresh/); assert.match(md, /mme-licensing[^\n]*unreachable/);
   assert.match(md, /Who works there[^\n]*\n+- Status: empty; not built/);
   assert.match(md, /Who signs the model contract\?/);
   assert.match(md, /Ministry of Mines and Energy, Namibia/); assert.match(md, /ResourceContracts\.org, CC BY-SA 4\.0/);
