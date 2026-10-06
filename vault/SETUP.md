@@ -297,7 +297,11 @@ pages weekly. Both draft only from stored public originals; nothing runs without
    "not configured". `PACK_BUDGET_GBP` caps one build (default 2); `S2_API_KEY` and `OPENALEX_KEY` from §5 feed the
    literature section.
 3. **Try it.** Open a project with a country (or create one): the Country pack card shows ten rows; press **Assemble the
-   pack**; within the hour the rows fill with a headline sentence each and a freshness dot. Tap a row for the sentences,
+   pack**; within the hour the rows fill with a headline sentence each and a freshness dot. If the card instead shows a
+   red "Drafting failed on the last build" notice, it names the cause in plain words (no Anthropic credit, a refused
+   key, a rate limit); the originals are filed, so fix the account and press Refresh. An embedder that refuses (Voyage
+   without a payment method allows three requests a minute) never un-files an original: the ingest-sync cron indexes
+   it later. Tap a row for the sentences,
    each with a chip that opens the original at the cited passage. The globe's country panel shows the same summary.
 4. **Round dates.** Each Monday the watch files any regulator page that changed and proposes dated stages with the
    sentence that states them; they wait under Queues as "Round date" until someone presses **Confirm the date**.

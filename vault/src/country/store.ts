@@ -19,7 +19,7 @@ import { PACK_ITEM_KIND, PACK_ITEM_TYPE, PACK_LEGAL_TAG, PACK_ORIGIN, PACK_PROJE
 
 const MAX_BYTES = 50 * 1024 * 1024;
 
-export interface StoreResult { id: string; version: number; status: 'created' | 'updated' | 'unchanged'; sha256: string; item_type: string; chunks: number | null }
+export interface StoreResult { id: string; version: number; status: 'created' | 'updated' | 'unchanged'; sha256: string; item_type: string; chunks: number | null; /** the original is filed but not indexed yet (the embedder refused): the ingest-sync cron chunks it later */ warning?: string }
 export interface StoreOptions { now?: Date; /** When given, the original is extracted and chunked at once; otherwise the ingest-sync cron does it. */ ingest?: IngestDeps | null }
 
 /** An instrument or a PDF is a regulatory filing; a page, an API answer or a dataset is a feed snapshot. */
@@ -83,10 +83,13 @@ export async function storeOriginal(db: Db, storage: Storage, source: CountrySou
     id = existing.id; status = 'updated';
   }
 
-  let chunks: number | null = null;
+  // The original is filed once the bytes and the row are saved. Indexing it is a second step that can fail on its own
+  // (an embedder rate limit, a key refused): that leaves the item unchunked for the ingest-sync cron, which picks up
+  // every item without current chunks, and is never reported as "could not be filed".
+  let chunks: number | null = null, warning: string | undefined;
   if (opts.ingest) {
-    const r = await ingestItem(db, storage, id, opts.ingest, { now: () => now });
-    chunks = r.chunks;
+    try { chunks = (await ingestItem(db, storage, id, opts.ingest, { now: () => now })).chunks; }
+    catch (e) { warning = `filed, not indexed yet (the ingest-sync cron will chunk it): ${(e as Error).message.slice(0, 200)}`; }
   }
-  return { id, version, status, sha256: hash, item_type: type, chunks };
+  return { id, version, status, sha256: hash, item_type: type, chunks, ...(warning ? { warning } : {}) };
 }
