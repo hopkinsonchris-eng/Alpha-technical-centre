@@ -137,7 +137,7 @@ async function readZipCsv(bytes: Buffer): Promise<Buffer> {
 
 /* ── the fetch ───────────────────────────────────────────────────────────────────────────────────────────────── */
 
-const ACCEPT: Record<string, string> = { html: 'text/html,application/xhtml+xml', pdf: 'application/pdf', json: 'application/json', csv: 'text/csv,application/zip,application/octet-stream', rss: 'application/rss+xml,application/xml,text/xml' };
+const ACCEPT: Record<string, string> = { html: 'text/html,application/xhtml+xml', pdf: 'application/pdf', json: 'application/json', csv: 'text/csv,application/zip,application/octet-stream,*/*;q=0.1', rss: 'application/rss+xml,application/xml,text/xml' };
 
 export async function fetchSource(source: CountrySource, ctx: FetchContext): Promise<FetchResult> {
   const now = ctx.now?.() ?? new Date();

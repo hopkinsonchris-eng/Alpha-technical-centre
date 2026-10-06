@@ -770,6 +770,8 @@
     },
     "US": {
       "name": "United States (offshore)",
+      "slug": "united-states",
+      "slugs": { "chambers-oil-gas": "usa" },
       "regulator": "Bureau of Ocean Energy Management (BOEM), U.S. Department of the Interior, for the Outer Continental Shelf; BLM onshore",
       "accounts_note": "BOEM Data Center downloads (ASCII, PDF, shapefile, geodatabase) need no account but carry a disclaimer to read first; \"Active Lease Polygons\" was updated 1 Oct 2026, most other layers 11 Feb 2025. The ArcGIS REST listing at gis.boem.gov sits behind a DOI warning banner in a browser, but its JSON endpoints answer a scripted query. BLM's NFLSS rendered nothing without JavaScript; onshore sale parcel lists were not read. Lease and well data is public; proprietary seismic is not.",
       "sources": [

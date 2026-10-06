@@ -81,6 +81,15 @@ export function registryProblems(reg: unknown): string[] {
     const local = new Set<string>();
     entry.sources.forEach((s: any, i: number) => out.push(...sourceProblems(s, `countries.${code}[${i}]`, local)));
     for (const id of local) if (seen.has(id)) out.push(`countries.${code} "${id}": duplicate of a generic id`);
+    const isSlug = (v: unknown) => typeof v === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v);
+    if (entry.slug !== undefined && !isSlug(entry.slug)) out.push(`countries.${code}: slug must be a URL slug (lower case letters, digits and hyphens), got ${JSON.stringify(entry.slug)}`);
+    if (entry.slugs !== undefined) {
+      if (!entry.slugs || typeof entry.slugs !== 'object' || Array.isArray(entry.slugs)) out.push(`countries.${code}: slugs must be an object of source id to slug`);
+      else for (const [id, v] of Object.entries(entry.slugs)) {
+        if (!seen.has(id) && !local.has(id)) out.push(`countries.${code}: slugs "${id}" names no generic or own source`);
+        if (!isSlug(v)) out.push(`countries.${code}: slugs "${id}" must be a URL slug, got ${JSON.stringify(v)}`);
+      }
+    }
   }
   return out;
 }
@@ -110,10 +119,10 @@ export interface ResolvedCountry {
 export function countrySlug(name: string): string {
   return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
-export function fillPlaceholders(url: string, c: { code: string; name: string }): string {
-  return url.replace(/\{cc\}/g, c.code).replace(/\{cc_lower\}/g, c.code.toLowerCase()).replace(/\{cc3\}/g, alpha3(c.code) ?? c.code).replace(/\{country\}/g, countrySlug(c.name));
+export function fillPlaceholders(url: string, c: { code: string; name: string; /** the slug the sites use, when the display name is not it */ slug?: string }): string {
+  return url.replace(/\{cc\}/g, c.code).replace(/\{cc_lower\}/g, c.code.toLowerCase()).replace(/\{cc3\}/g, alpha3(c.code) ?? c.code).replace(/\{country\}/g, c.slug || countrySlug(c.name));
 }
-function fillSource(s: CountrySource, c: { code: string; name: string }): CountrySource {
+function fillSource(s: CountrySource, c: { code: string; name: string; slug?: string }): CountrySource {
   const opts = s.options ? Object.fromEntries(Object.entries(s.options).map(([k, v]) => [k, typeof v === 'string' ? fillPlaceholders(v, c) : v])) : undefined;
   return { ...s, url: fillPlaceholders(s.url, c), ...(opts ? { options: opts } : {}) };
 }
@@ -122,9 +131,10 @@ export function sourcesFor(reg: CountryRegistry, country: string): ResolvedCount
   if (!isCountryCode(country)) throw new Error(`"${country}" is not an ISO 3166-1 alpha-2 country code in capitals`);
   const entry = reg.countries[country];
   const name = entry?.name ?? countryName(country).en;
-  const c = { code: country, name };
-  const own = (entry?.sources ?? []).map(s => fillSource(s, c));
-  const generic = reg.generic.map(s => fillSource(s, c));
+  // The entry may name the slug the sites use ("united-states"), and one per source where a site differs ("usa" at Chambers).
+  const forSource = (s: CountrySource) => ({ code: country, name, slug: entry?.slugs?.[s.id] ?? entry?.slug });
+  const own = (entry?.sources ?? []).map(s => fillSource(s, forSource(s)));
+  const generic = reg.generic.map(s => fillSource(s, forSource(s)));
   return {
     country, name, regulator: entry?.regulator ?? null, accounts_note: entry?.accounts_note ?? null, seeded_by_hand: !!entry?.seeded_by_hand,
     sources: [...own, ...generic],
