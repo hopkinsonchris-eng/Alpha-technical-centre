@@ -134,7 +134,7 @@ each one in Render → `atc-vault-api` → **Environment** (and the same
 | Variable | Where it comes from |
 |---|---|
 | `GEONAMES_USERNAME` | Free account at https://www.geonames.org/login → enable the free web services on the account page. Add field then searches GeoNames for oil and gas fields; without it the Hub says "GeoNames not available". |
-| `WORLD_MONITOR_API_KEY` | World Monitor → API keys (a `wm_` key). Server-side only: country risk and conflict events in the brief and the globe. Without it the risk line is simply absent. |
+| `WORLD_MONITOR_API_KEY` | World Monitor → API keys (a `wm_` key). Server-side only: country risk and conflict events in the brief and the globe; from wave 8 also the all-country tint, the halo, the ports, the chokepoint and the three live columns of the risk table on Today (`docs/vault-hub/wave8/01-risk-lens.md`). Without it the risk line, the halo and the tint are simply absent and the table's live columns say n/a. Ports, the chokepoint index and the shock scenario may be Pro-gated on the plan; each is reported on its own in `world_monitor.notes` and never hides the risk line. |
 
 **Research runs (wave 4)**
 

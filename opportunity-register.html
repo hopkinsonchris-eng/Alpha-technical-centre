@@ -767,8 +767,9 @@ function scoreFromRisks(risks){
   return Math.round(v.reduce(function(a,b){return a+b;},0)/v.length);
 }
 function heatColour(v){
-  // green (low) → amber → red (high)
-  var stops=[[0,[46,204,138]],[45,[232,150,58]],[70,[224,84,74]],[100,[176,32,40]]];
+  // green (low) → amber at 40 → red at 70 → deep red (high): the one scale, stated for the Hub in
+  // hub/components/risk-scale.js and for the Vault in vault/src/intel/worldmonitor.ts (wave 8).
+  var stops=[[0,[46,204,138]],[40,[232,150,58]],[70,[224,84,74]],[100,[176,32,40]]];
   for(var i=1;i<stops.length;i++){
     if(v<=stops[i][0]){
       var a=stops[i-1],b=stops[i],t=(v-a[0])/(b[0]-a[0]);

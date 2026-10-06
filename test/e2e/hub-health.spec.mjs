@@ -100,6 +100,8 @@ async function seed(page, { rerun, draft } = {}) {
     if (p === '/api/projects') return json(route, { projects: state.projects });
     if (p === '/api/organisations') return json(route, { organisations: ORGS });
     if (p === '/api/countries') return json(route, COUNTRIES);
+    // Wave 8: the risk table on Today reads its rows; without World Monitor the seeded Vault answers an empty table and the band stays hidden.
+    if (p === '/api/risk/table') return json(route, { columns: ['geopolitical', 'sanctions', 'security', 'technical', 'commercial'], rows: [], radius_km: 200, window_days: 30, generated_at: '2026-10-06T09:00:00.000Z', world_monitor: { status: 'not_connected', reason: 'not connected', notes: [] } });
     if (/^\/api\/countries\/[A-Z]{2}\/intel$/.test(p)) return json(route, { country: p.split('/')[3], name: { en: 'Country', es: 'País' }, world_monitor: { status: 'not_connected', reason: 'not connected' }, sections: {} });
     // Wave 7 PR5 (W7-AC19): the pack route answers for every country; nothing assembled yet in this seed.
     if (/^\/api\/countries\/[A-Z]{2}\/pack$/.test(p)) return json(route, { country: p.split('/')[3], assembled_at: null, sections: [], counts: { built: 0, fresh: 0, due: 0, stale: 0, unreachable: 0, empty: 10 }, job: null, spend_gbp: 0 });

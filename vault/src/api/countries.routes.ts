@@ -13,7 +13,9 @@ import { ApiError, bad, canSee, iso, loadAccess, notFound, route, type Access, t
 import { countryName, isCountryCode } from '../opportunities.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
 import { assembleCountryContext, withLiveRisk, writeBrief, type LiveRisk } from '../llm/brief.ts';
-import { countryRisk, worldMonitorConfigured, NOT_CONNECTED } from '../intel/worldmonitor.ts';
+import { acledEvents, bandOf, chokepointIndex, countryRisk, portActivity, riskScores, worldMonitorConfigured, NOT_CONNECTED, type Port, type RiskBand } from '../intel/worldmonitor.ts';
+import { nearby } from '../intel/risk-table.ts';
+import { deltas, recordSnapshot } from '../intel/risk-snapshots.ts';
 import { locationCheck } from '../assets/geo.ts';
 
 /* ── the country brief: provider injection (tests) ───────────────────── */
@@ -26,13 +28,31 @@ const DAY = 864e5;
 
 export interface Attention { stale: number; filing: number; expiring_days: number | null }
 export interface CountryAsset { id: string; name: string; kind: string; lat: number | null; lon: number | null; location_source: string | null; outside: string | null }
+/** Wave 8: ACLED events (via World Monitor) within NEAR_RADIUS_KM of the project's point in the last NEAR_WINDOW_DAYS; null without a point or a feed. */
+export interface NearLine { events: number; fatalities: number; nearest_km: number | null; radius_km: number; window_days: number; as_of: string }
 export interface CountryProject {
   id: string; name: string; status: string; stage: string; client_id: string | null; client_name: string | null;
   lat: number | null; lon: number | null; last_run_at: string | null; attention: Attention; assets: CountryAsset[];
+  near?: NearLine | null;
 }
-/** Wave 3: World Monitor's composite risk for the country; null without a key or when the feed refuses. */
-export interface CountryRiskLine { score: number | null; level: string | null; trend: string | null; computed_at: string | null; fetched_at: string; sanctions_active: boolean | null; sanctions_count: number | null }
-export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; risk: CountryRiskLine | null }
+/**
+ * Wave 3: World Monitor's composite risk for the country; null without a key or when the feed refuses.
+ * Wave 8: the band on the one shared scale, and the change against the firm's own daily snapshots (db/013).
+ */
+export interface CountryRiskLine {
+  score: number | null; level: string | null; trend: string | null; computed_at: string | null; fetched_at: string; sanctions_active: boolean | null; sanctions_count: number | null;
+  band?: RiskBand | null; delta_7d?: number | null; delta_30d?: number | null; since?: string | null;
+}
+/** Wave 8: the chokepoint the country's energy trade runs through (World Monitor supply-chain index, HS 27). */
+export interface ChokepointLine { primary: { id: string; name: string; score: number | null }; vulnerability_index: number | null; fetched_at: string | null }
+/** Wave 8: one tracked country's band from the all-country call, so the globe can tint every country; `held` marks the firm's own. */
+export interface WorldRiskRow { code: string; score: number | null; band: RiskBand | null; trend: string | null; held: boolean }
+export interface CountrySummary {
+  code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; risk: CountryRiskLine | null;
+  ports?: Port[]; chokepoint?: ChokepointLine | null;
+}
+export const NEAR_RADIUS_KM = 200;
+export const NEAR_WINDOW_DAYS = 30;
 
 function expiringDays(acc: Access, p: ProjectRow): number | null {
   const tag = acc.tags.get(p.default_legal_tag);
@@ -94,16 +114,48 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       byCode.get(p.country)!.push(view(p));
     }
     // Wave 3: live risk per country from World Monitor (server-side, cached an hour); null without a key.
+    // Wave 8 (docs/vault-hub/wave8/01-risk-lens.md): the band and the deltas from the daily snapshots, the export ports
+    // busiest first, the primary chokepoint, the ACLED events near each project's point, and the all-country tint from
+    // the one get-risk-scores call. Every reader fails on its own: a Pro-gated ports call never hides the risk line.
     const connected = worldMonitorConfigured();
     const riskNotes: string[] = [];
+    const note = (reason: string) => { if (!riskNotes.includes(reason)) riskNotes.push(reason); };
     const risks = new Map<string, CountryRiskLine | null>();
-    if (connected) await Promise.all([...byCode.keys()].map(async code => {
-      const r = await countryRisk(code);
-      if (r.ok) risks.set(code, { score: r.data.score, level: r.data.level, trend: r.data.trend, computed_at: r.data.computed_at, fetched_at: r.fetched_at, sanctions_active: r.data.sanctions_active, sanctions_count: r.data.sanctions_count });
-      else { risks.set(code, null); if (!riskNotes.includes(r.reason)) riskNotes.push(r.reason); }
-    }));
+    const ports = new Map<string, Port[]>();
+    const chokes = new Map<string, ChokepointLine | null>();
+    const near = new Map<string, NearLine | null>();
+    let worldRisk: WorldRiskRow[] = [];
+    if (connected) {
+      await Promise.all([...byCode.entries()].map(async ([code, projects]) => {
+        // The risk reading goes first and alone: when it fails (no key, a 429, a lapsed plan) the secondary readers
+        // are not tried, so a rate limit costs one call per country, as before wave 8.
+        const r = await countryRisk(code);
+        const [p, ck, ev] = r.ok ? await Promise.all([portActivity(code), chokepointIndex(code), acledEvents(code, NEAR_WINDOW_DAYS)]) : [r, r, r] as const;
+        if (r.ok) {
+          await recordSnapshot(x.db, code, r.data, r.fetched_at, x.now);
+          const d = await deltas(x.db, code, r.data.score, x.now);
+          risks.set(code, { score: r.data.score, level: r.data.level, trend: r.data.trend, band: bandOf(r.data.score), computed_at: r.data.computed_at, fetched_at: r.fetched_at, sanctions_active: r.data.sanctions_active, sanctions_count: r.data.sanctions_count, ...d });
+        } else { risks.set(code, null); note(r.reason); }
+        ports.set(code, p.ok ? p.data.slice().sort((a, b) => (b.tanker_calls_30d ?? 0) - (a.tanker_calls_30d ?? 0)) : []);
+        if (r.ok && !p.ok) note(`ports: ${p.reason}`);
+        chokes.set(code, ck.ok && ck.data.primary ? { primary: ck.data.primary, vulnerability_index: ck.data.vulnerability_index, fetched_at: ck.data.fetched_at } : null);
+        if (r.ok && !ck.ok) note(`chokepoints: ${ck.reason}`);
+        for (const pr of projects) near.set(pr.id, ev.ok && pr.lat !== null && pr.lon !== null ? { ...nearby(ev.data, pr.lat, pr.lon, NEAR_RADIUS_KM), radius_km: NEAR_RADIUS_KM, window_days: NEAR_WINDOW_DAYS, as_of: x.now.toISOString() } : null);
+        if (r.ok && !ev.ok) note(`events: ${ev.reason}`);
+      }));
+      const all = await riskScores();
+      if (all.ok) worldRisk = all.data.map(w => ({ code: w.code, score: w.score, band: w.band, trend: w.trend, held: byCode.has(w.code) }));
+      else note(`world: ${all.reason}`);
+      // A held country carries its own reading, which is the fresher of the two.
+      for (const [code, r] of risks) {
+        if (!r || r.score === null) continue;
+        const row: WorldRiskRow = { code, score: r.score, band: r.band ?? bandOf(r.score), trend: r.trend, held: true };
+        const i = worldRisk.findIndex(w => w.code === code);
+        if (i >= 0) worldRisk[i] = row; else worldRisk.push(row);
+      }
+    }
     const countries: CountrySummary[] = [...byCode.entries()].map(([code, projects]) => ({
-      code, name: countryName(code), projects,
+      code, name: countryName(code), projects: projects.map(p => ({ ...p, near: near.get(p.id) ?? null })),
       counts: {
         projects: projects.length,
         stale: projects.reduce((n, p) => n + p.attention.stale, 0),
@@ -111,10 +163,12 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
         expiring: projects.filter(p => p.attention.expiring_days !== null).length,
       },
       risk: risks.get(code) ?? null,
+      ports: ports.get(code) ?? [],
+      chokepoint: chokes.get(code) ?? null,
     })).sort((a, b) => a.name.en.localeCompare(b.name.en));
 
-    x.a.scope = 'firm'; x.a.refs = visible.map(p => `project:${p.id}`); x.a.detail = { countries: countries.length, projects: visible.length, world_monitor: connected ? 'live' : 'not_connected' };
-    return { body: { countries, unplaced, generated_at: x.now.toISOString(), world_monitor: connected ? { status: 'live', notes: riskNotes } : { status: 'not_connected', reason: NOT_CONNECTED, notes: [] } } };
+    x.a.scope = 'firm'; x.a.refs = visible.map(p => `project:${p.id}`); x.a.detail = { countries: countries.length, projects: visible.length, world_monitor: connected ? 'live' : 'not_connected', world_risk: worldRisk.length };
+    return { body: { countries, unplaced, world_risk: worldRisk, near: { radius_km: NEAR_RADIUS_KM, window_days: NEAR_WINDOW_DAYS }, generated_at: x.now.toISOString(), world_monitor: connected ? { status: 'live', notes: riskNotes } : { status: 'not_connected', reason: NOT_CONNECTED, notes: [] } } };
   });
 
   /**

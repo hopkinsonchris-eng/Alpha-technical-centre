@@ -264,6 +264,61 @@ export async function intelTimeline(code: string, limit = 40): Promise<WmResult<
   return { ...r, data: list(r.data, 'records').map((x: any, i: number): IntelRecord => ({ id: str(x.id) ?? `r${i + 1}`, domain: str(x.domain), category: str(x.category), title: String(x.title ?? ''), summary: str(x.summary), url: str(x.sourceUrl), occurred_at: whenIso(x.occurredAt), score: num(x.score) })) };
 }
 
+/* ── wave 8 readers (docs/vault-hub/wave8/01-risk-lens.md) ───────────── */
+
+export type RiskBand = 'green' | 'amber' | 'red';
+/** One scale everywhere (the Hub's riskLine, the globe halo, the risk table): 70 and over is red, 40 and over amber, else green. */
+export function bandOf(score: number | null | undefined): RiskBand | null {
+  if (typeof score !== 'number' || !Number.isFinite(score)) return null;
+  return score >= 70 ? 'red' : score >= 40 ? 'amber' : 'green';
+}
+
+export interface RiskScoreRow { code: string; score: number | null; band: RiskBand | null; level: string | null; trend: string | null; components: Record<string, number> | null; computed_at: string | null }
+/**
+ * GET /api/intelligence/v1/get-risk-scores with no region: every tracked country's Instability Index in one call, so
+ * the globe can tint all countries from one cached reading an hour. The feed keys entries by `region`, which is an
+ * ISO code for a country and a name for a region; only ISO-keyed entries are kept (a region row has no polygon).
+ */
+export async function riskScores(): Promise<WmResult<RiskScoreRow[]>> {
+  const r = await get('/api/intelligence/v1/get-risk-scores', {});
+  if (!r.ok) return r;
+  const rows: RiskScoreRow[] = [];
+  for (const e of list(r.data, 'ciiScores')) {
+    const code = str(e.countryCode ?? e.country_code ?? e.iso2 ?? e.region)?.toUpperCase() ?? '';
+    if (!/^[A-Z]{2}$/.test(code)) continue;
+    const comps = e.components && typeof e.components === 'object' ? Object.fromEntries(Object.entries(e.components).map(([k, v]) => [k, num(v) ?? 0])) : null;
+    const score = num(e.combinedScore ?? e.score);
+    rows.push({ code, score, band: bandOf(score), level: str(e.advisoryLevel), trend: enumWord(e.trend), components: comps, computed_at: whenIso(e.computedAt) });
+  }
+  return { ...r, data: rows };
+}
+
+export interface ChokepointExposure { id: string; name: string; score: number | null; coast: string | null; shock_supported: boolean }
+export interface ChokepointIndex { primary: { id: string; name: string; score: number | null } | null; vulnerability_index: number | null; exposures: ChokepointExposure[]; fetched_at: string | null }
+/** GET /api/supply-chain/v1/get-country-chokepoint-index?iso2=XX (HS2 27, energy): which chokepoint the country's energy trade runs through. */
+export async function chokepointIndex(code: string): Promise<WmResult<ChokepointIndex>> {
+  const r = await get('/api/supply-chain/v1/get-country-chokepoint-index', { iso2: code });
+  if (!r.ok) return r;
+  const d = r.data ?? {};
+  const exposures = list(d, 'exposures').map((e: any): ChokepointExposure => ({ id: String(e.chokepointId ?? ''), name: String(e.chokepointName ?? e.chokepointId ?? ''), score: num(e.exposureScore), coast: str(e.coastSide), shock_supported: !!e.shockSupported }));
+  const pid = str(d.primaryChokepointId);
+  const prim = exposures.find(e => e.id === pid) ?? (exposures.length ? exposures.slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0] : null);
+  return { ...r, data: { primary: prim ? { id: prim.id, name: prim.name, score: prim.score } : null, vulnerability_index: num(d.vulnerabilityIndex), exposures, fetched_at: whenIso(d.fetchedAt) } };
+}
+
+export interface EnergyShock { chokepoint_id: string; disruption_pct: number | null; crude_loss_kbd: number | null; cover_days: number | null; assessment: string | null; products: { product: string; output_loss_kbd: number | null; demand_kbd: number | null; deficit_pct: number | null }[]; data_available: boolean; coverage: string | null; limitations: string[] }
+/** GET /api/intelligence/v1/compute-energy-shock: what a part-closure of a chokepoint does to the country's oil supply. */
+export async function energyShock(code: string, chokepointId: string, pct = 50): Promise<WmResult<EnergyShock>> {
+  const r = await get('/api/intelligence/v1/compute-energy-shock', { country_code: code, chokepoint_id: chokepointId, disruption_pct: String(pct), fuel_mode: 'oil' });
+  if (!r.ok) return r;
+  const d = r.data ?? {};
+  return { ...r, data: {
+    chokepoint_id: String(d.chokepointId ?? chokepointId), disruption_pct: num(d.disruptionPct), crude_loss_kbd: num(d.crudeLossKbd), cover_days: num(d.effectiveCoverDays), assessment: str(d.assessment),
+    products: list(d, 'products').map((p: any) => ({ product: String(p.product ?? ''), output_loss_kbd: num(p.outputLossKbd), demand_kbd: num(p.demandKbd), deficit_pct: num(p.deficitPct) })),
+    data_available: !!d.dataAvailable, coverage: str(d.coverageLevel), limitations: list(d, 'limitations').map(String),
+  } };
+}
+
 /* ── research readers (wave 4) ───────────────────────────────────────── */
 
 export interface GdeltArticle { title: string; url: string; source: string | null; date: string | null; language: string | null; tone: number | null }

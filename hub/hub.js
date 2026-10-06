@@ -14,6 +14,7 @@ import { mountStatusStrip } from './components/status-strip.js';
 import { stateline } from './components/stateline.js';
 import { packController, packLine, orderedSections, shortWord, fmtDayMonth } from './components/country-pack.js';
 import { loadRounds, deadlinesCard, roundLine, movedLines, projectCountries } from './components/rounds.js';
+import { bandOf, heatColour, trendGlyph, signed } from './components/risk-scale.js';   // wave 8: the one risk scale
 
 /* ── language and DOM helpers ────────────────────────────────────────── */
 
@@ -496,14 +497,33 @@ function flags(att) {
 function riskLine(risk) {
   if (!risk || (risk.score === null && !risk.level)) return null;
   const el = mk('span', 'hub-risk-line', null, null, { 'data-risk-score': risk.score === null ? '' : String(risk.score) });
-  const tone = risk.score === null ? '' : risk.score >= 70 ? 'red' : risk.score >= 40 ? 'amber' : 'green';
+  const tone = risk.band || bandOf(risk.score);                            // wave 8: the one scale (risk-scale.js)
   if (tone) add(el, mk('span', 'hub-rag', null, null, { 'data-risk': tone, 'aria-hidden': 'true' }));
   add(el, mk('span', null, 'World Monitor' + (risk.score !== null ? ' ' + Math.round(risk.score) : ''), 'World Monitor' + (risk.score !== null ? ' ' + Math.round(risk.score) : '')));
+  const tr = trendLine(risk); if (tr) add(el, document.createTextNode(' '), tr);   // wave 8: the trend and the change
   if (risk.level) add(el, document.createTextNode(' · '), mk('span', null, 'advisory: ', 'aviso: '), dv('span', null, risk.level));
   const t = risk.fetched_at ? new Date(risk.fetched_at) : null;
   const hm = t && !isNaN(t) ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
   if (hm) add(el, mk('span', 'hub-muted', ' (' + hm + ')', ' (' + hm + ')'));
   return el;
+}
+/** Wave 8: "▲ +5 in 7 d · −10 in 30 d" from a risk line's trend and the Vault's own daily snapshots; null when there is nothing to say. */
+function trendLine(risk) {
+  if (!risk) return null;
+  const g = trendGlyph(risk.trend);
+  const parts = [];
+  if (typeof risk.delta_7d === 'number') parts.push([signed(risk.delta_7d) + ' in 7 d', signed(risk.delta_7d) + ' en 7 d']);
+  if (typeof risk.delta_30d === 'number') parts.push([signed(risk.delta_30d) + ' in 30 d', signed(risk.delta_30d) + ' en 30 d']);
+  if (!g && !parts.length) return null;
+  const el = mk('span', 'hub-risk-trend', null, null, { 'data-trend': risk.trend || '', 'data-delta-30d': typeof risk.delta_30d === 'number' ? String(risk.delta_30d) : '' });
+  if (g) add(el, mk('span', risk.trend === 'rising' ? 'up' : 'down', g, g, { title: risk.trend }));
+  if (parts.length) add(el, mk('span', null, (g ? ' ' : '') + parts.map((x) => x[0]).join(' · '), (g ? ' ' : '') + parts.map((x) => x[1]).join(' · ')));
+  return el;
+}
+/** Wave 8: "1 event · 200 km" when ACLED (via World Monitor) saw events near the project's point in the window; nothing at zero. */
+function nearFlag(near) {
+  if (!near || !near.events) return null;
+  return mk('span', 'hub-flag near', near.events + (near.events === 1 ? ' event' : ' events') + ' · ' + near.radius_km + ' km', near.events + (near.events === 1 ? ' evento' : ' eventos') + ' · ' + near.radius_km + ' km', { 'data-near': String(near.events), title: near.window_days + ' days' });
 }
 /** The project's own execution risk beside its register row: "our execution risk Amber 54". */
 function riskTag(reg) {
@@ -547,7 +567,7 @@ function panelRow(p, names) {
   if (p.client_name) add(li, dv('div', 'hub-note-s', p.client_name));
   // Wave 7 PR3 (H5): the project's own execution risk is labelled as such here too, apart from the country's World Monitor reading above.
   const rt = riskTag(proj.register || (full && full.register));
-  add(li, add(mk('div', 'flags'), ...flags(p.attention), rt));
+  add(li, add(mk('div', 'flags'), ...flags(p.attention), rt, nearFlag(p.near)));
   // Wave 3: the fields attached to the project, each with its source.
   const fields = (p.assets || []).filter((x) => x && x.name);
   if (fields.length) {
@@ -587,13 +607,39 @@ async function renderGlobe(person) {
         onPoint: (p) => hotRow(p.id),
         onHover: (h) => {
           if (!h) { tip.setAttribute('hidden', ''); return; }
-          // Wave 7 PR6 (O, W7-AC22): a country wearing the ring is named with its open round.
-          tip.textContent = h.name + (h.open ? (lang() === 'es' ? ' · Ronda de licencias abierta' : ' · Open licence round') : '');
+          tip.textContent = tipText(h);
           tip.style.left = h.x + 'px'; tip.style.top = h.y + 'px'; tip.removeAttribute('hidden');
         },
       });
     } catch (e) { globe = null; }
   }
+  // Wave 7 PR6 (O, W7-AC22): a country wearing the ring is named with its open round. Wave 8: a project dot says how
+  // many events ACLED saw near it, a port its tanker calls and trend, a country its World Monitor score and sanctions.
+  const es = () => lang() === 'es';
+  const tipText = (h) => {
+    const p = h.point;
+    if (p && p.kind === 'port') return p.name + (typeof p.calls === 'number' ? ' · ' + p.calls + (es() ? ' escalas de petroleros' : ' tanker calls') : '') + (typeof p.trend === 'number' ? ' · ' + signed(Math.round(p.trend)) + ' %' : '') + (p.anomaly ? (es() ? ' · anomalía' : ' · anomaly') : '');
+    if (p && !p.kind && p.near) return p.name + ' · ' + p.near.events + (es() ? (p.near.events === 1 ? ' evento a ' : ' eventos a ') : (p.near.events === 1 ? ' event within ' : ' events within ')) + p.near.radius_km + ' km · ' + p.near.window_days + ' d';
+    if (p) return p.name;
+    let t = h.name;
+    if (h.open) t += es() ? ' · Ronda de licencias abierta' : ' · Open licence round';
+    if (h.risk && typeof h.risk.score === 'number') t += ' · World Monitor ' + Math.round(h.risk.score) + (trendGlyph(h.risk.trend) ? ' ' + trendGlyph(h.risk.trend) : '');
+    if (h.risk && h.risk.sanctions) t += es() ? ' · sanciones' : ' · sanctions';
+    return t;
+  };
+  // Wave 8: the layer. Opportunities (the default) colours only held countries; Risk heat tints every tracked country.
+  const layerBox = $('#globe-layer');
+  const setLayer = (l, write) => {
+    const v = l === 'risk' ? 'risk' : 'opportunity';
+    if (globe) globe.setLayer(v);
+    sec.setAttribute('data-layer', v);
+    if (layerBox) for (const b of layerBox.querySelectorAll('button[data-layer]')) { const on = b.getAttribute('data-layer') === v; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    if (write) { try { localStorage.setItem('hub.globe.layer', v); } catch (e) { /* private mode */ } }
+  };
+  if (layerBox) layerBox.addEventListener('click', (ev) => { const b = ev.target.closest('button[data-layer]'); if (b) setLayer(b.getAttribute('data-layer'), true); });
+  let savedLayer = null; try { savedLayer = localStorage.getItem('hub.globe.layer'); } catch (e) { /* private mode */ }
+  setLayer(savedLayer || 'opportunity', false);
+  if (globe) sec.__globe = globe;                                           // the e2e tests read the drawn state through it
   const names = new Map();
   if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
   const panel = $('#country-panel'), unplaced = $('#country-unplaced'), reg = $('#register'), filters = $('#reg-filters');
@@ -609,12 +655,21 @@ async function renderGlobe(person) {
     for (const c of data.countries) {
       held.set(c.code, { projects: c.projects.length, stale: c.counts.stale, expiring: c.counts.expiring });
       for (const p of c.projects) {
-        if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) points.push({ id: p.id, name: p.name, lat: p.lat, lon: p.lon });
+        if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) points.push({ id: p.id, name: p.name, lat: p.lat, lon: p.lon, near: p.near || null });
         // Wave 3: the project's fields with a located record, drawn smaller beside it.
         for (const a of p.assets || []) if (Number.isFinite(a.lat) && Number.isFinite(a.lon)) points.push({ id: a.id, name: a.name, lat: a.lat, lon: a.lon, kind: 'field' });
       }
+      // Wave 8: the export ports World Monitor tracks for the country, as small diamonds.
+      for (const pt of c.ports || []) if (Number.isFinite(pt.lat) && Number.isFinite(pt.lon)) points.push({ id: 'port:' + pt.id, name: pt.name, lat: pt.lat, lon: pt.lon, kind: 'port', calls: pt.tanker_calls_30d, trend: pt.trend_pct, anomaly: !!pt.anomaly });
     }
     if (globe) globe.setData({ held, points });
+    // Wave 8: the band per country from the one all-country reading; a held country's own line carries its sanctions flag.
+    const riskMap = new Map();
+    for (const w of data.world_risk || []) riskMap.set(w.code, { band: w.band || bandOf(w.score), score: w.score, trend: w.trend || null, sanctions: false, held: !!w.held });
+    for (const c of data.countries) if (c.risk) riskMap.set(c.code, { band: c.risk.band || bandOf(c.risk.score), score: c.risk.score, trend: c.risk.trend || null, sanctions: !!c.risk.sanctions_active, held: true });
+    if (globe) globe.setRisk(riskMap);
+    const legend = $('#globe-legend'); if (legend && riskMap.size) legend.removeAttribute('hidden');
+    sec.setAttribute('data-world-risk', String(riskMap.size));
     if (data.unplaced && data.unplaced.length) {
       unplaced.removeAttribute('hidden');
       const n = data.unplaced.length;
@@ -653,6 +708,45 @@ async function renderGlobe(person) {
     if (r.state !== 'ready') { roundEl.setAttribute('data-round-state', r.state); return; }
     roundLine(roundEl, r.view, code);
   }
+  // Wave 8: the export ports and the chokepoint the country's energy trade runs through, then the shock figure
+  // (what losing half the chokepoint's flow would do to the country's crude supply) once the Vault answers.
+  const tradeEl = $('#country-trade');
+  async function showTrade(code, c) {
+    if (!tradeEl) return;
+    tradeEl.textContent = ''; tradeEl.setAttribute('hidden', ''); tradeEl.setAttribute('data-trade-state', 'off');
+    if (!code || !c) return;
+    const ports = (c.ports || []).slice(0, 2), ck = c.chokepoint || null;
+    if (!ports.length && !ck) return;
+    tradeEl.removeAttribute('hidden'); tradeEl.setAttribute('data-trade-state', 'ready');
+    if (ports.length) {
+      add(tradeEl, mk('span', 'hub-sl-label', 'Export: ', 'Exportación: '));
+      ports.forEach((p, i) => {
+        if (i) add(tradeEl, document.createTextNode(' · '));
+        const sp = mk('span', 'hub-port', null, null, { 'data-port': p.id });
+        add(sp, dv('span', null, p.name));
+        if (typeof p.tanker_calls_30d === 'number') add(sp, mk('span', null, ' ' + p.tanker_calls_30d + ' tanker calls', ' ' + p.tanker_calls_30d + ' escalas de petroleros'));
+        if (typeof p.trend_pct === 'number') add(sp, dv('span', null, ' (' + signed(Math.round(p.trend_pct)) + ' %)'));
+        if (p.anomaly) add(sp, mk('span', 'anomaly', ' anomaly', ' anomalía'));
+        add(tradeEl, sp);
+      });
+    }
+    if (ck && ck.primary) {
+      if (ports.length) add(tradeEl, document.createTextNode(' · '));
+      add(tradeEl, mk('span', null, 'via ', 'vía '), dv('span', 'hub-chokepoint', ck.primary.name, { 'data-chokepoint': ck.primary.id }));
+      if (typeof ck.primary.score === 'number') add(tradeEl, mk('span', 'hub-muted', ' (exposure ' + ck.primary.score.toFixed(2) + ')', ' (exposición ' + ck.primary.score.toFixed(2) + ')'));
+      const r = await api('/api/risk/shock?country=' + encodeURIComponent(code));
+      if (sec.getAttribute('data-country') !== code) return;                 // another country was chosen meanwhile
+      if (r.ok && r.body && r.body.shock && typeof r.body.shock.crude_loss_kbd === 'number') {
+        const sh = r.body.shock;
+        const line = mk('span', 'hub-shock', null, null, { 'data-shock': String(sh.crude_loss_kbd) });
+        add(line, document.createTextNode(' · '), mk('span', null, 'half of ' + ck.primary.name + ' lost: ', 'la mitad de ' + ck.primary.name + ' perdida: '), dv('span', null, num(Math.round(sh.crude_loss_kbd * 10) / 10) + ' kb/d'), mk('span', null, ' of crude', ' de crudo'));
+        if (typeof sh.cover_days === 'number') add(line, mk('span', null, ', ' + sh.cover_days + ' days of cover', ', ' + sh.cover_days + ' días de cobertura'));
+        if (sh.assessment) add(line, document.createTextNode(' · '), dv('span', 'hub-muted', sh.assessment));
+        add(tradeEl, line);
+        tradeEl.setAttribute('data-trade-state', 'shock');
+      }
+    }
+  }
   function showPack(code) {
     if (packCtl) { packCtl.stop(); packCtl = null; }
     packEl.setAttribute('hidden', ''); packEl.textContent = ''; packEl.setAttribute('data-pack-state', code ? 'loading' : 'off');
@@ -676,7 +770,7 @@ async function renderGlobe(person) {
     if (!code) {
       panel.setAttribute('hidden', ''); reg.removeAttribute('hidden'); if (filters) filters.removeAttribute('hidden'); unplaced.style.display = '';
       const intel = $('#country-intel'); if (intel) { intel.setAttribute('hidden', ''); intel.textContent = ''; intelFor = null; }
-      showPack(null); showRound(null);
+      showPack(null); showRound(null); showTrade(null);
       if (globe) globe.select(null);
       return;
     }
@@ -688,6 +782,7 @@ async function renderGlobe(person) {
     // Wave 3: the live risk line, only when World Monitor answered (nothing is simulated).
     const riskEl = $('#country-risk');
     if (riskEl) { riskEl.textContent = ''; const line = riskLine(c && c.risk); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
+    showTrade(code, c);                                                     // wave 8
     for (const p of projects) add(ul, panelRow(p, names));                 // W7-AC6: the same stateline as the register
     const createRow = $('#country-create-row');
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
@@ -1017,6 +1112,7 @@ async function renderRegister(person, info) {
   for (const st of STAGES) add(stageSel, mk('option', null, st, STAGE_ES[st] || st, { value: st }));
 
   const cinfo = new Map((data ? data.countries : []).map((c) => [c.code, c]));
+  const nearOf = (id) => { for (const c of cinfo.values()) for (const pr of c.projects || []) if (pr.id === id) return pr.near || null; return null; };
   const nameOf = (code) => (code ? (names && names.get(code)) || (cinfo.get(code) && cinfo.get(code).name) || { en: code, es: code } : { en: 'No country yet', es: 'Aún sin país' });
   const byCountry = new Map();
   for (const p of list) { const k = p.country || ''; if (!byCountry.has(k)) byCountry.set(k, []); byCountry.get(k).push(p); }
@@ -1034,7 +1130,10 @@ async function renderRegister(person, info) {
     const head = code ? mk('button', 'hub-country', null, null, { type: 'button', 'data-country': code }) : mk('div', 'hub-country', null, null, { 'data-country-group-head': '' });
     const n = rows.length;
     const nSpan = add(mk('span', 'n'), mk('span', null, n + (n === 1 ? ' project' : ' projects'), n + (n === 1 ? ' proyecto' : ' proyectos')));
-    if (c && c.risk && c.risk.score !== null && c.risk.score !== undefined) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'World Monitor ' + Math.round(c.risk.score), 'World Monitor ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }));
+    if (c && c.risk && c.risk.score !== null && c.risk.score !== undefined) {
+      add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'World Monitor ' + Math.round(c.risk.score), 'World Monitor ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }));
+      const tr = trendLine(c.risk); if (tr) add(nSpan, document.createTextNode(' '), tr);   // wave 8
+    }
     const att = c ? { stale: c.counts.stale, filing: c.counts.filing, expiring_days: c.counts.expiring ? Math.min(...c.projects.filter((p) => p.attention.expiring_days !== null).map((p) => p.attention.expiring_days)) : null } : null;
     add(head, mk('span', 'name', nm.en, nm.es), nSpan, add(mk('span', 'flags'), ...flags(att)));
     if (code && info && info.select) head.addEventListener('click', () => info.select(code, true));
@@ -1043,7 +1142,7 @@ async function renderRegister(person, info) {
     for (const p of rows) {
       const r = p.register || {};
       const row = mk('div', 'hub-reg-row', null, null, { 'data-register-row': p.id, 'data-stage': p.stage || '', 'data-risk': r.risk || '', 'data-row-country': code });
-      add(row, stateline(p, { size: 'row', now }), riskTag(r));
+      add(row, stateline(p, { size: 'row', now }), riskTag(r), nearFlag(nearOf(p.id)));   // wave 8: events near the point
       // R4: tapping a row (not one of its tokens) recentres the globe on its country and lights the row.
       row.addEventListener('click', (ev) => { if (ev.target.closest('a')) return; hotRow(p.id); if (code && globe) { suppressScrollUntil = performance.now() + 800; globe.select(code, { fly: true }); $('#sec-globe').setAttribute('data-target', code); } });
       add(host, row);
@@ -1586,6 +1685,79 @@ async function renderMailboxPrompt(person, mailbox) {
   });
 }
 
+/* ── Today: the risk table (wave 8, docs/vault-hub/wave8/01-risk-lens.md §2) ── */
+
+const COLUMN_WORD = { geopolitical: ['Geopolitical', 'Geopolítico'], sanctions: ['Sanctions', 'Sanciones'], security: ['Security', 'Seguridad'], technical: ['Technical', 'Técnico'], commercial: ['Commercial', 'Comercial'] };
+const LIVE_COLUMNS = new Set(['geopolitical', 'sanctions', 'security']);
+/**
+ * The opportunity register's heat table, half live: one row per opportunity in scope from GET /api/risk/table, the
+ * three World Monitor columns and the two entered ones coloured on the one scale, Overall by the register's rule, the
+ * change over 30 days against the Vault's own snapshots, and the project's own execution risk apart. A cell opens its
+ * evidence (source, as-of, the formula in words) under the table, as the register's scorecard does.
+ */
+async function renderRiskTable() {
+  const sec = $('#sec-risk'), table = $('#risk-table');
+  if (!sec || !table) return;
+  const r = await api('/api/risk/table');
+  if (!r.ok || !r.body || !Array.isArray(r.body.rows)) { sec.setAttribute('hidden', ''); sec.setAttribute('data-risk', r.status === 404 ? 'no-route' : 'failed'); return; }
+  const rows = r.body.rows, cols = Array.isArray(r.body.columns) ? r.body.columns : Object.keys(COLUMN_WORD);
+  if (!rows.length) { sec.setAttribute('hidden', ''); sec.setAttribute('data-risk', 'empty'); return; }
+  table.textContent = '';
+  const thead = mk('thead'), hr = mk('tr');
+  add(hr, mk('th', null, 'Opportunity', 'Oportunidad'));
+  for (const k of cols) { const w = COLUMN_WORD[k] || [k, k]; add(hr, mk('th', LIVE_COLUMNS.has(k) ? 'live' : null, w[0], w[1], { 'data-col': k, title: LIVE_COLUMNS.has(k) ? 'live from World Monitor' : 'as entered on the register' })); }
+  add(hr, mk('th', null, 'Overall', 'Global'), mk('th', null, '30 d', '30 d'), mk('th', null, 'Our execution risk', 'Nuestro riesgo de ejecución'));
+  add(thead, hr); add(table, thead);
+  const tbody = mk('tbody');
+  const ev = $('#risk-evidence');
+  let open = null;
+  const show = (btn, row, key, cell) => {
+    if (open) open.setAttribute('aria-expanded', 'false');
+    if (open === btn) { open = null; ev.setAttribute('hidden', ''); ev.textContent = ''; return; }
+    open = btn; btn.setAttribute('aria-expanded', 'true');
+    ev.textContent = ''; ev.removeAttribute('hidden'); ev.setAttribute('data-evidence-for', row.project_id + ':' + key);
+    const title = key === 'overall' ? ['Overall', 'Global'] : COLUMN_WORD[key] || [key, key];
+    add(ev, dv('b', null, row.name), document.createTextNode(' · '), mk('span', null, title[0], title[1]), document.createTextNode(' '), dv('span', null, typeof cell.score === 'number' ? String(cell.score) : '—'));
+    if (cell.source) add(ev, document.createTextNode(' · '), dv('span', 'hub-muted', cell.source));
+    if (cell.as_of) { const w = fmtWhen(cell.as_of); if (w) add(ev, document.createTextNode(' · '), mk('span', 'hub-muted', 'as of ' + w.en, 'al ' + w.es)); }
+    if (cell.evidence) add(ev, mk('span', 'hub-evidence-text', ' — ' + cell.evidence, ' — ' + cell.evidence));
+  };
+  const cellBtn = (row, key, cell, extraCls) => {
+    const sc = cell.score;
+    const btn = mk('button', 'hub-heat-cell' + (extraCls ? ' ' + extraCls : ''), null, null, { type: 'button', 'data-cell': key, 'data-status': cell.status || (typeof sc === 'number' ? 'live' : 'missing'), 'aria-expanded': 'false' });
+    if (typeof sc === 'number') { btn.style.background = heatColour(sc); btn.textContent = String(sc); btn.setAttribute('data-score', String(sc)); btn.setAttribute('aria-label', row.name + ' ' + key + ' ' + sc); }
+    else { setText(btn, cell.status === 'unavailable' ? 'n/a' : 'not entered', cell.status === 'unavailable' ? 'n/d' : 'sin dato'); btn.setAttribute('aria-label', row.name + ' ' + key + ' ' + (cell.status === 'unavailable' ? 'unavailable' : 'not entered')); }
+    btn.addEventListener('click', () => show(btn, row, key, cell));
+    return btn;
+  };
+  for (const row of rows) {
+    const tr = mk('tr', null, null, null, { 'data-risk-row': row.project_id, 'data-band': row.band || '' });
+    const nm = mk('td', 'nm');
+    const cn = row.country_name || { en: row.country, es: row.country };
+    add(nm, dv('a', null, row.name, { href: projectHref(row.project_id) }), mk('small', null, cn.en + (row.stage ? ' · ' + row.stage : ''), cn.es + (row.stage ? ' · ' + (STAGE_ES[row.stage] || row.stage) : '')));
+    add(tr, nm);
+    for (const k of cols) add(tr, add(mk('td'), cellBtn(row, k, row.cells[k] || { score: null, status: 'missing' })));
+    add(tr, add(mk('td'), cellBtn(row, 'overall', { score: row.overall, status: typeof row.overall === 'number' ? 'live' : 'missing', source: 'the register rule', as_of: null, evidence: 'The mean of the three highest columns with a value (the opportunity register\'s rule).' }, 'overall')));
+    const d = mk('td', 'delta', null, null, { 'data-delta': typeof row.delta_30d === 'number' ? String(row.delta_30d) : '' });
+    if (typeof row.delta_30d === 'number') add(d, mk('span', row.delta_30d > 0 ? 'up' : row.delta_30d < 0 ? 'down' : '', signed(row.delta_30d), signed(row.delta_30d), { title: row.since ? 'since ' + row.since : null })); else setText(d, '—', '—');
+    add(tr, d);
+    const ex = mk('td', 'ex'); const tag = riskTag(row.execution); if (tag) add(ex, tag); else setText(ex, '—', '—');
+    add(tr, ex);
+    add(tbody, tr);
+  }
+  add(table, tbody);
+  setText($('#risk-count'), String(rows.length), String(rows.length));
+  const wm = r.body.world_monitor || {};
+  const foot = $('#risk-foot');
+  if (foot) {
+    const live = wm.status === 'live';
+    setText(foot, (live ? 'World Monitor live' : 'World Monitor not connected: the three live columns are unavailable; the entered ones stand') + ' · events within ' + (r.body.radius_km || 200) + ' km over ' + (r.body.window_days || 30) + ' days · 30 d is the change in the country score against the Vault\'s own daily snapshots',
+      (live ? 'World Monitor en vivo' : 'World Monitor no conectado: las tres columnas en vivo no están disponibles; las registradas se mantienen') + ' · eventos a ' + (r.body.radius_km || 200) + ' km en ' + (r.body.window_days || 30) + ' días · 30 d es el cambio del puntaje país frente a las instantáneas diarias del Vault');
+    foot.setAttribute('data-wm', wm.status || '');
+  }
+  sec.removeAttribute('hidden'); sec.setAttribute('data-risk', 'ready');
+}
+
 async function initToday() {
   const d = fmtDateLong(new Date());
   setText($('#today-date'), d.en, d.es);
@@ -1606,6 +1778,7 @@ async function initToday() {
   const want = new URLSearchParams(location.search).get('country');
   if (info && info.select && want && /^[A-Z]{2}$/.test(want)) info.select(want, false);
   await Promise.all([renderActivity(person, strip).catch(() => false), renderAttention(projects, strip), renderRuns(projects)]);
+  try { await renderRiskTable(); } catch (e) { const s = $('#sec-risk'); if (s) { s.setAttribute('hidden', ''); s.setAttribute('data-risk', 'failed'); } }   // wave 8
   try { await renderPackLines(person, projects, info, activitySince); } catch (e) { /* the pack lines are optional */ }   // wave 7 PR5 (M)
   try { await renderRounds(person, projects, info, activitySince); } catch (e) { const c = $('#card-deadlines'); if (c) { c.setAttribute('hidden', ''); c.setAttribute('data-rounds', 'failed'); } }   // wave 7 PR6 (O)
   for (const sk of document.querySelectorAll('.hub-skel')) sk.remove();   // R12: the skeleton leaves with data-ready

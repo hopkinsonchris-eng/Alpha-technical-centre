@@ -1477,3 +1477,46 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
   .hub .hub-dl-main { min-height: 44px; }
 }
 @media (max-width: 640px) { .hub .hub-dl-row { padding: 4px 10px; } .hub .hub-dl-main { flex-basis: 100%; } }
+
+/* ---------- wave 8: the risk lens (docs/vault-hub/wave8/01-risk-lens.md) ---------- */
+/* The layer switch and the legend sit on the globe; the table below the globe row is the register's heat table, half live. */
+.hub-globe-layer { position: absolute; top: 12px; right: 12px; display: inline-flex; border: 1px solid rgba(201,168,76,.55); border-radius: 999px; overflow: hidden; background: rgba(11,31,58,.78); backdrop-filter: blur(4px); }
+.hub-globe-layer button { font: inherit; font-family: var(--font-label); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.72); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
+.hub-globe-layer button.active, .hub-globe-layer button[aria-pressed="true"] { background: var(--gold); color: var(--navy); }
+.hub-globe-layer button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.hub-globe-legend { position: absolute; right: 12px; bottom: 10px; margin: 0; display: grid; grid-template-columns: auto auto; gap: 2px 12px; font-family: var(--font-label); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.7); background: rgba(11,31,58,.6); padding: 6px 10px; border-radius: 6px; }
+.hub-globe-legend dt { grid-column: 1 / -1; color: rgba(242,223,160,.9); margin-bottom: 1px; }
+.hub-globe-legend dd { margin: 0; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.hub-globe-legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.hub-globe-legend .sw.band.green { background: radial-gradient(circle, rgba(46,204,138,.95) 30%, rgba(46,204,138,0) 72%); }
+.hub-globe-legend .sw.band.amber { background: radial-gradient(circle, rgba(232,150,58,.95) 30%, rgba(232,150,58,0) 72%); }
+.hub-globe-legend .sw.band.red { background: radial-gradient(circle, rgba(224,84,74,.95) 30%, rgba(224,84,74,0) 72%); }
+.hub-globe-legend .sw.chevron { border-radius: 0; font-size: 10px; line-height: 12px; text-align: center; color: #E8963A; font-style: normal; }
+.hub-globe-legend .sw.hatch { border-radius: 2px; background: repeating-linear-gradient(135deg, rgba(255,255,255,.55) 0 1px, #2F4A6D 1px 4px); }
+.hub-globe-legend .sw.held { border-radius: 2px; background: #C9A84C; }
+.hub-globe-legend .sw.ring { background: none; border: 1.5px solid #F2DFA0; }
+.hub-globe-legend .sw.port { border-radius: 0; width: 9px; height: 9px; background: #7FD6CC; transform: rotate(45deg); margin: 0 2px; }
+@media (max-width: 640px) { .hub-globe-legend { display: none; } }
+.hub-risk-trend { font-variant-numeric: tabular-nums; }
+.hub-risk-trend .up { color: var(--bad); } .hub-risk-trend .down { color: var(--ok); }
+.hub-trade-line { margin-top: 2px; }
+.hub-trade-line .anomaly { color: var(--bad); font-weight: 600; }
+.hub-flag.near { color: var(--navy-mid, #2F4A6D); background: #EEF2F7; border-color: #C9D4E2; }
+/* the table */
+.hub-heat-wrap { overflow-x: auto; margin: 6px 0 4px; }
+.hub-heat { width: 100%; border-collapse: separate; border-spacing: 3px; min-width: 720px; }
+.hub-heat th { font-family: var(--font-label); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; text-align: center; padding: 6px 4px; white-space: nowrap; }
+.hub-heat th:first-child { text-align: left; }
+.hub-heat th.live::after { content: ' ●'; color: #2E9E6E; font-size: 8px; vertical-align: middle; }
+.hub-heat td.nm { font-size: 13px; font-weight: 600; padding: 4px 8px 4px 4px; white-space: nowrap; }
+.hub-heat td.nm small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+.hub-heat td.nm a { color: inherit; text-decoration: none; } .hub-heat td.nm a:hover { color: var(--gold-ink); }
+.hub-heat td.ex { white-space: nowrap; }
+.hub-heat td.delta { text-align: center; font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+.hub-heat td.delta .up { color: var(--bad); } .hub-heat td.delta .down { color: var(--ok); }
+.hub-heat-cell { width: 100%; min-width: 64px; height: 40px; border: 1px solid transparent; border-radius: 4px; font-family: var(--font-mono, monospace); font-size: 13px; color: #fff; cursor: pointer; transition: transform .12s, border-color .12s; }
+.hub-heat-cell:hover, .hub-heat-cell[aria-expanded="true"] { transform: translateY(-1px); border-color: var(--navy); }
+.hub-heat-cell[data-status="missing"], .hub-heat-cell[data-status="unavailable"] { background: #E9EDF2; color: var(--muted); font-family: var(--font-body); font-size: 12px; }
+.hub-heat-cell.overall { font-weight: 700; }
+.hub-risk-evidence { background: var(--cream); border: 1px solid var(--rule); border-radius: var(--r); padding: 8px 12px; margin-top: 6px; }
+.hub-risk-evidence b { font-weight: 600; }

@@ -8,6 +8,7 @@ import {
   acledEvents, advisories, configureWorldMonitor, countryFacts, countryRisk, coverage, energyProfile, enumWord, headlines, humanitarian, intelBrief, intelTimeline,
   outages, portActivity, resetWorldMonitorCache, resilience, sanctions, ucdpEvents, whenIso, worldMonitorConfigured, NEEDS_PRO, NOT_CONNECTED,
   companyEnrichment, companySignals, gdeltDocuments, secFilings,
+  riskScores, chokepointIndex, energyShock,
 } from '../src/intel/worldmonitor.ts';
 
 const KEY = 'wm_' + 'a'.repeat(40);
@@ -34,6 +35,15 @@ const FIX: Record<string, unknown> = {
   'get-company-enrichment': { company: { name: 'Petróleos de Venezuela', domain: 'pdvsa.com', description: 'State oil company.', location: 'Caracas', website: 'https://www.pdvsa.com', founded: 1976, cik: '0000001', ticker: null }, market: { industry: 'Oil & Gas', country: 'VE', marketCapMusd: 12.5 }, secFilings: { recentFilings: [{ form: '20-F', filedAt: T0, url: 'https://sec.example.com/f1' }] }, sources: ['wikipedia', 'sec'] },
   'list-company-signals': { signals: [{ type: '8-K', title: 'Item 8.01 Other events', url: 'https://sec.example.com/8k', source: 'SEC', sourceTier: 1, timestampMs: T0, strength: 'high' }] },
   'search-sec-filings': { results: [{ company: 'Chevron Corp', cik: '93410', form: '10-K', fileDate: '2026-02-20', items: ['Item 1A', 'Item 7'], url: 'https://sec.example.com/10k', accession: '0000093410-26-000012' }] },
+  // Wave 8 (docs/vault-hub/wave8/01-risk-lens.md): the all-country scores, the chokepoint index and the energy-shock scenario.
+  'get-risk-scores': { ciiScores: [
+    { region: 'VE', staticBaseline: 58, dynamicScore: 46, combinedScore: 50.4, trend: 'TREND_DIRECTION_RISING', components: { newsActivity: 12.5, ciiContribution: 30, geoConvergence: 4, militaryActivity: 3.9 }, computedAt: T0, advisoryLevel: 'reconsider' },
+    { region: 'KZ', combinedScore: 31, trend: 'TREND_DIRECTION_STABLE', computedAt: T0, advisoryLevel: 'caution' },
+    { region: 'South America', combinedScore: 44, trend: 'TREND_DIRECTION_FALLING', computedAt: T0 },
+    { countryCode: 'EG', combinedScore: 66.2, trend: 'TREND_DIRECTION_FALLING', computedAt: T0 },
+  ], strategicRisks: [{ region: 'Middle East', level: 'SEVERITY_LEVEL_HIGH', score: 70, factors: ['Hormuz'], trend: 'TREND_DIRECTION_RISING' }], degraded: false, stale: false },
+  'get-country-chokepoint-index': { iso2: 'VE', hs2: '27', exposures: [{ chokepointId: 'panama', chokepointName: 'Panama Canal', exposureScore: 0.62, coastSide: 'atlantic', shockSupported: true }, { chokepointId: 'hormuz', chokepointName: 'Strait of Hormuz', exposureScore: 0.05, coastSide: '', shockSupported: true }], primaryChokepointId: 'panama', vulnerabilityIndex: 0.41, fetchedAt: '2026-10-01T08:20:00Z' },
+  'compute-energy-shock': { countryCode: 'VE', chokepointId: 'panama', disruptionPct: 50, gulfCrudeShare: 0, crudeLossKbd: 12.5, products: [{ product: 'diesel', outputLossKbd: 4.2, demandKbd: 90, deficitPct: 4.7 }], effectiveCoverDays: 21, assessment: 'manageable', dataAvailable: true, coverageLevel: 'partial', limitations: ['no IEA stocks'], degraded: false, chokepointConfidence: 'medium' },
   'get-intel-timeline': { records: [{ id: 'r1', domain: 'energy', resource: 'x', country: 'VE', category: 'production', title: 'Output recovers in Orinoco belt', summary: 'Chevron ramps Petropiar.', sourceUrl: 'https://example.com/r', occurredAt: Date.parse('2026-09-20T00:00:00Z'), ingestedAt: T0, score: 0.8 }], partial: false },
 };
 let mode: 'ok' | '429' | '401' | '403' | '500' = 'ok';
@@ -173,4 +183,30 @@ test('wave 4 research readers: GDELT articles, company enrichment and signals, S
   proGated.clear();
   configureWorldMonitor({ fetch: fakeFetch, apiKey: null, now });
   assert.deepEqual(await gdeltDocuments('x'), { ok: false, reason: NOT_CONNECTED });
+});
+
+test('wave 8: the all-country scores keep only entries keyed by an ISO code, with band words; the chokepoint index and the energy shock follow their shapes', async () => {
+  configureWorldMonitor({ fetch: fakeFetch, apiKey: KEY, now });
+  calls.length = 0;
+  const all = await riskScores();
+  assert.ok(all.ok);
+  assert.match(calls.at(-1)!.url, /get-risk-scores$/);
+  assert.deepEqual(all.data.map(r => r.code), ['VE', 'KZ', 'EG']);
+  assert.deepEqual(all.data[0], { code: 'VE', score: 50.4, band: 'amber', level: 'reconsider', trend: 'rising', components: { newsActivity: 12.5, ciiContribution: 30, geoConvergence: 4, militaryActivity: 3.9 }, computed_at: '2026-10-01T08:00:00.000Z' });
+  assert.equal(all.data[1].band, 'green'); assert.equal(all.data[2].band, 'amber'); assert.equal(all.data[2].trend, 'falling'); assert.equal(all.data[1].components, null);
+  const again = await riskScores(); assert.ok(again.ok && again.cached);
+  assert.equal(calls.length, 1);
+  const ck = await chokepointIndex('VE');
+  assert.ok(ck.ok);
+  assert.match(calls.at(-1)!.url, /get-country-chokepoint-index\?iso2=VE$/);
+  assert.deepEqual(ck.data.primary, { id: 'panama', name: 'Panama Canal', score: 0.62 });
+  assert.equal(ck.data.vulnerability_index, 0.41);
+  assert.equal(ck.data.exposures.length, 2);
+  assert.equal(ck.data.exposures[1].shock_supported, true);
+  const sh = await energyShock('VE', 'panama', 50);
+  assert.ok(sh.ok);
+  assert.match(calls.at(-1)!.url, /compute-energy-shock\?country_code=VE&chokepoint_id=panama&disruption_pct=50&fuel_mode=oil$/);
+  assert.equal(sh.data.crude_loss_kbd, 12.5); assert.equal(sh.data.cover_days, 21); assert.equal(sh.data.assessment, 'manageable');
+  assert.deepEqual(sh.data.products[0], { product: 'diesel', output_loss_kbd: 4.2, demand_kbd: 90, deficit_pct: 4.7 });
+  assert.deepEqual(sh.data.limitations, ['no IEA stocks']);
 });

@@ -225,6 +225,22 @@
             <canvas id="globe" role="img" aria-label="Globe of where the firm works. Use the register beside it." data-en-aria="Globe of where the firm works. Use the register beside it." data-es-aria="Globo de dónde trabaja la firma. Use el registro al lado."></canvas>
             <div class="hub-globe-tip" id="globe-tip" hidden aria-hidden="true"></div>
             <p class="hub-globe-hint" data-en="Drag to turn · pinch to zoom · tap a country or a dot" data-es="Arrastre para girar · pellizque para acercar · toque un país o un punto">Drag to turn · pinch to zoom · tap a country or a dot</p>
+            <!-- Wave 8 (docs/vault-hub/wave8/01-risk-lens.md §1): the layer and the legend. The halo, the chevron, the hatch and the tint are drawn by globe.js from one World Monitor reading an hour. -->
+            <div class="hub-globe-layer" id="globe-layer" role="group" aria-label="Map layer">
+              <button type="button" class="active" data-layer="opportunity" aria-pressed="true" data-en="Opportunities" data-es="Oportunidades">Opportunities</button>
+              <button type="button" data-layer="risk" aria-pressed="false" data-en="Risk heat" data-es="Calor de riesgo">Risk heat</button>
+            </div>
+            <dl class="hub-globe-legend" id="globe-legend" hidden aria-label="Legend">
+              <dt><span data-en="World Monitor instability" data-es="Inestabilidad World Monitor">World Monitor instability</span></dt>
+              <dd><i class="sw band green" aria-hidden="true"></i><span data-en="low" data-es="baja">low</span></dd>
+              <dd><i class="sw band amber" aria-hidden="true"></i><span data-en="elevated" data-es="elevada">elevated</span></dd>
+              <dd><i class="sw band red" aria-hidden="true"></i><span data-en="high" data-es="alta">high</span></dd>
+              <dd><i class="sw chevron" aria-hidden="true">▲</i><span data-en="rising" data-es="subiendo">rising</span></dd>
+              <dd><i class="sw hatch" aria-hidden="true"></i><span data-en="sanctions" data-es="sanciones">sanctions</span></dd>
+              <dd><i class="sw held" aria-hidden="true"></i><span data-en="we hold a project" data-es="tenemos un proyecto">we hold a project</span></dd>
+              <dd><i class="sw ring" aria-hidden="true"></i><span data-en="open round" data-es="ronda abierta">open round</span></dd>
+              <dd><i class="sw port" aria-hidden="true"></i><span data-en="export port" data-es="puerto de exportación">export port</span></dd>
+            </dl>
           </div>
           <div class="hub-globe-side" id="register-column">
             <div class="hub-sec-head hub-reg-head">
@@ -258,6 +274,7 @@
               <h3 id="country-name"></h3>
               <p class="hub-muted" id="country-sub"></p>
               <p class="hub-note-s" id="country-risk" hidden></p>
+              <p class="hub-note-s hub-trade-line" id="country-trade" hidden data-trade-state="off"></p>
               <ul class="hub-country-projects" id="country-projects"></ul>
               <div class="hub-actions-row hub-create-here" id="country-create-row" hidden>
                 <button type="button" class="btn btn-outline btn-sm" id="country-create" data-en="Create a project here" data-es="Crear un proyecto aquí">Create a project here</button>
@@ -304,6 +321,23 @@
           <article class="card hub-counter" id="card-rerun" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>
           <article class="card hub-counter" id="card-stale" data-empty="1"><div class="hub-skel" aria-hidden="true"><span></span></div></article>
         </div>
+      </section>
+
+      <!-- THE RISK TABLE (wave 8, docs/vault-hub/wave8/01-risk-lens.md §2): the opportunity register's five columns, three live from World Monitor,
+           two as entered; the register's overall rule; the project's own execution risk apart. After the counters, before the latest runs (R4 keeps What came in and the counters as the bands under the globe); hidden until the Vault answers. -->
+      <section id="sec-risk" aria-labelledby="h-risk" hidden data-risk="loading">
+        <article class="card hub-risk-card" id="card-risk" aria-labelledby="h-risk">
+          <div class="hub-card-head">
+            <div>
+              <h3 id="h-risk" data-en="Country and execution risk" data-es="Riesgo país y de ejecución">Country and execution risk</h3>
+              <p class="hub-muted" id="risk-sub" data-en="Geopolitical, sanctions and security read live from World Monitor; technical and commercial as entered on each register. Select a cell to see the evidence behind it." data-es="Geopolítico, sanciones y seguridad leídos en vivo de World Monitor; técnico y comercial según se registró. Seleccione una celda para ver la evidencia.">Geopolitical, sanctions and security read live from World Monitor; technical and commercial as entered on each register. Select a cell to see the evidence behind it.</p>
+            </div>
+            <span class="hub-count" id="risk-count" aria-hidden="true">0</span>
+          </div>
+          <div class="hub-heat-wrap"><table class="hub-heat" id="risk-table"></table></div>
+          <p class="hub-note-s hub-risk-evidence" id="risk-evidence" hidden aria-live="polite"></p>
+          <p class="hub-muted hub-note-s" id="risk-foot"></p>
+        </article>
       </section>
 
       <!-- RECENT RUNS -->

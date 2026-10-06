@@ -15,6 +15,12 @@
      .select(code, { fly: true })      // fly to a country and highlight it; null clears
      .setRings(['BR', 'PE'])           // wave 7 PR6: a thin gold ring around each country with an open licence
                                        // round, sized to the country's area; onHover carries open: true for it
+     .setRisk(Map<iso2, {band, score, trend, sanctions}>)   // wave 8: a halo in the band colour under each held
+                                       // country, a trend chevron above it, a hatch over a sanctioned country, and
+                                       // the tint of every country when the layer is 'risk'; onHover carries risk
+     .setLayer('opportunity' | 'risk') // wave 8: the Risk heat layer tints every tracked country by its band
+     // wave 8: a point with kind 'port' is an export port (a small teal diamond, red-rimmed on an anomaly);
+     // hovering it reports the point so the page can say its tanker calls and trend.
      .setLang('en' | 'es')
      .destroy()
 
@@ -36,7 +42,14 @@ const COLOURS = {
   point: '#FFFFFF', pointRing: 'rgba(201,168,76,0.9)',
   field: '#F3E9C9', fieldLine: 'rgba(11,31,58,0.9)', fieldHover: '#FFFFFF',
   ring: '#F2DFA0', ringOuter: 'rgba(201,168,76,0.75)',
+  // Wave 8: the one scale (hub/components/risk-scale.js). Halo and chevron in the band colour; a muted tint of the
+  // same hue for the Risk heat layer's land, so held gold still reads on top; a pale hatch for sanctions.
+  band: { green: '#2ECC8A', amber: '#E8963A', red: '#E0544A' },
+  tint: { green: '#255C4C', amber: '#6C4F22', red: '#702D2D' },
+  hatch: 'rgba(255,255,255,0.42)',
+  port: '#7FD6CC', portLine: '#0B1F3A', portAnomaly: '#E0544A',
 };
+const rgba = (hex, a) => 'rgba(' + parseInt(hex.slice(1, 3), 16) + ',' + parseInt(hex.slice(3, 5), 16) + ',' + parseInt(hex.slice(5, 7), 16) + ',' + a + ')';
 const RING_MIN = 12;                    // px: the smallest ring, so a small country still wears one
 const FIELD_R = 2.6;                    // field points: smaller, no pulse
 const POINT_HIT_PX = 8;                 // hover radius for a point
@@ -74,6 +87,8 @@ export function createGlobe(canvas, opts) {
   let zoom = 1;
   let held = new Map(), points = [];
   let rings = new Set();                // wave 7 PR6: iso2 codes with an open licence round
+  let risk = new Map();                 // wave 8: iso2 → {band, score, trend, sanctions}
+  let layer = 'opportunity';            // wave 8: 'risk' tints every country by its band
   let hovered = null, selected = null;
   let hoveredPoint = null;              // wave 3: the field point under the pointer
   let visible = [];                     // [{p, x, y}] drawn this frame, for hit testing
@@ -107,7 +122,24 @@ export function createGlobe(canvas, opts) {
       const line = hv.expiring ? COLOURS.expiring : hv.stale ? COLOURS.stale : COLOURS.heldLine;
       return [hovered === code ? COLOURS.hover : COLOURS.held, line, hv.expiring || hv.stale ? 2 : 0.8];
     }
+    // Wave 8: on the Risk heat layer a tracked country wears a muted tint of its band.
+    const rk = layer === 'risk' ? risk.get(code) : null;
+    if (rk && rk.band && COLOURS.tint[rk.band]) return [COLOURS.tint[rk.band], hovered === code ? COLOURS.hover : COLOURS.landLine, hovered === code ? 1 : 0.5];
     return [hovered === code ? '#3F5F86' : COLOURS.land, COLOURS.landLine, 0.5];
+  }
+
+  /** Wave 8: diagonal hatching clipped to the country, over its fill (sanctions). */
+  function hatch(f) {
+    const b = path.bounds(f);
+    if (!b || !Number.isFinite(b[0][0]) || !Number.isFinite(b[1][1])) return;
+    const hgt = b[1][1] - b[0][1], wid = b[1][0] - b[0][0];
+    if (!(hgt > 0) || !(wid > 0) || hgt > 4000 || wid > 4000) return;
+    ctx.save();
+    ctx.beginPath(); path(f); ctx.clip();
+    ctx.beginPath();
+    for (let x = b[0][0] - hgt; x < b[1][0]; x += 6) { ctx.moveTo(x, b[1][1]); ctx.lineTo(x + hgt, b[0][1]); }
+    ctx.strokeStyle = COLOURS.hatch; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
   }
 
   function draw(now = performance.now()) {
@@ -130,6 +162,31 @@ export function createGlobe(canvas, opts) {
     // Graticule.
     ctx.beginPath(); path(graticule); ctx.strokeStyle = COLOURS.graticule; ctx.lineWidth = 0.6; ctx.stroke();
 
+    const centre = [-rotation[0], -rotation[1]];
+    /** The cap that encloses a country (the ring's radius), when its centre is on the front hemisphere. */
+    const capOf = (code) => {
+      const f = byCode.get(code);
+      if (!f) return null;
+      const c = centroid.get(f);
+      if (d3.geoDistance(c, centre) > Math.PI / 2 - 0.05) return null;
+      const xy = projection(c);
+      if (!xy) return null;
+      const theta = Math.acos(Math.max(-1, Math.min(1, 1 - area.get(f) / (2 * Math.PI))));
+      return { x: xy[0], y: xy[1], r: Math.max(RING_MIN, R * Math.sin(theta) * 1.05 + 6) };
+    };
+
+    // Wave 8: a halo in the band colour under each held country with a World Monitor reading, drawn before the land
+    // so the glow spills around the country's edge and the gold fill stays the sign of "we hold a project here".
+    for (const code of held.keys()) {
+      const rk = risk.get(code);
+      if (!rk || !rk.band || !COLOURS.band[rk.band]) continue;
+      const cap = capOf(code);
+      if (!cap) continue;
+      const g = ctx.createRadialGradient(cap.x, cap.y, cap.r * 0.5, cap.x, cap.y, cap.r * 1.4);
+      g.addColorStop(0, rgba(COLOURS.band[rk.band], 0.6)); g.addColorStop(0.7, rgba(COLOURS.band[rk.band], 0.28)); g.addColorStop(1, rgba(COLOURS.band[rk.band], 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cap.x, cap.y, cap.r * 1.4, 0, Math.PI * 2); ctx.fill();
+    }
+
     // Countries: plain land first, then held countries on top so their outlines stay crisp.
     const order = features.slice().sort((a, b) => Number(!!held.get(a.properties.iso2) || selected === a.properties.iso2) - Number(!!held.get(b.properties.iso2) || selected === b.properties.iso2));
     for (const f of order) {
@@ -137,11 +194,13 @@ export function createGlobe(canvas, opts) {
       ctx.beginPath(); path(f);
       ctx.fillStyle = fill; ctx.fill();
       ctx.strokeStyle = line; ctx.lineWidth = lw; ctx.stroke();
+      // Wave 8: sanctions are a hatch, not a colour, so they never collide with the band.
+      const code = f.properties.iso2, rk = risk.get(code);
+      if (rk && rk.sanctions && (held.has(code) || layer === 'risk')) hatch(f);
     }
 
     // Points on the visible hemisphere: fields first (small, cream, still), then project
     // points on top, pulsing unless motion is reduced.
-    const centre = [-rotation[0], -rotation[1]];
     // Wave 7 PR6 (O, W7-AC22): a thin gold ring around each country with an open licence round, drawn over the land
     // and under the points: the radius is that of the cap with the country's area, so the ring encloses the country
     // without any new data; a dashed outer line makes it read as a ring rather than a selection.
@@ -161,6 +220,16 @@ export function createGlobe(canvas, opts) {
       ctx.setLineDash([3, 4]); ctx.strokeStyle = COLOURS.ringOuter; ctx.lineWidth = 1; ctx.globalAlpha = 0.8; ctx.stroke();
       ctx.restore();
     }
+    // Wave 8: the trend as a chevron above the halo (up for rising, down for falling, nothing for stable).
+    for (const code of held.keys()) {
+      const rk = risk.get(code);
+      if (!rk || !rk.band || !(rk.trend === 'rising' || rk.trend === 'falling')) continue;
+      const cap = capOf(code);
+      if (!cap) continue;
+      const up = rk.trend === 'rising', x = cap.x, y = cap.y - cap.r - 8;
+      ctx.beginPath(); ctx.moveTo(x - 5, up ? y + 4 : y - 4); ctx.lineTo(x + 5, up ? y + 4 : y - 4); ctx.lineTo(x, up ? y - 4 : y + 4); ctx.closePath();
+      ctx.fillStyle = COLOURS.band[rk.band]; ctx.fill(); ctx.strokeStyle = COLOURS.landLine; ctx.lineWidth = 0.8; ctx.stroke();
+    }
     const pulse = reduced ? 0.5 : (Math.sin(now / 600) + 1) / 2;
     visible = [];
     for (const p of points) {
@@ -177,8 +246,16 @@ export function createGlobe(canvas, opts) {
       ctx.fillStyle = hot ? COLOURS.fieldHover : COLOURS.field; ctx.fill();
       ctx.strokeStyle = COLOURS.fieldLine; ctx.lineWidth = 0.8; ctx.stroke();
     }
+    // Wave 8: export ports as small teal diamonds, red-rimmed on an anomaly signal.
     for (const v of visible) {
-      if (v.p.kind === 'field') continue;
+      if (v.p.kind !== 'port') continue;
+      const hot = hoveredPoint === v.p, s = hot ? 5.2 : 3.8;
+      ctx.beginPath(); ctx.moveTo(v.x, v.y - s); ctx.lineTo(v.x + s, v.y); ctx.lineTo(v.x, v.y + s); ctx.lineTo(v.x - s, v.y); ctx.closePath();
+      ctx.fillStyle = COLOURS.port; ctx.fill();
+      ctx.strokeStyle = v.p.anomaly ? COLOURS.portAnomaly : COLOURS.portLine; ctx.lineWidth = v.p.anomaly ? 1.5 : 0.8; ctx.stroke();
+    }
+    for (const v of visible) {
+      if (v.p.kind) continue;
       ctx.beginPath(); ctx.arc(v.x, v.y, 4 + 6 * pulse, 0, Math.PI * 2);
       ctx.strokeStyle = COLOURS.pointRing; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.9 - 0.6 * pulse; ctx.stroke(); ctx.globalAlpha = 1;
       ctx.beginPath(); ctx.arc(v.x, v.y, 3, 0, Math.PI * 2); ctx.fillStyle = COLOURS.point; ctx.fill();
@@ -282,7 +359,7 @@ export function createGlobe(canvas, opts) {
       canvas.style.cursor = f || pt ? 'pointer' : 'grab';
       if (opts.onHover) {
         if (pt) opts.onHover({ code, name: pt.name, x, y, point: pt });
-        else opts.onHover(f ? { code, name: f.properties[lang] || f.properties.en, x, y, open: rings.has(code) } : null);
+        else opts.onHover(f ? { code, name: f.properties[lang] || f.properties.en, x, y, open: rings.has(code), risk: risk.get(code) || null, held: held.has(code) } : null);
       }
       if (reduced || pt || !code) draw();
     }
@@ -296,7 +373,7 @@ export function createGlobe(canvas, opts) {
       const [x, y] = local(ev);
       // Wave 7 PR2 (idea A): a tap on a project dot is the project, not its country.
       const pt = pointAt(x, y);
-      if (pt && pt.kind !== 'field' && opts.onPoint) { opts.onPoint(pt, geoAt(x, y)); schedule(); return; }
+      if (pt && !pt.kind && opts.onPoint) { opts.onPoint(pt, geoAt(x, y)); schedule(); return; }
       const f = hit(x, y);
       if (f && opts.onSelect) opts.onSelect(f.properties.iso2, f, geoAt(x, y));
     } else if (!reduced) inertia = clamp(d.vx, -0.5, 0.5);
@@ -340,6 +417,12 @@ export function createGlobe(canvas, opts) {
     },
     /** Wave 7 PR6: the countries with an open licence round; each wears the ring until the list changes. */
     setRings(codes) { rings = new Set(Array.isArray(codes) ? codes.filter((c) => byCode.has(c)) : []); draw(); schedule(); },
+    /** Wave 8: the band, trend and sanctions flag per country (held or not); the halo, chevron, hatch and tint read from it. */
+    setRisk(m) { risk = m instanceof Map ? m : new Map(Object.entries(m || {})); draw(); schedule(); },
+    /** Wave 8: 'opportunity' (the default: only held countries carry colour) or 'risk' (every tracked country tinted by band). */
+    setLayer(l) { layer = l === 'risk' ? 'risk' : 'opportunity'; draw(); schedule(); },
+    get layer() { return layer; },
+    riskOf(code) { return risk.get(code) || null; },
     setLang(l) { lang = l; },
     nameOf(code) { const f = byCode.get(code); return f ? { en: f.properties.en, es: f.properties.es } : null; },
     /** The country's geographic centre from its polygon (a computed point, never a guess). */
