@@ -139,8 +139,8 @@ each finding filed as a public note under the project with its source, URL and a
 operator, licence and production figures opened as proposals in the review queue. A run stops at
 `RESEARCH_BUDGET_MINUTES` (default 15) or `RESEARCH_BUDGET_GBP` of model spend (default 3), whichever
 comes first. `RESEARCH_ENABLED=false` switches it off. The `atc-vault-research` cron (every 15 minutes,
-added by a Blueprint sync, which asks for its `DATABASE_URL`, `WORLD_MONITOR_API_KEY` and `ANTHROPIC_API_KEY`;
-enter the same values the web service has) finishes any run a restart interrupted. Nothing is deleted by a run; a re-run
+added by a Blueprint sync; a sync after the first never asks for keys, so link the cron to the `vault-storage`
+environment group, which carries its `DATABASE_URL`, `WORLD_MONITOR_API_KEY` and `ANTHROPIC_API_KEY`) finishes any run a restart interrupted. Nothing is deleted by a run; a re-run
 updates its own notes in place.
 
 **The Global Energy Monitor field tracker (once per release, about 10 minutes)**
@@ -282,8 +282,12 @@ The pack assembles itself when a project is created with a country, and the watc
 pages weekly. Both draft only from stored public originals; nothing runs without the drafting key.
 
 1. **The key on the crons.** The blueprint adds three cron jobs, `atc-vault-country-pack`, `atc-vault-country-pack-refresh`
-   and `atc-vault-round-watch`. Apply the blueprint (step 2) so they exist, then confirm each is linked to the
-   `vault-storage` environment group or carries `ANTHROPIC_API_KEY` and `DATABASE_URL` itself. The API service already has both.
+   and `atc-vault-round-watch`. With Auto Sync on, the Blueprint creates them the moment the pull request merges, so
+   look for them in the Dashboard before pressing Manual Sync (which has nothing left to apply and shows nothing).
+   Render only asks for `sync: false` keys when a Blueprint is first created; a later sync creates the crons without
+   them. So link each cron to the `vault-storage` environment group (its Environment tab → Link environment group),
+   which carries `ANTHROPIC_API_KEY` and `DATABASE_URL`. If the Environment tab lists either key with an empty value,
+   delete the empty entry so the group's value is used. The API service already has both.
 2. **Optional keys.** `EIA_API_KEY` (free, eia.gov/opendata) fills the production section; without it that section says
    "not configured". `PACK_BUDGET_GBP` caps one build (default 2); `S2_API_KEY` and `OPENALEX_KEY` from §5 feed the
    literature section.
