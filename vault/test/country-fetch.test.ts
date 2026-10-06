@@ -278,7 +278,7 @@ test('a pdf source is a regulatory filing; a page or dataset is a feed snapshot;
 test('an embedder that refuses (a rate limit, a key) does not un-file the original: the bytes and the row are saved, chunks stay for the ingest-sync cron, and the result carries the warning', async () => {
   const { db, storage } = dbh;
   const s = generic('pwc-tax-summaries');
-  const { ctx: c } = ctx([[/taxsummaries\.pwc\.com\/namibia$/, () => text('<!doctype html><html><head><title>Namibia - Corporate | PwC</title></head><body><p>Petroleum income tax is levied at 35 percent on taxable income from a licence area.</p></body></html>', 200, { 'content-type': 'text/html' })]]);
+  const { ctx: c } = ctx([[/taxsummaries\.pwc\.com\/namibia\/corporate\/taxes-on-corporate-income$/, () => text('<!doctype html><html><head><title>Namibia - Corporate | PwC</title></head><body><p>Petroleum income tax is levied at 35 percent on taxable income from a licence area.</p></body></html>', 200, { 'content-type': 'text/html' })]]);
   const fetched = await fetchSource(s, c) as FetchOk;
   const refusing = { name: 'voyage', dims: 1024, maxDistance: 0.6, embed: async () => { throw new Error('voyage 429: {"detail":"You have not yet added your payment method in the billing page and will have reduced rate limits of 3 RPM and 10K TPM."}'); } };
   const r = await storeOriginal(db, storage, s, fetched, 'NA', { now: NOW, ingest: { provider: null, embedder: refusing as any } });

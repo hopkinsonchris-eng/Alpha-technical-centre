@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { countryName, isCountryCode } from '../opportunities.ts';
 import { isAllowedUrl } from './adapters/shared.ts';
 import { SECTIONS, SECTION_IDS, type CountryRegistry, type CountrySource, type SectionId, type SourceAccess } from './types.ts';
+import { alpha3 } from './iso3.ts';
 
 export const REGISTRY_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../master/country-sources.json');
 export const ACCESS_KINDS: SourceAccess[] = ['html', 'pdf', 'json', 'csv', 'rss', 'arcgis', 'ckan', 'adapter'];
@@ -99,7 +100,7 @@ export interface ResolvedCountry {
   regulator: string | null;
   accounts_note: string | null;
   seeded_by_hand: boolean;
-  /** The country's own entries first, then the generic set, each with {cc}, {cc_lower} and {country} filled; a {year} series stays a series. */
+  /** The country's own entries first, then the generic set, each with {cc}, {cc_lower}, {cc3} and {country} filled; a {year} series stays a series. */
   sources: CountrySource[];
   /** Set when the country has no entry of its own. */
   note: string | null;
@@ -110,7 +111,7 @@ export function countrySlug(name: string): string {
   return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 export function fillPlaceholders(url: string, c: { code: string; name: string }): string {
-  return url.replace(/\{cc\}/g, c.code).replace(/\{cc_lower\}/g, c.code.toLowerCase()).replace(/\{country\}/g, countrySlug(c.name));
+  return url.replace(/\{cc\}/g, c.code).replace(/\{cc_lower\}/g, c.code.toLowerCase()).replace(/\{cc3\}/g, alpha3(c.code) ?? c.code).replace(/\{country\}/g, countrySlug(c.name));
 }
 function fillSource(s: CountrySource, c: { code: string; name: string }): CountrySource {
   const opts = s.options ? Object.fromEntries(Object.entries(s.options).map(([k, v]) => [k, typeof v === 'string' ? fillPlaceholders(v, c) : v])) : undefined;

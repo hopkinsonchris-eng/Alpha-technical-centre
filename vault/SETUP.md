@@ -294,7 +294,10 @@ pages weekly. Both draft only from stored public originals; nothing runs without
    which carries `ANTHROPIC_API_KEY` and `DATABASE_URL`. If the Environment tab lists either key with an empty value,
    delete the empty entry so the group's value is used. The API service already has both.
 2. **Optional keys.** `EIA_API_KEY` (free, eia.gov/opendata) fills the production section; without it that section says
-   "not configured". `PACK_BUDGET_GBP` caps one build (default 2); `S2_API_KEY` and `OPENALEX_KEY` from §5 feed the
+   "not configured". Many regulators publish their gazettes as scans with no text layer (Venezuela's Ministry does):
+   set `VAULT_OCR_DOWNLOAD=1` and `VAULT_OCR_LANG=spa+eng` on `atc-vault-api`, `atc-vault-ingest-sync` and the three
+   pack crons and the ingest reads them with OCR (tesseract fetches its language data once, into the container);
+   without it such a PDF is filed and the section says its originals carried no text. `PACK_BUDGET_GBP` caps one build (default 2); `S2_API_KEY` and `OPENALEX_KEY` from §5 feed the
    literature section.
 3. **Try it.** Open a project with a country (or create one): the Country pack card shows ten rows; press **Assemble the
    pack**; within the hour the rows fill with a headline sentence each and a freshness dot. If the card instead shows a

@@ -86,13 +86,13 @@
     {
       "id": "eia-international",
       "section": "production",
-      "url": "https://api.eia.gov/v2/international/data/?frequency=annual&data[0]=value&facets[countryRegionId][]={cc}&facets[activityId][]=1&facets[productId][]=53&sort[0][column]=period&sort[0][direction]=desc&length=60",
+      "url": "https://api.eia.gov/v2/international/data/?frequency=annual&data[0]=value&facets[countryRegionId][]={cc3}&facets[activityId][]=1&facets[productId][]=53&sort[0][column]=period&sort[0][direction]=desc&length=60",
       "access": "json",
       "licence": "Public domain (U.S. government publications are in the public domain; EIA copyright and reuse page)",
       "attribution": "Source: U.S. Energy Information Administration, International Energy Data (dated at fetch)",
       "allowed_domains": ["api.eia.gov", "eia.gov", "www.eia.gov"],
       "options": { "api_key_env": "EIA_API_KEY", "api_key_param": "api_key" },
-      "note": "Needs EIA_API_KEY (free registration); skipped as 'not configured' without it. Throttled per second and per hour."
+      "note": "Needs EIA_API_KEY (free registration); skipped as 'not configured' without it. Throttled per second and per hour. The country facet takes the ISO alpha-3 code ({cc3}: VEN, GBR, USA); the alpha-2 code answers zero rows."
     },
     {
       "id": "jodi-oil-monthly",
@@ -108,12 +108,22 @@
     {
       "id": "pwc-tax-summaries",
       "section": "fiscal",
-      "url": "https://taxsummaries.pwc.com/{country}",
+      "url": "https://taxsummaries.pwc.com/{country}/corporate/taxes-on-corporate-income",
       "access": "html",
       "licence": "Free (PwC Worldwide Tax Summaries); quoted with attribution",
       "attribution": "PwC Worldwide Tax Summaries, taxsummaries.pwc.com",
       "allowed_domains": ["taxsummaries.pwc.com"],
-      "note": "150+ territories; the oil and gas special regimes under corporate taxes. Orientation for screening; verify against the instrument in force."
+      "note": "The corporate income tax page, where the oil and gas rate and special regimes sit (the territory overview carries only the currency and a paragraph). Orientation for screening; verify against the instrument in force."
+    },
+    {
+      "id": "pwc-tax-summaries-other-taxes",
+      "section": "fiscal",
+      "url": "https://taxsummaries.pwc.com/{country}/corporate/other-taxes",
+      "access": "html",
+      "licence": "Free (PwC Worldwide Tax Summaries); quoted with attribution",
+      "attribution": "PwC Worldwide Tax Summaries, taxsummaries.pwc.com",
+      "allowed_domains": ["taxsummaries.pwc.com"],
+      "note": "The other-taxes page: royalties, production levies, windfall and extraction taxes where the territory has them. Orientation for screening; verify against the instrument in force."
     }
   ],
   "countries": {
@@ -1113,7 +1123,7 @@
       "name": "Venezuela",
       "regulator": "Ministerio del Poder Popular de Hidrocarburos (MinHidrocarburos, the Ministerio del Poder Popular de Petróleo until Decree 5.061 of 17 December 2024); PDVSA and its affiliate CVP hold the state's share of every empresa mixta",
       "seeded_by_hand": true,
-      "accounts_note": "No open regulator feed and no licence rounds: areas are awarded by the National Executive through empresas mixtas (PDVSA majority) and, since the reform of the Ley Orgánica de Hidrocarburos in Gaceta Oficial N° 6.978 Extraordinario of 29 January 2026, through Contratos de Participación Productiva. The Ministry's site (minhidrocarburos.gob.ve, WordPress, read on 6 Oct 2026) publishes the legal framework with the law texts as PDFs, news with an RSS feed, and the PODE statistical yearbook whose newest edition is 2014; its adscribed-entities page is images only. pdvsa.com, the Gaceta Oficial host and the TSJ's gazette archive did not connect from the build sandbox on 6 Oct 2026 and are unverified until the job reaches them. Venezuela is not an EITI country and Legal 500 has no Venezuela chapter (both answer 404); the Chambers 2026 chapter answers. An ArcGIS Online layer 'Bloques_FPO' (a 2017 ministry map, copyright 'Ministerio del Poder Popular de Petróleo, PDVSA') exists on an account that does not identify its publisher, so it is not registered. US sanctions: OFAC's Venezuela programme page lists the general licences in force (the GL 46 series since 29 January 2026); work for US persons or in US dollars is screened against it before anything else.",
+      "accounts_note": "No open regulator feed and no licence rounds: areas are awarded by the National Executive through empresas mixtas (PDVSA majority) and, since the reform of the Ley Orgánica de Hidrocarburos in Gaceta Oficial N° 6.978 Extraordinario of 29 January 2026, through Contratos de Participación Productiva. The Ministry's site (minhidrocarburos.gob.ve, WordPress, read on 6 Oct 2026) publishes the legal framework with the law texts as scanned PDFs without a text layer (FAOLEX holds readable copies of the 2006 law and the 2009 services-reservation law), news with an RSS feed, and the PODE statistical yearbook whose newest edition is 2014; its adscribed-entities page is images only. pdvsa.com, the Gaceta Oficial host and the TSJ's gazette archive did not connect from the build sandbox on 6 Oct 2026 and are unverified until the job reaches them. Venezuela is not an EITI country and Legal 500 has no Venezuela chapter (both answer 404); the Chambers 2026 chapter answers. An ArcGIS Online layer 'Bloques_FPO' (a 2017 ministry map, copyright 'Ministerio del Poder Popular de Petróleo, PDVSA') exists on an account that does not identify its publisher, so it is not registered. US sanctions: OFAC's Venezuela programme page lists the general licences in force (the GL 46 series since 29 January 2026); work for US persons or in US dollars is screened against it before anything else. EIA's analysis page for Venezuela renders by script and carries only navigation when fetched, so it is not registered; the EIA data API (alpha-3 facet VEN) is the production source.",
       "sources": [
         {
           "id": "ve-minhidrocarburos-marco-legal",
@@ -1137,7 +1147,7 @@
           "allowed_domains": [
             "minhidrocarburos.gob.ve"
           ],
-          "note": "Ley Orgánica de Hidrocarburos as published in G.O. 38.493 of 4 August 2006 (2.2 MB), the text before the January 2026 partial reform; read the reform beside it."
+          "note": "The Ministry's copy of the Ley Orgánica de Hidrocarburos (G.O. 38.493, 4 August 2006): a 16-page scan re-published from GacetaOficial.io with only its watermark as text, so it needs OCR (VAULT_OCR_DOWNLOAD=1 and VAULT_OCR_LANG=spa+eng on the API service, vault/SETUP.md §7.5); the FAOLEX text copy beside it is the readable one."
         },
         {
           "id": "ve-ley-participacion-actividades-primarias-2006",
@@ -1149,7 +1159,19 @@
           "allowed_domains": [
             "minhidrocarburos.gob.ve"
           ],
-          "note": "Ley de Regulación de la Participación en las Actividades Primarias (G.O. 38.419, 18 April 2006): how private capital takes part through empresas mixtas."
+          "note": "Ley de Regulación de la Participación en las Actividades Primarias (G.O. 38.419, 18 April 2006): how private capital takes part through empresas mixtas. A 3-page scan with no text layer; needs OCR as above."
+        },
+        {
+          "id": "ve-faolex-ley-organica-hidrocarburos-2006",
+          "section": "legal",
+          "url": "https://faolex.fao.org/docs/pdf/ven69660.pdf",
+          "access": "pdf",
+          "licence": "FAOLEX (FAO) reproduction of an official act of the Republic, for information; FAO's terms of use cover the database, the act itself carries no copyright; quoted for screening, not advice",
+          "attribution": "Asamblea Nacional de la República Bolivariana de Venezuela, via FAOLEX (FAO Legal Office), faolex.fao.org",
+          "allowed_domains": [
+            "faolex.fao.org"
+          ],
+          "note": "The Ley Orgánica de Hidrocarburos as decreed by the National Assembly (G.O. 38.493, 4 August 2006) in FAOLEX's text copy: 14 pages, every article readable, the text before the January 2026 partial reform."
         },
         {
           "id": "ve-an-reforma-loh-2026",
@@ -1274,16 +1296,16 @@
           "ttl_days": 180
         },
         {
-          "id": "eia-venezuela-analysis",
-          "section": "production",
-          "url": "https://www.eia.gov/international/analysis/country/VEN",
-          "access": "html",
-          "licence": "Public domain (U.S. Energy Information Administration)",
-          "attribution": "U.S. Energy Information Administration, Country Analysis: Venezuela",
+          "id": "ve-faolex-reserva-servicios-2009",
+          "section": "service",
+          "url": "https://faolex.fao.org/docs/pdf/ven88234.pdf",
+          "access": "pdf",
+          "licence": "FAOLEX (FAO) reproduction of an official act of the Republic, for information; FAO's terms of use cover the database, the act itself carries no copyright; quoted for screening, not advice",
+          "attribution": "Asamblea Nacional de la República Bolivariana de Venezuela, via FAOLEX (FAO Legal Office), faolex.fao.org",
           "allowed_domains": [
-            "eia.gov"
+            "faolex.fao.org"
           ],
-          "note": "EIA's country analysis page: current production, exports, reserves and the sanctions context, with its own update date; needs no key, unlike the EIA data API."
+          "note": "Ley Orgánica que reserva al Estado bienes y servicios conexos a las actividades primarias de hidrocarburos (G.O. 39.173, 7 May 2009): the law under which oilfield services on the Lake Maracaibo and elsewhere were taken over by PDVSA; the frame any service company works in. FAOLEX text copy, 6 pages."
         }
       ]
     }
