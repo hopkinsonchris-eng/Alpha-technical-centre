@@ -297,7 +297,10 @@ export async function runPack(db: Db, country: string, opts: PackRunOptions = {}
     }
     // Sections nobody wrote in this build are recorded 'empty' with their sources (their version did not move).
     const after = new Map<SectionId, number>((await db.query<{ section: SectionId; v: number }>('SELECT section, max(version)::int AS v FROM country_packs WHERE country = $1 GROUP BY section', [country])).rows.map(r => [r.section, r.v]));
+    // A section the drafter kept (same originals, still fresh) stands at its version: it is neither rewritten nor recorded empty.
+    const kept = new Set((summary.draft?.sections ?? []).filter(x => x.kept).map(x => x.section));
     for (const s of perSection) {
+      if (kept.has(s.section)) continue;
       if ((after.get(s.section) ?? 0) > (before.get(s.section) ?? 0)) continue;
       await writePackSection(db, { country, section: s.section, body: EMPTY_BODY, status: 'empty', stale_reason: draftError ? `draft failed: ${draftError.message}` : null, ttl_days: s.ttl_days, built_by: `job:${job}`, now: now(), sources: s.sources, source_items: s.items });
     }

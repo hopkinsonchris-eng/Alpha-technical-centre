@@ -5,6 +5,7 @@
  * Every run is one row in `jobs`.
  */
 import { pathToFileURL } from 'node:url';
+import { processSpendGbp } from '../llm/spend-guard.ts';
 import type { Db } from '../db/client.ts';
 import { openDb } from '../db/client.ts';
 import { migrate } from '../db/migrate.ts';
@@ -27,7 +28,13 @@ export interface IngestSyncSummary {
   ingested: number; skipped: number; needs_attention: number; failed: number; errors: string[];
   /** Set when the run had nothing to do, so the log says why rather than failing on a key it never needed. */
   idle?: string;
+  /** Set when the run's model-spend cap stopped it, with how many items wait for the next run. */
+  stopped_by?: 'budget'; left?: number;
 }
+
+/** Pounds of model spend one ingest-sync run may make; INGEST_BUDGET_GBP overrides. */
+export const DEFAULT_INGEST_BUDGET_GBP = 2;
+export function ingestBudgetGbp(env: NodeJS.ProcessEnv = process.env): number { const v = Number(env.INGEST_BUDGET_GBP); return Number.isFinite(v) && v > 0 ? v : DEFAULT_INGEST_BUDGET_GBP; }
 
 export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promise<IngestSyncSummary> {
   const job = (await db.query<{ id: number }>(`INSERT INTO jobs (name, status) VALUES ('ingest-sync', 'running') RETURNING id`)).rows[0].id;
@@ -54,7 +61,11 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
     // start without their keys, and an idle run must not fail on a key it would never have used.
     const storage = opts.storage ?? openStorage();
     const deps = opts.deps ?? (pending.length ? { provider: openProvider(), embedder: openEmbedder() } : null);
-    for (const it of pending) {
+    // A per-run cap on model spend (INGEST_BUDGET_GBP, default £2): a backlog is worked through run by run, never in
+    // one unbounded sweep; what is left waits for the next run, fifteen minutes on.
+    const cap = ingestBudgetGbp(); const spentBefore = processSpendGbp();
+    for (const [i, it] of pending.entries()) {
+      if (processSpendGbp() - spentBefore >= cap) { summary.stopped_by = 'budget'; summary.left = pending.length - i; console.log(`ingest-sync: stopped at £${cap} of model spend this run; ${summary.left} item(s) wait for the next run`); break; }
       try {
         const r = await ingestItem(db, storage, it.id, deps!);
         if (r.status === 'ok') summary.ingested++; else if (r.status === 'skipped') summary.skipped++; else summary.needs_attention++;

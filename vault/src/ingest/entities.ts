@@ -92,7 +92,7 @@ function parseJsonObject(s: string): any {
 async function modelPass(text: string, anchors: Anchor[], provider: LlmProvider): Promise<AssetMention[]> {
   let raw: any = null;
   try {
-    const r = await provider.complete({ system: SYSTEM, messages: [{ role: 'user', content: text.slice(0, 20000) }], maxTokens: 1200, effort: 'low' });
+    const r = await provider.complete({ system: SYSTEM, messages: [{ role: 'user', content: text.slice(0, 20000) }], maxTokens: 1200, effort: 'low' , purpose: 'extract.assets' });
     raw = parseJsonObject(r.text);
   } catch { return []; }
   const list: any[] = Array.isArray(raw?.candidates) ? raw.candidates : [];

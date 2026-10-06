@@ -29,12 +29,13 @@ import { costOf, DEFAULT_MODEL } from './prices.ts';
 export const INFRA_CEILING_USD = 60;
 export const BUDGET_WARN_AT = 0.8;
 
-export const FEATURES = ['draft', 'tool', 'delta', 'chunking', 'dream', 'extraction', 'country-pack', 'round-watch'] as const;
+export const FEATURES = ['draft', 'tool', 'delta', 'chunking', 'dream', 'extraction', 'country-pack', 'round-watch', 'research', 'brief'] as const;
 export type FeatureId = (typeof FEATURES)[number] | 'other';
 export const FEATURE_LABELS: Record<FeatureId, string> = {
   draft: 'Drafting (email, letter, report, calc note)', tool: 'Tool assistant', delta: 'Delta notes (re-run explanations)',
   chunking: 'Chunking (contextual retrieval)', dream: 'Dream (weekly lessons)', extraction: 'Extraction (paper facts, legal and finance terms)', 'country-pack': 'Country pack (sections drafted from stored originals)',
   'round-watch': 'Round watch (dated stages read from changed regulator pages)', other: 'Other',
+  research: 'Research (web search and fact reading on a project)', brief: 'Briefs (What came in)',
 };
 
 export const ACTION_FEATURES: Array<[prefix: string, feature: FeatureId]> = [
@@ -44,6 +45,8 @@ export const ACTION_FEATURES: Array<[prefix: string, feature: FeatureId]> = [
   ['miners.paper-facts', 'extraction'], ['paper_facts', 'extraction'], ['llm.extract', 'extraction'],
   ['llm.country-pack', 'country-pack'],
   ['llm.round-watch', 'round-watch'],
+  ['llm.research', 'research'],
+  ['llm.brief', 'brief'],
 ];
 
 export function featureOf(action: string): FeatureId {

@@ -293,23 +293,30 @@ pages weekly. Both draft only from stored public originals; nothing runs without
    them. So link each cron to the `vault-storage` environment group (its Environment tab → Link environment group),
    which carries `ANTHROPIC_API_KEY` and `DATABASE_URL`. If the Environment tab lists either key with an empty value,
    delete the empty entry so the group's value is used. The API service already has both.
-2. **Optional keys.** `EIA_API_KEY` (free, eia.gov/opendata) fills the production section; without it that section says
+2. **The daily cap.** Every model call in the Vault (drafting, research, briefs, the ingest's chunk context and
+   extractions) passes one brake: when the day's spend, read from the cost ledger, reaches `VAULT_DAILY_BUDGET_GBP`
+   (default £10) every call refuses until 00:00 UTC, the health route reports it and the Hub's strip shows "model
+   budget spent today" in red. Raise it on `atc-vault-api` and the crons when the firm's use grows. The ingest cron
+   also stops each run at `INGEST_BUDGET_GBP` (default £2) and leaves the rest of a backlog for its next run. The
+   ledger now records the ingest, research and brief calls (features Chunking, Extraction, Research, Briefs on the
+   Cost page), which it did not before 6 October 2026.
+3. **Optional keys.** `EIA_API_KEY` (free, eia.gov/opendata) fills the production section; without it that section says
    "not configured". Many regulators publish their gazettes as scans with no text layer (Venezuela's Ministry does):
    set `VAULT_OCR_DOWNLOAD=1` and `VAULT_OCR_LANG=spa+eng` on `atc-vault-api`, `atc-vault-ingest-sync` and the three
    pack crons and the ingest reads them with OCR (tesseract fetches its language data once, into the container);
    without it such a PDF is filed and the section says its originals carried no text. `PACK_BUDGET_GBP` caps one build (default 2); `S2_API_KEY` and `OPENALEX_KEY` from §5 feed the
    literature section.
-3. **Try it.** Open a project with a country (or create one): the Country pack card shows ten rows; press **Assemble the
+4. **Try it.** Open a project with a country (or create one): the Country pack card shows ten rows; press **Assemble the
    pack**; within the hour the rows fill with a headline sentence each and a freshness dot. If the card instead shows a
    red "Drafting failed on the last build" notice, it names the cause in plain words (no Anthropic credit, a refused
    key, a rate limit); the originals are filed, so fix the account and press Refresh. An embedder that refuses (Voyage
    without a payment method allows three requests a minute) never un-files an original: the ingest-sync cron indexes
    it later. Tap a row for the sentences,
    each with a chip that opens the original at the cited passage. The globe's country panel shows the same summary.
-4. **Round dates.** Each Monday the watch files any regulator page that changed and proposes dated stages with the
+5. **Round dates.** Each Monday the watch files any regulator page that changed and proposes dated stages with the
    sentence that states them; they wait under Queues as "Round date" until someone presses **Confirm the date**.
    Confirmed deadlines appear on Today under "Deadlines in the next 90 days" and ring the country on the globe.
-5. **Sources.** `vault/master/country-sources.json` lists every source with its licence and attribution line; add a
+6. **Sources.** `vault/master/country-sources.json` lists every source with its licence and attribution line; add a
    country or a regulator page there by pull request. Mexico, Namibia, Guyana and Venezuela are seeded by hand and say so on the card.
 
 ## 8. The pull request

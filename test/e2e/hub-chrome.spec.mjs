@@ -166,6 +166,25 @@ test('the file store down: the strip shows one red alert naming the bucket (from
   await expect(strip.locator('[data-figure="store"]')).toBeHidden();
 });
 
+test('the model budget spent: the strip shows one red alert with the day\'s spend and the cap (from GET /api/health → llm) that links to the Cost page; under the cap it shows nothing', async ({ page }) => {
+  await seed(page);
+  await page.route('**/api/health', (route) => json(route, { ok: true, version: '0.7.0', migrations: 11, backend: 'pg', llm: { today_gbp: 10.4321, cap_gbp: 10, exhausted: true, as_of: '2026-10-06T13:00:00.000Z', ledger_gbp: 10.4321, unflushed_gbp: 0 } }));
+  await page.goto('/hub/queue.html');
+  const strip = page.locator('#hub-strip');
+  await expect(strip).toHaveAttribute('data-state', 'synced');
+  const b = strip.locator('[data-figure="budget"]');
+  await expect(b).toBeVisible();
+  await expect(b).toHaveText('model budget spent today: £10.43 of £10');
+  await expect(b).toHaveAttribute('data-es', 'presupuesto del modelo agotado hoy: £10.43 de £10');
+  await expect(b).toHaveAttribute('href', '/hub/cost.html');
+  await expect(b).toHaveAttribute('title', /VAULT_DAILY_BUDGET_GBP/);
+  await expect(strip.locator('[data-figure="store"]')).toBeHidden();
+  await page.route('**/api/health', (route) => json(route, { ok: true, version: '0.7.0', migrations: 11, backend: 'pg', llm: { today_gbp: 1.2, cap_gbp: 10, exhausted: false, as_of: '2026-10-06T13:05:00.000Z', ledger_gbp: 1.2, unflushed_gbp: 0 } }));
+  await page.goto('/hub/queue.html');
+  await expect(strip).toHaveAttribute('data-state', 'synced');
+  await expect(strip.locator('[data-figure="budget"]')).toBeHidden();
+});
+
 test('R3: below 900 px the sidebar is a 56 px sticky bottom bar of five icons, Today · Projects · Find · Queues · More, and the user card lives in More', async ({ page }) => {
   await seed(page);
   await page.setViewportSize({ width: 390, height: 844 });

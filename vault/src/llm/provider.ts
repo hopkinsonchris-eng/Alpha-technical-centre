@@ -1,3 +1,4 @@
+import { assertBudget, recordCall } from './spend-guard.ts';
 /**
  * LLM provider interface (Tier A). Every model call in the vault goes through
  * here so that keys stay on the server, usage is recorded, and tests run with
@@ -6,11 +7,11 @@
 export interface LlmMessage { role: 'user' | 'assistant'; content: string }
 export interface LlmUsage { input: number; cached: number; output: number }
 export interface LlmResult { text: string; usage: LlmUsage; model: string; provider: string }
-export interface LlmRequest { system: string; messages: LlmMessage[]; maxTokens?: number; temperature?: number; effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max' }
+export interface LlmRequest { system: string; messages: LlmMessage[]; maxTokens?: number; temperature?: number; effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'; /** written to the cost ledger as `llm.<purpose>` by the spend guard; leave unset when the caller records its own row */ purpose?: string; by?: string; scope?: string; refs?: string[] }
 export interface LlmProvider { name: string; model: string; complete(req: LlmRequest): Promise<LlmResult>; search?(req: WebSearchRequest): Promise<WebSearchResult> }
 
 /* ── wave 4: web search through the Messages API's server-side tool ─── */
-export interface WebSearchRequest { system: string; prompt: string; maxUses: number; maxTokens?: number }
+export interface WebSearchRequest { system: string; prompt: string; maxUses: number; maxTokens?: number; purpose?: string; by?: string; scope?: string; refs?: string[] }
 export interface WebCitation { url: string; title: string | null; cited_text: string; sentence: string }
 export interface WebSearchHit { url: string; title: string | null; page_age: string | null }
 export interface WebSearchResult { text: string; usage: LlmUsage; model: string; searches: number; citations: WebCitation[]; results: WebSearchHit[]; error?: string; /** the API's stop_reason, so a cut-off answer is named */ stop?: string }
@@ -55,6 +56,7 @@ export class AnthropicProvider implements LlmProvider {
   name = 'anthropic';
   constructor(private readonly apiKey: string, public readonly model = process.env.LLM_MODEL ?? 'claude-sonnet-5-5', private readonly fetchImpl: typeof fetch = fetch) {}
   async complete(req: LlmRequest): Promise<LlmResult> {
+    await assertBudget();                                             // the daily cap, before any token is bought
     const res = await this.fetchImpl('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01' },
@@ -69,7 +71,9 @@ export class AnthropicProvider implements LlmProvider {
     const j: any = await res.json();
     const text = (j.content ?? []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join('');
     const u = j.usage ?? {};
-    return { text, usage: { input: u.input_tokens ?? 0, cached: u.cache_read_input_tokens ?? 0, output: u.output_tokens ?? 0 }, model: j.model ?? this.model, provider: this.name };
+    const out: LlmResult = { text, usage: { input: u.input_tokens ?? 0, cached: u.cache_read_input_tokens ?? 0, output: u.output_tokens ?? 0 }, model: j.model ?? this.model, provider: this.name };
+    await recordCall({ model: out.model, usage: out.usage, purpose: req.purpose, by: req.by, scope: req.scope, refs: req.refs });
+    return out;
   }
 
   /**
@@ -83,6 +87,7 @@ export class AnthropicProvider implements LlmProvider {
     const messages: any[] = [{ role: 'user', content: req.prompt }];
     const body = (msgs: any[]) => JSON.stringify({ model: this.model, max_tokens: req.maxTokens ?? 4000, output_config: { effort: 'medium' }, system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }], messages: msgs, tools });
     const call = async (msgs: any[]) => {
+      await assertBudget();
       const res = await this.fetchImpl('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01' }, body: body(msgs) });
       if (!res.ok) throw new Error(`anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
       return res.json() as Promise<any>;
@@ -94,6 +99,7 @@ export class AnthropicProvider implements LlmProvider {
       const more = readWebSearch(j2, this.model);
       out = { ...more, text: out.text + more.text, usage: { input: out.usage.input + more.usage.input, cached: out.usage.cached + more.usage.cached, output: out.usage.output + more.usage.output }, searches: out.searches + more.searches, citations: [...out.citations, ...more.citations], results: [...out.results, ...more.results], ...(out.error && !more.error ? { error: out.error } : {}) };
     }
+    await recordCall({ model: out.model, usage: out.usage, searches: out.searches, purpose: req.purpose, by: req.by, scope: req.scope, refs: req.refs });
     return out;
   }
 }

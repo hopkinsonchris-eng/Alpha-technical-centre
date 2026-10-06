@@ -69,7 +69,7 @@ function parseJsonObject(s: string): any {
 
 /** The facts a finding states, each with a verbatim quote; an invented quote drops the fact. Returns the provider's usage for the budget. */
 export async function readFacts(text: string, provider: LlmProvider): Promise<{ facts: ResearchFact[]; usage: LlmUsage; model: string }> {
-  const r = await provider.complete({ system: SYSTEM, messages: [{ role: 'user', content: text.slice(0, 6000) }], maxTokens: 600, effort: 'low' });
+  const r = await provider.complete({ system: SYSTEM, messages: [{ role: 'user', content: text.slice(0, 6000) }], maxTokens: 600, effort: 'low', purpose: 'research.facts' });
   const raw = parseJsonObject(r.text);
   const list: any[] = Array.isArray(raw?.facts) ? raw.facts : [];
   const facts: ResearchFact[] = [];
