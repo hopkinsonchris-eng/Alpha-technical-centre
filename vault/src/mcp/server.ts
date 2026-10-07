@@ -35,6 +35,7 @@ import { firmDir } from '../jobs/lessons-index.ts';
 import { buildCatalog, resolve, type Catalog } from '../catalog.ts';
 import { countriesWithPack, loadPack, packHeadlines, packMarkdown, termsLines } from '../llm/country-pack.ts';
 import { isCountryCode } from '../opportunities.ts';
+import { countryRiskLines } from '../intel/risk-log.ts';
 
 export interface McpDeps { db: Db; person: Person; now?: () => Date }
 
@@ -346,8 +347,10 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     const country = (await db.query<any>('SELECT country FROM projects WHERE id = $1', [project_id])).rows[0]?.country?.trim?.() ?? null;
     const packRead = country ? await loadPack(db, country) : null;
     const pack = packRead ? { country: packRead.country, assembled_at: packRead.assembled_at, headlines: packHeadlines(packRead) } : null;
+    // Wave 8 (W8-AC6): the country's World Monitor reading and advisories, with the change since the previous reading; nothing without a key.
+    const riskLines = country ? await countryRiskLines(db, country) : [];
     const packLines = pack && packRead ? ['', `## Country pack (${pack.country})`, '', `- Assembled: ${pack.assembled_at ? pack.assembled_at.slice(0, 10) : 'not yet'}; the full pack is vault://countries/${pack.country}/pack.md`, ...termsLines(packRead), ...pack.headlines.map(h => `- ${h.section} (${h.status}${h.due_at ? `, due ${h.due_at}` : ''}): ${h.en || 'not built'}`)] : [];
-    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, pack, markdown: sum.markdown + lines.join('\n') + packLines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
+    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, pack, markdown: sum.markdown + lines.join('\n') + packLines.join('\n') + riskLines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
   }));
 
   server.registerTool('get_item', {

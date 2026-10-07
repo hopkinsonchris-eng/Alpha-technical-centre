@@ -15,6 +15,8 @@
      .select(code, { fly: true })      // fly to a country and highlight it; null clears
      .setRings(['BR', 'PE'])           // wave 7 PR6: a thin gold ring around each country with an open licence
                                        // round, sized to the country's area; onHover carries open: true for it
+     .setRisk(new Map([['VE', { tone: 'red', rising: true, sanctions: true }]]))   // wave 8: the risk halo, tick and mark
+     .setEvents([{ lat, lon }])        // wave 8: the chosen country's conflict events as clustered dots
      .setLang('en' | 'es')
      .destroy()
 
@@ -36,7 +38,12 @@ const COLOURS = {
   point: '#FFFFFF', pointRing: 'rgba(201,168,76,0.9)',
   field: '#F3E9C9', fieldLine: 'rgba(11,31,58,0.9)', fieldHover: '#FFFFFF',
   ring: '#F2DFA0', ringOuter: 'rgba(201,168,76,0.75)',
+  // Wave 8: the risk halo in the register's three tones, and the conflict event dots of the chosen country.
+  haloGreen: '#2E9E6E', haloAmber: '#E0A020', haloRed: '#E25B4A',
+  event: '#FF5A4A', eventLine: 'rgba(255,255,255,0.9)', eventText: '#FFFFFF',
 };
+const HALO_GAP = 9;                     // px outside the round ring, so the two never merge
+const EVENT_CLUSTER_PX = 12;            // event dots closer than this on screen share one dot with a count
 const RING_MIN = 12;                    // px: the smallest ring, so a small country still wears one
 const FIELD_R = 2.6;                    // field points: smaller, no pulse
 const POINT_HIT_PX = 8;                 // hover radius for a point
@@ -74,6 +81,8 @@ export function createGlobe(canvas, opts) {
   let zoom = 1;
   let held = new Map(), points = [];
   let rings = new Set();                // wave 7 PR6: iso2 codes with an open licence round
+  let halos = new Map();                // wave 8: iso2 → {tone: 'green'|'amber'|'red', rising, sanctions}
+  let events = [];                      // wave 8: [{lat, lon, n?}] conflict events of the chosen country
   let hovered = null, selected = null;
   let hoveredPoint = null;              // wave 3: the field point under the pointer
   let visible = [];                     // [{p, x, y}] drawn this frame, for hit testing
@@ -161,6 +170,35 @@ export function createGlobe(canvas, opts) {
       ctx.setLineDash([3, 4]); ctx.strokeStyle = COLOURS.ringOuter; ctx.lineWidth = 1; ctx.globalAlpha = 0.8; ctx.stroke();
       ctx.restore();
     }
+    // Wave 8 (W8-AC2): a halo per held country in the tone of its World Monitor score, outside the round ring: a soft
+    // wide stroke under a thin one, a rising tick at the top when the trend is rising, a sanctions mark at the right.
+    for (const [code, hv] of halos) {
+      const f = byCode.get(code);
+      if (!f) continue;
+      const c = centroid.get(f);
+      if (d3.geoDistance(c, centre) > Math.PI / 2 - 0.05) continue;
+      const xy = projection(c);
+      if (!xy) continue;
+      const theta = Math.acos(Math.max(-1, Math.min(1, 1 - area.get(f) / (2 * Math.PI))));
+      const rr = Math.max(RING_MIN, R * Math.sin(theta) * 1.05 + 6) + HALO_GAP;
+      const tone = hv.tone === 'red' ? COLOURS.haloRed : hv.tone === 'amber' ? COLOURS.haloAmber : COLOURS.haloGreen;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
+      ctx.strokeStyle = tone; ctx.lineWidth = 7; ctx.globalAlpha = 0.28; ctx.stroke();
+      ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
+      ctx.lineWidth = 1.3; ctx.globalAlpha = 0.9; ctx.stroke();
+      if (hv.rising) {                                   // the tick: a small triangle pointing up at twelve o'clock
+        const tx = xy[0], ty = xy[1] - rr;
+        ctx.beginPath(); ctx.moveTo(tx, ty - 7); ctx.lineTo(tx - 5, ty + 2); ctx.lineTo(tx + 5, ty + 2); ctx.closePath();
+        ctx.fillStyle = tone; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = COLOURS.eventLine; ctx.lineWidth = 0.8; ctx.stroke();
+      }
+      if (hv.sanctions) {                                // the mark: a small diamond at three o'clock
+        const mx = xy[0] + rr, my = xy[1];
+        ctx.beginPath(); ctx.moveTo(mx, my - 5); ctx.lineTo(mx + 5, my); ctx.lineTo(mx, my + 5); ctx.lineTo(mx - 5, my); ctx.closePath();
+        ctx.fillStyle = COLOURS.ring; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = tone; ctx.lineWidth = 1; ctx.stroke();
+      }
+      ctx.restore();
+    }
     const pulse = reduced ? 0.5 : (Math.sin(now / 600) + 1) / 2;
     visible = [];
     for (const p of points) {
@@ -176,6 +214,28 @@ export function createGlobe(canvas, opts) {
       ctx.beginPath(); ctx.arc(v.x, v.y, hot ? FIELD_R + 1.5 : FIELD_R, 0, Math.PI * 2);
       ctx.fillStyle = hot ? COLOURS.fieldHover : COLOURS.field; ctx.fill();
       ctx.strokeStyle = COLOURS.fieldLine; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    // Wave 8 (W8-AC4): the chosen country's conflict events, clustered on screen with a count, under the project points.
+    if (events.length) {
+      const clusters = [];
+      for (const e of events) {
+        if (!(Number.isFinite(e.lat) && Number.isFinite(e.lon))) continue;
+        if (d3.geoDistance([e.lon, e.lat], centre) > Math.PI / 2 - 0.02) continue;
+        const xy = projection([e.lon, e.lat]);
+        if (!xy) continue;
+        const hit = clusters.find((k) => Math.hypot(k.x - xy[0], k.y - xy[1]) <= EVENT_CLUSTER_PX);
+        if (hit) { hit.n += 1; hit.x = (hit.x * (hit.n - 1) + xy[0]) / hit.n; hit.y = (hit.y * (hit.n - 1) + xy[1]) / hit.n; }
+        else clusters.push({ x: xy[0], y: xy[1], n: 1 });
+      }
+      ctx.save();
+      for (const k of clusters) {
+        const rad = Math.min(9, 3 + 1.6 * Math.sqrt(k.n - 1));
+        ctx.beginPath(); ctx.arc(k.x, k.y, rad, 0, Math.PI * 2);
+        ctx.fillStyle = COLOURS.event; ctx.globalAlpha = 0.88; ctx.fill();
+        ctx.strokeStyle = COLOURS.eventLine; ctx.lineWidth = 0.8; ctx.globalAlpha = 1; ctx.stroke();
+        if (k.n > 1) { ctx.fillStyle = COLOURS.eventText; ctx.font = '700 9px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(k.n), k.x, k.y + 0.5); }
+      }
+      ctx.restore();
     }
     for (const v of visible) {
       if (v.p.kind === 'field') continue;
@@ -340,6 +400,10 @@ export function createGlobe(canvas, opts) {
     },
     /** Wave 7 PR6: the countries with an open licence round; each wears the ring until the list changes. */
     setRings(codes) { rings = new Set(Array.isArray(codes) ? codes.filter((c) => byCode.has(c)) : []); draw(); schedule(); },
+    /** Wave 8 (W8-AC2): iso2 → {tone, rising, sanctions}; a country without an entry wears no halo. */
+    setRisk(map) { const m = map instanceof Map ? map : new Map(Object.entries(map || {})); halos = new Map([...m].filter(([c, v]) => byCode.has(c) && v && v.tone)); draw(); schedule(); },
+    /** Wave 8 (W8-AC4): the chosen country's conflict events, [{lat, lon}]; an empty list clears them. */
+    setEvents(list) { events = Array.isArray(list) ? list : []; draw(); schedule(); },
     setLang(l) { lang = l; },
     nameOf(code) { const f = byCode.get(code); return f ? { en: f.properties.en, es: f.properties.es } : null; },
     /** The country's geographic centre from its polygon (a computed point, never a guess). */

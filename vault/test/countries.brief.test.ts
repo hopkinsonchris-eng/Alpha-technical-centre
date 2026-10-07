@@ -206,7 +206,10 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
   wmCalls = []; calls = 0;
   const r = await (await partner.request('/api/countries')).json() as any;
   const kz = r.countries.find((c: any) => c.code === 'KZ');
-  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: kz.risk.fetched_at, sanctions_active: false, sanctions_count: 0 });
+  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: kz.risk.fetched_at, sanctions_active: false, sanctions_count: 0, change: null, previous_computed_at: null });
+  // W8-AC1: the first reading is logged once; a second read of the same reading adds no row.
+  await partner.request('/api/countries');
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM country_risk_log WHERE country = 'KZ'")).rows[0].n, 1);
   assert.match(kz.risk.fetched_at, /^\d{4}-/);
   assert.equal(r.world_monitor.status, 'live');
   assert.ok(!JSON.stringify(r).includes(WM_KEY), 'the key is never in a response');
@@ -238,6 +241,10 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
   const fresh = await post(partner, '/api/countries/KZ/brief');
   assert.equal(fresh.body.cached, false);
   assert.equal(calls, 2);
+  // W8-AC1: the moved reading is logged and the summary says what changed since the previous one.
+  const moved = (await (await partner.request('/api/countries')).json() as any).countries.find((c: any) => c.code === 'KZ');
+  assert.equal(moved.risk.score, 80); assert.equal(moved.risk.change, 16); assert.equal(moved.risk.previous_computed_at, '2026-10-01T08:00:00.000Z');
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM country_risk_log WHERE country = 'KZ'")).rows[0].n, 2);
   // A 429 is reported in the brief's meta and the summary, never retried in a loop.
   let hits = 0;
   configureWorldMonitor({ apiKey: WM_KEY, fetch: (async () => { hits++; return new Response('{}', { status: 429, headers: { 'retry-after': '30' } }); }) as unknown as typeof fetch });

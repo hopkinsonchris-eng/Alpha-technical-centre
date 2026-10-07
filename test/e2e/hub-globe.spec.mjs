@@ -653,3 +653,109 @@ test('W7-AC15 (Hub, H5): choosing a country shows its cached brief with its date
   const row = page.locator('#country-projects [data-country-project="ven-barinas"]');
   await expect(row.locator('[data-risk-tag]')).toHaveText('our execution risk Red 78');
 });
+
+
+/* ── wave 8 (docs/vault-hub/wave8/01-risk-on-the-map.md): risk on the map ── */
+
+const RISKY = {
+  ...COUNTRIES,
+  countries: COUNTRIES.countries.map((c) => c.code === 'VE'
+    ? { ...c, risk: { ...c.risk, trend: 'rising', sanctions_active: true, sanctions_count: 212, change: 16, previous_computed_at: '2026-09-01T08:00:00.000Z' } }
+    : c.code === 'KZ' ? { ...c, risk: { score: 45, level: null, trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: '2026-10-01T09:00:00.000Z', sanctions_active: false, sanctions_count: 0, change: null, previous_computed_at: null } } : c),
+};
+
+test('W8-AC2: a halo per held country in the tone of its World Monitor score, a rising tick and a sanctions mark; none without a reading; the legend names every channel in both languages', async ({ page }) => {
+  await stubApi(page, { '/api/countries': (u, r) => json(r, RISKY) });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  const sec = page.locator('#sec-globe');
+  await expect(sec).toHaveAttribute('data-halos', 'KZ:amber,VE:red');
+  await expect(sec).toHaveAttribute('data-halo-rising', 'VE');
+  await expect(sec).toHaveAttribute('data-halo-sanctions', 'VE');
+  const legend = page.locator('#globe-legend');
+  await expect(legend).toBeVisible();
+  for (const k of ['held', 'attention', 'round', 'halo', 'rising', 'sanctions', 'events']) await expect(legend.locator('[data-legend="' + k + '"]')).toHaveCount(1);
+  await expect(legend.locator('[data-legend="halo"]')).toContainText('World Monitor risk');
+  await page.locator('aside .nav-lang button[data-lang="es"]').click();
+  await expect(legend.locator('[data-legend="halo"]')).toContainText('Riesgo World Monitor');
+  await page.locator('aside .nav-lang button[data-lang="en"]').click();
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.locator('#globe').screenshot({ path: path.join(EVIDENCE, 'w8-risk-globe.png') });
+});
+
+test('W8-AC2 (none): countries without a reading wear no halo', async ({ page }) => {
+  await stubApi(page, { '/api/countries': (u, r) => json(r, { ...COUNTRIES, countries: COUNTRIES.countries.map((c) => ({ ...c, risk: null })) }) });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  await expect(page.locator('#sec-globe')).not.toHaveAttribute('data-halos', /.+/);
+  await expect(page.locator('#sec-globe')).not.toHaveAttribute('data-halo-rising', /.+/);
+});
+
+test('W8-AC3: the panel risk line and the register group head carry the trend, the sanctions mark and the change, only when the summary has them', async ({ page }) => {
+  await stubApi(page, { '/api/countries': (u, r) => json(r, RISKY) });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const risk = page.locator('#country-risk');
+  await expect(risk).toContainText('World Monitor 71');
+  await expect(risk.locator('[data-risk-trend]')).toHaveAttribute('data-risk-trend', 'rising');
+  await expect(risk.locator('[data-risk-trend]')).toContainText('rising');
+  await expect(risk.locator('[data-risk-sanctions]')).toContainText('sanctions');
+  await expect(risk.locator('[data-risk-change]')).toHaveAttribute('data-risk-change', '16');
+  await expect(risk.locator('[data-risk-change]')).toContainText('+16 since 1 Sep');
+  await page.locator('#country-back').click();
+  const ve = page.locator('#register [data-country="VE"]');
+  await expect(ve.locator('.hub-risk-n')).toHaveText('World Monitor 71');
+  await expect(ve.locator('[data-risk-trend]')).toHaveAttribute('data-risk-trend', 'rising');
+  await expect(ve.locator('[data-risk-sanctions]')).toHaveCount(1);
+  await expect(ve.locator('[data-risk-change]')).toContainText('+16');
+  const kz = page.locator('#register [data-country="KZ"]');
+  await expect(kz.locator('.hub-risk-n')).toHaveText('World Monitor 45');
+  await expect(kz.locator('[data-risk-trend]')).toHaveCount(0);
+  await expect(kz.locator('[data-risk-sanctions]')).toHaveCount(0);
+  await expect(kz.locator('[data-risk-change]')).toHaveCount(0);
+});
+
+test('W8-AC4, W8-AC5: choosing a country draws its conflict events as clustered dots, writes the near-fields line from the events within 100 km of our fields and the ports line from the tanker calls; leaving clears them; worldmonitor.app is never asked', async ({ page }) => {
+  const leaks = [];
+  await page.route('**/*worldmonitor.app/**', (route) => { leaks.push(route.request().url()); return route.abort(); });
+  const near = { ...INTEL, sections: { ...INTEL.sections,
+    events: { ok: true, data: [
+      { id: 'VEN1', type: 'Protests', sub_type: null, admin1: 'Apure', location: null, lat: 7.2, lon: -70.7, actors: 'Protesters', fatalities: 0, date: '2026-09-28T00:00:00.000Z', notes: null, source: 'ACLED' },
+      { id: 'VEN2', type: 'Violence against civilians', sub_type: null, admin1: 'Barinas', location: null, lat: 8.0, lon: -69.4, actors: 'Unknown', fatalities: 2, date: '2026-09-26T00:00:00.000Z', notes: null, source: 'ACLED' },
+    ], fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+    ports: { ok: true, data: [
+      { id: 'p1', name: 'José', lat: 10.1, lon: -64.8, tanker_calls_30d: 80, trend_pct: -10, import_dwt: null, export_dwt: null, anomaly: false },
+      { id: 'p2', name: 'Puerto La Cruz', lat: 10.2, lon: -64.6, tanker_calls_30d: 40, trend_pct: -4, import_dwt: null, export_dwt: null, anomaly: false },
+    ], fetched_at: '2026-10-01T09:00:00.000Z', cached: false },
+  } };
+  await stubApi(page, { '/api/countries/VE/intel': (u, r) => json(r, near) });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  const sec = page.locator('#sec-globe');
+  await expect(sec).toHaveAttribute('data-events-shown', '2');
+  const nearLine = page.locator('#country-near');
+  await expect(nearLine).toBeVisible();
+  await expect(nearLine).toHaveAttribute('data-near-events', '1');
+  await expect(nearLine).toContainText('1 conflict event within 100 km of our fields in 30 days (2 fatalities)');
+  const ports = page.locator('#country-ports');
+  await expect(ports).toBeVisible();
+  await expect(ports).toContainText('Ports: 120 tanker calls in 30 days across 2 ports · trend −8 %');
+  await page.locator('aside .nav-lang button[data-lang="es"]').click();
+  await expect(nearLine).toContainText('1 evento de conflicto a menos de 100 km de nuestros campos en 30 días (2 víctimas mortales)');
+  await page.locator('aside .nav-lang button[data-lang="en"]').click();
+  await page.locator('#country-back').click();
+  await expect(sec).not.toHaveAttribute('data-events-shown', /.+/);
+  await expect(nearLine).toBeHidden();
+  await expect(ports).toBeHidden();
+  expect(leaks).toEqual([]);
+});
+
+test('W8-AC5 (none): a ports section that did not answer writes no ports line; events outside 100 km count as drawn but not near', async ({ page }) => {
+  await stubApi(page, { '/api/countries/VE/intel': (u, r) => json(r, INTEL) });
+  await page.goto('/hub/index.html?country=VE');
+  await ready(page); await globeReady(page);
+  await expect(page.locator('#sec-globe')).toHaveAttribute('data-events-shown', '1');
+  await expect(page.locator('#country-near')).toHaveAttribute('data-near-events', '0');
+  await expect(page.locator('#country-near')).toContainText('No conflict events within 100 km of our fields in 30 days (1 elsewhere in the country)');
+  await expect(page.locator('#country-ports')).toBeHidden();
+});

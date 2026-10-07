@@ -55,3 +55,8 @@ Two source defects from the same day's reading, fixed with tests: jodidata.org a
 - **No model fetch of PDFs.** The proposal left a path for the provider to read a PDF itself with citations; D67 and the pack's guard rule out the model fetching anything, so every source is fetched by the server and drafted from the stored text.
 - **Round deadlines and What came in.** The round watch's changed page is filed as an item under project `firm`; the activity feed was not changed to surface it, and Today's Deadlines card and the "moved to" line are read from the rounds view instead.
 - **The status strip does not count round proposals.** The Deadlines card does; the strip's figures stay as PR2 defined them.
+
+## Wave 8: risk on the map (7 October)
+
+Chris Hopkinson: "Could we colour countries or give them halos related to the country risk level… What about the risk table that we have in the opportunity register, I liked that." A compressed practice scan (insurers' political risk maps, International SOS, Windward and Lloyd's List, ACLED) and a two-step proposal; the decision, verbatim: "Build both and open pr." Markup and acceptance criteria W8-AC1 to AC6 in `../wave8/01-risk-on-the-map.md`. Shipped in one pull request: a halo per held country in the register's three tones with a rising tick and a sanctions mark, the same marks in the panel's risk line and the register's group head, a legend, the chosen country's ACLED events as clustered dots with a near-our-fields line (100 km) and a ports line, an append-only risk log (migration 013) so the Hub and the connector say what changed since the previous reading, and the risk block in `get_project_context`. Not built, named: a whole-globe tint, events for every held country at once, a dark theme.
+
