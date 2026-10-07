@@ -97,8 +97,10 @@ export async function recordCall(c: CallRecord): Promise<void> {
   if (!c.purpose) return;
   try {
     await guard.db.query(
-      `INSERT INTO audit_events (person_id, action, scope, refs, detail, tokens_in, tokens_cached, tokens_out, cost_usd) VALUES ($1,$2,$3,$4::text[],$5::jsonb,$6,$7,$8,$9)`,
-      [c.by ?? 'system', `llm.${c.purpose}`, c.scope ?? 'firm', c.refs ?? [], JSON.stringify({ model: c.model, ...(c.searches ? { searches: c.searches } : {}), ...(c.detail ?? {}) }), c.usage.input, c.usage.cached, c.usage.output, Math.round(usd * 1e5) / 1e5]);
+      // The row carries the guard's own clock, so the day it lands on is the day the guard reads it back under (7 Oct 2026: a
+      // row stamped by the database's clock fell on the test's "next day" and the new day did not start from zero).
+      `INSERT INTO audit_events (at, person_id, action, scope, refs, detail, tokens_in, tokens_cached, tokens_out, cost_usd) VALUES ($1,$2,$3,$4,$5::text[],$6::jsonb,$7,$8,$9,$10)`,
+      [new Date(guard.clock()).toISOString(), c.by ?? 'system', `llm.${c.purpose}`, c.scope ?? 'firm', c.refs ?? [], JSON.stringify({ model: c.model, ...(c.searches ? { searches: c.searches } : {}), ...(c.detail ?? {}) }), c.usage.input, c.usage.cached, c.usage.output, Math.round(usd * 1e5) / 1e5]);
   } catch (e) {
     if (!guard.warned) { console.warn(`spend guard: a ledger row could not be written (${(e as Error).message})`); guard.warned = true; }
   }
