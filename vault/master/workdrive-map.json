@@ -9,6 +9,15 @@
       "legal_tag": null,
       "recursive": true,
       "enabled": false
+    },
+    {
+      "folder_id": "e31vnead8503f3ca64631957db6c2682eb678",
+      "name": "Alpha technical / Parker Creek",
+      "project_id": "parker-creek",
+      "type": null,
+      "legal_tag": null,
+      "recursive": true,
+      "enabled": true
     }
   ],
   "books": {
