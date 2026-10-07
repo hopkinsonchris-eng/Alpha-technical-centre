@@ -100,6 +100,17 @@ async function setCursor(db: Db, key: string, value: unknown): Promise<void> {
 
 export interface WorkdriveOptions { fetchImpl?: typeof fetch; config?: WorkdriveConfig | null; map?: WorkdriveMap; now?: () => Date; /** Wave 6 (P59): use the Changes API after the first full listing (default true). */ changes?: boolean; /** 7 Oct 2026: new or changed files downloaded in one run (default WORKDRIVE_MAX_FILES_PER_RUN or 150); the rest wait for the next run, which lists in full. */ maxPerRun?: number }
 
+/** Zoho's error code from a refused download (`{"errors":[{"id":"R000","title":"INVALID_OAUTHSCOPE"}]}` or `{"ERROR_MESSAGE":…}`), with the cure when it is the scope. */
+async function zohoError(res: Response): Promise<string> {
+  let body = '';
+  try { body = (await res.text()).slice(0, 500); } catch { return ''; }
+  const code = /INVALID_OAUTHSCOPE/.test(body) ? 'INVALID_OAUTHSCOPE'
+    : (/"(?:title|ERROR_MESSAGE|errorCode|message)"\s*:\s*"([^"]+)"/.exec(body)?.[1] ?? '');
+  if (!code) return '';
+  if (code === 'INVALID_OAUTHSCOPE') return ` ${code} (the download host needs the ZohoFiles.files.READ scope as well as WorkDrive.files.READ: generate a new self-client code with both, exchange it, and replace ZOHO_WORKDRIVE_REFRESH_TOKEN)`;
+  return ` ${code}`;
+}
+
 /* ── wave 6 (P59): the Changes API, one cursor per mapped folder ── */
 interface Change { action: string; group: string; resourceId: string | null; name: string | null; deleted: boolean }
 interface ChangesPage { changes: Change[]; next: string | null; expired: boolean }
@@ -172,12 +183,12 @@ export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptio
     const files: RemoteFile[] = [];
     try { await listFolder(cfg, fetchImpl, folder.folder_id, folder.name ?? folder.folder_id, folder.recursive !== false, files); }
     catch (e) { stats.failed++; stats.errors.push((e as Error).message); continue; }
-    // The changes cursor is stored only once every listed file has been handled: a run that defers files must list in full next time.
+    // The changes cursor is stored only after a clean run (every listed file filed or unchanged); see below.
     const token = opts.changes !== false ? (nextToken ?? await changesStart(cfg, fetchImpl, folder.folder_id)) : null;
     files.sort((a, b) => a.modifiedMs - b.modifiedMs);
     stats.listed += files.length;
     const cap = Math.max(1, Number(opts.maxPerRun ?? process.env.WORKDRIVE_MAX_FILES_PER_RUN ?? 150) || 150);
-    let downloaded = 0, deferred = 0;
+    let downloaded = 0, deferred = 0, failed = 0, refused: string | null = null;
     for (const f of files) {
       try {
         const known = (await db.query<{ id: string; extracted: any }>(
@@ -189,10 +200,16 @@ export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptio
           stats.unchanged++; continue;
         }
         if (f.size > MAX_BYTES) { stats.skipped++; stats.errors.push(`${f.name}: larger than ${MAX_BYTES} bytes, skipped`); continue; }
-        if (downloaded >= cap) { deferred++; continue; }
+        if (downloaded >= cap || refused) { deferred++; continue; }
         downloaded++;
         const dl = await fetchImpl(f.download ?? `${cfg.downloadUrl}/${encodeURIComponent(f.id)}`, { headers: await cfg.auth.headers() });
-        if (!dl.ok) throw new Error(`workdrive download ${f.id} failed (${dl.status})`);
+        if (!dl.ok) {
+          // 7 Oct 2026, live: every download answered 401 INVALID_OAUTHSCOPE (the download host wants ZohoFiles.files.READ as well as
+          // WorkDrive.files.READ), 150 times in one run. A refusal is the token's, not the file's: say so once and let the rest wait.
+          const why = await zohoError(dl);
+          if (dl.status === 401 || dl.status === 403) refused = `${f.name}: workdrive download ${f.id} failed (${dl.status})${why}`;
+          throw new Error(`workdrive download ${f.id} failed (${dl.status})${why}`);
+        }
         const bytes = new Uint8Array(await dl.arrayBuffer());
         const meta: Record<string, unknown> = {
           type: folder.type || inferType(f.name, f.mime), title: f.name, project_id: folder.project_id,
@@ -209,13 +226,16 @@ export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptio
           if (r.version === 1) stats.created++; else stats.versioned++;
           stats.items.push({ id: r.id, version: r.version });
         }
-      } catch (e) { stats.failed++; stats.errors.push(`${f.name}: ${(e as Error).message}`); }
+      } catch (e) { failed++; stats.failed++; stats.errors.push(`${f.name}: ${(e as Error).message}`); }
     }
     if (deferred) {
       stats.deferred = (stats.deferred ?? 0) + deferred;
-      (stats.notes ??= []).push(`${folder.name ?? folder.folder_id}: ${deferred} file${deferred === 1 ? '' : 's'} left for the next run (WORKDRIVE_MAX_FILES_PER_RUN=${cap})`);
-      await db.query('DELETE FROM settings WHERE key = $1', [cursorKey]);
-    } else if (token) await setCursor(db, cursorKey, { token, at: startedAt });
+      (stats.notes ??= []).push(`${folder.name ?? folder.folder_id}: ${deferred} file${deferred === 1 ? '' : 's'} left for the next run (${refused ? 'downloads refused' : `WORKDRIVE_MAX_FILES_PER_RUN=${cap}`})`);
+    }
+    // The changes cursor is stored only after a clean run: a file deferred or failed would otherwise never be asked for again,
+    // because the Changes API reports only what moved on WorkDrive's side (seen live on 7 Oct 2026 after a run of refused downloads).
+    if (deferred || failed) await db.query('DELETE FROM settings WHERE key = $1', [cursorKey]);
+    else if (token) await setCursor(db, cursorKey, { token, at: startedAt });
   }
   await setCursor(db, 'workdrive:last_sync', { at: startedAt, ...stats, items: undefined });
   return stats;
