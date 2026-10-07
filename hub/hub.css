@@ -1226,7 +1226,7 @@ body[data-ready] .hub-project #p-skeleton { display: none; }
    (its values turn into the chosen country's own, W8-AC8); the register follows below, full width. */
 .hub .hub-globe { grid-template-columns: 1fr; gap: 18px; align-items: start; margin-bottom: 0; }
 .hub .hub-globe-stage { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: center; }
-.hub .hub-globe-wrap { width: min(100%, 720px); max-height: none; margin: 0 auto; background: none; border-radius: 0; box-shadow: none; overflow: visible; align-self: center; }
+.hub .hub-globe-wrap { width: min(100%, 720px, 70vh); max-height: none; margin: 0 auto; background: none; border-radius: 0; box-shadow: none; overflow: visible; align-self: center; }   /* 70vh: the whole globe on the first screen */
 .hub .hub-globe-hint { position: static; margin: -6px 0 0; text-align: center; color: var(--muted); }
 .hub .hub-globe-legend { position: static; max-width: none; display: grid; gap: 10px; font-size: 12px; letter-spacing: .03em; color: var(--navy-mid); align-self: center; }
 .hub .hub-globe-legend li { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 8px; align-items: start; white-space: normal; overflow: visible; }
@@ -1236,13 +1236,11 @@ body[data-ready] .hub-project #p-skeleton { display: none; }
 .hub .hub-globe-legend .lg-value:empty { display: none; }
 .hub .hub-globe-legend[data-country] .lg-name { color: var(--muted); }
 .hub .hub-globe-side { display: block; height: auto; min-height: 0; }
-.hub .hub-register-live { flex: none; max-height: 60vh; overflow-y: auto; }
-.hub #country-panel { flex: none; max-height: none; overflow: visible; }
 .hub .hub-globe-side .hub-reg-head { margin-bottom: 8px; flex: none; }
 .hub .hub-globe-side .hub-reg-head h2 { font-size: 1.25rem; }
 .hub .hub-reg-filters { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; flex: none; font-size: 12.5px; }
 .hub .hub-reg-filters .hub-select { font: inherit; font-size: 12.5px; padding: 4px 8px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--white); color: var(--navy); min-height: 32px; }
-.hub .hub-register-live { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.hub .hub-register-live { flex: none; min-height: 48px; max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }   /* wave 8: its own box below the stage */
 .hub .hub-reg-group { margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 0; }
 .hub .hub-reg-group .hub-country { border-radius: var(--r-lg) var(--r-lg) 0 0; position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--rule); min-height: 44px; }
 .hub .hub-reg-group div.hub-country { cursor: default; }
@@ -1259,7 +1257,7 @@ body[data-ready] .hub-project #p-skeleton { display: none; }
 .hub .hub-country-projects .hub-country-project { display: block; padding: 6px 14px 10px; }
 .hub .hub-country-project .hub-stateline-row { border-bottom: none; }
 .hub .hub-country-project .flags, .hub .hub-country-project .hub-country-fields { margin-top: 4px; }
-.hub #country-panel { min-height: 0; overflow-y: auto; flex: 1 1 0; padding-right: 4px; }
+.hub #country-panel { min-height: 0; overflow: visible; flex: none; padding-right: 4px; }
 .hub .hub-create-here { margin-top: 10px; }
 @media (max-width: 900px) {
   .hub .hub-globe { grid-template-columns: 1fr; gap: 16px; }

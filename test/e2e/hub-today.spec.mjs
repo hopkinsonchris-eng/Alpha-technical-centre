@@ -361,13 +361,17 @@ for (const vp of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }]) {
     await ready(page); await globeReady(page);
     await fits(page, '#hub-strip', vp.height);
     await fits(page, '#globe', vp.height);
-    await fits(page, '#register [data-register-row]', vp.height);
-    await fits(page, '#register [data-country-group] .hub-country', vp.height);
-    // The globe takes 55 % of the row, the register the rest, scrolling inside its column.
+    // Wave 8 (W8-AC7, revising this criterion at Chris's request on 7 October): the first screen is the strip, the globe
+    // centred on a full-width stage without a box, and the legend on its right; the live register is the band below,
+    // scrolling inside its own box. The globe is still the door: a tap on a dot lights the row and scrolls it into view.
+    await fits(page, '#globe-legend', vp.height);
     const row = await page.locator('.hub-globe').boundingBox();
     const globe = await page.locator('.hub-globe-wrap').boundingBox();
-    expect(globe.width / row.width).toBeGreaterThan(0.5);
-    expect(globe.width / row.width).toBeLessThan(0.6);
+    const legend = await page.locator('#globe-legend').boundingBox();
+    expect(globe.width / row.width).toBeGreaterThan(0.45);
+    expect(legend.x).toBeGreaterThanOrEqual(globe.x + globe.width);
+    const regBox = await page.locator('#register').boundingBox();
+    expect(regBox.y).toBeGreaterThanOrEqual(globe.y + globe.height);
     const reg = page.locator('#register');
     expect(await reg.evaluate((el) => el.scrollHeight > el.clientHeight && /auto|scroll/.test(getComputedStyle(el).overflowY))).toBe(true);
     // One stateline row per project, grouped by country, with "Create a project here" as an outline action at the end of each group.
