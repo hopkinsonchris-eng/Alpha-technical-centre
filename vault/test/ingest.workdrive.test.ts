@@ -37,11 +37,12 @@ function recorded(tick: { value: 't1' | 't2' }, bytes: Record<string, Uint8Array
     const list = /\/files\/([^/]+)\/files$/.exec(url.pathname);
     if (list) {
       assert.equal(url.searchParams.get('page[limit]'), '50');
+      assert.equal(url.searchParams.get('sort'), '-last_modified', 'the live API answers "Invalid Param found" to -modified_time (7 Oct 2026)');
       const file = { F1: `workdrive/list-root-${tick.value}.json`, SUB1: `workdrive/list-legal-${tick.value}.json` }[list[1]];
       return file ? Response.json(readJson(file)) : new Response('{}', { status: 404 });
     }
     const dl = /^\/v1\/workdrive\/download\/([^/]+)$/.exec(url.pathname);
-    if (dl && url.host === 'download.zoho.com') {
+    if (dl && /^download(-accl)?\.zoho\.(com|eu)$/.test(url.host)) {
       const b = bytes[dl[1]];
       return b === undefined ? new Response('gone', { status: 404 }) : new Response(b as BodyInit, { status: 200 });
     }
@@ -79,7 +80,7 @@ test('sync: new files become items, modified files become versions, unchanged fi
   const { fetchImpl, log } = recorded(tick, bytes);
   const config = workdriveConfig(ENV, fetchImpl);
   const sink = appSink(h.app);
-  const downloads = () => log.filter(l => l.includes('download.zoho.com')).length;
+  const downloads = () => log.filter(l => /download(-accl)?\.zoho\./.test(l)).length;
 
   // 1. everything is new (the subfolder is walked)
   const first = await syncWorkdrive(h.db, sink, { fetchImpl, config, map: MAP });
@@ -190,3 +191,43 @@ test('the sync job reports a source that is not configured instead of failing, a
   assert.equal(bad.failed, 1);
   assert.match(bad.errors[0], /list F1 failed \(500\)/);
 });
+
+/* ── 7 October 2026: the first live run against the EU data centre ── */
+
+test('live shape: the byte size comes from storage_info.size_in_bytes (size is "976.06 KB"), a file past the cap is skipped and named, the file\'s own download_url is used, and a run files at most maxPerRun new files, leaving the rest for the next run with the full listing kept', async () => {
+  const nda = readFixture('nda.txt');
+  const entry = (id: string, name: string, bytes: number, extra: any = {}) => ({ id, type: 'files', attributes: { name, extn: name.split('.').pop(), type: 'document', is_folder: false, modified_time_in_millisecond: 1791371482525, storage_info: { size: '976.06 KB', size_in_bytes: bytes }, permalink: `https://workdrive.zoho.eu/file/${id}`, ...extra } });
+  const listing = { data: [
+    entry('eu-001', 'One.txt', nda.length, { download_url: 'https://download-accl.zoho.eu/v1/workdrive/download/eu-001' }),
+    entry('eu-002', 'Huge.txt', 60 * 1024 * 1024),
+    entry('eu-003', 'Three.txt', nda.length),
+  ] };
+  const log: string[] = [];
+  const fetchImpl = (async (input: string | URL, init?: RequestInit) => {
+    const url = new URL(String(input));
+    log.push(`${init?.method ?? 'GET'} ${url.host}${url.pathname}${url.search}`);
+    if (url.pathname === '/oauth/v2/token') return Response.json(readJson('workdrive/token.json'));
+    if (/^\/api\/v1\/changes\//.test(url.pathname)) return Response.json({ data: { token: 'tok-eu' } });
+    if (url.pathname === '/api/v1/changes') return Response.json({ data: [], cursor: { next: null, has_next: false } });
+    if (/\/files\/EU1\/files$/.test(url.pathname)) return Response.json(listing);
+    if (/\/v1\/workdrive\/download\//.test(url.pathname)) return new Response(nda as BodyInit, { status: 200 });
+    return new Response('unexpected', { status: 500 });
+  }) as unknown as typeof fetch;
+  const config = workdriveConfig({ ...ENV, ZOHO_WORKDRIVE_API_URL: 'https://workdrive.zoho.eu/api/v1', ZOHO_WORKDRIVE_DOWNLOAD_URL: 'https://download.zoho.eu/v1/workdrive/download', ZOHO_WORKDRIVE_ACCOUNTS_URL: 'https://accounts.zoho.eu' } as any, fetchImpl);
+  const map = { folders: [{ folder_id: 'EU1', name: 'Parker Creek', project_id: 'orinoco-partnership', recursive: true, enabled: true }] } as any;
+  const sink = appSink(h.app);
+  const first = await syncWorkdrive(h.db, sink, { fetchImpl, config, map, maxPerRun: 1 });
+  assert.equal(first.listed, 3);
+  assert.equal(first.created, 1, first.errors.join('; '));
+  assert.equal(first.skipped, 1); assert.ok(first.errors.some(e => /Huge\.txt: larger than/.test(e)), 'the file past the cap is named');
+  assert.equal(first.deferred, 1, 'one new file is left for the next run');
+  assert.ok(first.notes?.some(n => /1 file.* left for the next run/.test(n)), JSON.stringify(first.notes));
+  assert.ok(log.some(l => l.startsWith('GET download-accl.zoho.eu/v1/workdrive/download/eu-001')), 'the file\'s own download_url is used');
+  assert.ok(!log.some(l => l.includes('download/eu-003')), 'the deferred file was not downloaded');
+  assert.equal((await h.db.query<any>(`SELECT value FROM settings WHERE key = 'workdrive:changes:EU1'`)).rows.length, 0, 'no changes cursor while files are deferred: the next run lists in full');
+  const second = await syncWorkdrive(h.db, sink, { fetchImpl, config, map, maxPerRun: 1 });
+  assert.equal(second.created, 1); assert.equal(second.unchanged, 1); assert.equal(second.deferred, 0);
+  assert.ok(log.some(l => l.includes('download.zoho.eu/v1/workdrive/download/eu-003')), 'without a download_url the configured download host is used');
+  assert.equal((await h.db.query<any>(`SELECT value FROM settings WHERE key = 'workdrive:changes:EU1'`)).rows.length, 1, 'the changes cursor is stored once nothing is deferred');
+});
+
