@@ -190,11 +190,18 @@ export async function energyProfile(code: string): Promise<WmResult<EnergyProfil
   const r = await get('/api/intelligence/v1/get-country-energy-profile', { country_code: code });
   if (!r.ok) return r;
   const d = r.data ?? {};
-  const mix = d.mixAvailable ? { coal: num(d.coalShare) ?? 0, gas: num(d.gasShare) ?? 0, oil: num(d.oilShare) ?? 0, nuclear: num(d.nuclearShare) ?? 0, renewables: num(d.renewShare) ?? 0, hydro: num(d.hydroShare) ?? 0, wind: num(d.windShare) ?? 0, solar: num(d.solarShare) ?? 0 } : null;
+  // The live feed gives the shares as percentages (hydro 91.102, gas 4.493 … summing to 100; 7 Oct 2026); recorded shapes
+  // gave fractions summing to 1. Both are read as shares of 1: a set that sums past 1.5 is a percentage set.
+  const rawMix = d.mixAvailable ? { coal: num(d.coalShare) ?? 0, gas: num(d.gasShare) ?? 0, oil: num(d.oilShare) ?? 0, nuclear: num(d.nuclearShare) ?? 0, renewables: num(d.renewShare) ?? 0, hydro: num(d.hydroShare) ?? 0, wind: num(d.windShare) ?? 0, solar: num(d.solarShare) ?? 0 } : null;
+  const pctSet = !!rawMix && (rawMix.coal + rawMix.gas + rawMix.oil + rawMix.nuclear + rawMix.hydro + rawMix.wind + rawMix.solar > 1.5);
+  const share = (v: number) => Math.round((pctSet ? v / 100 : v) * 1e5) / 1e5;
+  const mix = rawMix ? Object.fromEntries(Object.entries(rawMix).map(([k, v]) => [k, share(v)])) as typeof rawMix : null;
+  const importRaw = num(d.importShare);
+  const importShare = importRaw === null ? null : importRaw > 1 ? Math.round(importRaw / 100 * 1e5) / 1e5 : importRaw;
   const oil = d.jodiOilAvailable ? { data_month: str(d.jodiOilDataMonth), crude_imports_kbd: num(d.crudeImportsKbd), gasoline_demand_kbd: num(d.gasolineDemandKbd), gasoline_imports_kbd: num(d.gasolineImportsKbd), diesel_demand_kbd: num(d.dieselDemandKbd), diesel_imports_kbd: num(d.dieselImportsKbd), jet_demand_kbd: num(d.jetDemandKbd), jet_imports_kbd: num(d.jetImportsKbd), lpg_demand_kbd: num(d.lpgDemandKbd), lpg_imports_kbd: num(d.lpgImportsKbd) } : null;
   const gas = d.jodiGasAvailable ? { data_month: str(d.jodiGasDataMonth), total_demand_tj: num(d.gasTotalDemandTj), lng_imports_tj: num(d.gasLngImportsTj), pipe_imports_tj: num(d.gasPipeImportsTj), lng_share: num(d.gasLngShare), storage_fill_pct: d.gasStorageAvailable ? num(d.gasStorageFillPct) : null, storage_trend: d.gasStorageAvailable ? str(d.gasStorageTrend) : null } : null;
   const stocks = d.ieaStocksAvailable ? Object.fromEntries(Object.entries(d).filter(([k]) => /^ieaStocks/.test(k) && k !== 'ieaStocksAvailable').map(([k, v]) => [k.replace(/^ieaStocks/, '').replace(/^[A-Z]/, m => m.toLowerCase()), typeof v === 'number' ? v : str(v)])) : null;
-  return { ...r, data: { mix_year: num(d.mixYear), mix, import_share: num(d.importShare), oil, gas, stocks, raw: d } };
+  return { ...r, data: { mix_year: num(d.mixYear), mix, import_share: importShare, oil, gas, stocks, raw: d } };
 }
 
 /** GET /api/intelligence/v1/get-country-port-activity: tanker traffic by port. */
@@ -238,7 +245,7 @@ export async function sanctions(code: string): Promise<WmResult<Sanctions>> {
   const c = list(d, 'countries').find((x: any) => String(x.countryCode ?? '').toUpperCase() === code);
   const recent = list(d, 'entries').filter((e: any) => (e.countryCodes ?? []).map((x: string) => x.toUpperCase()).includes(code)).slice(0, 12)
     .map((e: any) => ({ name: String(e.name ?? ''), type: enumWord(e.entityType), programs: list(e, 'programs').map(String), effective_at: whenIso(e.effectiveAt), is_new: !!e.isNew }));
-  return { ...r, data: { entries: num(c?.entryCount), new_entries: num(c?.newEntryCount), vessels: num(c?.vesselCount), aircraft: num(c?.aircraftCount), dataset_date: str(d.datasetDate), recent } };
+  return { ...r, data: { entries: num(c?.entryCount), new_entries: num(c?.newEntryCount), vessels: num(c?.vesselCount), aircraft: num(c?.aircraftCount), dataset_date: whenIso(d.datasetDate)?.slice(0, 10) ?? str(d.datasetDate), recent } };
 }
 
 /** GET /api/resilience/v1/get-resilience-score (Pro): the Country Resilience Index. */
