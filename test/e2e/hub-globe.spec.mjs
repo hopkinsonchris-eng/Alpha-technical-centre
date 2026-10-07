@@ -676,6 +676,12 @@ test('W8-AC2: a halo per held country in the tone of its World Monitor score, a 
   await expect(legend).toBeVisible();
   for (const k of ['held', 'attention', 'round', 'halo', 'rising', 'sanctions', 'events']) await expect(legend.locator('[data-legend="' + k + '"]')).toHaveCount(1);
   await expect(legend.locator('[data-legend="halo"]')).toContainText('World Monitor risk');
+  // The three risk dots keep their size side by side (7 Oct: "the legends next to World Monitor risk are squashed").
+  const dots = legend.locator('[data-legend="halo"] .hub-lg-swatch.halo i');
+  await expect(dots).toHaveCount(3);
+  for (let i = 0; i < 3; i++) { const b = await dots.nth(i).boundingBox(); expect(b.width, 'dot ' + i).toBeGreaterThanOrEqual(10); expect(Math.abs(b.width - b.height), 'dot ' + i + ' is round').toBeLessThan(1); }
+  const [d0, d1] = [await dots.nth(0).boundingBox(), await dots.nth(1).boundingBox()];
+  expect(d1.x).toBeGreaterThanOrEqual(d0.x + d0.width);
   await page.locator('aside .nav-lang button[data-lang="es"]').click();
   await expect(legend.locator('[data-legend="halo"]')).toContainText('Riesgo World Monitor');
   await page.locator('aside .nav-lang button[data-lang="en"]').click();

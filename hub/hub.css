@@ -1229,7 +1229,9 @@ body[data-ready] .hub-project #p-skeleton { display: none; }
 .hub .hub-globe-wrap { width: min(100%, 720px, 70vh); max-height: none; margin: 0 auto; background: none; border-radius: 0; box-shadow: none; overflow: visible; align-self: center; }   /* 70vh: the whole globe on the first screen */
 .hub .hub-globe-hint { position: static; margin: -6px 0 0; text-align: center; color: var(--muted); }
 .hub .hub-globe-legend { position: static; max-width: none; display: grid; gap: 10px; font-size: 12px; letter-spacing: .03em; color: var(--navy-mid); align-self: center; }
-.hub .hub-globe-legend li { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 8px; align-items: start; white-space: normal; overflow: visible; }
+.hub .hub-globe-legend li { display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 8px; align-items: start; white-space: normal; overflow: visible; }   /* 40px: the three risk dots side by side, never squashed */
+.hub .hub-globe-legend .hub-lg-swatch.halo { width: 40px; gap: 3px; }
+.hub .hub-globe-legend .hub-lg-swatch.halo i { flex: none; width: 11px; height: 11px; border-width: 3px; }
 .hub .hub-globe-legend .hub-lg-swatch, .hub .hub-globe-legend .hub-lg-mark { margin-top: 2px; }
 .hub .hub-globe-legend .hub-lg-mark { color: var(--gold); }
 .hub .hub-globe-legend .lg-value { grid-column: 2; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
