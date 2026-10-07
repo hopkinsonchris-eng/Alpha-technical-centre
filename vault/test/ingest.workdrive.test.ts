@@ -231,3 +231,59 @@ test('live shape: the byte size comes from storage_info.size_in_bytes (size is "
   assert.equal((await h.db.query<any>(`SELECT value FROM settings WHERE key = 'workdrive:changes:EU1'`)).rows.length, 1, 'the changes cursor is stored once nothing is deferred');
 });
 
+
+test('live (7 Oct 2026, 13:45 UTC): a download refused with 401 INVALID_OAUTHSCOPE stops the folder after one named error with the scope to add, the rest of the files wait, the changes cursor is not stored, and the next run with a good token lists in full and files everything', async () => {
+  const nda = readFixture('nda.txt');
+  const entry = (id: string, name: string) => ({ id, type: 'files', attributes: { name, extn: 'txt', type: 'document', is_folder: false, modified_time_in_millisecond: 1791371482525, storage_info: { size: '1 KB', size_in_bytes: nda.length }, permalink: `https://workdrive.zoho.eu/file/${id}`, download_url: `https://download-accl.zoho.eu/v1/workdrive/download/${id}` } });
+  const listing = { data: [entry('sc-001', 'One.txt'), entry('sc-002', 'Two.txt'), entry('sc-003', 'Three.txt')] };
+  const log: string[] = [];
+  let download: 'refused' | 'missing' | 'ok' = 'refused';
+  const fetchImpl = (async (input: string | URL, init?: RequestInit) => {
+    const url = new URL(String(input));
+    log.push(`${init?.method ?? 'GET'} ${url.host}${url.pathname}${url.search}`);
+    if (url.pathname === '/oauth/v2/token') return Response.json(readJson('workdrive/token.json'));
+    if (/^\/api\/v1\/changes\//.test(url.pathname)) return Response.json({ data: { token: 'tok-sc' } });
+    if (url.pathname === '/api/v1/changes') return Response.json({ data: [], cursor: { next: null, has_next: false } });
+    if (/\/files\/SC1\/files$/.test(url.pathname)) return Response.json(listing);
+    if (/\/v1\/workdrive\/download\//.test(url.pathname)) {
+      if (download === 'refused') return new Response(JSON.stringify({ errors: [{ id: 'R000', title: 'INVALID_OAUTHSCOPE' }] }), { status: 401 });
+      if (download === 'missing' && url.pathname.endsWith('sc-002')) return new Response('{"errors":[{"id":"R001","title":"URL_RULE_NOT_CONFIGURED"}]}', { status: 404 });
+      return new Response(nda as BodyInit, { status: 200 });
+    }
+    return new Response('unexpected', { status: 500 });
+  }) as unknown as typeof fetch;
+  const config = workdriveConfig({ ...ENV, ZOHO_WORKDRIVE_API_URL: 'https://workdrive.zoho.eu/api/v1', ZOHO_WORKDRIVE_DOWNLOAD_URL: 'https://download.zoho.eu/v1/workdrive/download', ZOHO_WORKDRIVE_ACCOUNTS_URL: 'https://accounts.zoho.eu' } as any, fetchImpl);
+  const map = { folders: [{ folder_id: 'SC1', name: 'Scoped', project_id: 'orinoco-partnership', recursive: true, enabled: true }] } as any;
+  const sink = appSink(h.app);
+  const downloads = () => log.filter(l => /download(-accl)?\.zoho\./.test(l)).length;
+  const cursorRows = async () => (await h.db.query<any>(`SELECT value FROM settings WHERE key = 'workdrive:changes:SC1'`)).rows.length;
+
+  // 1. the token lacks ZohoFiles.files.READ: one download is tried, one error says so, the rest wait
+  const first = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.equal(first.listed, 3);
+  assert.equal(first.created, 0);
+  assert.equal(first.failed, 1, 'one failure, not one per file');
+  assert.equal(downloads(), 1, 'a refused download is not retried file by file');
+  assert.equal(first.errors.length, 1, first.errors.join('; '));
+  assert.match(first.errors[0], /One\.txt: workdrive download sc-001 failed \(401\) INVALID_OAUTHSCOPE/);
+  assert.match(first.errors[0], /ZohoFiles\.files\.READ/, 'the error names the scope the download host needs');
+  assert.equal(first.deferred, 2, 'the other files wait for a run with a good token');
+  assert.ok(first.notes?.some(n => /Scoped: 2 files left for the next run \(downloads refused\)/.test(n)), JSON.stringify(first.notes));
+  assert.equal(await cursorRows(), 0, 'no changes cursor after a refused download: the next run lists in full');
+
+  // 2. one file fails for its own reason: the others are filed, the cursor still waits for a clean run
+  download = 'missing';
+  const second = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.equal(second.created, 2, second.errors.join('; '));
+  assert.equal(second.failed, 1);
+  assert.match(second.errors[0], /Two\.txt: workdrive download sc-002 failed \(404\) URL_RULE_NOT_CONFIGURED$/);
+  assert.equal(await cursorRows(), 0, 'a failed download keeps the full listing for the next run');
+
+  // 3. a good token: the listing is in full, the missing file is filed, and the cursor is stored
+  download = 'ok';
+  const third = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.deepEqual([third.created, third.unchanged, third.failed, third.deferred], [1, 2, 0, 0], third.errors.join('; '));
+  assert.equal(await cursorRows(), 1, 'the changes cursor is stored once every file is filed');
+  const fourth = await syncWorkdrive(h.db, sink, { fetchImpl, config, map });
+  assert.equal(fourth.unchanged_by_changes, 1, 'the next run asks the Changes API and lists nothing');
+});

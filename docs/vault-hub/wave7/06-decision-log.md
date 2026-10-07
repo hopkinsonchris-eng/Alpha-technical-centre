@@ -62,3 +62,7 @@ Chris Hopkinson: "Could we colour countries or give them halos related to the co
 
 First live look, the same morning: "The legend is poorly positioned. Can we make the globe bigger in the centre of the screen and not in a blue box with the legend on its right side. If I click on a country on the globe and it goes to the static 2D map the legend should show the actual values." Done as W8-AC7 and W8-AC8: the globe on a full-width stage with no box, the legend a column on its right that turns into the chosen country's values, the register below.
 
+## WorkDrive first live sync (7 October, afternoon)
+
+The Parker Creek folder (2,295 files) listed cleanly once the EU hosts, the `-last_modified` sort and the per-run cap were in (PR 77), but the 13:45 UTC run refused all 150 downloads with 401: the download host (download.zoho.eu) checks the `ZohoFiles.files.READ` scope, which the setup note did not ask for, so the listing worked and the download did not. Fixed on the owner's side with a new self-client code carrying that scope. In code: a refused download (401/403) now stops the folder after one error naming Zoho's code and the scope to add, the rest wait, and the changes cursor is stored only after a clean run, since a deferred or failed file would otherwise never be asked for again. Three files over 50 MB (a LOGDATA.BLB and two mud-log TIFFs) are skipped by the cap and named in the log; raising the cap is a separate decision.
+
