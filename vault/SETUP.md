@@ -119,7 +119,7 @@ each one in Render → `atc-vault-api` → **Environment** (and the same
 
 | Variable | Where it comes from |
 |---|---|
-| `ZOHO_WORKDRIVE_*` | Zoho API console (https://api-console.zoho.com) → **Self Client** → generate a code with scopes `WorkDrive.files.READ, WorkDrive.teamfolders.READ` → exchange for a refresh token. Then map team folders to projects in `vault/master/workdrive-map.json`. |
+| `ZOHO_WORKDRIVE_*` | Zoho API console (https://api-console.zoho.eu for an EU account, .com otherwise) → **Self Client** → generate a code with scopes `WorkDrive.files.READ,WorkDrive.teamfolders.READ` → exchange it within ten minutes: `curl -s -X POST "https://accounts.zoho.eu/oauth/v2/token" -d "grant_type=authorization_code" -d "client_id=…" -d "client_secret=…" -d "code=…"` (one line, no space after any `=`) → `ZOHO_WORKDRIVE_CLIENT_ID`, `_CLIENT_SECRET`, `_REFRESH_TOKEN`. An EU account also needs `ZOHO_WORKDRIVE_ACCOUNTS_URL=https://accounts.zoho.eu`, `ZOHO_WORKDRIVE_API_URL=https://workdrive.zoho.eu/api/v1` and `ZOHO_WORKDRIVE_DOWNLOAD_URL=https://download.zoho.eu/v1/workdrive/download`. Put them on the `vault-storage` group with `atc-vault-ingest-sync` linked. Then map team folders to projects in `vault/master/workdrive-map.json` (the project must exist in the Vault). A run downloads at most `WORKDRIVE_MAX_FILES_PER_RUN` new or changed files (default 150) and leaves the rest for the next quarter hour. |
 | `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, `ZOHO_BOOKS_REFRESH_TOKEN` | Same console, scopes `ZohoBooks.invoices.READ, ZohoBooks.purchaseorders.READ, ZohoBooks.expenses.READ`. Skip if invoicing is not in Zoho Books. |
 
 **External APEX apps (D6)**

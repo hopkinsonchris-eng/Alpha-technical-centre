@@ -47,10 +47,10 @@ export function workdriveConfig(env: NodeJS.ProcessEnv = process.env, fetchImpl?
   };
 }
 
-export interface SyncStats { listed: number; created: number; versioned: number; unchanged: number; skipped: number; failed: number; errors: string[]; items: Array<{ id: string; version: number }>; /** wave 6 */ moved?: number; hidden?: number; unchanged_by_changes?: number }
-const emptyStats = (): SyncStats => ({ listed: 0, created: 0, versioned: 0, unchanged: 0, skipped: 0, failed: 0, errors: [], items: [] });
+export interface SyncStats { listed: number; created: number; versioned: number; unchanged: number; skipped: number; failed: number; errors: string[]; items: Array<{ id: string; version: number }>; /** 7 Oct 2026: new or changed files left for the next run by the per-run cap */ deferred?: number; notes?: string[]; /** wave 6 */ moved?: number; hidden?: number; unchanged_by_changes?: number }
+const emptyStats = (): SyncStats => ({ listed: 0, created: 0, versioned: 0, unchanged: 0, skipped: 0, failed: 0, errors: [], items: [], deferred: 0, notes: [] });
 
-interface RemoteFile { id: string; name: string; mime: string; size: number; modifiedMs: number; path: string; url?: string }
+interface RemoteFile { id: string; name: string; mime: string; size: number; modifiedMs: number; path: string; url?: string; /** the file's own download URL from the listing (the EU data centre answers on download-accl.zoho.eu) */ download?: string }
 
 const modifiedMs = (a: any): number => {
   const n = Number(a?.modified_time_in_millisecond ?? a?.modified_time_i);
@@ -68,7 +68,8 @@ const MIME_BY_EXT: Record<string, string> = {
 /** JSON:API listing of a folder, paged 50 at a time, newest first (sort=-modified_time). */
 async function listFolder(cfg: WorkdriveConfig, fetchImpl: typeof fetch, folderId: string, trail: string, recursive: boolean, out: RemoteFile[]): Promise<void> {
   for (let offset = 0; ; offset += 50) {
-    const url = `${cfg.apiUrl}/files/${encodeURIComponent(folderId)}/files?page%5Blimit%5D=50&page%5Boffset%5D=${offset}&sort=-modified_time`;
+    // sort=-last_modified: the live API (EU, 7 Oct 2026) answers "Invalid Param found" to -modified_time.
+    const url = `${cfg.apiUrl}/files/${encodeURIComponent(folderId)}/files?page%5Blimit%5D=50&page%5Boffset%5D=${offset}&sort=-last_modified`;
     const res = await fetchImpl(url, { headers: await cfg.auth.headers({ accept: 'application/vnd.api+json' }) });
     if (!res.ok) throw new Error(`workdrive list ${folderId} failed (${res.status})`);
     const j: any = await res.json();
@@ -81,9 +82,12 @@ async function listFolder(cfg: WorkdriveConfig, fetchImpl: typeof fetch, folderI
         continue;
       }
       const ext = (a.extn ?? /\.([A-Za-z0-9]+)$/.exec(name)?.[1] ?? '').toLowerCase();
+      // The byte count is storage_info.size_in_bytes; storage_info.size is a display string ("976.06 KB") on the live API.
+      const size = Number(a.storage_info?.size_in_bytes ?? a.size_in_bytes ?? a.storage_info?.size ?? a.size ?? 0);
       out.push({
-        id: d.id, name: /\.[A-Za-z0-9]+$/.test(name) || !ext ? name : `${name}.${ext}`, size: Number(a.storage_info?.size ?? a.size ?? 0),
+        id: d.id, name: /\.[A-Za-z0-9]+$/.test(name) || !ext ? name : `${name}.${ext}`, size: Number.isFinite(size) ? size : 0,
         mime: a.content_type ?? MIME_BY_EXT[ext] ?? 'application/octet-stream', modifiedMs: modifiedMs(a), path: trail, url: a.permalink,
+        ...(typeof a.download_url === 'string' && /^https:\/\//.test(a.download_url) ? { download: a.download_url } : {}),
       });
     }
     if (data.length < 50) break;
@@ -94,7 +98,7 @@ async function setCursor(db: Db, key: string, value: unknown): Promise<void> {
   await db.query(`INSERT INTO settings (key, value, updated_by) VALUES ($1, $2::jsonb, 'ingest-sync') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_by = 'ingest-sync', updated_at = now()`, [key, JSON.stringify(value)]);
 }
 
-export interface WorkdriveOptions { fetchImpl?: typeof fetch; config?: WorkdriveConfig | null; map?: WorkdriveMap; now?: () => Date; /** Wave 6 (P59): use the Changes API after the first full listing (default true). */ changes?: boolean }
+export interface WorkdriveOptions { fetchImpl?: typeof fetch; config?: WorkdriveConfig | null; map?: WorkdriveMap; now?: () => Date; /** Wave 6 (P59): use the Changes API after the first full listing (default true). */ changes?: boolean; /** 7 Oct 2026: new or changed files downloaded in one run (default WORKDRIVE_MAX_FILES_PER_RUN or 150); the rest wait for the next run, which lists in full. */ maxPerRun?: number }
 
 /* ── wave 6 (P59): the Changes API, one cursor per mapped folder ── */
 interface Change { action: string; group: string; resourceId: string | null; name: string | null; deleted: boolean }
@@ -168,9 +172,12 @@ export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptio
     const files: RemoteFile[] = [];
     try { await listFolder(cfg, fetchImpl, folder.folder_id, folder.name ?? folder.folder_id, folder.recursive !== false, files); }
     catch (e) { stats.failed++; stats.errors.push((e as Error).message); continue; }
-    if (opts.changes !== false) { const t = nextToken ?? await changesStart(cfg, fetchImpl, folder.folder_id); if (t) await setCursor(db, cursorKey, { token: t, at: startedAt }); }
+    // The changes cursor is stored only once every listed file has been handled: a run that defers files must list in full next time.
+    const token = opts.changes !== false ? (nextToken ?? await changesStart(cfg, fetchImpl, folder.folder_id)) : null;
     files.sort((a, b) => a.modifiedMs - b.modifiedMs);
     stats.listed += files.length;
+    const cap = Math.max(1, Number(opts.maxPerRun ?? process.env.WORKDRIVE_MAX_FILES_PER_RUN ?? 150) || 150);
+    let downloaded = 0, deferred = 0;
     for (const f of files) {
       try {
         const known = (await db.query<{ id: string; extracted: any }>(
@@ -182,7 +189,9 @@ export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptio
           stats.unchanged++; continue;
         }
         if (f.size > MAX_BYTES) { stats.skipped++; stats.errors.push(`${f.name}: larger than ${MAX_BYTES} bytes, skipped`); continue; }
-        const dl = await fetchImpl(`${cfg.downloadUrl}/${encodeURIComponent(f.id)}`, { headers: await cfg.auth.headers() });
+        if (downloaded >= cap) { deferred++; continue; }
+        downloaded++;
+        const dl = await fetchImpl(f.download ?? `${cfg.downloadUrl}/${encodeURIComponent(f.id)}`, { headers: await cfg.auth.headers() });
         if (!dl.ok) throw new Error(`workdrive download ${f.id} failed (${dl.status})`);
         const bytes = new Uint8Array(await dl.arrayBuffer());
         const meta: Record<string, unknown> = {
@@ -202,6 +211,11 @@ export async function syncWorkdrive(db: Db, sink: ItemSink, opts: WorkdriveOptio
         }
       } catch (e) { stats.failed++; stats.errors.push(`${f.name}: ${(e as Error).message}`); }
     }
+    if (deferred) {
+      stats.deferred = (stats.deferred ?? 0) + deferred;
+      (stats.notes ??= []).push(`${folder.name ?? folder.folder_id}: ${deferred} file${deferred === 1 ? '' : 's'} left for the next run (WORKDRIVE_MAX_FILES_PER_RUN=${cap})`);
+      await db.query('DELETE FROM settings WHERE key = $1', [cursorKey]);
+    } else if (token) await setCursor(db, cursorKey, { token, at: startedAt });
   }
   await setCursor(db, 'workdrive:last_sync', { at: startedAt, ...stats, items: undefined });
   return stats;
