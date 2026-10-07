@@ -174,3 +174,21 @@ test('wave 4 research readers: GDELT articles, company enrichment and signals, S
   configureWorldMonitor({ fetch: fakeFetch, apiKey: null, now });
   assert.deepEqual(await gdeltDocuments('x'), { ok: false, reason: NOT_CONNECTED });
 });
+
+test('7 Oct 2026, first live reading: the energy mix arrives as percentages (hydro 91.102, gas 4.493, oil 4.368, wind 0.025, solar 0.012) and is normalised to shares; a fraction mix stays as it is; the sanctions dataset date arrives as epoch milliseconds and becomes a day', async () => {
+  configureWorldMonitor({ fetch: fakeFetch, apiKey: KEY, now });
+  const energy = FIX['get-country-energy-profile'] as Record<string, unknown>, sanc = FIX['list-sanctions-pressure'] as Record<string, unknown>;
+  FIX['get-country-energy-profile'] = { ...energy, hydroShare: 91.102, gasShare: 4.493, oilShare: 4.368, windShare: 0.025, solarShare: 0.012, renewShare: 91.139, coalShare: 0, nuclearShare: 0, importShare: 0 };
+  FIX['list-sanctions-pressure'] = { ...sanc, datasetDate: Date.parse('2026-10-05T00:00:00Z') };
+  try {
+    const en = await energyProfile('VE'); assert.ok(en.ok);
+    assert.equal(en.data.mix!.hydro, 0.91102); assert.equal(en.data.mix!.gas, 0.04493); assert.equal(en.data.mix!.oil, 0.04368);
+    assert.equal(en.data.mix!.wind, 0.00025); assert.equal(en.data.mix!.solar, 0.00012);
+    assert.equal(en.data.import_share, 0);
+    const s = await sanctions('VE'); assert.ok(s.ok); assert.equal(s.data.dataset_date, '2026-10-05');
+  } finally { FIX['get-country-energy-profile'] = energy; FIX['list-sanctions-pressure'] = sanc; configureWorldMonitor({ fetch: fakeFetch, apiKey: KEY, now }); }
+  // The recorded fraction shape (sum about 1) is left alone.
+  const fr = await energyProfile('VE'); assert.ok(fr.ok); assert.equal(fr.data.mix!.hydro, 0.71); assert.equal(fr.data.import_share, 0.02);
+  const sd = await sanctions('VE'); assert.ok(sd.ok); assert.equal(sd.data.dataset_date, sanc.datasetDate ? String(sanc.datasetDate).slice(0, 10) : null);
+});
+
