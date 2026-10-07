@@ -68,7 +68,7 @@ test('ZohoAuth refreshes once, caches the token, and refreshes again after it ex
   clock = 3600_000;
   assert.equal(await auth.accessToken(), 't2');
   const bad = new ZohoAuth({ clientId: 'a', clientSecret: 'b', refreshToken: 'c', accountsUrl: 'https://x' }, (async () => Response.json({ error: 'invalid_code' }, { status: 400 })) as unknown as typeof fetch);
-  await assert.rejects(bad.accessToken(), /token refresh failed/);
+  await assert.rejects(bad.accessToken(), /token refresh failed \(400\): invalid_code \(the refresh token is not valid at https:\/\/x: an EU token needs ACCOUNTS_URL/);
 });
 
 test('sync: new files become items, modified files become versions, unchanged files are not downloaded or versioned', async () => {
