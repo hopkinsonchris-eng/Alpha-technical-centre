@@ -221,20 +221,22 @@
       <!-- THE GLOBE IS THE DOOR (wave 2 globe; wave 7 PR2 idea A): the globe and the live register beside it -->
       <section id="sec-globe" aria-labelledby="h-globe" data-globe="loading">
         <div class="hub-globe">
-          <div class="hub-globe-wrap">
-            <canvas id="globe" role="img" aria-label="Globe of where the firm works. Use the register beside it." data-en-aria="Globe of where the firm works. Use the register beside it." data-es-aria="Globo de dónde trabaja la firma. Use el registro al lado."></canvas>
-            <div class="hub-globe-tip" id="globe-tip" hidden aria-hidden="true"></div>
-            <p class="hub-globe-hint" data-en="Drag to turn · pinch to zoom · tap a country or a dot" data-es="Arrastre para girar · pellizque para acercar · toque un país o un punto">Drag to turn · pinch to zoom · tap a country or a dot</p>
+          <div class="hub-globe-stage">
+            <div class="hub-globe-wrap">
+              <canvas id="globe" role="img" aria-label="Globe of where the firm works. Use the register beside it." data-en-aria="Globe of where the firm works. Use the register beside it." data-es-aria="Globo de dónde trabaja la firma. Use el registro al lado."></canvas>
+              <div class="hub-globe-tip" id="globe-tip" hidden aria-hidden="true"></div>
+            </div>
             <ul class="hub-globe-legend" id="globe-legend" aria-label="Legend">
-              <li data-legend="held"><span class="hub-lg-swatch held" aria-hidden="true"></span><span data-en="Where we work" data-es="Dónde trabajamos">Where we work</span></li>
-              <li data-legend="attention"><span class="hub-lg-swatch attention" aria-hidden="true"></span><span data-en="Stale or NDA expiring" data-es="Obsoleto o NDA por vencer">Stale or NDA expiring</span></li>
-              <li data-legend="round"><span class="hub-lg-swatch round" aria-hidden="true"></span><span data-en="Open licence round" data-es="Ronda de licencias abierta">Open licence round</span></li>
-              <li data-legend="halo"><span class="hub-lg-swatch halo" aria-hidden="true"><i class="g"></i><i class="a"></i><i class="r"></i></span><span data-en="World Monitor risk: managed, elevated, high" data-es="Riesgo World Monitor: gestionado, elevado, alto">World Monitor risk: managed, elevated, high</span></li>
-              <li data-legend="rising"><span class="hub-lg-mark" aria-hidden="true">▲</span><span data-en="Risk rising" data-es="Riesgo al alza">Risk rising</span></li>
-              <li data-legend="sanctions"><span class="hub-lg-mark" aria-hidden="true">◆</span><span data-en="Sanctions active" data-es="Sanciones vigentes">Sanctions active</span></li>
-              <li data-legend="events"><span class="hub-lg-swatch event" aria-hidden="true"></span><span data-en="Conflict events, last 30 days (chosen country)" data-es="Eventos de conflicto, últimos 30 días (país elegido)">Conflict events, last 30 days (chosen country)</span></li>
+              <li data-legend="held"><span class="hub-lg-swatch held" aria-hidden="true"></span><span class="lg-name" data-en="Where we work" data-es="Dónde trabajamos">Where we work</span><span class="lg-value" data-legend-value="held"></span></li>
+              <li data-legend="attention"><span class="hub-lg-swatch attention" aria-hidden="true"></span><span class="lg-name" data-en="Stale or NDA expiring" data-es="Obsoleto o NDA por vencer">Stale or NDA expiring</span><span class="lg-value" data-legend-value="attention"></span></li>
+              <li data-legend="round"><span class="hub-lg-swatch round" aria-hidden="true"></span><span class="lg-name" data-en="Open licence round" data-es="Ronda de licencias abierta">Open licence round</span><span class="lg-value" data-legend-value="round"></span></li>
+              <li data-legend="halo"><span class="hub-lg-swatch halo" aria-hidden="true"><i class="g"></i><i class="a"></i><i class="r"></i></span><span class="lg-name" data-en="World Monitor risk: managed, elevated, high" data-es="Riesgo World Monitor: gestionado, elevado, alto">World Monitor risk: managed, elevated, high</span><span class="lg-value" data-legend-value="halo"></span></li>
+              <li data-legend="rising"><span class="hub-lg-mark" aria-hidden="true">▲</span><span class="lg-name" data-en="Risk rising" data-es="Riesgo al alza">Risk rising</span><span class="lg-value" data-legend-value="rising"></span></li>
+              <li data-legend="sanctions"><span class="hub-lg-mark" aria-hidden="true">◆</span><span class="lg-name" data-en="Sanctions active" data-es="Sanciones vigentes">Sanctions active</span><span class="lg-value" data-legend-value="sanctions"></span></li>
+              <li data-legend="events"><span class="hub-lg-swatch event" aria-hidden="true"></span><span class="lg-name" data-en="Conflict events, last 30 days (chosen country)" data-es="Eventos de conflicto, últimos 30 días (país elegido)">Conflict events, last 30 days (chosen country)</span><span class="lg-value" data-legend-value="events"></span></li>
             </ul>
           </div>
+          <p class="hub-globe-hint" data-en="Drag to turn · pinch to zoom · tap a country or a dot" data-es="Arrastre para girar · pellizque para acercar · toque un país o un punto">Drag to turn · pinch to zoom · tap a country or a dot</p>
           <div class="hub-globe-side" id="register-column">
             <div class="hub-sec-head hub-reg-head">
               <div>

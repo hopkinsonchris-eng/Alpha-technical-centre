@@ -40,6 +40,8 @@ Vault: `db/013_country_risk_log.sql` (new), `src/intel/risk-log.ts` (new), `src/
 - **W8-AC4** Choosing a country draws its ACLED events as clustered dots (`data-events-shown` on `#sec-globe`) and writes the near-fields line from the events within 100 km of the country's located projects and fields; leaving the country clears both. No browser request goes to worldmonitor.app.
 - **W8-AC5** The ports line sums tanker calls across the country's ports and gives the trend; it is absent when the section did not answer.
 - **W8-AC6** `get_project_context` for a project with a country carries the risk block with the score, level, trend, sanctions, change and advisories when World Monitor is connected, and no such block without a key; the key never appears.
+- **W8-AC7** (after first live use, 7 October: "The legend is poorly positioned. Can we make the globe bigger in the centre of the screen and not in a blue box with the legend on its right side.") The globe stands on a full-width stage, centred, at least 600 px wide on a desktop viewport, with no box behind it; the legend is a column on its right, never over the canvas; on an iPad in portrait the legend drops under the globe; the register follows below, full width, scrolling in its own box. This revises W7-AC7's first screen (strip, globe and register side by side) to strip, globe and legend, with the register as the band below; the globe stays the door (a tap on a dot still lights and scrolls its row).
+- **W8-AC8** ("If I click on a country on the globe … the legend should show the actual values.") Choosing a country turns the legend into that country's values under each name: projects, stale and NDA expiring, open round or not, the World Monitor index with its tone word and trend, the trend, the sanctions count, and the conflict events with those within 100 km of our fields; "no reading" where there is none; leaving the country restores the plain legend. Both languages.
 
 ## 5. Smoke plan
 
@@ -51,6 +53,8 @@ Vault: `db/013_country_risk_log.sql` (new), `src/intel/risk-log.ts` (new), `src/
 | W8-AC4 | `hub-globe.spec.mjs` W8-AC4: intel mock with one event 15 km from Barinas and one 180 km away → `data-events-shown="2"`, near line "1 conflict event within 100 km"; back to all countries clears both; worldmonitor.app never requested |
 | W8-AC5 | the same test with two ports → "Ports: 120 tanker calls in 30 days across 2 ports · trend −8 %"; ports failed → no line |
 | W8-AC6 | `mcp.risk.test.ts`: with a fake World Monitor the context markdown carries the block and the advisory; without a key it does not |
+| W8-AC7 | `hub-globe.spec.mjs` W8-AC7: the legend is in the stage, not the wrap; the wrap has no background image; the canvas is ≥ 600 px wide at 1440 px and the legend's left edge is right of the canvas; at 820 px the legend is below the canvas |
+| W8-AC8 | `hub-globe.spec.mjs` W8-AC8: the seven values for Venezuela in EN and ES, cleared on leaving, "no reading" for Egypt; evidence `w8-risk-stage.png` |
 | Migrations | `auth`, `boot`, `db` tests count 13 |
 
 Risks: the halo must not be mistaken for the round ring (different colour family, thicker and softer, no dash); the globe stays readable on an iPad at 1x zoom (the halo radius follows the ring's cap radius). Rollback: revert the PR; the log table is harmless when unread.

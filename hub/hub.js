@@ -703,7 +703,7 @@ async function renderGlobe(person) {
       panel.setAttribute('hidden', ''); reg.removeAttribute('hidden'); if (filters) filters.removeAttribute('hidden'); unplaced.style.display = '';
       const intel = $('#country-intel'); if (intel) { intel.setAttribute('hidden', ''); intel.textContent = ''; intelFor = null; }
       showPack(null); showRound(null);
-      clearNear();
+      clearNear(); legendFor(null);
       if (globe) globe.select(null);
       return;
     }
@@ -719,12 +719,37 @@ async function renderGlobe(person) {
     const createRow = $('#country-create-row');
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
     reg.setAttribute('hidden', ''); if (filters) filters.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
-    clearNear();
+    clearNear(); legendFor(code, c);
     renderIntel(code, names, { onLoaded: (S) => showNear(code, c, S) });
     showPack(code);
     showRound(code);
     if (briefUi) briefUi.loadCached(code);
     if (globe) globe.select(code, { fly: true });
+  }
+  // Wave 8 (W8-AC8): the legend turns into the chosen country's own values; nothing chosen, the plain legend.
+  const legendEl = $('#globe-legend');
+  const lv = (k) => legendEl && legendEl.querySelector('[data-legend-value="' + k + '"]');
+  const setLv = (k, en, es) => { const el = lv(k); if (!el) return; el.textContent = ''; if (en !== null && en !== undefined) setText(el, en, es); };
+  function legendFor(code, c) {
+    if (!legendEl) return;
+    if (!code) { legendEl.removeAttribute('data-country'); for (const el of legendEl.querySelectorAll('[data-legend-value]')) el.textContent = ''; return; }
+    legendEl.setAttribute('data-country', code);
+    const name = names.get(code) || (c && c.name) || { en: code, es: code };
+    const n = c ? c.projects.length : 0;
+    setLv('held', name.en + ' · ' + n + (n === 1 ? ' project' : ' projects'), name.es + ' · ' + n + (n === 1 ? ' proyecto' : ' proyectos'));
+    const st = c ? c.counts.stale : 0, ex = c ? c.counts.expiring : 0;
+    setLv('attention', st + ' stale · ' + ex + ' NDA expiring', st + ' obsoletos · ' + ex + ' NDA por vencer');
+    const open = (sec.getAttribute('data-rings') || '').split(',').includes(code);
+    setLv('round', open ? 'open round' : 'no open round', open ? 'ronda abierta' : 'sin ronda abierta');
+    const r = c && c.risk;
+    if (r && typeof r.score === 'number') {
+      const tone = toneOf(r.score), lab = RISK_LABEL[tone] || ['', ''];
+      const tr = r.trend === 'rising' ? ['rising', 'al alza'] : r.trend === 'falling' ? ['falling', 'a la baja'] : r.trend ? [r.trend, r.trend === 'stable' ? 'estable' : r.trend] : ['', ''];
+      setLv('halo', Math.round(r.score) + ' · ' + lab[0] + (tr[0] ? ' · ' + tr[0] : ''), Math.round(r.score) + ' · ' + lab[1] + (tr[1] ? ' · ' + tr[1] : ''));
+      setLv('rising', tr[0] || 'no trend', tr[1] || 'sin tendencia');
+      setLv('sanctions', r.sanctions_active ? (r.sanctions_count != null ? r.sanctions_count + ' designations' : 'active') : 'none recorded', r.sanctions_active ? (r.sanctions_count != null ? r.sanctions_count + ' designaciones' : 'vigentes') : 'ninguna registrada');
+    } else { for (const k of ['halo', 'rising', 'sanctions']) setLv(k, 'no reading', 'sin lectura'); }
+    setLv('events', 'reading…', 'leyendo…');
   }
   // Wave 8 (W8-AC4, W8-AC5): the chosen country's conflict events on the globe, the events within NEAR_KM of our located
   // projects and fields, and the tanker calls across its ports; cleared on leaving the country.
@@ -738,6 +763,7 @@ async function renderGlobe(person) {
   function showNear(code, c, S) {
     if (sec.getAttribute('data-country') !== code) return;                  // another country was chosen meanwhile
     const ev = S && S.events && S.events.ok && Array.isArray(S.events.data) ? S.events.data.filter((e) => Number.isFinite(e.lat) && Number.isFinite(e.lon)) : null;
+    if (!ev) setLv('events', 'not available', 'no disponible');
     if (ev && nearEl) {
       if (globe) globe.setEvents(ev);
       sec.setAttribute('data-events-shown', String(ev.length));
@@ -748,6 +774,7 @@ async function renderGlobe(person) {
       }
       const near = ours.length ? ev.filter((e) => ours.some(([la, lo]) => haversineKm(la, lo, e.lat, e.lon) <= NEAR_KM)) : [];
       const n = near.length, f = near.reduce((s, e) => s + (Number.isFinite(e.fatalities) ? e.fatalities : 0), 0), rest = ev.length - n;
+      setLv('events', ev.length + ' in 30 days · ' + n + ' within ' + NEAR_KM + ' km of our fields', ev.length + ' en 30 días · ' + n + ' a menos de ' + NEAR_KM + ' km de nuestros campos');
       nearEl.textContent = ''; nearEl.setAttribute('data-near-events', String(n));
       if (!ours.length) setText(nearEl, 'No located project or field here to measure from; ' + ev.length + (ev.length === 1 ? ' conflict event' : ' conflict events') + ' in the country in 30 days.', 'Sin proyecto ni campo ubicado aquí desde donde medir; ' + ev.length + (ev.length === 1 ? ' evento de conflicto' : ' eventos de conflicto') + ' en el país en 30 días.');
       else if (n) setText(nearEl, n + (n === 1 ? ' conflict event' : ' conflict events') + ' within ' + NEAR_KM + ' km of our fields in 30 days (' + f + (f === 1 ? ' fatality' : ' fatalities') + ')', n + (n === 1 ? ' evento' : ' eventos') + ' de conflicto a menos de ' + NEAR_KM + ' km de nuestros campos en 30 días (' + f + (f === 1 ? ' víctima mortal' : ' víctimas mortales') + ')');

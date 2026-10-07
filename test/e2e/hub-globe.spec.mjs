@@ -759,3 +759,58 @@ test('W8-AC5 (none): a ports section that did not answer writes no ports line; e
   await expect(page.locator('#country-near')).toContainText('No conflict events within 100 km of our fields in 30 days (1 elsewhere in the country)');
   await expect(page.locator('#country-ports')).toBeHidden();
 });
+
+
+test('W8-AC7: the globe stands on a full-width stage, centred and without a box, with the legend in a column on its right, never over the canvas', async ({ page }) => {
+  await stubApi(page, { '/api/countries': (u, r) => json(r, RISKY) });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  await expect(page.locator('.hub-globe-wrap #globe-legend')).toHaveCount(0);
+  await expect(page.locator('.hub-globe-stage #globe-legend')).toHaveCount(1);
+  const wrapBg = await page.locator('.hub-globe-wrap').evaluate((el) => getComputedStyle(el).backgroundImage);
+  expect(wrapBg).toBe('none');
+  const canvas = await page.locator('#globe').boundingBox();
+  const legend = await page.locator('#globe-legend').boundingBox();
+  expect(canvas.width).toBeGreaterThanOrEqual(600);
+  expect(legend.x).toBeGreaterThanOrEqual(canvas.x + canvas.width);      // to the right of the globe, not on it
+  const page2 = await page.context().newPage();
+  await page2.setViewportSize({ width: 820, height: 1180 });             // iPad portrait: the legend drops under the globe
+  await stubApi(page2, { '/api/countries': (u, r) => json(r, RISKY) });
+  await page2.goto('/hub/index.html');
+  await ready(page2); await globeReady(page2);
+  const c2 = await page2.locator('#globe').boundingBox(), l2 = await page2.locator('#globe-legend').boundingBox();
+  expect(l2.y).toBeGreaterThanOrEqual(c2.y + c2.height);
+  await page2.close();
+});
+
+test('W8-AC8: choosing a country turns the legend into its actual values (projects, attention, round, risk, trend, sanctions, events); leaving restores the plain legend', async ({ page }) => {
+  await stubApi(page, { '/api/countries': (u, r) => json(r, RISKY), '/api/countries/VE/intel': (u, r) => json(r, INTEL) });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  const legend = page.locator('#globe-legend');
+  await expect(legend).not.toHaveAttribute('data-country', /.+/);
+  await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('');
+  await page.locator('#register [data-country="VE"]').click();
+  await expect(legend).toHaveAttribute('data-country', 'VE');
+  await expect(legend.locator('[data-legend-value="held"]')).toHaveText('Venezuela · 2 projects');
+  await expect(legend.locator('[data-legend-value="attention"]')).toHaveText('2 stale · 0 NDA expiring');
+  await expect(legend.locator('[data-legend-value="round"]')).toHaveText('no open round');
+  await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('71 · High · rising');
+  await expect(legend.locator('[data-legend-value="rising"]')).toHaveText('rising');
+  await expect(legend.locator('[data-legend-value="sanctions"]')).toHaveText('212 designations');
+  await expect(legend.locator('[data-legend-value="events"]')).toHaveText('1 in 30 days · 0 within 100 km of our fields');
+  await page.locator('aside .nav-lang button[data-lang="es"]').click();
+  await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('71 · Alto · al alza');
+  await expect(legend.locator('[data-legend-value="events"]')).toHaveText('1 en 30 días · 0 a menos de 100 km de nuestros campos');
+  await page.locator('aside .nav-lang button[data-lang="en"]').click();
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.locator('.hub-globe-stage').screenshot({ path: path.join(EVIDENCE, 'w8-risk-stage.png') });
+  await page.locator('#country-back').click();
+  await expect(legend).not.toHaveAttribute('data-country', /.+/);
+  await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('');
+  await expect(legend.locator('[data-legend-value="events"]')).toHaveText('');
+  // A country without a reading says so.
+  await page.locator('#register [data-country="EG"]').click();
+  await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('no reading');
+  await expect(legend.locator('[data-legend-value="sanctions"]')).toHaveText('no reading');
+});
