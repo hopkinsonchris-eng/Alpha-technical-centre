@@ -492,17 +492,34 @@ function flags(att) {
   if (att && att.expiring_days !== null && att.expiring_days !== undefined) out.push(mk('span', 'hub-flag expiring', 'NDA ' + att.expiring_days + ' d', 'NDA ' + att.expiring_days + ' d'));
   return out;
 }
+/** The register's three tones for a World Monitor index: under 40 managed, under 70 elevated, 70 and over high. */
+export const toneOf = (score) => (score === null || score === undefined ? '' : score >= 70 ? 'red' : score >= 40 ? 'amber' : 'green');
+/** Wave 8 (W8-AC3): the marks the map, the panel and the register share: "▲ rising", "◆ sanctions", "+16 since 1 Sep". Each only when the summary carries it. */
+export function riskMarks(risk) {
+  const out = [];
+  if (!risk) return out;
+  if (risk.trend === 'rising' || risk.trend === 'falling') out.push(mk('span', 'hub-risk-mark', (risk.trend === 'rising' ? '▲ rising' : '▼ falling'), (risk.trend === 'rising' ? '▲ al alza' : '▼ a la baja'), { 'data-risk-trend': risk.trend }));
+  if (risk.sanctions_active) out.push(mk('span', 'hub-risk-mark', '◆ sanctions', '◆ sanciones', { 'data-risk-sanctions': '' }));
+  if (typeof risk.change === 'number' && risk.change !== 0) {
+    const d = fmtDay(risk.previous_computed_at);
+    const n = (risk.change > 0 ? '+' : '') + (Math.round(risk.change * 10) / 10);
+    out.push(mk('span', 'hub-risk-mark', n + (d ? ' since ' + d.en : ''), n + (d ? ' desde ' + d.es : ''), { 'data-risk-change': String(Math.round(risk.change * 10) / 10) }));
+  }
+  return out;
+}
+const withSeps = (host, marks) => { for (const m of marks) add(host, document.createTextNode(' · '), m); };
 /** "World Monitor 71 · advisory: reconsider travel (09:00)" from the countries summary (wave 3); null without a reading. */
 function riskLine(risk) {
   if (!risk || (risk.score === null && !risk.level)) return null;
   const el = mk('span', 'hub-risk-line', null, null, { 'data-risk-score': risk.score === null ? '' : String(risk.score) });
-  const tone = risk.score === null ? '' : risk.score >= 70 ? 'red' : risk.score >= 40 ? 'amber' : 'green';
+  const tone = toneOf(risk.score);
   if (tone) add(el, mk('span', 'hub-rag', null, null, { 'data-risk': tone, 'aria-hidden': 'true' }));
   add(el, mk('span', null, 'World Monitor' + (risk.score !== null ? ' ' + Math.round(risk.score) : ''), 'World Monitor' + (risk.score !== null ? ' ' + Math.round(risk.score) : '')));
   if (risk.level) add(el, document.createTextNode(' · '), mk('span', null, 'advisory: ', 'aviso: '), dv('span', null, risk.level));
   const t = risk.fetched_at ? new Date(risk.fetched_at) : null;
   const hm = t && !isNaN(t) ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
   if (hm) add(el, mk('span', 'hub-muted', ' (' + hm + ')', ' (' + hm + ')'));
+  withSeps(el, riskMarks(risk));                                           // wave 8 (W8-AC3)
   return el;
 }
 /** The project's own execution risk beside its register row: "our execution risk Amber 54". */
@@ -615,6 +632,15 @@ async function renderGlobe(person) {
       }
     }
     if (globe) globe.setData({ held, points });
+    // Wave 8 (W8-AC2): a halo per held country from the summary's reading; the section reports what the globe wears.
+    const halos = new Map();
+    for (const c of data.countries) if (c.risk && typeof c.risk.score === 'number') halos.set(c.code, { tone: toneOf(c.risk.score), rising: c.risk.trend === 'rising', sanctions: !!c.risk.sanctions_active });
+    if (globe) globe.setRisk(halos);
+    const codesOf = (pred) => [...halos].filter(([, v]) => pred(v)).map(([k]) => k).sort();
+    const setOrDrop = (name, v) => { if (v) sec.setAttribute(name, v); else sec.removeAttribute(name); };
+    setOrDrop('data-halos', [...halos].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => k + ':' + v.tone).join(','));
+    setOrDrop('data-halo-rising', codesOf((v) => v.rising).join(','));
+    setOrDrop('data-halo-sanctions', codesOf((v) => v.sanctions).join(','));
     if (data.unplaced && data.unplaced.length) {
       unplaced.removeAttribute('hidden');
       const n = data.unplaced.length;
@@ -677,6 +703,7 @@ async function renderGlobe(person) {
       panel.setAttribute('hidden', ''); reg.removeAttribute('hidden'); if (filters) filters.removeAttribute('hidden'); unplaced.style.display = '';
       const intel = $('#country-intel'); if (intel) { intel.setAttribute('hidden', ''); intel.textContent = ''; intelFor = null; }
       showPack(null); showRound(null);
+      clearNear();
       if (globe) globe.select(null);
       return;
     }
@@ -692,11 +719,53 @@ async function renderGlobe(person) {
     const createRow = $('#country-create-row');
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
     reg.setAttribute('hidden', ''); if (filters) filters.setAttribute('hidden', ''); unplaced.style.display = 'none'; panel.removeAttribute('hidden');
-    renderIntel(code, names);
+    clearNear();
+    renderIntel(code, names, { onLoaded: (S) => showNear(code, c, S) });
     showPack(code);
     showRound(code);
     if (briefUi) briefUi.loadCached(code);
     if (globe) globe.select(code, { fly: true });
+  }
+  // Wave 8 (W8-AC4, W8-AC5): the chosen country's conflict events on the globe, the events within NEAR_KM of our located
+  // projects and fields, and the tanker calls across its ports; cleared on leaving the country.
+  const nearEl = $('#country-near'), portsEl = $('#country-ports');
+  function clearNear() {
+    if (globe) globe.setEvents([]);
+    sec.removeAttribute('data-events-shown');
+    for (const el of [nearEl, portsEl]) if (el) { el.setAttribute('hidden', ''); el.textContent = ''; }
+    if (nearEl) nearEl.removeAttribute('data-near-events');
+  }
+  function showNear(code, c, S) {
+    if (sec.getAttribute('data-country') !== code) return;                  // another country was chosen meanwhile
+    const ev = S && S.events && S.events.ok && Array.isArray(S.events.data) ? S.events.data.filter((e) => Number.isFinite(e.lat) && Number.isFinite(e.lon)) : null;
+    if (ev && nearEl) {
+      if (globe) globe.setEvents(ev);
+      sec.setAttribute('data-events-shown', String(ev.length));
+      const ours = [];
+      for (const p of (c && c.projects) || []) {
+        if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) ours.push([p.lat, p.lon]);
+        for (const a of p.assets || []) if (Number.isFinite(a.lat) && Number.isFinite(a.lon)) ours.push([a.lat, a.lon]);
+      }
+      const near = ours.length ? ev.filter((e) => ours.some(([la, lo]) => haversineKm(la, lo, e.lat, e.lon) <= NEAR_KM)) : [];
+      const n = near.length, f = near.reduce((s, e) => s + (Number.isFinite(e.fatalities) ? e.fatalities : 0), 0), rest = ev.length - n;
+      nearEl.textContent = ''; nearEl.setAttribute('data-near-events', String(n));
+      if (!ours.length) setText(nearEl, 'No located project or field here to measure from; ' + ev.length + (ev.length === 1 ? ' conflict event' : ' conflict events') + ' in the country in 30 days.', 'Sin proyecto ni campo ubicado aquí desde donde medir; ' + ev.length + (ev.length === 1 ? ' evento de conflicto' : ' eventos de conflicto') + ' en el país en 30 días.');
+      else if (n) setText(nearEl, n + (n === 1 ? ' conflict event' : ' conflict events') + ' within ' + NEAR_KM + ' km of our fields in 30 days (' + f + (f === 1 ? ' fatality' : ' fatalities') + ')', n + (n === 1 ? ' evento' : ' eventos') + ' de conflicto a menos de ' + NEAR_KM + ' km de nuestros campos en 30 días (' + f + (f === 1 ? ' víctima mortal' : ' víctimas mortales') + ')');
+      else setText(nearEl, 'No conflict events within ' + NEAR_KM + ' km of our fields in 30 days (' + rest + ' elsewhere in the country)', 'Sin eventos de conflicto a menos de ' + NEAR_KM + ' km de nuestros campos en 30 días (' + rest + ' en el resto del país)');
+      nearEl.removeAttribute('hidden');
+    }
+    const ports = S && S.ports && S.ports.ok && Array.isArray(S.ports.data) ? S.ports.data : null;
+    if (ports && ports.length && portsEl) {
+      const withCalls = ports.filter((p) => Number.isFinite(p.tanker_calls_30d));
+      const calls = withCalls.reduce((s, p) => s + p.tanker_calls_30d, 0);
+      const trended = withCalls.filter((p) => Number.isFinite(p.trend_pct) && p.tanker_calls_30d > 0);
+      const trend = trended.length ? trended.reduce((s, p) => s + p.trend_pct * p.tanker_calls_30d, 0) / trended.reduce((s, p) => s + p.tanker_calls_30d, 0) : null;
+      const trEn = trend === null ? '' : ' · trend ' + (trend < 0 ? '−' : '+') + Math.round(Math.abs(trend)) + ' %';
+      const trEs = trend === null ? '' : ' · tendencia ' + (trend < 0 ? '−' : '+') + Math.round(Math.abs(trend)) + ' %';
+      portsEl.textContent = '';
+      setText(portsEl, 'Ports: ' + calls + ' tanker calls in 30 days across ' + ports.length + (ports.length === 1 ? ' port' : ' ports') + trEn, 'Puertos: ' + calls + ' escalas de buques tanque en 30 días en ' + ports.length + (ports.length === 1 ? ' puerto' : ' puertos') + trEs);
+      portsEl.removeAttribute('hidden');
+    }
   }
   $('#country-back').addEventListener('click', () => select(null, true));
   const createBtn = $('#country-create');
@@ -738,7 +807,15 @@ const link = (title, url) => (url ? dv('a', 'hub-inline-link', title, { href: ur
  * Read once per selection from GET /api/countries/:code/intel: the Vault holds the key and
  * nothing is fetched from the browser.
  */
-async function renderIntel(code, names) {
+const NEAR_KM = 100;                                                         // wave 8: "near our fields" is within this many kilometres
+/** Great-circle distance in kilometres (haversine). */
+export function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371, r = Math.PI / 180;
+  const dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+async function renderIntel(code, names, opts) {
   const host = $('#country-intel');
   if (!host) return;
   intelFor = code;
@@ -758,6 +835,7 @@ async function renderIntel(code, names) {
     return;
   }
   const S = res.body.sections, wm = res.body.world_monitor || {};
+  if (opts && typeof opts.onLoaded === 'function') { try { opts.onLoaded(S); } catch (e) { /* the card still renders */ } }   // wave 8
   host.setAttribute('data-state', wm.status === 'live' ? 'live' : 'not_connected');
   // Wave 7 (S9, D65): without World Monitor there is nothing to show, so the card stays hidden rather than announcing it on every country.
   if (wm.status !== 'live') { host.setAttribute('hidden', ''); return; }
@@ -1034,7 +1112,8 @@ async function renderRegister(person, info) {
     const head = code ? mk('button', 'hub-country', null, null, { type: 'button', 'data-country': code }) : mk('div', 'hub-country', null, null, { 'data-country-group-head': '' });
     const n = rows.length;
     const nSpan = add(mk('span', 'n'), mk('span', null, n + (n === 1 ? ' project' : ' projects'), n + (n === 1 ? ' proyecto' : ' proyectos')));
-    if (c && c.risk && c.risk.score !== null && c.risk.score !== undefined) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'World Monitor ' + Math.round(c.risk.score), 'World Monitor ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }));
+    if (c && c.risk && c.risk.score !== null && c.risk.score !== undefined) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'World Monitor ' + Math.round(c.risk.score), 'World Monitor ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }))
+    if (c && c.risk) withSeps(nSpan, riskMarks(c.risk));                    // wave 8 (W8-AC3): the same marks as the panel and the map
     const att = c ? { stale: c.counts.stale, filing: c.counts.filing, expiring_days: c.counts.expiring ? Math.min(...c.projects.filter((p) => p.attention.expiring_days !== null).map((p) => p.attention.expiring_days)) : null } : null;
     add(head, mk('span', 'name', nm.en, nm.es), nSpan, add(mk('span', 'flags'), ...flags(att)));
     if (code && info && info.select) head.addEventListener('click', () => info.select(code, true));
