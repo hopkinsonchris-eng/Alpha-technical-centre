@@ -40,9 +40,14 @@ test('W3-AC1: Vault assets first (exact match before contains), GEM-imported one
       assert.deepEqual(u.searchParams.getAll('featureCode'), ['OILF', 'GASF']);
       return json({ totalResultsCount: 1, geonames: [{ geonameId: 3640000, name: 'Guafita', lat: '7.65', lng: '-70.95', countryCode: 'VE', fcode: 'OILF', adminName1: 'Apure' }] });
     },
+    // Wave 8 (8 Oct 2026): Wikidata is asked by text search first, then the found items are read by id.
+    'www.wikidata.org': (u) => {
+      assert.equal(u.searchParams.get('action'), 'wbsearchentities'); assert.equal(u.searchParams.get('search'), 'Guafita');
+      return json({ search: [{ id: 'Q98765', label: 'Guafita oil field', description: 'oil field in Venezuela' }] });
+    },
     'query.wikidata.org': (u) => {
-      assert.match(u.searchParams.get('query') ?? '', /Q211748/);
-      return json({ results: { bindings: [{ item: { value: 'http://www.wikidata.org/entity/Q98765' }, itemLabel: { value: 'Guafita oil field' }, coord: { value: 'Point(-70.9 7.6)' }, countryCode: { value: 'VE' } }] } });
+      assert.match(u.searchParams.get('query') ?? '', /wd:Q98765/);
+      return json({ results: { bindings: [{ item: { value: 'http://www.wikidata.org/entity/Q98765' }, itemLabel: { value: 'Guafita oil field' }, classLabel: { value: 'oil field' }, coord: { value: 'Point(-70.9 7.6)' }, countryCode: { value: 'VE' } }] } });
     },
   });
   const r = await locate(db, 'Guafita', 'VE', { fetch: f, geonamesUser: 'atc-test' });
@@ -60,6 +65,7 @@ test('W3-AC1: Vault assets first (exact match before contains), GEM-imported one
   const wd = r.candidates[2];
   assert.equal(wd.source_id, 'Q98765'); assert.equal(wd.lat, 7.6); assert.equal(wd.lon, -70.9);
   assert.equal(wd.source_url, 'https://www.wikidata.org/wiki/Q98765');
+  assert.equal(wd.confidence, 0.8, 'an oil field for kind field'); assert.equal((wd.detail as any).class, 'oil field');
   // A plain Vault asset without GEM data reports source 'vault' and keeps null coordinates.
   const v = await locate(db, 'victoria', 'VE', { fetch: fakeFetch({}), geonamesUser: 'atc-test' });
   assert.equal(v.candidates[0].source, 'vault');
@@ -79,6 +85,50 @@ test('W3-AC1: without a GeoNames username, or when a gazetteer fails or times ou
   const r2 = await locate(db, 'Nowhere', 'BR', { fetch: bad, geonamesUser: 'x' });
   assert.deepEqual(r2.unavailable.map(u => u.source).sort(), ['geonames', 'wikidata']);
   assert.match(r2.unavailable.find(u => u.source === 'geonames')!.reason, /401/);
+});
+
+test('W8 (8 Oct 2026, "Fezzan"): the kind drives the gazetteers: a basin asks GeoNames for basins and regions and Wikidata by text search, so a region with coordinates in the country is a candidate; a kind that matches ranks higher; things without a place are left out', async () => {
+  calls.length = 0;
+  const f = fakeFetch({
+    'secure.geonames.org': (u) => {
+      assert.equal(u.searchParams.get('country'), 'LY');
+      assert.deepEqual(u.searchParams.getAll('featureCode'), ['BSNP', 'BSND', 'RGN', 'AREA', 'DSRT', 'PLAT']);
+      return json({ totalResultsCount: 1, geonames: [{ geonameId: 2209937, name: 'Fezzan', lat: '26.5', lng: '13.0', countryCode: 'LY', fcode: 'RGN', adminName1: 'Sabha' }] });
+    },
+    'www.wikidata.org': (u) => {
+      assert.equal(u.searchParams.get('search'), 'Fezzan');
+      return json({ search: [{ id: 'Q188258', label: 'Fezzan', description: 'historical region of Libya' }, { id: 'Q107030550', label: 'Fezzan', description: 'boat' }, { id: 'Q94750163', label: 'Fezzan', description: 'ward of Nigeria' }] });
+    },
+    'query.wikidata.org': (u) => {
+      const q = u.searchParams.get('query') ?? '';
+      assert.match(q, /wd:Q188258/); assert.match(q, /wd:Q107030550/);
+      return json({ results: { bindings: [
+        { item: { value: 'http://www.wikidata.org/entity/Q188258' }, itemLabel: { value: 'Fezzan' }, classLabel: { value: 'historical region' }, coord: { value: 'Point(13.4253 26.3328)' }, countryCode: { value: 'LY' } },
+        { item: { value: 'http://www.wikidata.org/entity/Q188258' }, itemLabel: { value: 'Fezzan' }, classLabel: { value: 'landscape' }, coord: { value: 'Point(13.4253 26.3328)' }, countryCode: { value: 'LY' } },
+        { item: { value: 'http://www.wikidata.org/entity/Q107030550' }, itemLabel: { value: 'Fezzan' }, classLabel: { value: 'boat' } },
+        { item: { value: 'http://www.wikidata.org/entity/Q94750163' }, itemLabel: { value: 'Fezzan' }, classLabel: { value: 'ward of Nigeria' }, coord: { value: 'Point(13.155 11.843)' }, countryCode: { value: 'NG' } },
+      ] } });
+    },
+  });
+  const r = await locate(db, 'Fezzan', 'LY', { fetch: f, geonamesUser: 'atc-test', kind: 'basin' });
+  assert.deepEqual(r.unavailable, []);
+  assert.deepEqual(r.candidates.map(c => [c.source, c.source_id, c.kind]), [['geonames', '2209937', 'basin'], ['wikidata', 'Q188258', 'basin']], 'the boat (no place) and the Nigerian ward (other country) are out');
+  const wd = r.candidates[1];
+  assert.equal(wd.lat, 26.3328); assert.equal(wd.lon, 13.4253); assert.equal(wd.country, 'LY');
+  assert.equal((wd.detail as any).class, 'historical region', 'the first class names what the record is');
+  assert.equal(wd.confidence, 0.8, 'a region is a basin-like place');
+  assert.equal(r.candidates[0].confidence, 0.8, 'an exact GeoNames name');
+  // Without a country the ward comes too, marked by its own country; and the default kind is still field.
+  const all = await locate(db, 'Fezzan', null, { fetch: f, geonamesUser: 'atc-test', kind: 'basin' });
+  assert.ok(all.candidates.some(c => c.source_id === 'Q94750163' && c.country === 'NG'));
+  calls.length = 0;
+  const fld = fakeFetch({
+    'secure.geonames.org': (u) => { assert.deepEqual(u.searchParams.getAll('featureCode'), ['OILF', 'GASF']); return json({ geonames: [] }); },
+    'www.wikidata.org': () => json({ search: [{ id: 'Q188258', label: 'Fezzan' }] }),
+    'query.wikidata.org': () => json({ results: { bindings: [{ item: { value: 'http://www.wikidata.org/entity/Q188258' }, itemLabel: { value: 'Fezzan' }, classLabel: { value: 'historical region' }, coord: { value: 'Point(13.4253 26.3328)' }, countryCode: { value: 'LY' } }] } }),
+  });
+  const asField = await locate(db, 'Fezzan', 'LY', { fetch: fld, geonamesUser: 'atc-test' });
+  assert.equal(asField.candidates[0].kind, 'field'); assert.equal(asField.candidates[0].confidence, 0.5, 'a region offered for a field is a weaker match, still offered');
 });
 
 test('ids and coordinates helpers', () => {

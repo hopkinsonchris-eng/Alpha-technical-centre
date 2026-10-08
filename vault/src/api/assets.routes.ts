@@ -124,8 +124,11 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const country = x.c.req.query('country') || null;
     if (name.length < 2) throw bad('name is required (two characters or more)', '?name');
     if (country && !COUNTRY_RE.test(country)) throw bad('country must be an ISO 3166-1 alpha-2 code in capitals', '?country');
-    const r = await locate(x.db, name, country);
-    x.a.scope = 'public'; x.a.detail = { name, country, candidates: r.candidates.length, unavailable: r.unavailable.map(u => u.source) };
+    // Wave 8 (8 Oct 2026): the kind asked for drives what the gazetteers are asked; a basin is not looked up as an oil field.
+    const kindRaw = x.c.req.query('kind') || 'field';
+    if (!(ASSET_KINDS as string[]).includes(kindRaw)) throw bad(`kind must be one of ${ASSET_KINDS.join(', ')}`, '?kind');
+    const r = await locate(x.db, name, country, { kind: kindRaw as AssetKind });
+    x.a.scope = 'public'; x.a.detail = { name, country, kind: kindRaw, candidates: r.candidates.length, unavailable: r.unavailable.map(u => u.source) };
     return { body: r };
   });
 
