@@ -128,6 +128,8 @@ async function seed(page, { rerun, draft } = {}) {
     // Wave 7 PR3 (W7-AC12): the standing route, in the shape builder G serves, from the same seed.
     if (p === '/api/projects/' + PID + '/standing') return json(route, { project: { id: PID, name: project().name, status: project().status, stage: project().stage, stage_since: project().stage_history[project().stage_history.length - 1].at, country: 'CO', client_id: 'frontera' }, next: { title: 'Issue screening letter to Frontera', due_at: null, owner: 'Chris', ref: null }, figures: [], open: { proposals: {}, filing: 0, questions_in_drafts: 0, unanswered_inbound: 0, unacknowledged_dispatches: 0 }, counterparties: [], deadlines: [], since: null, stale_counts: { runs: 0, items: 0 }, last_activity: null });
     if (p === '/api/projects/' + PID + '/timeline') return json(route, { project_id: PID, count: TIMELINE.length, entries: TIMELINE });
+    // Wave 8 PR 2 (W8-AC10): the Files tab reads the project's files; the seed's one document, filed by hand.
+    if (p === '/api/projects/' + PID + '/files') return json(route, { project_id: PID, count: 1, generated_at: PAPER_ITEM.created_at, files: [{ id: PAPER_ITEM.id, name: PAPER_ITEM.title, title: PAPER_ITEM.title, path: null, source: 'upload', type: 'paper', mime: 'application/pdf', size: null, version: 1, created_at: PAPER_ITEM.created_at, authored_at: PAPER_ITEM.authored_at }] });
     if (p === '/api/projects/' + PID + '/vintages') return json(route, { project_id: PID, vintages: [] });
     if (p === '/api/projects/' + PID + '/lineage') return json(route, { project_id: PID, nodes: [], edges: [] });
     if (p === '/api/projects/' + PID + '/contacts') return json(route, CONTACTS);

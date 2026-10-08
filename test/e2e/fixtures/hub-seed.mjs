@@ -43,6 +43,10 @@ export const PAPER_ITEM = {
   id: DOC, type: 'paper', title: 'Polymer flooding in heavy oil reservoirs of the Llanos basin', created_at: iso(6 * DAY), authored_at: '2021-03-01T00:00:00.000Z', authors: ['A. Gómez', 'B. Ruiz'], client_id: null, project_id: PID, asset_ids: [], legal_tag: 'lt-public',
   origin: { source: 'upload' }, storage_key: 'originals/aa/paper', content_hash: 'sha256:' + 'd'.repeat(64), version: 1, supersedes: null, cites: [], filing: { method: 'tool' }, extracted: {}, stale: false, tags: [], organisation_ids: [], reference_no: null, mime: 'application/pdf',
 };
+/** Wave 8 PR 2 (W8-AC10): what GET /api/projects/:id/files answers for the seed's one document. */
+export const FILES_BODY = { project_id: PID, count: 1, generated_at: iso(0), files: [
+  { id: DOC, name: PAPER_ITEM.title, title: PAPER_ITEM.title, path: null, source: 'upload', type: 'paper', mime: 'application/pdf', size: null, version: 1, created_at: PAPER_ITEM.created_at, authored_at: PAPER_ITEM.authored_at },
+] };
 const TIMELINE = [
   ...RUNS.map((r) => ({ kind: 'run', ref: 'run:' + r.id, id: r.id, at: r.created_at, title: r.title, job: r.job, tool_version: r.tool_version, status: r.status, legal_tag: 'lt-firm', stale: r.stale, stale_reasons: r.stale_reasons, supersedes: null, superseded_by: null })),
   { kind: 'item', ref: 'doc:' + DOC, id: DOC, at: PAPER_ITEM.created_at, title: PAPER_ITEM.title, type: 'paper', version: 1, reference_no: null, legal_tag: 'lt-public', stale: false, stale_reasons: [], supersedes: null, superseded_by: null },
@@ -115,6 +119,7 @@ export async function seedHub(page) {
     if (/^\/api\/items\/[^/]+\/versions$/.test(p)) return json(route, { item_id: p.split('/')[3], versions: [] });
     if (p === '/api/projects/' + PID) return json(route, PROJECTS[0]);
     if (p === '/api/projects/' + PID + '/timeline') return json(route, { project_id: PID, count: TIMELINE.length, entries: TIMELINE });
+    if (p === '/api/projects/' + PID + '/files') return json(route, FILES_BODY);
     if (p === '/api/projects/' + PID + '/contacts') return json(route, CONTACTS);
     if (p === '/api/projects/' + PID + '/research') return json(route, { enabled: false, findings: [], runs: [] });
     if (p.startsWith('/api/projects/' + PID + '/')) return json(route, { project_id: PID, assets: [], vintages: [], nodes: [], edges: [], runs: [], items: [], lessons: [], rules: [], findings: [], enabled: false });
