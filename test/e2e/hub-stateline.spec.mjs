@@ -220,6 +220,47 @@ test('R1: three actions right-aligned (Write to… primary, Research, Open in to
   await expect(page.locator('#p-archived')).toBeHidden();
 });
 
+test('rename (8 Oct 2026, "Feezan"): Rename project in the … menu opens a sheet with the current name; Cancel changes nothing; Save sends the name only and the title, the crumb and the page title follow; a blank name is refused in place', async ({ page }) => {
+  const patched = await open(page);
+  const more = page.locator('#p-more');
+  await more.click();
+  const rename = page.locator('#p-rename');
+  await expect(rename).toBeVisible();
+  await expect(rename).toHaveText('Rename project');
+  await rename.click();
+  const sheet = page.locator('#p-rename-sheet');
+  await expect(sheet).toBeVisible();
+  const input = page.locator('#p-rename-input');
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue('Llanos Basin waterflood screening');
+  await expect(sheet).toContainText('The address stays');
+  await page.locator('#p-rename-cancel').click();
+  await expect(sheet).toBeHidden();
+  expect(patched).toEqual([]);
+  await more.click(); await rename.click();
+  await input.fill('   ');
+  await page.locator('#p-rename-save').click();
+  await expect(page.locator('#p-rename-error')).toContainText('Type a name');
+  expect(patched).toEqual([]);
+  await input.fill('  Llanos Basin waterflood screen  ');
+  await input.press('Enter');
+  await expect.poll(() => patched).toEqual([{ name: 'Llanos Basin waterflood screen' }]);
+  await expect(sheet).toBeHidden();
+  await expect(page.locator('#p-title')).toHaveText('Llanos Basin waterflood screen');
+  await expect(page.locator('.hub-crumb')).toContainText('Llanos Basin waterflood screen');
+  expect(await page.title()).toMatch(/^Llanos Basin waterflood screen — /);
+  await expect(page.locator('#p-notices')).toContainText('Renamed');
+  // The same name again sends nothing.
+  await more.click(); await rename.click();
+  await page.locator('#p-rename-save').click();
+  await expect(sheet).toBeHidden();
+  expect(patched.length).toBe(1);
+  // Spanish.
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await more.click();
+  await expect(rename).toHaveText('Renombrar proyecto');
+});
+
 test('R6: the tab strip is sticky under the stateline, Add documents opens the drop zone as a sheet, the whole page is a drop target; the File disclosure holds the tag, contacts, team and a compact Fields row', async ({ page }) => {
   await open(page);
   const tabs = page.locator('#p-tabs-wrap');
