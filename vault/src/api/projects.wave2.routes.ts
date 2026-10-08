@@ -1,6 +1,8 @@
 /**
  * Project updates (wave 2, docs/vault-hub/wave2/05-markup.md §1.3):
- *   PATCH /api/projects/:id  {stage?, status?, country?, lat?, lon?, register?}
+ *   PATCH /api/projects/:id  {name?, stage?, status?, country?, lat?, lon?, register?}
+ * 8 Oct 2026 ("Feezan"): `name` renames the project for display only, trimmed, 1–120 characters on one line; the id,
+ * which every record, link and address carries, never changes. The audit names the old and the new name.
  * Members and partners move an opportunity through its stages; every stage
  * change is appended to stage_history and named in the audit event. A project
  * the caller cannot see answers 404 so its existence is not leaked. The
@@ -19,7 +21,8 @@ import { linkRegisterCounterparties } from './organisations.routes.ts';
 import { projectView } from './projects.routes.ts';
 
 const STATUSES = ['prospect', 'active', 'closed', 'archived'];
-const FIELDS = new Set(['stage', 'status', 'country', 'lat', 'lon', 'register']);
+const FIELDS = new Set(['name', 'stage', 'status', 'country', 'lat', 'lon', 'register']);
+const NAME_MAX = 120;
 
 export function register(app: Hono<Env>, _deps: RouteDeps): void {
   route(app, 'PATCH', '/api/projects/:id', 'project.update', async (x) => {
@@ -31,13 +34,22 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     requireWritableProject(acc, id);
     const b = await jsonBody(x.c);
     const keys = Object.keys(b);
-    if (!keys.length) throw bad('nothing to change: send stage, status, country, lat, lon or register', '/');
+    if (!keys.length) throw bad('nothing to change: send name, stage, status, country, lat, lon or register', '/');
     for (const k of keys) if (!FIELDS.has(k)) throw bad(`"${k}" cannot be changed here`, `/${k}`);
+    let rename: { from: string; to: string } | null = null;
+    if (b.name !== undefined) {
+      if (typeof b.name !== 'string' || !b.name.trim()) throw bad('name must be a non-empty string', '/name');
+      const name = b.name.trim();
+      if (name.length > NAME_MAX) throw bad(`name must be at most ${NAME_MAX} characters`, '/name');
+      if (/[\u0000-\u001f\u007f]/.test(name)) throw bad('name must be one line of text', '/name');
+      if (name !== p.name) rename = { from: p.name, to: name };
+    }
     const opp = readOpportunityFields(b);
     if (b.status !== undefined && !STATUSES.includes(b.status)) throw bad(`status must be one of ${STATUSES.join(', ')}`, '/status');
 
     const sets: string[] = []; const params: unknown[] = [id];
     const set = (col: string, v: unknown, cast = '') => { params.push(v); sets.push(`${col} = $${params.length}${cast}`); };
+    if (rename) set('name', rename.to);
     if (opp.country !== undefined) set('country', opp.country);
     if (opp.lat !== undefined) set('lat', opp.lat);
     if (opp.lon !== undefined) set('lon', opp.lon);
@@ -72,7 +84,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     }
     const milestone = nextText ? await ensureNextActionMilestone(x.db, id, x.person.id, nextText, nextDue, x.now) : null;
     const linked = register ? await linkRegisterCounterparties(x.db, id, register) : [];
-    x.a.detail = { fields: keys, ...(stageChange ? { stage: stageChange } : {}), ...(milestone ? { next_milestone: milestone.id } : {}), ...(linked.length ? { linked } : {}) };
+    x.a.detail = { fields: keys, ...(rename ? { name: rename } : {}), ...(stageChange ? { stage: stageChange } : {}), ...(milestone ? { next_milestone: milestone.id } : {}), ...(linked.length ? { linked } : {}) };
     const freshAcc = await loadAccess(x.db, x.person, x.now);
     return { body: await projectView(x, freshAcc, freshAcc.projects.get(id)!) };
   });

@@ -165,11 +165,38 @@ test('AC11: PATCH changes the stage, appends to stage_history, writes one audit 
 });
 
 test('AC11: PATCH refuses unknown stages, unknown fields, bad values and an empty body', async () => {
-  for (const [body, where] of [[{ stage: 'Won!' }, '/stage'], [{ name: 'Renamed' }, '/name'], [{ lat: 100 }, '/lat'], [{ status: 'done' }, '/status'], [{}, '/']] as const) {
+  for (const [body, where] of [[{ stage: 'Won!' }, '/stage'], [{ id: 'renamed' }, '/id'], [{ lat: 100 }, '/lat'], [{ status: 'done' }, '/status'], [{}, '/']] as const) {
     const r = await json(await call(partner, 'PATCH', '/api/projects/kaz-brownfield', body));
     assert.equal(r.status, 400, JSON.stringify(body) + ' → ' + JSON.stringify(r.body));
     assert.equal(r.body.error.path, where);
   }
+});
+
+test('rename (8 Oct 2026, "Feezan"): PATCH name changes the display name only, trimmed; the id and every link stay; the audit names from and to; a blank, over-long or non-text name is refused', async () => {
+  const before = await json(await call(partner, 'GET', '/api/projects/kaz-brownfield'));
+  const was = before.body.name;
+  const r = await json(await call(partner, 'PATCH', '/api/projects/kaz-brownfield', { name: '  Western Kazakhstan Brownfield (Tengiz)  ' }));
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.id, 'kaz-brownfield', 'the id never changes');
+  assert.equal(r.body.name, 'Western Kazakhstan Brownfield (Tengiz)', 'trimmed');
+  assert.equal((await json(await call(partner, 'GET', '/api/projects/kaz-brownfield'))).body.name, 'Western Kazakhstan Brownfield (Tengiz)');
+  const audit = (await db.query<any>("SELECT detail FROM audit_events WHERE action = 'project.update' ORDER BY id DESC LIMIT 1")).rows[0];
+  assert.deepEqual(audit.detail.name, { from: was, to: 'Western Kazakhstan Brownfield (Tengiz)' });
+  assert.deepEqual(audit.detail.fields, ['name']);
+  for (const bad of ['', '   ', 'x'.repeat(121), 42, null, 'Line\nbreak']) {
+    const b = await json(await call(partner, 'PATCH', '/api/projects/kaz-brownfield', { name: bad }));
+    assert.equal(b.status, 400, JSON.stringify(bad) + ' → ' + JSON.stringify(b.body));
+    assert.equal(b.body.error.path, '/name');
+  }
+  // The same name again is a no-op that still answers 200 and audits no name change.
+  const same = await json(await call(partner, 'PATCH', '/api/projects/kaz-brownfield', { name: 'Western Kazakhstan Brownfield (Tengiz)' }));
+  assert.equal(same.status, 200);
+  const last = (await db.query<any>("SELECT detail FROM audit_events WHERE action = 'project.update' ORDER BY id DESC LIMIT 1")).rows[0];
+  assert.equal(last.detail.name, undefined);
+  // A non-member who cannot see a client project cannot rename it either.
+  assert.equal((await call(ben, 'PATCH', '/api/projects/llanos-waterflood', { name: 'Hijacked' })).status, 404);
+  // Put it back for the tests that follow.
+  assert.equal((await call(partner, 'PATCH', '/api/projects/kaz-brownfield', { name: was })).status, 200);
 });
 
 test('AC11: a member may PATCH a client project; a non-member who cannot see it gets 404, not 403; an internal project is open', async () => {

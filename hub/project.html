@@ -207,6 +207,24 @@
   </div>
 </section>
 
+<!-- 8 Oct 2026 ("Feezan"): Rename changes the name shown everywhere; the id in the address stays -->
+<div class="hub-scrim" id="rename-scrim" hidden></div>
+<div class="hub-sheet hub-confirm" id="p-rename-sheet" role="dialog" aria-modal="true" aria-labelledby="h-rename" hidden>
+  <div class="hub-sheet-head"><h3 id="h-rename" data-en="Rename this project" data-es="Renombrar este proyecto">Rename this project</h3></div>
+  <div class="hub-sheet-body">
+    <form class="hub-rename-form" id="p-rename-form" novalidate>
+      <label class="hub-rename-label" for="p-rename-input" data-en="Name" data-es="Nombre">Name</label>
+      <input type="text" class="hub-rename-input" id="p-rename-input" maxlength="120" autocomplete="off" spellcheck="true">
+      <p class="hub-muted hub-rename-note" data-en="The name changes on this page, the register, the globe and Today. The address stays as it was, so links and records keep working." data-es="El nombre cambia en esta página, el registro, el globo y Hoy. La dirección no cambia, así que los enlaces y los registros siguen funcionando.">The name changes on this page, the register, the globe and Today. The address stays as it was, so links and records keep working.</p>
+      <p class="hub-rename-error" id="p-rename-error" role="alert" hidden></p>
+      <div class="hub-actions">
+        <button type="submit" class="btn btn-primary btn-sm" id="p-rename-save" data-en="Save name" data-es="Guardar nombre">Save name</button>
+        <button type="button" class="btn btn-outline btn-sm" id="p-rename-cancel" data-en="Cancel" data-es="Cancelar">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Wave 7 PR2 (R1): Archive asks in a sheet; nothing is deleted -->
 <div class="hub-scrim" id="archive-scrim" hidden></div>
 <div class="hub-sheet hub-confirm" id="p-archive-sheet" role="dialog" aria-modal="true" aria-labelledby="h-archive" hidden>

@@ -1561,3 +1561,12 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 .hub .hub-ask-sources .hub-muted { font-size: 12.5px; }
 .hub .hub-ask-meta { font-size: 12.5px; margin: 12px 0 0; }
 
+/* 8 Oct 2026 ("Feezan"): the rename sheet */
+.hub .hub-rename-form { padding: 0 20px; }
+.hub .hub-rename-label { display: block; font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--gold-ink, #8a6d2b); margin-bottom: 6px; }
+.hub .hub-rename-input { box-sizing: border-box; width: 100%; font: inherit; font-size: 16px; color: var(--navy); background: var(--cream); border: 1px solid var(--rule); border-radius: var(--r-lg, 10px); padding: 10px 12px; }
+.hub .hub-rename-input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.18); }
+.hub .hub-sheet-body .hub-rename-note { padding: 0; margin: 8px 0 0; font-size: 13px; }
+.hub .hub-rename-error { color: var(--bad); font-size: 13px; margin: 8px 0 0; padding: 0; }
+.hub .hub-rename-form .hub-actions { padding: 14px 0 0; }
+

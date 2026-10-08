@@ -499,9 +499,12 @@ function renderActions(ctx) {
       const mwrap = mk('span', 'hub-menu-wrap', null, null, { 'data-actions-built': '' });
       const more = mk('button', 'btn btn-outline btn-sm hub-more', '…', '…', { type: 'button', id: 'p-more', 'aria-label': 'More actions', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': 'p-more-menu' });
       const mmenu = mk('div', 'hub-menu', null, null, { id: 'p-more-menu', role: 'menu', hidden: '' });
+      // 8 Oct 2026 ("Feezan"): Rename, above Archive; the id in the address never changes.
+      const rename = mk('button', 'hub-menu-item', 'Rename project', 'Renombrar proyecto', { type: 'button', role: 'menuitem', id: 'p-rename' });
+      rename.addEventListener('click', () => renameProject(ctx, more));
       const archive = mk('button', 'hub-menu-item', 'Archive project', 'Archivar proyecto', { type: 'button', role: 'menuitem', id: 'p-archive', 'data-archived': '0' });
       archive.addEventListener('click', () => archiveProject(ctx, archive));
-      add(mmenu, archive);
+      add(mmenu, rename, archive);
       add(mwrap, more, mmenu);
       attachMenu(more, mmenu);
       add(host, mwrap);
@@ -547,6 +550,45 @@ function openSheet(sheet, scrim, opener, onClose) {
 
 /** Archive hides the project from Today, the globe, the register and Cmd+K; its records stay and the file still opens by id. Restore puts it back.
  *  Wave 7 (R1): Archive asks in a confirm sheet (#p-archive-sheet); Restore is one tap. */
+/** 8 Oct 2026 ("Feezan"): a sheet with the current name; Save sends {name} only when it changed; the header, the crumb and the
+ *  page title follow. The Vault keeps the id (and so the address) as it was. */
+function renameProject(ctx, opener) {
+  const p = ctx.project;
+  const sheet = $('#p-rename-sheet'), form = $('#p-rename-form'), input = $('#p-rename-input'), err = $('#p-rename-error'), save = $('#p-rename-save'), cancel = $('#p-rename-cancel');
+  if (!sheet || !form || !input) return;
+  const menu = $('#p-more-menu'); if (menu) menu.setAttribute('hidden', '');
+  if (opener) opener.setAttribute('aria-expanded', 'false');
+  input.value = p.name || '';
+  err.textContent = ''; err.setAttribute('hidden', '');
+  const close = openSheet(sheet, $('#rename-scrim'), opener);
+  input.focus(); input.select();
+  const showErr = (en, es) => { setText(err, en, es); err.removeAttribute('hidden'); input.focus(); };
+  const done = () => { form.removeEventListener('submit', onSubmit); cancel.removeEventListener('click', onCancel); };
+  const onCancel = () => { done(); close(); };
+  async function onSubmit(ev) {
+    ev.preventDefault();
+    const name = input.value.trim();
+    if (!name) { showErr('Type a name.', 'Escriba un nombre.'); return; }
+    if (name === p.name) { done(); close(); return; }
+    save.disabled = true;
+    const res = await api('/api/projects/' + encodeURIComponent(p.id), { method: 'PATCH', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ name }) });
+    save.disabled = false;
+    if (res.ok && res.body) {
+      const was = p.name;
+      Object.assign(p, res.body);
+      done(); close();
+      renderHeader(ctx);
+      const notices = pnotices(); notices.textContent = '';
+      add(notices, notice('ok', 'Renamed.', 'Renombrado.', '"' + was + '" is now "' + p.name + '". The address is unchanged.', '"' + was + '" ahora es "' + p.name + '". La dirección no cambia.'));
+      return;
+    }
+    const msg = errMessage(res);
+    showErr(msg || (res.status ? 'HTTP ' + res.status : 'The Vault is unreachable.'), msg || (res.status ? 'HTTP ' + res.status : 'El Vault no es accesible.'));
+  }
+  form.addEventListener('submit', onSubmit);
+  cancel.addEventListener('click', onCancel);
+}
+
 async function archiveProject(ctx, btn) {
   const p = ctx.project;
   const notices = pnotices(); notices.textContent = '';
