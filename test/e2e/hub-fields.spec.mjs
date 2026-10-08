@@ -147,7 +147,7 @@ test('W3-AC6: Add field searches the gazetteers in the project country, shows ea
   await form.getByRole('button', { name: 'Search' }).click();
   const cands = form.locator('#fld-candidates li[data-candidate]');
   await expect(cands).toHaveCount(2);
-  expect(calls.locate).toEqual(['?name=Guafita&country=VE']);
+  expect(calls.locate).toEqual(['?name=Guafita&country=VE&kind=field']);   // wave 8: the kind rides along, so a basin is not looked up as an oil field
   await expect(cands.nth(0)).toContainText('Guafita');
   await expect(cands.nth(0).locator('.hub-src')).toHaveText('GEM');
   await expect(cands.nth(0)).toContainText('7.98, -69.12');

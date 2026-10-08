@@ -17,7 +17,7 @@ export interface Candidate {
   asset_id?: string; detail?: Record<string, unknown>;
 }
 export interface Unavailable { source: Source; reason: string }
-export interface LocateOptions { fetch?: typeof fetch; geonamesUser?: string; timeoutMs?: number; limit?: number }
+export interface LocateOptions { fetch?: typeof fetch; geonamesUser?: string; timeoutMs?: number; limit?: number; /** wave 8: the kind asked for drives what the gazetteers are asked (default field) */ kind?: AssetKind }
 export interface LocateResult { candidates: Candidate[]; unavailable: Unavailable[] }
 
 export const ASSET_KINDS: AssetKind[] = ['field', 'block', 'basin', 'reservoir', 'well'];   // wave 7 PR3: a reservoir sits between a field and its wells
@@ -66,16 +66,31 @@ async function fromVault(db: Db, name: string, country: string | null): Promise<
   });
 }
 
-async function fromGeonames(fetchImpl: typeof fetch, name: string, country: string | null, user: string, timeoutMs: number): Promise<Candidate[]> {
+/* Wave 8 (8 Oct 2026, "Fezzan"): what each kind asks the gazetteers for. Before this every lookup asked for oil and
+   gas fields only, so a basin or a region (Fezzan, a region of Libya with coordinates on Wikidata and GeoNames) never
+   came back whatever kind was chosen. GeoNames feature codes: BSNP petroleum basin, BSND drainage basin, RGN region,
+   AREA area, DSRT desert, PLAT plateau, OILF oilfield, GASF gasfield, OILW oil well, WLL well, RESV reservoir. */
+const GEONAMES_CODES: Record<AssetKind, string[]> = {
+  field: ['OILF', 'GASF'], block: ['OILF', 'GASF', 'AREA', 'RGN'], basin: ['BSNP', 'BSND', 'RGN', 'AREA', 'DSRT', 'PLAT'],
+  reservoir: ['OILF', 'GASF', 'RESV'], well: ['OILW', 'WLL', 'OILF', 'GASF'],
+};
+/** The Wikidata classes that make a record a strong match for the kind; anything else with a place is still offered, weaker. */
+const CLASS_WORDS: Record<AssetKind, RegExp> = {
+  field: /oil ?field|gas ?field|hydrocarbon|petroleum field|oil and gas/i, block: /block|concession|licen[cs]e|lease|contract area/i,
+  basin: /basin|region|landscape|desert|plateau|depression|graben|trough|sub-?basin|geological/i, reservoir: /reservoir|formation|oil ?field|gas ?field/i,
+  well: /well|borehole|drilling/i,
+};
+
+async function fromGeonames(fetchImpl: typeof fetch, name: string, country: string | null, user: string, timeoutMs: number, kind: AssetKind): Promise<Candidate[]> {
   const u = new URL('https://secure.geonames.org/searchJSON');
   u.searchParams.set('name', name);
   if (country) u.searchParams.set('country', country);
-  u.searchParams.append('featureCode', 'OILF'); u.searchParams.append('featureCode', 'GASF');
+  for (const code of GEONAMES_CODES[kind]) u.searchParams.append('featureCode', code);
   u.searchParams.set('maxRows', '5'); u.searchParams.set('username', user);
   const j = await fetchJson(fetchImpl, u.toString(), timeoutMs);
   if (j?.status?.message) throw new Error(String(j.status.message));
   return (Array.isArray(j?.geonames) ? j.geonames : []).map((g: any) => ({
-    name: String(g.name), kind: 'field' as AssetKind, country: g.countryCode ?? country ?? null,
+    name: String(g.name), kind: (/^(OILF|GASF)$/.test(String(g.fcode ?? '')) && kind !== 'well' ? 'field' : kind) as AssetKind, country: g.countryCode ?? country ?? null,
     lat: Number.isFinite(Number(g.lat)) ? Number(g.lat) : null, lon: Number.isFinite(Number(g.lng)) ? Number(g.lng) : null,
     source: 'geonames' as Source, source_id: String(g.geonameId), source_url: `https://www.geonames.org/${g.geonameId}`,
     confidence: String(g.name).toLowerCase() === name.toLowerCase() ? 0.8 : 0.5,
@@ -83,37 +98,57 @@ async function fromGeonames(fetchImpl: typeof fetch, name: string, country: stri
   }));
 }
 
-async function fromWikidata(fetchImpl: typeof fetch, name: string, country: string | null, timeoutMs: number): Promise<Candidate[]> {
-  const safe = name.replace(/["\\]/g, ' ').trim();
-  const query = `SELECT ?item ?itemLabel ?coord ?countryCode ?operatorLabel WHERE {
-  ?item wdt:P31 wd:Q211748 ; rdfs:label ?label .
-  FILTER(LANG(?label) IN ("en","es") && CONTAINS(LCASE(?label), LCASE("${safe}")))
+async function fromWikidata(fetchImpl: typeof fetch, name: string, country: string | null, timeoutMs: number, kind: AssetKind): Promise<Candidate[]> {
+  // 1. The text search Wikipedia itself uses: fuzzy on the label and its aliases, in every language.
+  const su = new URL('https://www.wikidata.org/w/api.php');
+  su.searchParams.set('action', 'wbsearchentities'); su.searchParams.set('search', name.trim()); su.searchParams.set('language', 'en');
+  su.searchParams.set('uselang', 'en'); su.searchParams.set('type', 'item'); su.searchParams.set('limit', '10'); su.searchParams.set('format', 'json');
+  const sj = await fetchJson(fetchImpl, su.toString(), timeoutMs);
+  const ids: string[] = (Array.isArray(sj?.search) ? sj.search : []).map((e: any) => String(e?.id ?? '')).filter((id: string) => /^Q\d+$/.test(id)).slice(0, 10);
+  if (!ids.length) return [];
+  // 2. What those items are and where: their classes, coordinates, country and operator, in one query.
+  const query = `SELECT ?item ?itemLabel ?classLabel ?coord ?countryCode ?operatorLabel WHERE {
+  VALUES ?item { ${ids.map(id => 'wd:' + id).join(' ')} }
+  OPTIONAL { ?item wdt:P31 ?class }
   OPTIONAL { ?item wdt:P625 ?coord }
   OPTIONAL { ?item wdt:P17 ?c . ?c wdt:P297 ?countryCode }
   OPTIONAL { ?item wdt:P137 ?operator }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en,es". }
-} LIMIT 10`;
+}`;
   const u = new URL('https://query.wikidata.org/sparql');
   u.searchParams.set('format', 'json'); u.searchParams.set('query', query);
   const j = await fetchJson(fetchImpl, u.toString(), timeoutMs);
   const rows: any[] = j?.results?.bindings ?? [];
-  const seen = new Set<string>();
-  const out: Candidate[] = [];
+  // Several rows per item (one per class): keep the item once, the matching class first, every class in the detail.
+  const byId = new Map<string, { row: any; classes: string[] }>();
   for (const b of rows) {
     const id = String(b.item?.value ?? '').split('/').pop() ?? '';
-    if (!id || seen.has(id)) continue;
+    if (!id) continue;
+    const cls = b.classLabel?.value ? String(b.classLabel.value) : '';
+    const e = byId.get(id) ?? { row: b, classes: [] };
+    if (cls && !e.classes.includes(cls)) e.classes.push(cls);
+    if (!e.row.coord?.value && b.coord?.value) e.row = b;
+    byId.set(id, e);
+  }
+  const out: Candidate[] = [];
+  for (const id of ids) {
+    const e = byId.get(id);
+    if (!e) continue;
+    const b = e.row;
     const cc = b.countryCode?.value ? String(b.countryCode.value).toUpperCase() : null;
-    if (country && cc && cc !== country) continue;
-    seen.add(id);
     const c = parseWikidataCoord(b.coord?.value);
+    if (!c && !cc) continue;                                    // a boat, a person, a disambiguation page: nothing to place
+    if (country && cc && cc !== country) continue;
+    if (e.classes.some(k => /disambiguation|Wikimedia|human\b|ship|boat|vehicle|film|album|song/i.test(k))) continue;
+    const matching = e.classes.find(k => CLASS_WORDS[kind].test(k));
     out.push({
-      name: String(b.itemLabel?.value ?? id), kind: 'field', country: cc ?? country ?? null, lat: c?.lat ?? null, lon: c?.lon ?? null,
+      name: String(b.itemLabel?.value ?? id), kind, country: cc ?? country ?? null, lat: c?.lat ?? null, lon: c?.lon ?? null,
       source: 'wikidata', source_id: id, source_url: `https://www.wikidata.org/wiki/${id}`,
-      confidence: String(b.itemLabel?.value ?? '').toLowerCase().startsWith(name.toLowerCase()) ? 0.7 : 0.5,
-      detail: { operator: b.operatorLabel?.value ?? null },
+      confidence: matching ? 0.8 : 0.5,
+      detail: { class: matching ?? e.classes[0] ?? null, classes: e.classes, operator: b.operatorLabel?.value ?? null },
     });
   }
-  return out;
+  return out.sort((a, z) => z.confidence - a.confidence);
 }
 
 let defaults: LocateOptions = {};
@@ -126,12 +161,13 @@ export async function locate(db: Db, name: string, country: string | null, o: Lo
   const fetchImpl = opts.fetch ?? fetch;
   const timeoutMs = opts.timeoutMs ?? 6000;
   const geonamesUser = opts.geonamesUser ?? process.env.GEONAMES_USERNAME;
+  const kind: AssetKind = opts.kind && ASSET_KINDS.includes(opts.kind) ? opts.kind : 'field';
   const unavailable: Unavailable[] = [];
   const vault = await fromVault(db, name, country);
   const [gn, wd] = await Promise.all([
-    geonamesUser ? fromGeonames(fetchImpl, name, country, geonamesUser, timeoutMs).catch(e => { unavailable.push({ source: 'geonames', reason: (e as Error).message }); return [] as Candidate[]; })
+    geonamesUser ? fromGeonames(fetchImpl, name, country, geonamesUser, timeoutMs, kind).catch(e => { unavailable.push({ source: 'geonames', reason: (e as Error).message }); return [] as Candidate[]; })
       : Promise.resolve((unavailable.push({ source: 'geonames', reason: 'GEONAMES_USERNAME not set on the Vault service' }), [] as Candidate[])),
-    fromWikidata(fetchImpl, name, country, timeoutMs).catch(e => { unavailable.push({ source: 'wikidata', reason: (e as Error).message }); return [] as Candidate[]; }),
+    fromWikidata(fetchImpl, name, country, timeoutMs, kind).catch(e => { unavailable.push({ source: 'wikidata', reason: (e as Error).message }); return [] as Candidate[]; }),
   ]);
   const limit = opts.limit ?? 12;
   return { candidates: [...vault, ...gn, ...wd].slice(0, limit), unavailable: unavailable.sort((a, b) => a.source.localeCompare(b.source)) };

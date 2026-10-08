@@ -816,6 +816,7 @@ function candidateRow(ctx, c, onAttach) {
   add(meta, document.createTextNode(' · '), srcPill(c.source));
   if (c.country && ctx.project.country && c.country !== ctx.project.country) { const on = (ctx.names && ctx.names.get(c.country)) || { en: c.country, es: c.country }; add(meta, document.createTextNode(' · '), mk('span', 'hub-outside', 'in ' + on.en + ', not this project\'s country', 'en ' + on.es + ', no el país de este proyecto', { 'data-outside': c.country })); }
   if (c.asset_id) add(meta, document.createTextNode(' · '), mk('span', null, 'already in the Vault', 'ya en el Vault'));
+  if (c.detail && c.detail.class) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.class));   // wave 8: "historical region", "petroleum basin"
   if (c.detail && c.detail.operator) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.operator));
   if (c.detail && c.detail.status) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.status));
   if (c.source_url) add(meta, document.createTextNode(' · '), dv('a', 'hub-inline-link', 'record', { href: c.source_url, target: '_blank', rel: 'noopener noreferrer' }));
@@ -1148,7 +1149,8 @@ async function renderFields(ctx) {
       if (cc) add(meta, dv('span', 'mono', cc)); else add(meta, mk('span', null, 'no coordinates on this record', 'sin coordenadas en este registro'));
       add(meta, document.createTextNode(' · '), srcPill(c.source));
       if (c.detail && c.detail.status) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.status));
-      if (c.detail && c.detail.operator) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.operator));
+      if (c.detail && c.detail.class) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.class));   // wave 8: "historical region", "petroleum basin"
+  if (c.detail && c.detail.operator) add(meta, document.createTextNode(' · '), dv('span', null, c.detail.operator));
       add(main, meta);
       const b = mk('button', 'btn btn-primary btn-sm', 'Attach', 'Adjuntar', { type: 'button', 'data-attach': c.source + ':' + c.source_id });
       b.addEventListener('click', () => decide(q, attachBody(c, p.country || null), b, li));
@@ -1239,7 +1241,7 @@ async function renderFields(ctx) {
     if (name.length < 2) { add(out, mk('p', 'hub-muted', 'Type at least two characters.', 'Escriba al menos dos caracteres.')); return; }
     go.disabled = true;
     add(out, mk('p', 'hub-muted', 'Searching…', 'Buscando…'));
-    const r = await api('/api/assets/locate?name=' + encodeURIComponent(name) + (p.country ? '&country=' + encodeURIComponent(p.country) : ''));
+    const r = await api('/api/assets/locate?name=' + encodeURIComponent(name) + (p.country ? '&country=' + encodeURIComponent(p.country) : '') + '&kind=' + encodeURIComponent(kindSel.value || 'field'));
     go.disabled = false;
     out.textContent = '';
     if (!r.ok) { add(out, notice('bad', 'The search failed.', 'La búsqueda falló.', errMessage(r) || (r.status ? 'HTTP ' + r.status : 'The Vault is unreachable.'), errMessage(r) || (r.status ? 'HTTP ' + r.status : 'El Vault no es accesible.'))); return; }
