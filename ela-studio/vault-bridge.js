@@ -60,6 +60,8 @@ function inputsFor(p) {
   const d = defaults().econ, e = complete(p).econ;
   const inputs = [];
   if (FISCAL_KEYS.every((k) => e[k] === d[k])) inputs.push({ ref: FISCAL_TERMS_REF, kind: 'reference', role: 'fiscal_terms' });
+  // Wave 8 PR 2 (W8-AC13): the spreadsheet opened from the Vault, so lineage and staleness know what the run read.
+  if (importedDoc) inputs.push({ ref: importedDoc.ref, kind: 'document', version: importedDoc.version, role: 'import' });
   inputs.push({ ref: 'tool:' + TOOL_ID, kind: 'manual' });
   return inputs;
 }
@@ -112,11 +114,15 @@ window.ATC_TOOL = {
   run: (p) => runFor(p == null ? getParams() : p),
   getInputs: (p) => inputsFor(p == null ? getParams() : p),
   getAssumptions: (p) => assumptionsFor(p == null ? getParams() : p),
+  getImported: () => (importedDoc ? clone(importedDoc) : null),
 };
 
 /* ---- Vault ---- */
 let vault = null;
 let vProject = 'firm';
+/* Wave 8 PR 2: the Vault document the studio last imported ({ref, version, name}), cited by the next saved run;
+   cleared by a device import or by loading a run. */
+let importedDoc = null;
 let projectMeta = {};
 let metaReady = Promise.resolve();
 let runsCache = {};
@@ -253,6 +259,7 @@ function loadRunAction(id) {
   if (!vault) return;
   vault.loadRun(id).then((rec) => {
     if (rec.title) CUR_NAME = rec.title;
+    importedDoc = null;
     setParams(rec.params);
     const now = runFor(getParams());
     const ok = Object.keys(rec.outputs || {}).every((k) => same(rec.outputs[k] && rec.outputs[k].value, now[k] && now[k].value));
@@ -277,11 +284,44 @@ function loadProjectMeta() {
     .then((b) => { (Array.isArray(b) ? b : (b && b.projects) || []).forEach((pr) => { if (pr && pr.id != null) projectMeta[String(pr.id)] = pr; }); })
     .catch(() => {});
 }
+/* ---- Open from Vault (wave 8 PR 2, W8-AC13) ---- */
+/* The button sits beside Import data and shows only with the Vault reachable and a project chosen. The picker is
+   the client library's; the chosen original goes through the studio's own handleImport as a File. */
+function mountVaultOpen() {
+  const anchor = $('#btnImport');
+  if (!anchor || $('#btnVaultOpen')) return;
+  const b = document.createElement('button');
+  b.className = 'btn ghost'; b.id = 'btnVaultOpen'; b.type = 'button'; b.hidden = true;
+  b.setAttribute('data-vact', 'vault-open');
+  b.setAttribute('data-en', '⇩ Open from Vault'); b.setAttribute('data-es', '⇩ Abrir desde el Vault');
+  b.textContent = lang() === 'es' ? '⇩ Abrir desde el Vault' : '⇩ Open from Vault';
+  b.title = 'Open a spreadsheet filed on this project';
+  anchor.insertAdjacentElement('afterend', b);
+  const input = $('#fileInput');
+  if (input) input.addEventListener('change', () => { importedDoc = null; });   // a device import replaces the Vault one
+}
+function paintVaultOpen() {
+  const b = $('#btnVaultOpen'); if (!b) return;
+  b.hidden = !(vault && vault.mode() === 'server' && vProject && vProject !== 'firm');
+}
+function openFromVault() {
+  if (!vault || typeof window.handleImport !== 'function') { toast('The studio cannot import here.'); return; }
+  vault.pickFile({ project: vProject, accept: ['.xlsx', '.xlsm', '.xls', '.csv'], title: { en: 'Open from the Vault', es: 'Abrir desde el Vault' } })
+    .then((r) => {
+      if (!r) return;
+      importedDoc = { ref: 'doc:' + r.item.id, version: Number(r.item.version) || 1, name: r.item.name || r.file.name };
+      window.handleImport(r.file);
+      toast('Opened ' + importedDoc.name + ' from the Vault. The next saved run cites it.');
+    })
+    .catch((e) => toast('The file could not be opened: ' + ((e && e.message) || e)));
+}
+
 function wireDrawer() {
   document.addEventListener('click', (e) => {
     const b = e.target.closest && e.target.closest('[data-vact]'); if (!b) return;
     const a = b.getAttribute('data-vact');
-    if (a === 'open-runs') openRuns();
+    if (a === 'vault-open') openFromVault();
+    else if (a === 'open-runs') openRuns();
     else if (a === 'close-runs') closeRuns();
     else if (a === 'run-load') loadRunAction(b.getAttribute('data-id'));
     else if (a === 'run-supersede') supersedeAction(b.getAttribute('data-id'));
@@ -290,6 +330,7 @@ function wireDrawer() {
 }
 
 function init() {
+  mountVaultOpen();
   localizeStatic();
   paintToolVer();
   wireDrawer();
@@ -299,9 +340,10 @@ function init() {
     window.ATC_VAULT = vault;
     window.dispatchEvent(new Event('atc-vault-ready'));
     const el = $('#projectPicker');
-    metaReady = vault.pickProject(el).then((id) => { vProject = id || 'firm'; return loadProjectMeta(); }).catch(() => {});
+    metaReady = vault.pickProject(el).then((id) => { vProject = id || 'firm'; paintVaultOpen(); return loadProjectMeta(); }).catch(() => {});
     el.addEventListener('vault:project', (e) => {
       vProject = (e.detail && e.detail.projectId) || 'firm';
+      paintVaultOpen();
       if (runsOpen()) refreshRuns();
     });
     vault.resolve(TOOL_ID).then((r) => {
