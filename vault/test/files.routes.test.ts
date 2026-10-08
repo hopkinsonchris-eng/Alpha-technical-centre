@@ -74,10 +74,11 @@ test('W8-AC9: the files of a project carry their folder, source, kind and versio
   const rows = body.files as any[];
   assert.deepEqual(rows.map(f => f.name), ['Frost 2 Openhole Logs.zip', '06_8_2021_tracer.MAIN.pdf', 'SHOW #124-8.tiff', 'Mutual NDA.pdf', 'production.xlsx'], 'sorted by folder then name, uploads (no folder) last');
   const tracer = rows.find(f => f.id === a.id);
-  assert.deepEqual({ ...tracer, created_at: undefined, authored_at: undefined }, {
+  assert.deepEqual({ ...tracer, created_at: undefined, authored_at: undefined, index: undefined }, {
     id: a.id, name: '06_8_2021_tracer.MAIN.pdf', title: '06_8_2021_tracer.MAIN.pdf', path: `${root}/Reserves VDR/Logs`, source: 'zoho-workdrive',
-    type: 'report', mime: 'application/pdf', size: 1234, version: 1, created_at: undefined, authored_at: undefined,
+    type: 'report', mime: 'application/pdf', size: 1234, version: 1, created_at: undefined, authored_at: undefined, index: undefined,
   });
+  assert.equal(tracer.index.state, 'waiting', 'nothing indexed in this test: every file waits');
   assert.ok(tracer.created_at);
   assert.equal(rows.find(f => f.id === petra.id).version, 2, 'the second upload of the same external id is version 2 of one row');
   assert.equal(rows.find(f => f.id === up.id).path, null, 'a hand upload has no folder');
@@ -103,4 +104,61 @@ test('W8-AC9: the files of a project carry their folder, source, kind and versio
   const last = audits.find(a => a.scope === `project:${PID}`);
   assert.ok(last, 'a project.files audit row with the project scope');
   assert.equal(last.detail.count, 4);
+});
+
+test('W8-AC15: each file carries its indexing state, the waiting ones their place in the sync job\'s order and an expected run; the summary counts them; the item route answers for one record', async () => {
+  const P2 = 'index-demo';
+  await db.query(`INSERT INTO projects (id, client_id, name, status, default_legal_tag, members, country) VALUES ($1, NULL, 'Index demo', 'prospect', 'lt-firm', '{ana.perez}', 'US')`, [P2]);
+  const mk = async (name: string, bytes: string, mime = 'application/pdf') => {
+    const fd = new FormData();
+    fd.append('item', JSON.stringify({ project_id: P2, type: 'report', title: name, origin: { source: 'zoho-workdrive', external_id: `wd:${name}` }, extracted: { filename: name, workdrive: { path: 'Alpha technical / Index demo/Logs', size: 10, modified_ms: 1 } } }));
+    fd.append('original', new Blob([bytes], { type: mime }), name);
+    const r = await partner.request('/api/items', { method: 'POST', body: fd });
+    const t = await r.text(); assert.equal(r.status, 201, t);
+    return JSON.parse(t).id as string;
+  };
+  const indexed = await mk('indexed.pdf', '%PDF indexed');
+  const unsupported = await mk('scan.tiff', 'II*', 'image/tiff');
+  const needsOcr = await mk('scan.pdf', '%PDF scan');
+  const waitD = await mk('wait-d.pdf', '%PDF d');
+  const waitE = await mk('wait-e.pdf', '%PDF e');
+  const waitF = await mk('wait-f.pdf', '%PDF f');
+  await db.query(`INSERT INTO chunks (item_id, item_version, ordinal, text, legal_tag, project_id, current) VALUES ($1, 1, 0, 'indexed text', 'lt-firm', $2, true)`, [indexed, P2]);
+  await db.query(`UPDATE items SET extracted = extracted || '{"ingest":{"status":"ok","version":1,"at":"2026-10-08T07:00:00.000Z"},"chunks":1,"text_chars":12}'::jsonb WHERE id = $1`, [indexed]);
+  await db.query(`UPDATE items SET extracted = extracted || '{"ingest":{"status":"unsupported","version":1,"at":"2026-10-08T07:00:00.000Z"}}'::jsonb WHERE id = $1`, [unsupported]);
+  await db.query(`UPDATE items SET extracted = extracted || '{"ingest":{"status":"needs_ocr","version":1,"at":"2026-10-08T07:00:00.000Z"},"needs_ocr":true}'::jsonb WHERE id = $1`, [needsOcr]);
+  // The sync job takes the oldest filed first, across the Vault: E, then D, then F.
+  await db.query(`UPDATE items SET created_at = '2020-01-01T00:00:00Z' WHERE id = $1`, [waitE]);
+  await db.query(`UPDATE items SET created_at = '2020-01-02T00:00:00Z' WHERE id = $1`, [waitD]);
+  await db.query(`UPDATE items SET created_at = '2020-01-03T00:00:00Z' WHERE id = $1`, [waitF]);
+
+  const r = await get(partner, `/api/projects/${P2}/files`);
+  const t = await r.text(); assert.equal(r.status, 200, t);
+  const body = JSON.parse(t);
+  const by = Object.fromEntries(body.files.map((f: any) => [f.id, f.index]));
+  assert.deepEqual(by[indexed], { state: 'indexed', chunks: 1 });
+  assert.deepEqual(by[unsupported], { state: 'unsupported', chunks: 0 });
+  assert.deepEqual(by[needsOcr], { state: 'needs_ocr', chunks: 0 });
+  assert.equal(by[waitE].state, 'waiting'); assert.equal(by[waitE].queue_position, 1);
+  assert.equal(by[waitD].queue_position, 2); assert.equal(by[waitF].queue_position, 3);
+  assert.deepEqual({ ...body.index, queue_total: undefined, next_run_at: undefined }, { indexed: 1, waiting: 3, unsupported: 1, needs_ocr: 1, empty: 0, no_original: 0, per_run: 200, queue_total: undefined, next_run_at: undefined });
+  assert.ok(body.index.queue_total >= 3, `queue_total ${body.index.queue_total}`);
+  // The expected run: the next quarter hour for the first 200 in the queue, and the same for all three.
+  const next = new Date(body.index.next_run_at);
+  assert.ok(next.getTime() > Date.now() - 1000 && next.getTime() <= Date.now() + 15 * 60000 + 1000, body.index.next_run_at);
+  assert.equal(next.getUTCMinutes() % 15, 0); assert.equal(next.getUTCSeconds(), 0);
+  assert.equal(by[waitE].expected_at, body.index.next_run_at);
+  assert.equal(by[waitF].expected_at, body.index.next_run_at);
+
+  // One record.
+  const one = await get(partner, `/api/items/${waitD}/index`);
+  const ob = await one.json();
+  assert.equal(one.status, 200, JSON.stringify(ob));
+  assert.equal(ob.state, 'waiting'); assert.equal(ob.queue_position, 2); assert.ok(ob.queue_total >= 3); assert.equal(ob.expected_at, body.index.next_run_at);
+  assert.equal(ob.item_id, waitD);
+  const idx = await get(partner, `/api/items/${indexed}/index`);
+  assert.deepEqual(await idx.json(), { item_id: indexed, version: 1, state: 'indexed', chunks: 1 });
+  assert.equal((await partner.request(`/api/items/${waitF}/hide`, { method: 'POST' })).status, 200);
+  assert.equal((await get(partner, `/api/items/${waitF}/index`)).status, 404);
+  assert.equal((await get(member, '/api/items/00000000-0000-4000-8000-000000000051/index')).status, 403, 'a client-NDA record outside the associate\'s scope');
 });

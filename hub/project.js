@@ -2119,7 +2119,7 @@ async function init() {
   // Wave 8 PR 2 (W8-AC10): the Files tab, from GET /api/projects/:id/files; a row opens the record panel.
   const projectFiles = flR.ok && flR.body && Array.isArray(flR.body.files) ? flR.body.files : null;
   if (!projectFiles) tabError($('#panel-files'), flR, 'The files could not be listed.', 'No se pudieron listar los archivos.');
-  else renderFileTree($('#files'), projectFiles, { onOpen: (f, btn) => openRecord({ ref: 'doc:' + f.id, title: f.name || f.title, trigger: btn }) });
+  else renderFileTree($('#files'), projectFiles, { index: flR.body.index || null, onOpen: (f, btn) => openRecord({ ref: 'doc:' + f.id, title: f.name || f.title, trigger: btn }) });
 
   buildTabs({
     timeline: entries.length, files: projectFiles ? projectFiles.length : null, vintages: vintages.length, basis: basis.length,

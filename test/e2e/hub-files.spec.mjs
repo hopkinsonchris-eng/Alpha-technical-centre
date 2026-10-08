@@ -30,12 +30,18 @@ const FILE_LIST = [
   file(MAIL, 'RE: Frost well LAS files', null, { source: 'zoho-mail', type: 'email', mime: 'message/rfc822', size: null }),
   file(PROD, 'production.xlsx', null, { source: 'upload', type: 'spreadsheet', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size: 20480 }),
 ];
-const FILES_BODY = { project_id: PID, count: FILE_LIST.length, generated_at: '2026-10-08T07:00:00.000Z', files: FILE_LIST };
+// Wave 8 PR 3 (W8-AC16): where each file stands with the indexer, and the summary line.
+const INDEX = {
+  [PETRA]: { state: 'unsupported', chunks: 0 }, [SUMMARY]: { state: 'indexed', chunks: 14 }, [TRACER]: { state: 'waiting', chunks: 0, queue_position: 143, expected_at: '2026-10-08T14:30:00.000Z' },
+  [SHOW]: { state: 'unsupported', chunks: 0 }, [MAIL]: { state: 'indexed', chunks: 2 }, [PROD]: { state: 'needs_ocr', chunks: 0 },
+};
+const INDEX_SUMMARY = { indexed: 2, waiting: 1, unsupported: 2, needs_ocr: 1, empty: 0, no_original: 0, queue_total: 610, per_run: 200, next_run_at: '2026-10-08T14:30:00.000Z' };
+const FILES_BODY = { project_id: PID, count: FILE_LIST.length, generated_at: '2026-10-08T07:00:00.000Z', index: INDEX_SUMMARY, files: FILE_LIST.map((f) => ({ ...f, index: INDEX[f.id] })) };
 const ITEM = (id) => {
   const f = FILE_LIST.find((x) => x.id === id);
   return { id, type: f.type, title: f.name, created_at: f.created_at, authored_at: null, authors: [], client_id: null, project_id: PID, asset_ids: [], organisation_ids: [], legal_tag: 'lt-firm',
     origin: { source: f.source, external_id: 'wd:' + id }, storage_key: 'originals/ab/' + id, mime: f.mime, content_hash: 'sha256:' + 'a'.repeat(64), version: f.version, supersedes: null, reference_no: null,
-    filing: { method: 'path', confidence: 1, confirmed_by: null }, extracted: { filename: f.name, workdrive: f.path ? { path: f.path } : undefined, ingest: { status: 'ok', version: f.version } }, stale: false, tags: [], cites: [] };
+    filing: { method: 'path', confidence: 1, confirmed_by: null }, extracted: { filename: f.name, workdrive: f.path ? { path: f.path } : undefined, ...(INDEX[id].state === 'waiting' ? {} : { ingest: { status: INDEX[id].state === 'indexed' ? 'ok' : INDEX[id].state, version: f.version }, chunks: INDEX[id].chunks }) }, stale: false, tags: [], cites: [] };
 };
 const CATALOG = { tools: [], built_at: '2026-09-29T09:00:00.000Z', commit: 'abc1234' };
 
@@ -59,6 +65,8 @@ async function stubApi(page, over = {}) {
     if (p === '/api/projects/' + PID + '/lineage') return json(route, { project_id: PID, nodes: [], edges: [] });
     const orig = /^\/api\/items\/([^/]+)\/original$/.exec(p);
     if (orig && orig[1] === TRACER) return route.fulfill({ status: 200, contentType: 'application/pdf', body: readFileSync(path.join(FILES, 'report.pdf')) });
+    const ix = /^\/api\/items\/([^/]+)\/index$/.exec(p);
+    if (ix && INDEX[ix[1]]) return json(route, { item_id: ix[1], version: 1, ...INDEX[ix[1]], ...(INDEX[ix[1]].state === 'waiting' ? { queue_total: 610 } : {}) });
     const it = /^\/api\/items\/([^/]+)$/.exec(p);
     if (it && FILE_LIST.some((x) => x.id === it[1])) return json(route, ITEM(it[1]));
     if (p.startsWith('/api/items/') && p.endsWith('/versions')) return json(route, { item_id: p.split('/')[3], versions: [] });
@@ -157,3 +165,34 @@ test('W8-AC10: when the route fails the tab says so and the rest of the page sta
   await expect(page.locator('#tab-files .n')).toHaveCount(0);
   await expect(page.locator('#p-body')).toBeVisible();
 });
+
+test('W8-AC16: the indexing line counts the states and names the next run; each row carries its state; a waiting file\'s panel says where it is in the queue and when', async ({ page }) => {
+  await openFiles(page);
+  const line = page.locator('#files-index');
+  await expect(line).toContainText('2 of 6 indexed');
+  await expect(line).toContainText('1 waiting');
+  await expect(line).toContainText('2 unsupported');
+  await expect(line).toContainText('1 needs OCR');
+  await expect(line).toContainText('next run');
+  await expect(line).toHaveAttribute('data-waiting', '1');
+  await page.locator('#files-find').fill('');
+  for (const f of [folder(page, 'Reserves VDR'), folder(page, 'Logs')]) if (!(await f.evaluate((e) => e.open))) await f.locator('> summary').click();
+  const tree = page.locator('#files');
+  await expect(tree.locator(`[data-file-id="${TRACER}"]`)).toHaveAttribute('data-index-state', 'waiting');
+  await expect(tree.locator(`[data-file-id="${TRACER}"] [data-index-mark]`)).toContainText('waiting · 143rd');
+  await expect(tree.locator(`[data-file-id="${PETRA}"] [data-index-mark]`)).toContainText('no text');
+  await expect(tree.locator(`[data-file-id="${PROD}"] [data-index-mark]`)).toContainText('needs OCR');
+  await expect(tree.locator(`[data-file-id="${SUMMARY}"] [data-index-mark]`)).toHaveCount(0);
+  await tree.locator(`[data-file-id="${TRACER}"]`).click();
+  const panel = page.locator('#record-panel');
+  await expect(panel).toBeVisible();
+  const wait = panel.locator('[data-index-wait]').first();          // in the view; the technical line repeats it
+  await expect(wait).toBeVisible();
+  await expect(wait).toContainText('143rd of 610');
+  await expect(wait).toContainText('14:30');
+  await expect(panel.locator('[data-index-now]')).toHaveCount(1);
+  await page.locator('.nav-lang button[data-lang="es"]').click();
+  await expect(line).toContainText('2 de 6 indexados');
+  await expect(wait).toContainText('143.º de 610');
+});
+

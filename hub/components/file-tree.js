@@ -14,7 +14,7 @@
    kind chip narrows the list before the tree is built and opens every
    folder on the way. Every string carries data-en and data-es.
    ============================================================ */
-import { mk, add, setText, fmtShortDate } from '../hub.js';
+import { mk, add, setText, fmtShortDate, fmtStamp } from '../hub.js';
 import { buildTree, kindOf, matches, KINDS, GROUPS, fmtSize } from '../../js/vault-files.js';
 
 const svg = (d) => '<svg class="hub-ic" viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
@@ -56,7 +56,9 @@ export function renderFileTree(host, files, opts = {}) {
   const status = mk('span', 'hub-muted hub-ft-status', null, null, { id: 'files-status', role: 'status' });
   add(head, find, chips, status);
   const treeHost = mk('div', 'hub-ft-tree');
-  add(host, head, treeHost);
+  add(host, head);
+  if (opts.index) add(host, indexLine(opts.index, all));
+  add(host, treeHost);
 
   let timer = null;
   input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { state.term = input.value; paint(); }, 120); });
@@ -104,6 +106,13 @@ export function renderFileTree(host, files, opts = {}) {
     if (when) { const d = fmtShortDate(when); add(meta, mk('span', null, d.en, d.es)); }
     const size = fmtSize(f.size);
     if (size) add(meta, mk('span', null, size, size));
+    // Wave 8 PR 3 (W8-AC16): where the file stands with the indexer; an indexed file says nothing more.
+    const ix = f.index && typeof f.index === 'object' ? f.index : null;
+    if (ix && ix.state) {
+      btn.setAttribute('data-index-state', ix.state);
+      const m = indexMark(ix);
+      if (m) add(meta, m);
+    }
     add(main, meta);
     add(btn, main);
     btn.addEventListener('click', () => onOpen(f, btn));
@@ -113,3 +122,52 @@ export function renderFileTree(host, files, opts = {}) {
   paint();
   return { paint, state };
 }
+
+/* ── Wave 8 PR 3 (W8-AC16): the indexing line and the per-row marks ───── */
+
+export const ORDINAL = {
+  en: (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); },
+  es: (n) => n + '.º',
+};
+const WHEN = (iso) => { const d = fmtStamp(iso); return typeof d === 'object' && d ? d : { en: String(d || ''), es: String(d || '') }; };
+
+/** The mark on a row: "waiting · 143rd", "no text", "needs OCR", "empty", "original missing"; nothing when indexed. */
+export function indexMark(ix) {
+  const words = {
+    unsupported: ['no text', 'sin texto'], needs_ocr: ['needs OCR', 'necesita OCR'], empty: ['empty', 'vacío'], no_original: ['original missing', 'falta el original'],
+  };
+  if (ix.state === 'waiting') {
+    const pos = Number(ix.queue_position);
+    const en = 'waiting' + (pos ? ' · ' + ORDINAL.en(pos) : ''), es = 'en espera' + (pos ? ' · ' + ORDINAL.es(pos) : '');
+    const el = mk('span', 'hub-ft-mark hub-ft-mark-waiting', en, es, { 'data-index-mark': 'waiting' });
+    if (ix.expected_at) { const w = WHEN(ix.expected_at); el.title = 'Expected about ' + w.en; }
+    return el;
+  }
+  if (words[ix.state]) return mk('span', 'hub-ft-mark', words[ix.state][0], words[ix.state][1], { 'data-index-mark': ix.state });
+  return null;
+}
+
+/** "1,480 of 2,316 indexed · 610 waiting · 226 unsupported (TIFF, zip) · 3 need OCR · next run 14:30". */
+export function indexLine(sum, files) {
+  const total = (sum.indexed || 0) + (sum.waiting || 0) + (sum.unsupported || 0) + (sum.needs_ocr || 0) + (sum.empty || 0) + (sum.no_original || 0);
+  const n = (v) => Number(v || 0).toLocaleString('en-GB');
+  const line = mk('div', 'hub-ft-index hub-muted', null, null, { id: 'files-index', role: 'status', 'data-waiting': String(sum.waiting || 0), 'data-indexed': String(sum.indexed || 0) });
+  const en = [n(sum.indexed) + ' of ' + n(total) + ' indexed'], es = [n(sum.indexed) + ' de ' + n(total) + ' indexados'];
+  if (sum.waiting) { en.push(n(sum.waiting) + ' waiting'); es.push(n(sum.waiting) + ' en espera'); }
+  if (sum.unsupported) {
+    const exts = [...new Set((files || []).filter((f) => f.index && f.index.state === 'unsupported').map((f) => (/\.([A-Za-z0-9]+)$/.exec(f.name || '') || [])[1]).filter(Boolean).map((e) => e.toUpperCase()))].slice(0, 4);
+    const kinds = exts.length ? ' (' + exts.join(', ') + ')' : '';
+    en.push(n(sum.unsupported) + ' unsupported' + kinds); es.push(n(sum.unsupported) + ' sin soporte' + kinds);
+  }
+  if (sum.needs_ocr) { en.push(n(sum.needs_ocr) + (sum.needs_ocr === 1 ? ' needs OCR' : ' need OCR')); es.push(n(sum.needs_ocr) + (sum.needs_ocr === 1 ? ' necesita OCR' : ' necesitan OCR')); }
+  if (sum.empty) { en.push(n(sum.empty) + ' empty'); es.push(n(sum.empty) + ' vacíos'); }
+  if (sum.no_original) { en.push(n(sum.no_original) + ' without an original'); es.push(n(sum.no_original) + ' sin original'); }
+  if (sum.waiting && sum.next_run_at) {
+    const t = new Date(sum.next_run_at);
+    const hm = isNaN(t) ? '' : t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    en.push('next run ' + hm + ' (' + n(sum.per_run) + ' per run)'); es.push('próxima pasada ' + hm + ' (' + n(sum.per_run) + ' por pasada)');
+  }
+  setText(line, en.join(' · '), es.join(' · '));
+  return line;
+}
+

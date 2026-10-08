@@ -22,7 +22,7 @@
      ctx    { project, entryById, lineage, catalog, versionsOf(id), open(ref, title),
               openDraft(rec), openReply(rec), highlight, passage, siteRoot }
    ============================================================ */
-import { mk, dv, add, fmtShortDate, num, RUN_STATUS, api, openTarget, armOnOpen } from './hub.js';
+import { mk, dv, add, setText, fmtShortDate, num, RUN_STATUS, api, openTarget, armOnOpen } from './hub.js';
 import { firstReason } from './components/stale-badge.js';
 import { buildViewer, viewerKind, originalUrl } from './viewer.js';
 
@@ -415,6 +415,9 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
   else add(view, mk('p', 'hub-muted', rec.storage_key ? 'Original missing: upload it again.' : 'Filed without an original.', rec.storage_key ? 'Falta el original: súbalo de nuevo.' : 'Registrado sin original.'));
   view.setAttribute('data-mode', mode);
   add(frag, view);
+  // Wave 8 PR 3 (W8-AC16): a file still waiting for the indexer says where it is in the queue, whatever the view shows.
+  const waitEls = [];
+  if (!indexed(rec) && hasOriginal) { const wp = mk('p', 'hub-muted hub-index-wait', null, null, { 'data-index-wait': '', hidden: '' }); waitEls.push(wp); add(frag, wp); }
 
   // Actions: Open original, Download, Write a reply, Cite.
   const actions = mk('div', 'hub-rp-actions hub-actions-row', null, null, { 'data-part': 'actions', 'data-actions': '' });
@@ -457,7 +460,21 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
   } else if (ex.ingest && INGEST_WORD[ex.ingest.status]) idx = mk('span', null, INGEST_WORD[ex.ingest.status][0], INGEST_WORD[ex.ingest.status][1], { 'data-h': 'indexed' });
   else {
     idx = mk('span', null, null, null, { 'data-h': 'indexed' });
-    add(idx, mk('span', 'hub-muted', 'not indexed yet', 'aún no indexado'));
+    const waitLine = mk('span', 'hub-muted', 'not indexed yet', 'aún no indexado', { 'data-index-wait': '' });
+    add(idx, waitLine); waitEls.push(waitLine);
+    // Wave 8 PR 3 (W8-AC16): where it is in the sync job's queue and when its run is expected, in the view and the technical line.
+    api('/api/items/' + encodeURIComponent(rec.id) + '/index').then((r) => {
+      const b = r.ok && r.body ? r.body : null;
+      if (!b || b.state !== 'waiting' || !b.queue_position) return;
+      const t = b.expected_at ? new Date(b.expected_at) : null;
+      const hm = t && !isNaN(t) ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+      const total = Number(b.queue_total || 0);
+      const pos = Number(b.queue_position);
+      const ordEn = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+      const en = 'Waiting to be indexed: ' + ordEn(pos) + (total ? ' of ' + total.toLocaleString('en-GB') : '') + ' in the queue' + (hm ? ', expected about ' + hm : '') + '.';
+      const es = 'En espera de indexación: ' + pos + '.º' + (total ? ' de ' + total.toLocaleString('en-GB') : '') + ' en la cola' + (hm ? ', previsto hacia las ' + hm : '') + '.';
+      for (const el of waitEls) { setText(el, en, es); el.removeAttribute('hidden'); }
+    }).catch(() => {});
     // Wave 7 (S27): a record filed by a tool or the API waits for the ingest cron; offer to index it now.
     const b = mk('button', 'btn btn-outline btn-sm hub-index-now', 'Index now', 'Indexar ahora', { type: 'button', 'data-index-now': rec.id });
     b.addEventListener('click', async () => {
