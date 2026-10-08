@@ -1541,3 +1541,23 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 .hub .hub-ft-mark { font-size: 11.5px; color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 0 8px; line-height: 17px; white-space: nowrap; }
 .hub .hub-ft-mark-waiting { color: var(--warn); border-color: var(--warn-line); background: var(--warn-bg); }
 
+/* Wave 8 PR 4 (W8-AC18): Ask this project */
+.hub .hub-project-tabs .hub-ask-btn { flex: none; margin-left: 8px; }
+.hub .hub-ask-form { padding: 0 20px; }
+.hub .hub-ask-q { box-sizing: border-box; width: 100%; min-height: 72px; resize: vertical; font: inherit; font-size: 14.5px; line-height: 1.45; color: var(--navy); background: var(--cream); border: 1px solid var(--rule); border-radius: var(--r-lg, 10px); padding: 10px 12px; }
+.hub .hub-ask-q:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.18); }
+.hub .hub-ask-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.hub .hub-ask-hint { font-size: 12px; }
+.hub .hub-ask-status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.hub .hub-ask-status[data-state="error"] { color: var(--bad); }
+.hub .hub-ask-result { padding: 14px 20px 0; }
+.hub .hub-ask-answer p { font-size: 14.5px; line-height: 1.55; max-width: none; margin: 0 0 10px; }
+.hub .hub-cite { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0 2px 0 3px; vertical-align: 2px; font-family: var(--font-label); font-size: 11.5px; font-weight: 600; color: var(--navy); background: #F6EED6; border: 1px solid #E3D08F; border-radius: 999px; cursor: pointer; line-height: 1; }
+.hub .hub-cite:hover { background: var(--gold); border-color: var(--gold); }
+.hub .hub-ask-questions, .hub .hub-ask-sources { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.hub .hub-ask-questions h4, .hub .hub-ask-sources h4 { font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--gold-ink, #8a6d2b); margin: 0 0 8px; }
+.hub .hub-ask-questions ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; }
+.hub .hub-ask-sources ol { margin: 0; padding-left: 22px; font-size: 13.5px; line-height: 1.6; }
+.hub .hub-ask-sources .hub-muted { font-size: 12.5px; }
+.hub .hub-ask-meta { font-size: 12.5px; margin: 12px 0 0; }
+

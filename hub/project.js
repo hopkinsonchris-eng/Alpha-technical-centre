@@ -40,6 +40,7 @@ import './components/lineage-graph.js';
 import { stateline } from './components/stateline.js';
 import { packController, packCard, packSheetBody, orderedSections } from './components/country-pack.js';
 import { renderFileTree } from './components/file-tree.js';
+import { mountAsk } from './components/ask.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const DAY = 864e5;
@@ -2128,6 +2129,7 @@ async function init() {
     scorecard: card.fail + card.na ? bi(card.fail + card.na + ' fail', card.fail + card.na + ' fallan') : null,
   }, new Set([...(lessonsOk ? [] : ['lessons']), ...(researchOk ? [] : ['research'])]));
   renderResearch(ctx, researchOk ? rsR : null);              // after the tabs exist: the status line, the Research tab and its count
+  mountAsk(ctx, { openRecord, openSheet });                  // wave 8 PR 4 (W8-AC18): Ask this project, beside Research
   if (canWriteProject(ctx)) draftUi = mountDraft(ctx, { openRecord });  // wave 5: Write to… beside Research
   ctx.refreshTimeline = () => refreshTimeline(ctx);
   await renderPack(ctx);                                     // wave 7 PR5 (M): the Country pack card, before the hash can land on a section
