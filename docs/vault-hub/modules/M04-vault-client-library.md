@@ -57,4 +57,14 @@ const saved = await vault.saveRun({
 ```
 The client fills `id`, `created_at`, `input_hash` (hash of `{inputs, params, assumptions}`), `author` (from `me()`) and `tool_version`/`tool_commit` (from `resolve(job)`). Missing or malformed fields reject with a message naming the JSON path (for example `Invalid run record: $.project_id is required`, also on `error.path`) before any request is made. Without a reachable `/api/me` the run is queued under `localStorage['vault_queue_v1']` (`queued: true`; `author`, `tool_version` and `tool_commit` are filled at flush) and `listRuns` returns it with `queued: true`. When `/api/me` answers 200 the queue flushes on its own, or call `await vault.flushQueue()`. A queued run the server rejects with a 4xx stays in the queue with an `error` note, and is not resent. From `file://` no request is made.
 
+Wave 8 PR 2 (`docs/vault-hub/wave8/02-files-and-picker.md`): a tool opens a document filed on the project instead of one from the device, and the run it saves cites it.
+```js
+const picked = await vault.pickFile({ project: 'parker-creek', accept: ['.xlsx', '.csv'] });   // a dialog: folders, find box, kind chips
+if (picked) {
+  handleImport(picked.file);                                   // a File, as the tool's own loader takes it
+  inputs.push({ ref: 'doc:' + picked.item.id, kind: 'document', version: picked.item.version, role: 'import' });
+}
+```
+Also `vault.files(projectId)` (the rows of `GET /api/projects/:id/files`: id, name, path, source, type, mime, size, version), `vault.pickItem(opts)` (the dialog alone, resolving the chosen row or null; `opts.kinds: ['sheet']` and `opts.title: {en, es}` are optional) and `vault.readOriginal(id, {version?})` (the bytes of a record's original through the originals route with the session cookie: `{bytes, mime, filename}`). Local mode: `files` answers `[]` and `pickItem` resolves null without a request. The bytes never come from the storage bucket, and the picker is built over the Vault's records, where the folder paths live.
+
 Also on `vault`: `pickProject(el?)` (project `<select>` from `GET /api/projects`, remembered per page, fires `vault:project` on `el`; without `el` returns the remembered id) and `configure({ apiBase })` (default same-origin `''`; resets mode and caches, keeps the queue). `mountFind(el, scope)` renders a search box with inline styles and brand tokens. `supersede(oldId, partial)` posts to `/api/runs/:id/supersede` and queues offline like `saveRun`.

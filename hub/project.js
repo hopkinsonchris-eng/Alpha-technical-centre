@@ -39,6 +39,7 @@ import './components/vintage-table.js';
 import './components/lineage-graph.js';
 import { stateline } from './components/stateline.js';
 import { packController, packCard, packSheetBody, orderedSections } from './components/country-pack.js';
+import { renderFileTree } from './components/file-tree.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const DAY = 864e5;
@@ -1645,7 +1646,7 @@ function renderResearch(ctx, first) {
 }
 
 const TABS = [
-  ['timeline', 'Timeline', 'Cronología'], ['vintages', 'Headline numbers', 'Cifras principales'], ['research', 'Research', 'Investigación'], ['lineage', 'Lineage', 'Linaje'],
+  ['timeline', 'Timeline', 'Cronología'], ['files', 'Files', 'Archivos'], ['vintages', 'Headline numbers', 'Cifras principales'], ['research', 'Research', 'Investigación'], ['lineage', 'Lineage', 'Linaje'],
   ['basis', 'Basis notes', 'Notas de bases'], ['lessons', 'Lessons in scope', 'Lecciones en alcance'], ['scorecard', 'Scorecard', 'Ficha de evaluación'],
 ];
 let activeTabs = [];
@@ -2032,7 +2033,7 @@ async function init() {
   showVault(true);
   const project = pr.body;
 
-  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo, rsR, ctR] = await Promise.all([
+  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo, rsR, ctR, flR] = await Promise.all([
     api('/api/projects/' + enc + '/timeline'),
     api('/api/projects/' + enc + '/vintages'),
     api('/api/projects/' + enc + '/lineage'),
@@ -2045,6 +2046,7 @@ async function init() {
     loadGeo(),
     api('/api/projects/' + enc + '/research'),
     api('/api/projects/' + enc + '/contacts'),                 // wave 7 (S15): the list Write to… uses
+    api('/api/projects/' + enc + '/files'),                    // wave 8 PR 2 (W8-AC10): the Files tab
   ]);
   const names = new Map();
   if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
@@ -2114,8 +2116,13 @@ async function init() {
   renderBasis(basis, entryById, (lineage && lineage.edges) || []);
   if (lessonsOk) renderLessons(lessons);
 
+  // Wave 8 PR 2 (W8-AC10): the Files tab, from GET /api/projects/:id/files; a row opens the record panel.
+  const projectFiles = flR.ok && flR.body && Array.isArray(flR.body.files) ? flR.body.files : null;
+  if (!projectFiles) tabError($('#panel-files'), flR, 'The files could not be listed.', 'No se pudieron listar los archivos.');
+  else renderFileTree($('#files'), projectFiles, { onOpen: (f, btn) => openRecord({ ref: 'doc:' + f.id, title: f.name || f.title, trigger: btn }) });
+
   buildTabs({
-    timeline: entries.length, vintages: vintages.length, basis: basis.length,
+    timeline: entries.length, files: projectFiles ? projectFiles.length : null, vintages: vintages.length, basis: basis.length,
     research: researchOk ? listOf(rsR.body, 'findings').length : null,
     lessons: lessonsOk ? lessons.length : null,
     scorecard: card.fail + card.na ? bi(card.fail + card.na + ' fail', card.fail + card.na + ' fallan') : null,

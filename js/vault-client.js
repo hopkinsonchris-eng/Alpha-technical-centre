@@ -12,7 +12,10 @@
  *  file:// no request is ever made. No dependencies, no reliance on style.css.
  * ========================================================================== */
 
+import { buildTree, kindOf, matches, KINDS, GROUPS, fmtSize } from './vault-files.js';
+
 const QUEUE_KEY = 'vault_queue_v1';
+const ORIGINAL_TIMEOUT_MS = 120000;
 const PROJECT_KEY = 'vault_project_v1';
 const REQUEST_TIMEOUT_MS = 8000;
 
@@ -587,6 +590,210 @@ async function pickProject(el) {
   return known ? remembered : null;
 }
 
+/* ── wave 8 PR 2: the project's files, an original's bytes, and the picker ── */
+/* docs/vault-hub/wave8/02-files-and-picker.md, W8-AC12. The structure lives in the Vault (folder paths on the
+   records), never in the storage bucket; the bytes come through the originals route with the session cookie. */
+
+/** The files of a project, as GET /api/projects/:id/files lists them (W8-AC9). Local mode: []. */
+async function files(projectId) {
+  if (typeof projectId !== 'string' || !projectId) throw fail('files: projectId is required');
+  await me();
+  if (MODE !== 'server') return [];
+  const res = await request('/api/projects/' + encodeURIComponent(projectId) + '/files');
+  if (!res.ok) throw await httpError(res, 'files(' + projectId + ')');
+  const body = await readJson(res);
+  return Array.isArray(body) ? body : (body && Array.isArray(body.files) ? body.files : []);
+}
+
+/** RFC 6266: filename*=UTF-8''… first, then filename="…". */
+function dispositionFilename(header) {
+  if (typeof header !== 'string') return null;
+  const star = /filename\*\s*=\s*(?:UTF-8|utf-8)''([^;]+)/.exec(header);
+  if (star) { try { return decodeURIComponent(star[1].trim()); } catch (e) { return star[1].trim(); } }
+  const plain = /filename\s*=\s*"([^"]*)"|filename\s*=\s*([^;]+)/.exec(header);
+  return plain ? (plain[1] || plain[2] || '').trim() || null : null;
+}
+
+/**
+ * The bytes of a record's original: GET /api/items/:id/original[?version=N], scope-checked by the Vault, with the
+ * session cookie. Resolves { id, version, bytes: Uint8Array, mime, filename }.
+ */
+async function readOriginal(id, opts = {}) {
+  if (typeof id !== 'string' || !RE.uuid.test(id)) throw fail('readOriginal: a record id is required');
+  if (noNetwork()) throw fail('Vault API is not reachable from file://', { code: 'offline' });
+  if (typeof globalThis.fetch !== 'function') throw fail('fetch is not available', { code: 'offline' });
+  const version = opts.version != null ? Number(opts.version) : null;
+  const q = version ? '?version=' + encodeURIComponent(String(version)) : '';
+  const init = { method: 'GET', headers: { accept: '*/*' }, cache: 'no-store', credentials: 'same-origin' };
+  let timer = null;
+  if (typeof AbortController !== 'undefined') { const ac = new AbortController(); init.signal = ac.signal; timer = setTimeout(() => ac.abort(), ORIGINAL_TIMEOUT_MS); }
+  let res;
+  try { res = await globalThis.fetch(apiBase + '/api/items/' + encodeURIComponent(id) + '/original' + q, init); }
+  finally { if (timer) clearTimeout(timer); }
+  if (!res.ok) throw await httpError(res, 'readOriginal(' + id + ')');
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const mime = String(res.headers.get('content-type') || 'application/octet-stream').split(';')[0].trim() || 'application/octet-stream';
+  const filename = (typeof opts.filename === 'string' && opts.filename) || dispositionFilename(res.headers.get('content-disposition')) || id;
+  return { id, version: version || null, bytes, mime, filename };
+}
+
+const ACCEPTS = (accept) => (Array.isArray(accept) ? accept : typeof accept === 'string' ? accept.split(',') : [])
+  .map((a) => String(a).trim().toLowerCase().replace(/^\*?\./, '.')).filter(Boolean);
+function acceptsFile(file, accept, kinds) {
+  if (kinds && kinds.length && !kinds.includes(kindOf(file))) return false;
+  if (!accept.length) return true;
+  const name = String(file.name || '').toLowerCase();
+  const mime = String(file.mime || '').toLowerCase();
+  return accept.some((a) => (a.startsWith('.') ? name.endsWith(a) : a.endsWith('/*') ? mime.startsWith(a.slice(0, -1)) : mime === a));
+}
+
+/**
+ * A dialog over the page listing the project's files in their folders (the same tree the Hub's Files tab draws),
+ * with a find box and the kind chips. Resolves the chosen record ({id, name, path, type, mime, version, …}) or
+ * null when closed. opts: { project, accept: ['.xlsx', '.csv'] | 'text/csv', kinds: ['sheet'], title: {en, es} }.
+ * Local mode resolves null without a request. Inline styles, brand tokens, no style.css (M04, AC5).
+ */
+async function pickItem(opts = {}) {
+  const project = typeof opts.project === 'string' ? opts.project : '';
+  if (!project) throw fail('pickItem: project is required');
+  await me();
+  const doc = globalThis.document;
+  if (MODE !== 'server' || !doc || typeof doc.createElement !== 'function') return null;
+  let all;
+  try { all = await files(project); } catch (e) { all = e; }
+  const accept = ACCEPTS(opts.accept);
+  const kinds = Array.isArray(opts.kinds) ? opts.kinds : null;
+  const listed = Array.isArray(all) ? all.filter((f) => acceptsFile(f, accept, kinds)) : [];
+  const title = opts.title && typeof opts.title === 'object' ? opts.title : { en: 'Open from the Vault', es: 'Abrir desde el Vault' };
+
+  return new Promise((resolve) => {
+    const state = { term: '', kinds: new Set() };
+    const hasDialog = typeof globalThis.HTMLDialogElement === 'function';
+    const root = doc.createElement(hasDialog ? 'dialog' : 'div');
+    root.setAttribute('data-vault-picker', project);
+    root.setAttribute('aria-label', lang() === 'es' ? title.es : title.en);
+    root.style.cssText = (hasDialog ? '' : 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(11,31,58,.55);')
+      + 'padding:0;border:none;background:transparent;max-width:none;max-height:none;';
+    const box = doc.createElement('div');
+    box.style.cssText = 'box-sizing:border-box;width:min(720px,94vw);max-height:min(80vh,760px);display:flex;flex-direction:column;background:' + T.white + ';color:' + T.navy
+      + ';border:1px solid ' + T.rule + ';border-radius:12px;box-shadow:0 20px 60px rgba(11,31,58,.28);font-family:' + T.body + ';font-size:14px;overflow:hidden';
+    root.appendChild(box);
+
+    const head = doc.createElement('div');
+    head.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid ' + T.rule + ';background:' + T.cream;
+    const h = bilingual(doc.createElement('div'), title.en, title.es);
+    h.style.cssText = 'font-family:' + T.label + ';font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:' + T.gold + ';flex:1';
+    const proj = doc.createElement('span'); proj.textContent = project; proj.style.cssText = 'font-size:12.5px;color:' + T.steel;
+    const close = bilingual(doc.createElement('button'), 'Cancel', 'Cancelar');
+    close.type = 'button'; close.setAttribute('data-vault-picker-cancel', '');
+    close.style.cssText = 'font:inherit;font-size:13px;color:' + T.navy + ';background:' + T.white + ';border:1px solid ' + T.rule + ';border-radius:999px;padding:5px 14px;cursor:pointer';
+    head.append(h, proj, close);
+
+    const bar = doc.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid ' + T.rule;
+    const input = doc.createElement('input');
+    input.type = 'search'; input.setAttribute('autocomplete', 'off'); input.setAttribute('data-vault-picker-find', '');
+    input.placeholder = lang() === 'es' ? 'Buscar un archivo' : 'Find a file';
+    input.style.cssText = 'box-sizing:border-box;flex:1 1 220px;min-width:160px;padding:7px 12px;font:inherit;color:' + T.navy + ';background:' + T.cream + ';border:1px solid ' + T.rule + ';border-radius:999px';
+    bar.appendChild(input);
+    const present = new Set(listed.map(kindOf));
+    for (const k of ['pdf', 'sheet', 'image', 'mail', 'doc', 'other']) {
+      if (!present.has(k)) continue;
+      const chip = bilingual(doc.createElement('button'), KINDS[k].en, KINDS[k].es);
+      chip.type = 'button'; chip.setAttribute('data-kind', k); chip.setAttribute('aria-pressed', 'false');
+      const off = 'font:inherit;font-size:12.5px;border:1px solid ' + T.rule + ';background:' + T.white + ';color:' + T.navyMid + ';border-radius:999px;padding:2px 11px;cursor:pointer';
+      chip.style.cssText = off;
+      chip.addEventListener('click', () => {
+        if (state.kinds.has(k)) state.kinds.delete(k); else state.kinds.add(k);
+        const on = state.kinds.has(k);
+        chip.setAttribute('aria-pressed', String(on));
+        chip.style.cssText = on ? off + ';background:' + T.navy + ';color:' + T.white + ';border-color:' + T.navy : off;
+        paint();
+      });
+      bar.appendChild(chip);
+    }
+    const status = doc.createElement('span'); status.setAttribute('role', 'status'); status.setAttribute('data-vault-picker-status', '');
+    status.style.cssText = 'margin-left:auto;font-size:12.5px;color:' + T.steel;
+    bar.appendChild(status);
+
+    const body = doc.createElement('div');
+    body.style.cssText = 'overflow:auto;padding:6px 10px 12px;flex:1 1 auto;min-height:120px';
+    box.append(head, bar, body);
+
+    let timer = null;
+    input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { state.term = input.value; paint(); }, 120); });
+
+    const finish = (value) => {
+      if (root.__done) return; root.__done = true;
+      try { if (hasDialog && root.open) root.close(); } catch (e) { /* already closed */ }
+      if (root.parentNode) root.parentNode.removeChild(root);
+      resolve(value);
+    };
+    close.addEventListener('click', () => finish(null));
+    root.addEventListener('cancel', (ev) => { ev.preventDefault(); finish(null); });
+    root.addEventListener('click', (ev) => { if (ev.target === root) finish(null); });
+    root.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); finish(null); } });
+
+    function row(f) {
+      const b = doc.createElement('button');
+      b.type = 'button'; b.setAttribute('data-file-id', f.id); b.setAttribute('data-kind', kindOf(f));
+      b.style.cssText = 'display:flex;align-items:baseline;gap:10px;width:100%;box-sizing:border-box;padding:8px 10px;border:none;background:none;text-align:left;font:inherit;color:' + T.navy + ';cursor:pointer;border-radius:8px';
+      const name = doc.createElement('span'); name.textContent = f.name || f.title || f.id; name.style.cssText = 'font-weight:500;overflow-wrap:anywhere';
+      const meta = doc.createElement('span'); meta.style.cssText = 'font-size:12px;color:' + T.steel + ';white-space:nowrap';
+      meta.textContent = [Number(f.version) > 1 ? 'v' + f.version : '', (f.authored_at || f.created_at || '').slice(0, 10), fmtSize(f.size)].filter(Boolean).join(' · ');
+      b.append(name, meta);
+      b.addEventListener('mouseenter', () => { b.style.background = T.cream; });
+      b.addEventListener('mouseleave', () => { b.style.background = 'none'; });
+      b.addEventListener('click', () => finish(f));
+      return b;
+    }
+    function folderNode(d, depth, open) {
+      const det = doc.createElement('details');
+      det.setAttribute('data-folder-name', d.name); det.setAttribute('data-count', String(d.count));
+      det.open = open || depth === 0;
+      det.style.cssText = 'margin-left:' + (depth ? 14 : 0) + 'px';
+      const sum = doc.createElement('summary');
+      sum.style.cssText = 'cursor:pointer;padding:7px 8px;font-weight:500;color:' + T.navy + ';border-radius:8px;list-style:none;display:flex;align-items:center;gap:8px';
+      const label = d.group ? bilingual(doc.createElement('span'), GROUPS[d.group].en, GROUPS[d.group].es) : doc.createElement('span');
+      if (!d.group) label.textContent = d.name;
+      const n = doc.createElement('span'); n.textContent = String(d.count);
+      n.style.cssText = 'font-size:11px;background:' + T.cream + ';border:1px solid ' + T.rule + ';border-radius:999px;padding:0 7px;line-height:17px;color:' + T.steel;
+      sum.append(label, n); det.appendChild(sum);
+      for (const sub of d.folders) det.appendChild(folderNode(sub, depth + 1, open));
+      for (const f of d.files) det.appendChild(row(f));
+      return det;
+    }
+    function paint() {
+      body.textContent = '';
+      if (!Array.isArray(all)) { bilingual(body.appendChild(doc.createElement('p')), 'The files could not be listed: ' + (all && all.message || 'error'), 'No se pudieron listar los archivos: ' + (all && all.message || 'error')); return; }
+      const narrowed = !!(state.term.trim() || state.kinds.size);
+      const shown = narrowed ? listed.filter((f) => matches(f, state.term, state.kinds)) : listed;
+      bilingual(status, narrowed ? shown.length + ' of ' + listed.length + ' files' : listed.length + (listed.length === 1 ? ' file' : ' files'), narrowed ? shown.length + ' de ' + listed.length + ' archivos' : listed.length + (listed.length === 1 ? ' archivo' : ' archivos'));
+      if (!shown.length) {
+        const p = doc.createElement('p'); p.style.cssText = 'padding:24px 10px;text-align:center;color:' + T.steel;
+        bilingual(p, listed.length ? 'No file matches.' : 'No file of that kind on this project yet.', listed.length ? 'Ningún archivo coincide.' : 'Aún no hay archivos de ese tipo en este proyecto.');
+        body.appendChild(p); return;
+      }
+      const tree = buildTree(shown);
+      // A short list opens every folder down to its files; a long one opens the top level and lets the find box narrow it.
+      for (const d of tree.folders) body.appendChild(folderNode(d, 0, narrowed || shown.length <= 60));
+    }
+    paint();
+    (doc.body || doc.documentElement).appendChild(root);
+    if (hasDialog) { try { root.showModal(); } catch (e) { root.setAttribute('open', ''); } }
+    try { input.focus(); } catch (e) { /* no focus */ }
+  });
+}
+
+/** pickItem, then readOriginal, as a File the tool's own loader can take: { item, file } or null. */
+async function pickFile(opts = {}) {
+  const item = await pickItem(opts);
+  if (!item) return null;
+  const o = await readOriginal(item.id, { filename: item.name });
+  const file = typeof globalThis.File === 'function' ? new globalThis.File([o.bytes], o.filename, { type: o.mime }) : { name: o.filename, type: o.mime, bytes: o.bytes };
+  return { item, file, bytes: o.bytes, mime: o.mime };
+}
+
 /* ── configuration ───────────────────────────────────────────────────── */
 
 /** Point the client at another origin (default same-origin ''). Resets mode and caches; keeps the queue. */
@@ -599,8 +806,9 @@ function configure(opts = {}) {
 export const vault = {
   mode, me, resolve, canonicalHash, saveRun, loadRun, listRuns, supersede, find, mountFind, flushQueue,
   pickProject, pageAsset, configure,
+  files, readOriginal, pickItem, pickFile,                   // wave 8 PR 2: the project's files and the picker
 };
-export { pickProject, pageAsset, configure };
+export { pickProject, pageAsset, configure, files, readOriginal, pickItem, pickFile };
 
 // In a served page, learn the mode early so mode() is meaningful and a waiting queue drains.
 if (typeof location !== 'undefined' && location && /^https?:$/.test(location.protocol)) {

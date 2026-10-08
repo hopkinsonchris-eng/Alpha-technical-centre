@@ -38,11 +38,21 @@ const net = {
   projects: [],         // what GET /api/projects answers
 };
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+net.files = [];           // what GET /api/projects/:id/files answers
+net.originalStatus = 200; // what GET /api/items/:id/original answers
 globalThis.fetch = async (url, init = {}) => {
   const method = init.method || 'GET';
   const path = String(url);
   const body = init.body ? JSON.parse(init.body) : undefined;
-  net.calls.push({ method, path, body });
+  net.calls.push({ method, path, body, credentials: init.credentials });
+  // Wave 8 PR 2 (W8-AC12): the files of a project and the bytes of an original.
+  const files = /^\/api\/projects\/([^/]+)\/files$/.exec(path);
+  if (files) return json(200, { project_id: files[1], count: net.files.length, generated_at: '2026-10-08T07:00:00.000Z', files: net.files });
+  const orig = /^\/api\/items\/([^/]+)\/original(\?.*)?$/.exec(path);
+  if (orig) {
+    if (net.originalStatus !== 200) return json(net.originalStatus, { error: { code: 'not_found', message: 'no original' } });
+    return new Response(new Uint8Array([0x61, 0x2c, 0x31, 0x0a]), { status: 200, headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': "inline; filename*=UTF-8''production%20v2.csv" } });
+  }
   if (path === '/api/me') return net.meStatus === 200 ? json(200, { id: 'chris', email: 'chris@example.com', name: 'Chris', role: 'partner' }) : json(net.meStatus, { error: { code: 'unauthorized', message: 'no' } });
   if (/^\/api\/tools\/[^/]+\/resolve$/.test(path)) {
     return net.resolveStatus === 200
@@ -73,7 +83,7 @@ const runCalls = () => net.calls.filter((c) => c.path.startsWith('/api/runs'));
 beforeEach(() => {
   store.clear();
   net.calls = []; net.runsPosted = [];
-  net.meStatus = 401; net.resolveVersion = '1.2.3'; net.resolveStatus = 200;
+  net.meStatus = 401; net.resolveVersion = '1.2.3'; net.resolveStatus = 200; net.files = []; net.originalStatus = 200;
   fakeDocument.visibilityState = 'visible';
   vault.configure({ apiBase: '' });          // resets mode, person, resolve cache
 });
@@ -342,3 +352,44 @@ describe('a numeric output must carry its unit (wave 7, §7.4)', () => {
     assert.deepEqual(Object.keys(net.runsPosted[0].outputs), ['risk', 'screened', 'npv10']);
   });
 });
+
+/* ── wave 8 PR 2 (W8-AC12): the project's files and an original's bytes ── */
+
+describe('files, readOriginal and pickItem (wave 8, W8-AC12)', () => {
+  const ID = '00000000-0000-4000-8000-000000000505';
+  const FILE = { id: ID, name: 'production.xlsx', title: 'production.xlsx', path: null, source: 'upload', type: 'spreadsheet', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size: 20480, version: 2, created_at: '2026-10-07T17:34:46.357Z', authored_at: null };
+
+  test('local mode: files answers [] and pickItem resolves null, with no request to the route', async () => {
+    assert.deepEqual(await vault.files('parker-creek'), []);
+    assert.equal(await vault.pickItem({ project: 'parker-creek' }), null);
+    assert.equal(net.calls.filter((c) => c.path.includes('/files')).length, 0);
+  });
+
+  test('server mode: files reads GET /api/projects/:id/files and returns the rows', async () => {
+    net.meStatus = 200; net.files = [FILE];
+    const rows = await vault.files('parker-creek');
+    assert.deepEqual(rows, [FILE]);
+    assert.ok(net.calls.some((c) => c.method === 'GET' && c.path === '/api/projects/parker-creek/files'));
+    await assert.rejects(vault.files(''), /projectId/);
+  });
+
+  test('readOriginal fetches the originals route with the session cookie and returns bytes, mime and the filename from the disposition', async () => {
+    net.meStatus = 200;
+    const o = await vault.readOriginal(ID);
+    assert.deepEqual([...o.bytes], [0x61, 0x2c, 0x31, 0x0a]);
+    assert.equal(o.mime, 'text/csv');
+    assert.equal(o.filename, 'production v2.csv');
+    assert.equal(o.id, ID);
+    const call = net.calls.find((c) => c.path.startsWith('/api/items/' + ID + '/original'));
+    assert.ok(call, 'the originals route was read');
+    assert.equal(call.credentials, 'same-origin');
+    const v = await vault.readOriginal(ID, { version: 1, filename: 'given.csv' });
+    assert.equal(v.filename, 'given.csv');
+    assert.equal(v.version, 1);
+    assert.ok(net.calls.some((c) => c.path === '/api/items/' + ID + '/original?version=1'));
+    await assert.rejects(vault.readOriginal('not-an-id'), /record id/);
+    net.originalStatus = 404;
+    await assert.rejects(vault.readOriginal(ID), (e) => { assert.equal(e.status, 404); return true; });
+  });
+});
+
