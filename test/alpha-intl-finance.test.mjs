@@ -124,6 +124,37 @@ describe('shareholderLoan: tax release comes before the sweep', () => {
   });
 });
 
+describe('shareholderLoan: tax release switched off (Heads of Terms s.9 as signed)', () => {
+  // Same case as above: year 1 share 60, tax 10, owed 50. With no release the
+  // whole 60 is available to sweep, so the 50 owed is repaid and 10 is left,
+  // and the principals pay the 10 of tax themselves: 10 - 10 = 0 kept.
+  const off = shareholderLoan({ fcf: [-100, 120], taxable: [0, 80] },
+    { share: 0.5, rate: 0, compounding: 1, sweepPct: 1, taxRate: 0.25, fee: 0, taxRelease: false });
+  test('nothing is released; the sweep takes cash before tax', () => {
+    near(off.rows[1].taxRelease, 0, 1e-9, 'no release');
+    near(off.rows[1].tax, 10, 1e-9, 'tax still owed');
+    near(off.rows[1].sweep, 50, 1e-9, 'sweep');
+    near(off.rows[1].toPrincipals, 0, 1e-9, 'kept after paying tax');
+  });
+  test('while the loan is outstanding the principals fund their tax from their own pocket', () => {
+    // Year 1 share 40 all swept against 50 owed; tax 0.25 x 0.5 x 80 = 10 paid out of pocket.
+    const o = shareholderLoan({ fcf: [-100, 80], taxable: [0, 80] },
+      { share: 0.5, rate: 0, compounding: 1, sweepPct: 1, taxRate: 0.25, fee: 0, taxRelease: false });
+    near(o.rows[1].sweep, 40, 1e-9, 'all cash swept');
+    near(o.rows[1].toPrincipals, -10, 1e-9, 'tax out of pocket');
+    near(o.rows[1].draw, 0, 1e-9, 'the lender does not fund tax');
+  });
+  test('compareFinancing passes the switch through and costs the principals value', () => {
+    const fcf = [-400, -200, 150, 250, 300, 300, 250, 200, 150, 100];
+    const capex = [400, 250, 50, 0, 0, 0, 0, 0, 0, 0];
+    const on = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS }, 0.10);
+    const noRel = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS, taxRelease: false }, 0.10);
+    assert.ok(noRel.partner.payoffIndex <= on.partner.payoffIndex, 'repaid no later');
+    assert.ok(noRel.partner.rows.every((r) => r.taxRelease === 0));
+    assert.equal(DEAL_DEFAULTS.taxRelease, true);
+  });
+});
+
 describe('shareholderLoan: third-party fee', () => {
   test('arrangement fee is capitalised on each draw', () => {
     const r = shareholderLoan({ fcf: [-200], taxable: [0] },

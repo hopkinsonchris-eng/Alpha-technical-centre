@@ -15,6 +15,10 @@
  *   3. Tax release: tax = rate x (share x taxable profit - deductible
  *      interest), after losses carried forward. It is paid first from s; any
  *      tax the principals cannot cover from s is drawn on the loan.
+ *      With taxRelease off (Heads of Terms s.9 as signed: every Alpha
+ *      Distribution goes to the lender while a loan is outstanding) nothing is
+ *      released: the sweep takes s before tax and the principals pay the tax
+ *      from their own pocket, which can leave their cash negative.
  *   4. Sweep: sweepPct of what is left repays the loan, interest first, and
  *      the rest is the principals' to keep.
  *
@@ -34,6 +38,7 @@ export const DEAL_DEFAULTS = Object.freeze({
   taxRate: 0.25,               // principals' tax rate on allocated profit
   deprYears: 5,                // straight-line tax depreciation of capex
   interestDeductible: true,
+  taxRelease: true,            // pay principals' tax before the sweep
   thirdPartyRate: 0.09,
   thirdPartyCompounding: 1,
   thirdPartyFee: 0.015,        // arrangement fee on each draw, capitalised
@@ -84,6 +89,7 @@ export function shareholderLoan({ fcf, taxable }, opts) {
   const taxRate = Math.max(0, opts.taxRate ?? 0);
   const feePct = Math.max(0, opts.fee ?? 0);
   const deductible = opts.interestDeductible !== false;
+  const release = opts.taxRelease !== false;
 
   let bal = 0, lossCF = 0, peak = 0, drawn = 0, totInt = 0, totFee = 0, totPaid = 0, totTax = 0;
   let payoffIndex = null, everDrawn = false;
@@ -100,8 +106,8 @@ export function shareholderLoan({ fcf, taxable }, opts) {
     let tax = 0;
     if (ti < 0) { lossCF = -ti; } else { lossCF = 0; tax = ti * taxRate; }
     const cash = Math.max(0, s);
-    const taxRelease = Math.min(cash, tax);
-    const taxShort = tax - taxRelease;               // drawn at year end, no interest this year
+    const taxRelease = release ? Math.min(cash, tax) : 0;
+    const taxShort = release ? tax - taxRelease : 0; // drawn at year end, no interest this year
     draw += taxShort;
     const shortFee = taxShort * feePct;
     fee += shortFee;
@@ -111,7 +117,7 @@ export function shareholderLoan({ fcf, taxable }, opts) {
     const sweep = Math.min(postTax * sweepPct, owed);
     const interestPaid = Math.min(sweep, interest);
     const closing = owed - sweep;
-    const toPrincipals = postTax - sweep;
+    const toPrincipals = postTax - sweep - (release ? 0 : tax); // without a release, tax comes from the principals' pocket
 
     if (draw > 0) everDrawn = true;
     peak = Math.max(peak, owed);
@@ -147,7 +153,7 @@ export function compareFinancing({ fcf, capex }, deal, disc) {
   const d = { ...DEAL_DEFAULTS, ...deal };
   const share = 1 - d.partnerShare;
   const taxable = taxableSeries(fcf, capex, d.deprYears);
-  const common = { share, sweepPct: d.sweepPct, taxRate: d.taxRate, interestDeductible: d.interestDeductible };
+  const common = { share, sweepPct: d.sweepPct, taxRate: d.taxRate, interestDeductible: d.interestDeductible, taxRelease: d.taxRelease };
   const n = fcf.length;
   const settle = (loan) => {
     const cash = loan.rows.map((x) => x.toPrincipals);

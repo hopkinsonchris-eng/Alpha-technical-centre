@@ -998,7 +998,7 @@ body{padding-top:0;}
         </div>
         <div class="method-box">
           <h3 data-en="Alpha International shareholder financing" data-es="Financiamiento de accionistas de Alpha International">Alpha International shareholder financing</h3>
-          <p data-en="The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects." data-es="El socio financiador mantiene su participación y puede prestar a los principales la suya a una tasa compuesta. Cada año se calcula la parte de los principales del flujo de caja libre del proyecto (después de la participación del gobierno). Una parte negativa se dispone del préstamo, con intereses desde mitad de año. Una liberación fiscal paga luego el impuesto de los principales sobre su utilidad asignada: flujo de caja libre más CAPEX, menos depreciación fiscal lineal, menos intereses deducibles, tras pérdidas acumuladas. El impuesto que no pueden cubrir con caja se dispone del préstamo. El barrido repaga al prestamista, intereses primero. Un préstamo de terceros sigue los mismos pasos a su propia tasa, con una comisión de estructuración añadida a cada disposición. El VPN de los principales resta cualquier saldo pendiente en el último año. El impuesto de accionistas es una tasa fija sin retenciones ni efectos de tratados.">The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects.</p>
+          <p data-en="The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects. Switching the tax release off follows Heads of Terms §9 as signed: the sweep takes every distribution while a loan is outstanding and the principals pay their tax from their own pocket." data-es="El socio financiador mantiene su participación y puede prestar a los principales la suya a una tasa compuesta. Cada año se calcula la parte de los principales del flujo de caja libre del proyecto (después de la participación del gobierno). Una parte negativa se dispone del préstamo, con intereses desde mitad de año. Una liberación fiscal paga luego el impuesto de los principales sobre su utilidad asignada: flujo de caja libre más CAPEX, menos depreciación fiscal lineal, menos intereses deducibles, tras pérdidas acumuladas. El impuesto que no pueden cubrir con caja se dispone del préstamo. El barrido repaga al prestamista, intereses primero. Un préstamo de terceros sigue los mismos pasos a su propia tasa, con una comisión de estructuración añadida a cada disposición. El VPN de los principales resta cualquier saldo pendiente en el último año. El impuesto de accionistas es una tasa fija sin retenciones ni efectos de tratados. Desactivar la liberación fiscal sigue la §9 del Heads of Terms firmado: el barrido toma toda distribución mientras haya un préstamo pendiente y los principales pagan su impuesto de su propio bolsillo.">The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects. Switching the tax release off follows Heads of Terms §9 as signed: the sweep takes every distribution while a loan is outstanding and the principals pay their tax from their own pocket.</p>
         </div>
       </div>
 
@@ -1043,6 +1043,11 @@ body{padding-top:0;}
                 <label for="ai-depr"><span data-en="Tax depreciation of CAPEX (years)" data-es="Depreciación fiscal del CAPEX (años)">Tax depreciation of CAPEX (years)</span> <output id="ai-o-depr">5</output></label>
                 <input type="range" id="ai-depr" min="1" max="10" step="1" value="5">
               </div>
+              <div class="ae-tog-row">
+                <input type="checkbox" id="ai-release" checked>
+                <label for="ai-release" data-en="Release tax before the sweep" data-es="Liberar el impuesto antes del barrido">Release tax before the sweep</label>
+              </div>
+              <div class="ae-note" style="margin:-2px 0 8px;" data-en="Off follows Heads of Terms §9 as signed: every distribution goes to the lender while a loan is outstanding, and the principals pay their tax from their own pocket." data-es="Desactivado sigue la §9 del Heads of Terms firmado: toda distribución va al prestamista mientras haya un préstamo pendiente, y los principales pagan su impuesto de su propio bolsillo.">Off follows Heads of Terms §9 as signed: every distribution goes to the lender while a loan is outstanding, and the principals pay their tax from their own pocket.</div>
               <div class="ae-tog-row">
                 <input type="checkbox" id="ai-deduct" checked>
                 <label for="ai-deduct" data-en="Loan interest is tax-deductible" data-es="Los intereses del préstamo son deducibles">Loan interest is tax-deductible</label>
@@ -2270,6 +2275,7 @@ function getDeal() {
     taxRate: +el('ai-tax').value / 100,
     deprYears: +el('ai-depr').value,
     interestDeductible: el('ai-deduct').checked,
+    taxRelease: el('ai-release').checked,
     thirdPartyRate: +el('ai-trate').value / 100,
     thirdPartyCompounding: +el('ai-tcomp').value,
     thirdPartyFee: +el('ai-tfee').value / 100,
@@ -2285,6 +2291,7 @@ function setDeal(d) {
   el('ai-tax').value = Math.round(x.taxRate * 100);
   el('ai-depr').value = x.deprYears;
   el('ai-deduct').checked = !!x.interestDeductible;
+  el('ai-release').checked = x.taxRelease !== false;
   el('ai-trate').value = +(x.thirdPartyRate * 100).toFixed(2);
   el('ai-tcomp').value = String(x.thirdPartyCompounding);
   el('ai-tfee').value = +(x.thirdPartyFee * 100).toFixed(2);
@@ -2327,7 +2334,10 @@ function kpis(c, d, M) {
     { l: T(`Interest to ${d.partnerName}`, `Intereses a ${d.partnerName}`), v: mm(pr.totalInterest), s: owed, c: 'k-red' },
     { l: T('Third-party interest + fees', 'Intereses + comisiones de terceros'), v: mm(tp.totalInterest + tp.totalFees), s: tpOwed, c: '' },
     { l: T('Benefit of third-party debt', 'Beneficio de deuda de terceros'), v: mm(b.npv), s: T(`Principals' NPV${(M.p.disc * 100).toFixed(0)}; ${mm(b.costSaved)}MM cost saved`, `VPN${(M.p.disc * 100).toFixed(0)} de los principales; ${mm(b.costSaved)}MM ahorrados`) + earlier, c: 'k-green' },
-    { l: T('Tax released before sweep', 'Impuesto liberado antes del barrido'), v: mm(pr.totalTax), s: T(`${pct(d.taxRate)} on principals' allocated profit`, `${pct(d.taxRate)} sobre la utilidad asignada`), c: '' },
+    d.taxRelease
+      ? { l: T('Tax released before sweep', 'Impuesto liberado antes del barrido'), v: mm(pr.totalTax), s: T(`${pct(d.taxRate)} on principals' allocated profit`, `${pct(d.taxRate)} sobre la utilidad asignada`), c: '' }
+      : (() => { const n = pr.rows.filter((r) => r.toPrincipals < -0.05).length;
+          return { l: T('Tax paid outside the sweep', 'Impuesto pagado fuera del barrido'), v: mm(pr.totalTax), s: T(`No release (HoT §9 as signed); out of pocket in ${n} yr${n === 1 ? '' : 's'}`, `Sin liberación (HoT §9 firmado); de su bolsillo en ${n} año${n === 1 ? '' : 's'}`), c: 'k-red' }; })(),
     { l: T(`${d.partnerName} total NPV${(M.p.disc * 100).toFixed(0)}`, `VPN${(M.p.disc * 100).toFixed(0)} total de ${d.partnerName}`), v: mm(c.partnerNPV), s: T(`Equity ${mm(c.partnerEquityNPV)} + loan ${mm(c.partnerLoanNPV)}`, `Capital ${mm(c.partnerEquityNPV)} + préstamo ${mm(c.partnerLoanNPV)}`), c: 'k-navy' },
   ];
   el('ai-kpis').innerHTML = k.map((x) => `<div class="ae-kpi ${x.c}"><div class="ae-klabel">${x.l}</div><div class="ae-kval">${x.v}<span class="u">MM</span></div><div class="ae-ksub">${x.s}</div></div>`).join('');
@@ -2352,7 +2362,7 @@ function cashChart(c, d) {
   const fr = frame(560, 240);
   const rows = c.partner.rows;
   const hi = Math.max(1, ...rows.map((r) => r.taxRelease + r.sweep + r.toPrincipals)) * 1.1;
-  const lo = Math.min(0, ...rows.map((r) => -r.draw)) * 1.15;
+  const lo = Math.min(0, ...rows.map((r) => -r.draw + Math.min(0, r.toPrincipals))) * 1.15;
   let s = gridY(fr, lo, hi, (v) => Math.round(v).toLocaleString('en-US'));
   const bw = (fr.w - fr.padL - fr.padR) / NY * 0.62;
   const bar = (i, a, b, col, tip) => {
@@ -2365,6 +2375,7 @@ function cashChart(c, d) {
     if (r.sweep > 0) { s += bar(i, base, base + r.sweep, '#C0392B', `sweep ${mm1(r.sweep)}MM`); base += r.sweep; }
     if (r.toPrincipals > 0) { s += bar(i, base, base + r.toPrincipals, '#C9A84C', `kept ${mm1(r.toPrincipals)}MM`); }
     if (r.draw > 0) s += bar(i, 0, -r.draw, '#0B1F3A', `loan-funded ${mm1(r.draw)}MM`);
+    if (r.toPrincipals < 0) s += bar(i, -r.draw, -r.draw + r.toPrincipals, '#8C6E2F', `tax from own pocket ${mm1(-r.toPrincipals)}MM`);
   });
   s += `<line x1="${fr.padL}" x2="${fr.w - fr.padR}" y1="${fr.lin(0, lo, hi)}" y2="${fr.lin(0, lo, hi)}" stroke="#0B1F3A"/>`;
   s += axisYears(fr);
@@ -2372,7 +2383,7 @@ function cashChart(c, d) {
   el('lg-ai-cash').innerHTML = [
     ['#6B7A8D', 'Tax release', 'Liberación fiscal'], ['#C0392B', `Sweep to ${d.partnerName}`, `Barrido a ${d.partnerName}`],
     ['#C9A84C', 'Kept by principals', 'Retenido por principales'], ['#0B1F3A', 'Funded by loan', 'Financiado por préstamo'],
-  ].map(([col, en, es]) => `<span><i style="background:${col}"></i>${T(en, es)}</span>`).join('');
+  ].concat(d.taxRelease ? [] : [['#8C6E2F', 'Tax from own pocket', 'Impuesto de su bolsillo']]).map(([col, en, es]) => `<span><i style="background:${col}"></i>${T(en, es)}</span>`).join('');
   el('ai-cash-sub').innerHTML = T(`${d.partnerName}-loan case. Bars above zero split the principals' ${pct(c.share)} into tax release, sweep and cash kept; bars below zero are years the loan funds them.`,
     `Caso préstamo de ${d.partnerName}. Las barras sobre cero dividen el ${pct(c.share)} de los principales en liberación fiscal, barrido y caja retenida; las barras bajo cero son años financiados por el préstamo.`);
 }
@@ -2384,7 +2395,7 @@ function valueTable(c, d, M) {
     `Caja de los principales tras impuestos y servicio de deuda, ${YEARS[0]}–${YEARS[NY - 1]}. El VPN al ${disc}% descuenta cualquier saldo pendiente al final.`);
   const row = (name, npv, kept, tax, cost, repaid, owed, cls = '') => `<tr class="${cls}"><td>${name}</td><td>${mm(npv)}</td><td>${mm(kept)}</td><td>${mm(tax)}</td><td>${cost}</td><td>${repaid}</td><td>${owed}</td></tr>`;
   const loanRow = (name, L) => row(name, L.principalsNPV, sum(L.principalsCash), L.totalTax, mm(L.totalInterest + L.totalFees), repaidBy(L), L.endingBalance > 0.05 ? mm(L.endingBalance) : '—');
-  el('tb-ai-value').innerHTML = `<thead><tr><th>${T('Funding route', 'Vía de financiamiento')}</th><th>${T(`Principals' NPV${disc}`, `VPN${disc} principales`)}</th><th>${T('Cash kept, 20 yr', 'Caja retenida, 20 años')}</th><th>${T('Tax released', 'Impuesto liberado')}</th><th>${T('Interest + fees', 'Intereses + comisiones')}</th><th>${T('Repaid by', 'Repagado en')}</th><th>${T(`Owed ${YEARS[NY - 1]}`, `Adeudado ${YEARS[NY - 1]}`)}</th></tr></thead><tbody>`
+  el('tb-ai-value').innerHTML = `<thead><tr><th>${T('Funding route', 'Vía de financiamiento')}</th><th>${T(`Principals' NPV${disc}`, `VPN${disc} principales`)}</th><th>${T('Cash kept, 20 yr', 'Caja retenida, 20 años')}</th><th>${T('Tax', 'Impuesto')}</th><th>${T('Interest + fees', 'Intereses + comisiones')}</th><th>${T('Repaid by', 'Repagado en')}</th><th>${T(`Owed ${YEARS[NY - 1]}`, `Adeudado ${YEARS[NY - 1]}`)}</th></tr></thead><tbody>`
     + loanRow(T(`${d.partnerName} loan · ${pct(d.partnerRate, 1)}`, `Préstamo ${d.partnerName} · ${pct(d.partnerRate, 1)}`), c.partner)
     + loanRow(T(`Third-party loan · ${pct(d.thirdPartyRate, 2)} + ${pct(d.thirdPartyFee, 2)} fee`, `Préstamo de terceros · ${pct(d.thirdPartyRate, 2)} + ${pct(d.thirdPartyFee, 2)} comisión`), c.thirdParty)
     + row(T('Self-funded (no debt)', 'Autofinanciado (sin deuda)'), c.self.principalsNPV, sum(c.self.cash), c.self.totalTax, '—', '—', '—')
@@ -2414,13 +2425,14 @@ function compareTable(id, items, d, M, firstCol) {
 function ledger(c, d) {
   const key = el('ai-ledger-sel').value === 'thirdParty' ? 'thirdParty' : 'partner';
   const L = c[key];
-  let h = `<thead><tr><th>${T('Year', 'Año')}</th><th>${T("Principals' share of FCF", 'Parte de principales del FCL')}</th><th>${T('Drawn', 'Dispuesto')}</th><th>${T('Fee', 'Comisión')}</th><th>${T('Interest', 'Intereses')}</th><th>${T('Tax release', 'Liberación fiscal')}</th><th>${T('Sweep', 'Barrido')}</th><th>${T('Kept', 'Retenido')}</th><th>${T('Closing balance', 'Saldo final')}</th></tr></thead><tbody>`;
-  const tot = { share: 0, draw: 0, fee: 0, interest: 0, taxRelease: 0, sweep: 0, toPrincipals: 0 };
+  let h = `<thead><tr><th>${T('Year', 'Año')}</th><th>${T("Principals' share of FCF", 'Parte de principales del FCL')}</th><th>${T('Drawn', 'Dispuesto')}</th><th>${T('Fee', 'Comisión')}</th><th>${T('Interest', 'Intereses')}</th><th>${d.taxRelease ? T('Tax release', 'Liberación fiscal') : T('Tax (own pocket)', 'Impuesto (su bolsillo)')}</th><th>${T('Sweep', 'Barrido')}</th><th>${T('Kept, after tax', 'Retenido, tras impuesto')}</th><th>${T('Closing balance', 'Saldo final')}</th></tr></thead><tbody>`;
+  const taxKey = d.taxRelease ? 'taxRelease' : 'tax';
+  const tot = { share: 0, draw: 0, fee: 0, interest: 0, [taxKey]: 0, sweep: 0, toPrincipals: 0 };
   L.rows.forEach((r, i) => {
     Object.keys(tot).forEach((k) => { tot[k] += r[k]; });
-    h += `<tr><td>${YEARS[i]}</td><td style="color:${r.share < 0 ? 'var(--red)' : 'var(--navy)'}">${mm1(r.share)}</td><td>${mm1(r.draw)}</td><td>${mm1(r.fee)}</td><td>${mm1(r.interest)}</td><td>${mm1(r.taxRelease)}</td><td>${mm1(r.sweep)}</td><td>${mm1(r.toPrincipals)}</td><td>${mm1(r.closing)}</td></tr>`;
+    h += `<tr><td>${YEARS[i]}</td><td style="color:${r.share < 0 ? 'var(--red)' : 'var(--navy)'}">${mm1(r.share)}</td><td>${mm1(r.draw)}</td><td>${mm1(r.fee)}</td><td>${mm1(r.interest)}</td><td>${mm1(r[taxKey])}</td><td>${mm1(r.sweep)}</td><td>${mm1(r.toPrincipals)}</td><td>${mm1(r.closing)}</td></tr>`;
   });
-  h += `<tr class="r-tot"><td>${T('Total', 'Total')}</td><td>${mm1(tot.share)}</td><td>${mm1(tot.draw)}</td><td>${mm1(tot.fee)}</td><td>${mm1(tot.interest)}</td><td>${mm1(tot.taxRelease)}</td><td>${mm1(tot.sweep)}</td><td>${mm1(tot.toPrincipals)}</td><td>${mm1(L.endingBalance)}</td></tr>`;
+  h += `<tr class="r-tot"><td>${T('Total', 'Total')}</td><td>${mm1(tot.share)}</td><td>${mm1(tot.draw)}</td><td>${mm1(tot.fee)}</td><td>${mm1(tot.interest)}</td><td>${mm1(tot[taxKey])}</td><td>${mm1(tot.sweep)}</td><td>${mm1(tot.toPrincipals)}</td><td>${mm1(L.endingBalance)}</td></tr>`;
   el('tb-ai-ledger').innerHTML = h + '</tbody>';
   el('ai-ledger-sel').options[0].textContent = lang() === 'es' ? `Préstamo ${d.partnerName}` : `${d.partnerName} loan`;
 }
@@ -2459,7 +2471,7 @@ window.ALPHA_INTL = { get: getDeal, set: setDeal, defaults: DEAL_DEFAULTS };
 
 ['ai-pshare', 'ai-prate', 'ai-sweep', 'ai-tax', 'ai-depr', 'ai-trate', 'ai-tfee'].forEach((id) =>
   el(id).addEventListener('input', () => { syncOutputs(); render(window.LAST_QLM_RENDER); }));
-['ai-pcomp', 'ai-tcomp', 'ai-deduct', 'ai-ledger-sel'].forEach((id) =>
+['ai-pcomp', 'ai-tcomp', 'ai-deduct', 'ai-release', 'ai-ledger-sel'].forEach((id) =>
   el(id).addEventListener('change', () => render(window.LAST_QLM_RENDER)));
 el('ai-name').addEventListener('input', () => render(window.LAST_QLM_RENDER));
 // Charts drawn while the tab was hidden are re-laid out when it opens (WebKit/iPad).
