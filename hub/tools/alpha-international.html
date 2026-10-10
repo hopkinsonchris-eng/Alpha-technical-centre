@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Upstream Quick-Look Financial Model · Generic Contract Tool</title>
-<meta name="description" content="Upstream Quick-Look Financial Model — a transparent, generic-contract tool for fast upstream economics: NPV, IRR, payback and cash flow for oil and gas assets, from Alpha Technical Centre.">
+<title>Alpha International Financing Model</title>
+<!-- Staff edition of financial-modelling.html: the public model plus the Alpha International
+     shareholder-financing tab. Lives under /hub/ (Cloudflare Access) because the deal terms are confidential.
+     Keep the shared model in step with the public page when either changes. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -19,7 +21,7 @@
 *,*::before,*::after{box-sizing:border-box;}
 svg{display:block;width:100%;height:auto;}
 /* Chart containers reserve height even when injected inside a hidden tab (WebKit/iPad fix) */
-#ch-tornado,#ch-brent-sens,#ch-irr-plat,#ch-prod,#ch-cf,#ch-bridge,#ch-selffund,#ch-govttake,#ch-ramps,#ch-split{min-height:40px;}
+#ch-ai-bal,#ch-ai-cash,#ch-tornado,#ch-brent-sens,#ch-irr-plat,#ch-prod,#ch-cf,#ch-bridge,#ch-selffund,#ch-govttake,#ch-ramps,#ch-split{min-height:40px;}
 svg text{font-family:'Barlow Condensed',sans-serif;}
 body{margin:0;background:var(--cream);}
 #qlm{max-width:1380px;margin:0 auto;padding:0 0 40px;}
@@ -43,12 +45,14 @@ body{margin:0;background:var(--cream);}
 #rt-fields:checked    ~ .ae-body #tab-fields,
 #rt-sens:checked      ~ .ae-body #tab-sens,
 #rt-method:checked    ~ .ae-body #tab-method,
+#rt-alpha:checked     ~ .ae-body #tab-alpha,
 #rt-apex:checked      ~ .ae-body #tab-apex-compare{display:block;}
 #rt-overview:checked  ~ .ae-tabs label[for="rt-overview"],
 #rt-contract:checked  ~ .ae-tabs label[for="rt-contract"],
 #rt-fields:checked    ~ .ae-tabs label[for="rt-fields"],
 #rt-sens:checked      ~ .ae-tabs label[for="rt-sens"],
-#rt-method:checked    ~ .ae-tabs label[for="rt-method"]{color:var(--gold);border-bottom-color:var(--gold);}
+#rt-method:checked    ~ .ae-tabs label[for="rt-method"],
+#rt-alpha:checked     ~ .ae-tabs label[for="rt-alpha"]{color:var(--gold);border-bottom-color:var(--gold);}
 #rt-apex:checked      ~ .ae-tabs label[for="rt-apex"]{color:#22d3a4;border-bottom-color:#22d3a4;}
 /* ════ LAYOUT ════ */
 .ae-body{display:grid;grid-template-columns:280px 1fr;gap:20px;padding:20px 26px 0;}
@@ -216,6 +220,11 @@ footer b{color:var(--navy);}
 .drawer .run-actions .btn:hover{background:var(--panel);border-color:var(--navy);}
 .drawer .run-actions .btn.ghost{border-color:var(--steel);color:var(--steel);}
 .drawer .run-actions .btn.ghost:hover{border-color:var(--navy);color:var(--navy);}
+/* ════ ALPHA INTERNATIONAL TAB ════ */
+#tab-alpha .ae-callout{font-size:12.5px;}
+#tab-alpha td.pos{color:var(--green);font-weight:600;}
+#tab-alpha td.neg{color:var(--red);}
+#tab-alpha tr.r-sel td{background:var(--tint);}
 #projectPicker{display:inline-block;max-width:280px;}
 #projectPicker select{font-family:'Barlow',sans-serif;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--navy);width:100%;}
 </style>
@@ -590,38 +599,13 @@ body{padding-top:0;}
 .tool-body-offset{padding-top:72px;}
 </style>
 
-<!-- ===== SEO / social / structured data ===== -->
-<link rel="canonical" href="https://www.alpha-technical-centre.com/financial-modelling.html">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="robots" content="index, follow, max-image-preview:large">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Alpha Technical Centre">
-<meta property="og:title" content="Upstream Quick-Look Financial Model · Generic Contract Tool">
-<meta property="og:description" content="Upstream Quick-Look Financial Model — a transparent, generic-contract tool for fast upstream economics: NPV, IRR, payback and cash flow for oil and gas assets, from Alpha Technical Centre.">
-<meta property="og:url" content="https://www.alpha-technical-centre.com/financial-modelling.html">
-<meta property="og:image" content="https://www.alpha-technical-centre.com/og-image.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:locale" content="en_US">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Upstream Quick-Look Financial Model · Generic Contract Tool">
-<meta name="twitter:description" content="Upstream Quick-Look Financial Model — a transparent, generic-contract tool for fast upstream economics: NPV, IRR, payback and cash flow for oil and gas assets, from Alpha Technical Centre.">
-<meta name="twitter:image" content="https://www.alpha-technical-centre.com/og-image.png">
-
-<!-- ===== /SEO ===== -->
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NKCRSSV2RQ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-NKCRSSV2RQ');
-</script>
+<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
 <nav class="nav">
   <div class="wrap nav-inner">
-    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
+    <a class="nav-logo" href="/index.html" aria-label="Alpha Technical Centre home">
       <span class="nav-mark">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
@@ -635,26 +619,26 @@ body{padding-top:0;}
       </span>
     </a>
     <div class="nav-links">
-      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
-      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
+      <a href="/index.html" data-en="Home" data-es="Inicio">Home</a>
+      <a href="/about.html" data-en="About" data-es="Nosotros">About</a>
       <div class="nav-dropdown">
         <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
         <div class="nav-dropdown-menu">
-          <a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
-          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
+          <a href="/oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
+          <a href="/financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
         </div>
       </div>
-      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
-      <a href="technical-due-diligence.html" data-en="Due Diligence" data-es="Diligencia Debida">Due Diligence</a>
-      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
-      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
-      <a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a>
-      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
+      <a href="/tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
+      <a href="/technical-due-diligence.html" data-en="Due Diligence" data-es="Diligencia Debida">Due Diligence</a>
+      <a href="/case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
+      <a href="/team.html" data-en="Team" data-es="Equipo">Team</a>
+      <a href="/insights.html" data-en="Insights" data-es="Análisis">Insights</a>
+      <a href="/contact.html" data-en="Contact" data-es="Contacto">Contact</a>
       <div class="nav-lang">
         <button data-lang="en" class="active">EN</button>
         <button data-lang="es">ES</button>
       </div>
-      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
+      <a href="/plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
     </div>
     <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
   </div>
@@ -701,17 +685,17 @@ body{padding-top:0;}
 </style>
 <nav class="atcnav">
  <div class="atcnav-inner">
-  <a class="atcnav-brand" href="index.html"><span class="m">Alpha<b>.</b> Technical Centre</span><span class="s">An Alpha Energy Asset</span></a>
+  <a class="atcnav-brand" href="/index.html"><span class="m">Alpha<b>.</b> Technical Centre</span><span class="s">An Alpha Energy Asset</span></a>
   <button class="atcnav-tg" aria-label="Menu" onclick="this.parentNode.querySelector('.atcnav-menu').classList.toggle('open')"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <div class="atcnav-menu">
    <div class="atcnav-it">
     <span class="atcnav-lk" tabindex="0">Modelling <svg class="atcnav-chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4.5 6 7.5 9 4.5"/></svg></span>
     <div class="atcnav-dd">
-     <a class="atcnav-ddl" href="oil-gas-modelling.html"><span class="t ">Oil &amp; Gas Modelling</span><span class="d">Subsurface, reservoir &amp; production quick-look tools</span></a>
-     <a class="atcnav-ddl" href="financial-modelling.html"><span class="t cur">Financial Modelling</span><span class="d">Upstream quick-look economics &amp; contract model</span></a>
+     <a class="atcnav-ddl" href="/oil-gas-modelling.html"><span class="t ">Oil &amp; Gas Modelling</span><span class="d">Subsurface, reservoir &amp; production quick-look tools</span></a>
+     <a class="atcnav-ddl" href="/financial-modelling.html"><span class="t cur">Financial Modelling</span><span class="d">Upstream quick-look economics &amp; contract model</span></a>
     </div>
    </div>
-   <a class="atcnav-lk cta " href="plan-your-job.html">Plan Your Job</a>
+   <a class="atcnav-lk cta " href="/plan-your-job.html">Plan Your Job</a>
   </div>
  </div>
 </nav>
@@ -721,7 +705,7 @@ body{padding-top:0;}
   <header class="ae-head">
     <div>
       <h1 class="ae-title">Upstream <em>Quick-Look</em> Financial Model</h1>
-      <div class="ae-sub">Generic Contract Tool · PSC · R/T · CPP · Service Contract · ±10% Screening Accuracy</div>
+      <div class="ae-sub"><span data-en="Staff edition · Alpha International shareholder financing" data-es="Edición interna · Financiamiento de accionistas de Alpha International">Staff edition · Alpha International shareholder financing</span> · <a href="/hub/index.html" style="color:var(--gold);" data-en="Back to Hub" data-es="Volver al Hub">Back to Hub</a></div>
     </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
       <div class="ae-chips" id="qlm-chips"></div>
@@ -746,12 +730,13 @@ body{padding-top:0;}
   </div>
 
   <!-- Radio controls (CSS-only tab switching) -->
-  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-overview" checked>
+  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-overview">
   <input class="ae-radio" type="radio" name="qlm-tab" id="rt-contract">
   <input class="ae-radio" type="radio" name="qlm-tab" id="rt-apex">
 <input class="ae-radio" type="radio" name="qlm-tab" id="rt-fields">
   <input class="ae-radio" type="radio" name="qlm-tab" id="rt-sens">
   <input class="ae-radio" type="radio" name="qlm-tab" id="rt-method">
+  <input class="ae-radio" type="radio" name="qlm-tab" id="rt-alpha" checked>
 
   <nav class="ae-tabs">
     <label class="ae-tab" for="rt-overview">Overview</label>
@@ -760,6 +745,7 @@ body{padding-top:0;}
     <label class="ae-tab" for="rt-fields">Field Builder</label>
     <label class="ae-tab" for="rt-sens">Sensitivity</label>
     <label class="ae-tab" for="rt-method">Methodology</label>
+    <label class="ae-tab" id="alphaTabLabel" for="rt-alpha" data-en="Alpha International" data-es="Alpha International">Alpha International</label>
   </nav>
 
   <div class="ae-body">
@@ -1010,6 +996,120 @@ body{padding-top:0;}
             <li>Gas fields use a single flat gas price; no take-or-pay, LNG tolling, or liquids uplift</li>
           </ul>
         </div>
+        <div class="method-box">
+          <h3 data-en="Alpha International shareholder financing" data-es="Financiamiento de accionistas de Alpha International">Alpha International shareholder financing</h3>
+          <p data-en="The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects." data-es="El socio financiador mantiene su participación y puede prestar a los principales la suya a una tasa compuesta. Cada año se calcula la parte de los principales del flujo de caja libre del proyecto (después de la participación del gobierno). Una parte negativa se dispone del préstamo, con intereses desde mitad de año. Una liberación fiscal paga luego el impuesto de los principales sobre su utilidad asignada: flujo de caja libre más CAPEX, menos depreciación fiscal lineal, menos intereses deducibles, tras pérdidas acumuladas. El impuesto que no pueden cubrir con caja se dispone del préstamo. El barrido repaga al prestamista, intereses primero. Un préstamo de terceros sigue los mismos pasos a su propia tasa, con una comisión de estructuración añadida a cada disposición. El VPN de los principales resta cualquier saldo pendiente en el último año. El impuesto de accionistas es una tasa fija sin retenciones ni efectos de tratados.">The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects.</p>
+        </div>
+      </div>
+
+      <!-- ══ ALPHA INTERNATIONAL · SHAREHOLDER FINANCING ══ -->
+      <div class="ae-tabpanel" id="tab-alpha">
+        <div class="ae-card">
+          <div class="ae-ct" data-en="Alpha International · Shareholder Financing" data-es="Alpha International · Financiamiento de Accionistas">Alpha International · Shareholder Financing</div>
+          <div class="ae-cn" data-en="The funding partner funds its equity share and can lend the principals theirs. The principals' share of free cash flow repays the loan after a tax release. Uses the active portfolio, regime and prices set elsewhere in the model." data-es="El socio financiador aporta su participación y puede prestar a los principales la suya. La parte de los principales del flujo de caja libre repaga el préstamo después de una liberación fiscal. Usa la cartera activa, el régimen y los precios definidos en el resto del modelo.">The funding partner funds its equity share and can lend the principals theirs. The principals' share of free cash flow repays the loan after a tax release. Uses the active portfolio, regime and prices set elsewhere in the model.</div>
+          <div class="contract-grid">
+            <div>
+              <div class="ae-eyebrow" data-en="Ownership &amp; partner loan" data-es="Propiedad y préstamo del socio">Ownership &amp; partner loan</div>
+              <div class="ae-slider ai-name">
+                <label for="ai-name" data-en="Funding partner" data-es="Socio financiador">Funding partner</label>
+                <input type="text" id="ai-name" class="ae-select" maxlength="40" value="Tennor">
+              </div>
+              <div class="ae-slider">
+                <label for="ai-pshare"><span data-en="Partner equity share" data-es="Participación del socio">Partner equity share</span> <output id="ai-o-pshare">65% / 35%</output></label>
+                <input type="range" id="ai-pshare" min="50" max="80" step="1" value="65">
+              </div>
+              <div class="ae-slider">
+                <label for="ai-prate"><span data-en="Partner loan rate (compounding)" data-es="Tasa del préstamo del socio (compuesta)">Partner loan rate (compounding)</span> <output id="ai-o-prate">20%</output></label>
+                <input type="range" id="ai-prate" min="5" max="30" step="0.5" value="20">
+              </div>
+              <label class="ae-note" for="ai-pcomp" data-en="Compounding" data-es="Capitalización">Compounding</label>
+              <select class="ae-select" id="ai-pcomp">
+                <option value="1" data-en="Annual" data-es="Anual">Annual</option>
+                <option value="4" data-en="Quarterly" data-es="Trimestral">Quarterly</option>
+                <option value="12" data-en="Monthly" data-es="Mensual">Monthly</option>
+              </select>
+              <div class="ae-slider">
+                <label for="ai-sweep"><span data-en="Cash sweep (% of post-tax principal cash)" data-es="Barrido de caja (% de caja de principales tras impuestos)">Cash sweep (% of post-tax principal cash)</span> <output id="ai-o-sweep">100%</output></label>
+                <input type="range" id="ai-sweep" min="25" max="100" step="5" value="100">
+              </div>
+            </div>
+            <div>
+              <div class="ae-eyebrow" data-en="Tax release" data-es="Liberación fiscal">Tax release</div>
+              <div class="ae-slider">
+                <label for="ai-tax"><span data-en="Principals' tax rate on allocated profit" data-es="Tasa impositiva de los principales sobre la utilidad asignada">Principals' tax rate on allocated profit</span> <output id="ai-o-tax">25%</output></label>
+                <input type="range" id="ai-tax" min="0" max="50" step="1" value="25">
+              </div>
+              <div class="ae-slider">
+                <label for="ai-depr"><span data-en="Tax depreciation of CAPEX (years)" data-es="Depreciación fiscal del CAPEX (años)">Tax depreciation of CAPEX (years)</span> <output id="ai-o-depr">5</output></label>
+                <input type="range" id="ai-depr" min="1" max="10" step="1" value="5">
+              </div>
+              <div class="ae-tog-row">
+                <input type="checkbox" id="ai-deduct" checked>
+                <label for="ai-deduct" data-en="Loan interest is tax-deductible" data-es="Los intereses del préstamo son deducibles">Loan interest is tax-deductible</label>
+              </div>
+              <div class="ae-eyebrow" style="margin-top:12px;" data-en="Third-party debt alternative" data-es="Alternativa de deuda de terceros">Third-party debt alternative</div>
+              <div class="ae-slider">
+                <label for="ai-trate"><span data-en="Third-party loan rate" data-es="Tasa del préstamo de terceros">Third-party loan rate</span> <output id="ai-o-trate">9.00%</output></label>
+                <input type="range" id="ai-trate" min="4" max="16" step="0.25" value="9">
+              </div>
+              <div class="ae-slider">
+                <label for="ai-tfee"><span data-en="Arrangement fee (% of each draw)" data-es="Comisión de estructuración (% de cada disposición)">Arrangement fee (% of each draw)</span> <output id="ai-o-tfee">1.50%</output></label>
+                <input type="range" id="ai-tfee" min="0" max="4" step="0.25" value="1.5">
+              </div>
+              <label class="ae-note" for="ai-tcomp" data-en="Compounding" data-es="Capitalización">Compounding</label>
+              <select class="ae-select" id="ai-tcomp">
+                <option value="1" data-en="Annual" data-es="Anual">Annual</option>
+                <option value="4" data-en="Quarterly" data-es="Trimestral">Quarterly</option>
+                <option value="12" data-en="Monthly" data-es="Mensual">Monthly</option>
+              </select>
+            </div>
+          </div>
+          <div class="ae-callout" data-en="&lt;b&gt;Each year:&lt;/b&gt; (1) the principals' share of free cash flow is worked out after host-government take; (2) if negative, the lender funds it, accruing interest from mid-year; (3) a &lt;b&gt;tax release&lt;/b&gt; pays the principals' tax on their allocated profit first, after deductible interest and losses carried forward; (4) the &lt;b&gt;sweep&lt;/b&gt; then repays the lender, interest first; (5) what is left goes to the principals." data-es="&lt;b&gt;Cada año:&lt;/b&gt; (1) se calcula la parte de los principales del flujo de caja libre después de la participación del gobierno; (2) si es negativa, el prestamista la financia y los intereses corren desde mitad de año; (3) una &lt;b&gt;liberación fiscal&lt;/b&gt; paga primero el impuesto de los principales sobre su utilidad asignada, tras intereses deducibles y pérdidas acumuladas; (4) el &lt;b&gt;barrido&lt;/b&gt; repaga al prestamista, intereses primero; (5) el resto queda para los principales."><b>Each year:</b> (1) the principals' share of free cash flow is worked out after host-government take; (2) if negative, the lender funds it, accruing interest from mid-year; (3) a <b>tax release</b> pays the principals' tax on their allocated profit first, after deductible interest and losses carried forward; (4) the <b>sweep</b> then repays the lender, interest first; (5) what is left goes to the principals.</div>
+        </div>
+
+        <div class="ae-kpis" id="ai-kpis"></div>
+
+        <div class="ae-2col">
+          <div class="ae-card">
+            <div class="ae-ct" data-en="Principals' Loan Balance ($MM)" data-es="Saldo del Préstamo de los Principales ($MM)">Principals' Loan Balance ($MM)</div>
+            <div class="ae-cn" data-en="Closing balance each year: partner loan against third-party loan." data-es="Saldo final de cada año: préstamo del socio frente a préstamo de terceros.">Closing balance each year: partner loan against third-party loan.</div>
+            <div id="ch-ai-bal"></div>
+            <div class="ae-legend" id="lg-ai-bal"></div>
+          </div>
+          <div class="ae-card">
+            <div class="ae-ct" data-en="Where the Principals' Cash Goes ($MM)" data-es="Destino de la Caja de los Principales ($MM)">Where the Principals' Cash Goes ($MM)</div>
+            <div class="ae-cn" id="ai-cash-sub" data-en="Partner-loan case. Positive years split into tax release, sweep and cash kept; red bars are years the loan funds." data-es="Caso préstamo del socio. Los años positivos se dividen en liberación fiscal, barrido y caja retenida; las barras rojas son años financiados por el préstamo.">Partner-loan case. Positive years split into tax release, sweep and cash kept; red bars are years the loan funds.</div>
+            <div id="ch-ai-cash"></div>
+            <div class="ae-legend" id="lg-ai-cash"></div>
+          </div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct" data-en="Value to the Principals" data-es="Valor para los Principales">Value to the Principals</div>
+          <div class="ae-cn" id="ai-value-sub"></div>
+          <div class="ae-scroll"><table id="tb-ai-value"></table></div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct" data-en="By Fiscal / Licence Regime" data-es="Por Régimen Fiscal / de Licencia">By Fiscal / Licence Regime</div>
+          <div class="ae-cn" data-en="The active portfolio run under each regime. The selected regime uses its current terms; the others use their default terms." data-es="La cartera activa bajo cada régimen. El régimen seleccionado usa sus términos actuales; los demás usan sus términos por defecto.">The active portfolio run under each regime. The selected regime uses its current terms; the others use their default terms.</div>
+          <div class="ae-scroll"><table id="tb-ai-regime"></table></div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct" data-en="By Project" data-es="Por Proyecto">By Project</div>
+          <div class="ae-cn" data-en="Each active field financed on its own, under the selected regime." data-es="Cada campo activo financiado por separado, bajo el régimen seleccionado.">Each active field financed on its own, under the selected regime.</div>
+          <div class="ae-scroll"><table id="tb-ai-project"></table></div>
+        </div>
+
+        <div class="ae-card">
+          <div class="ae-ct" data-en="Principals' Loan Ledger ($MM)" data-es="Libro del Préstamo de los Principales ($MM)">Principals' Loan Ledger ($MM)</div>
+          <select class="ae-select" id="ai-ledger-sel" style="max-width:260px;">
+            <option value="partner" data-en="Partner loan" data-es="Préstamo del socio">Partner loan</option>
+            <option value="thirdParty" data-en="Third-party loan" data-es="Préstamo de terceros">Third-party loan</option>
+          </select>
+          <div class="ae-scroll"><table id="tb-ai-ledger"></table></div>
+        </div>
       </div>
 
     </div><!-- end panelwrap -->
@@ -1042,7 +1142,7 @@ let MODEL_CTR=0;
 // Default password: "alpha2026"  (change ACCESS_HASH to rotate).
 const ACCESS_HASH='6813c775'; // djb2 hash of the access password
 function djb2(str){let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))>>>0;return h.toString(16);}
-let UNLOCKED=false;
+let UNLOCKED=true;   // staff edition: full access without the password
 
 function tryUnlock(){
   const el=document.getElementById('lic-pw');
@@ -1922,6 +2022,7 @@ function recalc(){
   vBrentSens(LAST);
   vHeatMap(LAST);
   vIRRPlat(LAST);
+  if(window.vAlphaIntl) window.vAlphaIntl(LAST);
 }
 
 /* ─── 8. SLIDER BACKGROUND FILL ─── */
@@ -2105,24 +2206,24 @@ function resetAll(){
       <div class="footer-col">
         <h4 data-en="Capabilities" data-es="Capacidades">Capabilities</h4>
         <ul>
-          <li><a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Petróleo y Gas">Oil &amp; Gas Modelling</a></li>
-          <li><a href="financial-modelling.html" data-en="Financial Modelling" data-es="Financiera">Financial Modelling</a></li>
-          <li><a href="plan-your-job.html" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a></li>
+          <li><a href="/oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Petróleo y Gas">Oil &amp; Gas Modelling</a></li>
+          <li><a href="/financial-modelling.html" data-en="Financial Modelling" data-es="Financiera">Financial Modelling</a></li>
+          <li><a href="/plan-your-job.html" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a></li>
         </ul>
       </div>
       <div class="footer-col">
         <h4 data-en="Company" data-es="Empresa">Company</h4>
         <ul>
-          <li><a href="about.html" data-en="About" data-es="Nosotros">About</a></li>
-          <li><a href="team.html" data-en="Team" data-es="Equipo">Team</a></li>
-          <li><a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a></li>
-          <li><a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a></li>
+          <li><a href="/about.html" data-en="About" data-es="Nosotros">About</a></li>
+          <li><a href="/team.html" data-en="Team" data-es="Equipo">Team</a></li>
+          <li><a href="/case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a></li>
+          <li><a href="/insights.html" data-en="Insights" data-es="Análisis">Insights</a></li>
         </ul>
       </div>
       <div class="footer-col">
         <h4 data-en="Connect" data-es="Contacto">Connect</h4>
         <ul>
-          <li><a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
+          <li><a href="/contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
           <li><a href="mailto:info@alpha-technical-centre.com">info@alpha-technical-centre.com</a></li>
           <li><a href="https://alphaenergylatinamerica.com" data-en="Alpha Energy ↗" data-es="Alpha Energy ↗">Alpha Energy ↗</a></li>
         </ul>
@@ -2135,12 +2236,238 @@ function resetAll(){
   </div>
 </footer>
 
-<script src="main.js"></script>
+<script src="/main.js"></script>
 <script type="module">
   // Vault client (M04/M05). If this import fails the page carries on as before.
-  import { vault } from './js/vault-client.js';
+  import { vault } from '/js/vault-client.js';
   window.ATC_VAULT = vault;
   window.dispatchEvent(new Event('atc-vault-ready'));
+</script>
+<script type="module">
+/* ════ ALPHA INTERNATIONAL · SHAREHOLDER FINANCING TAB ════
+   Engine in hub/tools/alpha-intl-finance.js (unit tested). This block reads the deal
+   inputs, runs the engine on the model's portfolio cash flow (LAST) and draws
+   the tab. It uses the page's chart helpers and fieldCashFlowWith(). */
+import { DEAL_DEFAULTS, compareFinancing, effectiveAnnualRate } from '/hub/tools/alpha-intl-finance.js';
+
+const el = (id) => document.getElementById(id);
+const lang = () => (document.documentElement.getAttribute('lang') === 'es' ? 'es' : 'en');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const T = (en, es) => `<span data-en="${esc(en)}" data-es="${esc(es)}">${lang() === 'es' ? es : en}</span>`;
+const mm = (v) => (v < 0 ? '−$' : '$') + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
+const mm1 = (v) => (v < 0 ? '−$' : '$') + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+const pct = (v, d = 0) => (v * 100).toFixed(d) + '%';
+const REGIMES = { psc: ['PSC', 'PSC'], rt: ['Royalty / Tax', 'Regalía / Impuesto'], cpp: ['CPP', 'CPP'], svc: ['Service contract', 'Contrato de servicio'], jv: ['Joint venture', 'Empresa mixta'] };
+const COMP = { 1: ['annual', 'anual'], 4: ['quarterly', 'trimestral'], 12: ['monthly', 'mensual'] };
+
+function getDeal() {
+  return {
+    partnerName: (el('ai-name').value || '').trim() || DEAL_DEFAULTS.partnerName,
+    partnerShare: +el('ai-pshare').value / 100,
+    partnerRate: +el('ai-prate').value / 100,
+    partnerCompounding: +el('ai-pcomp').value,
+    sweepPct: +el('ai-sweep').value / 100,
+    taxRate: +el('ai-tax').value / 100,
+    deprYears: +el('ai-depr').value,
+    interestDeductible: el('ai-deduct').checked,
+    thirdPartyRate: +el('ai-trate').value / 100,
+    thirdPartyCompounding: +el('ai-tcomp').value,
+    thirdPartyFee: +el('ai-tfee').value / 100,
+  };
+}
+function setDeal(d) {
+  const x = { ...DEAL_DEFAULTS, ...d };
+  el('ai-name').value = x.partnerName;
+  el('ai-pshare').value = Math.round(x.partnerShare * 100);
+  el('ai-prate').value = +(x.partnerRate * 100).toFixed(2);
+  el('ai-pcomp').value = String(x.partnerCompounding);
+  el('ai-sweep').value = Math.round(x.sweepPct * 100);
+  el('ai-tax').value = Math.round(x.taxRate * 100);
+  el('ai-depr').value = x.deprYears;
+  el('ai-deduct').checked = !!x.interestDeductible;
+  el('ai-trate').value = +(x.thirdPartyRate * 100).toFixed(2);
+  el('ai-tcomp').value = String(x.thirdPartyCompounding);
+  el('ai-tfee').value = +(x.thirdPartyFee * 100).toFixed(2);
+  syncOutputs();
+  if (window.LAST_QLM_RENDER) render(window.LAST_QLM_RENDER);
+}
+function syncOutputs() {
+  const d = getDeal();
+  el('ai-o-pshare').textContent = `${pct(d.partnerShare)} / ${pct(1 - d.partnerShare)}`;
+  el('ai-o-prate').textContent = (d.partnerRate * 100).toFixed(1).replace(/\.0$/, '') + '%';
+  el('ai-o-sweep').textContent = pct(d.sweepPct);
+  el('ai-o-tax').textContent = pct(d.taxRate);
+  el('ai-o-depr').textContent = d.deprYears;
+  el('ai-o-trate').textContent = (d.thirdPartyRate * 100).toFixed(2) + '%';
+  el('ai-o-tfee').textContent = (d.thirdPartyFee * 100).toFixed(2) + '%';
+  document.querySelectorAll('#tab-alpha input[type=range]').forEach((r) => { if (window.updateSliderBg) updateSliderBg(r); });
+}
+
+// Portfolio cash flow under any regime / subset of fields, from the page engine.
+function cashFlowFor(fields, p) {
+  const fcf = new Array(NY).fill(0), capex = new Array(NY).fill(0);
+  for (const f of fields) fieldCashFlowWith(f, p).forEach((r, i) => { fcf[i] += r.ncf; capex[i] += r.capex; });
+  return { fcf, capex };
+}
+
+const repaidBy = (loan) => loan.payoffIndex !== null ? String(YEARS[loan.payoffIndex])
+  : (loan.endingBalance > 0.05 ? T(`Not by ${YEARS[NY - 1]}`, `No antes de ${YEARS[NY - 1]}`) : '—');
+
+function kpis(c, d, M) {
+  const P = esc(d.partnerName), pr = c.partner, tp = c.thirdParty, b = c.benefit;
+  const prEar = effectiveAnnualRate(d.partnerRate, d.partnerCompounding);
+  const owed = pr.endingBalance > 0.05 ? T(`${mm(pr.endingBalance)}MM still owed in ${YEARS[NY - 1]}`, `${mm(pr.endingBalance)}MM aún adeudados en ${YEARS[NY - 1]}`)
+    : (pr.payoffIndex !== null ? T(`Repaid ${YEARS[pr.payoffIndex]}`, `Repagado ${YEARS[pr.payoffIndex]}`) : T('No borrowing needed', 'Sin necesidad de préstamo'));
+  const tpOwed = tp.endingBalance > 0.05 ? T(`${mm(tp.endingBalance)}MM still owed in ${YEARS[NY - 1]}`, `${mm(tp.endingBalance)}MM aún adeudados en ${YEARS[NY - 1]}`)
+    : (tp.payoffIndex !== null ? T(`Repaid ${YEARS[tp.payoffIndex]} at ${pct(d.thirdPartyRate, 2)}`, `Repagado ${YEARS[tp.payoffIndex]} al ${pct(d.thirdPartyRate, 2)}`) : '—');
+  const earlier = b.yearsEarlier ? T(`, repaid ${b.yearsEarlier} yr${b.yearsEarlier > 1 ? 's' : ''} sooner`, `, repagado ${b.yearsEarlier} año${b.yearsEarlier > 1 ? 's' : ''} antes`) : '';
+  const k = [
+    { l: T("Principals' funding need", 'Necesidad de los principales'), v: mm(pr.totalDrawn), s: T(`${pct(c.share)} of funding years + tax shortfalls`, `${pct(c.share)} de años con déficit + impuestos sin caja`), c: 'k-navy' },
+    { l: T(`Peak owed to ${d.partnerName}`, `Máximo adeudado a ${d.partnerName}`), v: mm(pr.peakBalance), s: T(`${pct(d.partnerRate, 1)} ${COMP[d.partnerCompounding][0]} · ${pct(prEar, 2)} effective`, `${pct(d.partnerRate, 1)} ${COMP[d.partnerCompounding][1]} · ${pct(prEar, 2)} efectivo`), c: 'k-red' },
+    { l: T(`Interest to ${d.partnerName}`, `Intereses a ${d.partnerName}`), v: mm(pr.totalInterest), s: owed, c: 'k-red' },
+    { l: T('Third-party interest + fees', 'Intereses + comisiones de terceros'), v: mm(tp.totalInterest + tp.totalFees), s: tpOwed, c: '' },
+    { l: T('Benefit of third-party debt', 'Beneficio de deuda de terceros'), v: mm(b.npv), s: T(`Principals' NPV${(M.p.disc * 100).toFixed(0)}; ${mm(b.costSaved)}MM cost saved`, `VPN${(M.p.disc * 100).toFixed(0)} de los principales; ${mm(b.costSaved)}MM ahorrados`) + earlier, c: 'k-green' },
+    { l: T('Tax released before sweep', 'Impuesto liberado antes del barrido'), v: mm(pr.totalTax), s: T(`${pct(d.taxRate)} on principals' allocated profit`, `${pct(d.taxRate)} sobre la utilidad asignada`), c: '' },
+    { l: T(`${d.partnerName} total NPV${(M.p.disc * 100).toFixed(0)}`, `VPN${(M.p.disc * 100).toFixed(0)} total de ${d.partnerName}`), v: mm(c.partnerNPV), s: T(`Equity ${mm(c.partnerEquityNPV)} + loan ${mm(c.partnerLoanNPV)}`, `Capital ${mm(c.partnerEquityNPV)} + préstamo ${mm(c.partnerLoanNPV)}`), c: 'k-navy' },
+  ];
+  el('ai-kpis').innerHTML = k.map((x) => `<div class="ae-kpi ${x.c}"><div class="ae-klabel">${x.l}</div><div class="ae-kval">${x.v}<span class="u">MM</span></div><div class="ae-ksub">${x.s}</div></div>`).join('');
+}
+
+function balChart(c, d) {
+  const fr = frame(560, 240);
+  const a = c.partner.rows.map((r) => r.closing), b = c.thirdParty.rows.map((r) => r.closing);
+  const hi = Math.max(1, ...a, ...b) * 1.1;
+  let s = gridY(fr, 0, hi, (v) => Math.round(v).toLocaleString('en-US'));
+  s += `<path d="${pathOf(fr, a, 0, hi)}" fill="none" stroke="#C0392B" stroke-width="2.4"/>`;
+  s += `<path d="${pathOf(fr, b, 0, hi)}" fill="none" stroke="#0B1F3A" stroke-width="2.4" stroke-dasharray="6 4"/>`;
+  a.forEach((v, i) => { s += `<circle cx="${fr.X(i)}" cy="${fr.lin(v, 0, hi)}" r="2.6" fill="#C0392B"><title>${YEARS[i]}: ${mm1(v)}MM</title></circle>`; });
+  b.forEach((v, i) => { s += `<circle cx="${fr.X(i)}" cy="${fr.lin(v, 0, hi)}" r="2.6" fill="#0B1F3A"><title>${YEARS[i]}: ${mm1(v)}MM</title></circle>`; });
+  s += axisYears(fr);
+  el('ch-ai-bal').innerHTML = SVG(fr, s, 'Principals loan balance by year');
+  el('lg-ai-bal').innerHTML = `<span><i style="background:#C0392B"></i>${T(`${d.partnerName} loan · ${pct(d.partnerRate, 1)}`, `Préstamo ${d.partnerName} · ${pct(d.partnerRate, 1)}`)}</span>`
+    + `<span><i style="background:#0B1F3A"></i>${T(`Third-party loan · ${pct(d.thirdPartyRate, 2)}`, `Préstamo de terceros · ${pct(d.thirdPartyRate, 2)}`)}</span>`;
+}
+
+function cashChart(c, d) {
+  const fr = frame(560, 240);
+  const rows = c.partner.rows;
+  const hi = Math.max(1, ...rows.map((r) => r.taxRelease + r.sweep + r.toPrincipals)) * 1.1;
+  const lo = Math.min(0, ...rows.map((r) => -r.draw)) * 1.15;
+  let s = gridY(fr, lo, hi, (v) => Math.round(v).toLocaleString('en-US'));
+  const bw = (fr.w - fr.padL - fr.padR) / NY * 0.62;
+  const bar = (i, a, b, col, tip) => {
+    const y0 = fr.lin(a, lo, hi), y1 = fr.lin(b, lo, hi);
+    return `<rect x="${(fr.X(i) - bw / 2).toFixed(1)}" y="${Math.min(y0, y1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0 - y1).toFixed(1)}" fill="${col}"><title>${YEARS[i]} · ${tip}</title></rect>`;
+  };
+  rows.forEach((r, i) => {
+    let base = 0;
+    if (r.taxRelease > 0) { s += bar(i, base, base + r.taxRelease, '#6B7A8D', `tax ${mm1(r.taxRelease)}MM`); base += r.taxRelease; }
+    if (r.sweep > 0) { s += bar(i, base, base + r.sweep, '#C0392B', `sweep ${mm1(r.sweep)}MM`); base += r.sweep; }
+    if (r.toPrincipals > 0) { s += bar(i, base, base + r.toPrincipals, '#C9A84C', `kept ${mm1(r.toPrincipals)}MM`); }
+    if (r.draw > 0) s += bar(i, 0, -r.draw, '#0B1F3A', `loan-funded ${mm1(r.draw)}MM`);
+  });
+  s += `<line x1="${fr.padL}" x2="${fr.w - fr.padR}" y1="${fr.lin(0, lo, hi)}" y2="${fr.lin(0, lo, hi)}" stroke="#0B1F3A"/>`;
+  s += axisYears(fr);
+  el('ch-ai-cash').innerHTML = SVG(fr, s, 'Principals cash: tax release, sweep and cash kept');
+  el('lg-ai-cash').innerHTML = [
+    ['#6B7A8D', 'Tax release', 'Liberación fiscal'], ['#C0392B', `Sweep to ${d.partnerName}`, `Barrido a ${d.partnerName}`],
+    ['#C9A84C', 'Kept by principals', 'Retenido por principales'], ['#0B1F3A', 'Funded by loan', 'Financiado por préstamo'],
+  ].map(([col, en, es]) => `<span><i style="background:${col}"></i>${T(en, es)}</span>`).join('');
+  el('ai-cash-sub').innerHTML = T(`${d.partnerName}-loan case. Bars above zero split the principals' ${pct(c.share)} into tax release, sweep and cash kept; bars below zero are years the loan funds them.`,
+    `Caso préstamo de ${d.partnerName}. Las barras sobre cero dividen el ${pct(c.share)} de los principales en liberación fiscal, barrido y caja retenida; las barras bajo cero son años financiados por el préstamo.`);
+}
+
+function valueTable(c, d, M) {
+  const disc = (M.p.disc * 100).toFixed(0);
+  const sum = (a) => a.reduce((s, v) => s + v, 0);
+  el('ai-value-sub').innerHTML = T(`Principals' cash after tax and debt service, ${YEARS[0]}–${YEARS[NY - 1]}. NPV at ${disc}% deducts any balance still owed at the end.`,
+    `Caja de los principales tras impuestos y servicio de deuda, ${YEARS[0]}–${YEARS[NY - 1]}. El VPN al ${disc}% descuenta cualquier saldo pendiente al final.`);
+  const row = (name, npv, kept, tax, cost, repaid, owed, cls = '') => `<tr class="${cls}"><td>${name}</td><td>${mm(npv)}</td><td>${mm(kept)}</td><td>${mm(tax)}</td><td>${cost}</td><td>${repaid}</td><td>${owed}</td></tr>`;
+  const loanRow = (name, L) => row(name, L.principalsNPV, sum(L.principalsCash), L.totalTax, mm(L.totalInterest + L.totalFees), repaidBy(L), L.endingBalance > 0.05 ? mm(L.endingBalance) : '—');
+  el('tb-ai-value').innerHTML = `<thead><tr><th>${T('Funding route', 'Vía de financiamiento')}</th><th>${T(`Principals' NPV${disc}`, `VPN${disc} principales`)}</th><th>${T('Cash kept, 20 yr', 'Caja retenida, 20 años')}</th><th>${T('Tax released', 'Impuesto liberado')}</th><th>${T('Interest + fees', 'Intereses + comisiones')}</th><th>${T('Repaid by', 'Repagado en')}</th><th>${T(`Owed ${YEARS[NY - 1]}`, `Adeudado ${YEARS[NY - 1]}`)}</th></tr></thead><tbody>`
+    + loanRow(T(`${d.partnerName} loan · ${pct(d.partnerRate, 1)}`, `Préstamo ${d.partnerName} · ${pct(d.partnerRate, 1)}`), c.partner)
+    + loanRow(T(`Third-party loan · ${pct(d.thirdPartyRate, 2)} + ${pct(d.thirdPartyFee, 2)} fee`, `Préstamo de terceros · ${pct(d.thirdPartyRate, 2)} + ${pct(d.thirdPartyFee, 2)} comisión`), c.thirdParty)
+    + row(T('Self-funded (no debt)', 'Autofinanciado (sin deuda)'), c.self.principalsNPV, sum(c.self.cash), c.self.totalTax, '—', '—', '—')
+    + `<tr class="r-tot"><td>${T('Benefit of third-party over partner loan', 'Beneficio de terceros frente al socio')}</td><td>${mm(c.benefit.npv)}</td><td>${mm(sum(c.thirdParty.principalsCash) - sum(c.partner.principalsCash))}</td><td></td><td>${mm(c.benefit.costSaved)}</td><td>${c.benefit.yearsEarlier ? T(`${c.benefit.yearsEarlier} yr sooner`, `${c.benefit.yearsEarlier} años antes`) : ''}</td><td></td></tr></tbody>`;
+}
+// Self-funded principals pay tax with no interest shield.
+function selfTax(c, d) {
+  const share = c.share; let loss = 0, tot = 0;
+  c.taxable.forEach((t) => { let ti = share * t - loss; if (ti < 0) loss = -ti; else { loss = 0; tot += ti * d.taxRate; } });
+  return tot;
+}
+
+function compareTable(id, items, d, M, firstCol) {
+  const disc = (M.p.disc * 100).toFixed(0);
+  let h = `<thead><tr><th>${firstCol}</th><th>${T(`Project NPV${disc}`, `VPN${disc} proyecto`)}</th><th>${T("Principals' funding", 'Aporte principales')}</th>`
+    + `<th>${T(`${d.partnerName} interest`, `Intereses ${d.partnerName}`)}</th><th>${T('Repaid by', 'Repagado en')}</th><th>${T("Principals' NPV", 'VPN principales')}</th>`
+    + `<th>${T('3rd-party cost', 'Costo terceros')}</th><th>${T('Repaid by', 'Repagado en')}</th><th>${T("Principals' NPV", 'VPN principales')}</th><th>${T('Benefit', 'Beneficio')}</th></tr></thead><tbody>`;
+  for (const it of items) {
+    const c = it.c, pr = c.partner, tp = c.thirdParty;
+    h += `<tr class="${it.sel ? 'r-sel' : ''}"><td>${it.name}</td><td>${mm(it.npv)}</td><td>${mm(pr.totalDrawn)}</td><td>${mm(pr.totalInterest)}</td><td>${repaidBy(pr)}</td><td class="${pr.principalsNPV < 0 ? 'neg' : ''}">${mm(pr.principalsNPV)}</td>`
+      + `<td>${mm(tp.totalInterest + tp.totalFees)}</td><td>${repaidBy(tp)}</td><td class="${tp.principalsNPV < 0 ? 'neg' : ''}">${mm(tp.principalsNPV)}</td><td class="${c.benefit.npv > 0 ? 'pos' : ''}">${mm(c.benefit.npv)}</td></tr>`;
+  }
+  if (!items.length) h += `<tr><td colspan="10">${T('No active fields.', 'Sin campos activos.')}</td></tr>`;
+  el(id).innerHTML = h + '</tbody>';
+}
+
+function ledger(c, d) {
+  const key = el('ai-ledger-sel').value === 'thirdParty' ? 'thirdParty' : 'partner';
+  const L = c[key];
+  let h = `<thead><tr><th>${T('Year', 'Año')}</th><th>${T("Principals' share of FCF", 'Parte de principales del FCL')}</th><th>${T('Drawn', 'Dispuesto')}</th><th>${T('Fee', 'Comisión')}</th><th>${T('Interest', 'Intereses')}</th><th>${T('Tax release', 'Liberación fiscal')}</th><th>${T('Sweep', 'Barrido')}</th><th>${T('Kept', 'Retenido')}</th><th>${T('Closing balance', 'Saldo final')}</th></tr></thead><tbody>`;
+  const tot = { share: 0, draw: 0, fee: 0, interest: 0, taxRelease: 0, sweep: 0, toPrincipals: 0 };
+  L.rows.forEach((r, i) => {
+    Object.keys(tot).forEach((k) => { tot[k] += r[k]; });
+    h += `<tr><td>${YEARS[i]}</td><td style="color:${r.share < 0 ? 'var(--red)' : 'var(--navy)'}">${mm1(r.share)}</td><td>${mm1(r.draw)}</td><td>${mm1(r.fee)}</td><td>${mm1(r.interest)}</td><td>${mm1(r.taxRelease)}</td><td>${mm1(r.sweep)}</td><td>${mm1(r.toPrincipals)}</td><td>${mm1(r.closing)}</td></tr>`;
+  });
+  h += `<tr class="r-tot"><td>${T('Total', 'Total')}</td><td>${mm1(tot.share)}</td><td>${mm1(tot.draw)}</td><td>${mm1(tot.fee)}</td><td>${mm1(tot.interest)}</td><td>${mm1(tot.taxRelease)}</td><td>${mm1(tot.sweep)}</td><td>${mm1(tot.toPrincipals)}</td><td>${mm1(L.endingBalance)}</td></tr>`;
+  el('tb-ai-ledger').innerHTML = h + '</tbody>';
+  el('ai-ledger-sel').options[0].textContent = lang() === 'es' ? `Préstamo ${d.partnerName}` : `${d.partnerName} loan`;
+}
+
+function render(M) {
+  window.LAST_QLM_RENDER = M;
+  if (!M || !el('tab-alpha')) return;
+  const d = getDeal();
+  const disc = M.p.disc;
+  const c = compareFinancing({ fcf: M.portNCF, capex: M.portCapex }, d, disc);
+  c.self.totalTax = selfTax(c, d);
+  kpis(c, d, M);
+  balChart(c, d);
+  cashChart(c, d);
+  valueTable(c, d, M);
+
+  const regimes = Object.keys(REGIMES).map((ct) => {
+    const p = { ...M.p, contractType: ct, cp: ct === M.p.contractType ? { ...M.p.cp } : { ...CONTRACT_DEFAULTS[ct] } };
+    const cf = cashFlowFor(M.active, p);
+    const sel = ct === M.p.contractType;
+    return { name: T(REGIMES[ct][0] + (sel ? ' · selected' : ''), REGIMES[ct][1] + (sel ? ' · seleccionado' : '')), sel,
+      npv: npv(cf.fcf, disc), c: compareFinancing(cf, d, disc) };
+  });
+  compareTable('tb-ai-regime', M.active.length ? regimes : [], d, M, T('Regime', 'Régimen'));
+
+  const projects = M.fieldData.map((x) => {
+    const fcf = x.rows.map((r) => r.ncf), capex = x.rows.map((r) => r.capex);
+    return { name: esc(x.f.name), npv: x.fNPV, c: compareFinancing({ fcf, capex }, d, disc) };
+  });
+  compareTable('tb-ai-project', projects, d, M, T('Project', 'Proyecto'));
+  ledger(c, d);
+}
+
+window.vAlphaIntl = render;
+window.ALPHA_INTL = { get: getDeal, set: setDeal, defaults: DEAL_DEFAULTS };
+
+['ai-pshare', 'ai-prate', 'ai-sweep', 'ai-tax', 'ai-depr', 'ai-trate', 'ai-tfee'].forEach((id) =>
+  el(id).addEventListener('input', () => { syncOutputs(); render(window.LAST_QLM_RENDER); }));
+['ai-pcomp', 'ai-tcomp', 'ai-deduct', 'ai-ledger-sel'].forEach((id) =>
+  el(id).addEventListener('change', () => render(window.LAST_QLM_RENDER)));
+el('ai-name').addEventListener('input', () => render(window.LAST_QLM_RENDER));
+// Charts drawn while the tab was hidden are re-laid out when it opens (WebKit/iPad).
+el('rt-alpha').addEventListener('change', function () {
+  if (this.checked) requestAnimationFrame(() => requestAnimationFrame(() => render(window.LAST_QLM_RENDER)));
+});
+syncOutputs();
+render(typeof LAST !== 'undefined' ? LAST : null);
 </script>
 <script>
 /* ════ VAULT: ATC_TOOL INTERFACE & RUNS DRAWER (M05) ════ */
@@ -2177,7 +2504,8 @@ function getParams(){
     preFinRate:($('tog-prefin').checked ? +$('s-prefin').value/100 : null),
     contractType:CONTRACT_TYPE,
     cp:{...CONTRACT_P},
-    fields:FIELDS.map(f=>({id:f.id,type:f.type,color:f.color,active:f.active,name:f.name,plateau:f.plateau,rampYrs:f.rampYrs,platYrs:f.platYrs,capexTotal:f.capexTotal,opexPerUnit:f.opexPerUnit,qdiscount:f.qdiscount,capexProfile:f.capexProfile}))
+    fields:FIELDS.map(f=>({id:f.id,type:f.type,color:f.color,active:f.active,name:f.name,plateau:f.plateau,rampYrs:f.rampYrs,platYrs:f.platYrs,capexTotal:f.capexTotal,opexPerUnit:f.opexPerUnit,qdiscount:f.qdiscount,capexProfile:f.capexProfile})),
+    deal:(window.ALPHA_INTL?window.ALPHA_INTL.get():undefined)
   };
 }
 
@@ -2193,6 +2521,7 @@ function setParams(p){
   if(p.fields&&Array.isArray(p.fields)){
     FIELDS=p.fields.slice();
   }
+  if(p.deal&&window.ALPHA_INTL){window.ALPHA_INTL.set(p.deal);}
   renderFieldCards();document.querySelectorAll('input[type=range]').forEach(function(el){
     try{var pct=100*((+el.value)-(+el.min))/((+el.max)-(+el.min));el.style.setProperty('--pct',pct+'%');}catch(e){}
   });
