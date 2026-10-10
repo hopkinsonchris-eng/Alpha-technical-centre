@@ -21,7 +21,7 @@
 *,*::before,*::after{box-sizing:border-box;}
 svg{display:block;width:100%;height:auto;}
 /* Chart containers reserve height even when injected inside a hidden tab (WebKit/iPad fix) */
-#ch-ai-bal,#ch-ai-cash,#ch-tornado,#ch-brent-sens,#ch-irr-plat,#ch-prod,#ch-cf,#ch-bridge,#ch-selffund,#ch-govttake,#ch-ramps,#ch-split{min-height:40px;}
+#ch-ai-bal,#ch-ai-cash,#ch-ai-screen,#ch-ai-value,#ch-tornado,#ch-brent-sens,#ch-irr-plat,#ch-prod,#ch-cf,#ch-bridge,#ch-selffund,#ch-govttake,#ch-ramps,#ch-split{min-height:40px;}
 svg text{font-family:'Barlow Condensed',sans-serif;}
 body{margin:0;background:var(--cream);}
 #qlm{max-width:1380px;margin:0 auto;padding:0 0 40px;}
@@ -998,7 +998,7 @@ body{padding-top:0;}
         </div>
         <div class="method-box">
           <h3 data-en="Alpha International shareholder financing" data-es="Financiamiento de accionistas de Alpha International">Alpha International shareholder financing</h3>
-          <p data-en="Alpha International is modelled as a Texas C-corp by default: it pays US federal corporate tax (default 21%) on pre-tax profit, which is free cash flow plus CAPEX, less straight-line depreciation, plus host income tax, after losses carried forward. Host income tax is credited against it in the same year (no carry-over, never below zero). Texas has no corporate income tax and its franchise tax is ignored. The principals are then taxed on dividends paid, including dividends paid to the lender on their behalf: 23.8% held directly, or 5% when held through a UK holding company (US–UK treaty rate for a company holding 10% or more; the UK generally exempts the dividend). Loan interest is not set against dividend tax. Choose 'Pass-through LLC' for the original structure, described next. The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects. Switching the tax release off follows Heads of Terms §9 as signed: the sweep takes every distribution while a loan is outstanding and the principals pay their tax from their own pocket. Ticking 'Principals hold through holding companies' taxes the principals' allocated profit at the holding-company rate (default 5%) instead of their personal rate; the right rate depends on the holding companies' jurisdiction and how Alpha International is taxed." data-es="Alpha International se modela por defecto como una C-corp de Texas: paga el impuesto federal de sociedades de EE. UU. (21% por defecto) sobre la utilidad antes de impuestos (flujo de caja libre más CAPEX, menos depreciación lineal, más impuesto anfitrión), tras pérdidas acumuladas, con crédito por el impuesto anfitrión del mismo año. Texas no tiene impuesto sobre la renta corporativo y se ignora su franchise tax. Los principales tributan luego sobre los dividendos pagados, incluidos los pagados al prestamista por su cuenta: 23,8% en tenencia directa o 5% mediante una holding británica (tasa del tratado EE. UU.–Reino Unido para una sociedad con el 10% o más). Elija 'LLC transparente' para la estructura original, descrita a continuación. El socio financiador mantiene su participación y puede prestar a los principales la suya a una tasa compuesta. Cada año se calcula la parte de los principales del flujo de caja libre del proyecto (después de la participación del gobierno). Una parte negativa se dispone del préstamo, con intereses desde mitad de año. Una liberación fiscal paga luego el impuesto de los principales sobre su utilidad asignada: flujo de caja libre más CAPEX, menos depreciación fiscal lineal, menos intereses deducibles, tras pérdidas acumuladas. El impuesto que no pueden cubrir con caja se dispone del préstamo. El barrido repaga al prestamista, intereses primero. Un préstamo de terceros sigue los mismos pasos a su propia tasa, con una comisión de estructuración añadida a cada disposición. El VPN de los principales resta cualquier saldo pendiente en el último año. El impuesto de accionistas es una tasa fija sin retenciones ni efectos de tratados. Desactivar la liberación fiscal sigue la §9 del Heads of Terms firmado: el barrido toma toda distribución mientras haya un préstamo pendiente y los principales pagan su impuesto de su propio bolsillo. Marcar 'Los principales participan mediante sociedades holding' grava la utilidad asignada a la tasa de la sociedad holding (5% por defecto) en lugar de la tasa personal; la tasa correcta depende de la jurisdicción de las holdings y de cómo tribute Alpha International.">Alpha International is modelled as a Texas C-corp by default: it pays US federal corporate tax (default 21%) on pre-tax profit, which is free cash flow plus CAPEX, less straight-line depreciation, plus host income tax, after losses carried forward. Host income tax is credited against it in the same year (no carry-over, never below zero). Texas has no corporate income tax and its franchise tax is ignored. The principals are then taxed on dividends paid, including dividends paid to the lender on their behalf: 23.8% held directly, or 5% when held through a UK holding company (US–UK treaty rate for a company holding 10% or more; the UK generally exempts the dividend). Loan interest is not set against dividend tax. Choose 'Pass-through LLC' for the original structure, described next. The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects. Switching the tax release off follows Heads of Terms §9 as signed: the sweep takes every distribution while a loan is outstanding and the principals pay their tax from their own pocket. Ticking 'Principals hold through holding companies' taxes the principals' allocated profit at the holding-company rate (default 5%) instead of their personal rate; the right rate depends on the holding companies' jurisdiction and how Alpha International is taxed.</p>
+          <p data-en="Alpha International is modelled as a Texas C-corp by default: it pays US federal corporate tax (default 21%) on pre-tax profit, which is free cash flow plus CAPEX, less straight-line depreciation, plus host income tax, after losses carried forward. Host income tax is credited against it in the same year (no carry-over, never below zero). Texas has no corporate income tax and its franchise tax is ignored. The principals are then taxed on dividends paid, including dividends paid to the lender on their behalf: 23.8% held directly, or 5% when held through a UK holding company (US–UK treaty rate for a company holding 10% or more; the UK generally exempts the dividend). Loan interest is not set against dividend tax. Choose 'Pass-through LLC' for the original structure, described next. The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects. Switching the tax release off follows Heads of Terms §9 as signed: the sweep takes every distribution while a loan is outstanding and the principals pay their tax from their own pocket. Ticking 'Principals hold through holding companies' taxes the principals' allocated profit at the holding-company rate (default 5%) instead of their personal rate; the right rate depends on the holding companies' jurisdiction and how Alpha International is taxed. The Deal screen runs 300 single oil fields (5 regimes × 3 oil prices × 5 sizes × 4 development costs; 3-year ramp, 5-year plateau, $10/bbl OPEX) through the current deal terms and reports the lowest project IRR above every field that misses the repayment target. That is the entry hurdle the sweep supports. Field size scales the loan but not the years to repay." data-es="Alpha International se modela por defecto como una C-corp de Texas: paga el impuesto federal de sociedades de EE. UU. (21% por defecto) sobre la utilidad antes de impuestos (flujo de caja libre más CAPEX, menos depreciación lineal, más impuesto anfitrión), tras pérdidas acumuladas, con crédito por el impuesto anfitrión del mismo año. Texas no tiene impuesto sobre la renta corporativo y se ignora su franchise tax. Los principales tributan luego sobre los dividendos pagados, incluidos los pagados al prestamista por su cuenta: 23,8% en tenencia directa o 5% mediante una holding británica (tasa del tratado EE. UU.–Reino Unido para una sociedad con el 10% o más). Elija 'LLC transparente' para la estructura original, descrita a continuación. El socio financiador mantiene su participación y puede prestar a los principales la suya a una tasa compuesta. Cada año se calcula la parte de los principales del flujo de caja libre del proyecto (después de la participación del gobierno). Una parte negativa se dispone del préstamo, con intereses desde mitad de año. Una liberación fiscal paga luego el impuesto de los principales sobre su utilidad asignada: flujo de caja libre más CAPEX, menos depreciación fiscal lineal, menos intereses deducibles, tras pérdidas acumuladas. El impuesto que no pueden cubrir con caja se dispone del préstamo. El barrido repaga al prestamista, intereses primero. Un préstamo de terceros sigue los mismos pasos a su propia tasa, con una comisión de estructuración añadida a cada disposición. El VPN de los principales resta cualquier saldo pendiente en el último año. El impuesto de accionistas es una tasa fija sin retenciones ni efectos de tratados. Desactivar la liberación fiscal sigue la §9 del Heads of Terms firmado: el barrido toma toda distribución mientras haya un préstamo pendiente y los principales pagan su impuesto de su propio bolsillo. Marcar 'Los principales participan mediante sociedades holding' grava la utilidad asignada a la tasa de la sociedad holding (5% por defecto) en lugar de la tasa personal; la tasa correcta depende de la jurisdicción de las holdings y de cómo tribute Alpha International. El filtro de proyectos pasa 300 campos de petróleo (5 regímenes × 3 precios × 5 tamaños × 4 costos de desarrollo) por los términos actuales e informa la TIR mínima por encima de todo campo que no cumple el objetivo de repago. El tamaño del campo escala el préstamo, no los años para repagarlo.">Alpha International is modelled as a Texas C-corp by default: it pays US federal corporate tax (default 21%) on pre-tax profit, which is free cash flow plus CAPEX, less straight-line depreciation, plus host income tax, after losses carried forward. Host income tax is credited against it in the same year (no carry-over, never below zero). Texas has no corporate income tax and its franchise tax is ignored. The principals are then taxed on dividends paid, including dividends paid to the lender on their behalf: 23.8% held directly, or 5% when held through a UK holding company (US–UK treaty rate for a company holding 10% or more; the UK generally exempts the dividend). Loan interest is not set against dividend tax. Choose 'Pass-through LLC' for the original structure, described next. The funding partner holds its equity share and may lend the principals theirs at a compounding rate. Each year the principals' share of project free cash flow (after host-government take) is calculated. A negative share is drawn on the loan, with interest accruing from mid-year. A tax release then pays the principals' tax on their allocated profit: free cash flow plus CAPEX, less straight-line tax depreciation, less deductible interest, after losses carried forward. Tax they cannot cover from cash is drawn on the loan. The sweep then repays the lender, interest first. A third-party loan runs through the same steps at its own rate, with an arrangement fee added to each draw. Principals' NPV takes off any balance still owed in the final year. Shareholder tax is a single flat rate with no withholding or treaty effects. Switching the tax release off follows Heads of Terms §9 as signed: the sweep takes every distribution while a loan is outstanding and the principals pay their tax from their own pocket. Ticking 'Principals hold through holding companies' taxes the principals' allocated profit at the holding-company rate (default 5%) instead of their personal rate; the right rate depends on the holding companies' jurisdiction and how Alpha International is taxed. The Deal screen runs 300 single oil fields (5 regimes × 3 oil prices × 5 sizes × 4 development costs; 3-year ramp, 5-year plateau, $10/bbl OPEX) through the current deal terms and reports the lowest project IRR above every field that misses the repayment target. That is the entry hurdle the sweep supports. Field size scales the loan but not the years to repay.</p>
         </div>
       </div>
 
@@ -1127,6 +1127,34 @@ body{padding-top:0;}
           <div class="ae-ct" data-en="By Project" data-es="Por Proyecto">By Project</div>
           <div class="ae-cn" data-en="Each active field financed on its own, under the selected regime." data-es="Cada campo activo financiado por separado, bajo el régimen seleccionado.">Each active field financed on its own, under the selected regime.</div>
           <div class="ae-scroll"><table id="tb-ai-project"></table></div>
+        </div>
+
+        <div class="ae-card" id="ai-screen">
+          <div class="ae-ct" data-en="Deal Screen · Does the Partner Loan Work, and What Should We Require?" data-es="Filtro de Proyectos · ¿Funciona el Préstamo del Socio y Qué Debemos Exigir?">Deal Screen · Does the Partner Loan Work, and What Should We Require?</div>
+          <div class="ae-cn" id="ai-screen-sub"></div>
+          <div class="ae-slider" style="max-width:420px;">
+            <label for="ai-hurdle"><span data-en="Repayment target (years)" data-es="Objetivo de repago (años)">Repayment target (years)</span> <output id="ai-o-hurdle">10</output></label>
+            <input type="range" id="ai-hurdle" min="3" max="15" step="1" value="10">
+          </div>
+          <div class="ae-callout" id="ai-screen-summary"></div>
+          <div class="ae-ct" style="margin-top:14px;" id="ai-screen-t1"></div>
+          <div id="ch-ai-screen"></div>
+          <div class="ae-legend" id="lg-ai-screen"></div>
+          <div class="ae-2col" style="margin-top:14px;">
+            <div>
+              <div class="ae-ct" id="ai-screen-t2"></div>
+              <div class="ae-cn" id="ai-screen-n2"></div>
+              <div id="ch-ai-value"></div>
+              <div class="ae-legend" id="lg-ai-value"></div>
+            </div>
+            <div>
+              <div class="ae-ct" id="ai-screen-t3"></div>
+              <div class="ae-cn" id="ai-screen-n3"></div>
+              <div class="ae-scroll"><table class="ae-heat" id="tb-ai-heat"></table></div>
+            </div>
+          </div>
+          <div class="ae-ct" style="margin-top:14px;" data-en="By Project IRR" data-es="Por TIR del Proyecto">By Project IRR</div>
+          <div class="ae-scroll"><table id="tb-ai-bands"></table></div>
         </div>
 
         <div class="ae-card">
@@ -2275,7 +2303,7 @@ function resetAll(){
    Engine in hub/tools/alpha-intl-finance.js (unit tested). This block reads the deal
    inputs, runs the engine on the model's portfolio cash flow (LAST) and draws
    the tab. It uses the page's chart helpers and fieldCashFlowWith(). */
-import { DEAL_DEFAULTS, compareFinancing, effectiveAnnualRate } from '/hub/tools/alpha-intl-finance.js';
+import { DEAL_DEFAULTS, compareFinancing, effectiveAnnualRate, irrMid, screenSummary, npvMid } from '/hub/tools/alpha-intl-finance.js';
 
 const el = (id) => document.getElementById(id);
 const lang = () => (document.documentElement.getAttribute('lang') === 'es' ? 'es' : 'en');
@@ -2485,6 +2513,139 @@ function ledger(c, d) {
   el('ai-ledger-sel').options[0].textContent = lang() === 'es' ? `Préstamo ${d.partnerName}` : `${d.partnerName} loan`;
 }
 
+/* ── Deal screen: 300 single oil fields under the current deal ─────────────────
+   5 regimes (selected regime on its current terms, the rest on defaults) × Brent
+   (rail −15, rail, rail +20) × plateau × capex per flowing barrel. Field template:
+   3-year ramp, 5-year plateau, $10/bbl OPEX, $5/bbl quality discount. */
+const SCREEN_PLATEAUS = [2500, 5000, 10000, 20000, 40000];
+const SCREEN_INTENSITY = [10000, 20000, 30000, 40000];     // $ per flowing bopd
+const REGIME_COLOUR = { psc: '#2a78d6', rt: '#eb6834', cpp: '#1baf7a', svc: '#eda100', jv: '#e87ba4' }; // validated categorical order
+const HEAT_RAMP = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
+
+function screenCases(M, d) {
+  const out = [], base = M.p.brent;
+  const brents = [Math.max(20, base - 15), base, base + 20];
+  for (const ct of Object.keys(REGIMES)) {
+    const cp = ct === M.p.contractType ? { ...M.p.cp } : { ...CONTRACT_DEFAULTS[ct] };
+    for (const brent of brents) for (const plateau of SCREEN_PLATEAUS) for (const intensity of SCREEN_INTENSITY) {
+      const f = { id: 'screen', type: 'oil', active: true, plateau, rampYrs: 3, platYrs: 5,
+        capexTotal: plateau * intensity / 1e6, opexPerUnit: 10, qdiscount: 5, capexProfile: 'front' };
+      const p = { ...M.p, brent, contractType: ct, cp };
+      const rows = fieldCashFlowWith(f, p);
+      const c = compareFinancing({ fcf: rows.map((r) => r.ncf), capex: rows.map((r) => r.capex), hostTax: rows.map((r) => r.hostTax) }, d, M.p.disc);
+      out.push({ ct, brent, base: brent === base, plateau, intensity, capex: f.capexTotal * M.p.capexM,
+        irr: irrMid(c.companyFcf), drawn: c.partner.totalDrawn, peak: c.partner.peakBalance,
+        yrs: c.partner.payoffIndex === null ? null : c.partner.payoffIndex + 1,
+        npvLoan: c.partner.principalsNPV, npvThird: c.thirdParty.principalsNPV, npvSelf: c.self.principalsNPV });
+    }
+  }
+  return out;
+}
+
+function screenChart(pts, sum, port, d, hurdle) {
+  const W = 1100, H = 420, L = 64, R = 18, TP = 14, B = 44, pw = W - L - R, ph = H - TP - B;
+  const X = (v) => L + pw * Math.max(0, Math.min(v === null ? 0 : v, 1));
+  const Y = (v) => TP + ph * (1 - v / 22);
+  const mx = Math.max(1, ...pts.map((p) => p.drawn));
+  let s = `<rect x="${L}" y="${Y(22)}" width="${pw}" height="${Y(20.5) - Y(22)}" fill="#F3EFE4"/>`
+    + `<text x="${L + pw - 6}" y="${Y(21.25) + 4}" text-anchor="end" font-size="11" fill="#6B7A8D">${lang() === 'es' ? 'No repagado en 20 años (recurso pleno contra los principales)' : 'Not repaid within 20 years (full recourse to the principals)'}</text>`;
+  [0, 5, 10, 15, 20].forEach((v) => { s += `<line x1="${L}" x2="${L + pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="#E8E2D2"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#6B7A8D">${v}</text>`; });
+  [0, 0.2, 0.4, 0.6, 0.8, 1].forEach((v) => { s += `<text x="${X(v)}" y="${TP + ph + 18}" text-anchor="middle" font-size="11" fill="#6B7A8D">${Math.round(v * 100)}%${v === 1 ? '+' : ''}</text>`; });
+  s += `<line x1="${L}" x2="${L + pw}" y1="${Y(hurdle)}" y2="${Y(hurdle)}" stroke="#0B1F3A" stroke-dasharray="2 4"/>`;
+  s += `<text x="${L + 6}" y="${Y(hurdle) - 5}" font-size="11" fill="#0B1F3A">${lang() === 'es' ? `Objetivo: ${hurdle} años` : `Target: ${hurdle} years`}</text>`;
+  const ear = effectiveAnnualRate(d.partnerRate, d.partnerCompounding);
+  s += `<line x1="${X(ear)}" x2="${X(ear)}" y1="${Y(20.5)}" y2="${TP + ph}" stroke="#0B1F3A" stroke-dasharray="5 4" stroke-width="1.2"/>`
+    + `<text x="${X(ear) + 6}" y="${Y(19)}" font-size="11" fill="#0B1F3A">${pct(ear, 1)} ${lang() === 'es' ? 'tasa del préstamo' : 'loan rate'}</text>`;
+  if (sum.hurdleIrr !== null) s += `<line x1="${X(sum.hurdleIrr)}" x2="${X(sum.hurdleIrr)}" y1="${Y(20.5)}" y2="${TP + ph}" stroke="#1A7A4A" stroke-width="1.6"/>`
+    + `<text x="${X(sum.hurdleIrr) + 6}" y="${Y(17.5)}" font-size="11" font-weight="600" fill="#1A7A4A">${lang() === 'es' ? 'Umbral' : 'Hurdle'} ≈ ${pct(sum.hurdleIrr)}</text>`;
+  [...pts].sort((a, b) => b.drawn - a.drawn).forEach((p) => {
+    const y = p.yrs === null ? 21.25 : p.yrs, rad = 2.5 + 15 * Math.sqrt(p.drawn / mx);
+    s += `<circle cx="${X(p.irr).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="${rad.toFixed(1)}" fill="${REGIME_COLOUR[p.ct]}" fill-opacity="0.5" stroke="#fff" stroke-width="1.2"><title>${REGIMES[p.ct][0]} · $${p.brent} · ${p.plateau.toLocaleString('en-US')} bopd · $${p.intensity / 1000}k/bbl · IRR ${p.irr === null ? 'n/a' : pct(p.irr)} · ${p.yrs === null ? 'never repaid' : 'repaid in ' + p.yrs + ' yrs'} · borrowed ${mm(p.drawn)}MM</title></circle>`;
+  });
+  if (port && port.irr !== null && port.drawn > 0) {
+    const px = X(port.irr), py = Y(port.yrs === null ? 21.25 : port.yrs);
+    s += `<path d="M${px},${py - 9} L${px + 9},${py} L${px},${py + 9} L${px - 9},${py} Z" fill="#0B1F3A" stroke="#fff" stroke-width="2"><title>Your portfolio · IRR ${pct(port.irr)} · ${port.yrs === null ? 'never repaid' : 'repaid in ' + port.yrs + ' yrs'}</title></path>`
+      + `<text x="${px + 13}" y="${py + 4}" font-size="11.5" font-weight="700" fill="#0B1F3A">${lang() === 'es' ? 'Su cartera' : 'Your portfolio'}</text>`;
+  }
+  s += `<text x="${L + pw / 2}" y="${H - 6}" text-anchor="middle" font-size="11.5" fill="#1A2433">${lang() === 'es' ? 'TIR del proyecto, sin apalancamiento, tras fiscalidad anfitriona e impuesto corporativo de EE. UU.' : 'Project IRR, unlevered, after host fiscal take and US corporate tax'}</text>`;
+  s += `<text transform="translate(16,${TP + ph / 2}) rotate(-90)" text-anchor="middle" font-size="11.5" fill="#1A2433">${lang() === 'es' ? 'Años hasta repagar' : 'Years to repay'}</text>`;
+  el('ch-ai-screen').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Years to repay the partner loan against project IRR">${s}</svg>`;
+  el('lg-ai-screen').innerHTML = Object.keys(REGIMES).map((k) => `<span><i style="background:${REGIME_COLOUR[k]}"></i>${T(REGIMES[k][0], REGIMES[k][1])}</span>`).join('')
+    + `<span><i style="background:#0B1F3A;transform:rotate(45deg)"></i>${T('Your portfolio', 'Su cartera')}</span>`;
+}
+
+function valueChart(pts, d) {
+  const W = 540, H = 300, L = 52, R = 12, TP = 12, B = 40, pw = W - L - R, ph = H - TP - B;
+  const X = (v) => L + pw * Math.max(0, Math.min(v, 1));
+  const lo = -0.5, hi = 1.25, Y = (v) => TP + ph * (1 - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo));
+  let s = '';
+  [-0.5, 0, 0.5, 1].forEach((v) => { s += `<line x1="${L}" x2="${L + pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 || v === 1 ? '#6B7A8D' : '#E8E2D2'}"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#6B7A8D">${Math.round(v * 100)}%</text>`; });
+  [0, 0.25, 0.5, 0.75, 1].forEach((v) => { s += `<text x="${X(v)}" y="${TP + ph + 16}" text-anchor="middle" font-size="11" fill="#6B7A8D">${Math.round(v * 100)}%${v === 1 ? '+' : ''}</text>`; });
+  const use = pts.filter((p) => p.npvSelf > 0.5 && p.irr !== null);
+  for (const [key, col] of [['npvThird', '#0B1F3A'], ['npvLoan', '#C0392B']])
+    use.forEach((p) => { s += `<circle cx="${X(p.irr).toFixed(1)}" cy="${Y(p[key] / p.npvSelf).toFixed(1)}" r="3.2" fill="${col}" fill-opacity="0.65"><title>IRR ${pct(p.irr)} · ${key === 'npvLoan' ? d.partnerName : 'third-party'} loan keeps ${pct(p[key] / p.npvSelf)} of self-funded value</title></circle>`; });
+  s += `<text x="${L + pw / 2}" y="${H - 4}" text-anchor="middle" font-size="11" fill="#1A2433">${lang() === 'es' ? 'TIR del proyecto' : 'Project IRR'}</text>`;
+  el('ch-ai-value').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Share of self-funded value the principals keep under each loan">${s}</svg>`;
+  el('lg-ai-value').innerHTML = `<span><i style="background:#C0392B"></i>${T(`${d.partnerName} loan · ${pct(d.partnerRate, 1)}`, `Préstamo ${d.partnerName} · ${pct(d.partnerRate, 1)}`)}</span><span><i style="background:#0B1F3A"></i>${T(`Third-party loan · ${pct(d.thirdPartyRate, 2)}`, `Préstamo de terceros · ${pct(d.thirdPartyRate, 2)}`)}</span>`;
+}
+
+function heatTable(pts, M) {
+  // Field size changes the amount borrowed, not the years to repay, so rows are oil price.
+  const g = pts.filter((p) => p.ct === M.p.contractType && p.plateau === 10000);
+  const brents = [...new Set(g.map((p) => p.brent))].sort((a, b) => b - a);
+  let h = `<thead><tr><th>${T('Brent', 'Brent')}</th>${SCREEN_INTENSITY.map((i) => `<th>$${i / 1000}k/bbl</th>`).join('')}</tr></thead><tbody>`;
+  for (const br of brents) {
+    h += `<tr><th>$${br}${br === M.p.brent ? ' ·' + T(' base', ' base') : ''}</th>`;
+    for (const it of SCREEN_INTENSITY) {
+      const p = g.find((x) => x.brent === br && x.intensity === it);
+      if (!p || p.drawn <= 0) { h += `<td style="background:#F3EFE4;color:#6B7A8D">${T('No loan', 'Sin préstamo')}</td>`; continue; }
+      if (p.yrs === null) { h += `<td style="background:#F3EFE4;color:#C0392B;font-weight:700" title="IRR ${p.irr === null ? 'n/a' : pct(p.irr)}">${T('Never', 'Nunca')}</td>`; continue; }
+      const k = Math.min(HEAT_RAMP.length - 1, Math.floor((p.yrs - 1) / 3));
+      h += `<td style="background:${HEAT_RAMP[k]};color:${k >= 3 ? '#fff' : '#0B1F3A'}" title="IRR ${pct(p.irr)}">${p.yrs} ${T('yrs', 'años')}<br><span style="font-weight:400;font-size:11px">IRR ${p.irr === null ? 'n/a' : pct(p.irr)}</span></td>`;
+    }
+    h += '</tr>';
+  }
+  el('tb-ai-heat').innerHTML = h + '</tbody>';
+}
+
+function screen(M, d, c) {
+  if (!el('ai-screen')) return;
+  const hurdle = +el('ai-hurdle').value;
+  el('ai-o-hurdle').textContent = hurdle;
+  const pts = screenCases(M, d);
+  const sum = screenSummary(pts, hurdle);
+  const port = { irr: irrMid(c.companyFcf), drawn: c.partner.totalDrawn, yrs: c.partner.payoffIndex === null ? null : c.partner.payoffIndex + 1 };
+  const base = M.p.brent, P = d.partnerName;
+  el('ai-screen-sub').innerHTML = T(`${pts.length} single oil fields under the deal terms above: 5 regimes (selected on its current terms, others on defaults) × Brent $${Math.max(20, base - 15)}/$${base}/$${base + 20} × 2,500–40,000 bopd × $10k–40k per flowing barrel. 3-year ramp, 5-year plateau.`,
+    `${pts.length} campos de petróleo bajo los términos de arriba: 5 regímenes (el seleccionado con sus términos actuales, el resto por defecto) × Brent $${Math.max(20, base - 15)}/$${base}/$${base + 20} × 2.500–40.000 bpd × $10k–40k por barril diario. Rampa de 3 años, meseta de 5.`);
+  const pk = sum.peakToCapex === null ? '' : pct(sum.peakToCapex);
+  const portLine = port.irr === null || port.drawn <= 0 ? '' : (port.yrs !== null && port.yrs <= hurdle
+    ? T(` Your portfolio (IRR ${pct(port.irr)}) repays in ${port.yrs} years: <b>it meets the target.</b>`, ` Su cartera (TIR ${pct(port.irr)}) repaga en ${port.yrs} años: <b>cumple el objetivo.</b>`)
+    : T(` Your portfolio (IRR ${pct(port.irr)}) ${port.yrs === null ? 'never repays' : `repays in ${port.yrs} years`}: <b>it misses the target.</b>`, ` Su cartera (TIR ${pct(port.irr)}) ${port.yrs === null ? 'nunca repaga' : `repaga en ${port.yrs} años`}: <b>no cumple el objetivo.</b>`));
+  el('ai-screen-summary').innerHTML = (sum.hurdleIrr === null
+    ? T(`No screened project repays the ${P} loan within ${hurdle} years.`, `Ningún proyecto repaga el préstamo de ${P} en ${hurdle} años.`)
+    : T(`<b>Entry hurdle ≈ ${pct(sum.hurdleIrr)} project IRR</b> to repay the ${P} loan within ${hurdle} years`, `<b>Umbral de entrada ≈ ${pct(sum.hurdleIrr)} de TIR</b> para repagar el préstamo de ${P} en ${hurdle} años`)
+      + (sum.maxFailIrr !== null ? T(` (the best project that missed returned ${pct(sum.maxFailIrr)}).`, ` (el mejor proyecto que no lo logró rindió ${pct(sum.maxFailIrr)}).`) : '.'))
+    + (sum.neverIrr !== null ? T(` Below about ${pct(sum.neverIrr)} the loan is never repaid and the balance stays with the principals (full recourse).`, ` Por debajo de ${pct(sum.neverIrr)} el préstamo nunca se repaga y el saldo queda con los principales (recurso pleno).`) : '')
+    + (pk ? T(` Peak owed is typically ${pk} of project capex, whatever the project size.`, ` El saldo máximo suele ser el ${pk} del capex del proyecto, sea cual sea su tamaño.`) : '')
+    + portLine;
+  el('ai-screen-t1').innerHTML = T(`Years to repay the ${P} loan vs project return · bubble = amount the principals borrow`, `Años para repagar el préstamo de ${P} frente a la rentabilidad · burbuja = monto que piden los principales`);
+  el('ai-screen-t2').innerHTML = T('Value the principals keep vs funding their own share', 'Valor que conservan los principales frente a autofinanciarse');
+  el('ai-screen-n2').innerHTML = T("Principals' NPV under each loan as a share of their NPV if they paid their own 35%. 100% = the loan costs nothing.", 'VPN de los principales con cada préstamo como fracción de su VPN autofinanciándose. 100% = el préstamo no cuesta nada.');
+  el('ai-screen-t3').innerHTML = T(`Years to repay · ${REGIMES[M.p.contractType][0]}`, `Años para repagar · ${REGIMES[M.p.contractType][1]}`);
+  el('ai-screen-n3').innerHTML = T('Rows: oil price. Columns: development cost per flowing barrel. Field size changes how much is borrowed, not how long it takes to repay.', 'Filas: precio del petróleo. Columnas: costo de desarrollo por barril diario. El tamaño del campo cambia cuánto se pide, no cuánto se tarda en repagar.');
+  screenChart(pts, sum, port, d, hurdle);
+  valueChart(pts, d);
+  heatTable(pts, M);
+  let h = `<thead><tr><th>${T('Project IRR', 'TIR del proyecto')}</th><th>${T('Projects', 'Proyectos')}</th><th>${T(`${P} loan repaid`, `Préstamo ${P} repagado`)}</th><th>${T('Median years to repay', 'Mediana de años')}</th><th>${T('Value lost vs self-funding (median)', 'Valor perdido vs autofinanciarse (mediana)')}</th></tr></thead><tbody>`;
+  for (const b of sum.bands) {
+    if (!b.n) continue;
+    const label = b.lo === 0 ? `< ${pct(b.hi)}` : (b.hi === Infinity ? `≥ ${pct(b.lo)}` : `${pct(b.lo)}–${pct(b.hi)}`);
+    h += `<tr><td>${label}</td><td>${b.n}</td><td class="${b.repaidShare === 1 ? 'pos' : (b.repaidShare === 0 ? 'neg' : '')}">${pct(b.repaidShare)}</td><td>${b.medianYrs === null ? '—' : b.medianYrs}</td><td>${b.medianCostPct === null ? '—' : (b.medianCostPct > 1 ? T('more than all of it', 'más que todo') : pct(b.medianCostPct))}</td></tr>`;
+  }
+  el('tb-ai-bands').innerHTML = h + '</tbody>';
+}
+
 function render(M) {
   window.LAST_QLM_RENDER = M;
   if (!M || !el('tab-alpha')) return;
@@ -2514,12 +2675,13 @@ function render(M) {
   });
   compareTable('tb-ai-project', projects, d, M, T('Project', 'Proyecto'));
   ledger(c, d);
+  screen(M, d, c);
 }
 
 window.vAlphaIntl = render;
 window.ALPHA_INTL = { get: getDeal, set: setDeal, defaults: DEAL_DEFAULTS };
 
-['ai-pshare', 'ai-prate', 'ai-sweep', 'ai-tax', 'ai-hrate', 'ai-ctax', 'ai-div', 'ai-depr', 'ai-trate', 'ai-tfee'].forEach((id) =>
+['ai-hurdle', 'ai-pshare', 'ai-prate', 'ai-sweep', 'ai-tax', 'ai-hrate', 'ai-ctax', 'ai-div', 'ai-depr', 'ai-trate', 'ai-tfee'].forEach((id) =>
   el(id).addEventListener('input', () => { syncOutputs(); render(window.LAST_QLM_RENDER); }));
 ['ai-entity', 'ai-pcomp', 'ai-tcomp', 'ai-deduct', 'ai-release', 'ai-holdco', 'ai-ledger-sel'].forEach((id) =>
   el(id).addEventListener('change', () => { syncOutputs(); render(window.LAST_QLM_RENDER); }));
