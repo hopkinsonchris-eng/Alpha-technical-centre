@@ -10,7 +10,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEAL_DEFAULTS, effectiveAnnualRate, taxableSeries, shareholderLoan,
-  selfFunded, compareFinancing, npvMid, DealError, corporateTax,
+  selfFunded, compareFinancing, npvMid, DealError, corporateTax, irrMid, screenSummary,
 } from '../hub/tools/alpha-intl-finance.js';
 
 const near = (a, b, tol, what) =>
@@ -258,5 +258,48 @@ describe('compareFinancing', () => {
   });
   test('rejects mismatched arrays', () => {
     assert.throws(() => compareFinancing({ fcf: [1, 2], capex: [1] }, DEAL_DEFAULTS, 0.1), DealError);
+  });
+});
+
+describe('deal screen', () => {
+  test('irrMid finds the rate where the mid-year NPV is zero', () => {
+    const r = irrMid([-100, 60, 60]);
+    near(npvMid([-100, 60, 60], r), 0, 1e-6, 'npv at irr');
+    assert.equal(irrMid([10, 10]), null, 'no sign change, no IRR');
+  });
+  // Six borrowing cases plus one that never borrows (left out of every figure).
+  const pts = [
+    { irr: 0.10, yrs: null, drawn: 10, peak: 40, capex: 100, npvLoan: -8, npvSelf: 2 },
+    { irr: 0.22, yrs: 15, drawn: 10, peak: 30, capex: 100, npvLoan: 1, npvSelf: 4 },
+    { irr: 0.28, yrs: 11, drawn: 10, peak: 25, capex: 100, npvLoan: 3, npvSelf: 6 },
+    { irr: 0.32, yrs: 9, drawn: 10, peak: 20, capex: 100, npvLoan: 6, npvSelf: 8 },
+    { irr: 0.45, yrs: 5, drawn: 10, peak: 15, capex: 100, npvLoan: 18, npvSelf: 20 },
+    { irr: 0.60, yrs: 3, drawn: 10, peak: 12, capex: 100, npvLoan: 39, npvSelf: 40 },
+    { irr: 0.50, yrs: null, drawn: 0, peak: 0, capex: 100, npvLoan: 30, npvSelf: 30 },
+  ];
+  const s = screenSummary(pts, 10);
+  test('hurdle: the lowest IRR above every case that misses the repayment target', () => {
+    near(s.maxFailIrr, 0.28, 1e-12, 'highest IRR that misses 10 years');
+    near(s.hurdleIrr, 0.32, 1e-12, 'lowest IRR above it that makes 10 years');
+    near(s.neverIrr, 0.10, 1e-12, 'highest IRR never repaid');
+    assert.equal(s.n, 6, 'non-borrowing case excluded');
+  });
+  test('peak owed as a share of capex is the median across borrowing cases', () => {
+    near(s.peakToCapex, (25 + 20) / 2 / 100, 1e-12, 'median of 40,30,25,20,15,12 over 100');
+  });
+  test('IRR bands report repayment and the value the loan costs against self-funding', () => {
+    const b = s.bands.find((x) => x.lo === 0.30);
+    assert.equal(b.n, 1);
+    assert.equal(b.repaidShare, 1);
+    assert.equal(b.medianYrs, 9);
+    near(b.medianCostPct, (8 - 6) / 8, 1e-12, 'cost as share of self-funded value');
+    const low = s.bands.find((x) => x.lo === 0);
+    assert.equal(low.repaidShare, 0);
+    assert.equal(low.medianYrs, null);
+  });
+  test('with nothing missing the target there is no hurdle above zero', () => {
+    const t = screenSummary([{ irr: 0.5, yrs: 3, drawn: 1, peak: 1, capex: 10, npvLoan: 1, npvSelf: 1 }], 10);
+    assert.equal(t.maxFailIrr, null);
+    near(t.hurdleIrr, 0.5, 1e-12, 'lowest passing IRR');
   });
 });

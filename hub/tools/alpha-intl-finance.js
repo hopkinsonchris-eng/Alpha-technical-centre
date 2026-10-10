@@ -219,3 +219,52 @@ export function compareFinancing({ fcf: projectFcf, capex, hostTax }, deal, disc
     },
   };
 }
+
+/** IRR under the mid-year convention (bisection); null when the cash flow has no sign change. */
+export function irrMid(cfs) {
+  const f = (r) => npvMid(cfs, r);
+  let lo = -0.99, hi = 20;
+  if (f(lo) * f(hi) > 0) return null;
+  for (let k = 0; k < 120; k++) { const m = (lo + hi) / 2; if (f(lo) * f(m) <= 0) hi = m; else lo = m; }
+  return (lo + hi) / 2;
+}
+
+const median = (a) => {
+  if (!a.length) return null;
+  const s = [...a].sort((x, y) => x - y), m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+
+/** IRR bands the deal screen reports; the first takes everything below 15% (and no IRR). */
+export const SCREEN_BANDS = [[0, 0.15], [0.15, 0.20], [0.20, 0.25], [0.25, 0.30], [0.30, 0.40], [0.40, 0.60], [0.60, Infinity]];
+
+/**
+ * Summarise a sweep of screened projects. Each point is one project financed under the deal:
+ * { irr, yrs (years to repay the partner loan, null if never), drawn, peak, capex, npvLoan, npvSelf }.
+ * Projects that never borrow are left out. hurdleIrr is the lowest IRR above every project that
+ * misses the repayment target, i.e. the entry hurdle the sweep supports.
+ */
+export function screenSummary(points, hurdleYears) {
+  const pts = points.filter((p) => p.drawn > 0);
+  const irrOf = (p) => (p.irr === null || p.irr === undefined ? -Infinity : p.irr);
+  const meets = (p) => p.yrs !== null && p.yrs <= hurdleYears;
+  const fails = pts.filter((p) => !meets(p));
+  const maxFailIrr = fails.length ? Math.max(...fails.map(irrOf)) : null;
+  const above = pts.filter((p) => meets(p) && (maxFailIrr === null || irrOf(p) > maxFailIrr));
+  const never = pts.filter((p) => p.yrs === null);
+  const bands = SCREEN_BANDS.map(([lo, hi]) => {
+    const g = pts.filter((p) => (lo === 0 ? irrOf(p) < hi : irrOf(p) >= lo && irrOf(p) < hi));
+    const repaid = g.filter((p) => p.yrs !== null);
+    const cost = g.filter((p) => p.npvSelf > 0).map((p) => (p.npvSelf - p.npvLoan) / p.npvSelf);
+    return { lo, hi, n: g.length, repaidShare: g.length ? repaid.length / g.length : null,
+      medianYrs: median(repaid.map((p) => p.yrs)), medianCostPct: median(cost) };
+  });
+  return {
+    n: pts.length,
+    maxFailIrr: maxFailIrr === -Infinity ? null : maxFailIrr,
+    hurdleIrr: above.length ? Math.min(...above.map(irrOf)) : null,
+    neverIrr: never.length ? Math.max(...never.map(irrOf)) : null,
+    peakToCapex: median(pts.filter((p) => p.capex > 0).map((p) => p.peak / p.capex)),
+    bands,
+  };
+}
