@@ -494,14 +494,17 @@ function flags(att) {
 }
 /** The register's three tones for a World Monitor index: under 40 managed, under 70 elevated, 70 and over high. */
 export const toneOf = (score) => (score === null || score === undefined ? '' : score >= 70 ? 'red' : score >= 40 ? 'amber' : 'green');
+/** The sanctions imposed on a country from its summary: the Vault's own list (sanctions_on), known with or without a World Monitor reading; null when the summary has none. */
+export const sanctionsOf = (c) => (c && Array.isArray(c.sanctions_on) ? c.sanctions_on : c && c.risk && Array.isArray(c.risk.sanctions_targeted_by) ? c.risk.sanctions_targeted_by : null);
 /** True when a sanctions programme targets the country itself (US OFAC or Canada SEMA), not merely designated entities linked to it. */
-export const underSanctions = (risk) => !!(risk && Array.isArray(risk.sanctions_targeted_by) && risk.sanctions_targeted_by.length);
+export const underSanctions = (c) => { const s = sanctionsOf(c); return !!(s && s.length); };
+const sanctionsMark = () => mk('span', 'hub-risk-mark', '◆ under sanctions', '◆ bajo sanciones', { 'data-risk-sanctions': '' });
 /** Wave 8 (W8-AC3): the marks the map, the panel and the register share: "▲ rising", "◆ under sanctions", "+16 since 1 Sep". Each only when the summary carries it. */
-export function riskMarks(risk) {
+export function riskMarks(risk, sanctioned = false) {
   const out = [];
+  if (sanctioned) out.push(sanctionsMark());
   if (!risk) return out;
   if (risk.trend === 'rising' || risk.trend === 'falling') out.push(mk('span', 'hub-risk-mark', (risk.trend === 'rising' ? '▲ rising' : '▼ falling'), (risk.trend === 'rising' ? '▲ al alza' : '▼ a la baja'), { 'data-risk-trend': risk.trend }));
-  if (underSanctions(risk)) out.push(mk('span', 'hub-risk-mark', '◆ under sanctions', '◆ bajo sanciones', { 'data-risk-sanctions': '' }));
   if (typeof risk.change === 'number' && risk.change !== 0) {
     const d = fmtDay(risk.previous_computed_at);
     const n = (risk.change > 0 ? '+' : '') + (Math.round(risk.change * 10) / 10);
@@ -511,8 +514,8 @@ export function riskMarks(risk) {
 }
 const withSeps = (host, marks) => { for (const m of marks) add(host, document.createTextNode(' · '), m); };
 /** "World Monitor 71 · advisory: reconsider travel (09:00)" from the countries summary (wave 3); null without a reading. */
-function riskLine(risk) {
-  if (!risk || (risk.score === null && !risk.level)) return null;
+function riskLine(risk, sanctioned = false) {
+  if (!risk || (risk.score === null && !risk.level)) return sanctioned ? add(mk('span', 'hub-risk-line'), sanctionsMark()) : null;
   const el = mk('span', 'hub-risk-line', null, null, { 'data-risk-score': risk.score === null ? '' : String(risk.score) });
   const tone = toneOf(risk.score);
   if (tone) add(el, mk('span', 'hub-rag', null, null, { 'data-risk': tone, 'aria-hidden': 'true' }));
@@ -521,7 +524,7 @@ function riskLine(risk) {
   const t = risk.fetched_at ? new Date(risk.fetched_at) : null;
   const hm = t && !isNaN(t) ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
   if (hm) add(el, mk('span', 'hub-muted', ' (' + hm + ')', ' (' + hm + ')'));
-  withSeps(el, riskMarks(risk));                                           // wave 8 (W8-AC3)
+  withSeps(el, riskMarks(risk, sanctioned));                               // wave 8 (W8-AC3)
   return el;
 }
 /** The project's own execution risk beside its register row: "our execution risk Amber 54". */
@@ -636,11 +639,15 @@ async function renderGlobe(person) {
     if (globe) globe.setData({ held, points });
     // Wave 8 (W8-AC2): a halo per held country from the summary's reading; the section reports what the globe wears.
     const halos = new Map();
-    for (const c of data.countries) if (c.risk && typeof c.risk.score === 'number') halos.set(c.code, { tone: toneOf(c.risk.score), rising: c.risk.trend === 'rising', sanctions: underSanctions(c.risk) });
+    // A sanctioned country wears its mark with or without a reading (a halo without a tone draws only the mark).
+    for (const c of data.countries) {
+      const scored = !!(c.risk && typeof c.risk.score === 'number');
+      if (scored || underSanctions(c)) halos.set(c.code, { tone: scored ? toneOf(c.risk.score) : '', rising: scored && c.risk.trend === 'rising', sanctions: underSanctions(c) });
+    }
     if (globe) globe.setRisk(halos);
     const codesOf = (pred) => [...halos].filter(([, v]) => pred(v)).map(([k]) => k).sort();
     const setOrDrop = (name, v) => { if (v) sec.setAttribute(name, v); else sec.removeAttribute(name); };
-    setOrDrop('data-halos', [...halos].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => k + ':' + v.tone).join(','));
+    setOrDrop('data-halos', [...halos].filter(([, v]) => v.tone).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => k + ':' + v.tone).join(','));
     setOrDrop('data-halo-rising', codesOf((v) => v.rising).join(','));
     setOrDrop('data-halo-sanctions', codesOf((v) => v.sanctions).join(','));
     if (data.unplaced && data.unplaced.length) {
@@ -716,7 +723,7 @@ async function renderGlobe(person) {
     setText($('#country-sub'), projects.length ? projects.length + (projects.length === 1 ? ' project' : ' projects') : 'No projects here yet', projects.length ? projects.length + (projects.length === 1 ? ' proyecto' : ' proyectos') : 'Aún no hay proyectos aquí');
     // Wave 3: the live risk line, only when World Monitor answered (nothing is simulated).
     const riskEl = $('#country-risk');
-    if (riskEl) { riskEl.textContent = ''; const line = riskLine(c && c.risk); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
+    if (riskEl) { riskEl.textContent = ''; const line = riskLine(c && c.risk, underSanctions(c)); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
     for (const p of projects) add(ul, panelRow(p, names));                 // W7-AC6: the same stateline as the register
     const createRow = $('#country-create-row');
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
@@ -749,9 +756,9 @@ async function renderGlobe(person) {
       const tr = r.trend === 'rising' ? ['rising', 'al alza'] : r.trend === 'falling' ? ['falling', 'a la baja'] : r.trend ? [r.trend, r.trend === 'stable' ? 'estable' : r.trend] : ['', ''];
       setLv('halo', Math.round(r.score) + ' · ' + lab[0] + (tr[0] ? ' · ' + tr[0] : ''), Math.round(r.score) + ' · ' + lab[1] + (tr[1] ? ' · ' + tr[1] : ''));
       setLv('rising', tr[0] || 'no trend', tr[1] || 'sin tendencia');
-      const tb = r.sanctions_targeted_by;
-      setLv('sanctions', underSanctions(r) ? tb.join(', ') : Array.isArray(tb) ? 'none' : 'no reading', underSanctions(r) ? tb.join(', ') : Array.isArray(tb) ? 'ninguna' : 'sin lectura');
-    } else { for (const k of ['halo', 'rising', 'sanctions']) setLv(k, 'no reading', 'sin lectura'); }
+    } else { for (const k of ['halo', 'rising']) setLv(k, 'no reading', 'sin lectura'); }
+    const sn = sanctionsOf(c);
+    setLv('sanctions', sn ? (sn.length ? sn.join(', ') : 'none') : 'no reading', sn ? (sn.length ? sn.join(', ') : 'ninguna') : 'sin lectura');
     setLv('events', 'reading…', 'leyendo…');
   }
   // Wave 8 (W8-AC4, W8-AC5): the chosen country's conflict events on the globe, the events within NEAR_KM of our located
@@ -1144,7 +1151,7 @@ async function renderRegister(person, info) {
     const n = rows.length;
     const nSpan = add(mk('span', 'n'), mk('span', null, n + (n === 1 ? ' project' : ' projects'), n + (n === 1 ? ' proyecto' : ' proyectos')));
     if (c && c.risk && c.risk.score !== null && c.risk.score !== undefined) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'World Monitor ' + Math.round(c.risk.score), 'World Monitor ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }))
-    if (c && c.risk) withSeps(nSpan, riskMarks(c.risk));                    // wave 8 (W8-AC3): the same marks as the panel and the map
+    if (c) withSeps(nSpan, riskMarks(c.risk, underSanctions(c)));                    // wave 8 (W8-AC3): the same marks as the panel and the map
     const att = c ? { stale: c.counts.stale, filing: c.counts.filing, expiring_days: c.counts.expiring ? Math.min(...c.projects.filter((p) => p.attention.expiring_days !== null).map((p) => p.attention.expiring_days)) : null } : null;
     add(head, mk('span', 'name', nm.en, nm.es), nSpan, add(mk('span', 'flags'), ...flags(att)));
     if (code && info && info.select) head.addEventListener('click', () => info.select(code, true));

@@ -201,12 +201,12 @@ test('sanctions imposed on a country come from programmes named after it, not fr
   assert.deepEqual(programsTargeting('VE', programs), [], 'a programme with no designations imposes nothing');
 });
 
-test('10 Oct 2026: the feed named no programme for Venezuela despite 255 linked designations, so its OFAC country programme stands in; the United States never gets one', () => {
+test('10 Oct 2026: the feed named no programme for Venezuela or Libya, so every country with an OFAC country programme carries it whatever the feed says; the United States never does', () => {
   const thematic = [{ program: 'SDGT', entryCount: 4000 }];
-  assert.deepEqual(sanctionsOn('VE', thematic, true), ['OFAC Venezuela-related sanctions']);
-  assert.deepEqual(sanctionsOn('VE', null, true), ['OFAC Venezuela-related sanctions'], 'works without the Pro programme list');
-  assert.deepEqual(sanctionsOn('VE', [{ program: 'VENEZUELA-EO13850', entryCount: 5 }], true), ['VENEZUELA-EO13850'], 'the feed\'s own names win');
-  assert.deepEqual(sanctionsOn('US', thematic, true), []);
-  assert.deepEqual(sanctionsOn('VE', thematic, false), [], 'no designations linked, no mark');
-  assert.equal(sanctionsOn('VE', null, null), null, 'nothing known');
+  for (const [code, name] of [['VE', 'Venezuela-related'], ['LY', 'Libya'], ['RU', 'Russia-related'], ['IR', 'Iran'], ['CU', 'Cuba'], ['KP', 'North Korea']] as const) {
+    assert.deepEqual(sanctionsOn(code, thematic), [`OFAC ${name} sanctions`], code);
+    assert.deepEqual(sanctionsOn(code), [`OFAC ${name} sanctions`], code + ' without the feed');
+  }
+  assert.deepEqual(sanctionsOn('VE', [{ program: 'VENEZUELA-EO13850', entryCount: 5 }]), ['VENEZUELA-EO13850'], 'the feed\'s own names win');
+  for (const code of ['US', 'GB', 'BR', 'KZ', 'CO']) assert.deepEqual(sanctionsOn(code, thematic), [], code);
 });

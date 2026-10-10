@@ -841,3 +841,21 @@ test('sanctions: the mark is for programmes that target the country, not for des
   await expect(page.locator('#globe-legend [data-legend="sanctions"]')).toContainText('Bajo sanciones');
   await expect(box).toContainText('Impuestas a este país');
 });
+
+test('sanctions are the Vault\'s own call: a country with an OFAC programme wears the mark without a World Monitor reading (Libya, 10 Oct), one without wears none', async ({ page }) => {
+  const LY = { code: 'LY', name: { en: 'Libya', es: 'Libia' }, projects: [proj('lby-sirte', 'Sirte Basin Review', { lat: 29.5, lon: 19.5 })], counts: { projects: 1, stale: 0, filing: 0, expiring: 0 }, sanctions_on: ['OFAC Libya sanctions'], risk: null };
+  const data = { ...RISKY, countries: [...RISKY.countries.map((c) => ({ ...c, sanctions_on: c.code === 'VE' ? ['OFAC Venezuela-related sanctions'] : [] })), LY] };
+  await stubApi(page, { '/api/countries': (u, r) => json(r, data) });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  const sec = page.locator('#sec-globe');
+  await expect(sec).toHaveAttribute('data-halo-sanctions', 'LY,VE');
+  await expect(sec).toHaveAttribute('data-halos', 'KZ:amber,VE:red');   // Libya has no reading, so no tone ring
+  await expect(page.locator('#register [data-country="KZ"] [data-risk-sanctions]')).toHaveCount(0);
+  await page.goto('/hub/index.html?country=LY');
+  await ready(page); await globeReady(page);
+  const legend = page.locator('#globe-legend');
+  await expect(legend.locator('[data-legend-value="sanctions"]')).toHaveText('OFAC Libya sanctions');
+  await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('no reading');
+  await expect(page.locator('#country-risk [data-risk-sanctions]')).toContainText('under sanctions');
+});

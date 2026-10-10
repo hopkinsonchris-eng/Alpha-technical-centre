@@ -191,6 +191,7 @@ test('W3-AC9: without a key the countries summary carries risk: null and the bri
   const r = await (await partner.request('/api/countries')).json() as any;
   assert.ok(r.countries.length >= 1);
   assert.ok(r.countries.every((c: any) => c.risk === null));
+  assert.ok(r.countries.every((c: any) => Array.isArray(c.sanctions_on)), 'sanctions are known without World Monitor');
   assert.equal(r.world_monitor.status, 'not_connected');
   assert.match(r.world_monitor.reason, /WORLD_MONITOR_API_KEY/);
   const b = await post(partner, '/api/countries/KZ/brief');

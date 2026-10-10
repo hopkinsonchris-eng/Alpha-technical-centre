@@ -181,13 +181,16 @@ export function createGlobe(canvas, opts) {
       if (!xy) continue;
       const theta = Math.acos(Math.max(-1, Math.min(1, 1 - area.get(f) / (2 * Math.PI))));
       const rr = Math.max(RING_MIN, R * Math.sin(theta) * 1.05 + 6) + HALO_GAP;
-      const tone = hv.tone === 'red' ? COLOURS.haloRed : hv.tone === 'amber' ? COLOURS.haloAmber : COLOURS.haloGreen;
+      // A halo without a tone (sanctioned, no World Monitor reading) draws only its sanctions mark.
+      const tone = hv.tone === 'red' ? COLOURS.haloRed : hv.tone === 'amber' ? COLOURS.haloAmber : hv.tone === 'green' ? COLOURS.haloGreen : COLOURS.eventLine;
       ctx.save();
-      ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
-      ctx.strokeStyle = tone; ctx.lineWidth = 7; ctx.globalAlpha = 0.28; ctx.stroke();
-      ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
-      ctx.lineWidth = 1.3; ctx.globalAlpha = 0.9; ctx.stroke();
-      if (hv.rising) {                                   // the tick: a small triangle pointing up at twelve o'clock
+      if (hv.tone) {
+        ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
+        ctx.strokeStyle = tone; ctx.lineWidth = 7; ctx.globalAlpha = 0.28; ctx.stroke();
+        ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
+        ctx.lineWidth = 1.3; ctx.globalAlpha = 0.9; ctx.stroke();
+      }
+      if (hv.tone && hv.rising) {                                   // the tick: a small triangle pointing up at twelve o'clock
         const tx = xy[0], ty = xy[1] - rr;
         ctx.beginPath(); ctx.moveTo(tx, ty - 7); ctx.lineTo(tx - 5, ty + 2); ctx.lineTo(tx + 5, ty + 2); ctx.closePath();
         ctx.fillStyle = tone; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = COLOURS.eventLine; ctx.lineWidth = 0.8; ctx.stroke();
@@ -400,7 +403,7 @@ export function createGlobe(canvas, opts) {
     },
     /** Wave 7 PR6: the countries with an open licence round; each wears the ring until the list changes. */
     setRings(codes) { rings = new Set(Array.isArray(codes) ? codes.filter((c) => byCode.has(c)) : []); draw(); schedule(); },
-    /** Wave 8 (W8-AC2): iso2 → {tone, rising, sanctions}; a country without an entry wears no halo. */
+    /** Wave 8 (W8-AC2): iso2 → {tone, rising, sanctions}; a country without an entry wears no halo, one with tone '' only its sanctions mark. */
     setRisk(map) { const m = map instanceof Map ? map : new Map(Object.entries(map || {})); halos = new Map([...m].filter(([c, v]) => byCode.has(c) && v && v.tone)); draw(); schedule(); },
     /** Wave 8 (W8-AC4): the chosen country's conflict events, [{lat, lon}]; an empty list clears them. */
     setEvents(list) { events = Array.isArray(list) ? list : []; draw(); schedule(); },
