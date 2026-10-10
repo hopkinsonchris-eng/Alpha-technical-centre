@@ -49,7 +49,8 @@ export const isFreeMail = (d: string) => FREE_MAIL.has(d);
 
 export function firmDomains(env: NodeJS.ProcessEnv = process.env): string[] {
   const extra = (env.MAIL_FIRM_DOMAINS ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  return [...new Set([(env.ALLOWED_EMAIL_DOMAIN ?? 'alpha-technical-centre.com').toLowerCase(), ...extra])];
+  const own = (env.ALLOWED_EMAIL_DOMAIN ?? 'alpha-technical-centre.com').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  return [...new Set([...own, ...extra])];
 }
 export const domainOf = (address: string) => normaliseDomain(address.split('@')[1] ?? '');
 export const isFirmAddress = (address: string, firm: string[]) => firm.includes(domainOf(address));

@@ -37,6 +37,6 @@ export function appSink(app: Requester, headers: HeadersInit = {}): ItemSink {
 export async function serviceSink(db: Db, env: NodeJS.ProcessEnv = process.env): Promise<ItemSink> {
   const { createApp } = await import('../app.ts'); // late import: app.ts mounts the routes that import this module
   const domain = env.ALLOWED_EMAIL_DOMAIN ?? 'alpha-technical-centre.com';
-  const app = await createApp({ db, auth: { allowedEmailDomain: domain, devUserEmail: env.INGEST_SERVICE_EMAIL ?? `info@${domain}` } });
+  const app = await createApp({ db, auth: { allowedEmailDomain: domain, devUserEmail: env.INGEST_SERVICE_EMAIL ?? `info@${domain.split(',')[0].trim()}` } });
   return appSink(app);
 }
