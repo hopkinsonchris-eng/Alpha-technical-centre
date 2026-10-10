@@ -10,7 +10,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEAL_DEFAULTS, effectiveAnnualRate, taxableSeries, shareholderLoan,
-  selfFunded, compareFinancing, npvMid, DealError,
+  selfFunded, compareFinancing, npvMid, DealError, corporateTax,
 } from '../hub/tools/alpha-intl-finance.js';
 
 const near = (a, b, tol, what) =>
@@ -124,6 +124,100 @@ describe('shareholderLoan: tax release comes before the sweep', () => {
   });
 });
 
+describe('shareholderLoan: tax release switched off (Heads of Terms s.9 as signed)', () => {
+  // Same case as above: year 1 share 60, tax 10, owed 50. With no release the
+  // whole 60 is available to sweep, so the 50 owed is repaid and 10 is left,
+  // and the principals pay the 10 of tax themselves: 10 - 10 = 0 kept.
+  const off = shareholderLoan({ fcf: [-100, 120], taxable: [0, 80] },
+    { share: 0.5, rate: 0, compounding: 1, sweepPct: 1, taxRate: 0.25, fee: 0, taxRelease: false });
+  test('nothing is released; the sweep takes cash before tax', () => {
+    near(off.rows[1].taxRelease, 0, 1e-9, 'no release');
+    near(off.rows[1].tax, 10, 1e-9, 'tax still owed');
+    near(off.rows[1].sweep, 50, 1e-9, 'sweep');
+    near(off.rows[1].toPrincipals, 0, 1e-9, 'kept after paying tax');
+  });
+  test('while the loan is outstanding the principals fund their tax from their own pocket', () => {
+    // Year 1 share 40 all swept against 50 owed; tax 0.25 x 0.5 x 80 = 10 paid out of pocket.
+    const o = shareholderLoan({ fcf: [-100, 80], taxable: [0, 80] },
+      { share: 0.5, rate: 0, compounding: 1, sweepPct: 1, taxRate: 0.25, fee: 0, taxRelease: false });
+    near(o.rows[1].sweep, 40, 1e-9, 'all cash swept');
+    near(o.rows[1].toPrincipals, -10, 1e-9, 'tax out of pocket');
+    near(o.rows[1].draw, 0, 1e-9, 'the lender does not fund tax');
+  });
+  test('compareFinancing passes the switch through and costs the principals value', () => {
+    const fcf = [-400, -200, 150, 250, 300, 300, 250, 200, 150, 100];
+    const capex = [400, 250, 50, 0, 0, 0, 0, 0, 0, 0];
+    const on = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS }, 0.10);
+    const noRel = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS, taxRelease: false }, 0.10);
+    const yr = (x) => (x === null ? Infinity : x);   // null = not repaid within the horizon
+    assert.ok(yr(noRel.partner.payoffIndex) <= yr(on.partner.payoffIndex), 'repaid no later');
+    assert.ok(noRel.partner.rows.every((r) => r.taxRelease === 0));
+    assert.equal(DEAL_DEFAULTS.taxRelease, true);
+  });
+});
+
+describe('compareFinancing: principals holding through holding companies', () => {
+  const fcf = [-400, -200, 150, 250, 300, 300, 250, 200, 150, 100];
+  const capex = [400, 250, 50, 0, 0, 0, 0, 0, 0, 0];
+  test('defaults: held through a UK holding company at the 5% US-UK treaty rate', () => {
+    assert.equal(DEAL_DEFAULTS.holdco, true);
+    assert.equal(DEAL_DEFAULTS.holdcoTaxRate, 0.05);
+  });
+  test('switching holdco on taxes at the holding-company rate, for every route', () => {
+    const hc = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS, entity: 'llc', holdco: true, taxRate: 0.37 }, 0.10);
+    const direct5 = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS, entity: 'llc', holdco: false, taxRate: 0.05 }, 0.10);
+    assert.equal(hc.taxRate, 0.05);
+    near(hc.partner.totalTax, direct5.partner.totalTax, 1e-9, 'partner route tax');
+    near(hc.thirdParty.totalTax, direct5.thirdParty.totalTax, 1e-9, 'third-party route tax');
+    near(hc.self.principalsNPV, direct5.self.principalsNPV, 1e-9, 'self-funded');
+  });
+  test('held directly, the personal rate applies', () => {
+    const d = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS, entity: 'llc', holdco: false, taxRate: 0.37 }, 0.10);
+    assert.equal(d.taxRate, 0.37);
+  });
+});
+
+describe('Texas C-corp: corporate tax, then dividends', () => {
+  test('defaults: C-corp, 21% corporate tax, 23.8% dividend tax held directly', () => {
+    assert.equal(DEAL_DEFAULTS.entity, 'ccorp');
+    assert.equal(DEAL_DEFAULTS.corpTaxRate, 0.21);
+    assert.equal(DEAL_DEFAULTS.dividendTaxRate, 0.238);
+  });
+  test('corporate tax: losses carry forward and host income tax is credited', () => {
+    // Pre-tax profit = fcf + capex - depreciation + host income tax (it was paid out of fcf).
+    // y0: -100 + 100 - 100 + 0 = -100 (loss carried). y1: 100 - 100 loss = 0.
+    // y2: 100 + 10 = 110 taxable -> 21% = 23.1, less the 10 host tax credit = 13.1.
+    const t = corporateTax([-100, 100, 100], [100, 0, 0], [0, 0, 10], 1, 0.21);
+    near(t[0], 0, 1e-9, 'y0'); near(t[1], 0, 1e-9, 'y1'); near(t[2], 13.1, 1e-9, 'y2');
+  });
+  test('the credit never takes corporate tax below zero', () => {
+    const t = corporateTax([100], [0], [40], 1, 0.21);   // 140 x 21% = 29.4 < 40 credit
+    near(t[0], 0, 1e-12, 'fully credited');
+  });
+  test('distributions are after corporate tax, and dividends are taxed only when paid', () => {
+    const fcf = [-100, 200], capex = [100, 0], hostTax = [0, 0];
+    const c = compareFinancing({ fcf, capex, hostTax },
+      { ...DEAL_DEFAULTS, deprYears: 1, corpTaxRate: 0.2, dividendTaxRate: 0.25, holdco: false }, 0.1);
+    // Corporate: y1 pre-tax 200, less the 100 y0 loss = 100 at 20% = 20. Company cash y1 = 180.
+    near(c.corpTax[1], 20, 1e-9, 'corp tax y1');
+    near(c.partnerCash[1] - c.partner.rows[1].lenderCF, 0.65 * 180, 1e-9, 'partner equity after corp tax');
+    // Principals: share of y1 dividend 0.35 x 180 = 63, taxed 25% = 15.75. No tax in the loss year.
+    near(c.self.cash[1], 63 - 15.75, 1e-9, 'self-funded y1 after dividend tax');
+    near(c.self.cash[0], -35, 1e-9, 'no tax in y0');
+    near(c.partner.rows[1].tax, 15.75, 1e-9, 'loan route dividend tax');
+    assert.equal(c.taxRate, 0.25);
+  });
+  test('holding companies take the holding-company rate on dividends', () => {
+    const c = compareFinancing({ fcf: [100], capex: [0], hostTax: [0] },
+      { ...DEAL_DEFAULTS, corpTaxRate: 0.2, holdco: true, holdcoTaxRate: 0.05 }, 0.1);
+    near(c.self.cash[0], 0.35 * 80 * 0.95, 1e-9, 'dividend after 5%');
+  });
+  test('pass-through LLC mode charges no corporate tax', () => {
+    const c = compareFinancing({ fcf: [100], capex: [0], hostTax: [0] }, { ...DEAL_DEFAULTS, entity: 'llc' }, 0.1);
+    assert.deepEqual(c.corpTax, [0]);
+  });
+});
+
 describe('shareholderLoan: third-party fee', () => {
   test('arrangement fee is capitalised on each draw', () => {
     const r = shareholderLoan({ fcf: [-200], taxable: [0] },
@@ -153,9 +247,9 @@ describe('compareFinancing', () => {
     assert.ok(cmp.benefit.npv > 0, 'principals gain from cheaper debt');
     near(cmp.benefit.interestSaved, cmp.partner.totalInterest - cmp.thirdParty.totalInterest, 1e-9, 'saved');
   });
-  test('partner cash is its equity share plus its loan cash', () => {
+  test('partner cash is its equity share of company cash (after corporate tax) plus its loan cash', () => {
     for (let i = 0; i < fcf.length; i++)
-      near(cmp.partnerCash[i], 0.65 * fcf[i] + cmp.partner.rows[i].lenderCF, 1e-9, `partner y${i}`);
+      near(cmp.partnerCash[i], 0.65 * cmp.companyFcf[i] + cmp.partner.rows[i].lenderCF, 1e-9, `partner y${i}`);
   });
   test('principals NPV deducts any balance still owed at the horizon', () => {
     const cash = cmp.partner.rows.map((r) => r.toPrincipals);

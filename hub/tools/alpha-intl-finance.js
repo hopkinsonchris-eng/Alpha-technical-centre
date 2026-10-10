@@ -15,12 +15,27 @@
  *   3. Tax release: tax = rate x (share x taxable profit - deductible
  *      interest), after losses carried forward. It is paid first from s; any
  *      tax the principals cannot cover from s is drawn on the loan.
+ *      With taxRelease off (Heads of Terms s.9 as signed: every Alpha
+ *      Distribution goes to the lender while a loan is outstanding) nothing is
+ *      released: the sweep takes s before tax and the principals pay the tax
+ *      from their own pocket, which can leave their cash negative.
  *   4. Sweep: sweepPct of what is left repays the loan, interest first, and
  *      the rest is the principals' to keep.
  *
- * Taxable profit is project free cash flow with capex added back and
- * straight-line tax depreciation taken off. Host-government fiscal take is
- * already inside free cash flow, so this tax is the shareholder layer.
+ * Two company types (entity):
+ *   ccorp  Alpha International as a Texas C-corp (the default). The company
+ *          pays US corporate tax on pre-tax profit (free cash flow + capex -
+ *          straight-line depreciation + host income tax), after losses carried
+ *          forward, less a credit for host income tax (same year, no carry-over,
+ *          never below zero). Texas levies no corporate income tax; its small
+ *          franchise (margin) tax is ignored. What is left is distributed, and
+ *          the principals are taxed on the dividends paid, at the dividend rate
+ *          held directly or the holding-company rate (default 5%, the US-UK
+ *          treaty rate for a UK company holding 10% or more). Interest on the
+ *          principals' loan is not set against dividend tax.
+ *   llc    A pass-through LLC: no company tax; the principals are taxed on
+ *          their share of profit whether or not it is paid out.
+ * Host-government fiscal take is already inside free cash flow.
  *
  * Money in $MM, one entry per year, year index 0 first.
  */
@@ -31,9 +46,15 @@ export const DEAL_DEFAULTS = Object.freeze({
   partnerRate: 0.20,
   partnerCompounding: 1,       // periods per year
   sweepPct: 1,                 // share of post-tax principal cash swept
-  taxRate: 0.25,               // principals' tax rate on allocated profit
+  entity: 'ccorp',             // 'ccorp' (Texas C-corp) or 'llc' (pass-through)
+  corpTaxRate: 0.21,           // US federal corporate income tax (C-corp)
+  dividendTaxRate: 0.238,      // qualified dividends 20% + 3.8% NIIT, held directly (C-corp)
+  taxRate: 0.25,               // tax on allocated profit, held directly (LLC)
+  holdco: true,                // principals hold through holding companies
+  holdcoTaxRate: 0.05,         // US-UK treaty withholding on dividends to a UK company holding 10%+
   deprYears: 5,                // straight-line tax depreciation of capex
   interestDeductible: true,
+  taxRelease: true,            // pay principals' tax before the sweep
   thirdPartyRate: 0.09,
   thirdPartyCompounding: 1,
   thirdPartyFee: 0.015,        // arrangement fee on each draw, capitalised
@@ -73,6 +94,18 @@ export function taxableSeries(fcf, capex, deprYears) {
   return fcf.map((v, i) => v + capex[i] - dep[i]);
 }
 
+/** US corporate tax by year: losses carried forward, host income tax credited. */
+export function corporateTax(fcf, capex, hostTax, deprYears, rate) {
+  const taxable = taxableSeries(fcf, capex, deprYears);
+  let lossCF = 0;
+  return taxable.map((t, i) => {
+    const ti = t + (hostTax[i] || 0) - lossCF;
+    if (ti < 0) { lossCF = -ti; return 0; }
+    lossCF = 0;
+    return Math.max(0, rate * ti - (hostTax[i] || 0));
+  });
+}
+
 /** Roll the principals' loan forward year by year. */
 export function shareholderLoan({ fcf, taxable }, opts) {
   if (!Array.isArray(fcf) || !Array.isArray(taxable) || fcf.length !== taxable.length)
@@ -84,6 +117,7 @@ export function shareholderLoan({ fcf, taxable }, opts) {
   const taxRate = Math.max(0, opts.taxRate ?? 0);
   const feePct = Math.max(0, opts.fee ?? 0);
   const deductible = opts.interestDeductible !== false;
+  const release = opts.taxRelease !== false;
 
   let bal = 0, lossCF = 0, peak = 0, drawn = 0, totInt = 0, totFee = 0, totPaid = 0, totTax = 0;
   let payoffIndex = null, everDrawn = false;
@@ -100,8 +134,8 @@ export function shareholderLoan({ fcf, taxable }, opts) {
     let tax = 0;
     if (ti < 0) { lossCF = -ti; } else { lossCF = 0; tax = ti * taxRate; }
     const cash = Math.max(0, s);
-    const taxRelease = Math.min(cash, tax);
-    const taxShort = tax - taxRelease;               // drawn at year end, no interest this year
+    const taxRelease = release ? Math.min(cash, tax) : 0;
+    const taxShort = release ? tax - taxRelease : 0; // drawn at year end, no interest this year
     draw += taxShort;
     const shortFee = taxShort * feePct;
     fee += shortFee;
@@ -111,7 +145,7 @@ export function shareholderLoan({ fcf, taxable }, opts) {
     const sweep = Math.min(postTax * sweepPct, owed);
     const interestPaid = Math.min(sweep, interest);
     const closing = owed - sweep;
-    const toPrincipals = postTax - sweep;
+    const toPrincipals = postTax - sweep - (release ? 0 : tax); // without a release, tax comes from the principals' pocket
 
     if (draw > 0) everDrawn = true;
     peak = Math.max(peak, owed);
@@ -141,13 +175,20 @@ export function selfFunded({ fcf, taxable }, { share, taxRate = 0 }) {
 }
 
 /** Partner loan versus third-party loan versus self-funding, for one cash flow. */
-export function compareFinancing({ fcf, capex }, deal, disc) {
-  if (!Array.isArray(fcf) || !Array.isArray(capex) || fcf.length !== capex.length)
+export function compareFinancing({ fcf: projectFcf, capex, hostTax }, deal, disc) {
+  if (!Array.isArray(projectFcf) || !Array.isArray(capex) || projectFcf.length !== capex.length)
     throw new DealError('fcf and capex must be arrays of the same length');
   const d = { ...DEAL_DEFAULTS, ...deal };
   const share = 1 - d.partnerShare;
-  const taxable = taxableSeries(fcf, capex, d.deprYears);
-  const common = { share, sweepPct: d.sweepPct, taxRate: d.taxRate, interestDeductible: d.interestDeductible };
+  const ccorp = d.entity !== 'llc';
+  const host = Array.isArray(hostTax) ? hostTax : projectFcf.map(() => 0);
+  const corpTax = ccorp ? corporateTax(projectFcf, capex, host, d.deprYears, d.corpTaxRate) : projectFcf.map(() => 0);
+  const fcf = projectFcf.map((v, i) => v - corpTax[i]);   // cash the company can distribute
+  const taxRate = d.holdco ? d.holdcoTaxRate : (ccorp ? d.dividendTaxRate : d.taxRate);
+  // C-corp: shareholders are taxed on dividends paid; LLC: on their share of profit.
+  const taxable = ccorp ? fcf.map((v) => Math.max(0, v)) : taxableSeries(fcf, capex, d.deprYears);
+  const common = { share, sweepPct: d.sweepPct, taxRate, taxRelease: d.taxRelease,
+    interestDeductible: ccorp ? false : d.interestDeductible };
   const n = fcf.length;
   const settle = (loan) => {
     const cash = loan.rows.map((x) => x.toPrincipals);
@@ -159,13 +200,13 @@ export function compareFinancing({ fcf, capex }, deal, disc) {
     { ...common, rate: d.partnerRate, compounding: d.partnerCompounding, fee: 0 }));
   const thirdParty = settle(shareholderLoan({ fcf, taxable },
     { ...common, rate: d.thirdPartyRate, compounding: d.thirdPartyCompounding, fee: d.thirdPartyFee }));
-  const self = selfFunded({ fcf, taxable }, { share, taxRate: d.taxRate });
+  const self = selfFunded({ fcf, taxable }, { share, taxRate });
   self.principalsNPV = npvMid(self.cash, disc);
 
   const partnerCash = fcf.map((v, i) => d.partnerShare * v + partner.rows[i].lenderCF);
   const partnerEquityOnly = fcf.map((v) => d.partnerShare * v);
   return {
-    share, taxable, partner, thirdParty, self, partnerCash,
+    share, taxRate, taxable, corpTax, companyFcf: fcf, partner, thirdParty, self, partnerCash,
     partnerNPV: npvMid(partnerCash, disc),
     partnerLoanNPV: npvMid(partner.rows.map((x) => x.lenderCF), disc) + partner.endingBalance / Math.pow(1 + disc, n),
     partnerEquityNPV: npvMid(partnerEquityOnly, disc),
