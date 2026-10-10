@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   acledEvents, advisories, configureWorldMonitor, countryFacts, countryRisk, coverage, energyProfile, enumWord, headlines, humanitarian, intelBrief, intelTimeline,
-  outages, portActivity, programmeTarget, programsTargeting, resetWorldMonitorCache, resilience, sanctions, ucdpEvents, whenIso, worldMonitorConfigured, NEEDS_PRO, NOT_CONNECTED,
+  outages, portActivity, programmeTarget, programsTargeting, sanctionsOn, resetWorldMonitorCache, resilience, sanctions, ucdpEvents, whenIso, worldMonitorConfigured, NEEDS_PRO, NOT_CONNECTED,
   companyEnrichment, companySignals, gdeltDocuments, secFilings,
 } from '../src/intel/worldmonitor.ts';
 
@@ -199,4 +199,14 @@ test('sanctions imposed on a country come from programmes named after it, not fr
   const programs = [{ program: 'SDGT', entryCount: 4000 }, { program: 'CYBER2', entryCount: 120 }, { program: 'VENEZUELA', entryCount: 0 }];
   assert.deepEqual(programsTargeting('US', programs), [], 'the United States hosts designated entities but no programme targets it');
   assert.deepEqual(programsTargeting('VE', programs), [], 'a programme with no designations imposes nothing');
+});
+
+test('10 Oct 2026: the feed named no programme for Venezuela despite 255 linked designations, so its OFAC country programme stands in; the United States never gets one', () => {
+  const thematic = [{ program: 'SDGT', entryCount: 4000 }];
+  assert.deepEqual(sanctionsOn('VE', thematic, true), ['OFAC Venezuela-related sanctions']);
+  assert.deepEqual(sanctionsOn('VE', null, true), ['OFAC Venezuela-related sanctions'], 'works without the Pro programme list');
+  assert.deepEqual(sanctionsOn('VE', [{ program: 'VENEZUELA-EO13850', entryCount: 5 }], true), ['VENEZUELA-EO13850'], 'the feed\'s own names win');
+  assert.deepEqual(sanctionsOn('US', thematic, true), []);
+  assert.deepEqual(sanctionsOn('VE', thematic, false), [], 'no designations linked, no mark');
+  assert.equal(sanctionsOn('VE', null, null), null, 'nothing known');
 });

@@ -245,7 +245,7 @@ export async function sanctions(code: string): Promise<WmResult<Sanctions>> {
   const c = list(d, 'countries').find((x: any) => String(x.countryCode ?? '').toUpperCase() === code);
   const recent = list(d, 'entries').filter((e: any) => (e.countryCodes ?? []).map((x: string) => x.toUpperCase()).includes(code)).slice(0, 12)
     .map((e: any) => ({ name: String(e.name ?? ''), type: enumWord(e.entityType), programs: list(e, 'programs').map(String), effective_at: whenIso(e.effectiveAt), is_new: !!e.isNew }));
-  return { ...r, data: { targeted_by: programsTargeting(code, list(d, 'programs')), entries: num(c?.entryCount), new_entries: num(c?.newEntryCount), vessels: num(c?.vesselCount), aircraft: num(c?.aircraftCount), dataset_date: whenIso(d.datasetDate)?.slice(0, 10) ?? str(d.datasetDate), recent } };
+  return { ...r, data: { targeted_by: sanctionsOn(code, list(d, 'programs'), (num(c?.entryCount) ?? 0) > 0) ?? [], entries: num(c?.entryCount), new_entries: num(c?.newEntryCount), vessels: num(c?.vesselCount), aircraft: num(c?.aircraftCount), dataset_date: whenIso(d.datasetDate)?.slice(0, 10) ?? str(d.datasetDate), recent } };
 }
 
 /**
@@ -279,6 +279,30 @@ export function programmeTarget(program: string): string | null {
 export function programsTargeting(code: string, programs: any[]): string[] {
   return programs.filter((x: any) => (num(x?.entryCount) ?? 0) > 0 && programmeTarget(String(x?.program ?? '')) === code.toUpperCase())
     .map((x: any) => String(x.program)).sort();
+}
+/**
+ * Countries with an OFAC country sanctions programme of their own (Treasury's "Sanctions Programs and
+ * Country Information" list), for when the feed's programme list does not name the country: on
+ * 10 Oct 2026 it named none for Venezuela although 255 designations were linked to it. Review this
+ * list when OFAC adds or ends a country programme.
+ */
+export const OFAC_COUNTRY_PROGRAMMES: Record<string, string> = {
+  VE: 'Venezuela-related', IR: 'Iran', RU: 'Russia-related', CU: 'Cuba', KP: 'North Korea', BY: 'Belarus', MM: 'Burma',
+  SD: 'Sudan', SS: 'South Sudan', LY: 'Libya', SO: 'Somalia', YE: 'Yemen', IQ: 'Iraq-related', LB: 'Lebanon-related',
+  ML: 'Mali-related', CF: 'Central African Republic', CD: 'Democratic Republic of the Congo', NI: 'Nicaragua-related',
+  ET: 'Ethiopia-related', HK: 'Hong Kong-related',
+};
+/**
+ * The sanctions imposed on a country: the feed's programmes named after it, else its OFAC country
+ * programme when designations are linked to it. [] when none; null when neither the programme list
+ * nor the designation flag is known.
+ */
+export function sanctionsOn(code: string, programs: any[] | null, designations: boolean | null): string[] | null {
+  const named = programs ? programsTargeting(code, programs) : [];
+  if (named.length) return named;
+  const own = OFAC_COUNTRY_PROGRAMMES[code.toUpperCase()];
+  if (own && designations) return [`OFAC ${own} sanctions`];
+  return programs === null && designations === null ? null : [];
 }
 /**
  * The programme list from the sanctions-pressure feed (Pro), shared with `sanctions()` through the
