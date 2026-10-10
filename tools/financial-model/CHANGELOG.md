@@ -5,7 +5,7 @@ All notable changes to Upstream Quick-Look Financial Model are recorded here. Fo
 ## [Unreleased]
 
 ### Added
-- Staff edition at `hub/tools/alpha-international.html` (behind Cloudflare Access, noindex): the public model plus an Alpha International tab. It models the partner-funded principals' loan at a compounding rate, repaid by a cash sweep of the principals' share of free cash flow after a tax release, and compares it with third-party debt and self-funding, by fiscal regime and by project. Deal terms are saved with runs. Engine in `hub/tools/alpha-intl-finance.js`, tested in `test/alpha-intl-finance.test.mjs`. The public page is unchanged.
+- Staff edition at `hub/tools/alpha-international.html` (behind Cloudflare Access, noindex): the public model plus an Alpha International tab. It models the partner-funded principals' loan at a compounding rate, repaid by a cash sweep of the principals' share of free cash flow after a tax release, and compares it with third-party debt and self-funding, by fiscal regime and by project. Deal terms are saved with runs. Engine in `hub/tools/alpha-intl-finance.js`, tested in `test/alpha-intl-finance.test.mjs`. The public page does not carry the tab.
 
 ### Fixed
 - JV regime took OPEX and CAPEX off the contractor's cash twice: once at its equity share and again in full. JV income tax was also charged in full to the contractor. Now the JV pays royalty, costs and income tax, the contractor takes its equity share of what is left, and the value bridge closes. The 40% default case went from a portfolio NPV of −$1,106MM to +$1,063MM. Other regimes are unchanged.
