@@ -15,7 +15,7 @@ export interface Person { id: string; email: string; name: string; role: 'partne
 export interface AuthConfig {
   teamDomain?: string;      // e.g. alphatc.cloudflareaccess.com
   audience?: string;        // Access application AUD tag(s), comma separated when the connector login is its own application
-  allowedEmailDomain: string; // alpha-technical-centre.com
+  allowedEmailDomain: string; // alpha-technical-centre.com, or several comma separated
   devUserEmail?: string;
   jwks?: JWTVerifyGetKey;   // injected in tests
 }
@@ -45,18 +45,35 @@ export async function verifyAccessJwt(token: string, cfg: AuthConfig): Promise<s
   }
   const email = typeof payload.email === 'string' ? payload.email.toLowerCase() : '';
   if (!email) throw new AuthError('Access token carries no email');
-  if (!email.endsWith('@' + cfg.allowedEmailDomain)) throw new AuthError('email domain not allowed');
+  if (!allowedDomains(cfg.allowedEmailDomain).includes(email.slice(email.lastIndexOf('@') + 1))) throw new AuthError('email domain not allowed');
   return email;
 }
 
-/** Map an email to a Person, creating an associate on first sight. Partners are seeded from master/people.json. */
+/** ALLOWED_EMAIL_DOMAIN may list several domains, comma separated; the first is the firm's primary domain. */
+export function allowedDomains(list: string): string[] {
+  return list.split(',').map(d => d.trim().toLowerCase().replace(/^@/, '')).filter(Boolean);
+}
+
+/**
+ * Map an email to a Person, creating an associate on first sight. Partners are seeded from master/people.json.
+ * The id comes from the local part; when that id already belongs to another email (chris@ on a second domain),
+ * the newcomer gets an id of their own and never the existing person's record.
+ */
 export async function personForEmail(db: Db, email: string): Promise<Person> {
-  const found = await db.query<Person>('SELECT id, email, name, role FROM people WHERE email = $1', [email]);
+  const byEmail = () => db.query<Person>('SELECT id, email, name, role FROM people WHERE email = $1', [email]);
+  const found = await byEmail();
   if (found.rows[0]) return found.rows[0];
-  const id = email.split('@')[0].replace(/[^a-z0-9.-]/g, '');
-  const name = id.split(/[.-]/).map(s => s ? s[0].toUpperCase() + s.slice(1) : s).join(' ');
-  await db.query('INSERT INTO people (id, email, name, role) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO NOTHING', [id, email, name, 'associate']);
-  return { id, email, name, role: 'associate' };
+  const at = email.lastIndexOf('@');
+  const base = email.slice(0, at).replace(/[^a-z0-9.-]/g, '');
+  const name = base.split(/[.-]/).map(s => s ? s[0].toUpperCase() + s.slice(1) : s).join(' ');
+  const withDomain = `${base}-${email.slice(at + 1).split('.')[0].replace(/[^a-z0-9-]/g, '')}`;
+  const candidates = [base, withDomain, ...Array.from({ length: 8 }, (_, i) => `${withDomain}-${i + 2}`)];
+  for (const id of candidates) {
+    await db.query('INSERT INTO people (id, email, name, role) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING', [id, email, name, 'associate']);
+    const mine = await byEmail();
+    if (mine.rows[0]) return mine.rows[0];
+  }
+  throw new AuthError('could not allocate a person id');
 }
 
 /** Resolve the caller from request headers. */

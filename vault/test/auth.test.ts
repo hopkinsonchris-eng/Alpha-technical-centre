@@ -69,3 +69,24 @@ test('DEV_USER_EMAIL bypass works only when set, and never in production config'
   assert.equal(configFromEnv({ NODE_ENV: 'production', DEV_USER_EMAIL: 'x@alpha-technical-centre.com' } as any).devUserEmail, undefined);
   await db.close();
 });
+
+test('ALLOWED_EMAIL_DOMAIN may list several domains; others are still refused', async () => {
+  const { cfg, sign } = await setup();
+  const two: AuthConfig = { ...cfg, allowedEmailDomain: 'alpha-technical-centre.com, alphainternational.energy' };
+  assert.equal(await verifyAccessJwt(await sign({ email: 'TReed@AlphaInternational.energy' }), two), 'treed@alphainternational.energy');
+  assert.equal(await verifyAccessJwt(await sign({ email: 'chris@alpha-technical-centre.com' }), two), 'chris@alpha-technical-centre.com');
+  await assert.rejects(verifyAccessJwt(await sign({ email: 'x@evil-alphainternational.energy' }), two), /domain not allowed/);
+  await assert.rejects(verifyAccessJwt(await sign({ email: 'x@alphainternational.energy.evil.com' }), two), /domain not allowed/);
+  await assert.rejects(verifyAccessJwt(await sign({ email: 'treed@alphainternational.energy' }), cfg), /domain not allowed/);
+});
+
+test('a second domain never inherits an existing person whose id matches the local part', async () => {
+  const { sign, db, cfg } = await setup();
+  const app = await createApp({ db, auth: { ...cfg, allowedEmailDomain: 'alpha-technical-centre.com,alphainternational.energy' }, version: 'test' });
+  const me = async (email: string) => (await app.request('/api/me', { headers: { 'cf-access-jwt-assertion': await sign({ email }) } })).json();
+  const other = await me('chris@alphainternational.energy');
+  assert.equal(other.id, 'chris-alphainternational'); assert.equal(other.role, 'associate'); assert.equal(other.email, 'chris@alphainternational.energy');
+  assert.equal((await me('chris@alpha-technical-centre.com')).role, 'partner');
+  assert.equal((await me('chris@alphainternational.energy')).id, 'chris-alphainternational');
+  await db.close();
+});

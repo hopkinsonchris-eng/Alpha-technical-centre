@@ -1,4 +1,7 @@
 [
   {"id":"chris","email":"chris@alpha-technical-centre.com","name":"Chris Hopkinson","role":"partner","disciplines":["reservoir","commercial","management"],"signature_block":"Chris Hopkinson\nManaging Partner\nAlpha Technical Centre"},
+  {"id":"chopkinson","email":"chopkinson@alphainternational.energy","name":"Chris Hopkinson","role":"partner","disciplines":["reservoir","commercial","management"]},
+  {"id":"treed","email":"treed@alphainternational.energy","name":"Thomas Reed","role":"partner","disciplines":[]},
+  {"id":"cgerard","email":"cgerard@alphainternational.energy","name":"Christophe Gerard","role":"partner","disciplines":[]},
   {"id":"info","email":"info@alpha-technical-centre.com","name":"ATC shared mailbox","role":"service","disciplines":[]}
 ]
