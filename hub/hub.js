@@ -494,12 +494,14 @@ function flags(att) {
 }
 /** The register's three tones for a World Monitor index: under 40 managed, under 70 elevated, 70 and over high. */
 export const toneOf = (score) => (score === null || score === undefined ? '' : score >= 70 ? 'red' : score >= 40 ? 'amber' : 'green');
-/** Wave 8 (W8-AC3): the marks the map, the panel and the register share: "▲ rising", "◆ sanctions", "+16 since 1 Sep". Each only when the summary carries it. */
+/** True when a sanctions programme targets the country itself (US OFAC or Canada SEMA), not merely designated entities linked to it. */
+export const underSanctions = (risk) => !!(risk && Array.isArray(risk.sanctions_targeted_by) && risk.sanctions_targeted_by.length);
+/** Wave 8 (W8-AC3): the marks the map, the panel and the register share: "▲ rising", "◆ under sanctions", "+16 since 1 Sep". Each only when the summary carries it. */
 export function riskMarks(risk) {
   const out = [];
   if (!risk) return out;
   if (risk.trend === 'rising' || risk.trend === 'falling') out.push(mk('span', 'hub-risk-mark', (risk.trend === 'rising' ? '▲ rising' : '▼ falling'), (risk.trend === 'rising' ? '▲ al alza' : '▼ a la baja'), { 'data-risk-trend': risk.trend }));
-  if (risk.sanctions_active) out.push(mk('span', 'hub-risk-mark', '◆ sanctions', '◆ sanciones', { 'data-risk-sanctions': '' }));
+  if (underSanctions(risk)) out.push(mk('span', 'hub-risk-mark', '◆ under sanctions', '◆ bajo sanciones', { 'data-risk-sanctions': '' }));
   if (typeof risk.change === 'number' && risk.change !== 0) {
     const d = fmtDay(risk.previous_computed_at);
     const n = (risk.change > 0 ? '+' : '') + (Math.round(risk.change * 10) / 10);
@@ -634,7 +636,7 @@ async function renderGlobe(person) {
     if (globe) globe.setData({ held, points });
     // Wave 8 (W8-AC2): a halo per held country from the summary's reading; the section reports what the globe wears.
     const halos = new Map();
-    for (const c of data.countries) if (c.risk && typeof c.risk.score === 'number') halos.set(c.code, { tone: toneOf(c.risk.score), rising: c.risk.trend === 'rising', sanctions: !!c.risk.sanctions_active });
+    for (const c of data.countries) if (c.risk && typeof c.risk.score === 'number') halos.set(c.code, { tone: toneOf(c.risk.score), rising: c.risk.trend === 'rising', sanctions: underSanctions(c.risk) });
     if (globe) globe.setRisk(halos);
     const codesOf = (pred) => [...halos].filter(([, v]) => pred(v)).map(([k]) => k).sort();
     const setOrDrop = (name, v) => { if (v) sec.setAttribute(name, v); else sec.removeAttribute(name); };
@@ -747,7 +749,8 @@ async function renderGlobe(person) {
       const tr = r.trend === 'rising' ? ['rising', 'al alza'] : r.trend === 'falling' ? ['falling', 'a la baja'] : r.trend ? [r.trend, r.trend === 'stable' ? 'estable' : r.trend] : ['', ''];
       setLv('halo', Math.round(r.score) + ' · ' + lab[0] + (tr[0] ? ' · ' + tr[0] : ''), Math.round(r.score) + ' · ' + lab[1] + (tr[1] ? ' · ' + tr[1] : ''));
       setLv('rising', tr[0] || 'no trend', tr[1] || 'sin tendencia');
-      setLv('sanctions', r.sanctions_active ? (r.sanctions_count != null ? r.sanctions_count + ' designations' : 'active') : 'none recorded', r.sanctions_active ? (r.sanctions_count != null ? r.sanctions_count + ' designaciones' : 'vigentes') : 'ninguna registrada');
+      const tb = r.sanctions_targeted_by;
+      setLv('sanctions', underSanctions(r) ? tb.join(', ') : Array.isArray(tb) ? 'none' : 'no reading', underSanctions(r) ? tb.join(', ') : Array.isArray(tb) ? 'ninguna' : 'sin lectura');
     } else { for (const k of ['halo', 'rising', 'sanctions']) setLv(k, 'no reading', 'sin lectura'); }
     setLv('events', 'reading…', 'leyendo…');
   }
@@ -882,7 +885,7 @@ async function renderIntel(code, names, opts) {
     const facts = mk('div', 'hub-note-s');
     if (d.trend) add(facts, mk('span', null, 'trend ' + d.trend, 'tendencia ' + d.trend));
     if (typeof d.static_baseline === 'number') add(facts, document.createTextNode(' · '), mk('span', null, 'baseline ' + Math.round(d.static_baseline) + ', dynamic ' + Math.round(d.dynamic_score || 0), 'base ' + Math.round(d.static_baseline) + ', dinámico ' + Math.round(d.dynamic_score || 0)));
-    if (d.sanctions_active) add(facts, document.createTextNode(' · '), mk('b', 'hub-outside', 'sanctions active' + (d.sanctions_count ? ' (' + d.sanctions_count + ' designations)' : ''), 'sanciones activas' + (d.sanctions_count ? ' (' + d.sanctions_count + ' designaciones)' : '')));
+    if (d.sanctions_active) add(facts, document.createTextNode(' · '), mk('span', null, (d.sanctions_count ? d.sanctions_count + ' ' : '') + 'sanctioned entities linked', (d.sanctions_count ? d.sanctions_count + ' ' : '') + 'entidades sancionadas vinculadas'));
     const cd = fmtWhen(d.computed_at); if (cd) add(facts, document.createTextNode(' · '), mk('span', null, 'computed ' + cd.en, 'calculado ' + cd.es));
     add(box, facts);
     if (d.components) { const bars = mk('div', 'hub-bars'); const max = Math.max(1, ...Object.values(d.components)); for (const [k, v] of Object.entries(d.components)) add(bars, bar(k.replace(/([A-Z])/g, ' $1').toLowerCase(), v, max)); add(box, bars); }
@@ -945,7 +948,8 @@ async function renderIntel(code, names, opts) {
   add(grid, intelSection('sanctions', 'Sanctions pressure', 'Presión de sanciones', S.sanctions, (d) => {
     if (d.entries == null && !d.recent.length) return null;
     const box = mk('div');
-    add(box, add(mk('p', 'hub-note-s'), mk('span', null, num(d.entries || 0) + ' designations' + (d.new_entries ? ', ' + d.new_entries + ' new' : '') + (d.vessels ? ', ' + d.vessels + ' vessels' : '') + (d.dataset_date ? ' · dataset ' + d.dataset_date : ''), num(d.entries || 0) + ' designaciones' + (d.new_entries ? ', ' + d.new_entries + ' nuevas' : '') + (d.vessels ? ', ' + d.vessels + ' buques' : '') + (d.dataset_date ? ' · datos ' + d.dataset_date : ''))));
+    if (d.targeted_by && d.targeted_by.length) add(box, add(mk('p'), mk('b', 'hub-outside', 'Imposed on this country: ', 'Impuestas a este país: '), dv('span', null, d.targeted_by.join(', '))));
+    add(box, add(mk('p', 'hub-note-s'), mk('span', null, num(d.entries || 0) + ' designations linked to this country' + (d.new_entries ? ', ' + d.new_entries + ' new' : '') + (d.vessels ? ', ' + d.vessels + ' vessels' : '') + (d.dataset_date ? ' · dataset ' + d.dataset_date : ''), num(d.entries || 0) + ' designaciones vinculadas a este país' + (d.new_entries ? ', ' + d.new_entries + ' nuevas' : '') + (d.vessels ? ', ' + d.vessels + ' buques' : '') + (d.dataset_date ? ' · datos ' + d.dataset_date : ''))));
     if (d.recent.length) { const ul = mk('ul', 'hub-intel-list'); for (const e of d.recent) add(ul, li(dv('b', null, e.name), e.type ? dv('span', 'hub-muted', ' · ' + e.type) : null, e.programs.length ? dv('span', 'hub-muted', ' · ' + e.programs.join(', ')) : null, e.is_new ? mk('span', 'hub-outside', ' new', ' nueva') : null)); add(box, ul); }
     return box;
   }));

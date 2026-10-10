@@ -206,7 +206,7 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
   wmCalls = []; calls = 0;
   const r = await (await partner.request('/api/countries')).json() as any;
   const kz = r.countries.find((c: any) => c.code === 'KZ');
-  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: kz.risk.fetched_at, sanctions_active: false, sanctions_count: 0, change: null, previous_computed_at: null });
+  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: kz.risk.fetched_at, sanctions_active: false, sanctions_count: 0, sanctions_targeted_by: null, change: null, previous_computed_at: null });
   // W8-AC1: the first reading is logged once; a second read of the same reading adds no row.
   await partner.request('/api/countries');
   assert.equal((await db.query("SELECT count(*)::int AS n FROM country_risk_log WHERE country = 'KZ'")).rows[0].n, 1);
@@ -261,6 +261,22 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
 });
 
 /* ── wave 7 PR3 (S8, W7-AC15): a brief ages ── */
+
+test('the countries summary lists the sanctions programmes that target each country, apart from designations merely linked to it', async () => {
+  const withPrograms = (programs: unknown[]) => (async (url: string) => {
+    const ep = new URL(url).pathname.split('/').pop();
+    const body = ep === 'list-sanctions-pressure' ? { entries: [], countries: [], programs } : ep === 'get-country-risk' ? { ...WM_RISK, sanctionsActive: true, sanctionsCount: 9 } : WM_NEWS;
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  }) as unknown as typeof fetch;
+  configureWorldMonitor({ apiKey: WM_KEY, fetch: withPrograms([{ program: 'SDGT', entryCount: 4000 }]) });
+  let kz = ((await (await partner.request('/api/countries')).json()) as any).countries.find((c: any) => c.code === 'KZ');
+  assert.equal(kz.risk.sanctions_active, true, 'entities linked to the country');
+  assert.deepEqual(kz.risk.sanctions_targeted_by, [], 'but no programme targets it');
+  configureWorldMonitor({ apiKey: WM_KEY, fetch: withPrograms([{ program: 'KAZAKHSTAN-EO1', entryCount: 3 }]) });
+  kz = ((await (await partner.request('/api/countries')).json()) as any).countries.find((c: any) => c.code === 'KZ');
+  assert.deepEqual(kz.risk.sanctions_targeted_by, [], 'a country outside the programme table is never marked by guesswork');
+  configureWorldMonitor({ apiKey: WM_KEY, fetch: wmFetch });
+});
 
 test('S8: the brief carries generated_at, max_age_days and due; past max_age_days it is due and GET reads the cache without the provider', async () => {
   configureWorldMonitor({ apiKey: null });

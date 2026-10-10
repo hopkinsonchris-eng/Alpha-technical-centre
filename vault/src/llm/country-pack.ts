@@ -317,7 +317,7 @@ async function worldMonitorChip(country: string): Promise<PackSourceRef> {
     const r = await countryRisk(country);
     if (!r.ok) return { ...base, fetched_at: null, reachable: false, note: r.reason };
     const d: any = r.data;
-    return { ...base, fetched_at: r.fetched_at, reachable: true, note: `risk score ${d.score ?? 'n/a'}${d.level ? `, ${d.level}` : ''}${d.trend ? `, ${d.trend}` : ''}${d.sanctions_active ? ', sanctions active' : ''}` };
+    return { ...base, fetched_at: r.fetched_at, reachable: true, note: `risk score ${d.score ?? 'n/a'}${d.level ? `, ${d.level}` : ''}${d.trend ? `, ${d.trend}` : ''}${d.sanctions_active ? ', OFAC-designated entities linked' : ''}` };
   } catch (e) { return { ...base, fetched_at: null, reachable: false, note: (e as Error).message }; }
 }
 

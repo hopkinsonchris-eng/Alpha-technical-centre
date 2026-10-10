@@ -98,7 +98,7 @@ export async function withLiveRisk(ctx: BriefContext): Promise<BriefContext> {
     live.status = 'live'; live.reason = undefined; live.fetched_at = r.fetched_at; live.risk = r.data;
     const d = r.data;
     sources.push({ ref: `wm:risk:${code}`, title: `World Monitor country risk ${code}`, kind: 'wm', project_id: null, date: ymd(d.computed_at ?? r.fetched_at), legal_tag: 'lt-public',
-      detail: `score ${d.score ?? '—'}${d.level ? ', ' + d.level : ''}${d.trend ? ', ' + d.trend : ''}${d.sanctions_active ? ', sanctions active' : ''}`, url: null });
+      detail: `score ${d.score ?? '—'}${d.level ? ', ' + d.level : ''}${d.trend ? ', ' + d.trend : ''}${d.sanctions_active ? ', OFAC-designated entities linked' : ''}`, url: null });
     key.push(`wm:risk:${code}|${d.computed_at ?? r.fetched_at}|${d.score}`);
   } else live.reason = r.reason;
   if (en.ok && (en.data.oil || en.data.gas || en.data.mix)) {
@@ -162,7 +162,7 @@ export function briefUserPrompt(ctx: BriefContext, name: string): string {
   const live = ctx.live;
   if (live && live.status === 'live') {
     const parts: string[] = [];
-    if (live.risk) parts.push(`risk score ${live.risk.score ?? 'n/a'} of 100${live.risk.trend ? ' (' + live.risk.trend + ')' : ''}, advisory level ${live.risk.level ?? 'n/a'}${live.risk.components ? ', components ' + Object.entries(live.risk.components).map(([k, v]) => `${k} ${v}`).join(', ') : ''}${live.risk.sanctions_active ? `, sanctions active (${live.risk.sanctions_count ?? '?'} designations)` : ''}${live.risk.computed_at ? ', computed ' + live.risk.computed_at : ''} [wm:risk:${ctx.country}]`);
+    if (live.risk) parts.push(`risk score ${live.risk.score ?? 'n/a'} of 100${live.risk.trend ? ' (' + live.risk.trend + ')' : ''}, advisory level ${live.risk.level ?? 'n/a'}${live.risk.components ? ', components ' + Object.entries(live.risk.components).map(([k, v]) => `${k} ${v}`).join(', ') : ''}${live.risk.sanctions_active ? `, ${live.risk.sanctions_count ?? '?'} OFAC-designated entities linked to the country (not sanctions on the country itself)` : ''}${live.risk.computed_at ? ', computed ' + live.risk.computed_at : ''} [wm:risk:${ctx.country}]`);
     if (live.energy) {
       const o = live.energy.oil, g = live.energy.gas, m = live.energy.mix;
       const bits: string[] = [];

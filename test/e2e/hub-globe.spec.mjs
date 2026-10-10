@@ -522,7 +522,8 @@ test('W3-PR4: choosing a country reads its intelligence from the Vault and shows
   await expect(risk).toHaveAttribute('data-state', 'live');
   await expect(risk).toContainText('World Monitor 50');
   await expect(risk).toContainText('trend rising');
-  await expect(risk).toContainText('sanctions active (212 designations)');
+  await expect(risk).toContainText('212 sanctioned entities linked');
+  await expect(risk).not.toContainText('sanctions active');
   await expect(risk.locator('.hub-ibar')).toHaveCount(4);
   await expect(risk.locator('.hub-ibar').first()).toContainText('news activity');
   await expect(card.locator('[data-intel="brief"]')).toHaveAttribute('data-state', 'pro');
@@ -660,8 +661,8 @@ test('W7-AC15 (Hub, H5): choosing a country shows its cached brief with its date
 const RISKY = {
   ...COUNTRIES,
   countries: COUNTRIES.countries.map((c) => c.code === 'VE'
-    ? { ...c, risk: { ...c.risk, trend: 'rising', sanctions_active: true, sanctions_count: 212, change: 16, previous_computed_at: '2026-09-01T08:00:00.000Z' } }
-    : c.code === 'KZ' ? { ...c, risk: { score: 45, level: null, trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: '2026-10-01T09:00:00.000Z', sanctions_active: false, sanctions_count: 0, change: null, previous_computed_at: null } } : c),
+    ? { ...c, risk: { ...c.risk, trend: 'rising', sanctions_active: true, sanctions_count: 212, sanctions_targeted_by: ['VENEZUELA', 'VENEZUELA-EO13850'], change: 16, previous_computed_at: '2026-09-01T08:00:00.000Z' } }
+    : c.code === 'KZ' ? { ...c, risk: { score: 45, level: null, trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: '2026-10-01T09:00:00.000Z', sanctions_active: true, sanctions_count: 30, sanctions_targeted_by: [], change: null, previous_computed_at: null } } : c),
 };
 
 test('W8-AC2: a halo per held country in the tone of its World Monitor score, a rising tick and a sanctions mark; none without a reading; the legend names every channel in both languages', async ({ page }) => {
@@ -705,7 +706,7 @@ test('W8-AC3: the panel risk line and the register group head carry the trend, t
   await expect(risk).toContainText('World Monitor 71');
   await expect(risk.locator('[data-risk-trend]')).toHaveAttribute('data-risk-trend', 'rising');
   await expect(risk.locator('[data-risk-trend]')).toContainText('rising');
-  await expect(risk.locator('[data-risk-sanctions]')).toContainText('sanctions');
+  await expect(risk.locator('[data-risk-sanctions]')).toContainText('under sanctions');
   await expect(risk.locator('[data-risk-change]')).toHaveAttribute('data-risk-change', '16');
   await expect(risk.locator('[data-risk-change]')).toContainText('+16 since 1 Sep');
   await page.locator('#country-back').click();
@@ -803,7 +804,7 @@ test('W8-AC8: choosing a country turns the legend into its actual values (projec
   await expect(legend.locator('[data-legend-value="round"]')).toHaveText('no open round');
   await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('71 · High · rising');
   await expect(legend.locator('[data-legend-value="rising"]')).toHaveText('rising');
-  await expect(legend.locator('[data-legend-value="sanctions"]')).toHaveText('212 designations');
+  await expect(legend.locator('[data-legend-value="sanctions"]')).toHaveText('VENEZUELA, VENEZUELA-EO13850');
   await expect(legend.locator('[data-legend-value="events"]')).toHaveText('1 in 30 days · 0 within 100 km of our fields');
   await page.locator('aside .nav-lang button[data-lang="es"]').click();
   await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('71 · Alto · al alza');
@@ -819,4 +820,24 @@ test('W8-AC8: choosing a country turns the legend into its actual values (projec
   await page.locator('#register [data-country="EG"]').click();
   await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('no reading');
   await expect(legend.locator('[data-legend-value="sanctions"]')).toHaveText('no reading');
+  // Entities linked to a country do not put it under sanctions.
+  await page.locator('#country-back').click();
+  await page.locator('#register [data-country="KZ"]').click();
+  await expect(legend.locator('[data-legend-value="sanctions"]')).toHaveText('none');
+});
+
+test('sanctions: the mark is for programmes that target the country, not for designated entities linked to it; the intel card names both', async ({ page }) => {
+  const sanctioned = { ...INTEL, sections: { ...INTEL.sections, sanctions: { ok: true, data: { targeted_by: ['VENEZUELA', 'VENEZUELA-EO13850'], entries: 212, new_entries: 4, vessels: 30, aircraft: 2, dataset_date: '2026-09-30', recent: [] }, fetched_at: '2026-10-01T09:00:00.000Z', cached: false } } };
+  await stubApi(page, { '/api/countries': (u, r) => json(r, RISKY), '/api/countries/VE/intel': (u, r) => json(r, sanctioned) });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  await expect(page.locator('#sec-globe')).toHaveAttribute('data-halo-sanctions', 'VE');
+  await expect(page.locator('#globe-legend [data-legend="sanctions"]')).toContainText('Under sanctions (US, Canada lists)');
+  await page.locator('#register [data-country="VE"]').click();
+  const box = page.locator('#country-intel [data-intel="sanctions"]');
+  await expect(box).toContainText('Imposed on this country: VENEZUELA, VENEZUELA-EO13850');
+  await expect(box).toContainText('212 designations linked to this country');
+  await page.locator('aside .nav-lang button[data-lang="es"]').click();
+  await expect(page.locator('#globe-legend [data-legend="sanctions"]')).toContainText('Bajo sanciones');
+  await expect(box).toContainText('Impuestas a este país');
 });
