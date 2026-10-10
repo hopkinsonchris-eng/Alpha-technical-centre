@@ -195,10 +195,10 @@ export function createGlobe(canvas, opts) {
         ctx.beginPath(); ctx.moveTo(tx, ty - 7); ctx.lineTo(tx - 5, ty + 2); ctx.lineTo(tx + 5, ty + 2); ctx.closePath();
         ctx.fillStyle = tone; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = COLOURS.eventLine; ctx.lineWidth = 0.8; ctx.stroke();
       }
-      if (hv.sanctions) {                                // the mark: a small diamond at three o'clock
-        const mx = xy[0] + rr, my = xy[1];
+      if (hv.sanctions) {                                // the mark: a small diamond at three o'clock on the ring, or on the country itself without one
+        const mx = hv.tone ? xy[0] + rr : xy[0] + 10, my = hv.tone ? xy[1] : xy[1] + 8;
         ctx.beginPath(); ctx.moveTo(mx, my - 5); ctx.lineTo(mx + 5, my); ctx.lineTo(mx, my + 5); ctx.lineTo(mx - 5, my); ctx.closePath();
-        ctx.fillStyle = COLOURS.ring; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = tone; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = COLOURS.ring; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = hv.tone ? tone : COLOURS.fieldLine; ctx.lineWidth = hv.tone ? 1 : 1.4; ctx.stroke();
       }
       ctx.restore();
     }
@@ -403,8 +403,8 @@ export function createGlobe(canvas, opts) {
     },
     /** Wave 7 PR6: the countries with an open licence round; each wears the ring until the list changes. */
     setRings(codes) { rings = new Set(Array.isArray(codes) ? codes.filter((c) => byCode.has(c)) : []); draw(); schedule(); },
-    /** Wave 8 (W8-AC2): iso2 → {tone, rising, sanctions}; a country without an entry wears no halo, one with tone '' only its sanctions mark. */
-    setRisk(map) { const m = map instanceof Map ? map : new Map(Object.entries(map || {})); halos = new Map([...m].filter(([c, v]) => byCode.has(c) && v && v.tone)); draw(); schedule(); },
+    /** Wave 8 (W8-AC2): iso2 → {tone, rising, sanctions}; a country without an entry wears no halo, one with tone '' only its sanctions mark. Returns what it wears. */
+    setRisk(map) { const m = map instanceof Map ? map : new Map(Object.entries(map || {})); halos = new Map([...m].filter(([c, v]) => byCode.has(c) && v && (v.tone || v.sanctions))); draw(); schedule(); return halos; },
     /** Wave 8 (W8-AC4): the chosen country's conflict events, [{lat, lon}]; an empty list clears them. */
     setEvents(list) { events = Array.isArray(list) ? list : []; draw(); schedule(); },
     setLang(l) { lang = l; },
