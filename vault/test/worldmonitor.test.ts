@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   acledEvents, advisories, configureWorldMonitor, countryFacts, countryRisk, coverage, energyProfile, enumWord, headlines, humanitarian, intelBrief, intelTimeline,
-  outages, portActivity, resetWorldMonitorCache, resilience, sanctions, ucdpEvents, whenIso, worldMonitorConfigured, NEEDS_PRO, NOT_CONNECTED,
+  outages, portActivity, programmeTarget, programsTargeting, resetWorldMonitorCache, resilience, sanctions, ucdpEvents, whenIso, worldMonitorConfigured, NEEDS_PRO, NOT_CONNECTED,
   companyEnrichment, companySignals, gdeltDocuments, secFilings,
 } from '../src/intel/worldmonitor.ts';
 
@@ -27,7 +27,7 @@ const FIX: Record<string, unknown> = {
   'get-country-facts': { headOfState: 'N. Maduro', headOfStateTitle: 'President', wikipediaSummary: 'Venezuela is a country…', population: 28000000, capital: 'Caracas', languages: ['Spanish'], currencies: ['VES'], areaSqKm: 916445, countryName: 'Venezuela' },
   'get-humanitarian-summary': { summary: { countryCode: 'VE', countryName: 'Venezuela', conflictEventsTotal: 420, conflictPoliticalViolenceEvents: 120, conflictFatalities: 35, referencePeriod: '2026-07/2026-09', conflictDemonstrations: 300, updatedAt: T0 } },
   'list-security-advisories': { advisories: [{ title: 'Venezuela: reconsider travel', link: 'https://example.com/adv', pubDate: '2026-09-01T00:00:00Z', source: 'US State Department', sourceCountry: 'US', level: '3', country: 'VE' }, { title: 'Colombia: exercise caution', link: '', pubDate: '', source: 'FCDO', sourceCountry: 'GB', level: '2', country: 'CO' }], byCountry: { VE: 'Level 3' } },
-  'list-sanctions-pressure': { entries: [{ id: 's1', name: 'Some Shipping Co', entityType: 'SANCTIONS_ENTITY_TYPE_ENTITY', countryCodes: ['VE'], countryNames: ['Venezuela'], programs: ['VENEZUELA'], sourceLists: ['SDN'], effectiveAt: '2026-09-15', isNew: true, note: '' }], countries: [{ countryCode: 'VE', countryName: 'Venezuela', entryCount: 212, newEntryCount: 4, vesselCount: 30, aircraftCount: 2 }], programs: [], fetchedAt: '2026-10-01', datasetDate: '2026-09-30', totalCount: 9000 },
+  'list-sanctions-pressure': { entries: [{ id: 's1', name: 'Some Shipping Co', entityType: 'SANCTIONS_ENTITY_TYPE_ENTITY', countryCodes: ['VE'], countryNames: ['Venezuela'], programs: ['VENEZUELA'], sourceLists: ['SDN'], effectiveAt: '2026-09-15', isNew: true, note: '' }], countries: [{ countryCode: 'VE', countryName: 'Venezuela', entryCount: 212, newEntryCount: 4, vesselCount: 30, aircraftCount: 2 }], programs: [{ program: 'VENEZUELA-EO13850', entryCount: 150, newEntryCount: 2 }, { program: 'VENEZUELA', entryCount: 40, newEntryCount: 0 }, { program: 'SDGT', entryCount: 3000, newEntryCount: 9 }, { program: 'CUBA', entryCount: 0, newEntryCount: 0 }], fetchedAt: '2026-10-01', datasetDate: '2026-09-30', totalCount: 9000 },
   'get-resilience-score': { countryCode: 'VE', overallScore: 31.2, level: 'low', trend: 'stable', change30d: -0.4, lowConfidence: false, domains: [{ id: 'energy', score: 44, weight: 0.2 }] },
   'list-internet-outages': { outages: [{ id: 'o1', title: 'Partial outage in Zulia', link: 'https://example.com/o', detectedAt: Date.parse('2026-09-27T03:00:00Z'), country: 'VE', region: 'Zulia', severity: 'OUTAGE_SEVERITY_PARTIAL', cause: 'power', endedAt: 0 }] },
   'search-gdelt-documents': { articles: [{ url: 'https://news.example.com/a1', title: 'PDVSA restarts Guafita', source: 'Reuters', seendate: '20260930T100000Z', language: 'English', tone: 1.5 }, { url: '', title: '' }], total: 1 },
@@ -106,7 +106,7 @@ test('W3-AC9: events, headlines and the rest read the real field names and param
   const f = await countryFacts('VE'); assert.ok(f.ok); assert.equal(f.data.capital, 'Caracas'); assert.deepEqual(f.data.languages, ['Spanish']);
   const hu = await humanitarian('VE'); assert.ok(hu.ok); assert.equal(hu.data.fatalities, 35); assert.equal(hu.data.updated_at, '2026-10-01T08:00:00.000Z');
   const a = await advisories('VE'); assert.ok(a.ok); assert.equal(a.data.length, 1); assert.equal(a.data[0].source, 'US State Department');
-  const s = await sanctions('VE'); assert.ok(s.ok); assert.equal(s.data.entries, 212); assert.equal(s.data.recent[0].type, 'entity'); assert.equal(s.data.recent[0].is_new, true);
+  const s = await sanctions('VE'); assert.ok(s.ok); assert.equal(s.data.entries, 212); assert.deepEqual(s.data.targeted_by, ['VENEZUELA', 'VENEZUELA-EO13850']); assert.equal(s.data.recent[0].type, 'entity'); assert.equal(s.data.recent[0].is_new, true);
   assert.match(calls.at(-1)!.url, /list-sanctions-pressure\?max_items=200$/);
   const rs = await resilience('VE'); assert.ok(rs.ok); assert.equal(rs.data.score, 31.2); assert.equal(rs.data.domains[0].id, 'energy');
   assert.match(calls.at(-1)!.url, /get-resilience-score\?countryCode=VE$/);
@@ -192,3 +192,11 @@ test('7 Oct 2026, first live reading: the energy mix arrives as percentages (hyd
   const sd = await sanctions('VE'); assert.ok(sd.ok); assert.equal(sd.data.dataset_date, sanc.datasetDate ? String(sanc.datasetDate).slice(0, 10) : null);
 });
 
+
+test('sanctions imposed on a country come from programmes named after it, not from designations linked to it', () => {
+  for (const [p, c] of [['VENEZUELA-EO13850', 'VE'], ['VENEZUELA', 'VE'], ['IRAN', 'IR'], ['IFSR', 'IR'], ['RUSSIA-EO14024', 'RU'], ['DPRK3', 'KP'], ['SOUTH SUDAN', 'SS'], ['SUDAN-EO14098', 'SD'], ['BURMA-EO14014', 'MM'], ['HK-EO13936', 'HK'], ['cuba', 'CU']] as const) assert.equal(programmeTarget(p), c, p);
+  for (const p of ['SDGT', 'CYBER2', 'NPWMD', 'GLOMAG', 'UKRAINE-EO13662', 'ILLICIT-DRUGS-EO14059', 'CARTEL', 'IRANIAN-X', 'MALIGN', '']) assert.equal(programmeTarget(p), null, p);
+  const programs = [{ program: 'SDGT', entryCount: 4000 }, { program: 'CYBER2', entryCount: 120 }, { program: 'VENEZUELA', entryCount: 0 }];
+  assert.deepEqual(programsTargeting('US', programs), [], 'the United States hosts designated entities but no programme targets it');
+  assert.deepEqual(programsTargeting('VE', programs), [], 'a programme with no designations imposes nothing');
+});

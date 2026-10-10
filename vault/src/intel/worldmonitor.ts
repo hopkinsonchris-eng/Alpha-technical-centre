@@ -29,7 +29,7 @@ export interface Port { id: string; name: string; lat: number | null; lon: numbe
 export interface CountryFacts { name: string | null; capital: string | null; population: number | null; area_km2: number | null; head_of_state: string | null; head_of_state_title: string | null; languages: string[]; currencies: string[]; summary: string | null }
 export interface Humanitarian { events_total: number | null; political_violence: number | null; fatalities: number | null; demonstrations: number | null; period: string | null; updated_at: string | null }
 export interface Advisory { title: string; url: string | null; date: string | null; source: string | null; source_country: string | null; level: string | null }
-export interface Sanctions { entries: number | null; new_entries: number | null; vessels: number | null; aircraft: number | null; dataset_date: string | null; recent: { name: string; type: string | null; programs: string[]; effective_at: string | null; is_new: boolean }[] }
+export interface Sanctions { /** programmes with designations that are named after this country: the sanctions imposed on it */ targeted_by: string[]; entries: number | null; new_entries: number | null; vessels: number | null; aircraft: number | null; dataset_date: string | null; recent: { name: string; type: string | null; programs: string[]; effective_at: string | null; is_new: boolean }[] }
 export interface Resilience { score: number | null; level: string | null; trend: string | null; change_30d: number | null; low_confidence: boolean; domains: { id: string; score: number | null; weight: number | null }[] }
 export interface Outage { id: string; title: string; url: string | null; detected_at: string | null; ended_at: string | null; severity: string | null; region: string | null; cause: string | null }
 export interface IntelRecord { id: string; domain: string | null; category: string | null; title: string; summary: string | null; url: string | null; occurred_at: string | null; score: number | null }
@@ -245,7 +245,49 @@ export async function sanctions(code: string): Promise<WmResult<Sanctions>> {
   const c = list(d, 'countries').find((x: any) => String(x.countryCode ?? '').toUpperCase() === code);
   const recent = list(d, 'entries').filter((e: any) => (e.countryCodes ?? []).map((x: string) => x.toUpperCase()).includes(code)).slice(0, 12)
     .map((e: any) => ({ name: String(e.name ?? ''), type: enumWord(e.entityType), programs: list(e, 'programs').map(String), effective_at: whenIso(e.effectiveAt), is_new: !!e.isNew }));
-  return { ...r, data: { entries: num(c?.entryCount), new_entries: num(c?.newEntryCount), vessels: num(c?.vesselCount), aircraft: num(c?.aircraftCount), dataset_date: whenIso(d.datasetDate)?.slice(0, 10) ?? str(d.datasetDate), recent } };
+  return { ...r, data: { targeted_by: programsTargeting(code, list(d, 'programs')), entries: num(c?.entryCount), new_entries: num(c?.newEntryCount), vessels: num(c?.vesselCount), aircraft: num(c?.aircraftCount), dataset_date: whenIso(d.datasetDate)?.slice(0, 10) ?? str(d.datasetDate), recent } };
+}
+
+/**
+ * Sanctions imposed on a country, as against designations merely linked to it. The country-risk
+ * flag `sanctionsActive` is "this country has active OFAC designations": any sanctioned person or
+ * company with an address there, so the United States carries it. The feed has no target field,
+ * but OFAC (and Canada's SEMA) name country programmes after their target (VENEZUELA-EO13850,
+ * IRAN, RUSSIA-EO14024, DPRK3), so a programme with designations whose name leads with a country
+ * targets that country. Thematic programmes (SDGT, CYBER2, NPWMD, GLOMAG) and the Ukraine-related
+ * orders, whose names do not say who they target, name no country.
+ */
+const PROGRAMME_TARGETS: [string, string][] = [
+  ['SOUTH SUDAN', 'SS'], ['NORTH KOREA', 'KP'], ['HONG KONG', 'HK'], ['CENTRAL AFRICAN REPUBLIC', 'CF'], ['DEMOCRATIC REPUBLIC OF THE CONGO', 'CD'],
+  ['VENEZUELA', 'VE'], ['IRAN', 'IR'], ['IFSR', 'IR'], ['IRGC', 'IR'], ['RUSSIA', 'RU'], ['CAATSA - RUSSIA', 'RU'], ['CUBA', 'CU'],
+  ['DPRK', 'KP'], ['NKSPEA', 'KP'], ['SYRIA', 'SY'], ['BELARUS', 'BY'], ['BURMA', 'MM'], ['MYANMAR', 'MM'], ['SUDAN', 'SD'],
+  ['LIBYA', 'LY'], ['SOMALIA', 'SO'], ['YEMEN', 'YE'], ['IRAQ', 'IQ'], ['LEBANON', 'LB'], ['MALI', 'ML'], ['CAR', 'CF'],
+  ['DRCONGO', 'CD'], ['NICARAGUA', 'NI'], ['ETHIOPIA', 'ET'], ['ZIMBABWE', 'ZW'], ['HAITI', 'HT'], ['AFGHANISTAN', 'AF'],
+  ['MOLDOVA', 'MD'], ['GUATEMALA', 'GT'], ['HK', 'HK'],
+];
+/** The country a programme name targets, or null for a thematic one. */
+export function programmeTarget(program: string): string | null {
+  const p = program.trim().toUpperCase();
+  for (const [name, code] of PROGRAMME_TARGETS) {
+    if (!p.startsWith(name)) continue;
+    const next = p.charAt(name.length);
+    if (next === '' || !/[A-Z]/.test(next)) return code;
+  }
+  return null;
+}
+/** The programmes in the feed's `programs` list that target `code` and hold at least one designation, sorted. */
+export function programsTargeting(code: string, programs: any[]): string[] {
+  return programs.filter((x: any) => (num(x?.entryCount) ?? 0) > 0 && programmeTarget(String(x?.program ?? '')) === code.toUpperCase())
+    .map((x: any) => String(x.program)).sort();
+}
+/**
+ * The programme list from the sanctions-pressure feed (Pro), shared with `sanctions()` through the
+ * cache: one call answers every country. data is null when the answer carries no programme list.
+ */
+export async function sanctionPrograms(): Promise<WmResult<any[] | null>> {
+  const r = await get('/api/sanctions/v1/list-sanctions-pressure', { max_items: '200' });
+  if (!r.ok) return r;
+  return { ...r, data: Array.isArray(r.data?.programs) ? r.data.programs : null };
 }
 
 /** GET /api/resilience/v1/get-resilience-score (Pro): the Country Resilience Index. */

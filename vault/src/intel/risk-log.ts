@@ -38,7 +38,7 @@ export async function countryRiskLines(db: Db, country: string): Promise<string[
   const log = await recordRisk(db, country, d, r.fetched_at);
   const score = d.score === null ? 'no index' : String(Math.round(d.score));
   const lines = ['', `## Country risk (World Monitor, ${country})`, '',
-    `- Instability index: ${score} (${d.level ?? 'no advisory'}), trend ${d.trend ?? 'unknown'}${d.computed_at ? `, as of ${d.computed_at.slice(0, 10)}` : ''}; sanctions ${d.sanctions_active ? `active (${d.sanctions_count ?? '?'} designations)` : 'none recorded'}`,
+    `- Instability index: ${score} (${d.level ?? 'no advisory'}), trend ${d.trend ?? 'unknown'}${d.computed_at ? `, as of ${d.computed_at.slice(0, 10)}` : ''}; OFAC-designated entities linked ${d.sanctions_active ? (d.sanctions_count ?? '?') : 'none recorded'}`,
     log.change === null ? '- Change: first reading on record' : `- Change: ${log.change > 0 ? '+' : ''}${log.change} since ${log.previous_computed_at!.slice(0, 10)}`];
   const adv = await advisories(country);
   if (adv.ok) for (const a of adv.data.slice(0, 5)) lines.push(`- Advisory: ${a.title} (${[a.source, a.level ? `level ${a.level}` : null, a.date ? a.date.slice(0, 10) : null].filter(Boolean).join(', ')})`);

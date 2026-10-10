@@ -376,7 +376,7 @@ export async function fileWorldMonitor(db: Db, storage: Storage, country: string
   if (!r.ok) return r.reason;
   const src = WM_SOURCE(country);
   const payload = { country, name, fetched_at: r.fetched_at, risk: r.data };
-  const fetched: FetchOk = { unreachable: false, url: src.url, url_final: src.url, bytes: Buffer.from(JSON.stringify(payload, null, 2)), mime: 'application/json', fetched_at: r.fetched_at, status: 200, title: `World Monitor: ${name} risk and context`, description: `risk score ${r.data.score ?? 'n/a'}, ${r.data.level ?? 'no advisory'}, sanctions ${r.data.sanctions_active ? 'active' : 'none recorded'}` };
+  const fetched: FetchOk = { unreachable: false, url: src.url, url_final: src.url, bytes: Buffer.from(JSON.stringify(payload, null, 2)), mime: 'application/json', fetched_at: r.fetched_at, status: 200, title: `World Monitor: ${name} risk and context`, description: `risk score ${r.data.score ?? 'n/a'}, ${r.data.level ?? 'no advisory'}, OFAC-designated entities linked ${r.data.sanctions_active ? (r.data.sanctions_count ?? 'yes') : 'none recorded'}` };
   const rec: PackSourceRecord = { id: src.id, section: 'risk', url: src.url, licence: src.licence, attribution: src.attribution, fetched_at: r.fetched_at, item_id: null, sha256: null, reachable: true, note: src.note };
   try {
     const st = await storeOriginal(db, storage, src, fetched, country, { now: o.now(), ingest: o.ingest });

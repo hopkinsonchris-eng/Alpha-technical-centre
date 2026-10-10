@@ -38,7 +38,7 @@ test('W8-AC6: with World Monitor connected the project context carries the risk 
   const a = (await client.callTool({ name: 'get_project_context', arguments: { project_id: 'p-ve' } })) as any;
   const md: string = a.structuredContent.markdown;
   assert.match(md, /## Country risk \(World Monitor, VE\)/);
-  assert.match(md, /- Instability index: 50 \(reconsider\), trend rising, as of 2026-10-01; sanctions active \(212 designations\)/);
+  assert.match(md, /- Instability index: 50 \(reconsider\), trend rising, as of 2026-10-01; OFAC-designated entities linked 212/);
   assert.match(md, /- Change: first reading on record/);
   assert.match(md, /- Advisory: Venezuela: reconsider travel \(US State Department, level 3, 2026-09-01\)/);
   assert.ok(!md.includes(KEY));
