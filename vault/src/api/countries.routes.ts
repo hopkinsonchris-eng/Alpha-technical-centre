@@ -13,7 +13,7 @@ import { ApiError, bad, canSee, iso, loadAccess, notFound, route, type Access, t
 import { countryName, isCountryCode } from '../opportunities.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
 import { assembleCountryContext, withLiveRisk, writeBrief, type LiveRisk } from '../llm/brief.ts';
-import { countryRisk, programsTargeting, sanctionPrograms, worldMonitorConfigured, NOT_CONNECTED } from '../intel/worldmonitor.ts';
+import { countryRisk, sanctionPrograms, sanctionsOn, worldMonitorConfigured, NOT_CONNECTED } from '../intel/worldmonitor.ts';
 import { recordRisk } from '../intel/risk-log.ts';
 import { locationCheck } from '../assets/geo.ts';
 
@@ -32,7 +32,7 @@ export interface CountryProject {
   lat: number | null; lon: number | null; last_run_at: string | null; attention: Attention; assets: CountryAsset[];
 }
 /** Wave 3: World Monitor's composite risk for the country; null without a key or when the feed refuses. */
-export interface CountryRiskLine { score: number | null; level: string | null; trend: string | null; computed_at: string | null; fetched_at: string; sanctions_active: boolean | null; sanctions_count: number | null; /** programmes named after the country (sanctions imposed on it); null when the sanctions feed gave no programme list */ sanctions_targeted_by: string[] | null; /** wave 8 (W8-AC1): the score's move since the previous distinct reading in the log, null on the first */ change: number | null; previous_computed_at: string | null }
+export interface CountryRiskLine { score: number | null; level: string | null; trend: string | null; computed_at: string | null; fetched_at: string; sanctions_active: boolean | null; sanctions_count: number | null; /** the sanctions imposed on the country (sanctionsOn): [] when none, null when unknown */ sanctions_targeted_by: string[] | null; /** wave 8 (W8-AC1): the score's move since the previous distinct reading in the log, null on the first */ change: number | null; previous_computed_at: string | null }
 export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; risk: CountryRiskLine | null }
 
 function expiringDays(acc: Access, p: ProjectRow): number | null {
@@ -100,10 +100,9 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const risks = new Map<string, CountryRiskLine | null>();
     // `sanctions_active` counts designations linked to the country; the globe's sanctions mark wants the programmes that target it.
     const programs = connected ? await sanctionPrograms() : null;
-    const targetedBy = (code: string) => (programs?.ok && programs.data ? programsTargeting(code, programs.data) : null);
     if (connected) await Promise.all([...byCode.keys()].map(async code => {
       const r = await countryRisk(code);
-      if (r.ok) { const log = await recordRisk(x.db, code, r.data, r.fetched_at); risks.set(code, { score: r.data.score, level: r.data.level, trend: r.data.trend, computed_at: r.data.computed_at, fetched_at: r.fetched_at, sanctions_active: r.data.sanctions_active, sanctions_count: r.data.sanctions_count, sanctions_targeted_by: targetedBy(code), ...log }); }
+      if (r.ok) { const log = await recordRisk(x.db, code, r.data, r.fetched_at); risks.set(code, { score: r.data.score, level: r.data.level, trend: r.data.trend, computed_at: r.data.computed_at, fetched_at: r.fetched_at, sanctions_active: r.data.sanctions_active, sanctions_count: r.data.sanctions_count, sanctions_targeted_by: sanctionsOn(code, programs?.ok ? programs.data : null, r.data.sanctions_active), ...log }); }
       else { risks.set(code, null); if (!riskNotes.includes(r.reason)) riskNotes.push(r.reason); }
     }));
     const countries: CountrySummary[] = [...byCode.entries()].map(([code, projects]) => ({

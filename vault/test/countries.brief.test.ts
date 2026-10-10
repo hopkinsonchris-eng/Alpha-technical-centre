@@ -206,7 +206,7 @@ test('W3-AC9 and W3-AC10: with World Monitor connected the summary shows the sco
   wmCalls = []; calls = 0;
   const r = await (await partner.request('/api/countries')).json() as any;
   const kz = r.countries.find((c: any) => c.code === 'KZ');
-  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: kz.risk.fetched_at, sanctions_active: false, sanctions_count: 0, sanctions_targeted_by: null, change: null, previous_computed_at: null });
+  assert.deepEqual(kz.risk, { score: 64, level: 'exercise increased caution', trend: 'stable', computed_at: '2026-10-01T08:00:00.000Z', fetched_at: kz.risk.fetched_at, sanctions_active: false, sanctions_count: 0, sanctions_targeted_by: [], change: null, previous_computed_at: null });
   // W8-AC1: the first reading is logged once; a second read of the same reading adds no row.
   await partner.request('/api/countries');
   assert.equal((await db.query("SELECT count(*)::int AS n FROM country_risk_log WHERE country = 'KZ'")).rows[0].n, 1);
