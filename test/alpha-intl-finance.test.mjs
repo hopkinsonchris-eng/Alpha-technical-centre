@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import {
   DEAL_DEFAULTS, effectiveAnnualRate, taxableSeries, shareholderLoan,
   selfFunded, compareFinancing, npvMid, DealError,
-} from '../js/alpha-intl-finance.js';
+} from '../hub/tools/alpha-intl-finance.js';
 
 const near = (a, b, tol, what) =>
   assert.ok(Math.abs(a - b) <= tol, `${what}: got ${a}, expected ${b} (±${tol})`);

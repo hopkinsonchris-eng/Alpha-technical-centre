@@ -24,6 +24,7 @@ const PAGES = [
   ['/hub/index.html', 'Today', 'Hoy'], ['/hub/search.html', 'Find across the Vault', 'Buscar en el Vault'], ['/hub/queue.html', 'Filing queue', 'Cola de archivo'],
   ['/hub/tool.html', 'Tools', 'Herramientas'],
   ['/hub/analogues.html', 'Analogues', 'Análogos'], ['/hub/cost.html', 'Cost and usage', 'Costes y uso'], ['/hub/settings.html', 'Settings', 'Ajustes'],
+  ['/hub/tools/alpha-international.html', 'Alpha International financing model', 'Modelo de financiamiento Alpha International'],
 ];
 const GROUP = { context: ['In this project', 'En este proyecto'], projects: ['Projects', 'Proyectos'], records: ['Records', 'Registros'], contacts: ['Contacts', 'Contactos'], organisations: ['Organisations', 'Organizaciones'], countries: ['Countries', 'Países'], tools: ['Tools', 'Herramientas'], pages: ['Pages', 'Páginas'] };
 const ORDER = ['context', 'projects', 'records', 'contacts', 'organisations', 'countries', 'tools', 'pages'];
