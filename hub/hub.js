@@ -644,10 +644,11 @@ async function renderGlobe(person) {
       const scored = !!(c.risk && typeof c.risk.score === 'number');
       if (scored || underSanctions(c)) halos.set(c.code, { tone: scored ? toneOf(c.risk.score) : '', rising: scored && c.risk.trend === 'rising', sanctions: underSanctions(c) });
     }
-    if (globe) globe.setRisk(halos);
-    const codesOf = (pred) => [...halos].filter(([, v]) => pred(v)).map(([k]) => k).sort();
+    // The section reports what the globe actually wears, so a mark the globe drops cannot pass unnoticed.
+    const worn = globe ? globe.setRisk(halos) : halos;
+    const codesOf = (pred) => [...worn].filter(([, v]) => pred(v)).map(([k]) => k).sort();
     const setOrDrop = (name, v) => { if (v) sec.setAttribute(name, v); else sec.removeAttribute(name); };
-    setOrDrop('data-halos', [...halos].filter(([, v]) => v.tone).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => k + ':' + v.tone).join(','));
+    setOrDrop('data-halos', [...worn].filter(([, v]) => v.tone).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => k + ':' + v.tone).join(','));
     setOrDrop('data-halo-rising', codesOf((v) => v.rising).join(','));
     setOrDrop('data-halo-sanctions', codesOf((v) => v.sanctions).join(','));
     if (data.unplaced && data.unplaced.length) {
