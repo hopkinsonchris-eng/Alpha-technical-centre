@@ -155,6 +155,27 @@ describe('shareholderLoan: tax release switched off (Heads of Terms s.9 as signe
   });
 });
 
+describe('compareFinancing: principals holding through holding companies', () => {
+  const fcf = [-400, -200, 150, 250, 300, 300, 250, 200, 150, 100];
+  const capex = [400, 250, 50, 0, 0, 0, 0, 0, 0, 0];
+  test('defaults: held directly, holding-company rate 5%', () => {
+    assert.equal(DEAL_DEFAULTS.holdco, false);
+    assert.equal(DEAL_DEFAULTS.holdcoTaxRate, 0.05);
+  });
+  test('switching holdco on taxes at the holding-company rate, for every route', () => {
+    const hc = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS, holdco: true, taxRate: 0.37 }, 0.10);
+    const direct5 = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS, holdco: false, taxRate: 0.05 }, 0.10);
+    assert.equal(hc.taxRate, 0.05);
+    near(hc.partner.totalTax, direct5.partner.totalTax, 1e-9, 'partner route tax');
+    near(hc.thirdParty.totalTax, direct5.thirdParty.totalTax, 1e-9, 'third-party route tax');
+    near(hc.self.principalsNPV, direct5.self.principalsNPV, 1e-9, 'self-funded');
+  });
+  test('held directly, the personal rate applies', () => {
+    const d = compareFinancing({ fcf, capex }, { ...DEAL_DEFAULTS, holdco: false, taxRate: 0.37 }, 0.10);
+    assert.equal(d.taxRate, 0.37);
+  });
+});
+
 describe('shareholderLoan: third-party fee', () => {
   test('arrangement fee is capitalised on each draw', () => {
     const r = shareholderLoan({ fcf: [-200], taxable: [0] },

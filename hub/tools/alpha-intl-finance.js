@@ -35,7 +35,9 @@ export const DEAL_DEFAULTS = Object.freeze({
   partnerRate: 0.20,
   partnerCompounding: 1,       // periods per year
   sweepPct: 1,                 // share of post-tax principal cash swept
-  taxRate: 0.25,               // principals' tax rate on allocated profit
+  taxRate: 0.25,               // principals' tax rate on allocated profit, held directly
+  holdco: false,               // principals hold their shares through holding companies
+  holdcoTaxRate: 0.05,         // tax rate when held through holding companies
   deprYears: 5,                // straight-line tax depreciation of capex
   interestDeductible: true,
   taxRelease: true,            // pay principals' tax before the sweep
@@ -152,8 +154,9 @@ export function compareFinancing({ fcf, capex }, deal, disc) {
     throw new DealError('fcf and capex must be arrays of the same length');
   const d = { ...DEAL_DEFAULTS, ...deal };
   const share = 1 - d.partnerShare;
+  const taxRate = d.holdco ? d.holdcoTaxRate : d.taxRate;
   const taxable = taxableSeries(fcf, capex, d.deprYears);
-  const common = { share, sweepPct: d.sweepPct, taxRate: d.taxRate, interestDeductible: d.interestDeductible, taxRelease: d.taxRelease };
+  const common = { share, sweepPct: d.sweepPct, taxRate, interestDeductible: d.interestDeductible, taxRelease: d.taxRelease };
   const n = fcf.length;
   const settle = (loan) => {
     const cash = loan.rows.map((x) => x.toPrincipals);
@@ -165,13 +168,13 @@ export function compareFinancing({ fcf, capex }, deal, disc) {
     { ...common, rate: d.partnerRate, compounding: d.partnerCompounding, fee: 0 }));
   const thirdParty = settle(shareholderLoan({ fcf, taxable },
     { ...common, rate: d.thirdPartyRate, compounding: d.thirdPartyCompounding, fee: d.thirdPartyFee }));
-  const self = selfFunded({ fcf, taxable }, { share, taxRate: d.taxRate });
+  const self = selfFunded({ fcf, taxable }, { share, taxRate });
   self.principalsNPV = npvMid(self.cash, disc);
 
   const partnerCash = fcf.map((v, i) => d.partnerShare * v + partner.rows[i].lenderCF);
   const partnerEquityOnly = fcf.map((v) => d.partnerShare * v);
   return {
-    share, taxable, partner, thirdParty, self, partnerCash,
+    share, taxRate, taxable, partner, thirdParty, self, partnerCash,
     partnerNPV: npvMid(partnerCash, disc),
     partnerLoanNPV: npvMid(partner.rows.map((x) => x.lenderCF), disc) + partner.endingBalance / Math.pow(1 + disc, n),
     partnerEquityNPV: npvMid(partnerEquityOnly, disc),

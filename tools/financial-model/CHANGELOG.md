@@ -6,6 +6,7 @@ All notable changes to Upstream Quick-Look Financial Model are recorded here. Fo
 
 ### Added
 - Staff edition, Alpha International tab: a "Release tax before the sweep" switch, on by default. Off follows Heads of Terms §9 as signed: every distribution is swept to the lender while a loan is outstanding, and the principals pay their tax from their own pocket. The setting is saved with runs.
+- Staff edition, Alpha International tab: a "Principals hold through holding companies" switch, off by default. On, the principals' allocated profit is taxed at an editable holding-company rate (default 5%) instead of their personal rate, across the partner loan, third-party loan and self-funded routes. Saved with runs.
 - Staff edition at `hub/tools/alpha-international.html` (behind Cloudflare Access, noindex): the public model plus an Alpha International tab. It models the partner-funded principals' loan at a compounding rate, repaid by a cash sweep of the principals' share of free cash flow after a tax release, and compares it with third-party debt and self-funding, by fiscal regime and by project. Deal terms are saved with runs. Engine in `hub/tools/alpha-intl-finance.js`, tested in `test/alpha-intl-finance.test.mjs`. The public page does not carry the tab.
 
 ### Fixed
