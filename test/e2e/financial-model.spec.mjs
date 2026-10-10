@@ -188,3 +188,33 @@ test('local mode: the run is queued and the drawer says so', async ({ page }) =>
   await page.locator('#runsBtn').click();
   await expect(page.getByText(/queued locally/i).first()).toBeVisible();
 });
+
+// JV regime: the contractor's cash is its equity share of the JV's after-tax net
+// cash (royalty, OPEX, CAPEX and JV income tax shared by equity), less any bonus.
+// Before the fix OPEX and CAPEX were taken off twice. Checked on the public page
+// and the staff edition, through both engine paths, and the value bridge must close.
+for (const url of ['/financial-modelling.html', '/hub/tools/alpha-international.html']) {
+  test(`JV regime counts each cost once and reconciles (${url})`, async ({ page }) => {
+    await page.route('**/api/**', (r) => r.fulfill({ status: 404, contentType: 'application/json', body: '{}' }));
+    await page.goto(url);
+    await page.waitForFunction(() => typeof fieldCashFlow === 'function' && FIELDS.length > 0);
+    const res = await page.evaluate(() => {
+      const cp = { ...CONTRACT_DEFAULTS.jv, signBonus: 50 };
+      const p = { brent: 70, disc: 0.15, gaspr: 3, capexM: 1, opexM: 1, preFinRate: null, contractType: 'jv', cp };
+      const out = [];
+      for (const fn of [fieldCashFlow, fieldCashFlowWith]) {
+        for (const r of fn(FIELDS[0], p)) {
+          const roy = r.grossRev * cp.royalty, net = r.grossRev - roy - r.opex - r.capex;
+          const afterTax = net - Math.max(0, net) * cp.incomeTax;
+          const want = cp.jvEquity * afterTax - (r.i === 0 ? cp.signBonus : 0);
+          out.push({ ncf: r.ncf, want, close: r.grossRev - r.govtTake - r.opex - r.capex - r.ncf });
+        }
+      }
+      return out;
+    });
+    for (const x of res) {
+      expect(Math.abs(x.ncf - x.want)).toBeLessThan(1e-9);
+      expect(Math.abs(x.close)).toBeLessThan(1e-9);
+    }
+  });
+}

@@ -1278,12 +1278,13 @@ function fieldCashFlow(f, p){
       const fee=isGas ? (prod*365/1000*cp.svcFee/6) : (prod*365/1e6*cp.svcFee);
       contractorRev=fee-signBonusYr;
       govtTake=grossRev-fee+signBonusYr;
-    } else { // jv
+    } else { // jv: the JV pays royalty, costs and income tax; the contractor takes its equity share of what is left
       const royalty=grossRev*cp.royalty;
-      const jvNet=Math.max(0,grossRev-royalty-opex-capex);
-      const tax=jvNet*cp.incomeTax;
-      contractorRev=(grossRev-royalty)*cp.jvEquity-opex*cp.jvEquity-capex*cp.jvEquity-tax-signBonusYr;
-      govtTake=royalty+(1-cp.jvEquity)*(grossRev-royalty)+tax+signBonusYr;
+      const jvNet=grossRev-royalty-opex-capex;
+      const tax=Math.max(0,jvNet)*cp.incomeTax;
+      const jvAfterTax=jvNet-tax;
+      govtTake=royalty+tax+(1-cp.jvEquity)*jvAfterTax+signBonusYr; // host take includes the NOC partner's share
+      contractorRev=grossRev-govtTake; // so ncf = jvEquity x JV after-tax net cash - bonus
     }
     const ncf=contractorRev-opex-capex; // net cash flow before financing
     rows.push({i,prod,grossRev,opex,capex,contractorRev,govtTake,ncf});
@@ -1888,12 +1889,13 @@ function fieldCashFlowWith(f,p){
       const fee=isGas?(prod*365/1000*cp.svcFee/6):(prod*365/1e6*cp.svcFee);
       contractorRev=fee-signBonusYr;
       govtTake=grossRev-fee+signBonusYr;
-    } else {
+    } else { // jv: the JV pays royalty, costs and income tax; the contractor takes its equity share of what is left
       const royalty=grossRev*cp.royalty;
-      const jvNet=Math.max(0,grossRev-royalty-opex-capex);
-      const tax=jvNet*cp.incomeTax;
-      contractorRev=(grossRev-royalty)*cp.jvEquity-opex*cp.jvEquity-capex*cp.jvEquity-tax-signBonusYr;
-      govtTake=royalty+(1-cp.jvEquity)*(grossRev-royalty)+tax+signBonusYr;
+      const jvNet=grossRev-royalty-opex-capex;
+      const tax=Math.max(0,jvNet)*cp.incomeTax;
+      const jvAfterTax=jvNet-tax;
+      govtTake=royalty+tax+(1-cp.jvEquity)*jvAfterTax+signBonusYr; // host take includes the NOC partner's share
+      contractorRev=grossRev-govtTake; // so ncf = jvEquity x JV after-tax net cash - bonus
     }
     const ncf=contractorRev-opex-capex;
     rows.push({i,prod,grossRev,opex,capex,contractorRev,govtTake,ncf});
