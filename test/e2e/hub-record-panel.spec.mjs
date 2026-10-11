@@ -126,7 +126,7 @@ async function stubApi(page) {
   return calls;
 }
 const ready = (page) => page.locator('body[data-ready="1"]').waitFor();
-async function openProject(page, query = '') { const calls = await stubApi(page); await page.goto('/hub/project.html?id=' + PID + query); await ready(page); return calls; }
+async function openProject(page, query = '') { const calls = await stubApi(page); await page.goto('/hub/project.html?id=' + PID + query + '#timeline'); await ready(page); return calls; }   // these tests open records from the timeline; a project opens on Files
 const openDoc = (page, id = DOC) => page.locator(`.hub-tl-item[data-ref="doc:${id}"] .hub-tl-title`).click();
 
 test('AC13 / R5: a document opens as a title, one meta line, its content and actions; versions and the raw record sit last, the JSON inside a closed Technical disclosure', async ({ page }) => {

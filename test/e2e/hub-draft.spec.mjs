@@ -184,7 +184,7 @@ async function stubDraftNote(page, extra) {
 
 test('a saved draft shows itself in the record panel with the review as saved, reopens in Write to… with every decision and note, and saves each change by itself', async ({ page }) => {
   const calls = await stubDraftNote(page, { review: REVIEW });
-  await page.goto('/hub/project.html?id=' + PID);
+  await page.goto('/hub/project.html?id=' + PID + '#timeline');               // a project opens on Files (11 Oct 2026)
   await ready(page);
   await page.locator('.hub-tl-item[data-ref="doc:' + DRAFT_ID + '"] .hub-tl-title').click();
   const rp = page.locator('#record-panel');
@@ -245,7 +245,7 @@ test('a saved draft shows itself in the record panel with the review as saved, r
 
 test('a draft never reviewed says so; a sent draft reopens frozen', async ({ page }) => {
   await stubDraftNote(page);
-  await page.goto('/hub/project.html?id=' + PID);
+  await page.goto('/hub/project.html?id=' + PID + '#timeline');               // a project opens on Files (11 Oct 2026)
   await ready(page);
   await page.locator('.hub-tl-item[data-ref="doc:' + DRAFT_ID + '"] .hub-tl-title').click();
   const rp = page.locator('#record-panel');
@@ -253,7 +253,7 @@ test('a draft never reviewed says so; a sent draft reopens frozen', async ({ pag
   await expect(rp.locator('[data-draft-foot]')).toContainText('Review not saved yet');
   await expect(rp.locator('[data-draft-view] .hub-dr-para[data-decision]')).toHaveCount(0);
   await stubDraftNote(page, { review: REVIEW, sent: { at: '2026-10-03T10:00:00.000Z', organisation: 'Petrolera Zuata S.A.', dispatch_id: 'd-1' }, reference_no: 'ATC-2026-0152' });
-  await page.goto('/hub/project.html?id=' + PID);
+  await page.goto('/hub/project.html?id=' + PID + '#timeline');               // a project opens on Files (11 Oct 2026)
   await ready(page);
   await page.locator('.hub-tl-item[data-ref="doc:' + DRAFT_ID + '"] .hub-tl-title').click();
   await expect(rp.locator('[data-draft-foot]')).toContainText('Sent to Petrolera Zuata S.A. on 3 Oct 2026. The draft is frozen.');

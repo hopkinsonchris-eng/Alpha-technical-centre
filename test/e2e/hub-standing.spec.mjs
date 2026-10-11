@@ -136,7 +136,7 @@ async function stubApi(page, { me = PARTNER, project = PROJECT, standing = STAND
   return calls;
 }
 const ready = (page) => page.locator('body[data-ready="1"]').waitFor();
-const open = async (page, opts) => { const calls = await stubApi(page, opts); await page.goto('/hub/project.html?id=' + PID); await ready(page); return calls; };
+const open = async (page, opts) => { const calls = await stubApi(page, opts); await page.goto('/hub/project.html?id=' + PID); await ready(page); await page.locator('#tab-timeline').click(); return calls; };   // the timeline's tests; a project opens on Files (a fresh load each time, so the stubs apply)
 const sl = (page) => page.locator('#p-stateline [data-stateline="full"]');
 const token = (page, t) => sl(page).locator('[data-token="' + t + '"]');
 const strip = (page) => page.locator('#p-standing');

@@ -361,7 +361,7 @@ test('check 9: Write to… without a provider refuses clearly and renders no dra
 
 test('check 10: a field dossier shows its facts as a key-value card; a paper shows its abstract', async ({ page }) => {
   await seed(page);
-  await page.goto('/hub/project.html?id=' + PID);
+  await page.goto('/hub/project.html?id=' + PID + '#timeline');               // a project opens on Files (11 Oct 2026)
   await ready(page);
   await page.locator(`.hub-tl-item[data-ref="doc:${DOSSIER}"] .hub-tl-title`).click();
   const panel = page.locator('#record-panel');
