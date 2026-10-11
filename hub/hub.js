@@ -644,10 +644,10 @@ async function renderGlobe(person) {
       const scored = !!(c.risk && typeof c.risk.score === 'number');
       if (scored || underSanctions(c)) halos.set(c.code, { tone: scored ? toneOf(c.risk.score) : '', rising: scored && c.risk.trend === 'rising', sanctions: underSanctions(c) });
     }
-    // 11 Oct 2026: every country World Monitor scores High wears a pulsing red halo, with or without a project there.
+    // 11 Oct 2026: every country World Monitor scores High with no project of ours is shaded in pulsing red, with its rising and sanctions marks.
     for (const c of Array.isArray(data.high_risk) ? data.high_risk : []) {
       if (!c || typeof c.code !== 'string' || halos.has(c.code)) continue;
-      halos.set(c.code, { tone: 'red', rising: c.trend === 'rising', sanctions: false, unheld: true });
+      halos.set(c.code, { tone: 'red', rising: c.trend === 'rising', sanctions: Array.isArray(c.sanctions_on) && c.sanctions_on.length > 0, unheld: true });
       if (c.name && !names.has(c.code)) names.set(c.code, c.name);
     }
     // The section reports what the globe actually wears, so a mark the globe drops cannot pass unnoticed.
@@ -768,7 +768,7 @@ async function renderGlobe(person) {
       setLv('halo', Math.round(r.score) + ' · ' + lab[0] + (tr[0] ? ' · ' + tr[0] : ''), Math.round(r.score) + ' · ' + lab[1] + (tr[1] ? ' · ' + tr[1] : ''));
       setLv('rising', tr[0] || 'no trend', tr[1] || 'sin tendencia');
     } else { for (const k of ['halo', 'rising']) setLv(k, 'no reading', 'sin lectura'); }
-    const sn = sanctionsOf(c);
+    const sn = sanctionsOf(c) || (hr && Array.isArray(hr.sanctions_on) ? hr.sanctions_on : null);
     setLv('sanctions', sn ? (sn.length ? sn.join(', ') : 'none') : 'no reading', sn ? (sn.length ? sn.join(', ') : 'ninguna') : 'sin lectura');
     setLv('events', 'reading…', 'leyendo…');
   }

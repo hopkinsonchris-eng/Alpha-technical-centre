@@ -690,11 +690,11 @@ test('W8-AC2: a halo per held country in the tone of its World Monitor score, a 
   await page.locator('#globe').screenshot({ path: path.join(EVIDENCE, 'w8-risk-globe.png') });
 });
 
-test('11 Oct 2026: every country World Monitor scores High wears a pulsing red halo, with or without a project; the legend says so in both languages', async ({ page }) => {
+test('11 Oct 2026: a country World Monitor scores High with no project of ours is shaded in pulsing red with its rising and sanctions marks; held ones keep their ring; the legend says so in both languages', async ({ page }) => {
   const high = { ...RISKY, high_risk: [
-    { code: 'SY', name: { en: 'Syria', es: 'Siria' }, score: 91, trend: 'rising' },
-    { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, score: 82, trend: 'rising' },
-    { code: 'YE', name: { en: 'Yemen', es: 'Yemen' }, score: 88, trend: 'stable' },
+    { code: 'SY', name: { en: 'Syria', es: 'Siria' }, score: 91, trend: 'rising', sanctions_on: [] },
+    { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, score: 82, trend: 'rising', sanctions_on: ['Venezuela-related'] },
+    { code: 'YE', name: { en: 'Yemen', es: 'Yemen' }, score: 88, trend: 'stable', sanctions_on: ['Yemen'] },
   ] };
   await stubApi(page, { '/api/countries': (u, r) => json(r, high) });
   await page.goto('/hub/index.html');
@@ -703,12 +703,12 @@ test('11 Oct 2026: every country World Monitor scores High wears a pulsing red h
   await expect(sec).toHaveAttribute('data-halos', 'KZ:amber,SY:red,VE:red,YE:red');          // VE keeps its own reading and marks
   await expect(sec).toHaveAttribute('data-halo-watch', 'SY,YE');                               // the two with no project
   await expect(sec).toHaveAttribute('data-halo-rising', 'SY,VE');
-  await expect(sec).toHaveAttribute('data-halo-sanctions', 'VE');
+  await expect(sec).toHaveAttribute('data-halo-sanctions', 'VE,YE');                          // Yemen's diamond, with no project there
   const watch = page.locator('#globe-legend [data-legend="watch"]');
   await expect(watch).toHaveCount(1);
-  await expect(watch).toContainText('High risk pulses, where we work or not');
+  await expect(watch).toContainText('High risk, no project of ours: shaded, pulsing');
   await page.locator('aside .nav-lang button[data-lang="es"]').click();
-  await expect(watch).toContainText('El riesgo alto late, trabajemos allí o no');
+  await expect(watch).toContainText('Riesgo alto, sin proyecto nuestro: sombreado, late');
   await page.locator('aside .nav-lang button[data-lang="en"]').click();
   mkdirSync(EVIDENCE, { recursive: true });
   await page.locator('#globe').screenshot({ path: path.join(EVIDENCE, 'w9-high-risk-pulse.png') });

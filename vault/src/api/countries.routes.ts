@@ -34,8 +34,8 @@ export interface CountryProject {
 /** Wave 3: World Monitor's composite risk for the country; null without a key or when the feed refuses. */
 /** The score from which World Monitor's reading is High: the Hub's red tone (hub/hub.js toneOf). */
 export const HIGH_RISK = 70;
-/** 11 Oct 2026: a country World Monitor scores High, held or not; the globe pulses a red ring on each. */
-export interface HighRisk { code: string; name: { en: string; es: string }; score: number; trend: string | null }
+/** 11 Oct 2026: a country World Monitor scores High, held or not; the globe shades one with no project in pulsing red, with its marks. */
+export interface HighRisk { code: string; name: { en: string; es: string }; score: number; trend: string | null; /** the sanctions imposed on it, as the summary's sanctions_on */ sanctions_on: string[] }
 export interface CountryRiskLine { score: number | null; level: string | null; trend: string | null; computed_at: string | null; fetched_at: string; sanctions_active: boolean | null; sanctions_count: number | null; /** the same list as the summary's sanctions_on */ sanctions_targeted_by: string[]; /** wave 8 (W8-AC1): the score's move since the previous distinct reading in the log, null on the first */ change: number | null; previous_computed_at: string | null }
 export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; /** the sanctions imposed on the country (sanctionsOn), known with or without World Monitor */ sanctions_on: string[]; risk: CountryRiskLine | null }
 
@@ -115,7 +115,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const high: HighRisk[] = [];
     if (connected) {
       const all = await riskScores();
-      if (all.ok) for (const c of all.data) { if (c.score >= HIGH_RISK) high.push({ code: c.code, name: countryName(c.code), score: c.score, trend: c.trend }); }
+      if (all.ok) for (const c of all.data) { if (c.score >= HIGH_RISK) high.push({ code: c.code, name: countryName(c.code), score: c.score, trend: c.trend, sanctions_on: sanctionsOn(c.code, programList) }); }
       else if (!riskNotes.includes(all.reason)) riskNotes.push(all.reason);
     }
     const countries: CountrySummary[] = [...byCode.entries()].map(([code, projects]) => ({
