@@ -6,7 +6,7 @@ import { openDb, type Db } from '../src/db/client.ts';
 import { migrate } from '../src/db/migrate.ts';
 import { seedMaster } from '../src/db/seed.ts';
 import { createApp } from '../src/app.ts';
-import { configureWorldMonitor, riskScores } from '../src/intel/worldmonitor.ts';
+import { configureWorldMonitor, riskScores, sanctionsOn } from '../src/intel/worldmonitor.ts';
 
 const DOMAIN = 'alpha-technical-centre.com';
 const KEY = 'wm-test-key';
@@ -48,15 +48,16 @@ test('the all-country table is read in one call; only ISO2 lines with a score ar
   assert.equal(r.data.find(c => c.code === 'MX')!.trend, null);
 });
 
-test('the summary lists every High country, held or not, at 70 and over, with its name and trend; one table call per hour', async () => {
+test('the summary lists every High country, held or not, at 70 and over, with its name, trend and sanctions; one table call per hour', async () => {
   configureWorldMonitor({ apiKey: KEY, fetch: fetchWith(null) });
   calls = [];
   const s = await summary();
   assert.deepEqual(s.high_risk, [
-    { code: 'MX', name: { en: 'Mexico', es: 'México' }, score: 70, trend: null },
-    { code: 'SY', name: s.high_risk[1].name, score: 91.4, trend: 'stable' },
-    { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, score: 82, trend: 'rising' },
+    { code: 'MX', name: { en: 'Mexico', es: 'México' }, score: 70, trend: null, sanctions_on: [] },
+    { code: 'SY', name: s.high_risk[1].name, score: 91.4, trend: 'stable', sanctions_on: sanctionsOn('SY') },
+    { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, score: 82, trend: 'rising', sanctions_on: sanctionsOn('VE') },
   ]);
+  assert.ok(s.high_risk[2].sanctions_on.length > 0, 'Venezuela carries its sanctions, project or not');
   assert.equal(s.high_risk[1].name.en, 'Syria');
   assert.ok(!s.high_risk.some((c: any) => c.code === 'KZ'), 'Elevated is not High');
   assert.equal(calls.filter(u => u.includes('get-risk-scores')).length, 1);

@@ -16,7 +16,7 @@
      .setRings(['BR', 'PE'])           // wave 7 PR6: a thin gold ring around each country with an open licence
                                        // round, sized to the country's area; onHover carries open: true for it
      .setRisk(new Map([['VE', { tone: 'red', rising: true, sanctions: true }]]))   // wave 8: the risk halo, tick and mark;
-                                       // a red halo pulses (11 Oct 2026), including on a country with no project
+                                       // unheld: true (11 Oct 2026) shades a High country with no project in pulsing red, no ring
      .setEvents([{ lat, lon }])        // wave 8: the chosen country's conflict events as clustered dots
      .setLang('en' | 'es')
      .destroy()
@@ -126,6 +126,7 @@ export function createGlobe(canvas, opts) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const cx = w / 2, cy = h / 2, R = r0 * zoom;
+    const pulse = reduced ? 0.5 : (Math.sin(now / 600) + 1) / 2;
 
     // Atmosphere glow.
     const glow = ctx.createRadialGradient(cx, cy, R * 0.98, cx, cy, R * 1.09);
@@ -147,6 +148,25 @@ export function createGlobe(canvas, opts) {
       ctx.beginPath(); path(f);
       ctx.fillStyle = fill; ctx.fill();
       ctx.strokeStyle = line; ctx.lineWidth = lw; ctx.stroke();
+    }
+    // 11 Oct 2026: a country World Monitor scores High with no project of ours is shaded red and pulses (still under
+    // reduced motion); its marks are drawn on it with the halos below. Held countries keep their gold and their ring.
+    for (const [code, hv] of halos) {
+      if (!hv.unheld) continue;
+      const f = byCode.get(code);
+      if (!f) continue;
+      ctx.beginPath(); path(f);
+      ctx.fillStyle = COLOURS.haloRed; ctx.globalAlpha = selected === code ? 0.35 : 0.3 + 0.45 * pulse; ctx.fill();
+      ctx.globalAlpha = 1; ctx.strokeStyle = COLOURS.haloRed; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // A held country World Monitor scores High keeps its gold and gains a pulsing red outline around it.
+    for (const [code, hv] of halos) {
+      if (hv.unheld || hv.tone !== 'red' || !held.get(code)) continue;
+      const f = byCode.get(code);
+      if (!f) continue;
+      ctx.beginPath(); path(f);
+      ctx.strokeStyle = COLOURS.haloRed; ctx.lineWidth = 1.5 + 2.5 * pulse; ctx.globalAlpha = 0.55 + 0.45 * pulse; ctx.stroke();
+      ctx.globalAlpha = 1;
     }
 
     // Points on the visible hemisphere: fields first (small, cream, still), then project
@@ -171,7 +191,6 @@ export function createGlobe(canvas, opts) {
       ctx.setLineDash([3, 4]); ctx.strokeStyle = COLOURS.ringOuter; ctx.lineWidth = 1; ctx.globalAlpha = 0.8; ctx.stroke();
       ctx.restore();
     }
-    const pulse = reduced ? 0.5 : (Math.sin(now / 600) + 1) / 2;
     // Wave 8 (W8-AC2): a halo per held country in the tone of its World Monitor score, outside the round ring: a soft
     // wide stroke under a thin one, a rising tick at the top when the trend is rising, a sanctions mark at the right.
     for (const [code, hv] of halos) {
@@ -186,23 +205,22 @@ export function createGlobe(canvas, opts) {
       // A halo without a tone (sanctioned, no World Monitor reading) draws only its sanctions mark.
       const tone = hv.tone === 'red' ? COLOURS.haloRed : hv.tone === 'amber' ? COLOURS.haloAmber : hv.tone === 'green' ? COLOURS.haloGreen : COLOURS.eventLine;
       ctx.save();
-      if (hv.tone) {
-        // 11 Oct 2026: a High (red) reading pulses, held or not, in time with the project points; still under reduced motion.
-        const beat = hv.tone === 'red' ? pulse : null;
+      const ringed = hv.tone && !hv.unheld;                    // a shaded country (no project) wears no ring: its marks sit on it
+      if (ringed) {
         ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
-        ctx.strokeStyle = tone; ctx.lineWidth = beat === null ? 7 : 5 + 8 * beat; ctx.globalAlpha = beat === null ? 0.28 : 0.15 + 0.4 * beat; ctx.stroke();
+        ctx.strokeStyle = tone; ctx.lineWidth = 7; ctx.globalAlpha = 0.28; ctx.stroke();
         ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
         ctx.lineWidth = 1.3; ctx.globalAlpha = 0.9; ctx.stroke();
       }
-      if (hv.tone && hv.rising) {                                   // the tick: a small triangle pointing up at twelve o'clock
-        const tx = xy[0], ty = xy[1] - rr;
+      if (hv.tone && hv.rising) {                                   // the tick: a small triangle pointing up at twelve o'clock (above the country without a ring)
+        const tx = xy[0], ty = ringed ? xy[1] - rr : xy[1] - 10;
         ctx.beginPath(); ctx.moveTo(tx, ty - 7); ctx.lineTo(tx - 5, ty + 2); ctx.lineTo(tx + 5, ty + 2); ctx.closePath();
         ctx.fillStyle = tone; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = COLOURS.eventLine; ctx.lineWidth = 0.8; ctx.stroke();
       }
       if (hv.sanctions) {                                // the mark: a small diamond at three o'clock on the ring, or on the country itself without one
-        const mx = hv.tone ? xy[0] + rr : xy[0] + 10, my = hv.tone ? xy[1] : xy[1] + 8;
+        const mx = ringed ? xy[0] + rr : xy[0] + 10, my = ringed ? xy[1] : xy[1] + 8;
         ctx.beginPath(); ctx.moveTo(mx, my - 5); ctx.lineTo(mx + 5, my); ctx.lineTo(mx, my + 5); ctx.lineTo(mx - 5, my); ctx.closePath();
-        ctx.fillStyle = COLOURS.ring; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = hv.tone ? tone : COLOURS.fieldLine; ctx.lineWidth = hv.tone ? 1 : 1.4; ctx.stroke();
+        ctx.fillStyle = COLOURS.ring; ctx.globalAlpha = 1; ctx.fill(); ctx.strokeStyle = ringed ? tone : COLOURS.fieldLine; ctx.lineWidth = ringed ? 1 : 1.4; ctx.stroke();
       }
       ctx.restore();
     }
