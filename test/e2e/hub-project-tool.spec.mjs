@@ -339,8 +339,21 @@ test('AC1: the timeline shows every seeded record exactly once, newest first, wi
   await expect(page.locator('#tl stale-badge')).toHaveCount(3);
 });
 
+test('11 Oct 2026: a project opens on Files, the first tab; the Timeline is one tap away and keeps its address', async ({ page }) => {
+  await openProject(page);
+  const tabs = page.locator('#p-tabs [role="tab"]');
+  await expect(tabs.first()).toHaveAttribute('data-tab', 'files');
+  await expect(page.locator('#tab-files')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#panel-files')).toBeVisible();
+  await expect(page.locator('#panel-timeline')).toBeHidden();
+  await page.locator('#tab-timeline').click();
+  await expect(page.locator('#panel-timeline')).toBeVisible();
+  expect(new URL(page.url()).hash).toBe('#timeline');
+});
+
 test('timeline filters by type and by stale', async ({ page }) => {
   await openProject(page);
+  await page.locator('#tab-timeline').click();                                // 11 Oct 2026: a project opens on Files
   const count = async (label, n, names) => {
     await page.getByRole('button', { name: label, exact: true }).click();
     await expect(page.locator('.hub-tl-item'), label).toHaveCount(n);
@@ -788,6 +801,7 @@ function langAudit() {
 
 test('AC5: every text node has data-en and data-es on the project page, and the language toggle follows', async ({ page }) => {
   await openProject(page);
+  await page.locator('#tab-timeline').click();
   await page.locator('.hub-tl-item .hub-tl-title').first().click();          // include the open record panel
   await expect(page.locator('#record-panel [data-meta]')).toBeVisible();
   const en = await page.evaluate(langAudit);
@@ -956,7 +970,7 @@ test('add documents: a refused upload (403) and a Vault outage each say so witho
   await page.locator('#up-files').setInputFiles([{ name: 'note.md', mimeType: 'text/markdown', buffer: Buffer.from('x') }]);
   await expect(panel.locator('.hub-notice.bad')).toContainText('you are not a member of project "llanos-waterflood"');
   await expect(panel.locator('[data-upload-file]')).toHaveCount(0);
-  await expect(page.locator('#tl')).toBeVisible();   // the rest of the page is untouched
+  await expect(page.locator('#panel-files')).toBeVisible();   // the rest of the page is untouched (it opens on Files)
 
   await page.route('**/api/ingest/upload', (route) => route.abort('failed'));
   await page.locator('#up-files').setInputFiles([{ name: 'note2.md', mimeType: 'text/markdown', buffer: Buffer.from('y') }]);

@@ -1738,11 +1738,14 @@ function renderResearch(ctx, first) {
   return state;
 }
 
+// 11 Oct 2026: Files first, and the tab a project opens on: a large project's timeline is thousands of filings nobody reads.
 const TABS = [
-  ['timeline', 'Timeline', 'Cronología'], ['files', 'Files', 'Archivos'], ['vintages', 'Headline numbers', 'Cifras principales'], ['research', 'Research', 'Investigación'], ['lineage', 'Lineage', 'Linaje'],
+  ['files', 'Files', 'Archivos'], ['timeline', 'Timeline', 'Cronología'], ['vintages', 'Headline numbers', 'Cifras principales'], ['research', 'Research', 'Investigación'], ['lineage', 'Lineage', 'Linaje'],
   ['basis', 'Basis notes', 'Notas de bases'], ['lessons', 'Lessons in scope', 'Lecciones en alcance'], ['scorecard', 'Scorecard', 'Ficha de evaluación'],
 ];
 let activeTabs = [];
+/** The tab a project opens on: Files, or the Timeline when Files is hidden. */
+const defaultTab = () => (activeTabs.some((t) => t[0] === 'files') ? 'files' : 'timeline');
 
 function buildTabs(counts, hide) {
   const bar = $('#p-tabs');
@@ -1769,7 +1772,7 @@ function buildTabs(counts, hide) {
 }
 
 function showTab(key) {
-  if (!activeTabs.some((t) => t[0] === key)) key = 'timeline';
+  if (!activeTabs.some((t) => t[0] === key)) key = defaultTab();
   for (const [k, en, es] of activeTabs) {
     const on = k === key, b = $('#tab-' + k), p = $('#panel-' + k);
     b.setAttribute('aria-selected', String(on));
@@ -1797,7 +1800,7 @@ function showTimelineFiltered(filter) {
 const ACTION_HASH = /^(stage|next|file|tab-runs|tab-docs|stale|rec=.+|pack(-[a-z]+)?)$/;
 let currentTab = 'timeline';
 function routeHash() {
-  const h = (location.hash || '#timeline').slice(1);
+  const h = (location.hash || '#' + defaultTab()).slice(1);
   if (!ACTION_HASH.test(h)) { routeTab(h); return; }
   const ctx = panelCtx.ctx;
   if (h === 'stage') { const s = $('#p-stage'); if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } }
@@ -1824,7 +1827,7 @@ function routeHash() {
   history.replaceState(null, '', location.pathname + location.search + '#' + currentTab);   // the address names the tab again, without a second hashchange
 }
 const routeTab = (key) => {
-  currentTab = showTab(key || (location.hash || '#timeline').slice(1));
+  currentTab = showTab(key || (location.hash || '#' + defaultTab()).slice(1));
   const p = $('#record-panel');
   if (p && !p.hasAttribute('hidden')) { p.setAttribute('hidden', ''); document.body.classList.remove('has-panel'); panelTrigger = null; }   // the panel belongs to the tab it was opened from
 };
