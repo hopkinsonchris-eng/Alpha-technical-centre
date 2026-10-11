@@ -13,7 +13,7 @@ import { ApiError, bad, canSee, iso, loadAccess, notFound, route, type Access, t
 import { countryName, isCountryCode } from '../opportunities.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
 import { assembleCountryContext, withLiveRisk, writeBrief, type LiveRisk } from '../llm/brief.ts';
-import { countryRisk, riskScores, sanctionPrograms, sanctionsOn, worldMonitorConfigured, NOT_CONNECTED } from '../intel/worldmonitor.ts';
+import { countryRisk, programmeTarget, riskScores, sanctionPrograms, sanctionsOn, worldMonitorConfigured, NOT_CONNECTED, OFAC_COUNTRY_PROGRAMMES } from '../intel/worldmonitor.ts';
 import { recordRisk } from '../intel/risk-log.ts';
 import { locationCheck } from '../assets/geo.ts';
 
@@ -36,6 +36,8 @@ export interface CountryProject {
 export const HIGH_RISK = 70;
 /** 11 Oct 2026: a country World Monitor scores High, held or not; the globe shades one with no project in pulsing red, with its marks. */
 export interface HighRisk { code: string; name: { en: string; es: string }; score: number; trend: string | null; /** the sanctions imposed on it, as the summary's sanctions_on */ sanctions_on: string[] }
+/** 11 Oct 2026: what the summary knows of any country, project or not: its World Monitor score (null without one) and its sanctions. */
+export interface WorldLine { score: number | null; trend: string | null; sanctions_on: string[] }
 export interface CountryRiskLine { score: number | null; level: string | null; trend: string | null; computed_at: string | null; fetched_at: string; sanctions_active: boolean | null; sanctions_count: number | null; /** the same list as the summary's sanctions_on */ sanctions_targeted_by: string[]; /** wave 8 (W8-AC1): the score's move since the previous distinct reading in the log, null on the first */ change: number | null; previous_computed_at: string | null }
 export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; /** the sanctions imposed on the country (sanctionsOn), known with or without World Monitor */ sanctions_on: string[]; risk: CountryRiskLine | null }
 
@@ -113,9 +115,18 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     // 11 Oct 2026: every country World Monitor scores High (the Hub's red, 70 and over), with or without a project there,
     // from its all-country table in one call; asked after the per-country readings so a rate limit they hit holds it back.
     const high: HighRisk[] = [];
+    // 11 Oct 2026: every country the Hub can say something about without a project there, so tapping Russia reads its
+    // score and its sanctions: the all-country table's scores, and the sanctions known with or without World Monitor.
+    const world: Record<string, WorldLine> = {};
+    const sanctionedCodes = new Set<string>(Object.keys(OFAC_COUNTRY_PROGRAMMES));
+    for (const p of programList ?? []) { const t = programmeTarget(String((p as any)?.program ?? '')); if (t) sanctionedCodes.add(t); }
+    for (const code of sanctionedCodes) { const on = sanctionsOn(code, programList); if (on.length) world[code] = { score: null, trend: null, sanctions_on: on }; }
     if (connected) {
       const all = await riskScores();
-      if (all.ok) for (const c of all.data) { if (c.score >= HIGH_RISK) high.push({ code: c.code, name: countryName(c.code), score: c.score, trend: c.trend, sanctions_on: sanctionsOn(c.code, programList) }); }
+      if (all.ok) for (const c of all.data) {
+        world[c.code] = { score: c.score, trend: c.trend, sanctions_on: sanctionsOn(c.code, programList) };
+        if (c.score >= HIGH_RISK) high.push({ code: c.code, name: countryName(c.code), score: c.score, trend: c.trend, sanctions_on: world[c.code].sanctions_on });
+      }
       else if (!riskNotes.includes(all.reason)) riskNotes.push(all.reason);
     }
     const countries: CountrySummary[] = [...byCode.entries()].map(([code, projects]) => ({
@@ -131,7 +142,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     })).sort((a, b) => a.name.en.localeCompare(b.name.en));
 
     x.a.scope = 'firm'; x.a.refs = visible.map(p => `project:${p.id}`); x.a.detail = { countries: countries.length, projects: visible.length, world_monitor: connected ? 'live' : 'not_connected' };
-    return { body: { countries, unplaced, high_risk: high, generated_at: x.now.toISOString(), world_monitor: connected ? { status: 'live', notes: riskNotes } : { status: 'not_connected', reason: NOT_CONNECTED, notes: [] } } };
+    return { body: { countries, unplaced, high_risk: high, world, generated_at: x.now.toISOString(), world_monitor: connected ? { status: 'live', notes: riskNotes } : { status: 'not_connected', reason: NOT_CONNECTED, notes: [] } } };
   });
 
   /**

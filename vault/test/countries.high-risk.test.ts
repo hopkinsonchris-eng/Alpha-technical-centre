@@ -64,12 +64,19 @@ test('the summary lists every High country, held or not, at 70 and over, with it
   await summary();
   assert.equal(calls.filter(u => u.includes('get-risk-scores')).length, 1, 'cached for the hour');
   assert.ok(!JSON.stringify(s).includes(KEY));
+  // Every scored country reads its score and sanctions, High or not, project or not; sanctioned countries without a score too.
+  assert.deepEqual(s.world.KZ, { score: 64, trend: 'stable', sanctions_on: [] });
+  assert.equal(s.world.VE.score, 82);
+  assert.deepEqual(s.world.RU, { score: null, trend: null, sanctions_on: sanctionsOn('RU') });
+  assert.ok(s.world.RU.sanctions_on.length > 0);
+  assert.equal(s.world.IQ.score, null, 'a line without a score adds none');
 });
 
 test('without a key the list is empty; a refused table is named in the notes and the held readings still arrive', async () => {
   configureWorldMonitor({ apiKey: null, fetch: fetchWith(null) });
   const off = await summary();
   assert.deepEqual(off.high_risk, []);
+  assert.ok(off.world.RU.sanctions_on.length > 0 && off.world.RU.score === null, 'sanctions are known without World Monitor');
   assert.equal(off.world_monitor.status, 'not_connected');
   configureWorldMonitor({ apiKey: KEY, fetch: fetchWith(() => new Response('{"code":"pro_required"}', { status: 403 })) });
   const gated = await summary();

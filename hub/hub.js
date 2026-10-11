@@ -493,6 +493,8 @@ function flags(att) {
   return out;
 }
 /** The register's three tones for a World Monitor index: under 40 managed, under 70 elevated, 70 and over high. */
+/** 11 Oct 2026: the summary's world lines, code → {score, trend, sanctions_on}, for countries with no project; {} without them. */
+const worldOf = (data) => (data && data.world && typeof data.world === 'object' ? data.world : {});
 export const toneOf = (score) => (score === null || score === undefined ? '' : score >= 70 ? 'red' : score >= 40 ? 'amber' : 'green');
 /** The sanctions imposed on a country from its summary: the Vault's own list (sanctions_on), known with or without a World Monitor reading; null when the summary has none. */
 export const sanctionsOf = (c) => (c && Array.isArray(c.sanctions_on) ? c.sanctions_on : c && c.risk && Array.isArray(c.risk.sanctions_targeted_by) ? c.risk.sanctions_targeted_by : null);
@@ -650,6 +652,11 @@ async function renderGlobe(person) {
       halos.set(c.code, { tone: 'red', rising: c.trend === 'rising', sanctions: Array.isArray(c.sanctions_on) && c.sanctions_on.length > 0, unheld: true });
       if (c.name && !names.has(c.code)) names.set(c.code, c.name);
     }
+    // A sanctioned country with no project and no High reading still wears its diamond on the country (Russia, Libya, Cuba…).
+    for (const [code, w] of Object.entries(worldOf(data))) {
+      if (halos.has(code) || !w || !Array.isArray(w.sanctions_on) || !w.sanctions_on.length) continue;
+      halos.set(code, { tone: '', rising: false, sanctions: true, unheld: true });
+    }
     // The section reports what the globe actually wears, so a mark the globe drops cannot pass unnoticed.
     const worn = globe ? globe.setRisk(halos) : halos;
     const codesOf = (pred) => [...worn].filter(([, v]) => pred(v)).map(([k]) => k).sort();
@@ -657,7 +664,7 @@ async function renderGlobe(person) {
     setOrDrop('data-halos', [...worn].filter(([, v]) => v.tone).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => k + ':' + v.tone).join(','));
     setOrDrop('data-halo-rising', codesOf((v) => v.rising).join(','));
     setOrDrop('data-halo-sanctions', codesOf((v) => v.sanctions).join(','));
-    setOrDrop('data-halo-watch', codesOf((v) => v.unheld).join(','));
+    setOrDrop('data-halo-watch', codesOf((v) => v.unheld && v.tone === 'red').join(','));
     setOrDrop('data-halo-outline', codesOf((v) => !v.unheld && v.tone === 'red').join(','));   // held and High: gold with a pulsing red outline
     if (data.unplaced && data.unplaced.length) {
       unplaced.removeAttribute('hidden');
@@ -732,7 +739,10 @@ async function renderGlobe(person) {
     setText($('#country-sub'), projects.length ? projects.length + (projects.length === 1 ? ' project' : ' projects') : 'No projects here yet', projects.length ? projects.length + (projects.length === 1 ? ' proyecto' : ' proyectos') : 'Aún no hay proyectos aquí');
     // Wave 3: the live risk line, only when World Monitor answered (nothing is simulated).
     const riskEl = $('#country-risk');
-    if (riskEl) { riskEl.textContent = ''; const line = riskLine(c && c.risk, underSanctions(c)); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
+    // A country with no project reads its score and sanctions from the summary's world lines (11 Oct 2026).
+    const wl = !c ? worldOf(data)[code] : null;
+    const wRisk = wl && typeof wl.score === 'number' ? { score: wl.score, level: null, trend: wl.trend, fetched_at: data && data.generated_at } : null;
+    if (riskEl) { riskEl.textContent = ''; const line = c ? riskLine(c.risk, underSanctions(c)) : riskLine(wRisk, !!(wl && wl.sanctions_on && wl.sanctions_on.length)); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
     for (const p of projects) add(ul, panelRow(p, names));                 // W7-AC6: the same stateline as the register
     const createRow = $('#country-create-row');
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
@@ -760,9 +770,10 @@ async function renderGlobe(person) {
     const open = (sec.getAttribute('data-rings') || '').split(',').includes(code);
     setLv('round', open ? 'open round' : 'no open round', open ? 'ronda abierta' : 'sin ronda abierta');
     // 11 Oct 2026: a country with no project reads its High score from the summary's high_risk list.
-    const hr = !c && data && Array.isArray(data.high_risk) ? data.high_risk.find((h) => h && h.code === code) : null;
-    const r = (c && c.risk) || hr;
-    setLv('watch', hr ? 'high, no project here' : c && r && toneOf(r.score) === 'red' ? 'high' : '', hr ? 'alto, sin proyecto aquí' : c && r && toneOf(r.score) === 'red' ? 'alto' : '');
+    const hr = !c ? worldOf(data)[code] || null : null;
+    const r = (c && c.risk) || (hr && typeof hr.score === 'number' ? hr : null);
+    const high = r && toneOf(r.score) === 'red';
+    setLv('watch', high ? (c ? 'high' : 'high, no project here') : '', high ? (c ? 'alto' : 'alto, sin proyecto aquí') : '');
     if (r && typeof r.score === 'number') {
       const tone = toneOf(r.score), lab = RISK_LABEL[tone] || ['', ''];
       const tr = r.trend === 'rising' ? ['rising', 'al alza'] : r.trend === 'falling' ? ['falling', 'a la baja'] : r.trend ? [r.trend, r.trend === 'stable' ? 'estable' : r.trend] : ['', ''];
