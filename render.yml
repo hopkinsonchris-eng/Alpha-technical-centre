@@ -64,7 +64,7 @@ services:
       - key: CF_ACCESS_AUD
         sync: false
       - key: ALLOWED_EMAIL_DOMAIN
-        value: alpha-technical-centre.com
+        value: alpha-technical-centre.com,alphainternational.energy
       - key: VAULT_PUBLIC_URL
         value: https://www.alpha-technical-centre.com
       # wave 6: each person's mailbox by consent (vault/SETUP.md §7)
