@@ -428,6 +428,11 @@ function orderedTools(ctx, cat) {
   return tools.slice().sort(byToolbar).map((t) => ({ tool: t, produced: jobs.has(t.id) }));
 }
 
+/**
+ * External apps that open inside the project (11 Oct 2026, phase 4): they read ?project=<id>&name=<name> and show
+ * only that project. APEX 3D Model from v1.120.0; APEX Asset Intelligence joins when its new version reads the Vault.
+ */
+export const PROJECT_APPS = new Set(['apex-3d-model']);
 /** The tools that read ?asset= beside ?project= (wave 7 PR3, A10): the nodal analysis and the reservoir simulator, and any tool whose manifest says so. */
 const ASSET_TOOLS = new Set(['nodal-analysis', 'reservoir-simulator']);
 /** The first attached field (kind field, else the first attached asset of any kind): what a new run is about by default. */
@@ -472,8 +477,10 @@ function renderActions(ctx) {
     for (const { tool: t, produced } of list) {
       const target = openTarget(t, byId, siteRoot);
       const u = new URL(target.href);
-      // Wave 7 (S28): only a browser tool reads ?project=; an external app opens as itself.
-      if (!target.external) u.searchParams.set(t.hub.param || 'project', p.id); else external++;
+      // Wave 7 (S28): a browser tool reads ?project=; an external app opens as itself unless it is a project app (phase 4).
+      const inProject = !target.external || PROJECT_APPS.has(t.id);
+      if (inProject) u.searchParams.set(t.hub.param || 'project', p.id); else external++;
+      if (target.external && inProject) u.searchParams.set('name', p.name || p.id);
       // Wave 7 PR3 (H3, W7-AC14): the nodal and simulator links carry the first attached field, so a run names its well under it.
       const firstField = firstAttachedField(ctx);
       if (!target.external && firstField && ASSET_TOOLS.has(t.id)) u.searchParams.set('asset', firstField);
@@ -481,11 +488,14 @@ function renderActions(ctx) {
       a.insertAdjacentHTML('afterbegin', svgIcon('<path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>'));
       add(a, dv('span', null, t.name));
       if (produced) add(a, mk('span', 'hub-menu-hint', 'has runs here', 'con ejecuciones aquí'));
-      if (target.external) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); add(a, mk('span', 'hub-menu-hint', 'opens as itself', 'se abre por sí misma')); }
+      if (target.external) {
+        a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer');
+        add(a, inProject ? mk('span', 'hub-menu-hint', 'new tab', 'pestaña nueva') : mk('span', 'hub-menu-hint', 'opens as itself', 'se abre por sí misma'));
+      }
       add(menu, armOnOpen(a));                                  // wave 7 (S13): the legacy portal check is satisfied before the tool opens
     }
     if (!list.length) add(menu, mk('span', 'hub-muted hub-menu-note', 'No tool declares a project context yet.', 'Ninguna herramienta declara aún un contexto de proyecto.'));
-    else add(menu, mk('span', 'hub-muted hub-menu-note', external ? 'Browser tools open in this project; the external apps open as themselves.' : 'Each opens in this project.', external ? 'Las herramientas del navegador se abren en este proyecto; las apps externas se abren por sí mismas.' : 'Cada una se abre en este proyecto.'));
+    else add(menu, mk('span', 'hub-muted hub-menu-note', external ? 'Each opens in this project, except those marked "opens as itself".' : 'Each opens in this project.', external ? 'Cada una se abre en este proyecto, salvo las marcadas "se abre por sí misma".' : 'Cada una se abre en este proyecto.'));
   }
   add(wrap, btn, menu);
   attachMenu(btn, menu);
