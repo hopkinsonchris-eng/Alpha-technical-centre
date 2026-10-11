@@ -15,7 +15,8 @@
      .select(code, { fly: true })      // fly to a country and highlight it; null clears
      .setRings(['BR', 'PE'])           // wave 7 PR6: a thin gold ring around each country with an open licence
                                        // round, sized to the country's area; onHover carries open: true for it
-     .setRisk(new Map([['VE', { tone: 'red', rising: true, sanctions: true }]]))   // wave 8: the risk halo, tick and mark
+     .setRisk(new Map([['VE', { tone: 'red', rising: true, sanctions: true }]]))   // wave 8: the risk halo, tick and mark;
+                                       // a red halo pulses (11 Oct 2026), including on a country with no project
      .setEvents([{ lat, lon }])        // wave 8: the chosen country's conflict events as clustered dots
      .setLang('en' | 'es')
      .destroy()
@@ -170,6 +171,7 @@ export function createGlobe(canvas, opts) {
       ctx.setLineDash([3, 4]); ctx.strokeStyle = COLOURS.ringOuter; ctx.lineWidth = 1; ctx.globalAlpha = 0.8; ctx.stroke();
       ctx.restore();
     }
+    const pulse = reduced ? 0.5 : (Math.sin(now / 600) + 1) / 2;
     // Wave 8 (W8-AC2): a halo per held country in the tone of its World Monitor score, outside the round ring: a soft
     // wide stroke under a thin one, a rising tick at the top when the trend is rising, a sanctions mark at the right.
     for (const [code, hv] of halos) {
@@ -185,8 +187,10 @@ export function createGlobe(canvas, opts) {
       const tone = hv.tone === 'red' ? COLOURS.haloRed : hv.tone === 'amber' ? COLOURS.haloAmber : hv.tone === 'green' ? COLOURS.haloGreen : COLOURS.eventLine;
       ctx.save();
       if (hv.tone) {
+        // 11 Oct 2026: a High (red) reading pulses, held or not, in time with the project points; still under reduced motion.
+        const beat = hv.tone === 'red' ? pulse : null;
         ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
-        ctx.strokeStyle = tone; ctx.lineWidth = 7; ctx.globalAlpha = 0.28; ctx.stroke();
+        ctx.strokeStyle = tone; ctx.lineWidth = beat === null ? 7 : 5 + 8 * beat; ctx.globalAlpha = beat === null ? 0.28 : 0.15 + 0.4 * beat; ctx.stroke();
         ctx.beginPath(); ctx.arc(xy[0], xy[1], rr, 0, Math.PI * 2);
         ctx.lineWidth = 1.3; ctx.globalAlpha = 0.9; ctx.stroke();
       }
@@ -202,7 +206,6 @@ export function createGlobe(canvas, opts) {
       }
       ctx.restore();
     }
-    const pulse = reduced ? 0.5 : (Math.sin(now / 600) + 1) / 2;
     visible = [];
     for (const p of points) {
       if (!(Number.isFinite(p.lat) && Number.isFinite(p.lon))) continue;
