@@ -1,6 +1,6 @@
 {
   "id": "nodal-analysis",
-  "name": "Nodal Analysis",
+  "name": "APEX Nodal Analysis",
   "description": "IPR/VLP nodal analysis well performance optimiser with an ESP option.",
   "owner": "chris",
   "lifecycle": "production",

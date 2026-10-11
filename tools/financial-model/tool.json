@@ -1,6 +1,6 @@
 {
   "id": "financial-model",
-  "name": "Upstream Quick-Look Financial Model",
+  "name": "APEX Quick Look Financial Model",
   "description": "Generic-contract upstream quick-look economics: NPV, IRR, payback, cash flow and sensitivities.",
   "owner": "chris",
   "lifecycle": "production",

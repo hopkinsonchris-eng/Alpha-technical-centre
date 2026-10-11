@@ -4,6 +4,9 @@ All notable changes to ELA New Law Model Suite are recorded here. Format: [Keep 
 
 ## [Unreleased]
 
+### Changed
+- Renamed APEX New Law Model Suite (VZ): the page title and heading, the admin card and the Hub. The subtitle keeps Alpha Energy Latin America.
+
 ## [2.0.2] - 2026-07-31
 
 ### Fixed

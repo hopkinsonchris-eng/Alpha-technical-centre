@@ -4,6 +4,9 @@ All notable changes to Scope of Work Generator are recorded here. Format: [Keep 
 
 ## [Unreleased]
 
+### Changed
+- Renamed APEX Scope of Work Generator, in the Hub, on its page (title, badge, social tags) and on the Our Tools page.
+
 ## [1.0.0] - 2026-08-06
 
 ### Added

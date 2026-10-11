@@ -419,12 +419,13 @@ async function refreshHeadlines(ctx) {
   if (!isHoldingProject(ctx.project)) renderOpportunity(ctx);
 }
 
-/** The tools whose jobs appear on this project's timeline, in toolbar order first, then the rest. */
+/** The production tools that open in a project, in the sidecars' toolbar order; produced marks the ones with runs on this timeline. */
 function orderedTools(ctx, cat) {
   const tools = ((cat && cat.catalog && cat.catalog.tools) || []).filter((t) => t.lifecycle === 'production' && t.hub && (t.hub.context || []).includes('project'));
   const jobs = new Set((ctx.entries || []).filter((e) => e.kind === 'run' && e.job).map((e) => e.job));
+  // 11 Oct 2026: one fixed order (the sidecars' toolbar numbers) in every project; a tool that produced runs here keeps its hint, not a new place.
   const byToolbar = (a, b) => (a.hub.toolbar ?? 999) - (b.hub.toolbar ?? 999);
-  return [...tools.filter((t) => jobs.has(t.id)).sort(byToolbar), ...tools.filter((t) => !jobs.has(t.id)).sort(byToolbar)].map((t) => ({ tool: t, produced: jobs.has(t.id) }));
+  return tools.slice().sort(byToolbar).map((t) => ({ tool: t, produced: jobs.has(t.id) }));
 }
 
 /** The tools that read ?asset= beside ?project= (wave 7 PR3, A10): the nodal analysis and the reservoir simulator, and any tool whose manifest says so. */

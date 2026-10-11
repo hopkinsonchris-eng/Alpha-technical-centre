@@ -1,6 +1,6 @@
 {
   "id": "ela-model-suite",
-  "name": "ELA New Law Model Suite",
+  "name": "APEX New Law Model Suite (VZ)",
   "description": "Investor model suite for the January 2026 ELA new law, with Phase 1a and 1b cases.",
   "owner": "chris",
   "lifecycle": "production",

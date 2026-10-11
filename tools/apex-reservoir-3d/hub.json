@@ -1,7 +1,4 @@
 {
-  "context": [
-    "project"
-  ],
-  "param": "project",
-  "toolbar": 40
+  "context": [],
+  "param": "project"
 }

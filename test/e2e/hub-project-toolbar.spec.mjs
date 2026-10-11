@@ -3,7 +3,7 @@
 // with its history on the timeline; the opportunity card shows and edits the register fields.
 // AC9 and AC10. The API is stubbed with page.route.
 import { test, expect } from '@playwright/test';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -91,6 +91,24 @@ test('AC9 / R1: "Open in tool ▾" lists the production tools that take a projec
   // The header shows the country and stage.
   await expect(page.locator('#p-sub')).toContainText('Kazakhstan');
   await expect(page.locator('#p-stage')).toHaveValue('Qualified');
+});
+
+test('11 Oct 2026: the real catalog lists the APEX tools in one fixed order, renamed; a tool with runs here keeps its place; Opportunity Register, APEX Reservoir 3D and ELA Phase 1 Scenario Studio are gone from the menu', async ({ page }) => {
+  await stubApi(page);
+  const real = JSON.parse(readFileSync(path.join(ROOT, 'hub/catalog.json'), 'utf8'));
+  await page.route('**/api/catalog', (route) => json(route, { tools: real.tools }));
+  const nodalRun = { ...TIMELINE[0], job: 'nodal-analysis' };
+  await page.route('**/api/projects/' + PID + '/timeline', (route) => json(route, { project_id: PID, count: 1, entries: [nodalRun] }));
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('#p-openin').click();
+  const links = page.locator('#p-toolbar a[data-toolbar-tool]');
+  expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('data-toolbar-tool')))).toEqual(['apex-asset-intelligence', 'apex-3d-model', 'financial-model', 'ela-model-suite', 'plan-your-job', 'nodal-analysis']);
+  expect(await links.evaluateAll((els) => els.map((e) => e.querySelector('span').textContent))).toEqual(['APEX Asset Intelligence', 'APEX 3D Model', 'APEX Quick Look Financial Model', 'APEX New Law Model Suite (VZ)', 'APEX Scope of Work Generator', 'APEX Nodal Analysis']);
+  await expect(links.nth(5)).toHaveAttribute('data-produced', '1');            // has runs here, still last
+  await expect(page.locator('#p-openin-menu')).not.toContainText('Opportunity Register');
+  await expect(page.locator('#p-openin-menu')).not.toContainText('Reservoir 3D');
+  await expect(page.locator('#p-openin-menu')).not.toContainText('Scenario Studio');
 });
 
 test('W7-AC3: Opportunity Register and APEX Reservoir 3D open from the toolbar with ?project= intact and no login wall', async ({ page }) => {
