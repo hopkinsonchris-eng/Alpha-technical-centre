@@ -42,6 +42,7 @@ for (const [name, p] of Object.entries(PAGES)) {
       if (await co.count()) { await co.click(); await expect(page.locator('#country-panel')).toBeVisible(); }
     }
     if (name === 'project') {
+      await page.locator('#tab-timeline').click();                            // a project opens on Files (11 Oct 2026)
       const row = page.locator(`.hub-tl-item[data-ref="doc:${DOC}"] .hub-tl-title`);
       if (await row.count()) { await row.click(); await expect(page.locator('#record-panel')).toBeVisible(); }
     }

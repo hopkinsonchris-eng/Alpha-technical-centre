@@ -293,7 +293,9 @@ test('R6: the tab strip is sticky under the stateline, Add documents opens the d
   for (const li of await fields.locator('li[data-field]').all()) expect((await li.boundingBox()).height, 'a compact row').toBeLessThanOrEqual(44);
   await expect(fields.locator('#fld-add-btn')).toContainText('Add field');
   // The timeline rows: one tappable block at least 44 px tall, the date on one line, the type as a mono prefix, a pill on the right for every kind.
+  await page.locator('#tab-timeline').click();                                // 11 Oct 2026: a project opens on Files
   const row = page.locator('.hub-tl-item[data-id="' + LETTER + '"]');
+  await expect(row).toBeVisible();                                             // boundingBox does not wait for the tab to show it
   const rb = await row.boundingBox();
   expect(rb.height).toBeGreaterThanOrEqual(44);
   await expect(row.locator('.hub-tl-date')).toHaveText('1 Oct · 13:54');
