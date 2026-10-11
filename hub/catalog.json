@@ -27,7 +27,8 @@
           "date": "",
           "sections": {
             "Changed": [
-              "Opens inside the project from the Hub's Open in tool menu (`?project=<id>&name=<name>`, new tab), showing only that project; needs the app at v1.120.0 or later. The app now calls itself APEX 3D Model."
+              "Opens inside the project from the Hub's Open in tool menu (`?project=<id>&name=<name>`, new tab), showing only that project; needs the app at v1.120.0 or later. The app now calls itself APEX 3D Model.",
+              "Hub staff open it without an access key: the link carries a 12-hour pass the Vault signed (`#hubpass=`), fetched when the menu opens; needs the app at v1.121.0 or later and `TOOL_PASS_SEED` on the Vault."
             ]
           }
         },
@@ -990,6 +991,6 @@
       "hub": null
     }
   ],
-  "built_at": "2026-10-11T11:03:34.416Z",
-  "commit": "c4079f1"
+  "built_at": "2026-10-11T14:22:17.618Z",
+  "commit": "63b7a84"
 }

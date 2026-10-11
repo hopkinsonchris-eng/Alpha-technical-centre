@@ -74,6 +74,9 @@ services:
         sync: false
       - key: VAULT_TOKEN_KEY
         sync: false
+      # Tool passes (src/api/toolpass.routes.ts): Hub staff open APEX 3D Model without a key. Any random 32+ chars.
+      - key: TOOL_PASS_SEED
+        generateValue: true
 
   # Nightly staleness (M08): recomputes stale flags on runs and documents.
   - type: cron

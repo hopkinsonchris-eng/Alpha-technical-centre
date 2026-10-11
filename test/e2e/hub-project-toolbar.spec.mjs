@@ -122,6 +122,39 @@ test('11 Oct 2026: the real catalog lists the APEX tools in one fixed order, ren
   await expect(page.locator('#p-openin-menu')).not.toContainText('Scenario Studio');
 });
 
+test('11 Oct 2026: APEX 3D Model carries a Vault pass after the #, so Hub staff need no key; without one the plain link stays', async ({ page }) => {
+  await stubApi(page);
+  const real = JSON.parse(readFileSync(path.join(ROOT, 'hub/catalog.json'), 'utf8'));
+  await page.route('**/api/catalog', (route) => json(route, { tools: real.tools }));
+  const asked = [];
+  const PASS = 'hub1.eyJhdWQiOiJhcGV4LTNkLW1vZGVsIn0.c2lnbmF0dXJl';
+  await page.route('**/api/tool-pass', (route) => { asked.push(JSON.parse(route.request().postData())); return json(route, { tool: 'apex-3d-model', pass: PASS, expires_at: '2026-10-12T02:00:00.000Z' }); });
+  await page.goto('/hub/project.html?id=' + PID);
+  await ready(page);
+  await page.locator('#p-openin').click();
+  const threeD = page.locator('#p-toolbar a[data-toolbar-tool="apex-3d-model"]');
+  await expect(threeD).toHaveAttribute('data-pass', '1');
+  const u = new URL(await threeD.getAttribute('href'));
+  expect(u.hash).toBe('#hubpass=' + PASS);
+  expect(u.searchParams.get('project')).toBe(PID);                             // the project view is untouched
+  expect(asked).toEqual([{ tool: 'apex-3d-model' }]);                          // one pass, for the 3D model only; reopening within the hour asks again for none
+  await page.locator('#p-openin').click(); await page.locator('#p-openin').click();
+  expect(asked.length).toBe(1);
+  await expect(page.locator('#p-toolbar a[data-toolbar-tool="apex-asset-intelligence"]')).toHaveAttribute('href', 'https://apex-app2.onrender.com/');
+
+  // The Vault not set up yet (503): the plain project link, no pass, and the next open tries again.
+  await page.unroute('**/api/tool-pass');
+  await page.route('**/api/tool-pass', (route) => { asked.push(1); return json(route, { error: { code: 'not_configured', message: 'x' } }, 503); });
+  await page.reload(); await ready(page);
+  await page.locator('#p-openin').click();
+  const plain = page.locator('#p-toolbar a[data-toolbar-tool="apex-3d-model"]');
+  await expect(plain).toHaveAttribute('data-pass', '0');
+  expect(new URL(await plain.getAttribute('href')).hash).toBe('');
+  const before = asked.length;
+  await page.locator('#p-openin').click(); await page.locator('#p-openin').click();
+  await expect.poll(() => asked.length).toBeGreaterThan(before);
+});
+
 test('W7-AC3: Opportunity Register and APEX Reservoir 3D open from the toolbar with ?project= intact and no login wall', async ({ page }) => {
   await stubApi(page);
   const cat = JSON.parse(JSON.stringify(CATALOG));
