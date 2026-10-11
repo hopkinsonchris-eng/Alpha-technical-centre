@@ -152,7 +152,7 @@ export function createGlobe(canvas, opts) {
     // 11 Oct 2026: a country World Monitor scores High with no project of ours is shaded red and pulses (still under
     // reduced motion); its marks are drawn on it with the halos below. Held countries keep their gold and their ring.
     for (const [code, hv] of halos) {
-      if (!hv.unheld) continue;
+      if (!hv.unheld || hv.tone !== 'red') continue;                 // a sanctioned country with no High reading wears only its diamond
       const f = byCode.get(code);
       if (!f) continue;
       ctx.beginPath(); path(f);

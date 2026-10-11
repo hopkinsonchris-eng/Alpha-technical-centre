@@ -715,6 +715,31 @@ test('11 Oct 2026: a country World Monitor scores High with no project of ours i
   await page.locator('#globe').screenshot({ path: path.join(EVIDENCE, 'w9-high-risk-pulse.png') });
 });
 
+test('11 Oct 2026: a country with no project reads its World Monitor score and its sanctions in the panel and legend (Russia), and wears its diamond on the globe without being shaded', async ({ page }) => {
+  const world = { ...COUNTRIES, high_risk: [], world: { RU: { score: 64, trend: 'rising', sanctions_on: ['OFAC Russia-related sanctions'] }, CU: { score: null, trend: null, sanctions_on: ['OFAC Cuba sanctions'] }, BR: { score: 31, trend: 'stable', sanctions_on: [] } } };
+  await stubApi(page, { '/api/countries': (u, r) => json(r, world) });
+  await page.goto('/hub/index.html?country=RU');
+  await ready(page); await globeReady(page);
+  const risk = page.locator('#country-risk');
+  await expect(risk).toBeVisible();
+  await expect(risk).toContainText('World Monitor 64');
+  await expect(risk.locator('[data-risk-sanctions]')).toContainText('under sanctions');
+  await expect(risk.locator('[data-risk-trend]')).toHaveAttribute('data-risk-trend', 'rising');
+  const legend = page.locator('#globe-legend');
+  await expect(legend.locator('[data-legend-value="halo"]')).toContainText('64');
+  await expect(legend.locator('[data-legend-value="sanctions"]')).toHaveText('OFAC Russia-related sanctions');
+  await expect(legend.locator('[data-legend-value="watch"]')).toHaveText('');         // Elevated, not High: not shaded
+  const sec = page.locator('#sec-globe');
+  await expect(sec).toHaveAttribute('data-halo-sanctions', /CU.*RU/);
+  await expect(sec).not.toHaveAttribute('data-halo-watch', /RU/);
+  await page.goto('/hub/index.html?country=CU');
+  await ready(page); await globeReady(page);
+  await expect(page.locator('#country-risk [data-risk-sanctions]')).toContainText('under sanctions');   // no score, still its sanctions
+  await page.goto('/hub/index.html?country=BR');
+  await ready(page); await globeReady(page);
+  await expect(page.locator('#country-risk')).toContainText('World Monitor 31');
+});
+
 test('W8-AC2 (none): countries without a reading wear no halo', async ({ page }) => {
   await stubApi(page, { '/api/countries': (u, r) => json(r, { ...COUNTRIES, countries: COUNTRIES.countries.map((c) => ({ ...c, risk: null })) }) });
   await page.goto('/hub/index.html');
