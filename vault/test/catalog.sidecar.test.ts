@@ -64,7 +64,9 @@ test('AC8: an invalid sidecar is refused naming the file and the path', () => {
 test('AC8: every shipped sidecar is valid and every tool that takes a project declares it', () => {
   const cat = buildCatalog(REPO);
   const withContext = cat.tools.filter(t => t.hub && (t.hub.context ?? []).includes('project')).map(t => t.id);
-  for (const id of ['opportunity-register', 'nodal-analysis', 'financial-model', 'apex-reservoir-3d', 'ela-model-suite', 'plan-your-job']) assert.ok(withContext.includes(id), id + ' should take a project');
+  for (const id of ['apex-asset-intelligence', 'apex-3d-model', 'financial-model', 'ela-model-suite', 'plan-your-job', 'nodal-analysis']) assert.ok(withContext.includes(id), id + ' should take a project');
+  // 11 Oct 2026: out of the Open in tool menu; their pages and runs stay.
+  for (const id of ['opportunity-register', 'apex-reservoir-3d', 'ela-studio']) assert.ok(!withContext.includes(id), id + ' should not be offered in a project');
   for (const id of ['apex-3d-model', 'apex-asset-intelligence']) {
     const t = cat.tools.find(x => x.id === id)!;
     assert.ok(t.hub && /^https:\/\//.test(t.hub.version_url ?? ''), id + ' should publish a version_url');

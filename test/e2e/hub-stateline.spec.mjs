@@ -167,7 +167,7 @@ test('W7-AC6: the stateline re-renders after a stage change and after a register
   await expect(token(page, 'next')).toContainText('Send the NDA amendment');
 });
 
-test('R1: three actions right-aligned (Write to… primary, Research, Open in tool ▾ with the producing tools first); Archive in the … overflow behind a confirm sheet; Restore stays', async ({ page }) => {
+test('R1: three actions right-aligned (Write to… primary, Research, Open in tool ▾ in one fixed order); Archive in the … overflow behind a confirm sheet; Restore stays', async ({ page }) => {
   const patched = await open(page);
   const actions = page.locator('#p-toolbar');
   const write = actions.locator('#p-draft-btn'), research = actions.locator('#p-research-btn'), openIn = actions.locator('#p-openin'), more = actions.locator('#p-more');
@@ -181,15 +181,15 @@ test('R1: three actions right-aligned (Write to… primary, Research, Open in to
   const content = await page.locator('.hub-head').boundingBox();
   const mb = await more.boundingBox();
   expect(Math.round(mb.x + mb.width)).toBeGreaterThanOrEqual(Math.round(content.x + content.width) - 2);
-  // The menu: the tool that produced this project's runs first, then the rest in toolbar order; the legacy gate is armed on open.
+  // The menu: toolbar order in every project (11 Oct 2026); the tool that produced this project's runs keeps its place and its hint; the legacy gate is armed on open.
   await expect(page.locator('#p-openin-menu')).toBeHidden();
   await openIn.click();
   const menu = page.locator('#p-openin-menu');
   await expect(menu).toBeVisible();
   const links = menu.locator('a[data-toolbar-tool]');
-  expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('data-toolbar-tool')))).toEqual(['nodal-analysis', 'opportunity-register', 'plan-your-job']);
-  await expect(links.first()).toHaveAttribute('href', /nodal-analysis-tool\.html\?project=llanos-waterflood(&asset=field%3Aco%3Acubiro)?$/);   // wave 7 PR3 (W7-AC14): the first attached field rides along
-  await expect(links.first()).toHaveAttribute('data-produced', '1');
+  expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('data-toolbar-tool')))).toEqual(['opportunity-register', 'nodal-analysis', 'plan-your-job']);
+  await expect(links.nth(1)).toHaveAttribute('href', /nodal-analysis-tool\.html\?project=llanos-waterflood(&asset=field%3Aco%3Acubiro)?$/);   // wave 7 PR3 (W7-AC14): the first attached field rides along
+  await expect(links.nth(1)).toHaveAttribute('data-produced', '1');
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
   // Archive: in the overflow, with a confirm sheet; nothing is patched until confirmed.
