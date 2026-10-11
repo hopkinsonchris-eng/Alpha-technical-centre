@@ -159,6 +159,15 @@ export function createGlobe(canvas, opts) {
       ctx.fillStyle = COLOURS.haloRed; ctx.globalAlpha = selected === code ? 0.35 : 0.3 + 0.45 * pulse; ctx.fill();
       ctx.globalAlpha = 1; ctx.strokeStyle = COLOURS.haloRed; ctx.lineWidth = 1; ctx.stroke();
     }
+    // A held country World Monitor scores High keeps its gold and gains a pulsing red outline around it.
+    for (const [code, hv] of halos) {
+      if (hv.unheld || hv.tone !== 'red' || !held.get(code)) continue;
+      const f = byCode.get(code);
+      if (!f) continue;
+      ctx.beginPath(); path(f);
+      ctx.strokeStyle = COLOURS.haloRed; ctx.lineWidth = 1.5 + 2.5 * pulse; ctx.globalAlpha = 0.55 + 0.45 * pulse; ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
 
     // Points on the visible hemisphere: fields first (small, cream, still), then project
     // points on top, pulsing unless motion is reduced.

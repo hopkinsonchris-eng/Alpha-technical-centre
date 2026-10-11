@@ -658,6 +658,7 @@ async function renderGlobe(person) {
     setOrDrop('data-halo-rising', codesOf((v) => v.rising).join(','));
     setOrDrop('data-halo-sanctions', codesOf((v) => v.sanctions).join(','));
     setOrDrop('data-halo-watch', codesOf((v) => v.unheld).join(','));
+    setOrDrop('data-halo-outline', codesOf((v) => !v.unheld && v.tone === 'red').join(','));   // held and High: gold with a pulsing red outline
     if (data.unplaced && data.unplaced.length) {
       unplaced.removeAttribute('hidden');
       const n = data.unplaced.length;
