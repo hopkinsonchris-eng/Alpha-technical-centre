@@ -4,6 +4,9 @@ All notable changes to APEX Reservoir 3D are recorded here. Format: [Keep a Chan
 
 ## [Unreleased]
 
+### Changed
+- No longer offered in the Hub's Open in tool menu (its sidecar has no project context). The page and its runs are unchanged.
+
 ## [2.2.0] - 2026-07-10
 
 ### Added

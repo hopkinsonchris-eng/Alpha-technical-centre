@@ -1,6 +1,6 @@
 {
   "id": "plan-your-job",
-  "name": "Scope of Work Generator",
+  "name": "APEX Scope of Work Generator",
   "description": "Interactive Scope-of-Work generator with cost breakdown and service packages.",
   "owner": "chris",
   "lifecycle": "production",

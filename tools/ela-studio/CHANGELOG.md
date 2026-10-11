@@ -4,6 +4,9 @@ All notable changes to ELA Phase 1 Scenario Studio are recorded here. Format: [K
 
 ## [Unreleased]
 
+### Changed
+- No longer offered in the Hub's Open in tool menu (its sidecar has no project context). The page and its runs are unchanged.
+
 ## [1.0.1] - 2026-07-15
 
 ### Fixed

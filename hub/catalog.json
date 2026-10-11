@@ -42,7 +42,7 @@
           "project"
         ],
         "param": "project",
-        "toolbar": 80,
+        "toolbar": 20,
         "version_url": "https://apex-3d-model.uk/version.json",
         "live_version": null
       }
@@ -89,7 +89,7 @@
           "project"
         ],
         "param": "project",
-        "toolbar": 90,
+        "toolbar": 10,
         "version_url": "https://apex-app2.onrender.com/version.json",
         "live_version": null
       }
@@ -162,7 +162,11 @@
         {
           "version": "Unreleased",
           "date": "",
-          "sections": {}
+          "sections": {
+            "Changed": [
+              "No longer offered in the Hub's Open in tool menu (its sidecar has no project context). The page and its runs are unchanged."
+            ]
+          }
         },
         {
           "version": "2.2.0",
@@ -243,17 +247,14 @@
         }
       ],
       "hub": {
-        "context": [
-          "project"
-        ],
+        "context": [],
         "param": "project",
-        "toolbar": 40,
         "live_version": null
       }
     },
     {
       "id": "ela-model-suite",
-      "name": "ELA New Law Model Suite",
+      "name": "APEX New Law Model Suite (VZ)",
       "description": "Investor model suite for the January 2026 ELA new law, with Phase 1a and 1b cases.",
       "owner": "chris",
       "lifecycle": "production",
@@ -310,7 +311,11 @@
         {
           "version": "Unreleased",
           "date": "",
-          "sections": {}
+          "sections": {
+            "Changed": [
+              "Renamed APEX New Law Model Suite (VZ): the page title and heading, the admin card and the Hub. The subtitle keeps Alpha Energy Latin America."
+            ]
+          }
         },
         {
           "version": "2.0.2",
@@ -363,7 +368,7 @@
           "project"
         ],
         "param": "project",
-        "toolbar": 50,
+        "toolbar": 40,
         "live_version": null
       }
     },
@@ -406,7 +411,11 @@
         {
           "version": "Unreleased",
           "date": "",
-          "sections": {}
+          "sections": {
+            "Changed": [
+              "No longer offered in the Hub's Open in tool menu (its sidecar has no project context). The page and its runs are unchanged."
+            ]
+          }
         },
         {
           "version": "1.0.1",
@@ -428,17 +437,14 @@
         }
       ],
       "hub": {
-        "context": [
-          "project"
-        ],
+        "context": [],
         "param": "project",
-        "toolbar": 70,
         "live_version": null
       }
     },
     {
       "id": "financial-model",
-      "name": "Upstream Quick-Look Financial Model",
+      "name": "APEX Quick Look Financial Model",
       "description": "Generic-contract upstream quick-look economics: NPV, IRR, payback, cash flow and sensitivities.",
       "owner": "chris",
       "lifecycle": "production",
@@ -470,6 +476,9 @@
           "version": "Unreleased",
           "date": "",
           "sections": {
+            "Changed": [
+              "Renamed APEX Quick Look Financial Model, in the Hub, on its page (title, heading, social tags, footer) and on the public home and Our Tools pages, and in the staff edition."
+            ],
             "Added": [
               "Staff edition, Alpha International tab: a Deal screen. It runs 300 single oil fields (5 regimes, 3 oil prices around the rail Brent, 5 sizes, 4 development costs) through the current deal terms. It shows the entry hurdle (project IRR) needed to repay the partner loan within a chosen number of years, the IRR below which it is never repaid, and peak amount owed as a share of capex. Charts plot years to repay and value kept against IRR (current portfolio marked), with a heatmap by price and development cost and a table by IRR band. Summary logic is `screenSummary` and `irrMid` in `hub/tools/alpha-intl-finance.js`, unit tested.",
               "Staff edition, Alpha International tab: a \"Release tax before the sweep\" switch, on by default. Off follows Heads of Terms §9 as signed: every distribution is swept to the lender while a loan is outstanding, and the principals pay their tax from their own pocket. The setting is saved with runs.",
@@ -600,7 +609,7 @@
     },
     {
       "id": "nodal-analysis",
-      "name": "Nodal Analysis",
+      "name": "APEX Nodal Analysis",
       "description": "IPR/VLP nodal analysis well performance optimiser with an ESP option.",
       "owner": "chris",
       "lifecycle": "production",
@@ -639,7 +648,11 @@
         {
           "version": "Unreleased",
           "date": "",
-          "sections": {}
+          "sections": {
+            "Changed": [
+              "Renamed APEX Nodal Analysis, in the Hub, on its page (title, eyebrow, social tags) and on the public home and Our Tools pages; last in the Hub's Open in tool menu."
+            ]
+          }
         },
         {
           "version": "1.2.0",
@@ -679,7 +692,7 @@
           "project"
         ],
         "param": "project",
-        "toolbar": 20,
+        "toolbar": 60,
         "live_version": null
       }
     },
@@ -782,6 +795,7 @@
           "date": "",
           "sections": {
             "Changed": [
+              "No longer offered in the Hub's Open in tool menu (its sidecar has no project context). The page and its runs are unchanged.",
               "The register list itself now lives in the Hub (Today page: globe, country drill-down and register table backed by the Vault's projects). This page remains the calculator: it opens from the project toolbar with the project id in the address (?project=) and saves its potential-model runs to that project. Its own list and localStorage store are kept for use outside the Hub."
             ]
           }
@@ -863,17 +877,14 @@
         }
       ],
       "hub": {
-        "context": [
-          "project"
-        ],
+        "context": [],
         "param": "project",
-        "toolbar": 10,
         "live_version": null
       }
     },
     {
       "id": "plan-your-job",
-      "name": "Scope of Work Generator",
+      "name": "APEX Scope of Work Generator",
       "description": "Interactive Scope-of-Work generator with cost breakdown and service packages.",
       "owner": "chris",
       "lifecycle": "production",
@@ -899,7 +910,11 @@
         {
           "version": "Unreleased",
           "date": "",
-          "sections": {}
+          "sections": {
+            "Changed": [
+              "Renamed APEX Scope of Work Generator, in the Hub, on its page (title, badge, social tags) and on the Our Tools page."
+            ]
+          }
         },
         {
           "version": "1.0.0",
@@ -928,7 +943,7 @@
           "project"
         ],
         "param": "project",
-        "toolbar": 60,
+        "toolbar": 50,
         "live_version": null
       }
     },
@@ -971,6 +986,6 @@
       "hub": null
     }
   ],
-  "built_at": "2026-10-10T13:50:40.414Z",
-  "commit": "6f396d9"
+  "built_at": "2026-10-11T09:00:34.271Z",
+  "commit": "b1f87bc"
 }

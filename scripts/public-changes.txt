@@ -6,3 +6,9 @@ plan-your-job.html	Vault run capture (Save run, Runs drawer) added below the fol
 financial-modelling.html	Vault run capture added below the fold; JV regime fixed: OPEX and CAPEX were deducted twice (now the contractor takes its equity share of the JV's after-tax net cash); other regimes unchanged
 nodal-analysis-tool.html	Vault run capture added below the fold; physics unchanged
 reservoir-simulator.html	Vault run capture added; browser-held Anthropic key removed; physics unchanged
+index.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed
+tools.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed
+financial-modelling.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed
+plan-your-job.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed
+nodal-analysis-tool.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed
+oil-gas-modelling.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed

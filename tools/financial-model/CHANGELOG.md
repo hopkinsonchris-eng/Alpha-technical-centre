@@ -4,6 +4,9 @@ All notable changes to Upstream Quick-Look Financial Model are recorded here. Fo
 
 ## [Unreleased]
 
+### Changed
+- Renamed APEX Quick Look Financial Model, in the Hub, on its page (title, heading, social tags, footer) and on the public home and Our Tools pages, and in the staff edition.
+
 ### Added
 - Staff edition, Alpha International tab: a Deal screen. It runs 300 single oil fields (5 regimes, 3 oil prices around the rail Brent, 5 sizes, 4 development costs) through the current deal terms. It shows the entry hurdle (project IRR) needed to repay the partner loan within a chosen number of years, the IRR below which it is never repaid, and peak amount owed as a share of capex. Charts plot years to repay and value kept against IRR (current portfolio marked), with a heatmap by price and development cost and a table by IRR band. Summary logic is `screenSummary` and `irrMid` in `hub/tools/alpha-intl-finance.js`, unit tested.
 - Staff edition, Alpha International tab: a "Release tax before the sweep" switch, on by default. Off follows Heads of Terms §9 as signed: every distribution is swept to the lender while a loan is outstanding, and the principals pay their tax from their own pocket. The setting is saved with runs.

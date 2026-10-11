@@ -4,6 +4,7 @@ All notable changes to Opportunity Register are recorded here. Format: [Keep a C
 
 ## [Unreleased]
 ### Changed
+- No longer offered in the Hub's Open in tool menu (its sidecar has no project context). The page and its runs are unchanged.
 - The register list itself now lives in the Hub (Today page: globe, country drill-down and register table backed by the Vault's projects). This page remains the calculator: it opens from the project toolbar with the project id in the address (?project=) and saves its potential-model runs to that project. Its own list and localStorage store are kept for use outside the Hub.
 
 ## [2.2.0] - 2026-09-29

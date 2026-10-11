@@ -4,6 +4,9 @@ All notable changes to Nodal Analysis are recorded here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Changed
+- Renamed APEX Nodal Analysis, in the Hub, on its page (title, eyebrow, social tags) and on the public home and Our Tools pages; last in the Hub's Open in tool menu.
+
 ## [1.2.0] - 2026-07-08
 
 ### Added
