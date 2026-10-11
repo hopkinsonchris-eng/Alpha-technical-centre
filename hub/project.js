@@ -433,6 +433,41 @@ function orderedTools(ctx, cat) {
  * only that project. APEX 3D Model from v1.120.0; APEX Asset Intelligence joins when its new version reads the Vault.
  */
 export const PROJECT_APPS = new Set(['apex-3d-model']);
+/**
+ * Project apps that also take a Vault-signed pass after the `#` (11 Oct 2026): Hub staff open them without a key of
+ * their own. The pass lasts 12 h (vault/src/api/toolpass.routes.ts); the link asks for one when the menu opens, and again
+ * on a later open once it is an hour old, so viewing a project costs no request. No pass (Vault not set up, offline)
+ * leaves the plain link: the app asks for a key.
+ */
+export const PASS_APPS = new Set(['apex-3d-model']);
+const PASS_REFRESH_MS = 60 * 60 * 1000;
+const passes = new Map();                                        // tool id → { at, req }: one request per tool an hour, however often the menu is rebuilt
+function passFor(tool) {
+  const hit = passes.get(tool);
+  if (hit && Date.now() - hit.at < PASS_REFRESH_MS) return hit.req;
+  const req = api('/api/tool-pass', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ tool }) })
+    .then((r) => (r.ok && r.body && typeof r.body.pass === 'string' ? r.body.pass : ''));
+  const entry = { at: Date.now(), req };
+  passes.set(tool, entry);
+  req.then((pass) => { if (!pass && passes.get(tool) === entry) passes.delete(tool); });   // no pass: try again on the next open
+  return req;
+}
+function armPasses(links) {
+  const refresh = (cachedOnly) => {
+    for (const a of links) {
+      const tool = a.getAttribute('data-toolbar-tool');
+      if (cachedOnly && !passes.has(tool)) continue;
+      passFor(tool).then((pass) => {
+        const u = new URL(a.href);
+        u.hash = pass ? 'hubpass=' + pass : '';
+        a.href = u.href;
+        a.setAttribute('data-pass', pass ? '1' : '0');
+      });
+    }
+  };
+  refresh(true);                                                   // a rebuilt menu reuses a pass already fetched
+  return () => refresh(false);
+}
 /** The tools that read ?asset= beside ?project= (wave 7 PR3, A10): the nodal analysis and the reservoir simulator, and any tool whose manifest says so. */
 const ASSET_TOOLS = new Set(['nodal-analysis', 'reservoir-simulator']);
 /** The first attached field (kind field, else the first attached asset of any kind): what a new run is about by default. */
@@ -499,6 +534,8 @@ function renderActions(ctx) {
   }
   add(wrap, btn, menu);
   attachMenu(btn, menu);
+  const refreshPasses = armPasses([...menu.querySelectorAll('a[data-toolbar-tool][data-external="1"]')].filter((a) => PASS_APPS.has(a.getAttribute('data-toolbar-tool'))));
+  btn.addEventListener('click', refreshPasses);
   add(host, wrap);
   // … overflow (partners): Archive behind a confirm sheet; Restore stays a plain action.
   if (ctx.person && ctx.person.role === 'partner' && !isHoldingProject(p)) {
