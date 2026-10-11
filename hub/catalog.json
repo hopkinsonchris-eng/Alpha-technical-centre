@@ -25,7 +25,11 @@
         {
           "version": "Unreleased",
           "date": "",
-          "sections": {}
+          "sections": {
+            "Changed": [
+              "Opens inside the project from the Hub's Open in tool menu (`?project=<id>&name=<name>`, new tab), showing only that project; needs the app at v1.120.0 or later. The app now calls itself APEX 3D Model."
+            ]
+          }
         },
         {
           "version": "1.0.0",
@@ -986,6 +990,6 @@
       "hub": null
     }
   ],
-  "built_at": "2026-10-11T09:00:34.271Z",
-  "commit": "b1f87bc"
+  "built_at": "2026-10-11T11:03:34.416Z",
+  "commit": "c4079f1"
 }
