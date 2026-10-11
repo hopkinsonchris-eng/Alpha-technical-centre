@@ -644,6 +644,12 @@ async function renderGlobe(person) {
       const scored = !!(c.risk && typeof c.risk.score === 'number');
       if (scored || underSanctions(c)) halos.set(c.code, { tone: scored ? toneOf(c.risk.score) : '', rising: scored && c.risk.trend === 'rising', sanctions: underSanctions(c) });
     }
+    // 11 Oct 2026: every country World Monitor scores High wears a pulsing red halo, with or without a project there.
+    for (const c of Array.isArray(data.high_risk) ? data.high_risk : []) {
+      if (!c || typeof c.code !== 'string' || halos.has(c.code)) continue;
+      halos.set(c.code, { tone: 'red', rising: c.trend === 'rising', sanctions: false, unheld: true });
+      if (c.name && !names.has(c.code)) names.set(c.code, c.name);
+    }
     // The section reports what the globe actually wears, so a mark the globe drops cannot pass unnoticed.
     const worn = globe ? globe.setRisk(halos) : halos;
     const codesOf = (pred) => [...worn].filter(([, v]) => pred(v)).map(([k]) => k).sort();
@@ -651,6 +657,7 @@ async function renderGlobe(person) {
     setOrDrop('data-halos', [...worn].filter(([, v]) => v.tone).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => k + ':' + v.tone).join(','));
     setOrDrop('data-halo-rising', codesOf((v) => v.rising).join(','));
     setOrDrop('data-halo-sanctions', codesOf((v) => v.sanctions).join(','));
+    setOrDrop('data-halo-watch', codesOf((v) => v.unheld).join(','));
     if (data.unplaced && data.unplaced.length) {
       unplaced.removeAttribute('hidden');
       const n = data.unplaced.length;
@@ -751,7 +758,10 @@ async function renderGlobe(person) {
     setLv('attention', st + ' stale · ' + ex + ' NDA expiring', st + ' obsoletos · ' + ex + ' NDA por vencer');
     const open = (sec.getAttribute('data-rings') || '').split(',').includes(code);
     setLv('round', open ? 'open round' : 'no open round', open ? 'ronda abierta' : 'sin ronda abierta');
-    const r = c && c.risk;
+    // 11 Oct 2026: a country with no project reads its High score from the summary's high_risk list.
+    const hr = !c && data && Array.isArray(data.high_risk) ? data.high_risk.find((h) => h && h.code === code) : null;
+    const r = (c && c.risk) || hr;
+    setLv('watch', hr ? 'high, no project here' : c && r && toneOf(r.score) === 'red' ? 'high' : '', hr ? 'alto, sin proyecto aquí' : c && r && toneOf(r.score) === 'red' ? 'alto' : '');
     if (r && typeof r.score === 'number') {
       const tone = toneOf(r.score), lab = RISK_LABEL[tone] || ['', ''];
       const tr = r.trend === 'rising' ? ['rising', 'al alza'] : r.trend === 'falling' ? ['falling', 'a la baja'] : r.trend ? [r.trend, r.trend === 'stable' ? 'estable' : r.trend] : ['', ''];

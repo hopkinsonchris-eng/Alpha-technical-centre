@@ -690,12 +690,37 @@ test('W8-AC2: a halo per held country in the tone of its World Monitor score, a 
   await page.locator('#globe').screenshot({ path: path.join(EVIDENCE, 'w8-risk-globe.png') });
 });
 
+test('11 Oct 2026: every country World Monitor scores High wears a pulsing red halo, with or without a project; the legend says so in both languages', async ({ page }) => {
+  const high = { ...RISKY, high_risk: [
+    { code: 'SY', name: { en: 'Syria', es: 'Siria' }, score: 91, trend: 'rising' },
+    { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, score: 82, trend: 'rising' },
+    { code: 'YE', name: { en: 'Yemen', es: 'Yemen' }, score: 88, trend: 'stable' },
+  ] };
+  await stubApi(page, { '/api/countries': (u, r) => json(r, high) });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  const sec = page.locator('#sec-globe');
+  await expect(sec).toHaveAttribute('data-halos', 'KZ:amber,SY:red,VE:red,YE:red');          // VE keeps its own reading and marks
+  await expect(sec).toHaveAttribute('data-halo-watch', 'SY,YE');                               // the two with no project
+  await expect(sec).toHaveAttribute('data-halo-rising', 'SY,VE');
+  await expect(sec).toHaveAttribute('data-halo-sanctions', 'VE');
+  const watch = page.locator('#globe-legend [data-legend="watch"]');
+  await expect(watch).toHaveCount(1);
+  await expect(watch).toContainText('High risk pulses, where we work or not');
+  await page.locator('aside .nav-lang button[data-lang="es"]').click();
+  await expect(watch).toContainText('El riesgo alto late, trabajemos allí o no');
+  await page.locator('aside .nav-lang button[data-lang="en"]').click();
+  mkdirSync(EVIDENCE, { recursive: true });
+  await page.locator('#globe').screenshot({ path: path.join(EVIDENCE, 'w9-high-risk-pulse.png') });
+});
+
 test('W8-AC2 (none): countries without a reading wear no halo', async ({ page }) => {
   await stubApi(page, { '/api/countries': (u, r) => json(r, { ...COUNTRIES, countries: COUNTRIES.countries.map((c) => ({ ...c, risk: null })) }) });
   await page.goto('/hub/index.html');
   await ready(page); await globeReady(page);
   await expect(page.locator('#sec-globe')).not.toHaveAttribute('data-halos', /.+/);
   await expect(page.locator('#sec-globe')).not.toHaveAttribute('data-halo-rising', /.+/);
+  await expect(page.locator('#sec-globe')).not.toHaveAttribute('data-halo-watch', /.+/);
 });
 
 test('W8-AC3: the panel risk line and the register group head carry the trend, the sanctions mark and the change, only when the summary has them', async ({ page }) => {

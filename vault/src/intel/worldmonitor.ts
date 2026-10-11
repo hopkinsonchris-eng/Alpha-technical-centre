@@ -123,6 +123,24 @@ export async function countryRisk(code: string): Promise<WmResult<CountryRisk>> 
   } };
 }
 
+/** One country's line in the all-country risk table. */
+export interface RiskScore { code: string; score: number; trend: string | null; computed_at: string | null }
+/**
+ * GET /api/intelligence/v1/get-risk-scores → the Country Instability Index of every country World Monitor tracks, in one
+ * call (cached an hour like every reader). `region` is the ISO2 code; anything else (a region name, 'global') is dropped.
+ */
+export async function riskScores(): Promise<WmResult<RiskScore[]>> {
+  const r = await get('/api/intelligence/v1/get-risk-scores', {});
+  if (!r.ok) return r;
+  const out: RiskScore[] = [];
+  for (const c of list(r.data, 'ciiScores')) {
+    const code = String(c?.region ?? '').trim().toUpperCase(), score = num(c?.combinedScore);
+    if (!/^[A-Z]{2}$/.test(code) || score === null) continue;
+    out.push({ code, score, trend: enumWord(c.trend), computed_at: whenIso(c.computedAt) });
+  }
+  return { ...r, data: out.sort((a, b) => a.code.localeCompare(b.code)) };
+}
+
 /** GET /api/conflict/v1/list-acled-events for the last `days` days (start/end are epoch milliseconds). */
 export async function acledEvents(code: string, days = 30): Promise<WmResult<AcledEvent[]>> {
   const now = nowMs();
