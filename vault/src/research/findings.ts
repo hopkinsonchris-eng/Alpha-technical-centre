@@ -29,6 +29,29 @@ export interface FiledFinding { id: string; status: 'created' | 'updated' | 'unc
 const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
 const sha = (s: string) => 'sha256:' + createHash('sha256').update(s).digest('hex');
 
+/**
+ * 12 Oct 2026: World Monitor's intel timeline titles some news records "GDELT 190 — in Libya" with no summary beyond
+ * "source: <site>". The article's address carries its headline (the last path segment, words split on hyphens, numeric
+ * ids dropped), so a placeholder is filed under that headline instead; any other title is kept. hub/hub.js reads the
+ * same rule for records filed before this.
+ */
+export const PLACEHOLDER_TITLE = /^GDELT\s+\d+\s*[—–-]/;
+export function headlineFromUrl(url: string | null | undefined): string | null {
+  try {
+    const u = new URL(String(url));
+    const seg = u.pathname.split('/').filter(Boolean).pop() ?? '';
+    const words = decodeURIComponent(seg).replace(/\.(s?html?|php|aspx?)$/i, '').replace(/,\d+.*$/, '').split(/[-_+]+/).filter(w => w && !/^\d+$/.test(w) && !/^(art|amp|index)$/i.test(w));
+    if (words.length < 3) return null;
+    const s = words.join(' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  } catch { return null; }
+}
+export function readableTitle(title: string, url: string | null | undefined): string {
+  if (!PLACEHOLDER_TITLE.test(title) || !url) return title;
+  let host = ''; try { host = new URL(String(url)).hostname.replace(/^www\./, ''); } catch { /* no host */ }
+  return headlineFromUrl(url) ?? `Article on ${host || 'the web'}`;
+}
+
 /** Files one finding; the same (project, source, external id) is updated when its content changed and left alone otherwise. */
 export async function fileFinding(db: Db, projectId: string, f: Finding, by: string, now: Date): Promise<FiledFinding> {
   const quote = squash(f.text).slice(0, 600);

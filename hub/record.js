@@ -22,7 +22,7 @@
      ctx    { project, entryById, lineage, catalog, versionsOf(id), open(ref, title),
               openDraft(rec), openReply(rec), highlight, passage, siteRoot }
    ============================================================ */
-import { mk, dv, add, setText, fmtShortDate, num, RUN_STATUS, api, openTarget, armOnOpen } from './hub.js';
+import { mk, dv, add, setText, fmtShortDate, num, RUN_STATUS, api, openTarget, armOnOpen, readableTitle, meaningfulQuote, hostOf } from './hub.js';
 import { firstReason } from './components/stale-badge.js';
 import { buildViewer, viewerKind, originalUrl } from './viewer.js';
 
@@ -285,6 +285,31 @@ function dossierView(rec) {
   return host;
 }
 
+/**
+ * 12 Oct 2026: a research finding (news, a filing, a company signal) is a link with a line of context, not a paper: its
+ * headline, the site, the date, the quote when there is one worth reading, and the article itself one tap away. Only the
+ * link was filed, and the view says so, rather than "No abstract was stored for this paper".
+ */
+function newsView(rec) {
+  const ex = rec.extracted || {};
+  const url = ex.url || (rec.origin && rec.origin.url) || '';
+  const host = mk('div', 'hub-rp-news', null, null, { 'data-news': rec.id });
+  add(host, dv('p', 'hub-rp-headline', readableTitle(rec.title, url), { 'data-news-headline': '' }));
+  const line = mk('p', 'hub-note-s hub-muted', null, null, { 'data-news-meta': '' });
+  const bits = [];
+  if (url) bits.push(dv('span', null, hostOf(url)));
+  const d = (ex.published_at || rec.authored_at) ? fmtShortDate(ex.published_at || rec.authored_at) : null;
+  if (d) bits.push(mk('span', null, d.en, d.es));
+  const via = ex.source === 'intel-timeline' ? ['World Monitor intel timeline', 'cronología de inteligencia de World Monitor'] : ex.source === 'gdelt' ? ['GDELT via World Monitor', 'GDELT vía World Monitor'] : ex.source ? [String(ex.source), String(ex.source)] : null;
+  if (via) bits.push(mk('span', null, 'found by ' + via[0], 'hallado por ' + via[1]));
+  bits.forEach((b, i) => add(line, i ? document.createTextNode(' · ') : null, b));
+  add(host, line);
+  if (meaningfulQuote(ex.quote) && ex.quote !== rec.title) add(host, dv('blockquote', 'hub-proposal-quote', '“' + ex.quote + '”', { 'data-news-quote': '' }));
+  if (url) add(host, add(mk('a', 'btn btn-primary btn-sm', 'Open the article ↗', 'Abrir el artículo ↗', { href: url, target: '_blank', rel: 'noopener noreferrer', 'data-news-open': '' })));
+  add(host, mk('p', 'hub-muted hub-note-s', 'Only the link was filed; the article itself is on the publisher\'s site.', 'Solo se registró el enlace; el artículo está en el sitio del editor.', { 'data-news-note': '' }));
+  return host;
+}
+
 /** Authors, year, DOI and the abstract: from extracted (the ingest now carries abstract, doi and authors on the item) or, for an older
  *  paper, from the stored bibliographic record (metadata and abstract only, never full text). No Download: the original is the metadata. */
 async function paperView(rec) {
@@ -403,6 +428,7 @@ async function renderDoc({ ref, rec, node, entry, ctx }) {
   let mode = 'none';
   if (ex.kind === 'draft' && Array.isArray(ex.paragraphs)) { mode = 'draft'; add(view, draftView(rec, ctx)); }
   else if (ex.kind === 'dossier') { mode = 'dossier'; add(view, dossierView(rec)); }
+  else if (ex.kind === 'research' && !ex.abstract && !ex.doi && type !== 'paper') { mode = 'news'; add(view, newsView(rec)); }
   else if (isPaper) { mode = 'paper'; add(view, await paperView(rec)); }
   else if (hasOriginal && !isTextRecord(rec, type)) { mode = 'viewer'; add(view, buildViewer(rec, { download: false })); }
   else if (indexed(rec) && isTextRecord(rec, type)) {

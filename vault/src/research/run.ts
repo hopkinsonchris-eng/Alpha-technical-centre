@@ -23,7 +23,7 @@ import { locateFields } from './locate.ts';
 import { citedBy } from '../api/settings.routes.ts';
 import type { LocateOptions } from '../assets/gazetteers.ts';
 import { researchWebEnabled, searchWeb, webFindings, RESEARCH_WEB_OFF } from './web.ts';
-import { fileFinding, proposeFromFinding, readFacts, type Finding } from './findings.ts';
+import { fileFinding, proposeFromFinding, readableTitle, readFacts, type Finding } from './findings.ts';
 
 export interface ResearchOptions {
   now?: () => Date; storage?: Storage; provider?: LlmProvider | null; fetch?: typeof fetch; clock?: Clock;
@@ -250,7 +250,7 @@ export async function runResearch(db: Db, projectId: string, opts: ResearchOptio
         else {
           count('intel-timeline').queries++;
           const r = await intelTimeline(q.country, 40);
-          if (r.ok) for (const x of r.data) await file('intel-timeline', { source: 'intel-timeline', external_id: `intel:${x.id}`, url: x.url, title: x.title, text: x.summary ?? x.title, published_at: x.occurred_at, authors: [], query: q.country, asset_ids: [], facts: { domain: x.domain, category: x.category } });
+          if (r.ok) for (const x of r.data) { const title = readableTitle(x.title, x.url); await file('intel-timeline', { source: 'intel-timeline', external_id: `intel:${x.id}`, url: x.url, title, text: x.summary && !/^\s*source:\s*\S+\s*$/i.test(x.summary) ? x.summary : title, published_at: x.occurred_at, authors: [], query: q.country, asset_ids: [], facts: { domain: x.domain, category: x.category } }); }
           else count('intel-timeline').skipped = r.reason;
         }
       }

@@ -1573,3 +1573,6 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 .hub .hub-rename-error { color: var(--bad); font-size: 13px; margin: 8px 0 0; padding: 0; }
 .hub .hub-rename-form .hub-actions { padding: 14px 0 0; }
 
+/* 12 Oct 2026: a research finding opens as its headline, site and link (record.js newsView) */
+.hub-rp-news { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.hub-rp-headline { font-size: 17px; font-weight: 600; line-height: 1.35; margin: 0; }
