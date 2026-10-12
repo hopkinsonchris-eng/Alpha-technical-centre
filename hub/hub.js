@@ -512,6 +512,31 @@ function advisoryLine(level, sanctioned = false) {
   if (sanctioned) withSeps(el, [sanctionsMark()]);
   return el;
 }
+/**
+ * 12 Oct 2026: World Monitor's intel timeline titles some news records "GDELT 190 — in Libya" and gives no summary beyond
+ * "source: <site>". The article's own address carries its headline, so read it from there: the last path segment, words
+ * split on hyphens, numeric ids dropped. Any other title is kept as it is.
+ */
+export const PLACEHOLDER_TITLE = /^GDELT\s+\d+\s*[—–-]/;
+export function headlineFromUrl(url) {
+  try {
+    const u = new URL(url);
+    const seg = u.pathname.split('/').filter(Boolean).pop() || '';
+    const words = decodeURIComponent(seg).replace(/\.(s?html?|php|aspx?)$/i, '').replace(/,\d+.*$/, '').split(/[-_+]+/).filter((w) => w && !/^\d+$/.test(w) && !/^(art|amp|index)$/i.test(w));
+    if (words.length < 3) return null;
+    const s = words.join(' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  } catch (e) { return null; }
+}
+export const hostOf = (url) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+/** The title to show for a research record: its own, or the headline its link carries when World Monitor sent a placeholder. */
+export function readableTitle(title, url) {
+  const t = String(title || '');
+  if (!PLACEHOLDER_TITLE.test(t) || !url) return t;
+  return headlineFromUrl(url) || ('Article on ' + (hostOf(url) || 'the web'));
+}
+/** A quote worth showing: not World Monitor's bare "source: www.example.com". */
+export const meaningfulQuote = (q) => !!q && !/^\s*source:\s*\S+\s*$/i.test(String(q));
 /** 11 Oct 2026: the summary's world lines, code → {score, trend, sanctions_on}, for countries with no project; {} without them. */
 const worldOf = (data) => (data && data.world && typeof data.world === 'object' ? data.world : {});
 export const toneOf = (score) => (score === null || score === undefined ? '' : score >= 70 ? 'red' : score >= 40 ? 'amber' : 'green');

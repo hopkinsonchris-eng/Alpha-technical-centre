@@ -196,3 +196,42 @@ test('W8-AC16: the indexing line counts the states and names the next run; each 
   await expect(wait).toContainText('143.º de 610');
 });
 
+
+/* ── 12 Oct 2026: research records without an original stay out of Files; they open as a link ── */
+
+const NEWS = '00000000-0000-4000-8000-0000000009a1';
+const NEWS_URL = 'https://www.africaintelligence.com/north-africa/2026/10/06/new-setback-for-kuwaiti-group-al-kharafi-in-battle-with-libyan-sovereign-fund,110890783-art';
+const NEWS_FILE = { id: NEWS, name: 'GDELT 190 — in Libya', title: 'GDELT 190 — in Libya', path: 'Research', source: 'research', type: 'note', mime: null, size: null, version: 1, created_at: '2026-10-08T07:00:00.000Z', authored_at: '2026-10-06T00:00:00.000Z', index: { state: 'no_original', chunks: 0 } };
+const NEWS_ITEM = { id: NEWS, type: 'note', title: 'GDELT 190 — in Libya', created_at: '2026-10-08T07:00:00.000Z', authored_at: '2026-10-06T00:00:00.000Z', authors: ['chris'], client_id: null, project_id: PID, asset_ids: [], organisation_ids: [], legal_tag: 'lt-public',
+  origin: { source: 'research', adapter: 'intel-timeline', url: NEWS_URL }, storage_key: null, mime: null, content_hash: 'sha256:' + 'b'.repeat(64), version: 1, supersedes: null, reference_no: null, filing: {},
+  extracted: { kind: 'research', source: 'intel-timeline', query: 'LY', quote: 'source: www.africaintelligence.com', url: NEWS_URL, published_at: '2026-10-06T00:00:00.000Z', domain: 'conflict' }, stale: false, tags: ['research'], cites: [] };
+const withNews = { ...FILES_BODY, count: FILES_BODY.count + 1, index: { ...INDEX_SUMMARY, no_original: 1 }, files: [...FILES_BODY.files, NEWS_FILE] };
+
+test('12 Oct 2026: a research record without an original is hidden from Files with one line that shows it, and the tab counts only files', async ({ page }) => {
+  await openFiles(page, 'en', { ['/api/projects/' + PID + '/files']: (route) => json(route, withNews), ['/api/items/' + NEWS]: (route) => json(route, NEWS_ITEM) });
+  const files = page.locator('#files');
+  await expect(page.locator('#tab-files .n')).toHaveText(String(FILE_LIST.length));
+  await expect(files).not.toContainText('GDELT 190');
+  await expect(page.locator('#files-index')).not.toContainText('without an original');   // the index line counts only the files shown
+  const note = files.locator('[data-files-hidden]');
+  await expect(note).toContainText('1 research record without an original is hidden; it is in the Research tab.');
+  await note.locator('[data-files-toggle]').click();
+  await expect(files).toContainText('GDELT 190');
+  await expect(files.locator('[data-files-hidden]')).toContainText('1 record without an original is shown.');
+  await files.locator('[data-files-toggle]').click();
+  await expect(files).not.toContainText('GDELT 190');
+});
+
+test('12 Oct 2026: a research finding opens as its headline, site and date with the article one tap away, not as an empty paper', async ({ page }) => {
+  await openFiles(page, 'en', { ['/api/projects/' + PID + '/files']: (route) => json(route, withNews), ['/api/items/' + NEWS]: (route) => json(route, NEWS_ITEM) });
+  await page.locator('#files [data-files-toggle]').click();
+  await page.locator('#files').getByText('GDELT 190 — in Libya').click();
+  const rp = page.locator('#record-panel');
+  await expect(rp.locator('[data-news-headline]')).toHaveText('New setback for kuwaiti group al kharafi in battle with libyan sovereign fund');
+  await expect(rp.locator('[data-news-meta]')).toContainText('africaintelligence.com');
+  await expect(rp.locator('[data-news-meta]')).toContainText('found by World Monitor intel timeline');
+  await expect(rp.locator('[data-news-open]')).toHaveAttribute('href', NEWS_URL);
+  await expect(rp.locator('[data-news-quote]')).toHaveCount(0);                 // "source: www.…" is not a quote
+  await expect(rp).not.toContainText('No abstract was stored');
+  await expect(rp.locator('[data-news-note]')).toContainText('Only the link was filed');
+});

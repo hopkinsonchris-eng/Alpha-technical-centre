@@ -27,7 +27,7 @@
      POST /api/runs/:id/status           wave 7 PR3 (H6, W7-AC11): Mark reviewed (members) and Mark final (partners), from the run panel
    Every string a person reads carries data-en and data-es.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, fmtStamp, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord, armOnOpen } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, fmtStamp, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord, armOnOpen, readableTitle, meaningfulQuote } from './hub.js';
 import './components/stale-badge.js';
 import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
@@ -1680,14 +1680,15 @@ function renderResearch(ctx, first) {
         const line = mk('div', 'hub-finding-head');
         const d = f.date ? fmtShortDate(f.date) : null;
         if (d) add(line, mk('span', 'd', d.en, d.es));
-        add(line, dv('b', null, f.title));
+        const shown = readableTitle(f.title, f.url);                       // 12 Oct 2026: a placeholder title reads its headline from the link
+        add(line, dv('b', null, shown));
         if (f.url) { const a = dv('a', 'hub-inline-link', (() => { try { return new URL(f.url).hostname.replace(/^www\./, ''); } catch { return 'source'; } })(), { href: f.url, target: '_blank', rel: 'noopener noreferrer', 'data-url': '' }); add(line, document.createTextNode(' — '), a); }
         if (f.query) add(line, document.createTextNode(' · '), mk('span', 'hub-muted', 'query ', 'consulta '), dv('span', 'hub-query mono', f.query, { 'data-query': '' }));
         const open = mk('button', 'btn btn-outline btn-sm', 'open', 'abrir', { type: 'button', 'data-open': f.id });
-        open.addEventListener('click', () => openRecord({ ref: 'doc:' + f.id, title: f.title, trigger: open }));
+        open.addEventListener('click', () => openRecord({ ref: 'doc:' + f.id, title: shown, trigger: open }));
         add(line, open);
         add(li, line);
-        if (f.quote) add(li, dv('blockquote', 'hub-proposal-quote', '“' + f.quote + '”', { 'data-quote': '' }));
+        if (meaningfulQuote(f.quote)) add(li, dv('blockquote', 'hub-proposal-quote', '“' + f.quote + '”', { 'data-quote': '' }));
         add(ul, li);
       }
       add(sec, ul);
@@ -1739,6 +1740,31 @@ function renderResearch(ctx, first) {
 }
 
 // 11 Oct 2026: Files first, and the tab a project opens on: a large project's timeline is thousands of filings nobody reads.
+/**
+ * 12 Oct 2026: the Files tab lists what can be opened. Records filed without an original (research findings: a news link,
+ * a filing reference) are hidden behind one line that shows them on a tap; they stay in the Research tab, where they read
+ * as links. The tab's count is the files with an original.
+ */
+const hasOriginal = (f) => !(f && f.index && f.index.state === 'no_original');
+function paintFiles(host, files, index) {
+  const kept = files.filter(hasOriginal), hidden = files.length - kept.length;
+  let showAll = false;
+  const paint = () => {
+    const list = showAll ? files : kept;
+    const idx = showAll ? index : (kept.length && index ? { ...index, no_original: 0 } : null);
+    renderFileTree(host, list, { index: idx, onOpen: (f, btn) => openRecord({ ref: 'doc:' + f.id, title: f.name || f.title, trigger: btn }) });
+    if (!hidden) return;
+    const note = mk('p', 'hub-muted hub-note-s', null, null, { 'data-files-hidden': String(hidden) });
+    add(note, mk('span', null, showAll ? hidden + (hidden === 1 ? ' record without an original is shown. ' : ' records without an original are shown. ') : hidden + (hidden === 1 ? ' research record without an original is hidden; it is in the Research tab. ' : ' research records without an original are hidden; they are in the Research tab. '),
+      showAll ? hidden + (hidden === 1 ? ' registro sin original se muestra. ' : ' registros sin original se muestran. ') : hidden + (hidden === 1 ? ' registro de investigación sin original está oculto; está en la pestaña Investigación. ' : ' registros de investigación sin original están ocultos; están en la pestaña Investigación. ')));
+    const t = mk('button', 'hub-linkbtn', showAll ? 'Hide them' : 'Show them', showAll ? 'Ocultarlos' : 'Mostrarlos', { type: 'button', 'data-files-toggle': '' });
+    t.addEventListener('click', () => { showAll = !showAll; paint(); });
+    add(note, t);
+    host.insertBefore(note, host.querySelector('.hub-ft-tree') || null);
+  };
+  paint();
+}
+
 const TABS = [
   ['files', 'Files', 'Archivos'], ['timeline', 'Timeline', 'Cronología'], ['vintages', 'Headline numbers', 'Cifras principales'], ['research', 'Research', 'Investigación'], ['lineage', 'Lineage', 'Linaje'],
   ['basis', 'Basis notes', 'Notas de bases'], ['lessons', 'Lessons in scope', 'Lecciones en alcance'], ['scorecard', 'Scorecard', 'Ficha de evaluación'],
@@ -2215,10 +2241,10 @@ async function init() {
   // Wave 8 PR 2 (W8-AC10): the Files tab, from GET /api/projects/:id/files; a row opens the record panel.
   const projectFiles = flR.ok && flR.body && Array.isArray(flR.body.files) ? flR.body.files : null;
   if (!projectFiles) tabError($('#panel-files'), flR, 'The files could not be listed.', 'No se pudieron listar los archivos.');
-  else renderFileTree($('#files'), projectFiles, { index: flR.body.index || null, onOpen: (f, btn) => openRecord({ ref: 'doc:' + f.id, title: f.name || f.title, trigger: btn }) });
+  else paintFiles($('#files'), projectFiles, flR.body.index || null);
 
   buildTabs({
-    timeline: entries.length, files: projectFiles ? projectFiles.length : null, vintages: vintages.length, basis: basis.length,
+    timeline: entries.length, files: projectFiles ? projectFiles.filter(hasOriginal).length : null, vintages: vintages.length, basis: basis.length,
     research: researchOk ? listOf(rsR.body, 'findings').length : null,
     lessons: lessonsOk ? lessons.length : null,
     scorecard: card.fail + card.na ? bi(card.fail + card.na + ' fail', card.fail + card.na + ' fallan') : null,
