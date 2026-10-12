@@ -21,6 +21,9 @@ const SCORES = { ciiScores: [
   { region: 'IQ' },
 ], strategicRisks: [] };
 
+// The advisory index: the most severe travel level per country (US, UK, Australian registers).
+const ADVISORY = { CD: 'do-not-travel', LY: 'do-not-travel', SY: 'do-not-travel', KZ: 'caution', ML: 'reconsider', XX1: 'do-not-travel', NG: 'info' };
+
 let db: Db;
 let calls: string[] = [];
 const fetchWith = (scores: (() => Response) | null) => (async (url: string) => {
@@ -28,6 +31,7 @@ const fetchWith = (scores: (() => Response) | null) => (async (url: string) => {
   const ep = new URL(url).pathname.split('/').pop();
   if (ep === 'get-risk-scores' && scores) return scores();
   const body = ep === 'get-risk-scores' ? SCORES : ep === 'list-sanctions-pressure' ? { entries: [], countries: [], programs: [] }
+    : ep === 'list-security-advisories' ? { advisories: [], byCountry: ADVISORY }
     : ep === 'get-country-risk' ? { cii: { combinedScore: 64, trend: 'TREND_DIRECTION_STABLE', computedAt: T0 } } : {};
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 }) as unknown as typeof fetch;
@@ -52,22 +56,31 @@ test('the summary lists every High country, held or not, at 70 and over, with it
   configureWorldMonitor({ apiKey: KEY, fetch: fetchWith(null) });
   calls = [];
   const s = await summary();
-  assert.deepEqual(s.high_risk, [
-    { code: 'MX', name: { en: 'Mexico', es: 'México' }, score: 70, trend: null, sanctions_on: [] },
-    { code: 'SY', name: s.high_risk[1].name, score: 91.4, trend: 'stable', sanctions_on: sanctionsOn('SY') },
-    { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, score: 82, trend: 'rising', sanctions_on: sanctionsOn('VE') },
-  ]);
-  assert.ok(s.high_risk[2].sanctions_on.length > 0, 'Venezuela carries its sanctions, project or not');
-  assert.equal(s.high_risk[1].name.en, 'Syria');
-  assert.ok(!s.high_risk.some((c: any) => c.code === 'KZ'), 'Elevated is not High');
+  const byCode = (c: string) => s.high_risk.find((h: any) => h.code === c);
+  assert.deepEqual(s.high_risk.map((h: any) => h.code), ['CD', 'LY', 'MX', 'SY', 'VE']);
+  assert.deepEqual(byCode('MX'), { code: 'MX', name: { en: 'Mexico', es: 'México' }, score: 70, trend: null, sanctions_on: [], basis: 'cii', advisory: null });
+  assert.deepEqual(byCode('SY'), { code: 'SY', name: byCode('SY').name, score: 91.4, trend: 'stable', sanctions_on: sanctionsOn('SY'), basis: 'cii', advisory: 'do-not-travel' });
+  assert.deepEqual(byCode('VE'), { code: 'VE', name: { en: 'Venezuela', es: 'Venezuela' }, score: 82, trend: 'rising', sanctions_on: sanctionsOn('VE'), basis: 'cii', advisory: null });
+  assert.ok(byCode('VE').sanctions_on.length > 0, 'Venezuela carries its sanctions, project or not');
+  assert.equal(byCode('SY').name.en, 'Syria');
+  // No World Monitor score: the travel advisory stands in, and says so.
+  assert.deepEqual(byCode('CD'), { code: 'CD', name: byCode('CD').name, score: null, trend: null, sanctions_on: sanctionsOn('CD'), basis: 'advisory', advisory: 'do-not-travel' });
+  assert.equal(byCode('LY').basis, 'advisory');
+  assert.ok(!s.high_risk.some((c: any) => c.code === 'KZ'), 'Elevated is not High, and a score outranks the advisory');
+  assert.ok(!s.high_risk.some((c: any) => c.code === 'ML'), 'reconsider is not High');
+  assert.equal(s.world.ML.advisory, 'reconsider');
+  assert.equal(s.world.NG, undefined, 'an info line is no travel level');
+  assert.equal(s.world.XX1, undefined, 'only ISO2 codes');
+  assert.match(s.advisory_sources, /US State Department/);
+  assert.equal(s.countries.find((c: any) => c.code === 'KZ').advisory, 'caution', 'a held country carries its advisory beside its risk');
   assert.equal(calls.filter(u => u.includes('get-risk-scores')).length, 1);
   await summary();
   assert.equal(calls.filter(u => u.includes('get-risk-scores')).length, 1, 'cached for the hour');
   assert.ok(!JSON.stringify(s).includes(KEY));
   // Every scored country reads its score and sanctions, High or not, project or not; sanctioned countries without a score too.
-  assert.deepEqual(s.world.KZ, { score: 64, trend: 'stable', sanctions_on: [] });
+  assert.deepEqual(s.world.KZ, { score: 64, trend: 'stable', sanctions_on: [], advisory: 'caution' });
   assert.equal(s.world.VE.score, 82);
-  assert.deepEqual(s.world.RU, { score: null, trend: null, sanctions_on: sanctionsOn('RU') });
+  assert.deepEqual(s.world.RU, { score: null, trend: null, sanctions_on: sanctionsOn('RU'), advisory: null });
   assert.ok(s.world.RU.sanctions_on.length > 0);
   assert.equal(s.world.IQ.score, null, 'a line without a score adds none');
 });
@@ -80,7 +93,7 @@ test('without a key the list is empty; a refused table is named in the notes and
   assert.equal(off.world_monitor.status, 'not_connected');
   configureWorldMonitor({ apiKey: KEY, fetch: fetchWith(() => new Response('{"code":"pro_required"}', { status: 403 })) });
   const gated = await summary();
-  assert.deepEqual(gated.high_risk, []);
+  assert.deepEqual(gated.high_risk.map((h: any) => [h.code, h.basis]), [['CD', 'advisory'], ['LY', 'advisory'], ['SY', 'advisory']], 'without the score table, the advisory still marks the do-not-travel countries');
   assert.ok(gated.world_monitor.notes.some((n: string) => /Pro/.test(n)));
   assert.equal(gated.countries.find((c: any) => c.code === 'KZ').risk.score, 64);
 });

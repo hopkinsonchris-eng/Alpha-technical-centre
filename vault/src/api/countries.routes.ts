@@ -13,7 +13,7 @@ import { ApiError, bad, canSee, iso, loadAccess, notFound, route, type Access, t
 import { countryName, isCountryCode } from '../opportunities.ts';
 import { openProvider, type LlmProvider } from '../llm/provider.ts';
 import { assembleCountryContext, withLiveRisk, writeBrief, type LiveRisk } from '../llm/brief.ts';
-import { countryRisk, programmeTarget, riskScores, sanctionPrograms, sanctionsOn, worldMonitorConfigured, NOT_CONNECTED, OFAC_COUNTRY_PROGRAMMES } from '../intel/worldmonitor.ts';
+import { advisoryLevels, countryRisk, programmeTarget, riskScores, sanctionPrograms, sanctionsOn, worldMonitorConfigured, ADVISORY_SOURCES, NOT_CONNECTED, OFAC_COUNTRY_PROGRAMMES, type AdvisoryLevel } from '../intel/worldmonitor.ts';
 import { recordRisk } from '../intel/risk-log.ts';
 import { locationCheck } from '../assets/geo.ts';
 
@@ -35,11 +35,21 @@ export interface CountryProject {
 /** The score from which World Monitor's reading is High: the Hub's red tone (hub/hub.js toneOf). */
 export const HIGH_RISK = 70;
 /** 11 Oct 2026: a country World Monitor scores High, held or not; the globe shades one with no project in pulsing red, with its marks. */
-export interface HighRisk { code: string; name: { en: string; es: string }; score: number; trend: string | null; /** the sanctions imposed on it, as the summary's sanctions_on */ sanctions_on: string[] }
+export interface HighRisk {
+  code: string; name: { en: string; es: string };
+  /** the World Monitor CII score; null when High rests on the travel advisory instead */ score: number | null; trend: string | null;
+  /** the sanctions imposed on it, as the summary's sanctions_on */ sanctions_on: string[];
+  /** 12 Oct 2026: 'cii' (World Monitor's score) or 'advisory' (no score: the travel advisory says do not travel) */ basis: 'cii' | 'advisory';
+  advisory: AdvisoryLevel | null;
+}
 /** 11 Oct 2026: what the summary knows of any country, project or not: its World Monitor score (null without one) and its sanctions. */
-export interface WorldLine { score: number | null; trend: string | null; sanctions_on: string[] }
+export interface WorldLine {
+  score: number | null; trend: string | null; sanctions_on: string[];
+  /** 12 Oct 2026: the most severe travel advisory level (see ADVISORY_SOURCES), the Hub's fallback where World Monitor has no score */
+  advisory: AdvisoryLevel | null;
+}
 export interface CountryRiskLine { score: number | null; level: string | null; trend: string | null; computed_at: string | null; fetched_at: string; sanctions_active: boolean | null; sanctions_count: number | null; /** the same list as the summary's sanctions_on */ sanctions_targeted_by: string[]; /** wave 8 (W8-AC1): the score's move since the previous distinct reading in the log, null on the first */ change: number | null; previous_computed_at: string | null }
-export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; /** the sanctions imposed on the country (sanctionsOn), known with or without World Monitor */ sanctions_on: string[]; risk: CountryRiskLine | null }
+export interface CountrySummary { code: string; name: { en: string; es: string }; projects: CountryProject[]; counts: { projects: number; stale: number; filing: number; expiring: number }; /** the sanctions imposed on the country (sanctionsOn), known with or without World Monitor */ sanctions_on: string[]; risk: CountryRiskLine | null; /** 12 Oct 2026: the travel advisory level, the fallback where risk has no score */ advisory: AdvisoryLevel | null }
 
 function expiringDays(acc: Access, p: ProjectRow): number | null {
   const tag = acc.tags.get(p.default_legal_tag);
@@ -120,15 +130,27 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const world: Record<string, WorldLine> = {};
     const sanctionedCodes = new Set<string>(Object.keys(OFAC_COUNTRY_PROGRAMMES));
     for (const p of programList ?? []) { const t = programmeTarget(String((p as any)?.program ?? '')); if (t) sanctionedCodes.add(t); }
-    for (const code of sanctionedCodes) { const on = sanctionsOn(code, programList); if (on.length) world[code] = { score: null, trend: null, sanctions_on: on }; }
+    for (const code of sanctionedCodes) { const on = sanctionsOn(code, programList); if (on.length) world[code] = { score: null, trend: null, sanctions_on: on, advisory: null }; }
+    // 12 Oct 2026: World Monitor scores only its 31 tier-1 countries. Everywhere else the travel advisory (the most severe
+    // level the US, UK and Australian registers give) stands in, always labelled as such: "do not travel" is High.
+    let advisory: Record<string, AdvisoryLevel> = {};
     if (connected) {
       const all = await riskScores();
-      if (all.ok) for (const c of all.data) {
-        world[c.code] = { score: c.score, trend: c.trend, sanctions_on: sanctionsOn(c.code, programList) };
-        if (c.score >= HIGH_RISK) high.push({ code: c.code, name: countryName(c.code), score: c.score, trend: c.trend, sanctions_on: world[c.code].sanctions_on });
-      }
+      if (all.ok) for (const c of all.data) world[c.code] = { score: c.score, trend: c.trend, sanctions_on: sanctionsOn(c.code, programList), advisory: null };
       else if (!riskNotes.includes(all.reason)) riskNotes.push(all.reason);
+      const adv = await advisoryLevels();
+      if (adv.ok) advisory = adv.data;
+      else if (!riskNotes.includes(adv.reason)) riskNotes.push(adv.reason);
+      for (const [code, level] of Object.entries(advisory)) {
+        if (world[code]) world[code].advisory = level;
+        else world[code] = { score: null, trend: null, sanctions_on: sanctionsOn(code, programList), advisory: level };
+      }
     }
+    for (const [code, w] of Object.entries(world)) {
+      if (w.score !== null && w.score >= HIGH_RISK) high.push({ code, name: countryName(code), score: w.score, trend: w.trend, sanctions_on: w.sanctions_on, basis: 'cii', advisory: w.advisory });
+      else if (w.score === null && w.advisory === 'do-not-travel') high.push({ code, name: countryName(code), score: null, trend: null, sanctions_on: w.sanctions_on, basis: 'advisory', advisory: w.advisory });
+    }
+    high.sort((a, b) => a.code.localeCompare(b.code));
     const countries: CountrySummary[] = [...byCode.entries()].map(([code, projects]) => ({
       code, name: countryName(code), projects,
       counts: {
@@ -139,10 +161,11 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
       },
       sanctions_on: sanctionsOn(code, programList),
       risk: risks.get(code) ?? null,
+      advisory: advisory[code] ?? null,
     })).sort((a, b) => a.name.en.localeCompare(b.name.en));
 
     x.a.scope = 'firm'; x.a.refs = visible.map(p => `project:${p.id}`); x.a.detail = { countries: countries.length, projects: visible.length, world_monitor: connected ? 'live' : 'not_connected' };
-    return { body: { countries, unplaced, high_risk: high, world, generated_at: x.now.toISOString(), world_monitor: connected ? { status: 'live', notes: riskNotes } : { status: 'not_connected', reason: NOT_CONNECTED, notes: [] } } };
+    return { body: { countries, unplaced, high_risk: high, world, advisory_sources: ADVISORY_SOURCES, generated_at: x.now.toISOString(), world_monitor: connected ? { status: 'live', notes: riskNotes } : { status: 'not_connected', reason: NOT_CONNECTED, notes: [] } } };
   });
 
   /**

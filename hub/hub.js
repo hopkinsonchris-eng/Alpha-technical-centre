@@ -493,6 +493,25 @@ function flags(att) {
   return out;
 }
 /** The register's three tones for a World Monitor index: under 40 managed, under 70 elevated, 70 and over high. */
+/**
+ * 12 Oct 2026: World Monitor scores only its 31 tier-1 countries. Elsewhere the travel advisory stands in (the most severe
+ * level the US, UK and Australian registers give, from World Monitor's advisory index), always labelled as the advisory:
+ * "do not travel" is High (red), "reconsider" Elevated (amber); a lower level is not a risk reading and draws nothing.
+ */
+export const ADVISORY_WORD = { 'do-not-travel': ['do not travel', 'no viajar'], reconsider: ['reconsider travel', 'reconsiderar el viaje'], caution: ['exercise caution', 'extremar la precaución'], normal: ['normal precautions', 'precauciones normales'] };
+export const advisoryTone = (level) => (level === 'do-not-travel' ? 'red' : level === 'reconsider' ? 'amber' : '');
+/** "Travel advisory: do not travel (US, UK, Australia; no World Monitor score)", with its tone dot and the sanctions mark. */
+function advisoryLine(level, sanctioned = false) {
+  const w = ADVISORY_WORD[level];
+  if (!w) return sanctioned ? add(mk('span', 'hub-risk-line'), sanctionsMark()) : null;
+  const el = mk('span', 'hub-risk-line', null, null, { 'data-risk-basis': 'advisory', 'data-advisory': level });
+  const tone = advisoryTone(level);
+  if (tone) add(el, mk('span', 'hub-rag', null, null, { 'data-risk': tone, 'aria-hidden': 'true' }));
+  add(el, mk('span', null, 'Travel advisory: ' + w[0], 'Aviso de viaje: ' + w[1]),
+    mk('span', 'hub-muted', ' (US, UK, Australia; no World Monitor score)', ' (EE. UU., Reino Unido, Australia; sin puntuación de World Monitor)'));
+  if (sanctioned) withSeps(el, [sanctionsMark()]);
+  return el;
+}
 /** 11 Oct 2026: the summary's world lines, code → {score, trend, sanctions_on}, for countries with no project; {} without them. */
 const worldOf = (data) => (data && data.world && typeof data.world === 'object' ? data.world : {});
 export const toneOf = (score) => (score === null || score === undefined ? '' : score >= 70 ? 'red' : score >= 40 ? 'amber' : 'green');
@@ -602,6 +621,7 @@ async function renderGlobe(person) {
   const count = $('#globe-count');
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let globe = null;
+  let tipNote = new Map();                                                   // 12 Oct 2026: code → the advisory the hover names
   const tip = $('#globe-tip');
   if (geo) {
     try {
@@ -612,7 +632,8 @@ async function renderGlobe(person) {
         onHover: (h) => {
           if (!h) { tip.setAttribute('hidden', ''); return; }
           // Wave 7 PR6 (O, W7-AC22): a country wearing the ring is named with its open round.
-          tip.textContent = h.name + (h.open ? (lang() === 'es' ? ' · Ronda de licencias abierta' : ' · Open licence round') : '');
+          const note = h.code && tipNote.get(h.code);
+          tip.textContent = h.name + (h.open ? (lang() === 'es' ? ' · Ronda de licencias abierta' : ' · Open licence round') : '') + (note ? note[lang() === 'es' ? 1 : 0] : '');
           tip.style.left = h.x + 'px'; tip.style.top = h.y + 'px'; tip.removeAttribute('hidden');
         },
       });
@@ -644,12 +665,13 @@ async function renderGlobe(person) {
     // A sanctioned country wears its mark with or without a reading (a halo without a tone draws only the mark).
     for (const c of data.countries) {
       const scored = !!(c.risk && typeof c.risk.score === 'number');
-      if (scored || underSanctions(c)) halos.set(c.code, { tone: scored ? toneOf(c.risk.score) : '', rising: scored && c.risk.trend === 'rising', sanctions: underSanctions(c) });
+      const advTone = scored ? '' : advisoryTone(c.advisory);                // 12 Oct 2026: no score, the advisory's tone
+      if (scored || advTone || underSanctions(c)) halos.set(c.code, { tone: scored ? toneOf(c.risk.score) : advTone, rising: scored && c.risk.trend === 'rising', sanctions: underSanctions(c), basis: scored ? 'cii' : advTone ? 'advisory' : '' });
     }
     // 11 Oct 2026: every country World Monitor scores High with no project of ours is shaded in pulsing red, with its rising and sanctions marks.
     for (const c of Array.isArray(data.high_risk) ? data.high_risk : []) {
       if (!c || typeof c.code !== 'string' || halos.has(c.code)) continue;
-      halos.set(c.code, { tone: 'red', rising: c.trend === 'rising', sanctions: Array.isArray(c.sanctions_on) && c.sanctions_on.length > 0, unheld: true });
+      halos.set(c.code, { tone: 'red', rising: c.trend === 'rising', sanctions: Array.isArray(c.sanctions_on) && c.sanctions_on.length > 0, unheld: true, basis: c.basis === 'advisory' ? 'advisory' : 'cii' });
       if (c.name && !names.has(c.code)) names.set(c.code, c.name);
     }
     // A sanctioned country with no project and no High reading still wears its diamond on the country (Russia, Libya, Cuba…).
@@ -665,6 +687,11 @@ async function renderGlobe(person) {
     setOrDrop('data-halo-rising', codesOf((v) => v.rising).join(','));
     setOrDrop('data-halo-sanctions', codesOf((v) => v.sanctions).join(','));
     setOrDrop('data-halo-watch', codesOf((v) => v.unheld && v.tone === 'red').join(','));
+    setOrDrop('data-halo-advisory', codesOf((v) => v.basis === 'advisory').join(','));   // 12 Oct 2026: toned by the travel advisory, not a score
+    tipNote = new Map([...worn].filter(([, v]) => v.basis === 'advisory').map(([k]) => {
+      const lv = (data.countries.find((x) => x.code === k) || {}).advisory || (worldOf(data)[k] || {}).advisory;
+      const w = ADVISORY_WORD[lv]; return [k, w ? [' · travel advisory: ' + w[0], ' · aviso de viaje: ' + w[1]] : null];
+    }).filter(([, v]) => v));
     setOrDrop('data-halo-outline', codesOf((v) => !v.unheld && v.tone === 'red').join(','));   // held and High: gold with a pulsing red outline
     if (data.unplaced && data.unplaced.length) {
       unplaced.removeAttribute('hidden');
@@ -742,7 +769,11 @@ async function renderGlobe(person) {
     // A country with no project reads its score and sanctions from the summary's world lines (11 Oct 2026).
     const wl = !c ? worldOf(data)[code] : null;
     const wRisk = wl && typeof wl.score === 'number' ? { score: wl.score, level: null, trend: wl.trend, fetched_at: data && data.generated_at } : null;
-    if (riskEl) { riskEl.textContent = ''; const line = c ? riskLine(c.risk, underSanctions(c)) : riskLine(wRisk, !!(wl && wl.sanctions_on && wl.sanctions_on.length)); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
+    // With no World Monitor score, the travel advisory reads instead, named as the advisory (12 Oct 2026).
+    const cScored = !!(c && c.risk && typeof c.risk.score === 'number');
+    const adv = c ? (cScored ? null : c.advisory) : (wRisk ? null : wl && wl.advisory);
+    const sanc = c ? underSanctions(c) : !!(wl && wl.sanctions_on && wl.sanctions_on.length);
+    if (riskEl) { riskEl.textContent = ''; const line = adv && ADVISORY_WORD[adv] ? advisoryLine(adv, sanc) : c ? riskLine(c.risk, sanc) : riskLine(wRisk, sanc); if (line) { add(riskEl, line); riskEl.removeAttribute('hidden'); } else riskEl.setAttribute('hidden', ''); }
     for (const p of projects) add(ul, panelRow(p, names));                 // W7-AC6: the same stateline as the register
     const createRow = $('#country-create-row');
     if (createRow) { if (person && person.role === 'partner') createRow.removeAttribute('hidden'); else createRow.setAttribute('hidden', ''); }
@@ -772,13 +803,18 @@ async function renderGlobe(person) {
     // 11 Oct 2026: a country with no project reads its High score from the summary's high_risk list.
     const hr = !c ? worldOf(data)[code] || null : null;
     const r = (c && c.risk) || (hr && typeof hr.score === 'number' ? hr : null);
-    const high = r && toneOf(r.score) === 'red';
+    const advL = !(r && typeof r.score === 'number') ? (c ? c.advisory : hr && hr.advisory) : null;   // the advisory stands in without a score
+    const high = (r && toneOf(r.score) === 'red') || advL === 'do-not-travel';
+    setLv('advisory', ADVISORY_WORD[advL] ? 'used here' : '', ADVISORY_WORD[advL] ? 'usado aquí' : '');
     setLv('watch', high ? (c ? 'high' : 'high, no project here') : '', high ? (c ? 'alto' : 'alto, sin proyecto aquí') : '');
     if (r && typeof r.score === 'number') {
       const tone = toneOf(r.score), lab = RISK_LABEL[tone] || ['', ''];
       const tr = r.trend === 'rising' ? ['rising', 'al alza'] : r.trend === 'falling' ? ['falling', 'a la baja'] : r.trend ? [r.trend, r.trend === 'stable' ? 'estable' : r.trend] : ['', ''];
       setLv('halo', Math.round(r.score) + ' · ' + lab[0] + (tr[0] ? ' · ' + tr[0] : ''), Math.round(r.score) + ' · ' + lab[1] + (tr[1] ? ' · ' + tr[1] : ''));
       setLv('rising', tr[0] || 'no trend', tr[1] || 'sin tendencia');
+    } else if (ADVISORY_WORD[advL]) {
+      setLv('halo', 'advisory: ' + ADVISORY_WORD[advL][0] + ' (no World Monitor score)', 'aviso: ' + ADVISORY_WORD[advL][1] + ' (sin puntuación de World Monitor)');
+      setLv('rising', 'no trend', 'sin tendencia');
     } else { for (const k of ['halo', 'rising']) setLv(k, 'no reading', 'sin lectura'); }
     const sn = sanctionsOf(c) || (hr && Array.isArray(hr.sanctions_on) ? hr.sanctions_on : null);
     setLv('sanctions', sn ? (sn.length ? sn.join(', ') : 'none') : 'no reading', sn ? (sn.length ? sn.join(', ') : 'ninguna') : 'sin lectura');
@@ -1174,6 +1210,7 @@ async function renderRegister(person, info) {
     const n = rows.length;
     const nSpan = add(mk('span', 'n'), mk('span', null, n + (n === 1 ? ' project' : ' projects'), n + (n === 1 ? ' proyecto' : ' proyectos')));
     if (c && c.risk && c.risk.score !== null && c.risk.score !== undefined) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'World Monitor ' + Math.round(c.risk.score), 'World Monitor ' + Math.round(c.risk.score), { 'data-risk-score': String(c.risk.score) }))
+    else if (c && ADVISORY_WORD[c.advisory]) add(nSpan, document.createTextNode(' · '), mk('span', 'hub-risk-n', 'travel advisory: ' + ADVISORY_WORD[c.advisory][0], 'aviso de viaje: ' + ADVISORY_WORD[c.advisory][1], { 'data-risk-basis': 'advisory' }));   // 12 Oct 2026: no score, named as the advisory
     if (c) withSeps(nSpan, riskMarks(c.risk, underSanctions(c)));                    // wave 8 (W8-AC3): the same marks as the panel and the map
     const att = c ? { stale: c.counts.stale, filing: c.counts.filing, expiring_days: c.counts.expiring ? Math.min(...c.projects.filter((p) => p.attention.expiring_days !== null).map((p) => p.attention.expiring_days)) : null } : null;
     add(head, mk('span', 'name', nm.en, nm.es), nSpan, add(mk('span', 'flags'), ...flags(att)));
