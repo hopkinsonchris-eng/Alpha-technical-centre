@@ -740,6 +740,41 @@ test('11 Oct 2026: a country with no project reads its World Monitor score and i
   await expect(page.locator('#country-risk')).toContainText('World Monitor 31');
 });
 
+test('12 Oct 2026: where World Monitor has no score the travel advisory stands in, named as the advisory everywhere: do not travel shades the DRC; a held country with no score takes its advisory tone', async ({ page }) => {
+  const adv = { ...COUNTRIES,
+    countries: COUNTRIES.countries.map((c) => (c.code === 'KZ' ? { ...c, risk: null, advisory: 'reconsider' } : c)),
+    high_risk: [{ code: 'CD', name: { en: 'Democratic Republic of the Congo', es: 'República Democrática del Congo' }, score: null, trend: null, sanctions_on: ['OFAC Democratic Republic of the Congo sanctions'], basis: 'advisory', advisory: 'do-not-travel' }],
+    world: { CD: { score: null, trend: null, sanctions_on: ['OFAC Democratic Republic of the Congo sanctions'], advisory: 'do-not-travel' }, ML: { score: null, trend: null, sanctions_on: [], advisory: 'reconsider' } },
+    advisory_sources: 'US State Department, UK FCDO and Australian Smartraveller' };
+  await stubApi(page, { '/api/countries': (u, r) => json(r, adv) });
+  await page.goto('/hub/index.html');
+  await ready(page); await globeReady(page);
+  const sec = page.locator('#sec-globe');
+  await expect(sec).toHaveAttribute('data-halos', /CD:red/);
+  await expect(sec).toHaveAttribute('data-halos', /KZ:amber/);
+  await expect(sec).toHaveAttribute('data-halo-watch', /CD/);
+  await expect(sec).toHaveAttribute('data-halo-advisory', 'CD,KZ');
+  await expect(page.locator('#globe-legend [data-legend="advisory"]')).toContainText('No World Monitor score: travel advisory used (US, UK, Australia)');
+  await expect(page.locator('#register [data-country="KZ"] [data-risk-basis="advisory"]')).toHaveText('travel advisory: reconsider travel');
+  await page.goto('/hub/index.html?country=CD');
+  await ready(page); await globeReady(page);
+  const risk = page.locator('#country-risk');
+  await expect(risk.locator('[data-risk-basis="advisory"]')).toContainText('Travel advisory: do not travel');
+  await expect(risk).toContainText('(US, UK, Australia; no World Monitor score)');
+  await expect(risk).not.toContainText('World Monitor 0');
+  await expect(risk.locator('[data-risk-sanctions]')).toContainText('under sanctions');
+  const legend = page.locator('#globe-legend');
+  await expect(legend.locator('[data-legend-value="halo"]')).toHaveText('advisory: do not travel (no World Monitor score)');
+  await expect(legend.locator('[data-legend-value="advisory"]')).toHaveText('used here');
+  await expect(legend.locator('[data-legend-value="watch"]')).toHaveText('high, no project here');
+  await page.locator('aside .nav-lang button[data-lang="es"]').click();
+  await expect(risk).toContainText('Aviso de viaje: no viajar');
+  await page.locator('aside .nav-lang button[data-lang="en"]').click();
+  await page.goto('/hub/index.html?country=ML');
+  await ready(page); await globeReady(page);
+  await expect(page.locator('#country-risk')).toContainText('Travel advisory: reconsider travel');
+});
+
 test('W8-AC2 (none): countries without a reading wear no halo', async ({ page }) => {
   await stubApi(page, { '/api/countries': (u, r) => json(r, { ...COUNTRIES, countries: COUNTRIES.countries.map((c) => ({ ...c, risk: null })) }) });
   await page.goto('/hub/index.html');

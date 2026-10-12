@@ -255,6 +255,28 @@ export async function advisories(code: string): Promise<WmResult<Advisory[]>> {
   return { ...r, data: rows };
 }
 
+/** The four travel levels World Monitor's advisory index uses, most severe first. */
+export const ADVISORY_LEVELS = ['do-not-travel', 'reconsider', 'caution', 'normal'] as const;
+export type AdvisoryLevel = typeof ADVISORY_LEVELS[number];
+/** Where the advisory index comes from, for the Hub to say so: the highest level any of these registers gives. */
+export const ADVISORY_SOURCES = 'US State Department, UK FCDO and Australian Smartraveller';
+/**
+ * GET /api/intelligence/v1/list-security-advisories → byCountry: ISO2 → the most severe travel level any of the
+ * registers gives (do-not-travel, reconsider, caution, normal), for every country they cover. The same call (and so
+ * the same cached answer) as advisories(); one call answers every country.
+ */
+export async function advisoryLevels(): Promise<WmResult<Record<string, AdvisoryLevel>>> {
+  const r = await get('/api/intelligence/v1/list-security-advisories', {});
+  if (!r.ok) return r;
+  const by = r.data?.byCountry && typeof r.data.byCountry === 'object' ? r.data.byCountry : {};
+  const out: Record<string, AdvisoryLevel> = {};
+  for (const [k, v] of Object.entries(by)) {
+    const code = String(k).trim().toUpperCase(), level = String(v ?? '').trim().toLowerCase();
+    if (/^[A-Z]{2}$/.test(code) && (ADVISORY_LEVELS as readonly string[]).includes(level)) out[code] = level as AdvisoryLevel;
+  }
+  return { ...r, data: out };
+}
+
 /** GET /api/sanctions/v1/list-sanctions-pressure (Pro), kept to the country. */
 export async function sanctions(code: string): Promise<WmResult<Sanctions>> {
   const r = await get('/api/sanctions/v1/list-sanctions-pressure', { max_items: '200' });
