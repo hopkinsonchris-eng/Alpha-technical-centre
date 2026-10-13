@@ -272,3 +272,19 @@ test('the rules never guess an asset when the record names two', () => {
   const f = ruleFiling({ id: 'x', type: 'report', title: 'Smith A-1 and Frost 2 logs.pdf', client_id: null, project_id: PID, origin: {}, extracted: {}, asset_ids: [] }, assets);
   assert.equal(f?.folder, 'subsurface/wells');
 });
+
+test('W9-AC6: a file sorted under Wells before its well was attached moves into the well\'s folder on the next backlog run', async () => {
+  const id = await item({ title: 'Brown 7 cased hole logs.pdf' });
+  await fileItem(db, id, { provider: null });
+  assert.equal((await current(id)).folder, 'subsurface/wells', 'no well named Brown 7 yet');
+  await db.query(`INSERT INTO assets (id, kind, name, country, parent_id) VALUES ('t-brown7', 'well', 'Brown 7', 'US', 't-pc')`);
+  await db.query(`UPDATE projects SET asset_ids = array_append(asset_ids, 't-brown7') WHERE id = $1`, [PID]);
+  const s = await fileBacklog(db, null, { limit: 500 });
+  assert.ok((s.narrowed ?? 0) >= 1);
+  assert.equal((await current(id)).folder, 'subsurface/wells/t-brown7');
+  // A person's choice of the general folder stays.
+  const kept = await item({ title: 'Brown 7 sketch.pdf' });
+  await post(partner, `/api/projects/${PID}/folders/file`, { item_id: kept, folder: 'subsurface/wells' });
+  await fileBacklog(db, null, { limit: 500 });
+  assert.equal((await current(kept)).folder, 'subsurface/wells');
+});

@@ -275,7 +275,7 @@ export async function fileItem(db: Db, itemId: string, opts: FileOptions): Promi
 
 /* ── the backlog ─────────────────────────────────────────────────────── */
 
-export interface BacklogSummary { filed: number; proposed: number; unsorted: number; failed: number; left: number; stopped_by?: 'budget' }
+export interface BacklogSummary { filed: number; proposed: number; unsorted: number; failed: number; left: number; stopped_by?: 'budget'; /** records moved from Fields, Reservoirs or Wells into the asset's own folder once it was attached */ narrowed?: number }
 
 /** Files up to `limit` records that have never been filed, oldest first, stopping at `budgetGbp` of model spend. */
 export async function fileBacklog(db: Db, provider: LlmProvider | null, opts: { limit?: number; budgetGbp?: number; now?: Date } = {}): Promise<BacklogSummary> {
@@ -295,5 +295,30 @@ export async function fileBacklog(db: Db, provider: LlmProvider | null, opts: { 
       if (res.status === 'filed') s.filed++; else if (res.status === 'proposed') s.proposed++; else if (res.status === 'unsorted') s.unsorted++;
     } catch { s.failed++; }
   }
+  s.narrowed = await narrowGeneric(db, limit, opts.now);
   return s;
+}
+
+const GENERIC = ['subsurface/fields', 'subsurface/reservoirs', 'subsurface/wells'];
+
+/**
+ * A record the machine filed under Fields, Reservoirs or Wells itself (no asset of that level attached yet) moves into
+ * the asset's own folder once the rules can name it, so attaching a well after the files arrived still sorts them.
+ * Rules only (no model cost); a person's filing is never touched.
+ */
+export async function narrowGeneric(db: Db, limit = 200, now?: Date): Promise<number> {
+  const rows = (await db.query<any>(
+    `SELECT i.id, i.type, i.title, i.client_id, i.project_id, i.origin, i.extracted, i.asset_ids FROM folder_filings f JOIN items i ON i.id = f.item_id
+      WHERE f.superseded_by IS NULL AND f.method <> 'manual' AND f.folder = ANY($1::text[]) AND NOT i.hidden AND i.project_id = f.project_id
+      ORDER BY f.filed_at, f.id LIMIT $2`, [GENERIC, limit])).rows;
+  const assets = new Map<string, FolderAsset[]>();
+  let moved = 0;
+  for (const r of rows) {
+    if (!assets.has(r.project_id)) assets.set(r.project_id, await projectAssets(db, r.project_id));
+    const f = ruleFiling({ ...r, asset_ids: r.asset_ids ?? [] }, assets.get(r.project_id)!);
+    if (!f || GENERIC.includes(f.folder) || !GENERIC.some(g => f.folder.startsWith(g + '/'))) continue;
+    await writeFiling(db, r, f, 'vault', now ?? new Date());
+    moved++;
+  }
+  return moved;
 }
