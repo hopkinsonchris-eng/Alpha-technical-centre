@@ -19,7 +19,7 @@
    Projects for the assign list: GET /api/projects. Every string a person reads carries data-en and data-es.
    No secrets, no provider calls: this file only talks to /api/* on the same origin (behind Cloudflare Access).
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, fmtStamp, loadGeo, slugify } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, fmtStamp, loadGeo, slugify, assetNoun } from './hub.js';
 import { roundQueueBody } from './components/rounds.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
@@ -350,7 +350,8 @@ function reviewRow(q, list) {
     // Wave 3: a field named in a document. Accept attaches the first gazetteer candidate, or the name alone when there is none;
     // the Fields card on the project file offers the full choice.
     add(row, icon(DOC_ICON, 'gold'));
-    add(body, add(mk('span', 't', null, null, { id: tid }), mk('span', null, 'Field named in a document: ', 'Campo nombrado en un documento: '), dv('b', null, p.name), document.createTextNode(' '), dv('span', 'hub-muted', '(' + (p.kind || 'field') + ')')));
+    const an = assetNoun(p.kind);                                        // 13 Oct 2026: a well reads as a well throughout
+    add(body, add(mk('span', 't', null, null, { id: tid }), mk('span', null, an[2] + ' named in a document: ', an[3] + ' nombrado en un documento: '), dv('b', null, p.name)));
     const proj = projects.find((x) => x.id === p.project_id);
     add(body, add(mk('span', 'm'), dv('a', 'hub-inline-link', (proj && proj.name) || p.project_id || '—', { href: '/hub/project.html?id=' + encodeURIComponent(p.project_id || '') + '#p-fields', 'data-proposal-project': p.project_id || '' }), dv('span', null, [p.item_title, p.anchor].filter(Boolean).map((x) => ' · ' + x).join(''))));
     if (p.quote) add(body, dv('span', 'm q-quote', '“' + p.quote + '”'));
@@ -390,9 +391,10 @@ function reviewRow(q, list) {
 
   const okLabel = q.kind === 'organisation' ? ['Add to registry', 'Añadir al registro'] : q.kind === 'asset' ? ['Attach', 'Adjuntar'] : q.kind === 'research' ? (p.fact_kind === 'operator' ? ['Set as operator', 'Fijar como operador'] : p.fact_kind === 'location' ? ['Set location', 'Fijar ubicación'] : ['File as fact', 'Archivar como hecho']) : q.kind === 'round' ? ['Confirm the date', 'Confirmar la fecha'] : ['Accept', 'Aceptar'];
   const ok = mk('button', 'btn btn-primary btn-sm', okLabel[0], okLabel[1], { type: 'button', 'data-action': 'accept', 'aria-describedby': tid });
-  const noLabel = q.kind === 'asset' ? ['Not a field', 'No es un campo'] : q.kind === 'research' ? (p.fact_kind === 'location' ? ['Not it', 'No es ese'] : ['Not a fact', 'No es un hecho']) : q.kind === 'round' ? ['Not a round date', 'No es una fecha de ronda'] : ['Reject', 'Rechazar'];
+  const an0 = q.kind === 'asset' ? assetNoun(p.kind) : null;
+  const noLabel = q.kind === 'asset' ? ['Not a ' + an0[0], an0[4]] : q.kind === 'research' ? (p.fact_kind === 'location' ? ['Not it', 'No es ese'] : ['Not a fact', 'No es un hecho']) : q.kind === 'round' ? ['Not a round date', 'No es una fecha de ronda'] : ['Reject', 'Rechazar'];
   const no = mk('button', 'btn btn-outline btn-sm', noLabel[0], noLabel[1], { type: 'button', 'data-action': 'reject', 'aria-describedby': tid });
-  ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : q.kind === 'asset' ? 'Field attached to the project; its dossier is filed.' : q.kind === 'research' ? 'Fact recorded with its quote.' : q.kind === 'round' ? 'Round date confirmed; it now counts on Today.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : q.kind === 'asset' ? 'Campo adjuntado al proyecto; su dosier queda archivado.' : q.kind === 'research' ? 'Hecho registrado con su cita.' : q.kind === 'round' ? 'Fecha de ronda confirmada; ya cuenta en Hoy.' : 'Aceptado.')));
+  ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : q.kind === 'asset' ? an0[2] + ' attached to the project; its dossier is filed.' : q.kind === 'research' ? 'Fact recorded with its quote.' : q.kind === 'round' ? 'Round date confirmed; it now counts on Today.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : q.kind === 'asset' ? an0[3] + ' adjuntado al proyecto; su dosier queda archivado.' : q.kind === 'research' ? 'Hecho registrado con su cita.' : q.kind === 'round' ? 'Fecha de ronda confirmada; ya cuenta en Hoy.' : 'Aceptado.')));
   no.addEventListener('click', () => act(row, list, '#n-review', () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/reject'), () => (q.kind === 'round' ? announce('Not a round date; nothing was recorded.', 'No es una fecha de ronda; no se registró nada.') : announce('Rejected.', 'Rechazado.'))));
   add(controls, ok, no);
   add(body, controls);

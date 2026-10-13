@@ -27,7 +27,7 @@
      POST /api/runs/:id/status           wave 7 PR3 (H6, W7-AC11): Mark reviewed (members) and Mark final (partners), from the run panel
    Every string a person reads carries data-en and data-es.
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, fmtStamp, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord, armOnOpen, readableTitle, meaningfulQuote } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, loadCatalog, fmtShortDate, fmtStamp, num, RUN_STATUS, STAGES, STAGE_ES, RISK_LABEL, loadGeo, openTarget, sourceWord, armOnOpen, readableTitle, meaningfulQuote, assetNoun } from './hub.js';
 import './components/stale-badge.js';
 import { firstReason } from './components/stale-badge.js';
 import { iconKind } from './components/timeline-list.js';
@@ -1252,7 +1252,8 @@ async function renderFields(ctx) {
     const actions = mk('div', 'hub-actions-row');
     const bare = mk('button', 'btn btn-outline btn-sm', 'Attach without a location', 'Adjuntar sin ubicación', { type: 'button', 'data-attach-bare': '' });
     bare.addEventListener('click', () => decide(q, {}, bare, li));
-    const no = mk('button', 'btn btn-outline btn-sm', 'Not a field', 'No es un campo', { type: 'button', 'data-reject': '' });
+    const an = assetNoun(pl.kind);                                       // 13 Oct 2026: "Not a well" for a well
+    const no = mk('button', 'btn btn-outline btn-sm', 'Not a ' + an[0], an[4], { type: 'button', 'data-reject': '' });
     no.addEventListener('click', () => decide(q, null, no, li));
     add(actions, bare, no);
     add(li, actions);
