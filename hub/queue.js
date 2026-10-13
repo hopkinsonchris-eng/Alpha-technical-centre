@@ -147,6 +147,17 @@ function unavailable(list, res) {
 }
 
 /** Run an action on a row: disable it, show the failure inline, call onDone(result) and drop the row on success. */
+/** 13 Oct 2026: the order of the asset hierarchy (vault/src/assets/hierarchy.ts KIND_LEVEL): a child sits under a lower number. */
+const ASSET_LEVEL = { country: 0, basin: 1, block: 2, field: 3, reservoir: 4, well: 5 };
+const parentCache = new Map();
+/** The assets attached to a project that a `kind` may sit under, nearest level first (fields before blocks and basins). */
+function parentsFor(projectId, kind) {
+  if (!parentCache.has(projectId)) parentCache.set(projectId, api('/api/projects/' + encodeURIComponent(projectId) + '/assets').then((r) => (r.ok && r.body && Array.isArray(r.body.assets) ? r.body.assets : [])));
+  return parentCache.get(projectId).then((assets) => assets
+    .filter((a) => a && ASSET_LEVEL[a.kind] !== undefined && ASSET_LEVEL[a.kind] < ASSET_LEVEL[kind])
+    .sort((a, b) => ASSET_LEVEL[b.kind] - ASSET_LEVEL[a.kind] || String(a.name).localeCompare(String(b.name))));
+}
+
 async function act(row, list, countId, call, onDone) {
   row.setAttribute('data-busy', '1');
   row.querySelectorAll('button, select, input').forEach((el) => { el.disabled = true; });
@@ -359,6 +370,24 @@ function reviewRow(q, list) {
     if (first) add(body, add(mk('span', 'm', null, null, { 'data-first-candidate': first.source + ':' + first.source_id }), mk('span', null, 'Accept attaches ', 'Aceptar adjunta '), dv('b', null, first.name), dv('span', null, ' (' + first.source + (Number.isFinite(first.lat) && Number.isFinite(first.lon) ? ', ' + first.lat + ', ' + first.lon : '') + ')')));
     else add(body, mk('span', 'm', 'No gazetteer match: Accept attaches the name without a location.', 'Sin coincidencia en gaceteros: Aceptar adjunta el nombre sin ubicación.'));
     accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept', first ? (first.asset_id ? { asset_id: first.asset_id } : { create: { name: first.name, kind: first.kind || p.kind || 'field', ...(Number.isFinite(first.lat) && Number.isFinite(first.lon) ? { lat: first.lat, lon: first.lon, location_source: first.source } : {}), source_id: first.source_id, source_url: first.source_url, detail: first.detail || undefined, country: first.country || undefined } }) : {});
+    // 13 Oct 2026: a well (or reservoir) with no gazetteer match goes under a field the project already has: one button per
+    // possible parent ("Attach under Parker Creek"), read from the project's attached assets; Attach alone stays beside them.
+    if (!first && ASSET_LEVEL[p.kind] > ASSET_LEVEL.field && p.project_id) {
+      const parents = mk('span', 'm q-parents', null, null, { 'data-parents': '' });
+      add(body, parents);
+      parentsFor(p.project_id, p.kind).then((list) => {
+        if (!list.length) return;
+        const pick = (parent) => () => act(row, list, '#n-review', () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept', { create: { name: p.name, kind: p.kind, parent_id: parent.id } }),
+          () => announce(an[2] + ' attached under ' + parent.name + '.', an[3] + ' adjuntado bajo ' + parent.name + '.'));
+        for (const parent of list.slice(0, 3)) {
+          const b = mk('button', 'btn btn-primary btn-sm', 'Attach under ' + parent.name, 'Adjuntar bajo ' + parent.name, { type: 'button', 'data-attach-under': parent.id });
+          b.addEventListener('click', pick(parent));
+          add(parents, b);
+        }
+        const plain = row.querySelector('[data-action="accept"]');
+        if (plain) { plain.classList.remove('btn-primary'); plain.classList.add('btn-outline'); setText(plain, 'Attach on its own', 'Adjuntar por sí solo'); }
+      });
+    }
   } else if (q.kind === 'research') {
     // Wave 4: an operator, licence or production figure a research finding states, with its verbatim quote.
     // Accept records it (the operator on the field, a production figure on the register's current); Not a fact closes it.

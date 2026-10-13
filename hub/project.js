@@ -1250,6 +1250,16 @@ async function renderFields(ctx) {
     if (!cands.length) add(ul, add(mk('li', 'hub-candidate'), mk('span', 'hub-muted', 'No gazetteer match: the Vault, Global Energy Monitor, GeoNames and Wikidata know no record by this name here.', 'Sin coincidencia en gaceteros: el Vault, Global Energy Monitor, GeoNames y Wikidata no conocen ningún registro con este nombre aquí.')));
     add(li, ul);
     const actions = mk('div', 'hub-actions-row');
+    // 13 Oct 2026: a well or reservoir goes under a field (or block, basin) the project already has.
+    const LEVEL = { basin: 1, block: 2, field: 3, reservoir: 4, well: 5 };
+    if (LEVEL[pl.kind] > LEVEL.field) {
+      const parents = (ctx.fields || []).filter((f) => LEVEL[f.kind] !== undefined && LEVEL[f.kind] < LEVEL[pl.kind]).sort((a, b) => LEVEL[b.kind] - LEVEL[a.kind] || String(a.name).localeCompare(String(b.name))).slice(0, 3);
+      for (const parent of parents) {
+        const u = mk('button', 'btn btn-primary btn-sm', 'Attach under ' + parent.name, 'Adjuntar bajo ' + parent.name, { type: 'button', 'data-attach-under': parent.id });
+        u.addEventListener('click', () => decide(q, { create: { name: pl.name, kind: pl.kind, parent_id: parent.id } }, u, li));
+        add(actions, u);
+      }
+    }
     const bare = mk('button', 'btn btn-outline btn-sm', 'Attach without a location', 'Adjuntar sin ubicación', { type: 'button', 'data-attach-bare': '' });
     bare.addEventListener('click', () => decide(q, {}, bare, li));
     const an = assetNoun(pl.kind);                                       // 13 Oct 2026: "Not a well" for a well

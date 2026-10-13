@@ -135,3 +135,21 @@ test('W3-AC5: accepting with a chosen candidate attaches it and files the dossie
   assert.equal((await h.db.query<any>('SELECT status FROM review_queue WHERE id = $1', [boscan.id])).rows[0].status, 'rejected');
   assert.ok(!(await h.db.query<any>('SELECT asset_ids FROM projects WHERE id = $1', [PID])).rows[0].asset_ids.some((a: string) => /boscan/.test(a)));
 });
+
+test('13 Oct 2026: a well named in a document is accepted under a field the project already has: created as a well with that field as its parent; a field cannot be the child of a well', async () => {
+  const ins = await h.db.query<any>(`INSERT INTO review_queue (id, kind, status, payload) VALUES (gen_random_uuid(), 'asset', 'open', $1::jsonb) RETURNING id`,
+    [JSON.stringify({ project_id: PID, name: 'Williams #1', kind: 'well', quote: 'Recommendation: Return Williams #1 to production', anchor: 'slide 18', source: 'model', candidates: [] })]);
+  const id = ins.rows[0].id;
+  const r = await h.app.request(`/api/queue/review/${id}/accept`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ create: { name: 'Williams #1', kind: 'well', parent_id: 'field:ve:barinas' } }) });
+  const t = await r.text();
+  assert.equal(r.status, 200, t);
+  const b: any = JSON.parse(t);
+  assert.equal(b.asset.kind, 'well');
+  assert.equal(b.asset.name, 'Williams #1');
+  assert.equal(b.asset.parent_id, 'field:ve:barinas');
+  assert.ok((await h.db.query<any>('SELECT asset_ids FROM projects WHERE id = $1', [PID])).rows[0].asset_ids.includes(b.asset.id));
+  const ins2 = await h.db.query<any>(`INSERT INTO review_queue (id, kind, status, payload) VALUES (gen_random_uuid(), 'asset', 'open', $1::jsonb) RETURNING id`,
+    [JSON.stringify({ project_id: PID, name: 'Upside Down', kind: 'field', candidates: [] })]);
+  const bad = await h.app.request(`/api/queue/review/${ins2.rows[0].id}/accept`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ create: { name: 'Upside Down', kind: 'field', parent_id: b.asset.id } }) });
+  assert.equal(bad.status, 400);
+});
