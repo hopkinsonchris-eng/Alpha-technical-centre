@@ -134,3 +134,13 @@ Follow-ups opened by wave 4:
 | F17 | Research findings cited in briefs and drafts | Findings are indexed but the brief does not yet prefer them | Add the `research` tag to the brief's retrieval scope |
 | F14 | Model web search per field | Closed by W4-D1 revised (#40) | — |
 | F18 | Regulator feeds filtered per field | The run uses the literature adapters only (the regulator feeds take no query) | A post-filter on snapshot rows by the project's field names |
+
+## Wave 9 shipped (13 Oct 2026)
+
+Design record: `wave9/01-project-folders.md` (practice scan P1–P10, choice sheet W9-D1–D4, gap statement, options, markup).
+
+| PR | What | Tests | Evidence |
+|---|---|---|---|
+| — | Project folders: migration 014, the numbered skeleton with asset and app folders, rules then the model with verbatim quotes, doubtful filings queued, people's moves as examples, partners-only Legal and Financial, checklists with waivers, the backlog in `ingest-sync`; the Files tab's Project folders view and the queue section; the timeline and lineage now honour partners-only records | folders (11), auth/db/boot migration counts, hub-folders (7) | `evidence/w9-project-folders.png`, `evidence/w9-folder-queue.png` |
+
+Follow-ups opened by wave 9: F19 gap letter, F20 APEX apps save to the Vault directly, F21 the oil-person reading pass (see `wave9/01-project-folders.md` §9).

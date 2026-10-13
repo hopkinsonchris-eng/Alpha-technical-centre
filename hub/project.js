@@ -40,6 +40,7 @@ import './components/lineage-graph.js';
 import { stateline } from './components/stateline.js';
 import { packController, packCard, packSheetBody, orderedSections } from './components/country-pack.js';
 import { renderFileTree } from './components/file-tree.js';
+import { renderFolderTree } from './components/folder-tree.js';
 import { mountAsk } from './components/ask.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
@@ -1776,6 +1777,44 @@ function paintFiles(host, files, index) {
   paint();
 }
 
+/* ── Wave 9 (W9-AC11): the project's folders, beside the source folders ─ */
+
+const FILES_VIEW_KEY = 'hub.files.view';
+const POST_JSON = (body) => ({ method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+
+/** Shows the Project folders / Source folders switch when the Vault answers the folders route; Project folders first. */
+function paintFolders(data) {
+  const sw = $('#files-view'), host = $('#files-folders'), source = $('#files');
+  if (!sw || !host) return;
+  if (!data) { sw.setAttribute('hidden', ''); host.setAttribute('hidden', ''); source.removeAttribute('hidden'); return; }
+  const pid = encodeURIComponent(projectId);
+  const say = (en, es) => setText($('#files-view-live'), en, es);
+  const reload = async () => { const r = await api('/api/projects/' + pid + '/folders'); if (r.ok && r.body) draw(r.body); };
+  const done = async (r, en, es) => {
+    if (!r.ok) { say((r.body && r.body.error && r.body.error.message) || 'That did not work.', 'No se pudo hacer.'); return false; }
+    say(en, es); await reload(); return true;
+  };
+  const draw = (body) => renderFolderTree(host, body, {
+    onOpen: (f, btn) => openRecord({ ref: 'doc:' + f.id, title: f.name || f.title, trigger: btn }),
+    onOpenRun: (r, btn) => openRecord({ ref: 'run:' + r.id, title: r.title || r.job, trigger: btn }),
+    move: async (id, folder) => done(await api('/api/projects/' + pid + '/folders/file', POST_JSON({ item_id: id, folder })), 'Filed.', 'Archivado.'),
+    accept: async (qid) => done(await api('/api/folders/proposals/' + encodeURIComponent(qid) + '/accept', POST_JSON({})), 'Filed where the AI suggested.', 'Archivado donde sugirió la IA.'),
+    waive: async (folder, expect, waived) => done(await api('/api/projects/' + pid + '/folders/waive', POST_JSON({ folder, expect, waived })), waived ? 'Marked not applicable.' : 'Marked as needed.', waived ? 'Marcado como no aplicable.' : 'Marcado como necesario.'),
+  });
+  draw(data);
+  let view = 'folders';
+  try { view = sessionStorage.getItem(FILES_VIEW_KEY) === 'source' ? 'source' : 'folders'; } catch (e) { /* storage off */ }
+  const show = (v) => {
+    view = v;
+    for (const b of sw.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === v));
+    if (v === 'folders') { host.removeAttribute('hidden'); source.setAttribute('hidden', ''); } else { source.removeAttribute('hidden'); host.setAttribute('hidden', ''); }
+    try { sessionStorage.setItem(FILES_VIEW_KEY, v); } catch (e) { /* storage off */ }
+  };
+  for (const b of sw.querySelectorAll('[data-view]')) b.addEventListener('click', () => show(b.getAttribute('data-view')));
+  sw.removeAttribute('hidden');
+  show(view);
+}
+
 const TABS = [
   ['files', 'Files', 'Archivos'], ['timeline', 'Timeline', 'Cronología'], ['vintages', 'Headline numbers', 'Cifras principales'], ['research', 'Research', 'Investigación'], ['lineage', 'Lineage', 'Linaje'],
   ['basis', 'Basis notes', 'Notas de bases'], ['lessons', 'Lessons in scope', 'Lecciones en alcance'], ['scorecard', 'Scorecard', 'Ficha de evaluación'],
@@ -2166,7 +2205,7 @@ async function init() {
   showVault(true);
   const project = pr.body;
 
-  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo, rsR, ctR, flR] = await Promise.all([
+  const [tlR, vR, lnR, noteR, lessonR, runsR, orgR, fileR, cat, geo, rsR, ctR, flR, fdR] = await Promise.all([
     api('/api/projects/' + enc + '/timeline'),
     api('/api/projects/' + enc + '/vintages'),
     api('/api/projects/' + enc + '/lineage'),
@@ -2180,6 +2219,7 @@ async function init() {
     api('/api/projects/' + enc + '/research'),
     api('/api/projects/' + enc + '/contacts'),                 // wave 7 (S15): the list Write to… uses
     api('/api/projects/' + enc + '/files'),                    // wave 8 PR 2 (W8-AC10): the Files tab
+    api('/api/projects/' + enc + '/folders'),                  // wave 9 (W9-AC11): the same records in the project's folders
   ]);
   const names = new Map();
   if (geo) for (const f of geo.features) if (!names.has(f.properties.iso2)) names.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es });
@@ -2253,6 +2293,7 @@ async function init() {
   const projectFiles = flR.ok && flR.body && Array.isArray(flR.body.files) ? flR.body.files : null;
   if (!projectFiles) tabError($('#panel-files'), flR, 'The files could not be listed.', 'No se pudieron listar los archivos.');
   else paintFiles($('#files'), projectFiles, flR.body.index || null);
+  paintFolders(fdR && fdR.ok && fdR.body && Array.isArray(fdR.body.folders) ? fdR.body : null);
 
   buildTabs({
     timeline: entries.length, files: projectFiles ? projectFiles.filter(hasOriginal).length : null, vintages: vintages.length, basis: basis.length,

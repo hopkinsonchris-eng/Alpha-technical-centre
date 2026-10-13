@@ -16,12 +16,15 @@ import { ingestItem, type IngestDeps } from '../ingest/index.ts';
 import { serviceSink, type ItemSink } from '../ingest/items-client.ts';
 import { syncWorkdrive, workdriveConfig, type SyncStats, type WorkdriveOptions } from '../ingest/workdrive.ts';
 import { booksConfig, syncBooks, type BooksOptions } from '../ingest/zoho-books.ts';
+import { fileBacklog, type BacklogSummary } from '../folders/classify.ts';
 
 export interface IngestSyncOptions {
   storage?: Storage; deps?: IngestDeps; sink?: ItemSink;
   /** false skips the source; options are passed through (tests inject fetch and config). Default: run when configured by env. */
   workdrive?: WorkdriveOptions | false; books?: BooksOptions | false;
   limit?: number;
+  /** false skips filing the folder backlog (wave 9); default: file it. */
+  folders?: boolean;
 }
 export interface IngestSyncSummary {
   workdrive: SyncStats | null; books: SyncStats | null;
@@ -30,6 +33,8 @@ export interface IngestSyncSummary {
   idle?: string;
   /** Set when the run's model-spend cap stopped it, with how many items wait for the next run. */
   stopped_by?: 'budget'; left?: number;
+  /** Wave 9: records that had never been filed into the project folders, filed this run within what is left of the cap. */
+  folders?: BacklogSummary;
 }
 
 /** Pounds of model spend one ingest-sync run may make; INGEST_BUDGET_GBP overrides. */
@@ -71,6 +76,14 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
         if (r.status === 'ok') summary.ingested++; else if (r.status === 'skipped') summary.skipped++; else summary.needs_attention++;
         await db.query(`UPDATE jobs SET status = 'ok', finished_at = now() WHERE name = 'ingest-queue' AND finished_at IS NULL AND summary->>'item_id' = $1`, [it.id]);
       } catch (e) { summary.failed++; summary.errors.push(`${it.id}: ${(e as Error).message}`); }
+    }
+    // Wave 9: records never filed into the project folders (research notes, mail, files from before the folders) are
+    // filed here, at most 200 a run, within whatever the cap has left; a run with no model files by the rules alone.
+    if (opts.folders !== false && !summary.stopped_by) {
+      const left = cap - (processSpendGbp() - spentBefore);
+      let provider = deps?.provider ?? null;
+      if (!deps) { try { provider = openProvider(); } catch { provider = null; } }
+      try { summary.folders = await fileBacklog(db, provider, { limit: 200, budgetGbp: Math.max(0, left) }); } catch (e) { summary.errors.push(`folders: ${(e as Error).message}`); }
     }
     for (const s of [summary.workdrive, summary.books]) if (s) summary.errors.push(...s.errors);
     await db.query(`UPDATE jobs SET status = 'ok', finished_at = now(), summary = $2::jsonb WHERE id = $1`, [job, JSON.stringify(summary)]);
