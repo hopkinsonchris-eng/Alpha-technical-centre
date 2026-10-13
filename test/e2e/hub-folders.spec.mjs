@@ -73,7 +73,7 @@ const FILES_BODY = { project_id: PID, count: 1, generated_at: '2026-10-08T07:00:
 const CATALOG = { tools: [], built_at: '2026-09-29T09:00:00.000Z', commit: 'abc1234' };
 
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-async function stubApi(page, who = PARTNER) {
+async function stubApi(page, who = PARTNER, opts = {}) {
   const posts = [];
   const where = {};
   await page.route('**/api/**', async (route) => {
@@ -91,7 +91,7 @@ async function stubApi(page, who = PARTNER) {
     if (p === '/api/me') return json(route, who);
     if (p === '/api/catalog') return json(route, CATALOG);
     if (p === '/api/projects/' + PID) return json(route, PROJECT);
-    if (p === '/api/projects/' + PID + '/folders') return json(route, foldersBody(who, where));
+    if (p === '/api/projects/' + PID + '/folders') { const b = foldersBody(who, where); if (opts.extra) { b.files.push(...opts.extra); b.unsorted += opts.extra.length; b.folders[0].count += opts.extra.length; } return json(route, b); }
     if (p === '/api/projects/' + PID + '/files') return json(route, FILES_BODY);
     if (p === '/api/projects/' + PID + '/timeline') return json(route, { project_id: PID, count: 0, entries: [] });
     if (p === '/api/projects/' + PID + '/vintages') return json(route, { project_id: PID, vintages: [] });
@@ -112,20 +112,26 @@ async function stubApi(page, who = PARTNER) {
   return posts;
 }
 const ready = (page) => page.locator('body[data-ready="1"]').waitFor();
-async function openFolders(page, who = PARTNER, lang = 'en') {
-  const posts = await stubApi(page, who);
+async function openFolders(page, who = PARTNER, lang = 'en', opts = {}) {
+  const posts = await stubApi(page, who, opts);
   await page.goto('/hub/project.html?id=' + PID);
   await ready(page);
   if (lang === 'es') await page.locator('.nav-lang button[data-lang="es"]').click();
+  // 13 Oct 2026: the WorkDrive tree is the default; Project folders is one tap away.
+  if (opts.stayOnSource !== true) await page.locator('#files-view [data-view="folders"]').click();
   return posts;
 }
 const node = (page, key) => page.locator(`#files-folders details[data-folder-key="${key}"]`);
 const open = async (page, key) => { const d = node(page, key); if (!(await d.evaluate((e) => e.open))) await d.locator('> summary').click(); };
 
 test('W9-AC11: the Files tab opens on the project folders: twelve numbered folders with counts, a folder per field and well, the apps with their runs, each row saying how it got there', async ({ page }) => {
-  await openFolders(page);
+  await openFolders(page, PARTNER, 'en', { stayOnSource: true });
   await expect(page.locator('#tab-files')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#files-view')).toBeVisible();
+  // The WorkDrive tree people know is what opens; Project folders is the second button.
+  await expect(page.locator('#files-view [data-view="source"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#files')).toBeVisible();
+  await page.locator('#files-view [data-view="folders"]').click();
   await expect(page.locator('#files-view [data-view="folders"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#files-folders')).toBeVisible();
   await expect(page.locator('#files')).toBeHidden();
@@ -154,8 +160,9 @@ test('W9-AC11: the Files tab opens on the project folders: twelve numbered folde
 
 test('W9-AC11: an unsorted record carries the AI\'s suggestion and quote; Accept files it there; Move to files anything anywhere', async ({ page }) => {
   const posts = await openFolders(page);
+  await open(page, 'unsorted');
   const scan = page.locator(`#files-folders [data-file-id="${SCAN}"]`);
-  await expect(scan).toBeVisible();                                   // Unsorted starts open
+  await expect(scan).toBeVisible();
   await expect(scan.locator('[data-suggestion="facilities"]')).toContainText('06 Facilities & infrastructure (61%)');
   await expect(scan).toContainText('“tank battery and flow lines”');
   await expect(page.locator('#folders-status')).toContainText('1 unsorted');
@@ -165,6 +172,8 @@ test('W9-AC11: an unsorted record carries the AI\'s suggestion and quote; Accept
   await expect(node(page, 'facilities')).toHaveAttribute('data-count', '1');
   // Move to: the news item goes to Basin & regional.
   await open(page, 'research'); await open(page, 'research/news');
+  await expect(page.locator('#files-folders select')).toHaveCount(0);   // no dropdown until a row asks for one
+  await page.locator(`#files-folders [data-move-open="${GDELT}"]`).click();
   const sel = page.locator(`#files-folders [data-move="${GDELT}"]`);
   await expect(sel.locator('option[value="subsurface/wells/w-a1"]')).toHaveText('05 Subsurface › Wells › Smith A-1');
   await sel.selectOption('subsurface/basin');
@@ -193,21 +202,41 @@ test('W9-AC11: each folder lists what it expects with a tick or a gap; a partner
   await ctx.close();
 });
 
-test('W9-AC11: Source folders shows the WorkDrive tree as before, and the choice holds while the tab is open', async ({ page }) => {
-  await openFolders(page);
-  await page.locator('#files-view [data-view="source"]').click();
+test('W9-AC11: Source folders is the WorkDrive tree as before and the default; a choice of Project folders is remembered', async ({ page }) => {
+  await openFolders(page, PARTNER, 'en', { stayOnSource: true });
   await expect(page.locator('#files')).toBeVisible();
   await expect(page.locator('#files-folders')).toBeHidden();
   await expect(page.locator('#files [data-file-id]')).toHaveCount(1);
+  await page.locator('#files-view [data-view="folders"]').click();
   await page.reload(); await ready(page);
-  await expect(page.locator('#files-view [data-view="source"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#files-view [data-view="folders"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#files-folders')).toBeVisible();
+  await page.locator('#files-view [data-view="source"]').click();
+  await page.reload(); await ready(page);
   await expect(page.locator('#files')).toBeVisible();
+});
+
+test('13 Oct 2026: six thousand files not yet sorted: the page says sorting is in progress, shows fifty at a time and builds no dropdown until asked', async ({ page }) => {
+  const extra = Array.from({ length: 6000 }, (_, i) => ({ id: u(100000 + i), name: `PC_${String(i).padStart(4, '0')}.tif`, title: `PC_${i}.tif`, path: WD + '/Reserves VDR', source: 'zoho-workdrive', type: 'image', mime: 'image/tiff', size: 1000, version: 1, created_at: '2026-10-08T09:00:00.000Z', authored_at: null, folder: 'unsorted', filing: null, suggestion: null }));
+  const t0 = Date.now();
+  await openFolders(page, PARTNER, 'en', { extra });
+  await expect(page.locator('#files-folders [data-pending]')).toContainText('6,000 files have not been looked at yet');
+  await expect(page.locator('#files-folders [data-pending]')).toContainText('nothing for you to do');
+  expect(await page.locator('#files-folders [data-file-id]').count(), 'closed folders build no rows').toBe(0);
+  await open(page, 'unsorted');
+  await expect(page.locator('#files-folders [data-file-id]')).toHaveCount(50);
+  await expect(page.locator('#files-folders [data-more="unsorted"]')).toContainText('Show 50 more (5,951 left)');
+  expect(await page.locator('#files-folders select').count()).toBe(0);
+  await page.locator('#files-folders [data-more="unsorted"]').click();
+  await expect(page.locator('#files-folders [data-file-id]')).toHaveCount(100);
+  expect(Date.now() - t0, 'the tab stays quick').toBeLessThan(15000);
 });
 
 test('W9-AC11: in Spanish every folder, badge and control reads in Spanish', async ({ page }) => {
   await openFolders(page, PARTNER, 'es');
   await expect(page.locator('#files-view [data-view="folders"]')).toHaveText('Carpetas del proyecto');
   await expect(node(page, 'unsorted').locator('> summary .hub-ft-name')).toHaveText('00 Sin clasificar');
+  await open(page, 'unsorted');
   await expect(node(page, 'subsurface').locator('> summary .hub-ft-name')).toHaveText('05 Subsuelo');
   const scan = page.locator(`#files-folders [data-file-id="${SCAN}"]`);
   await expect(scan.locator('[data-suggestion]')).toContainText('La IA sugiere');

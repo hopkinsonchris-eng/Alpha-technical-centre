@@ -28,6 +28,7 @@ const ICON = {
   doc: svg('<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/>'),
   run: svg('<path d="M4 19h16"/><path d="M6 16l4-5 3 3 5-7"/>'),
 };
+const PAGE = 50;
 const RUN_WORD = { draft: ['Draft', 'Borrador'], reviewed: ['Reviewed', 'Revisada'], final: ['Final', 'Final'], superseded: ['Superseded', 'Reemplazada'] };
 
 /** Every folder a record may be moved to, with its label path ("05 Subsurface › Wells › A-1"); not Unsorted, not the app folders. */
@@ -64,7 +65,7 @@ export function renderFolderTree(host, data, opts = {}) {
   const folders = Array.isArray(data && data.folders) ? data.folders : [];
   const targets = moveTargets(folders);
   const labelOf = new Map(targets.map((t) => [t.key, t]));
-  const state = { term: '', opened: new Set(['unsorted']) };
+  const state = { term: '', opened: new Set() };
   host.textContent = '';
   host.classList.add('hub-files', 'hub-folders');
 
@@ -75,7 +76,15 @@ export function renderFolderTree(host, data, opts = {}) {
   const status = mk('span', 'hub-muted hub-ft-status', null, null, { id: 'folders-status', role: 'status' });
   add(head, find, status);
   const treeHost = mk('div', 'hub-ft-tree');
-  add(host, head, treeHost);
+  add(host, head);
+  // Records the sorter has not looked at yet are not a to-do list: say so, and how long it takes.
+  const pending = files.filter((f) => !f.filing).length;
+  if (pending) {
+    const n = pending.toLocaleString('en-GB'), ne = pending.toLocaleString('es-ES');
+    add(host, mk('p', 'hub-fd-pending', 'Sorting in progress: ' + n + (pending === 1 ? ' file has' : ' files have') + ' not been looked at yet. They file themselves every 15 minutes; there is nothing for you to do. Your WorkDrive folders are unchanged under Source folders.',
+      'Clasificación en curso: ' + ne + (pending === 1 ? ' archivo aún no se ha revisado' : ' archivos aún no se han revisado') + '. Se archivan solos cada 15 minutos; no tiene que hacer nada. Sus carpetas de WorkDrive siguen intactas en Carpetas de origen.', { 'data-pending': String(pending), role: 'status' }));
+  }
+  add(host, treeHost);
 
   let timer = null;
   input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { state.term = input.value; paint(); }, 120); });
@@ -119,11 +128,31 @@ export function renderFolderTree(host, data, opts = {}) {
     add(sum, mk('span', 'n', String(f.count || 0), String(f.count || 0)));
     add(det, sum);
     const body = mk('div', 'hub-ft-body');
-    if ((f.expects || []).length) add(body, checklist(f));
-    for (const k of kids) add(body, k);
-    for (const r of ownRuns) add(body, runRow(r));
-    for (const x of own) add(body, fileRow(x));
-    if (!kids.length && !ownRuns.length && !own.length && !(f.expects || []).length) add(body, mk('div', 'hub-muted hub-fd-empty', 'Nothing here yet.', 'Nada aquí todavía.'));
+    // 13 Oct 2026: a folder's rows are built the first time it opens, and a page at a time, so a project of thousands
+    // of files never puts thousands of rows (and their controls) into the page at once.
+    let built = false;
+    const build = () => {
+      if (built) return; built = true;
+      if ((f.expects || []).length) add(body, checklist(f));
+      for (const k of kids) add(body, k);
+      for (const r of ownRuns) add(body, runRow(r));
+      let shown = 0;
+      const more = mk('button', 'hub-linkbtn hub-fd-more', null, null, { type: 'button', 'data-more': f.key });
+      const page = () => {
+        const next = own.slice(shown, shown + PAGE);
+        for (const x of next) body.insertBefore(fileRow(x), more);
+        shown += next.length;
+        const left = own.length - shown;
+        if (left > 0) setText(more, 'Show ' + Math.min(PAGE, left) + ' more (' + left.toLocaleString('en-GB') + ' left)', 'Mostrar ' + Math.min(PAGE, left) + ' más (quedan ' + left.toLocaleString('es-ES') + ')');
+        else more.remove();
+      };
+      more.addEventListener('click', page);
+      add(body, more);
+      page();
+      if (!kids.length && !ownRuns.length && !own.length && !(f.expects || []).length) add(body, mk('div', 'hub-muted hub-fd-empty', 'Nothing here yet.', 'Nada aquí todavía.'));
+    };
+    if (det.open) build();
+    det.addEventListener('toggle', () => { if (det.open) build(); });
     add(det, body);
     return det;
   }
@@ -188,11 +217,17 @@ export function renderFolderTree(host, data, opts = {}) {
       add(tools, sug, ok);
     }
     if (opts.move) {
-      const sel = mk('select', 'hub-fd-move', null, null, { 'data-move': f.id, 'aria-label': 'Move to' });
-      add(sel, mk('option', null, f.folder === 'unsorted' ? 'File in…' : 'Move to…', f.folder === 'unsorted' ? 'Archivar en…' : 'Mover a…', { value: '' }));
-      for (const t of targets) if (t.key !== f.folder) add(sel, mk('option', null, t.en, t.es, { value: t.key }));
-      sel.addEventListener('change', async () => { if (!sel.value) return; sel.disabled = true; if (!(await opts.move(f.id, sel.value))) { sel.disabled = false; sel.value = ''; } });
-      add(tools, sel);
+      // The folder list is built only when asked for: one button per row, one dropdown on the row being moved.
+      const btn = mk('button', 'hub-linkbtn', f.folder === 'unsorted' ? 'File in…' : 'Move to…', f.folder === 'unsorted' ? 'Archivar en…' : 'Mover a…', { type: 'button', 'data-move-open': f.id });
+      btn.addEventListener('click', () => {
+        const sel = mk('select', 'hub-fd-move', null, null, { 'data-move': f.id, 'aria-label': 'Move to' });
+        add(sel, mk('option', null, 'Choose a folder…', 'Elegir carpeta…', { value: '' }));
+        for (const t of targets) if (t.key !== f.folder) add(sel, mk('option', null, t.en, t.es, { value: t.key }));
+        sel.addEventListener('change', async () => { if (!sel.value) return; sel.disabled = true; if (!(await opts.move(f.id, sel.value))) { sel.disabled = false; sel.value = ''; } });
+        btn.replaceWith(sel);
+        sel.focus();
+      });
+      add(tools, btn);
     }
     if (tools.childNodes.length) add(row, tools);
     return row;

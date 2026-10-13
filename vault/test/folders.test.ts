@@ -252,7 +252,7 @@ test('W9-AC10: the backlog files only records never filed, at most N a run, and 
   await fileBacklog(db, null, { limit: 500 });
   await db.query("DELETE FROM folder_filings WHERE item_id IN (SELECT id FROM items WHERE project_id = 'bl-demo')");
   await db.query("UPDATE items SET created_at = '2001-01-01' WHERE project_id = 'bl-demo'");
-  const s1 = await fileBacklog(db, null, { limit: 3 });
+  const s1 = await fileBacklog(db, null, { limit: 3, rulesLimit: 0 });
   assert.equal(s1.filed, 3, 'three this run');
   const done1 = (await db.query<any>("SELECT count(*)::int AS n FROM folder_filings f JOIN items i ON i.id = f.item_id WHERE i.project_id = 'bl-demo'")).rows[0].n;
   assert.equal(done1, 3);
@@ -287,4 +287,31 @@ test('W9-AC6: a file sorted under Wells before its well was attached moves into 
   await post(partner, `/api/projects/${PID}/folders/file`, { item_id: kept, folder: 'subsurface/wells' });
   await fileBacklog(db, null, { limit: 500 });
   assert.equal((await current(kept)).folder, 'subsurface/wells');
+});
+
+test('the rules file every record they can place in one run, whatever the model limit; the rest wait for the model', async () => {
+  await db.query(`INSERT INTO projects (id, client_id, name, status, default_legal_tag, members, country) VALUES ('sweep-demo', NULL, 'Sweep', 'prospect', 'lt-firm', '{}', 'US')`);
+  const placeable: string[] = [];
+  for (let i = 0; i < 30; i++) placeable.push(await item({ type: 'invoice', title: `Sweep invoice ${i}`, project: 'sweep-demo' }));
+  const odd = await item({ title: 'qqq', project: 'sweep-demo' });
+  let asked = 0;
+  const provider = new FakeProvider(() => { asked++; return '{}'; });
+  const s = await fileBacklog(db, provider, { limit: 1 });
+  assert.ok(s.filed >= 30, `filed ${s.filed}`);
+  for (const id of placeable) assert.equal((await current(id)).folder, 'financial');
+  assert.equal(asked, 1, 'only the record the rules could not place went to the model');
+  assert.equal((await current(odd)).folder, 'unsorted');
+});
+
+test('the project\'s own WorkDrive folder names place a file, below the mapped root and never into Legal or Financial', () => {
+  const assets = [{ id: 'w1', name: 'Frost 2', kind: 'well' }];
+  const at = (path: string, name = 'x.pdf') => ruleFiling({ id: 'x', type: 'report', title: name, client_id: null, project_id: PID, origin: { source: 'zoho-workdrive' }, extracted: { filename: name, workdrive: { path } }, asset_ids: [] }, assets)?.folder ?? null;
+  assert.equal(at('Alpha technical / Parker Creek/Geology/Maps'), 'subsurface');
+  assert.equal(at('Alpha technical / Parker Creek/Production'), 'subsurface/fields');
+  assert.equal(at('Alpha technical / Parker Creek/Well Files/Frost 2', 'Frost 2 deviation.pdf'), 'subsurface/wells/w1');
+  assert.equal(at('Alpha technical / Parker Creek/Facilities'), 'facilities');
+  assert.equal(at('Alpha technical / Parker Creek/Permits'), 'government');
+  assert.equal(at('Alpha technical / Parker Creek/Land and Title'), null, 'a land folder is not filed into Legal by its name');
+  assert.equal(at('Production Team / Parker Creek'), null, 'the mapped root\'s own name is not read');
+  assert.equal(at('Alpha technical / Production/Misc'), null, 'not even when it holds a slash');
 });

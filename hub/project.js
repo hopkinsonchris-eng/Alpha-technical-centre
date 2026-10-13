@@ -1782,7 +1782,7 @@ function paintFiles(host, files, index) {
 const FILES_VIEW_KEY = 'hub.files.view';
 const POST_JSON = (body) => ({ method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
 
-/** Shows the Project folders / Source folders switch when the Vault answers the folders route; Project folders first. */
+/** Shows the Source folders / Project folders switch when the Vault answers the folders route; Source folders by default. */
 function paintFolders(data) {
   const sw = $('#files-view'), host = $('#files-folders'), source = $('#files');
   if (!sw || !host) return;
@@ -1802,13 +1802,14 @@ function paintFolders(data) {
     waive: async (folder, expect, waived) => done(await api('/api/projects/' + pid + '/folders/waive', POST_JSON({ folder, expect, waived })), waived ? 'Marked not applicable.' : 'Marked as needed.', waived ? 'Marcado como no aplicable.' : 'Marcado como necesario.'),
   });
   draw(data);
-  let view = 'folders';
-  try { view = sessionStorage.getItem(FILES_VIEW_KEY) === 'source' ? 'source' : 'folders'; } catch (e) { /* storage off */ }
+  // 13 Oct 2026: the WorkDrive tree people know stays the default; Project folders is one tap away and remembered.
+  let view = 'source';
+  try { view = localStorage.getItem(FILES_VIEW_KEY) === 'folders' ? 'folders' : 'source'; } catch (e) { /* storage off */ }
   const show = (v) => {
     view = v;
     for (const b of sw.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === v));
     if (v === 'folders') { host.removeAttribute('hidden'); source.setAttribute('hidden', ''); } else { source.removeAttribute('hidden'); host.setAttribute('hidden', ''); }
-    try { sessionStorage.setItem(FILES_VIEW_KEY, v); } catch (e) { /* storage off */ }
+    try { localStorage.setItem(FILES_VIEW_KEY, v); } catch (e) { /* storage off */ }
   };
   for (const b of sw.querySelectorAll('[data-view]')) b.addEventListener('click', () => show(b.getAttribute('data-view')));
   sw.removeAttribute('hidden');
