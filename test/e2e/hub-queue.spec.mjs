@@ -84,9 +84,9 @@ test('the three sections render from the API, with the filing queue first and co
   await expect(page.locator('[data-queue-id="f3"] [data-assign]')).toHaveCount(0);
   // the assign list holds the projects but not the internal firm project
   await expect(row.locator('select option')).toHaveText(['Choose a project…', 'Llanos Basin waterflood screening', 'Middle Magdalena infill screening', 'Talara brownfield redevelopment']);
-  // the section order: filing, lessons, review
+  // the section order: filing, lessons, review, then (wave 9) files waiting for a folder
   const order = await page.locator('main section').evaluateAll((els) => els.map((e) => e.id));
-  expect(order).toEqual(['sec-filing', 'sec-lessons', 'sec-review']);
+  expect(order).toEqual(['sec-filing', 'sec-lessons', 'sec-review', 'sec-folders']);
 });
 
 test('assign: a suggestion files the message, the row goes, the page says what happened', async ({ page }) => {
