@@ -537,6 +537,16 @@ export function readableTitle(title, url) {
 }
 /** A quote worth showing: not World Monitor's bare "source: www.example.com". */
 export const meaningfulQuote = (q) => !!q && !/^\s*source:\s*\S+\s*$/i.test(String(q));
+/**
+ * 13 Oct 2026: what a named asset is, in words, for the queue and the project's proposals: a well is a well, not a field.
+ * [en noun, es noun, en capitalised, es capitalised, es "not a" phrase].
+ */
+export const ASSET_NOUN = {
+  field: ['field', 'campo', 'Field', 'Campo', 'No es un campo'], well: ['well', 'pozo', 'Well', 'Pozo', 'No es un pozo'],
+  block: ['block', 'bloque', 'Block', 'Bloque', 'No es un bloque'], basin: ['basin', 'cuenca', 'Basin', 'Cuenca', 'No es una cuenca'],
+  reservoir: ['reservoir', 'yacimiento', 'Reservoir', 'Yacimiento', 'No es un yacimiento'],
+};
+export const assetNoun = (k) => ASSET_NOUN[k] || ASSET_NOUN.field;
 /** 11 Oct 2026: the summary's world lines, code → {score, trend, sanctions_on}, for countries with no project; {} without them. */
 const worldOf = (data) => (data && data.world && typeof data.world === 'object' ? data.world : {});
 export const toneOf = (score) => (score === null || score === undefined ? '' : score >= 70 ? 'red' : score >= 40 ? 'amber' : 'green');

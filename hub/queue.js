@@ -19,7 +19,7 @@
    Projects for the assign list: GET /api/projects. Every string a person reads carries data-en and data-es.
    No secrets, no provider calls: this file only talks to /api/* on the same origin (behind Cloudflare Access).
    ============================================================ */
-import { api, listOf, mk, dv, add, setText, showSession, showVault, fmtStamp, loadGeo, slugify } from './hub.js';
+import { api, listOf, mk, dv, add, setText, showSession, showVault, fmtStamp, loadGeo, slugify, assetNoun } from './hub.js';
 import { roundQueueBody } from './components/rounds.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
@@ -147,6 +147,17 @@ function unavailable(list, res) {
 }
 
 /** Run an action on a row: disable it, show the failure inline, call onDone(result) and drop the row on success. */
+/** 13 Oct 2026: the order of the asset hierarchy (vault/src/assets/hierarchy.ts KIND_LEVEL): a child sits under a lower number. */
+const ASSET_LEVEL = { country: 0, basin: 1, block: 2, field: 3, reservoir: 4, well: 5 };
+const parentCache = new Map();
+/** The assets attached to a project that a `kind` may sit under, nearest level first (fields before blocks and basins). */
+function parentsFor(projectId, kind) {
+  if (!parentCache.has(projectId)) parentCache.set(projectId, api('/api/projects/' + encodeURIComponent(projectId) + '/assets').then((r) => (r.ok && r.body && Array.isArray(r.body.assets) ? r.body.assets : [])));
+  return parentCache.get(projectId).then((assets) => assets
+    .filter((a) => a && ASSET_LEVEL[a.kind] !== undefined && ASSET_LEVEL[a.kind] < ASSET_LEVEL[kind])
+    .sort((a, b) => ASSET_LEVEL[b.kind] - ASSET_LEVEL[a.kind] || String(a.name).localeCompare(String(b.name))));
+}
+
 async function act(row, list, countId, call, onDone) {
   row.setAttribute('data-busy', '1');
   row.querySelectorAll('button, select, input').forEach((el) => { el.disabled = true; });
@@ -350,7 +361,8 @@ function reviewRow(q, list) {
     // Wave 3: a field named in a document. Accept attaches the first gazetteer candidate, or the name alone when there is none;
     // the Fields card on the project file offers the full choice.
     add(row, icon(DOC_ICON, 'gold'));
-    add(body, add(mk('span', 't', null, null, { id: tid }), mk('span', null, 'Field named in a document: ', 'Campo nombrado en un documento: '), dv('b', null, p.name), document.createTextNode(' '), dv('span', 'hub-muted', '(' + (p.kind || 'field') + ')')));
+    const an = assetNoun(p.kind);                                        // 13 Oct 2026: a well reads as a well throughout
+    add(body, add(mk('span', 't', null, null, { id: tid }), mk('span', null, an[2] + ' named in a document: ', an[3] + ' nombrado en un documento: '), dv('b', null, p.name)));
     const proj = projects.find((x) => x.id === p.project_id);
     add(body, add(mk('span', 'm'), dv('a', 'hub-inline-link', (proj && proj.name) || p.project_id || '—', { href: '/hub/project.html?id=' + encodeURIComponent(p.project_id || '') + '#p-fields', 'data-proposal-project': p.project_id || '' }), dv('span', null, [p.item_title, p.anchor].filter(Boolean).map((x) => ' · ' + x).join(''))));
     if (p.quote) add(body, dv('span', 'm q-quote', '“' + p.quote + '”'));
@@ -358,6 +370,24 @@ function reviewRow(q, list) {
     if (first) add(body, add(mk('span', 'm', null, null, { 'data-first-candidate': first.source + ':' + first.source_id }), mk('span', null, 'Accept attaches ', 'Aceptar adjunta '), dv('b', null, first.name), dv('span', null, ' (' + first.source + (Number.isFinite(first.lat) && Number.isFinite(first.lon) ? ', ' + first.lat + ', ' + first.lon : '') + ')')));
     else add(body, mk('span', 'm', 'No gazetteer match: Accept attaches the name without a location.', 'Sin coincidencia en gaceteros: Aceptar adjunta el nombre sin ubicación.'));
     accept = () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept', first ? (first.asset_id ? { asset_id: first.asset_id } : { create: { name: first.name, kind: first.kind || p.kind || 'field', ...(Number.isFinite(first.lat) && Number.isFinite(first.lon) ? { lat: first.lat, lon: first.lon, location_source: first.source } : {}), source_id: first.source_id, source_url: first.source_url, detail: first.detail || undefined, country: first.country || undefined } }) : {});
+    // 13 Oct 2026: a well (or reservoir) with no gazetteer match goes under a field the project already has: one button per
+    // possible parent ("Attach under Parker Creek"), read from the project's attached assets; Attach alone stays beside them.
+    if (!first && ASSET_LEVEL[p.kind] > ASSET_LEVEL.field && p.project_id) {
+      const parents = mk('span', 'm q-parents', null, null, { 'data-parents': '' });
+      add(body, parents);
+      parentsFor(p.project_id, p.kind).then((list) => {
+        if (!list.length) return;
+        const pick = (parent) => () => act(row, list, '#n-review', () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/accept', { create: { name: p.name, kind: p.kind, parent_id: parent.id } }),
+          () => announce(an[2] + ' attached under ' + parent.name + '.', an[3] + ' adjuntado bajo ' + parent.name + '.'));
+        for (const parent of list.slice(0, 3)) {
+          const b = mk('button', 'btn btn-primary btn-sm', 'Attach under ' + parent.name, 'Adjuntar bajo ' + parent.name, { type: 'button', 'data-attach-under': parent.id });
+          b.addEventListener('click', pick(parent));
+          add(parents, b);
+        }
+        const plain = row.querySelector('[data-action="accept"]');
+        if (plain) { plain.classList.remove('btn-primary'); plain.classList.add('btn-outline'); setText(plain, 'Attach on its own', 'Adjuntar por sí solo'); }
+      });
+    }
   } else if (q.kind === 'research') {
     // Wave 4: an operator, licence or production figure a research finding states, with its verbatim quote.
     // Accept records it (the operator on the field, a production figure on the register's current); Not a fact closes it.
@@ -390,9 +420,10 @@ function reviewRow(q, list) {
 
   const okLabel = q.kind === 'organisation' ? ['Add to registry', 'Añadir al registro'] : q.kind === 'asset' ? ['Attach', 'Adjuntar'] : q.kind === 'research' ? (p.fact_kind === 'operator' ? ['Set as operator', 'Fijar como operador'] : p.fact_kind === 'location' ? ['Set location', 'Fijar ubicación'] : ['File as fact', 'Archivar como hecho']) : q.kind === 'round' ? ['Confirm the date', 'Confirmar la fecha'] : ['Accept', 'Aceptar'];
   const ok = mk('button', 'btn btn-primary btn-sm', okLabel[0], okLabel[1], { type: 'button', 'data-action': 'accept', 'aria-describedby': tid });
-  const noLabel = q.kind === 'asset' ? ['Not a field', 'No es un campo'] : q.kind === 'research' ? (p.fact_kind === 'location' ? ['Not it', 'No es ese'] : ['Not a fact', 'No es un hecho']) : q.kind === 'round' ? ['Not a round date', 'No es una fecha de ronda'] : ['Reject', 'Rechazar'];
+  const an0 = q.kind === 'asset' ? assetNoun(p.kind) : null;
+  const noLabel = q.kind === 'asset' ? ['Not a ' + an0[0], an0[4]] : q.kind === 'research' ? (p.fact_kind === 'location' ? ['Not it', 'No es ese'] : ['Not a fact', 'No es un hecho']) : q.kind === 'round' ? ['Not a round date', 'No es una fecha de ronda'] : ['Reject', 'Rechazar'];
   const no = mk('button', 'btn btn-outline btn-sm', noLabel[0], noLabel[1], { type: 'button', 'data-action': 'reject', 'aria-describedby': tid });
-  ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : q.kind === 'asset' ? 'Field attached to the project; its dossier is filed.' : q.kind === 'research' ? 'Fact recorded with its quote.' : q.kind === 'round' ? 'Round date confirmed; it now counts on Today.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : q.kind === 'asset' ? 'Campo adjuntado al proyecto; su dosier queda archivado.' : q.kind === 'research' ? 'Hecho registrado con su cita.' : q.kind === 'round' ? 'Fecha de ronda confirmada; ya cuenta en Hoy.' : 'Aceptado.')));
+  ok.addEventListener('click', () => act(row, list, '#n-review', accept, () => announce(q.kind === 'organisation' ? 'Organisation added to the registry.' : q.kind === 'asset' ? an0[2] + ' attached to the project; its dossier is filed.' : q.kind === 'research' ? 'Fact recorded with its quote.' : q.kind === 'round' ? 'Round date confirmed; it now counts on Today.' : 'Accepted.', q.kind === 'organisation' ? 'Organización añadida al registro.' : q.kind === 'asset' ? an0[3] + ' adjuntado al proyecto; su dosier queda archivado.' : q.kind === 'research' ? 'Hecho registrado con su cita.' : q.kind === 'round' ? 'Fecha de ronda confirmada; ya cuenta en Hoy.' : 'Aceptado.')));
   no.addEventListener('click', () => act(row, list, '#n-review', () => post('/api/queue/review/' + encodeURIComponent(q.id) + '/reject'), () => (q.kind === 'round' ? announce('Not a round date; nothing was recorded.', 'No es una fecha de ronda; no se registró nada.') : announce('Rejected.', 'Rechazado.'))));
   add(controls, ok, no);
   add(body, controls);

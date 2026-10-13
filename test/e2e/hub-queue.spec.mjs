@@ -304,6 +304,44 @@ const ASSET_ROW = { id: 'a1', kind: 'asset', status: 'open', payload: { project_
   candidates: [{ name: 'Guafita', kind: 'field', country: 'VE', lat: 7.98, lon: -69.12, source: 'gem', source_id: 'G100', source_url: 'https://www.gem.wiki/Guafita_Oil_Field', confidence: 1, asset_id: 'field:ve:guafita', detail: null }] } };
 const BARE_ROW = { id: 'a2', kind: 'asset', status: 'open', payload: { project_id: 'llanos-waterflood', item_id: 'i9', item_version: 1, item_title: 'Data room index', name: 'Nowhere', kind: 'field', quote: 'Nowhere Field is a name no gazetteer knows.', anchor: 'page 3', source: 'model', candidates: [] } };
 
+const WELL_ROW = { id: 'w1', kind: 'asset', status: 'open', payload: { project_id: 'llanos-waterflood', item_id: 'i9', item_version: 1, item_title: 'Parker Creek Working Deck JRE.pptx', name: 'Williams #1', kind: 'well', quote: 'Recommendation: Return Williams #1 to production', anchor: 'slide 18', source: 'model', candidates: [] } };
+
+test('13 Oct 2026: a well named in a document reads as a well: the title, Not a well, and the announcement; Attach sends the name as a well', async ({ page }) => {
+  const h = full().filter((x) => !(x[0] === 'GET' && String(x[1]).includes('review')));
+  h.push(['GET', /^\/api\/queue\/review$/, (u, r) => json(r, { items: [WELL_ROW] })]);
+  h.push(['POST', /^\/api\/queue\/review\/([^/]+)\/(accept|reject)$/, (u, r, m) => json(r, { id: m[1], status: m[2] === 'accept' ? 'accepted' : 'rejected' })]);
+  const calls = await open(page, h);
+  const row = page.locator('[data-review-id="w1"]');
+  await expect(row).toContainText('Well named in a document: Williams #1');
+  await expect(row).not.toContainText('Field');
+  await expect(row.getByRole('button', { name: 'Not a well' })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Not a field' })).toHaveCount(0);
+  await row.getByRole('button', { name: 'Attach' }).click();
+  await expect(page.locator('#live')).toContainText('Well attached to the project; its dossier is filed.');
+  expect(calls.filter((c) => c.method === 'POST').map((c) => c.path)).toEqual(['/api/queue/review/w1/accept']);
+  await page.locator('aside .nav-lang button[data-lang="es"]').click();
+});
+
+test('13 Oct 2026: a well with no gazetteer match offers Attach under each field the project has; that sends the well with the field as parent; Attach alone becomes "Attach on its own"', async ({ page }) => {
+  const h = full().filter((x) => !(x[0] === 'GET' && String(x[1]).includes('review')));
+  h.push(['GET', /^\/api\/queue\/review$/, (u, r) => json(r, { items: [WELL_ROW] })]);
+  h.push(['GET', /^\/api\/projects\/llanos-waterflood\/assets$/, (u, r) => json(r, { project_id: 'llanos-waterflood', assets: [
+    { id: 'field:us:parker-creek', kind: 'field', name: 'Parker Creek' }, { id: 'basin:us:misb', kind: 'basin', name: 'Mississippi Interior Salt Basin' }, { id: 'well:us:frost-2', kind: 'well', name: 'Frost #2' } ] })]);
+  h.push(['POST', /^\/api\/queue\/review\/([^/]+)\/(accept|reject)$/, (u, r, m) => json(r, { id: m[1], status: 'accepted' })]);
+  const calls = await open(page, h);
+  const row = page.locator('[data-review-id="w1"]');
+  const under = row.locator('[data-attach-under]');
+  await expect(under).toHaveCount(2);                                            // the field first, then the basin; never another well
+  await expect(under.nth(0)).toHaveText('Attach under Parker Creek');
+  await expect(under.nth(1)).toHaveText('Attach under Mississippi Interior Salt Basin');
+  await expect(row.locator('[data-action="accept"]')).toHaveText('Attach on its own');
+  await under.nth(0).click();
+  await expect(page.locator('#live')).toContainText('Well attached under Parker Creek.');
+  expect(calls.filter((c) => c.method === 'POST').map((c) => [c.path, c.body])).toEqual([
+    ['/api/queue/review/w1/accept', { create: { name: 'Williams #1', kind: 'well', parent_id: 'field:us:parker-creek' } }],
+  ]);
+});
+
 test('a field named in a document is a review row with its quote and project; Attach accepts with the first candidate (or the name alone); Not a field rejects', async ({ page }) => {
   const h = full().filter((x) => !(x[0] === 'GET' && String(x[1]).includes('review')));
   h.push(['GET', /^\/api\/queue\/review$/, (u, r) => json(r, { items: [...REVIEW, ASSET_ROW, BARE_ROW] })]);
