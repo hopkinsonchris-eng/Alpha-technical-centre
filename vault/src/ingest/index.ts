@@ -19,6 +19,7 @@ import { vectorLiteral, type Embedder } from './embed.ts';
 import { extractText, UnsupportedFormat } from './extract.ts';
 import { extractLegalFinance, flatten, isLegalFinanceType, proposeNdaExpiry } from './legal-finance.ts';
 import { extractAssets, proposeAssets } from './entities.ts';
+import { fileItem } from '../folders/classify.ts';
 
 export interface IngestDeps { provider: LlmProvider | null; embedder: Embedder }
 export interface IngestOptions { force?: boolean; now?: () => Date }
@@ -129,6 +130,8 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
       }
     } catch { /* proposals are best effort; the document is indexed either way */ }
   }
+  // Wave 9: the record takes its place in the project's folders, now that its text is known (best effort, like the proposals).
+  if (item.project_id) { try { await fileItem(db, item.id, { provider: deps.provider, text: ex.text }); } catch { /* filed by the next backlog run */ } }
   return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}), asset_proposals: assetProposals };
 }
 

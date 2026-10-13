@@ -1576,3 +1576,23 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 /* 12 Oct 2026: a research finding opens as its headline, site and link (record.js newsView) */
 .hub-rp-news { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .hub-rp-headline { font-size: 17px; font-weight: 600; line-height: 1.35; margin: 0; }
+/* Wave 9 (W9-AC11): the project's folders — the numbered skeleton, how each record got there, the checklists */
+.hub .hub-fd-view { display: inline-flex; gap: 6px; margin: 0 0 10px; }
+.hub .hub-fd-lock { display: inline-flex; color: var(--muted); }
+.hub .hub-fd-lock .hub-ic { width: 14px; height: 14px; }
+.hub .hub-fd-gaps { padding: 0 7px; line-height: 17px; font-size: 11px; }
+.hub .hub-fd-check { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 12.5px; padding: 6px 6px 8px; }
+.hub .hub-fd-expect { white-space: nowrap; }
+.hub .hub-fd-expect.met .hub-fd-mark { color: var(--ok); }
+.hub .hub-fd-expect.missing { color: var(--warn); }
+.hub .hub-fd-expect.waived { color: var(--muted); }
+.hub .hub-fd-row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.hub .hub-fd-row > .hub-ft-file { flex: 1 1 320px; width: auto; }
+.hub .hub-fd-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 0 6px 6px 30px; font-size: 12.5px; }
+.hub .hub-fd-suggest { color: var(--navy); }
+.hub .hub-fd-move { font: inherit; font-size: 12.5px; min-height: 32px; max-width: 260px; border: 1px solid var(--rule); border-radius: var(--r-sm, 6px); background: #fff; color: var(--navy); padding: 2px 6px; }
+.hub .hub-fd-badge { padding: 0 7px; line-height: 17px; font-size: 11px; }
+.hub .hub-fd-kind { font-size: 11.5px; }
+.hub .hub-fd-empty { font-size: 12.5px; padding: 6px; }
+.hub .hub-fd-run .hub-ic { color: var(--gold-ink, #8a6d2b); }
+@media (max-width: 640px) { .hub .hub-fd-tools { padding-left: 6px; } .hub .hub-fd-move { max-width: 100%; } }

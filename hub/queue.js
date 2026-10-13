@@ -445,6 +445,49 @@ async function renderReview() {
   for (const q of items) add(list, reviewRow(q, list));
 }
 
+/* ── Wave 9 (W9-AC11): files the AI was not sure where to file ────────── */
+
+/** One card: the file, the project, the AI's folder with its confidence and quote; Accept, Choose folder, Leave unsorted. */
+function folderRow(q, options, list) {
+  const tid = 'fq-' + q.id;
+  const row = mk('div', 'hub-item q-row', null, null, { 'data-folder-proposal': q.id, 'aria-labelledby': tid });
+  add(row, icon(DOC_ICON, 'gold'));
+  const body = mk('div', 'b');
+  add(body, add(mk('span', 't', null, null, { id: tid }), dv('b', null, q.title || q.item_id), document.createTextNode(' '), dv('span', 'hub-muted', '· ' + (q.project_name || q.project_id))));
+  const pc = q.confidence == null ? '' : ' (' + Math.round(q.confidence * 100) + '%)';
+  add(body, add(mk('span', 'm'), mk('span', null, 'AI suggests ', 'La IA sugiere '), dv('b', null, (q.folder_label || q.folder) + pc)));
+  if (q.quote) add(body, dv('span', 'm hub-muted', '“' + q.quote + '”'));
+  if (q.reason) add(body, dv('span', 'm hub-muted', q.reason));
+  const controls = mk('div', 'q-controls');
+  const ok = mk('button', 'btn btn-primary btn-sm', 'Accept', 'Aceptar', { type: 'button', 'data-folder-accept': q.id });
+  const sel = mk('select', 'hub-fd-move', null, null, { 'data-folder-choose': q.id, 'aria-label': 'Choose folder' });
+  add(sel, mk('option', null, 'Choose folder…', 'Elegir carpeta…', { value: '' }));
+  for (const o of options || []) add(sel, mk('option', null, o.label, o.label, { value: o.key }));
+  const no = mk('button', 'btn btn-outline btn-sm', 'Leave unsorted', 'Dejar sin clasificar', { type: 'button', 'data-folder-reject': q.id });
+  const url = (verb) => '/api/folders/proposals/' + encodeURIComponent(q.id) + '/' + verb;
+  ok.addEventListener('click', () => act(row, list, '#n-folders', () => post(url('accept'), {}), () => announce('Filed where the AI suggested.', 'Archivado donde sugirió la IA.')));
+  sel.addEventListener('change', () => { if (sel.value) act(row, list, '#n-folders', () => post(url('accept'), { folder: sel.value }), () => announce('Filed in the folder you chose.', 'Archivado en la carpeta elegida.')); });
+  no.addEventListener('click', () => act(row, list, '#n-folders', () => post(url('reject')), () => announce('Left in Unsorted.', 'Dejado sin clasificar.')));
+  add(controls, ok, sel, no);
+  add(body, controls);
+  add(row, body);
+  return row;
+}
+
+async function renderFolders() {
+  const sec = $('#sec-folders'), list = $('#folders-list');
+  if (!sec || !list) return;
+  const r = await api('/api/folders/proposals');
+  if (!r.ok || !r.body) return;
+  const items = listOf(r.body, 'proposals');
+  sec.removeAttribute('hidden');
+  setCount('#n-folders', items.length);
+  list.textContent = '';
+  if (!items.length) { empty(list); return; }
+  const options = r.body.options || {};
+  for (const q of items) add(list, folderRow(q, options[q.project_id], list));
+}
+
 /* ── page ────────────────────────────────────────────────────────────── */
 
 async function init() {
@@ -455,7 +498,7 @@ async function init() {
   projects = listOf(pr.body, 'projects', 'items').filter((p) => p && p.id && p.id !== 'firm').map((p) => ({ id: p.id, name: p.name || p.title || p.id }));
   projects.sort((a, b) => a.name.localeCompare(b.name));
   if (geo && Array.isArray(geo.features)) { countryNames = new Map(); for (const f of geo.features) if (f.properties && f.properties.iso2 && !countryNames.has(f.properties.iso2)) countryNames.set(f.properties.iso2, { en: f.properties.en, es: f.properties.es }); }
-  await Promise.all([renderFiling(), renderLessons(), renderReview()]);
+  await Promise.all([renderFiling(), renderLessons(), renderReview(), renderFolders()]);
   document.body.setAttribute('data-ready', '1');
 }
 if (document.body && document.body.getAttribute('data-page') !== 'test') init();

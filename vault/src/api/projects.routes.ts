@@ -57,6 +57,10 @@ function deltas(prev: Record<string, any> | null, cur: Record<string, any>) {
   return out;
 }
 
+/** The partners-only facts of an item row (its type and the extracted flag) for canSee: an NDA, an invoice or a record
+ *  filed into Legal or Financial (wave 9) is a partner's alone on the timeline and the lineage too. */
+const poRow = (i: any) => ({ type: i.type, extracted: { partners_only: i.partners_only === true ? true : i.partners_only === false ? false : undefined } });
+
 export function register(app: Hono<Env>, _deps: RouteDeps): void {
   route(app, 'POST', '/api/projects', 'project.create', async (x) => {
     requirePartner(x.person, 'creating a project');
@@ -190,8 +194,8 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     if (wanted !== undefined && wanted !== '' && !(CLASSES as readonly string[]).includes(wanted)) throw bad(`class must be one of ${CLASSES.join(', ')}`, '?class');
     const runs = (await x.db.query<any>('SELECT id, job, tool_version, title, status, supersedes, legal_tag, created_at, stale, stale_reasons FROM runs WHERE project_id = $1 AND NOT hidden', [p.id])).rows;
     const items = (await x.db.query<any>(`SELECT id, type, title, version, reference_no, supersedes, legal_tag, created_at, authored_at, stale, stale_reasons, kind, tags, origin->>'source' AS source,
-        extracted->'sent' AS sent, extracted->>'history' AS history FROM items WHERE project_id = $1 AND NOT hidden`, [p.id])).rows;
-    const vr = runs.filter(r => canSee(acc, r.legal_tag, p.id)), vi = items.filter(i => canSee(acc, i.legal_tag, p.id));
+        extracted->'sent' AS sent, extracted->>'history' AS history, extracted->'partners_only' AS partners_only FROM items WHERE project_id = $1 AND NOT hidden`, [p.id])).rows;
+    const vr = runs.filter(r => canSee(acc, r.legal_tag, p.id)), vi = items.filter(i => canSee(acc, i.legal_tag, p.id, poRow(i)));
     const runSuperseded = new Map(vr.filter(r => r.supersedes).map(r => [r.supersedes, r.id]));
     const itemSuperseded = new Map(vi.filter(i => i.supersedes).map(i => [i.supersedes, i.id]));
     // The newest run per job that is not superseded: an older draft of the same job is background.
@@ -215,7 +219,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const acc = await loadAccess(x.db, x.person, x.now);
     const p = await loadProject(x, acc);
     const runs = (await x.db.query<any>('SELECT id, job, title, status, supersedes, legal_tag, stale, record FROM runs WHERE project_id = $1 AND NOT hidden', [p.id])).rows.filter(r => canSee(acc, r.legal_tag, p.id));
-    const items = (await x.db.query<any>('SELECT id, type, title, supersedes, legal_tag, stale FROM items WHERE project_id = $1 AND NOT hidden', [p.id])).rows.filter(i => canSee(acc, i.legal_tag, p.id));
+    const items = (await x.db.query<any>("SELECT id, type, title, supersedes, legal_tag, stale, extracted->'partners_only' AS partners_only FROM items WHERE project_id = $1 AND NOT hidden", [p.id])).rows.filter(i => canSee(acc, i.legal_tag, p.id, poRow(i)));
     const runIds = runs.map(r => r.id), itemIds = items.map(i => i.id);
     const inputs = runIds.length ? (await x.db.query<any>('SELECT run_id::text AS run_id, ref, kind, role FROM run_inputs WHERE run_id = ANY($1::uuid[]) ORDER BY ref', [runIds])).rows : [];
     const cites = itemIds.length ? (await x.db.query<any>('SELECT item_id::text AS item_id, ref FROM item_cites WHERE item_id = ANY($1::uuid[]) ORDER BY ref', [itemIds])).rows : [];
