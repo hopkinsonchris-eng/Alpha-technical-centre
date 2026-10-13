@@ -97,6 +97,19 @@ const KIND_WORDS: [DocKind, RegExp][] = [
   ['invoice', /\binvoice\b/i],
 ];
 
+/** WorkDrive folder words → folder, first match wins (narrow before broad). Never Legal or Financial. */
+const PATH_FOLDERS: [RegExp, string, DocKind | null][] = [
+  [/seismic|geophysic/i, 'subsurface/seismic', 'seismic-survey'],
+  [/\bwells?\b|well ?files?|\blogs?\b|petrophysic|core/i, 'subsurface/wells', null],
+  [/\bproduction\b|\bvolumes?\b/i, 'subsurface/fields', 'production-data'],
+  [/reserves?|reservoir|engineering|geolog|\bmaps?\b|\bG&G\b/i, 'subsurface', null],
+  [/facilit|pipeline|gathering|compress|infrastructure/i, 'facilities', null],
+  [/environment|\bH?SSE?\b|safety/i, 'hse', null],
+  [/regulat|permit|\bRRC\b|government|ministry|authorit/i, 'government', null],
+  [/correspondence|e-?mails?\b|letters?\b/i, 'correspondence', 'correspondence'],
+  [/research|papers?\b|literature|articles?\b/i, 'research/papers', 'paper'],
+];
+
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** The attached assets a piece of text names as whole words (names of three letters or more). */
 export function namedAssets(text: string, assets: FolderAsset[]): FolderAsset[] {
@@ -142,6 +155,18 @@ export function ruleFiling(t: FileTarget, assets: FolderAsset[]): Filing | null 
     const own = `${t.title}\n${fileName(t)}`;
     const hit = KIND_WORDS.find(([, re]) => re.test(own)) ?? KIND_WORDS.find(([, re]) => wdPath(t).split('/').some(seg => re.test(seg)));
     if (hit) { kind = hit[0]; why = `Named as ${DOC_KINDS[hit[0]][0].toLowerCase()}`; }
+  }
+  if (!kind) {
+    // The project's own WorkDrive folders say a great deal ("…/Geology/Maps", "…/Production"). Below the mapped root
+    // only, and never into Legal or Financial: a folder name alone must not make a record partners-only.
+    const segs = wdPath(t).split(/(?<!\s)\/(?!\s)/).slice(1);   // " / " inside the mapped root's name is not a separator
+    for (const [re, folder, k] of PATH_FOLDERS) {
+      const seg = segs.find(x => re.test(x));
+      if (!seg) continue;
+      const level = folder === 'subsurface/wells' ? 'well' : folder === 'subsurface/fields' ? 'field' : null;
+      const a = level ? oneAsset(t, assets, level) : null;
+      return rule(a ? assetFolder(a)! : folder, k, `WorkDrive folder "${seg.trim()}"${a ? `; about ${a.name}` : ''}`);
+    }
   }
   if (!kind && (src === 'assistant' || src === 'tool') && ['letter', 'report', 'evaluation', 'presentation'].includes(t.type)) return rule('deliverables', 'deliverable', 'Written by the firm');
   if (kind) {
@@ -278,14 +303,18 @@ export async function fileItem(db: Db, itemId: string, opts: FileOptions): Promi
 export interface BacklogSummary { filed: number; proposed: number; unsorted: number; failed: number; left: number; stopped_by?: 'budget'; /** records moved from Fields, Reservoirs or Wells into the asset's own folder once it was attached */ narrowed?: number }
 
 /** Files up to `limit` records that have never been filed, oldest first, stopping at `budgetGbp` of model spend. */
-export async function fileBacklog(db: Db, provider: LlmProvider | null, opts: { limit?: number; budgetGbp?: number; now?: Date } = {}): Promise<BacklogSummary> {
+export async function fileBacklog(db: Db, provider: LlmProvider | null, opts: { limit?: number; rulesLimit?: number; budgetGbp?: number; now?: Date } = {}): Promise<BacklogSummary> {
   const limit = opts.limit ?? 200, cap = opts.budgetGbp ?? 1;
+  // 13 Oct 2026: the rules cost nothing, so every never-filed record they can place is filed in one sweep first; only
+  // what they cannot place waits for the model, `limit` a run. (At 200 a run in all, a 6,000-file project sat in
+  // Unsorted for hours and read as a to-do list.)
+  const swept = await rulesSweep(db, opts.rulesLimit ?? RULES_SWEEP, opts.now);
   const rows = (await db.query<{ id: string }>(
     `SELECT i.id FROM items i
       WHERE i.project_id IS NOT NULL AND NOT i.hidden
         AND NOT EXISTS (SELECT 1 FROM folder_filings f WHERE f.item_id = i.id AND f.superseded_by IS NULL)
       ORDER BY i.created_at, i.id LIMIT $1`, [limit])).rows;
-  const s: BacklogSummary = { filed: 0, proposed: 0, unsorted: 0, failed: 0, left: 0 };
+  const s: BacklogSummary = { filed: swept, proposed: 0, unsorted: 0, failed: 0, left: 0 };
   const apps = projectApps();
   const before = processSpendGbp();
   for (const [i, r] of rows.entries()) {
@@ -297,6 +326,28 @@ export async function fileBacklog(db: Db, provider: LlmProvider | null, opts: { 
   }
   s.narrowed = await narrowGeneric(db, limit, opts.now);
   return s;
+}
+
+/** Never-filed records the rules may file in one run (they cost no model call). */
+export const RULES_SWEEP = 20000;
+
+/** Files every never-filed record the rules can place; records they cannot place stay unfiled for the model. */
+export async function rulesSweep(db: Db, limit = RULES_SWEEP, now?: Date): Promise<number> {
+  if (limit <= 0) return 0;
+  const rows = (await db.query<any>(
+    `SELECT i.id, i.type, i.title, i.client_id, i.project_id, i.origin, i.extracted, i.asset_ids FROM items i
+      WHERE i.project_id IS NOT NULL AND NOT i.hidden
+        AND NOT EXISTS (SELECT 1 FROM folder_filings f WHERE f.item_id = i.id AND f.superseded_by IS NULL)
+      ORDER BY i.created_at, i.id LIMIT $1`, [limit])).rows;
+  const assets = new Map<string, FolderAsset[]>();
+  let filed = 0;
+  for (const r of rows) {
+    if (!assets.has(r.project_id)) assets.set(r.project_id, await projectAssets(db, r.project_id));
+    const f = ruleFiling({ ...r, asset_ids: r.asset_ids ?? [] }, assets.get(r.project_id)!);
+    if (!f) continue;
+    try { await writeFiling(db, r, f, 'vault', now ?? new Date()); filed++; } catch { /* filed by a concurrent run */ }
+  }
+  return filed;
 }
 
 const GENERIC = ['subsurface/fields', 'subsurface/reservoirs', 'subsurface/wells'];

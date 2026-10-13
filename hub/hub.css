@@ -1596,3 +1596,5 @@ body.hub[data-ready="1"] .hub-skel { display: none; }
 .hub .hub-fd-empty { font-size: 12.5px; padding: 6px; }
 .hub .hub-fd-run .hub-ic { color: var(--gold-ink, #8a6d2b); }
 @media (max-width: 640px) { .hub .hub-fd-tools { padding-left: 6px; } .hub .hub-fd-move { max-width: 100%; } }
+.hub .hub-fd-pending { font-size: 13px; color: var(--navy); background: var(--info-bg); border: 1px solid var(--info-line); border-radius: var(--r-sm, 6px); padding: 8px 10px; margin: 0 0 10px; }
+.hub .hub-fd-more { display: block; margin: 6px 0 6px 30px; font-size: 13px; }
