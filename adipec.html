@@ -7,8 +7,6 @@
 <title>ADIPEC 2026 — Alpha Technical Centre</title>
 <meta name="description" content="Alpha Technical Centre are at ADIPEC 2026 in Abu Dhabi, 2–5 November. Reservoir engineering, field development and technical due diligence for mature assets. Meet the team.">
 
-<link rel="stylesheet" href="style.css">
-
 <link rel="canonical" href="https://www.alpha-technical-centre.com/adipec.html">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -34,211 +32,194 @@
   gtag('config', 'G-NKCRSSV2RQ');
 </script>
 
+<!-- This page uses the ADIPEC handout's Alpha Energy branding (not style.css), so it matches the printed flyer -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap">
 <style>
-  /* ADIPEC page only: track-record tiles and the two contact cards */
-  .adipec-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
-  .record-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--rule); border-radius: var(--r-lg); overflow: hidden; background: var(--white); }
-  .record { padding: 28px 24px; border-right: 1px solid var(--rule); }
-  .record:last-child { border-right: none; }
-  .record-num { font-family: var(--font-display); font-size: 2.6rem; font-weight: 700; line-height: 1; color: var(--navy); }
-  .record-num em { font-style: normal; color: var(--gold); }
-  .record-name { font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--navy); margin-top: 14px; }
-  .record p { font-size: 0.95rem; color: var(--steel); margin-top: 6px; }
-  .people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-  .person h3 { color: var(--navy); }
-  .person .person-role { font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--steel); margin-top: 6px; }
-  .person a.person-mail { display: inline-block; margin-top: 18px; font-weight: 500; color: var(--navy); border-bottom: 1px solid var(--gold); padding-bottom: 2px; word-break: break-all; }
-  .person a.person-mail:hover { color: var(--gold); }
-  @media (max-width: 900px) {
-    .record-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .record:nth-child(2) { border-right: none; }
-    .record:nth-child(-n+2) { border-bottom: 1px solid var(--rule); }
+  :root {
+    --carbon: #16181D;
+    --blue: #1B8DD1;
+    --blue-light: #7CC3EE;
+    --navy: #0B2A45;
+    --vapor: #E9F4FB;
+    --steel: #5C6B78;
+    --hair: #D5DCE2;
+    --hair-dark: rgba(233, 244, 251, 0.25);
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --maxw: 1040px;
+    --gutter: clamp(20px, 5vw, 48px);
   }
-  @media (max-width: 600px) {
-    .people { grid-template-columns: 1fr; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: #FFFFFF; color: var(--carbon); font-family: var(--sans); font-size: 16px; line-height: 1.55; }
+  a { color: var(--navy); text-decoration: none; }
+  a:hover { color: var(--blue); }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gutter); }
+  .eyebrow { font-weight: 600; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--steel); }
+
+  /* top accent and header */
+  .accent { position: absolute; left: 0; top: 0; width: 96px; height: 5px; background: var(--blue); }
+  header.top { position: relative; }
+  .top-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding-top: 32px; padding-bottom: 18px; flex-wrap: wrap; position: relative; }
+  .top-row::after { content: ''; position: absolute; left: var(--gutter); right: var(--gutter); bottom: 0; border-bottom: 1px solid var(--hair); }
+  .brand { display: flex; flex-direction: column; gap: 9px; }
+  .brand img { width: clamp(170px, 26vw, 220px); height: auto; display: block; }
+  .brand .eyebrow { font-size: 10.5px; padding-left: 1px; }
+  .event { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
+  .event-name { font-weight: 600; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--carbon); }
+  .event-date { font-weight: 500; font-size: 13px; color: var(--steel); }
+  .nav-lang { display: flex; gap: 2px; margin-top: 4px; }
+  .nav-lang button { font: 600 11px/1 var(--sans); letter-spacing: 0.14em; color: var(--steel); background: none; border: 1px solid transparent; padding: 7px 9px; cursor: pointer; min-height: 32px; }
+  .nav-lang button.active { color: var(--navy); border-color: var(--hair); }
+
+  /* headline */
+  .lead { padding-top: clamp(36px, 6vw, 64px); padding-bottom: clamp(36px, 5vw, 56px); }
+  h1 { margin: 16px 0 0; font-family: var(--serif); font-weight: 500; font-size: clamp(54px, 10vw, 112px); line-height: 0.95; letter-spacing: -0.01em; color: var(--navy); }
+  h1 em { display: block; font-style: italic; color: var(--blue); }
+  .pivot { margin: clamp(24px, 4vw, 36px) 0 0; font-family: var(--serif); font-weight: 500; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; color: var(--navy); }
+  .lead p.body { margin: 12px 0 0; max-width: 60ch; color: var(--steel); font-size: 17px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; font: 600 12px/1 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; border: 1px solid var(--navy); transition: background .2s, color .2s, border-color .2s; }
+  .btn-fill { background: var(--navy); color: #FFFFFF; }
+  .btn-fill:hover { background: var(--blue); border-color: var(--blue); color: #FFFFFF; }
+  .btn-line { background: transparent; color: var(--navy); }
+  .btn-line:hover { background: var(--navy); color: #FFFFFF; }
+
+  /* track record band */
+  .band { background: var(--navy); color: #FFFFFF; padding: clamp(28px, 4vw, 44px) 0; }
+  .band-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .band-head .eyebrow { color: #FFFFFF; }
+  .band-head span:last-child { font-size: 13px; color: var(--vapor); }
+  .records { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--hair-dark); border-left: 1px solid var(--hair-dark); }
+  .record { border-right: 1px solid var(--hair-dark); border-bottom: 1px solid var(--hair-dark); padding: 20px 20px 22px; display: flex; flex-direction: column; gap: 8px; }
+  .record-num { font-family: var(--serif); font-weight: 600; font-size: clamp(44px, 5vw, 56px); line-height: 0.95; color: var(--blue-light); font-variant-numeric: lining-nums; }
+  .record-name { font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #FFFFFF; }
+  .record p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--vapor); }
+
+  /* meet us */
+  .meet { padding-top: clamp(36px, 5vw, 56px); padding-bottom: clamp(28px, 4vw, 40px); }
+  .meet h2 { margin: 0; font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 4vw, 40px); line-height: 1.1; color: var(--navy); }
+  .meet .intro { margin: 8px 0 18px; color: var(--steel); }
+  .person { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 24px; align-items: center; border-top: 1px solid var(--hair); padding: 16px 0; }
+  .person:last-of-type { border-bottom: 1px solid var(--hair); }
+  .person-name { font-family: var(--serif); font-weight: 600; font-size: 26px; line-height: 1.05; color: var(--navy); font-variant-ligatures: no-common-ligatures no-discretionary-ligatures; }
+  .person-role { margin-top: 4px; font-weight: 600; font-size: 11px; line-height: 1.5; letter-spacing: 0.14em; text-transform: uppercase; color: var(--steel); }
+  .person a { font-weight: 500; font-size: 16px; color: var(--navy); border-bottom: 1px solid var(--blue); padding: 6px 0 2px; justify-self: start; word-break: break-all; }
+  .person a:hover { color: var(--blue); }
+
+  /* footer strip */
+  footer.strip .strip-row { position: relative; }
+  footer.strip .strip-row::before { content: ''; position: absolute; left: var(--gutter); right: var(--gutter); top: 0; border-top: 1px solid var(--hair); }
+  .strip-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 18px; padding-bottom: 32px; }
+  .strip-row a { font-weight: 600; font-size: 13px; letter-spacing: 0.04em; }
+  .strip-row .eyebrow { font-size: 11px; }
+
+  @media (max-width: 900px) {
+    .records { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .top-row { align-items: flex-start; }
+    .event { align-items: flex-start; text-align: left; }
+    .person { grid-template-columns: 1fr; }
+    .btn { width: 100%; }
   }
   @media (max-width: 420px) {
-    .record-grid { grid-template-columns: 1fr; }
-    .record { border-right: none; border-bottom: 1px solid var(--rule); }
-    .record:last-child { border-bottom: none; }
+    .records { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 
-<!-- ============ NAV ============ -->
-<nav class="nav">
-  <div class="wrap nav-inner">
-    <a class="nav-logo" href="index.html" aria-label="Alpha Technical Centre home">
-      <span class="nav-mark">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 3 L20 20 L15 20 L12 12 L9 20 L4 20 Z" fill="#C9A84C"/>
-          <rect x="9.5" y="15" width="5" height="2.2" fill="#0B1F3A"/>
-        </svg>
-      </span>
-      <span class="nav-wordmark">
-        <span class="nav-wordmark-main">Alpha</span>
-        <span class="nav-wordmark-sub">Technical Centre</span>
-        <span class="nav-wordmark-parent">An Alpha Energy company</span>
-      </span>
+<header class="top">
+  <div class="accent" aria-hidden="true"></div>
+  <div class="wrap top-row">
+    <a class="brand" href="index.html" aria-label="Alpha Technical Centre home">
+      <img src="adipec-logo.svg" alt="Alpha Technical Centre" width="220" height="53">
+      <span class="eyebrow" data-en="An Alpha Energy company" data-es="Una empresa de Alpha Energy">An Alpha Energy company</span>
     </a>
-    <div class="nav-links">
-      <a href="index.html" data-en="Home" data-es="Inicio">Home</a>
-      <a href="about.html" data-en="About" data-es="Nosotros">About</a>
-      <div class="nav-dropdown">
-        <button data-en="Capabilities" data-es="Capacidades">Capabilities ▾</button>
-        <div class="nav-dropdown-menu">
-          <a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Modelización Petróleo y Gas">Oil &amp; Gas Modelling</a>
-          <a href="financial-modelling.html" data-en="Financial Modelling" data-es="Modelización Financiera">Financial Modelling</a>
-        </div>
-      </div>
-      <a href="tools.html" data-en="Our Tools" data-es="Herramientas">Our Tools</a>
-      <a href="technical-due-diligence.html" data-en="Due Diligence" data-es="Diligencia Debida">Due Diligence</a>
-      <a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a>
-      <a href="team.html" data-en="Team" data-es="Equipo">Team</a>
-      <a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a>
-      <a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a>
+    <div class="event">
+      <span class="event-name" data-en="ADIPEC 2026 · Abu Dhabi" data-es="ADIPEC 2026 · Abu Dabi">ADIPEC 2026 · Abu Dhabi</span>
+      <span class="event-date" data-en="2–5 November" data-es="2–5 de noviembre">2–5 November</span>
       <div class="nav-lang">
         <button data-lang="en" class="active">EN</button>
         <button data-lang="es">ES</button>
       </div>
-      <a href="plan-your-job.html" class="btn-nav" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a>
-    </div>
-    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
-  </div>
-</nav>
-
-<!-- ============ HERO ============ -->
-<header class="page-hero">
-  <div class="page-hero-bg hero-bg-grid"></div>
-  <div class="hero-bg-glow"></div>
-  <div class="wrap page-hero-content">
-    <span class="label" data-en="ADIPEC 2026 · Abu Dhabi · 2–5 November" data-es="ADIPEC 2026 · Abu Dabi · 2–5 de noviembre">ADIPEC 2026 · Abu Dhabi · 2–5 November</span>
-    <h1 data-en="Same field. More &lt;em&gt;barrels.&lt;/em&gt;" data-es="Mismo campo. Más &lt;em&gt;barriles.&lt;/em&gt;">Same field. More <em>barrels.</em></h1>
-    <p data-en="Alpha Technical Centre are at ADIPEC 2026. We target technical potential: reservoir engineering, field development and technical due diligence for mature assets — by partners who have run the fields, not just modelled them." data-es="Alpha Technical Centre estará en ADIPEC 2026. Buscamos el potencial técnico: ingeniería de yacimientos, desarrollo de campos y diligencia debida técnica para activos maduros — por socios que han operado los campos, no solo los han modelado.">Alpha Technical Centre are at ADIPEC 2026. We target technical potential: reservoir engineering, field development and technical due diligence for mature assets — by partners who have run the fields, not just modelled them.</p>
-    <div class="adipec-actions">
-      <a class="btn btn-primary" href="mailto:chris@alpha-technical-centre.com?subject=Meeting%20at%20ADIPEC%202026" data-en="Book a meeting at ADIPEC" data-es="Reserve una reunión en ADIPEC">Book a meeting at ADIPEC</a>
-      <a class="btn btn-ghost-light" href="adipec-2026-handout.pdf" download data-en="Download the handout (PDF)" data-es="Descargar el folleto (PDF)">Download the handout (PDF)</a>
     </div>
   </div>
 </header>
 
-<!-- ============ TRACK RECORD ============ -->
-<section class="section-white">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="label" data-en="Partner track record" data-es="Trayectoria de los socios">Partner track record</span>
-      <h2 data-en="Operators who have done this &lt;em&gt;before&lt;/em&gt;" data-es="Operadores que ya lo han &lt;em&gt;hecho&lt;/em&gt;">Operators who have done this <em>before</em></h2>
+<main>
+  <section class="wrap lead">
+    <span class="eyebrow" data-en="Brownfield rehabilitation · Mature fields" data-es="Rehabilitación de campos maduros">Brownfield rehabilitation · Mature fields</span>
+    <h1 data-en="Same field. &lt;em&gt;More barrels.&lt;/em&gt;" data-es="Mismo campo. &lt;em&gt;Más barriles.&lt;/em&gt;">Same field. <em>More barrels.</em></h1>
+    <p class="pivot" data-en="We target technical potential." data-es="Buscamos el potencial técnico.">We target technical potential.</p>
+    <p class="body" data-en="Reservoir engineering, field development and technical due diligence for mature assets — by partners who have run the fields, not just modelled them." data-es="Ingeniería de yacimientos, desarrollo de campos y diligencia debida técnica para activos maduros — por socios que han operado los campos, no solo los han modelado.">Reservoir engineering, field development and technical due diligence for mature assets — by partners who have run the fields, not just modelled them.</p>
+    <div class="actions">
+      <a class="btn btn-fill" href="mailto:chris@alpha-technical-centre.com?subject=Meeting%20at%20ADIPEC%202026" data-en="Book a meeting at ADIPEC" data-es="Reserve una reunión en ADIPEC">Book a meeting at ADIPEC</a>
+      <a class="btn btn-line" href="adipec-2026-handout.pdf" download data-en="Download the handout (PDF)" data-es="Descargar el folleto (PDF)">Download the handout (PDF)</a>
     </div>
-    <div class="record-grid">
-      <div class="record">
-        <div class="record-num">20<em>×</em></div>
-        <div class="record-name">Imperial Energy</div>
-        <p data-en="1,000 → 20,000 bopd; £2.5bn sale" data-es="De 1.000 a 20.000 bpd; venta por £2.500 M">1,000 → 20,000 bopd; £2.5bn sale</p>
-      </div>
-      <div class="record">
-        <div class="record-num">3<em>×</em></div>
-        <div class="record-name">Astrakhan Oil</div>
-        <p data-en="Bankrupt to going concern; output tripled in 12 months" data-es="De la quiebra a empresa en marcha; producción triplicada en 12 meses">Bankrupt to going concern; output tripled in 12 months</p>
-      </div>
-      <div class="record">
-        <div class="record-num">4.3<em>×</em></div>
-        <div class="record-name" data-en="Gulf Coast operator" data-es="Operador del Golfo">Gulf Coast operator</div>
-        <p data-en="18 months; opex ~$11 → ~$5/bbl" data-es="18 meses; opex de ~$11 a ~$5/bbl">18 months; opex ~$11 → ~$5/bbl</p>
-      </div>
-      <div class="record">
-        <div class="record-num">100,000<em>+</em></div>
-        <div class="record-name" data-en="Lake Maracaibo" data-es="Lago de Maracaibo">Lake Maracaibo</div>
-        <p data-en="bopd operations sustained" data-es="bpd de operaciones sostenidas">bopd operations sustained</p>
-      </div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ============ MEET US ============ -->
-<section class="section-cream">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="label" data-en="Meet us at ADIPEC" data-es="Reúnase con nosotros en ADIPEC">Meet us at ADIPEC</span>
-      <h2 data-en="Talk to the &lt;em&gt;partners&lt;/em&gt;" data-es="Hable con los &lt;em&gt;socios&lt;/em&gt;">Talk to the <em>partners</em></h2>
-      <p data-en="We are in Abu Dhabi for the full show, 2–5 November. Email either of us to arrange a time." data-es="Estaremos en Abu Dabi durante toda la feria, del 2 al 5 de noviembre. Escriba a cualquiera de nosotros para concertar una cita.">We are in Abu Dhabi for the full show, 2–5 November. Email either of us to arrange a time.</p>
+  <section class="band" aria-labelledby="record-head">
+    <div class="wrap">
+      <div class="band-head">
+        <span class="eyebrow" id="record-head" data-en="Partner track record" data-es="Trayectoria de los socios">Partner track record</span>
+        <span data-en="Operators who have done this before" data-es="Operadores que ya lo han hecho">Operators who have done this before</span>
+      </div>
+      <div class="records">
+        <div class="record">
+          <div class="record-num">20×</div>
+          <div class="record-name">Imperial Energy</div>
+          <p data-en="1,000 → 20,000 bopd; £2.5bn sale" data-es="De 1.000 a 20.000 bpd; venta por £2.500 M">1,000 → 20,000 bopd; £2.5bn sale</p>
+        </div>
+        <div class="record">
+          <div class="record-num">3×</div>
+          <div class="record-name">Astrakhan Oil</div>
+          <p data-en="Bankrupt to going concern; output tripled in 12 months" data-es="De la quiebra a empresa en marcha; producción triplicada en 12 meses">Bankrupt to going concern; output tripled in 12 months</p>
+        </div>
+        <div class="record">
+          <div class="record-num">4.3×</div>
+          <div class="record-name" data-en="Gulf Coast operator" data-es="Operador del Golfo">Gulf Coast operator</div>
+          <p data-en="18 months; opex ~$11 → ~$5/bbl" data-es="18 meses; opex de ~$11 a ~$5/bbl">18 months; opex ~$11 → ~$5/bbl</p>
+        </div>
+        <div class="record">
+          <div class="record-num">100,000+</div>
+          <div class="record-name" data-en="Lake Maracaibo" data-es="Lago de Maracaibo">Lake Maracaibo</div>
+          <p data-en="bopd operations sustained" data-es="bpd de operaciones sostenidas">bopd operations sustained</p>
+        </div>
+      </div>
     </div>
-    <div class="people">
-      <div class="card person">
-        <h3>Thomas Reed</h3>
+  </section>
+
+  <section class="wrap meet" aria-labelledby="meet-head">
+    <h2 id="meet-head" data-en="Meet us at ADIPEC" data-es="Reúnase con nosotros en ADIPEC">Meet us at ADIPEC</h2>
+    <p class="intro" data-en="We are in Abu Dhabi for the full show, 2–5 November. Email either of us to arrange a time." data-es="Estaremos en Abu Dabi durante toda la feria, del 2 al 5 de noviembre. Escriba a cualquiera de nosotros para concertar una cita.">We are in Abu Dhabi for the full show, 2–5 November. Email either of us to arrange a time.</p>
+    <div class="person">
+      <div>
+        <div class="person-name">Thomas Reed</div>
         <div class="person-role" data-en="Chief Executive Officer · Alpha International" data-es="Consejero Delegado · Alpha International">Chief Executive Officer · Alpha International</div>
-        <a class="person-mail" href="mailto:treed@alphainternational.energy?subject=ADIPEC%202026">treed@alphainternational.energy</a>
       </div>
-      <div class="card person">
-        <h3>Chris Hopkinson</h3>
+      <a href="mailto:treed@alphainternational.energy?subject=ADIPEC%202026">treed@alphainternational.energy</a>
+    </div>
+    <div class="person">
+      <div>
+        <div class="person-name">Chris Hopkinson</div>
         <div class="person-role" data-en="Managing Partner · Alpha Technical Centre" data-es="Socio Director · Alpha Technical Centre">Managing Partner · Alpha Technical Centre</div>
-        <a class="person-mail" href="mailto:chris@alpha-technical-centre.com?subject=ADIPEC%202026">chris@alpha-technical-centre.com</a>
       </div>
+      <a href="mailto:chris@alpha-technical-centre.com?subject=ADIPEC%202026">chris@alpha-technical-centre.com</a>
     </div>
-  </div>
-</section>
+  </section>
+</main>
 
-<!-- ============ CTA ============ -->
-<section class="section-dark">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="label" data-en="Have a field, a deal, or a question?" data-es="¿Tiene un campo, una operación o una pregunta?">Have a field, a deal, or a question?</span>
-      <h2 data-en="We target &lt;em&gt;technical&lt;/em&gt; potential" data-es="Buscamos el potencial &lt;em&gt;técnico&lt;/em&gt;">We target <em>technical</em> potential</h2>
-    </div>
-    <div class="adipec-actions">
-      <a class="btn btn-primary" href="technical-due-diligence.html" data-en="Technical due diligence" data-es="Diligencia debida técnica">Technical due diligence</a>
-      <a class="btn btn-ghost-light" href="case-studies.html" data-en="Case studies" data-es="Casos">Case studies</a>
-      <a class="btn btn-ghost-light" href="contact.html" data-en="Contact us" data-es="Contáctenos">Contact us</a>
-    </div>
-  </div>
-</section>
-
-<!-- ============ FOOTER ============ -->
-<footer class="footer">
-  <div class="footer-grad"></div>
-  <div class="wrap">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <span class="nav-wordmark">
-          <span class="nav-wordmark-main">Alpha</span>
-          <span class="nav-wordmark-sub">Technical Centre</span>
-        </span>
-        <p class="footer-tagline" data-en="Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates." data-es="Planificación integral del desarrollo de campos. Una empresa de propiedad total de Alpha Energy.">Integrated field development planning. A wholly-owned Alpha Energy company, available for external technical mandates.</p>
-      </div>
-      <div class="footer-col">
-        <h4 data-en="Capabilities" data-es="Capacidades">Capabilities</h4>
-        <ul>
-          <li><a href="oil-gas-modelling.html" data-en="Oil &amp; Gas Modelling" data-es="Petróleo y Gas">Oil &amp; Gas Modelling</a></li>
-          <li><a href="financial-modelling.html" data-en="Financial Modelling" data-es="Financiera">Financial Modelling</a></li>
-          <li><a href="plan-your-job.html" data-en="Plan Your Job" data-es="Planifique">Plan Your Job</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4 data-en="Company" data-es="Empresa">Company</h4>
-        <ul>
-          <li><a href="about.html" data-en="About" data-es="Nosotros">About</a></li>
-          <li><a href="team.html" data-en="Team" data-es="Equipo">Team</a></li>
-          <li><a href="case-studies.html" data-en="Case Studies" data-es="Casos">Case Studies</a></li>
-          <li><a href="insights.html" data-en="Insights" data-es="Análisis">Insights</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4 data-en="Connect" data-es="Contacto">Connect</h4>
-        <ul>
-          <li><a href="contact.html" data-en="Contact" data-es="Contacto">Contact</a></li>
-          <li><a href="mailto:info@alpha-technical-centre.com">info@alpha-technical-centre.com</a></li>
-          <li><a href="https://alphaenergylatinamerica.com" data-en="Alpha Energy ↗" data-es="Alpha Energy ↗">Alpha Energy ↗</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p data-en="© 2026 Alpha Technical Centre · Houston, Texas · A wholly-owned Alpha Energy company" data-es="© 2026 Alpha Technical Centre · Houston, Texas · Una empresa de propiedad total de Alpha Energy">© 2026 Alpha Technical Centre · Houston, Texas · A wholly-owned Alpha Energy company</p>
-      <span class="footer-conf" data-en="Strictly Confidential" data-es="Estrictamente Confidencial">Strictly Confidential</span>
-    </div>
+<footer class="strip">
+  <div class="wrap strip-row">
+    <a href="index.html">www.alpha-technical-centre.com</a>
+    <span class="eyebrow" data-en="London / Dubai" data-es="Londres / Dubái">London / Dubai</span>
   </div>
 </footer>
 
 <script src="main.js"></script>
-<script src="event-banner.js?v=20261103"></script>
 </body>
 </html>
