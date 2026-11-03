@@ -12,3 +12,20 @@ financial-modelling.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX 
 plan-your-job.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed
 nodal-analysis-tool.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed
 oil-gas-modelling.html	APEX rebrand (11 Oct 2026): tool names only, e.g. APEX Quick Look Financial Model, APEX Scope of Work Generator, APEX Nodal Analysis, APEX Asset Intelligence, APEX 3D Model; no behaviour changed
+about.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+case-studies.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+contact.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+financial-modelling.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+index.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+insights-2026-07-technology-radar.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+insights-gulf-coast-maracaibo-analogue.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+insights-mid2026-upstream-outlook.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+insights-technical-due-diligence-oil-gas.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+insights-us-energy-dominance-venezuela.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+insights.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+nodal-analysis.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+oil-gas-modelling.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+plan-your-job.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+team.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+technical-due-diligence.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
+tools.html	ADIPEC 2026 announcement bar: one script tag (event-banner.js) added; it switches itself off after 5 Nov 2026; page content unchanged
