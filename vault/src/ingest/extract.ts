@@ -4,12 +4,12 @@
  *
  *  - PDF:  pdfjs-dist text layer; a near-empty text layer means a scan, which is OCRed with
  *          tesseract.js when the language data is available locally (VAULT_TESSDATA_DIR, or
- *          VAULT_OCR_DOWNLOAD=1 to let tesseract fetch it). Otherwise `needs_ocr: true`.
+ *          VAULT_OCR_DOWNLOAD=1 to fetch the .gz data into it first). Otherwise `needs_ocr: true`.
  *  - DOCX: mammoth (HTML) → Markdown-ish text.     - XLSX/CSV/XLS: xlsx, one Markdown table per sheet.
  *  - PPTX: slide XML through jszip.                 - HTML, MD, TXT, JSON, EML: parsed here.
  * Anchor offsets are character offsets into `text`.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -209,18 +209,51 @@ function pdfPageText(items: any[]): string {
   return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
 }
 
+/** Where tesseract.js's own default CDN keeps a language's LSTM data. It hosts only the .gz file. */
+export const ocrLangUrl = (lang: string) => `https://cdn.jsdelivr.net/npm/@tesseract.js-data/${lang}/4.0.0_best_int/${lang}.traineddata.gz`;
+
+/**
+ * Make sure every language in `langs` ("eng", "eng+spa") is on disk in `dir`, downloading the missing ones when
+ * VAULT_OCR_DOWNLOAD=1. Returns false when any is missing and cannot be fetched. tesseract.js is never left to
+ * download for itself: when its own download fails it either throws from a message listener (no errorHandler: the
+ * whole ingest run exits with status 1) or never settles createWorker (with one), so a bad URL or a CDN outage
+ * would stop every run on the first scanned PDF. Fetching here turns that into needs_ocr on one file.
+ */
+export async function ensureLangData(dir: string, langs: string, opts: { download?: boolean; fetch?: typeof fetch } = {}): Promise<boolean> {
+  const download = opts.download ?? process.env.VAULT_OCR_DOWNLOAD === '1';
+  for (const lang of langs.split('+').map(l => l.trim()).filter(Boolean)) {
+    if (!/^[a-z_]+$/i.test(lang)) return false;
+    if (existsSync(path.join(dir, `${lang}.traineddata.gz`)) || existsSync(path.join(dir, `${lang}.traineddata`))) continue;
+    if (!download) return false;
+    try {
+      const res = await (opts.fetch ?? fetch)(ocrLangUrl(lang), { signal: AbortSignal.timeout(60_000) });
+      if (!res.ok) return false;
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      if (bytes.length < 1024) return false;
+      mkdirSync(dir, { recursive: true });
+      const tmp = path.join(dir, `${lang}.traineddata.gz.part`);
+      writeFileSync(tmp, bytes); renameSync(tmp, path.join(dir, `${lang}.traineddata.gz`));
+    } catch { return false; }
+  }
+  return true;
+}
+
+/** tesseract.js options once ensureLangData has the data local: read from `dir`, gzip when every language is .gz. */
+export function ocrWorkerOptions(dir: string, langs: string): Record<string, unknown> {
+  const gz = langs.split('+').map(l => l.trim()).filter(Boolean).every(l => existsSync(path.join(dir, `${l}.traineddata.gz`)));
+  return { langPath: dir, cachePath: dir, gzip: gz, cacheMethod: 'none', logger: () => {}, errorHandler: () => {} };
+}
+
 /** OCR every page (up to VAULT_OCR_MAX_PAGES). Returns null when OCR cannot run here (no engine, canvas or language data). */
 async function ocrPdf(pdf: any, only: Set<number>): Promise<string[] | null> {
   const dir = tessdataDir();
-  const haveData = ['eng.traineddata.gz', 'eng.traineddata'].some(f => existsSync(path.join(dir, f)));
-  if (!haveData && process.env.VAULT_OCR_DOWNLOAD !== '1') return null;
+  const langs = process.env.VAULT_OCR_LANG || 'eng';
+  if (!(await ensureLangData(dir, langs))) return null;
   let canvasMod: any, tess: any;
   try { canvasMod = await import('@napi-rs/canvas'); tess = await import('tesseract.js'); } catch { return null; }
   let worker: any;
   try {
-    worker = await tess.createWorker(process.env.VAULT_OCR_LANG || 'eng', 1, {
-      langPath: haveData ? dir : undefined, cachePath: dir, gzip: existsSync(path.join(dir, 'eng.traineddata.gz')), logger: () => {},
-    });
+    worker = await tess.createWorker(langs, 1, ocrWorkerOptions(dir, langs));
     const out: string[] = [];
     const last = Math.min(pdf.numPages, MAX_OCR_PAGES);
     for (let n = 1; n <= pdf.numPages; n++) {

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { extractText, UnsupportedFormat, detectFormat } from '../src/ingest/extract.ts';
+import { extractText, UnsupportedFormat, detectFormat, ensureLangData, ocrLangUrl, ocrWorkerOptions } from '../src/ingest/extract.ts';
 import { EML, longPdf, makeDocx, makePdf, makePptx, makeScannedPdf, makeXlsx, paragraphs } from './fixtures/ingest/build.ts';
 import { HERE, readFixture } from './fixtures/ingest/harness.ts';
 
@@ -21,6 +21,47 @@ test('PDF with a text layer: page anchors and the text', async () => {
   assert.match(r.text, /Second page about Carabobo/);
   assert.deepEqual(anchorLabels(r), ['page 1', 'page 2', 'page 3']);
   for (const a of r.anchors) assert.ok(r.text.slice(a.offset).startsWith('## Page'), 'anchor offsets point at the page heading');
+});
+
+test('OCR download: fetches the .gz file the CDN hosts, saves it, and starts tesseract on local data only', async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'no-tessdata-'));
+  assert.match(ocrLangUrl('eng'), /\/eng\/4\.0\.0_best_int\/eng\.traineddata\.gz$/, 'eng.traineddata without .gz is a 404 on the CDN');
+  const asked: string[] = [];
+  const fake = (async (u: string) => { asked.push(u); return new Response(new Uint8Array(4096)); }) as unknown as typeof fetch;
+  assert.equal(await ensureLangData(dir, 'eng+spa', { download: true, fetch: fake }), true);
+  assert.deepEqual(asked, [ocrLangUrl('eng'), ocrLangUrl('spa')]);
+  assert.ok(existsSync(path.join(dir, 'spa.traineddata.gz')));
+  assert.equal(await ensureLangData(dir, 'eng+spa', { download: true, fetch: fake }), true);
+  assert.equal(asked.length, 2, 'data on disk is never fetched again');
+  const o = ocrWorkerOptions(dir, 'eng+spa');
+  assert.equal(o.langPath, dir); assert.equal(o.gzip, true);
+  assert.equal(typeof o.errorHandler, 'function', 'without an errorHandler tesseract.js throws from a message listener and kills the process');
+});
+
+test('OCR download: a 404, a network error or downloads switched off all answer false, never throw', async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'no-tessdata-'));
+  const notFound = (async () => new Response('Not found', { status: 404 })) as unknown as typeof fetch;
+  const down = (async () => { throw new TypeError('fetch failed'); }) as unknown as typeof fetch;
+  assert.equal(await ensureLangData(dir, 'eng', { download: true, fetch: notFound }), false);
+  assert.equal(await ensureLangData(dir, 'eng', { download: true, fetch: down }), false);
+  assert.equal(await ensureLangData(dir, 'eng', { download: false, fetch: notFound }), false);
+  assert.equal(await ensureLangData(dir, '../etc', { download: true, fetch: notFound }), false);
+  assert.ok(!existsSync(path.join(dir, 'eng.traineddata.gz')));
+});
+
+test('scanned PDF: a language download that fails flags needs_ocr and never crashes the process', async () => {
+  const bytes = await makeScannedPdf(['SCANNED LETTER Carabobo']);
+  const prev = { dir: process.env.VAULT_TESSDATA_DIR, dl: process.env.VAULT_OCR_DOWNLOAD, lang: process.env.VAULT_OCR_LANG };
+  process.env.VAULT_TESSDATA_DIR = mkdtempSync(path.join(os.tmpdir(), 'no-tessdata-'));
+  process.env.VAULT_OCR_DOWNLOAD = '1';
+  process.env.VAULT_OCR_LANG = 'zzz'; // no such language: the download fails online or offline
+  try {
+    const r = await extractText(bytes, 'application/pdf', 'scan.pdf');
+    assert.equal(r.needs_ocr, true);
+    assert.ok(!r.ocr);
+  } finally {
+    for (const [k, v] of [['VAULT_TESSDATA_DIR', prev.dir], ['VAULT_OCR_DOWNLOAD', prev.dl], ['VAULT_OCR_LANG', prev.lang]] as const) if (v === undefined) delete process.env[k]; else process.env[k] = v;
+  }
 });
 
 test('scanned PDF: OCR when the language data is local, otherwise needs_ocr is set and nothing throws', async (t) => {
