@@ -360,12 +360,17 @@ export async function resilience(code: string): Promise<WmResult<Resilience>> {
   return { ...r, data: { score: num(d.overallScore), level: str(d.level), trend: str(d.trend), change_30d: num(d.change30d), low_confidence: !!d.lowConfidence, domains: list(d, 'domains').map((x: any) => ({ id: String(x.id ?? ''), score: num(x.score), weight: num(x.weight) })) } };
 }
 
-/** GET /api/infrastructure/v1/list-internet-outages for the last `days` days. */
+/**
+ * GET /api/infrastructure/v1/list-internet-outages for the last `days` days. The feed does not reliably honour its
+ * `country` filter (a Russia brief received Peru and Uruguay), so each row is kept only when its own `country` is this
+ * one; a row that names no country cannot be placed and is dropped.
+ */
 export async function outages(code: string, days = 30): Promise<WmResult<Outage[]>> {
   const now = nowMs();
+  const want = code.toUpperCase();
   const r = await get('/api/infrastructure/v1/list-internet-outages', { country: code, start: String(now - days * 86_400_000), end: String(now) });
   if (!r.ok) return r;
-  return { ...r, data: list(r.data, 'outages').slice(0, 20).map((o: any, i: number): Outage => ({ id: str(o.id) ?? `o${i + 1}`, title: String(o.title ?? ''), url: str(o.link), detected_at: whenIso(o.detectedAt), ended_at: whenIso(o.endedAt), severity: enumWord(o.severity), region: str(o.region), cause: str(o.cause) })) };
+  return { ...r, data: list(r.data, 'outages').filter((o: any) => String(o.country ?? '').toUpperCase() === want).slice(0, 20).map((o: any, i: number): Outage => ({ id: str(o.id) ?? `o${i + 1}`, title: String(o.title ?? ''), url: str(o.link), detected_at: whenIso(o.detectedAt), ended_at: whenIso(o.endedAt), severity: enumWord(o.severity), region: str(o.region), cause: str(o.cause) })) };
 }
 
 /** GET /api/intelligence/v1/get-intel-timeline (Pro): the durable intelligence store for the country, newest first. */
