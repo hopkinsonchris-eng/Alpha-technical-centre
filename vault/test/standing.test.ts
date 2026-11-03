@@ -49,7 +49,7 @@ before(async () => {
   await db.query("INSERT INTO people (id,email,name,role) VALUES ('ana','ana@alpha-technical-centre.com','Ana','associate'), ('ben','ben@alpha-technical-centre.com','Ben','associate')");
   await db.query("INSERT INTO organisations (id,name,kind,country) VALUES ('frontera','Frontera Energy','client','CO'), ('anh','ANH','regulator','CO'), ('ecopetrol','Ecopetrol S.A.','operator','CO')");
   await db.query(`INSERT INTO contacts (id,organisation_id,name,emails,relationship) VALUES ('juan','ecopetrol','Juan Pérez','{juan@ecopetrol.example}', '{"last_contact_at":"2026-09-20T10:00:00Z","last_contact_by":"chris","last_direction":"out","exchanges":4}'::jsonb)`);
-  await db.query(`INSERT INTO legal_tags (id,classification,data_type,client_id,originator,expires_at) VALUES ($1,'client-nda','second-party','frontera','Frontera Energy','2027-03-31')`, [TAG]);
+  await db.query(`INSERT INTO legal_tags (id,classification,data_type,client_id,originator,expires_at) VALUES ($1,'client-nda','second-party','frontera','Frontera Energy','2100-03-31')`, [TAG]);
   await db.query(`INSERT INTO projects (id,client_id,name,status,default_legal_tag,members,country,stage,stage_history,register,created_at) VALUES ($1,'frontera','Llanos waterflood','active',$2,'{chris,ana}','CO','Qualified',
     '[{"stage":"Initial screen","at":"2026-08-01T09:00:00Z","by":"chris"},{"stage":"Qualified","at":"2026-08-20T09:00:00Z","by":"chris"}]'::jsonb,
     '{"next":"Validate ownership","owner":"Tom","current":16,"plan":22,"holder":"Ecopetrol S.A.","government":"ANH"}'::jsonb, '2026-08-01T09:00:00Z')`, [P, TAG]);
@@ -64,14 +64,14 @@ before(async () => {
   await item(ids.theirs, 'letter', 'Their letter on the data room', '2026-09-12T09:00:00Z');
   await item(ids.email, 'email', 'RE: data room access', '2026-09-18T09:00:00Z', { direction: 'in', status: 'filed', contacts: [{ role: 'from', name: 'Juan Pérez', email: 'juan@ecopetrol.example' }] });
   await item(ids.draft, 'note', 'Draft letter to Ecopetrol', '2026-09-19T09:00:00Z', { kind: 'draft', draft_kind: 'letter', questions: ['What is the current rate?', 'Which licence?'] });
-  await item(ids.invoice, 'invoice', 'Invoice 2026-031', '2026-09-15T09:00:00Z', { number: '2026-031', amount: 12000, currency: 'USD', due_date: '2026-10-15', status: 'open' });
+  await item(ids.invoice, 'invoice', 'Invoice 2026-031', '2026-09-15T09:00:00Z', { number: '2026-031', amount: 12000, currency: 'USD', due_date: '2099-10-15', status: 'open' });
   await db.query("INSERT INTO dispatches (id,item_id,direction,organisation_id,channel,occurred_at,recorded_by) VALUES ($1,$2,'out','ecopetrol','email','2026-09-10T10:00:00Z','chris'), ($3,$4,'in','anh','post','2026-09-12T10:00:00Z','chris')", [ids.dOut, ids.letter, ids.dIn, ids.theirs]);
   await db.query("INSERT INTO review_queue (id,kind,payload) VALUES ($1,'asset',$4::jsonb), ($2,'research',$4::jsonb), ($3,'organisation',$4::jsonb)", [randomUUID(), randomUUID(), randomUUID(), JSON.stringify({ project_id: P })]);
   await db.query("INSERT INTO review_queue (id,kind,payload,status) VALUES ($1,'asset',$2::jsonb,'accepted')", [randomUUID(), JSON.stringify({ project_id: P })]);
   await item(ids.filing, 'email', 'Unfiled message', '2026-09-21T09:00:00Z', {}, 'firm', 'lt-firm');
   await db.query("INSERT INTO filing_queue (id,item_id,suggestions) VALUES ($1,$2,$3::jsonb)", [randomUUID(), ids.filing, JSON.stringify([{ project_id: P, confidence: 0.8 }])]);
   assert.equal((await call(partner, 'POST', `/api/projects/${P}/milestones`, { kind: 'data_room_closes', title: 'Data room closes', due_at: '2026-09-30' })).status, 201);
-  assert.equal((await call(partner, 'POST', `/api/projects/${P}/milestones`, { kind: 'next_action', title: 'Validate ownership', due_at: '2026-10-20', owner: 'chris' })).status, 201);
+  assert.equal((await call(partner, 'POST', `/api/projects/${P}/milestones`, { kind: 'next_action', title: 'Validate ownership', due_at: '2099-10-20', owner: 'chris' })).status, 201);
 });
 after(async () => { await db.close(); });
 
@@ -83,7 +83,7 @@ test('A1 / W7-AC12: the standing has exactly the agreed shape, from the register
   const s = r.body;
   assert.deepEqual(Object.keys(s), KEYS);
   assert.deepEqual(s.project, { id: P, name: 'Llanos waterflood', status: 'active', stage: 'Qualified', stage_since: '2026-08-20T09:00:00.000Z', country: 'CO', client_id: 'frontera' });
-  assert.deepEqual(s.next, { title: 'Validate ownership', due_at: '2026-10-20', owner: 'chris', ref: null });
+  assert.deepEqual(s.next, { title: 'Validate ownership', due_at: '2099-10-20', owner: 'chris', ref: null });
   // Figures: derived live from the runs and the register by the nightly job's rule, with unit, date and source on every row.
   assert.deepEqual(Object.keys(s.figures[0]), ['job', 'name', 'value', 'unit', 'as_of', 'source_ref', 'provenance', 'run_status', 'stale', 'asset_id']);
   assert.deepEqual(s.figures, [
@@ -98,9 +98,9 @@ test('A1 / W7-AC12: the standing has exactly the agreed shape, from the register
   ]);
   assert.deepEqual(s.deadlines, [
     { kind: 'data_room_closes', title: 'Data room closes', due_at: '2026-09-30', ref: null, overdue: true },
-    { kind: 'deadline', title: 'Invoice 2026-031 due', due_at: '2026-10-15', ref: `doc:${ids.invoice}`, overdue: false },
-    { kind: 'next_action', title: 'Validate ownership', due_at: '2026-10-20', ref: null, overdue: false },
-    { kind: 'expiry', title: `NDA ${TAG} expires`, due_at: '2027-03-31', ref: `tag:${TAG}`, overdue: false },
+    { kind: 'deadline', title: 'Invoice 2026-031 due', due_at: '2099-10-15', ref: `doc:${ids.invoice}`, overdue: false },
+    { kind: 'next_action', title: 'Validate ownership', due_at: '2099-10-20', ref: null, overdue: false },
+    { kind: 'expiry', title: `NDA ${TAG} expires`, due_at: '2100-03-31', ref: `tag:${TAG}`, overdue: false },
   ]);
   assert.deepEqual(s.since, { opened_at: null, runs: 1, items: 6, mail: 1 }, 'never opened: everything is new to the caller');
   assert.deepEqual(s.stale_counts, { runs: 0, items: 0 });
@@ -160,7 +160,7 @@ test('A7: since is relative to the caller\'s last project.read on this project; 
 test('S4 / A9: the project carries legal_tag_expiry, stage_changed_at (backfilled from the stage history) and origin_ref; the stage PATCH maintains it', async () => {
   let r = await call(partner, 'GET', `/api/projects/${P}`);
   assert.equal(r.status, 200);
-  assert.equal(r.body.legal_tag_expiry, '2027-03-31');
+  assert.equal(r.body.legal_tag_expiry, '2100-03-31');
   assert.equal(r.body.stage_changed_at, '2026-08-20T09:00:00.000Z');
   assert.equal(r.body.origin_ref, null);
   const before = Date.now();
