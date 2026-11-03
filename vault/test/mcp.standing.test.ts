@@ -23,7 +23,7 @@ async function seed(): Promise<Db> {
   await db.query("INSERT INTO legal_tags (id,classification,data_type,originator) VALUES ('lt-public','public','public','ANH'),('lt-firm','firm','first-party','ATC')");
   await db.query("INSERT INTO projects (id,name,default_legal_tag) VALUES ('firm','Firm','lt-firm')");
   await db.query("INSERT INTO organisations (id,name,kind) VALUES ('a','Client A','client'), ('anh','ANH','regulator')");
-  await db.query("INSERT INTO legal_tags (id,classification,data_type,client_id,originator,expires_at) VALUES ('lt-a-nda','client-nda','second-party','a','a','2027-06-30')");
+  await db.query("INSERT INTO legal_tags (id,classification,data_type,client_id,originator,expires_at) VALUES ('lt-a-nda','client-nda','second-party','a','a','2100-06-30')");
   await db.query(`INSERT INTO projects (id,client_id,name,default_legal_tag,members,country,stage,stage_history,register,created_at) VALUES ('p-a-1','a','a one','lt-a-nda','{ana}','CO','Qualified',
     '[{"stage":"Initial screen","at":"2026-08-01T09:00:00Z","by":"chris"},{"stage":"Qualified","at":"2026-08-20T09:00:00Z","by":"chris"}]'::jsonb,
     '{"holder":"Client A Holdings","partners":["Partner Co"],"next":"Agree the data room index","current":16,"plan":22}'::jsonb,'2026-08-01T09:00:00Z')`);
@@ -32,7 +32,7 @@ async function seed(): Promise<Db> {
   await db.query(
     "INSERT INTO runs (id,job,tool_version,tool_commit,author,created_at,project_id,client_id,legal_tag,title,record,input_hash,status) VALUES ($1,'opportunity-register','2.1.2','abc1234','chris','2026-08-01T10:00:00Z','p-a-1','a','lt-a-nda','Client A screening',$2::jsonb,$3,'final')",
     [RUN_A, JSON.stringify({ id: RUN_A, job: 'opportunity-register', title: 'Client A screening', outputs: { npv10: { value: 12.5, unit: 'MMUSD' } } }), 'sha256:' + '1'.repeat(64)]);
-  await db.query("INSERT INTO project_milestones (id,project_id,kind,title,due_at,owner,created_by) VALUES ($1,'p-a-1','next_action','Agree the data room index','2026-10-20','ana','chris'), ($2,'p-a-1','reply_due','Reply from ANH on the licence map','2026-09-30',NULL,'chris')", [randomUUID(), randomUUID()]);
+  await db.query("INSERT INTO project_milestones (id,project_id,kind,title,due_at,owner,created_by) VALUES ($1,'p-a-1','next_action','Agree the data room index','2099-10-20','ana','chris'), ($2,'p-a-1','reply_due','Reply from ANH on the licence map','2026-09-30',NULL,'chris')", [randomUUID(), randomUUID()]);
   return db;
 }
 
@@ -62,16 +62,16 @@ test('W7-AC12: get_project_context carries the standing, equal to the route\'s a
   const strip = ({ since: _s, ...rest }: any) => rest;
   assert.deepEqual(strip(st), strip(route));
   assert.equal(st.project.stage, 'Qualified'); assert.equal(st.project.stage_since, '2026-08-20T09:00:00.000Z');
-  assert.deepEqual(st.next, { title: 'Agree the data room index', due_at: '2026-10-20', owner: 'ana', ref: null });
+  assert.deepEqual(st.next, { title: 'Agree the data room index', due_at: '2099-10-20', owner: 'ana', ref: null });
   assert.ok(st.figures.some((f: any) => f.name === 'npv10' && f.unit === 'MMUSD' && f.as_of === '2026-08-01' && f.run_status === 'final'));
   assert.ok(st.figures.some((f: any) => f.job === 'register' && f.name === 'current' && f.unit === 'kboe/d'));
-  assert.deepEqual(st.deadlines.map((d: any) => [d.kind, d.due_at, d.overdue]), [['reply_due', '2026-09-30', true], ['next_action', '2026-10-20', false], ['expiry', '2027-06-30', false]]);
+  assert.deepEqual(st.deadlines.map((d: any) => [d.kind, d.due_at, d.overdue]), [['reply_due', '2026-09-30', true], ['next_action', '2099-10-20', false], ['expiry', '2100-06-30', false]]);
   assert.deepEqual(st.counterparties.map((c: any) => [c.organisation_id, c.role]), [['anh', 'government']]);
   // The markdown the model reads says the same, with units.
   const md: string = ctx.structuredContent.markdown;
   assert.match(md, /## Standing/);
   assert.match(md, /Stage: Qualified since 2026-08-20/);
-  assert.match(md, /Next: Agree the data room index \(due 2026-10-20, ana\)/);
+  assert.match(md, /Next: Agree the data room index \(due 2099-10-20, ana\)/);
   assert.match(md, /npv10: 12\.5 MMUSD \(as of 2026-08-01, final, run:00000000-0000-4000-8000-00000000a001\)/);
   assert.match(md, /current: 16 kboe\/d \(as of 2026-08-20, register\)/);
   assert.match(md, /Reply from ANH on the licence map: 2026-09-30 \(overdue\)/);
