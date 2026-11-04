@@ -126,6 +126,9 @@ services:
   - type: cron
     name: atc-vault-ingest-sync
     runtime: node
+    # OCR of scanned PDFs (tesseract + pdfjs page renders) peaks above 600 MB on one 20-page scan; Starter's 512 MB
+    # was killed mid-run, so nothing behind the first scan was ever indexed. Standard has 2 GB.
+    plan: standard
     rootDir: vault
     schedule: "*/15 * * * *"
     buildCommand: npm ci
