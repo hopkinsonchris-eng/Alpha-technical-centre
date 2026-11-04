@@ -10,7 +10,7 @@ import type { Db } from '../db/client.ts';
 import { openDb } from '../db/client.ts';
 import { migrate } from '../db/migrate.ts';
 import { openStorage, type Storage } from '../storage.ts';
-import { openProvider } from '../llm/provider.ts';
+import { ingestProviderFor, openProvider } from '../llm/provider.ts';
 import { openEmbedder } from '../ingest/embed.ts';
 import { ingestItem, type IngestDeps } from '../ingest/index.ts';
 import { serviceSink, type ItemSink } from '../ingest/items-client.ts';
@@ -96,7 +96,7 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
       const left = cap - (processSpendGbp() - spentBefore);
       let provider = deps?.provider ?? null;
       if (!deps) { try { provider = openProvider(); } catch { provider = null; } }
-      try { summary.folders = await fileBacklog(db, provider, { limit: 200, budgetGbp: Math.max(0, left) }); } catch (e) { summary.errors.push(`folders: ${(e as Error).message}`); }
+      try { summary.folders = await fileBacklog(db, ingestProviderFor(provider), { limit: 200, budgetGbp: Math.max(0, left) }); } catch (e) { summary.errors.push(`folders: ${(e as Error).message}`); }
     }
     for (const s of [summary.workdrive, summary.books]) if (s) summary.errors.push(...s.errors);
     await db.query(`UPDATE jobs SET status = 'ok', finished_at = now(), summary = $2::jsonb WHERE id = $1`, [job, JSON.stringify(summary)]);

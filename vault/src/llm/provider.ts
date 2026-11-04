@@ -55,6 +55,8 @@ export class FakeProvider implements LlmProvider {
 export class AnthropicProvider implements LlmProvider {
   name = 'anthropic';
   constructor(private readonly apiKey: string, public readonly model = process.env.LLM_MODEL ?? 'claude-sonnet-5-5', private readonly fetchImpl: typeof fetch = fetch) {}
+  /** The same key on another model. */
+  withModel(model: string): AnthropicProvider { return new AnthropicProvider(this.apiKey, model, this.fetchImpl); }
   async complete(req: LlmRequest): Promise<LlmResult> {
     await assertBudget();                                             // the daily cap, before any token is bought
     const res = await this.fetchImpl('https://api.anthropic.com/v1/messages', {
@@ -102,6 +104,16 @@ export class AnthropicProvider implements LlmProvider {
     await recordCall({ model: out.model, usage: out.usage, searches: out.searches, purpose: req.purpose, by: req.by, scope: req.scope, refs: req.refs });
     return out;
   }
+}
+
+/**
+ * The provider for indexing (chunk context, field proposals, folder filing): the same key on Claude Haiku 5.5, about
+ * twenty times cheaper than Sonnet per token, unless LLM_INGEST_MODEL names another model. These calls run once per
+ * chunk of every file, so they set the indexing bill; drafting, Ask and legal extraction keep the main model.
+ * A provider that is not Anthropic's (the fake one in tests) is returned unchanged.
+ */
+export function ingestProviderFor(p: LlmProvider | null, env: Record<string, string | undefined> = process.env): LlmProvider | null {
+  return p instanceof AnthropicProvider ? p.withModel(env.LLM_INGEST_MODEL || 'claude-haiku-5-5') : p;
 }
 
 /** null means "no assistant configured": callers degrade (template text, 501). */
