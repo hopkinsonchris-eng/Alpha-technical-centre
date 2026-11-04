@@ -184,3 +184,30 @@ test('files of 5 MB or more are queued as a job and picked up by the ingest-sync
   const again = await runIngestSync(h.db, { workdrive: false, books: false, deps });
   assert.equal(again.ingested, 0, 'nothing left to ingest');
 });
+
+test('a file that fails to index every time goes to the back of the queue instead of blocking every file behind it', async () => {
+  const poison = (await h.upload([{ name: 'poison-a.md', bytes: 'POISON ' + paragraphs(6).join('\n\n'), type: 'text/markdown' }])).body.results[0].item_id;
+  const good = (await h.upload([{ name: 'good-b.md', bytes: 'Healthy note. ' + paragraphs(6).join('\n\n'), type: 'text/markdown' }])).body.results[0].item_id;
+  // Both back in the queue, the failing one oldest: exactly the head-of-line case.
+  for (const [id, at] of [[poison, '2020-01-01'], [good, '2020-01-02']] as const) {
+    await h.db.query(`DELETE FROM chunks WHERE item_id = $1`, [id]);
+    await h.db.query(`UPDATE items SET created_at = $2::timestamptz, extracted = extracted - 'ingest' WHERE id = $1`, [id, at]);
+  }
+  await h.db.query(`UPDATE items SET extracted = extracted || jsonb_build_object('ingest', jsonb_build_object('version', version, 'status', 'skipped')) WHERE id <> ALL($1::uuid[]) AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.item_id = items.id AND c.current)`, [[poison, good]]);
+  const failing = { embed: async (...a: Parameters<FakeEmbedder['embed']>) => { if (a[0].some(t => t.includes('POISON'))) throw new Error('anthropic 401: invalid x-api-key'); return deps.embedder.embed(...a); } } as any;
+  const d = { provider: deps.provider, embedder: failing };
+
+  const first = await runIngestSync(h.db, { workdrive: false, books: false, folders: false, deps: d, limit: 1 });
+  assert.equal(first.failed, 1);
+  assert.match(first.errors[0], /401/);
+  assert.equal((await item(poison)).extracted.ingest_error.attempts, 1, 'the failure is recorded on the item');
+
+  const second = await runIngestSync(h.db, { workdrive: false, books: false, folders: false, deps: d, limit: 1 });
+  assert.equal(second.ingested, 1, 'the next run takes the file behind it');
+  assert.ok(await chunkCount(good, 'AND current') > 0);
+
+  const third = await runIngestSync(h.db, { workdrive: false, books: false, folders: false, deps, limit: 1 });
+  assert.equal(third.ingested, 1, 'once the cause is fixed the failed file is retried and indexed');
+  assert.ok(await chunkCount(poison, 'AND current') > 0);
+  assert.equal((await item(poison)).extracted.ingest_error, undefined, 'a success clears the failure record');
+});

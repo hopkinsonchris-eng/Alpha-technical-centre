@@ -5,7 +5,7 @@
  * Every run is one row in `jobs`.
  */
 import { pathToFileURL } from 'node:url';
-import { processSpendGbp } from '../llm/spend-guard.ts';
+import { BudgetExceeded, processSpendGbp } from '../llm/spend-guard.ts';
 import type { Db } from '../db/client.ts';
 import { openDb } from '../db/client.ts';
 import { migrate } from '../db/migrate.ts';
@@ -57,7 +57,11 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
         WHERE NOT i.hidden AND i.storage_key IS NOT NULL
           AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.item_id = i.id AND c.item_version = i.version AND c.current)
           AND coalesce(i.extracted->'ingest'->>'version', '') <> i.version::text
-        ORDER BY i.created_at LIMIT $1`, [opts.limit ?? 200])).rows;
+        -- A file that failed before goes behind every file that has not, so one that fails every run (a bad key, a
+        -- file the extractor chokes on) never holds the queue: before this, the oldest 200 were retried forever.
+        ORDER BY CASE WHEN i.extracted->'ingest_error'->>'version' = i.version::text
+                      THEN coalesce((i.extracted->'ingest_error'->>'attempts')::int, 1) ELSE 0 END,
+                 i.created_at LIMIT $1`, [opts.limit ?? 200])).rows;
     if (!pending.length && !wd && !bk) {
       summary.idle = 'nothing to ingest and no WorkDrive or Books source configured';
       console.log(`ingest-sync: ${summary.idle}`);
@@ -74,8 +78,17 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
       try {
         const r = await ingestItem(db, storage, it.id, deps!);
         if (r.status === 'ok') summary.ingested++; else if (r.status === 'skipped') summary.skipped++; else summary.needs_attention++;
+        await db.query(`UPDATE items SET extracted = extracted - 'ingest_error' WHERE id = $1 AND extracted ? 'ingest_error'`, [it.id]);
         await db.query(`UPDATE jobs SET status = 'ok', finished_at = now() WHERE name = 'ingest-queue' AND finished_at IS NULL AND summary->>'item_id' = $1`, [it.id]);
-      } catch (e) { summary.failed++; summary.errors.push(`${it.id}: ${(e as Error).message}`); }
+      } catch (e) {
+        // The day's model budget is spent: every file after this would fail the same way, and none of them is at fault.
+        if (e instanceof BudgetExceeded) { summary.stopped_by = 'budget'; summary.left = pending.length - i; summary.errors.push((e as Error).message); break; }
+        summary.failed++; summary.errors.push(`${it.id}: ${(e as Error).message}`);
+        await db.query(
+          `UPDATE items SET extracted = extracted || jsonb_build_object('ingest_error', jsonb_build_object('version', version, 'at', now(), 'message', left($2, 500),
+             'attempts', CASE WHEN extracted->'ingest_error'->>'version' = version::text THEN coalesce((extracted->'ingest_error'->>'attempts')::int, 0) + 1 ELSE 1 END))
+           WHERE id = $1`, [it.id, (e as Error).message]).catch(() => {});
+      }
     }
     // Wave 9: records never filed into the project folders (research notes, mail, files from before the folders) are
     // filed here, at most 200 a run, within whatever the cap has left; a run with no model files by the rules alone.
