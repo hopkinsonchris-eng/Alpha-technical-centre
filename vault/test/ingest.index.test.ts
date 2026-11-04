@@ -211,3 +211,29 @@ test('a file that fails to index every time goes to the back of the queue instea
   assert.ok(await chunkCount(poison, 'AND current') > 0);
   assert.equal((await item(poison)).extracted.ingest_error, undefined, 'a success clears the failure record');
 });
+
+test('indexing runs on the cheap model: chunk context and field proposals go to Haiku, spreadsheets get no model context at all', async () => {
+  const { AnthropicProvider, ingestProviderFor } = await import('../src/llm/provider.ts');
+  const { costOf } = await import('../src/prices.ts');
+  const main = new AnthropicProvider('k', 'claude-sonnet-5-5');
+  const cheap = ingestProviderFor(main, {});
+  assert.equal(cheap?.model, 'claude-haiku-5-5');
+  assert.equal(ingestProviderFor(main, { LLM_INGEST_MODEL: 'claude-sonnet-5-5' })?.model, 'claude-sonnet-5-5');
+  assert.equal(ingestProviderFor(null, {}), null);
+  assert.ok(ingestProviderFor(deps.provider, {}) === deps.provider, 'the fake provider stays the fake provider');
+  assert.ok((costOf('claude-haiku-5-5', { input: 1e6, cached: 0, output: 0 }) ?? 99) < 0.2, 'Haiku 5.5 is priced, so the budget guard does not count it at Sonnet rates');
+
+  const calls: { model: string; purpose?: string }[] = [];
+  const capture = (model: string) => ({ name: 'capture', model, complete: async (r: any) => { calls.push({ model, purpose: r.purpose }); return { text: r.purpose === 'context' ? 'This chunk is from the note.' : '[]', usage: { input: 0, cached: 0, output: 0 }, model, provider: 'capture' }; } });
+  const d = { provider: capture('main') as any, cheap: capture('cheap') as any, embedder: deps.embedder };
+  const note = (await h.upload([{ name: 'cheap-note.md', bytes: 'Parker Creek note. ' + paragraphs(8).join('\n\n'), type: 'text/markdown' }])).body.results[0].item_id;
+  await ingestItem(h.db, h.storage, note, d, { force: true });
+  assert.ok(calls.some(c => c.purpose === 'context'), 'contexts were written');
+  assert.ok(calls.filter(c => c.purpose === 'context' || c.purpose === 'extract.assets').every(c => c.model === 'cheap'), JSON.stringify(calls));
+
+  calls.length = 0;
+  const sheet = (await h.upload([{ name: 'cheap-sheet.xlsx', bytes: makeXlsx(), type: '' }])).body.results[0].item_id;
+  await ingestItem(h.db, h.storage, sheet, d, { force: true });
+  assert.equal(calls.filter(c => c.purpose === 'context').length, 0, 'no model context for a spreadsheet');
+  assert.ok(await chunkCount(sheet, 'AND current') > 0, 'the spreadsheet is still indexed');
+});

@@ -13,7 +13,7 @@
  */
 import type { Db } from '../db/client.ts';
 import type { Storage } from '../storage.ts';
-import type { LlmProvider } from '../llm/provider.ts';
+import { ingestProviderFor, type LlmProvider } from '../llm/provider.ts';
 import { chunkText, contextualise } from './chunk.ts';
 import { vectorLiteral, type Embedder } from './embed.ts';
 import { extractText, UnsupportedFormat } from './extract.ts';
@@ -21,7 +21,10 @@ import { extractLegalFinance, flatten, isLegalFinanceType, proposeNdaExpiry } fr
 import { extractAssets, proposeAssets } from './entities.ts';
 import { fileItem } from '../folders/classify.ts';
 
-export interface IngestDeps { provider: LlmProvider | null; embedder: Embedder }
+export interface IngestDeps { provider: LlmProvider | null; embedder: Embedder; /** indexing calls (context, proposals, filing); default ingestProviderFor(provider) */ cheap?: LlmProvider | null }
+
+/** Formats whose chunks are rows and cells: a model-written context adds little to them, so they get the template. */
+const DATA_FORMATS = new Set(['xlsx', 'csv', 'json']);
 export interface IngestOptions { force?: boolean; now?: () => Date }
 export type IngestStatus = 'ok' | 'skipped' | 'unsupported' | 'empty' | 'needs_ocr' | 'no_original';
 export interface IngestResult {
@@ -80,7 +83,8 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
   await storage.put(`derived/${item.id}/text.md`, new TextEncoder().encode(ex.text), 'text/markdown');
 
   const raw = chunkText(ex.text, ex.anchors);
-  const chunks = await contextualise(raw, { title: item.title || ex.title || 'Untitled', type: item.type, text: ex.text }, deps.provider);
+  const cheap = deps.cheap !== undefined ? deps.cheap : ingestProviderFor(deps.provider);
+  const chunks = await contextualise(raw, { title: item.title || ex.title || 'Untitled', type: item.type, text: ex.text }, DATA_FORMATS.has(ex.format) ? null : cheap);
   const vectors = chunks.length ? await deps.embedder.embed(chunks.map(c => `${c.context}\n\n${c.text}`), 'document') : [];
   if (vectors.length !== chunks.length) throw new Error(`embedder returned ${vectors.length} vectors for ${chunks.length} chunks`);
 
@@ -125,13 +129,13 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
     try {
       const project = (await db.query<any>('SELECT id, country, asset_ids FROM projects WHERE id = $1', [item.project_id])).rows[0];
       if (project) {
-        const mentions = await extractAssets(db, ex.text, ex.anchors, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, deps.provider);
+        const mentions = await extractAssets(db, ex.text, ex.anchors, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, cheap);
         assetProposals = (await proposeAssets(db, { id: item.id, version, title: item.title ?? null, project_id: item.project_id }, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, mentions)).length;
       }
     } catch { /* proposals are best effort; the document is indexed either way */ }
   }
   // Wave 9: the record takes its place in the project's folders, now that its text is known (best effort, like the proposals).
-  if (item.project_id) { try { await fileItem(db, item.id, { provider: deps.provider, text: ex.text }); } catch { /* filed by the next backlog run */ } }
+  if (item.project_id) { try { await fileItem(db, item.id, { provider: cheap, text: ex.text }); } catch { /* filed by the next backlog run */ } }
   return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}), asset_proposals: assetProposals };
 }
 

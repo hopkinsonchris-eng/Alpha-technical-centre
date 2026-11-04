@@ -19,6 +19,7 @@ export const PRICES: Record<string, ModelPrice> = {
   'claude-fable-5-1': { input: 10, output: 50, label: 'Claude Fable 5.1' },
   'claude-opus-5-5': { input: 4, output: 20, label: 'Claude Opus 5.5' },
   'claude-sonnet-5-5': { input: 2, output: 10, label: 'Claude Sonnet 5.5' },
+  'claude-haiku-5-5': { input: 0.1, output: 0.5, label: 'Claude Haiku 5.5' },
   'claude-haiku-4-5': { input: 1, output: 5, label: 'Claude Haiku 4.5' },
   /** The deterministic test provider costs nothing. */
   'fake-1': { input: 0, output: 0, label: 'Fake provider (tests)' },

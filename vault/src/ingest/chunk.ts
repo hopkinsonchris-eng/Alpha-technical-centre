@@ -159,7 +159,7 @@ export function chunkText(text: string, anchors: Anchor[] = [], opts: ChunkOptio
 
 /* ── contextual retrieval ────────────────────────────────────────────── */
 
-export interface ChunkDoc { title: string; type?: string; /** Full extracted text: put in the (cacheable) system prompt. */ text?: string }
+export interface ChunkDoc { title: string; type?: string; /** Extracted text; its opening (maxDocChars) goes in the (cacheable) system prompt. */ text?: string }
 export interface ContextOptions { concurrency?: number; maxDocChars?: number }
 
 const clean = (s: string) => s.replace(/<\/?chunk>/gi, ' ').replace(/\s+/g, ' ').trim();
@@ -186,7 +186,9 @@ export async function contextualise(chunks: Chunk[], doc: ChunkDoc, provider: Ll
     'Reply with 50 to 100 tokens of plain prose and nothing else, in the form: "This chunk is from <document title>, section <section>, about <what the chunk covers>".',
     'Name the parties, dates, amounts, wells, fields or projects the chunk concerns when they are clear. Do not quote the chunk at length.',
     `<document title="${doc.title.replace(/"/g, "'")}"${doc.type ? ` type="${doc.type}"` : ''}>`,
-    (doc.text ?? '').slice(0, opts.maxDocChars ?? 120_000),
+    // The opening of the document, not all of it: this prompt is sent once per chunk, so a 100-page report at 120,000
+    // characters cost about $0.90 to index; 12,000 characters places a chunk just as well for search at a tenth of that.
+    (doc.text ?? '').slice(0, opts.maxDocChars ?? 12_000),
     '</document>',
   ].join('\n');
   let next = 0;

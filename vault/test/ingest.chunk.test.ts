@@ -164,3 +164,14 @@ test('ingested chunks all carry a context and a populated tsvector that matches 
   const hit = (await h.db.query<{ n: number }>(`SELECT count(*)::int AS n FROM chunks WHERE item_id = $1 AND tsv @@ plainto_tsquery('simple', 'screening-notes.md')`, [id])).rows[0].n;
   assert.equal(hit, rows.length);
 });
+
+test('contextualise: a long document sends a short extract, not the whole text, with every chunk', async () => {
+  const long = doc(1500); // ~250,000 characters
+  assert.ok(long.length > 200_000);
+  const chunks = chunkText(long);
+  const seen: LlmRequest[] = [];
+  const provider = { name: 'capture', model: 'm', complete: async (r: LlmRequest) => { seen.push(r); return { text: 'This chunk is from the report.', usage: { input: 0, cached: 0, output: 0 }, model: 'm', provider: 'capture' }; } };
+  await contextualise(chunks.slice(0, 3), { title: 'Long report', text: long }, provider);
+  assert.equal(seen.length, 3);
+  for (const r of seen) assert.ok(r.system.length < 20_000, `system prompt was ${r.system.length} characters`);
+});
