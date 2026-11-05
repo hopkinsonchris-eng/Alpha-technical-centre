@@ -3150,7 +3150,13 @@
    "rationale": "Very cheap and fast but gains are a few percent of rate or a forecast increment; evidence is mostly operator/vendor disclosure, not peer-reviewed field outcomes.",
    "caveats": "No published capex or opex was found; null. The PTTEP gains are forecasts, not measured results. SPE-183879 figures come from a search snippet of a simulation study. A West Texas CRM field test (+5,372 bbl in one year) appeared only in a search snippet of a university repository record that would not open, so it is not used. Providers other than SLB and PTTEP are from general knowledge without captured URLs.",
    "citation_query": "\"capacitance resistance model\" | \"capacitance-resistance model\" | (\"waterflood\" + \"injection allocation\") | (\"waterflood\" + \"pattern balancing\") | (\"waterflood optimization\" + \"interwell connectivity\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"capacitance resistance model\" | \"capacitance-resistance model\" | (\"waterflood\" + \"injection allocation\") | (\"waterflood\" + \"pattern balancing\") | (\"waterflood optimization\" + \"interwell connectivity\")",
+    "since_2016": 182,
+    "since_2023": 67,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR02",
@@ -3227,7 +3233,13 @@
    "rationale": "Well-proven, moderate gains of a few % OOIP per spacing halving; capital is a full new well each time; evidence is older JPT/AAPG work plus a simulation.",
    "caveats": "No well cost basis for Lake Maracaibo was found; capex and opex are null. The Clair figures come from an abstract or search snippet and are simulated. A New Mexico regulatory filing (North Hobbs, 4% OOIP around infill wells) was seen only in a snippet and is not used. All providers come from general knowledge without captured URLs.",
    "citation_query": "(\"infill drilling\" + \"waterflood\") | (\"infill well\" + \"waterflood\") | (\"horizontal infill\" + \"bypassed oil\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"infill drilling\" + \"waterflood\") | (\"infill well\" + \"waterflood\") | (\"horizontal infill\" + \"bypassed oil\")",
+    "since_2016": 66,
+    "since_2023": 33,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR03",
@@ -3334,7 +3346,13 @@
    "rationale": "Several independent field cases with 10-25% OOIP gains and published polymer cost per barrel; moderate facility capex.",
    "caveats": "Taber 1997 limits come from OCR text in search snippets of copies of the paper, not the original. The Saleh/Bai 2014 limits and the Daqing 13% figure come from abstracts or snippets. The SNF claim of US$3-6 per extra barrel is vendor marketing and is not used. No facility capex basis was found. Providers other than SNF come from general knowledge.",
    "citation_query": "\"polymer flooding\" | \"polymer flood\" | \"polymer injection\" + \"oil recovery\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"polymer flooding\" | \"polymer flood\" | \"polymer injection\" + \"oil recovery\"",
+    "since_2016": 1842,
+    "since_2023": 594,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR04",
@@ -3409,7 +3427,13 @@
    "rationale": "Peer-reviewed field evidence of about 5-15% gains and some null results; one sanctioned offshore project with a stated capex.",
    "caveats": "Clair Ridge numbers are pre-production projections from BP via trade press; I found no audited post-start-up results. A Saudi Aramco SmartWater carbonate trial showing about 7 saturation units Sor reduction appeared only in a search snippet and is not used. No opex basis was found. Providers other than BP come from general knowledge.",
    "citation_query": "\"low salinity waterflooding\" | \"low salinity water flooding\" | \"low-salinity waterflood\" | \"low salinity water injection\" | \"smart water flooding\" | \"engineered water injection\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"low salinity waterflooding\" | \"low salinity water flooding\" | \"low-salinity waterflood\" | \"low salinity water injection\" | \"smart water flooding\" | \"engineered water injection\"",
+    "since_2016": 1182,
+    "since_2023": 274,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR05",
@@ -3488,7 +3512,13 @@
    "rationale": "Large gains (15-30% OOIP) in Daqing and Oman, but high chemical cost and sources were mostly abstracts.",
    "caveats": "All Daqing and Marmul figures come from abstracts or search snippets; the Marmul page itself returned 403. The cost-per-barrel figures come from snippets of a Scribd copy of an SPE paper with no clear year basis. The VLA 6/9/21 data are laboratory core results. No capex basis was found. All providers come from general knowledge without captured URLs.",
    "citation_query": "\"alkaline-surfactant-polymer\" | \"alkaline surfactant polymer\" | \"surfactant-polymer flooding\" | \"surfactant polymer flood\" | \"ASP flooding\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"alkaline-surfactant-polymer\" | \"alkaline surfactant polymer\" | \"surfactant-polymer flooding\" | \"surfactant polymer flood\" | \"ASP flooding\"",
+    "since_2016": 849,
+    "since_2023": 208,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR06",
@@ -3577,7 +3607,13 @@
    "rationale": "Proven locally with OSR 1.5-6.8; fuel-driven opex is high; incremental recovery per well is modest compared with steamflood.",
    "caveats": "Costs are 1990s California figures, not Venezuelan, and from trade press. The 1.5-6.8 OSR comes from the SPE-150283 abstract via an aggregator page. The tubing-collapse note is from a search snippet. All providers come from general knowledge without captured URLs.",
    "citation_query": "\"cyclic steam stimulation\" | \"cyclic steam injection\" | \"steam soak\" + \"heavy oil\" | \"steam huff and puff\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"cyclic steam stimulation\" | \"cyclic steam injection\" | \"steam soak\" + \"heavy oil\" | \"steam huff and puff\"",
+    "since_2016": 303,
+    "since_2023": 108,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR07",
@@ -3674,7 +3710,13 @@
    "rationale": "Highest recoveries (above 50-70% at Duri/Kern River) but large capex and fuel opex; well-documented field cases.",
    "caveats": "Taber 1997 limits come from OCR text in search snippets. The Duri 70% recovery factor is a government statement. Costs are 1990s California trade-press figures. The Kern River 42-73% recovery range appeared only in a search snippet and is not used. All providers come from general knowledge without captured URLs.",
    "citation_query": "(\"steamflood\" | \"steamflooding\" | \"steam flooding\" | \"steam drive\") + \"oil\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"steamflood\" | \"steamflooding\" | \"steam flooding\" | \"steam drive\") + \"oil\"",
+    "since_2016": 567,
+    "since_2023": 179,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR08",
@@ -3754,7 +3796,13 @@
    "rationale": "High reported recoveries in a few long-running fields, but the evidence is thin, comes mostly from snippets, and no cost data was found.",
    "caveats": "Every quantitative figure comes from search snippets; the MDPI review, the UNAL presentation and the MATEC paper could not be opened (403/404). Recovery figures for Balol conflict across sources (36% vs 39-45%). No capex or opex was found. All providers come from general knowledge without captured URLs.",
    "citation_query": "(\"in-situ combustion\" | \"in situ combustion\" | \"fire flooding\" | \"fireflood\") + \"oil\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"in-situ combustion\" | \"in situ combustion\" | \"fire flooding\" | \"fireflood\") + \"oil\"",
+    "since_2016": 600,
+    "since_2023": 211,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR09",
@@ -3852,7 +3900,13 @@
    "rationale": "Very well documented, with 4-15% OOIP gains, but capital and CO2 supply are heavy and its value depends on cheap CO2.",
    "caveats": "NETL primer costs are illustrative c.2010 US Permian figures, not project costs. The Next-Gen 14%/28% figures come from a search snippet. NETL names operators only in its survey tables, so the providers other than those come from general knowledge.",
    "citation_query": "\"CO2 flooding\" | \"CO2-EOR\" | \"CO2 enhanced oil recovery\" | \"carbon dioxide enhanced oil recovery\" | \"miscible CO2 injection\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"CO2 flooding\" | \"CO2-EOR\" | \"CO2 enhanced oil recovery\" | \"carbon dioxide enhanced oil recovery\" | \"miscible CO2 injection\"",
+    "since_2016": 2633,
+    "since_2023": 1090,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR10",
@@ -3931,7 +3985,13 @@
    "rationale": "Consistent 5-10% OOIP gains over about 60 fields, plus a local pilot; compressor capex significant; no cost data found.",
    "caveats": "The VLE-305 gains are estimates in a 2001 paper, not reported results. No capex or opex was found for gas compression or WAG in the sources opened. All providers come from general knowledge without captured URLs.",
    "citation_query": "\"water alternating gas\" | \"water-alternating-gas\" | (\"hydrocarbon gas injection\" + \"oil\") | \"immiscible gas injection\" | \"hydrocarbon miscible flooding\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"water alternating gas\" | \"water-alternating-gas\" | (\"hydrocarbon gas injection\" + \"oil\") | \"immiscible gas injection\" | \"hydrocarbon miscible flooding\"",
+    "since_2016": 956,
+    "since_2023": 393,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR11",
@@ -4011,7 +4071,13 @@
    "rationale": "Very low cost and no rig needed, but gains are small and inconsistent, and the best local data is vendor-authored.",
    "caveats": "The Lagunillas results are co-authored by the vendor and are not independently verified. The Daqing 4.95%, success-rate, Argentine cost and North Blowhorn figures come from search snippets. MEOR is not one technology; single-well squeezes and field floods differ widely. Providers other than Micro-Bac come from general knowledge.",
    "citation_query": "\"microbial enhanced oil recovery\" | \"microbial oil recovery\" | (\"microbial\" + \"enhanced oil recovery\" + \"field trial\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"microbial enhanced oil recovery\" | \"microbial oil recovery\" | (\"microbial\" + \"enhanced oil recovery\" + \"field trial\")",
+    "since_2016": 577,
+    "since_2023": 146,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IR12",
@@ -4090,7 +4156,13 @@
    "rationale": "Low-capex treatments with documented GOR and channelling reductions; incremental oil per treatment is moderate; evidence is mostly abstracts and trade press.",
    "caveats": "All figures come from abstracts or search snippets; the Hart E&P page returned 403 and the Snorre authorship and SPE number were not confirmed. No field-wide incremental recovery was found for FAWAG. No capex basis was found. All providers come from general knowledge without captured URLs.",
    "citation_query": "\"foam assisted water alternating gas\" | \"foam-assisted WAG\" | (\"CO2 foam\" + \"mobility control\") | (\"gel\" + \"conformance control\" + \"CO2 flood\") | (\"foam\" + \"gas mobility control\" + \"oil\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"foam assisted water alternating gas\" | \"foam-assisted WAG\" | (\"CO2 foam\" + \"mobility control\") | (\"gel\" + \"conformance control\" + \"CO2 flood\") | (\"foam\" + \"gas mobility control\" + \"oil\")",
+    "since_2016": 170,
+    "since_2023": 51,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "WI01",
@@ -5242,7 +5314,13 @@
    "rationale": "Cheap with good published success in marginal wells, but results variable and evidence mostly operator/vendor-reported.",
    "caveats": "KGS page was opened. SLB PPP figures are from a search snippet (the case page returned 404 when opened). The Oryx 60-well claim is from an OSTI abstract with no figures. No US$ cost was found. GasGun Inc., DynaEnergetics and Owen Oil Tools are from general knowledge without URLs.",
    "citation_query": "\"extreme overbalance\" | \"propellant stimulation\" | \"GasGun\" | \"StimGun\" | (\"propellant\" + perforating) | (\"reperforation\" + well)",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"extreme overbalance\" | \"propellant stimulation\" | \"GasGun\" | \"StimGun\" | (\"propellant\" + perforating) | (\"reperforation\" + well)",
+    "since_2016": 125,
+    "since_2023": 49,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "WI11",
@@ -5330,7 +5408,13 @@
    "rationale": "High capex and power cost with gains that fade over years; reasonable E2 evidence but few large campaigns.",
    "caveats": "The JPT 2019 and Eni Congo JPT articles were opened. The AER power figures come from a search snippet (the PDF returned 404 when opened). The Dagang and Tía Juana data are PetroWiki snippets. The Qingcheng figure is from a snippet and the URL mapping to the 2024 paper is likely but not confirmed. 'environment: onshore' reflects published field tests only. needs_rig: true because installation requires pulling tubing; this is general practice, not a cited limit. nVent, SLB and Baker Hughes are listed from general knowledge.",
    "citation_query": "\"downhole electric heating\" | \"downhole electrical heating\" | \"downhole heater\" | (\"heating cable\" + well) | (\"electric heating\" + (\"heavy oil\" | paraffin | wax) + well)",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"downhole electric heating\" | \"downhole electrical heating\" | \"downhole heater\" | (\"heating cable\" + well) | (\"electric heating\" + (\"heavy oil\" | paraffin | wax) + well)",
+    "since_2016": 118,
+    "since_2023": 52,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "WI12",
@@ -5453,7 +5537,13 @@
    "rationale": "Low-cost enabler whose benefit is realised through the intervention it selects; quantified evidence mostly vendor cases.",
    "caveats": "The Halliburton page was opened. Kelebija, SLB Wafra, the 39:1 PNS ratio and deepwater/e-line cost notes are from search snippets; the 39:1 source URL was not captured so it is not listed as evidence. Kelebija concerns candidate selection generally, not PLT specifically. No US$ cost per logging run was found. Weatherford, Expro and GOWell listed from general knowledge.",
    "citation_query": "(\"production logging\" | \"production log\" | \"pulsed neutron log\" | \"pulsed neutron capture\") + (well | reservoir | \"water entry\" | \"bypassed oil\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"production logging\" | \"production log\" | \"pulsed neutron log\" | \"pulsed neutron capture\") + (well | reservoir | \"water entry\" | \"bypassed oil\")",
+    "since_2016": 1233,
+    "since_2023": 535,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC01",
@@ -5576,7 +5666,13 @@
    "rationale": "Very low capex, recurring chemical cost; quantified gains are moderate (failure rates down ~15–30%, corrosion rates down ~4x) and mostly from operator/vendor sources.",
    "caveats": "Baker Hughes CGO49 figures (200 ppm, 0.1–0.3 mpy, 40 to 2 failures/yr), the SLB and Clariant doses and rates, the CET 2024 lab comparison and the SUT overdosing remark come from search-result snippets only; the Baker Hughes PDF body could not be read. The IPA 2024 figures are from the abstract. The 13Cr temperature remark is from a SWPSC paper snippet (swpshortcourse.org/ppdl/1847). No capex source found. Nalco/Ecolab is listed from general knowledge without a captured URL.",
    "citation_query": "(\"corrosion inhibitor injection\" | \"continuous inhibitor injection\" | \"batch corrosion inhibitor\" | \"oilfield corrosion inhibitor\" | \"pipeline corrosion inhibitor\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"corrosion inhibitor injection\" | \"continuous inhibitor injection\" | \"batch corrosion inhibitor\" | \"oilfield corrosion inhibitor\" | \"pipeline corrosion inhibitor\")",
+    "since_2016": 52,
+    "since_2023": 23,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC02",
@@ -5769,7 +5865,13 @@
    "rationale": "Low cost relative to the assets protected, galvanic systems need no power, and there is lake-specific evidence of large savings; the quantified evidence is old and largely abstract-level.",
    "caveats": "Benedict 1989 figures are from the TRID abstract only. The FHWA US$7 billion figure was confirmed through a NACE presentation and search snippets; the koch_04 PDF was not opened. The de Rincón 2010 and Porras 1972 Lake Maracaibo anode papers are abstract/snippet-only. The SoCalGas cost and the <1% rule of thumb are from search snippets (the latter from a vendor blog). The Deepwater figures are vendor claims seen in snippets. Corrpro, MATCOR, Cathodic Protection Co. and BAC are listed from general knowledge without captured URLs,. No opex figure was found.",
    "citation_query": "(\"cathodic protection\") + (\"pipeline\" | \"offshore platform\" | \"jacket\" | \"sacrificial anode\" | \"impressed current\" | \"anode retrofit\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"cathodic protection\") + (\"pipeline\" | \"offshore platform\" | \"jacket\" | \"sacrificial anode\" | \"impressed current\" | \"anode retrofit\")",
+    "since_2016": 1675,
+    "since_2023": 583,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC03",
@@ -5912,7 +6014,13 @@
    "rationale": "Installed cost is reported equal to or 20–35% below steel and installation is much faster; it eliminates corrosion opex. Evidence is operator/vendor disclosure, with no refereed lifecycle study captured.",
    "caveats": "The AMPP Lake Maracaibo flexible-flowline result (nine lines, no failures after three years) is from a search snippet; the AMPP page returned 403. The Petrobras TCP JIP details are from OGJ/OE Digital search snippets. The 20–35% savings are vendor-reported. The NOV and Future Pipe case details are from search snippets. PDVSA's lake pipe-replacement figures (166–220 km replaced, ~700 km planned) come from press reports that disagree with each other and were not used as evidence. There is no long-term published failure-rate data for RTP in the lake; buoyancy, UV, anchor/boat damage and fitting failures need site-specific review.",
    "citation_query": "(\"reinforced thermoplastic pipe\" | \"thermoplastic composite pipe\" | \"spoolable composite pipe\" | \"glass reinforced epoxy pipe\" | \"nonmetallic flowline\" | \"non-metallic pipe\" + \"oil\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"reinforced thermoplastic pipe\" | \"thermoplastic composite pipe\" | \"spoolable composite pipe\" | \"glass reinforced epoxy pipe\" | \"nonmetallic flowline\" | \"non-metallic pipe\" + \"oil\")",
+    "since_2016": 65,
+    "since_2023": 27,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC04",
@@ -6031,7 +6139,7 @@
    },
    "rationale": "Moderate per-run cost; strong directional evidence that ILI-driven integrity programmes cut corrosion incidents, though the percentages come from industry/operator sources rather than independent analysis.",
    "caveats": "The 47,000 miles, 76% and ROSEN case details are from search snippets of the cited pages. RBN and SoCalGas costs are from search snippets; the cost year for RBN is inferred from the article series, not confirmed. The sizing specs are from ROSEN flyers seen in search results. No independent PHMSA study isolating ILI benefit was found. Halliburton and Eddyfi are listed from general knowledge without captured URLs.",
-   "citation_query": "(\"in-line inspection\" | \"inline inspection\" | \"intelligent pig\" | \"smart pigging\" | \"magnetic flux leakage pipeline\" | \"unpiggable pipeline\")",
+   "citation_query": "(\"in-line inspection\" | \"inline inspection\" | \"intelligent pig\" | \"smart pig\" | \"intelligent pigging\" | \"smart pigging\") + (pipeline | pipelines | flowline)",
    "note": "seed: ATC register pilot and extension, Nov 2026"
   },
   {
@@ -6111,7 +6219,13 @@
    "rationale": "A wireline survey costs little against a workover; the benefit is better workover targeting, but published quantified savings are few and vendor-sourced.",
    "caveats": "Most figures come from search snippets of abstracts or vendor sheets (Sondex EMD, EM Pipe Scanner, KFUPM paper, ±10% comparison, SLB 4-barrier paper). The JPT 2022 article and SPE-182968-MS were abstract-only. The Weatherford case title refers to a saving but the page returned 403, so no figure is used. No per-log cost was found. GOWell/Probe is listed from general knowledge.",
    "citation_query": "(\"electromagnetic thickness\" | \"multi-barrier corrosion\" | \"multibarrier corrosion\" | \"electromagnetic casing inspection\" | \"magnetic defectoscope\" | \"casing corrosion logging\" | \"pulsed eddy current\" + \"casing\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"electromagnetic thickness\" | \"multi-barrier corrosion\" | \"multibarrier corrosion\" | \"electromagnetic casing inspection\" | \"magnetic defectoscope\" | \"casing corrosion logging\" | \"pulsed eddy current\" + \"casing\")",
+    "since_2016": 58,
+    "since_2023": 25,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC06",
@@ -6256,7 +6370,13 @@
    "rationale": "Monitoring and diagnostics are cheap and regulator-backed; remediation evidence is mostly lab or anecdotal, so quantified production or cost gains are thin.",
    "caveats": "The two GoM denominators differ (14,927 in the 2004 OGJ figures; 12,927 in Ibukun et al. 2024) and are reported as published. The 5.47 MPa / 3.48x figure is from a search snippet of a related study. No field success-rate statistics for resin/sealant SCP remediation were found. Seal-Tite and Wild Well are from general knowledge plus the JPT link above; Interwell and Expro are listed from general knowledge without captured URLs. ISO 16530 is named from general knowledge.",
    "citation_query": "(\"sustained casing pressure\" | \"sustained annular pressure\" | \"annular casing pressure\" | \"well barrier\" + \"integrity\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"sustained casing pressure\" | \"sustained annular pressure\" | \"annular casing pressure\" | \"well barrier\" + \"integrity\")",
+    "since_2016": 446,
+    "since_2023": 236,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC07",
@@ -6353,7 +6473,13 @@
    "rationale": "Software on existing SCADA is moderate in cost, but the regulator study shows it finds a minority of leaks first; better on large ruptures.",
    "caveats": "The Kiefner 12%/39% figures come from search snippets of the PHMSA webinar and comment documents, not the final report tables. KROHNE and AIP figures are abstract-level. No capex or opex figure was found; PHMSA RIA tables were not retrieved. AVEVA, Honeywell and ESI are listed from general knowledge without captured URLs.",
    "citation_query": "(\"pipeline leak detection\" | \"computational pipeline monitoring\" | \"real-time transient model\" + \"leak\" | \"negative pressure wave\" + \"leak\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"pipeline leak detection\" | \"computational pipeline monitoring\" | \"real-time transient model\" + \"leak\" | \"negative pressure wave\" + \"leak\")",
+    "since_2016": 561,
+    "since_2023": 264,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC08",
@@ -6465,7 +6591,13 @@
    "rationale": "Sensitive to small leaks but needs fibre along the route; field evidence is mostly trials and vendor tests without published cost figures.",
    "caveats": "All performance figures are from abstracts or search snippets; detection times and false-alarm rates were not found. No cost per km was found (FOSA claims cost advantages without figures). Hifi and Fotech are listed from general knowledge; OptaSense/Silixa/AP Sensing are well-known DAS providers but no case URL was captured for them specifically. The installation remark is general engineering judgement, not a sourced figure.",
    "citation_query": "(\"distributed acoustic sensing\" | \"distributed temperature sensing\" | \"fiber optic sensing\" | \"fibre optic sensing\" | \"acoustic leak detection\") + (\"pipeline\" | \"leak\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"distributed acoustic sensing\" | \"distributed temperature sensing\" | \"fiber optic sensing\" | \"fibre optic sensing\" | \"acoustic leak detection\") + (\"pipeline\" | \"leak\")",
+    "since_2016": 570,
+    "since_2023": 341,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC09",
@@ -6567,7 +6699,13 @@
    "rationale": "Reported 50–70% inspection cost cuts, but evidence is vendor/trade press plus one OTC paper seen only in a snippet.",
    "caveats": "OTC-24786-MS figures (2 to 4–10 years, 70% saving) come from a search snippet; the full text was not opened (sciencegate host blocked). Fugro AUD 10 million is from trade-press snippets. The SPE OGF day rate is from a search snippet. The lake-water visibility remark is engineering judgement, not a sourced figure. DOF/Subsea 7 and Eelume/Kongsberg are listed from general knowledge.",
    "citation_query": "(\"offshore platform inspection\" | \"offshore structure inspection\" | \"jacket inspection\" | \"structural integrity management\" + \"offshore\" | \"underwater inspection\" + \"platform\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"offshore platform inspection\" | \"offshore structure inspection\" | \"jacket inspection\" | \"structural integrity management\" + \"offshore\" | \"underwater inspection\" + \"platform\")",
+    "since_2016": 105,
+    "since_2023": 58,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC10",
@@ -6678,7 +6816,13 @@
    "rationale": "Low cost against replacement and fast to apply; evidence is vendor case histories with few independent long-term data.",
    "caveats": "Savings percentages of 37% offshore and 75% onshore attributed to Saudi Aramco appeared in a search snippet but could not be traced to a page, so they are not used. Belzona and Henkel claims are vendor-only. The PCC-2 offshore-gap and OTRC limitation remarks are from search snippets. Team/Furmanite and Clock Spring are listed from general knowledge. No capex/opex figures were found.",
    "citation_query": "(\"composite repair\" | \"composite wrap\" | \"composite sleeve\" | \"composite overwrap\") + (\"pipeline\" | \"riser\" | \"offshore\" | \"ISO 24817\" | \"PCC-2\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"composite repair\" | \"composite wrap\" | \"composite sleeve\" | \"composite overwrap\") + (\"pipeline\" | \"riser\" | \"offshore\" | \"ISO 24817\" | \"PCC-2\")",
+    "since_2016": 243,
+    "since_2023": 70,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC11",
@@ -6755,7 +6899,7 @@
    },
    "rationale": "Cheaper than replacement and removes internal-corrosion opex, but quantified results are sparse and mostly trade/vendor.",
    "caveats": "The PVDF 25%/US$7.6 million figure and the Khurais HDPE liner (title only) come from search snippets. The ADNOC JPT page gives no quantified results. Claims of a 40–60% saving against replacement and of a 13-year recovered spool (Subsea 7) were seen in snippets without a traceable page and are not used. United Pipeline Systems, Subsea 7 and Future Pipe are listed from general knowledge.",
-   "citation_query": "(\"HDPE liner\" | \"polyethylene liner\" | \"polymer liner\" | \"thermoplastic liner\" | \"Swagelining\" | \"polymer-lined pipeline\")",
+   "citation_query": "(\"polymer liner\" | \"HDPE liner\" | \"polyethylene liner\" | \"thermoplastic liner\" | \"loose-fit liner\") + (pipeline | flowline | \"oil and gas\")",
    "note": "seed: ATC register pilot and extension, Nov 2026"
   },
   {
@@ -6949,7 +7093,13 @@
    "rationale": "Higher completion capex needing a rig, but strong run-life evidence (zero failures over ~500 well-years in one operator dataset).",
    "caveats": "SPE 230417 figures (60+ completions, ~500 well-years, zero failures) come from search snippets of the JPT synopsis, partly confirmed on the page, and the paper is co-authored by the lining vendor. The SWPSC 13Cr remarks and the Leeds low-Cr claim come from search snippets. No absolute tubing price was captured. Tenaris, Vallourec, JFE and Nippon Steel are listed from general knowledge without captured URLs. The paraffin-scraping wear point is engineering judgement.",
    "citation_query": "(\"corrosion resistant alloy\" + \"tubing\" | \"13Cr\" + \"tubing\" | \"GRE-lined tubing\" | \"GRE lined tubing\" | \"glass reinforced epoxy lined\" | \"internally coated tubing\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"corrosion resistant alloy\" + \"tubing\" | \"13Cr\" + \"tubing\" | \"GRE-lined tubing\" | \"GRE lined tubing\" | \"glass reinforced epoxy lined\" | \"internally coated tubing\")",
+    "since_2016": 159,
+    "since_2023": 70,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "IC13",
@@ -7096,7 +7246,13 @@
    "rationale": "Mostly engineering effort with little hardware; reported savings range widely (tens of percent), with vendor/consultant sources and few refereed before-and-after studies.",
    "caveats": "The Medco result is from the IPA abstract. The RINA and ROSEN figures were opened or seen in snippets. A Gulf of Mexico case reporting an 80% cut in time-based inspection requirements was seen in a search snippet without a traceable URL and is not used. Atlantis NDT's 15–35% vendor range is not used. DNV Synergi, Bureau Veritas, Intertek and LR are listed from general knowledge.",
    "citation_query": "(\"risk-based inspection\" | \"risk based inspection\") + (\"API 581\" | \"API 580\" | \"pressure vessel\" | \"pipeline\" | \"offshore\" | \"oil and gas\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"risk-based inspection\" | \"risk based inspection\") + (\"API 581\" | \"API 580\" | \"pressure vessel\" | \"pipeline\" | \"offshore\" | \"oil and gas\")",
+    "since_2016": 336,
+    "since_2023": 139,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP01",
@@ -7213,7 +7369,13 @@
    "rationale": "Cheap per site with several peer-reviewed field studies, but realised reductions are moderate (≈22% to ≈50%) because new leaks recur between surveys.",
    "caveats": "Ravikumar 2017, Ravikumar 2020 and Wilde 2025 figures come from abstracts/search summaries, not full text. US$600/survey is an EPA assumption quoted by EDF, and a vendor (Rebellion) offered US$250/site, which was not used. Team, Montrose, SGS and Konica Minolta are named from general knowledge without captured URLs. No Venezuela-specific cost data.",
    "citation_query": "\"optical gas imaging\" | (\"leak detection and repair\" + methane)",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"optical gas imaging\" | (\"leak detection and repair\" + methane)",
+    "since_2016": 237,
+    "since_2023": 128,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP02",
@@ -7294,7 +7456,13 @@
    "rationale": "Independent controlled-release evidence is good for detection, weak for quantification, and there is no captured installed-cost source.",
    "caveats": "The PMC10100557 link is taken to be Bell et al. 2023 from search results; figures come from abstracts. The US$3,000/yr is an ARPA-E target. A Colorado figure of US$3,500-12,000/site/yr turned up in search but had unclear provenance and was not used. No capex source was captured. Honeywell, LongPath, Project Canary and Kuva are named from general knowledge.",
    "citation_query": "\"continuous monitoring\" + methane + (\"oil and gas\" | \"well site\" | \"well pad\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"continuous monitoring\" + methane + (\"oil and gas\" | \"well site\" | \"well pad\")",
+    "since_2016": 57,
+    "since_2023": 45,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP03",
@@ -7371,7 +7539,13 @@
    "rationale": "Strong peer-reviewed validation and high value for finding heavy-tailed emitters, but no published per-site cost was captured.",
    "caveats": "All figures come from abstracts/search summaries. No published per-site aerial or satellite cost was found: Stanford-linked commentary says aerial is 'significantly cheaper' than ~US$600/site OGI but gives no number. The ChemRxiv trial was a preprint at capture. The water and cloud limitation is general knowledge. Kayrros, Carbon Mapper and IMEO MARS are named from general knowledge without captured URLs.",
    "citation_query": "(\"methane emissions\" | \"methane plumes\") + (satellite | aerial | airborne) + (\"oil and gas\" | \"oil and natural gas\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"methane emissions\" | \"methane plumes\") + (satellite | aerial | airborne) + (\"oil and gas\" | \"oil and natural gas\")",
+    "since_2016": 260,
+    "since_2023": 149,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP04",
@@ -7466,7 +7640,13 @@
    "rationale": "Short published paybacks and large volumes, but the refereed cost evidence is from refineries and offshore figures are trade or operator claims.",
    "caveats": "Zadakbar figures were read from the full PDF. Gullfaks and Eldfisk figures are from search snippets. The Venezuela 8.31 bcm (2023) figure comes from IPS citing the World Bank: https://www.ipsnews.net/2024/09/explainer-why-venezuela-needs-to-reduce-its-gas-flaring/ . No opex source. Zeeco, John Zink, Gardner Denver Nash, Aragon and Transvac are named from general knowledge.",
    "citation_query": "\"flare gas recovery\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"flare gas recovery\"",
+    "since_2016": 131,
+    "since_2023": 58,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP05",
@@ -7572,7 +7752,13 @@
    "rationale": "Well-documented low capex and short payback, but the evidence is EPA partner data from 2006 with no recent refereed field study captured.",
    "caveats": "EPA figures were read from the full PDF but are on a 2006 basis and use US$3-7/Mcf gas prices. The 5,000-100,000 Mcf/yr range and the feasibility limit come from EPA workshop slide snippets. All providers are named from general knowledge without captured URLs.",
    "citation_query": "\"vapor recovery unit\" | \"vapour recovery unit\" | (\"vapor recovery\" + \"storage tanks\" + crude)",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"vapor recovery unit\" | \"vapour recovery unit\" | (\"vapor recovery\" + \"storage tanks\" + crude)",
+    "since_2016": 70,
+    "since_2023": 40,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP06",
@@ -7763,7 +7949,13 @@
    "rationale": "Several consistent EPA and CATF analyses with explicit costs, though the data are from 2006-2016 and US-centred.",
    "caveats": "EPA and Carbon Limits figures were read from full PDFs. Cost bases are 2006 and 2016 USD at US$3-7/Mcf gas. Emerson, Kimray and Atlas Copco are named from general knowledge. It has not been checked whether Maracaibo stations use gas pneumatics at scale.",
    "citation_query": "(\"pneumatic controllers\" + methane) | (\"pneumatic devices\" + methane + \"oil and gas\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"pneumatic controllers\" + methane) | (\"pneumatic devices\" + methane + \"oil and gas\")",
+    "since_2016": 21,
+    "since_2023": 6,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP07",
@@ -7890,7 +8082,13 @@
    "rationale": "Mature equipment with high strategic value for Maracaibo, but the evidence is mostly vendor case studies and no installed $/kW was captured.",
    "caveats": "No sourced installed $/kW or opex was found for gas gensets or microturbines. EERC and Capstone figures come from search snippets and the case-study PDF text. The 1999 sour-gas test is an old vendor claim. The Maracaibo output impact comes from Argus 2022 (via lapatilla.com) and https://www.argusmedia.com/en/news-and-insights/latest-market-news/1784924-widening-blackouts-stifle-venezuela-oil-production . Caterpillar, Jenbacher, Wärtsilä and Siemens Energy are named from general knowledge.",
    "citation_query": "(\"associated gas\" | \"flare gas\") + (\"power generation\" | microturbine | \"gas engine\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"associated gas\" | \"flare gas\") + (\"power generation\" | microturbine | \"gas engine\")",
+    "since_2016": 102,
+    "since_2023": 45,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP08",
@@ -8003,7 +8201,13 @@
    "rationale": "Very low running cost and well-proven for small loads, but there is little oilfield-specific quantified evidence and no full-system capex.",
    "caveats": "Oilfield evidence is thin. PDO figures are press reports and vary: a 2018 projection was 137,121 t/yr and capacity is reported as 100 MW or 105 MWac. The IRENA figures are not from oilfields. SPE-211150 details come from a snippet. GlassPoint and ComAp are named from general knowledge. No Venezuelan irradiance figure was captured, so the irradiance reason is general knowledge.",
    "citation_query": "solar + photovoltaic + (\"oil field\" | oilfield | \"oil well\" | wellsite)",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "solar + photovoltaic + (\"oil field\" | oilfield | \"oil well\" | wellsite)",
+    "since_2016": 32,
+    "since_2023": 21,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP09",
@@ -8144,7 +8348,13 @@
    "rationale": "Large, well-documented emission cuts at very high capex. The evidence is North Sea operator and authority data, with no refereed study captured.",
    "caveats": "Figures are from search snippets. The NOK 1,500/t and the 2.9 Mt figures may come from different Sodir report editions (2020 and newer). The Sodir page returned 403 on fetch. NOK 6bn and US$850M are reported equivalents. Siemens Energy, Nexans and Prysmian are named from general knowledge. Shallow lake platforms would need much shorter AC links. No lake-scale cost data.",
    "citation_query": "\"power from shore\" | \"offshore electrification\" | (\"electrification\" + \"offshore platforms\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "\"power from shore\" | \"offshore electrification\" | (\"electrification\" + \"offshore platforms\")",
+    "since_2016": 82,
+    "since_2023": 46,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP10",
@@ -8306,7 +8516,13 @@
    "rationale": "Routine technology with modest, single-study energy savings (5-20%) and no captured cost data.",
    "caveats": "Savings figures come from abstracts or trade press, one study each. SPOC's 10-40% (average 20%) claim is marketing and was excluded. No VSD capex/opex source was captured. ABB, Schneider, SLB and Baker Hughes are named from general knowledge. The harmonics findings come from abstracts only.",
    "citation_query": "(\"variable speed drive\" | \"variable frequency drive\") + (\"electric submersible pump\" | \"sucker rod pump\" | \"rod pumping\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"variable speed drive\" | \"variable frequency drive\") + (\"electric submersible pump\" | \"sucker rod pump\" | \"rod pumping\")",
+    "since_2016": 60,
+    "since_2023": 22,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP11",
@@ -8418,7 +8634,13 @@
    "rationale": "Costs are documented by GGFR, but field performance evidence is mainly vendor or trade-press, and mini-GTL is still early commercial.",
    "caveats": "The GGFR bulletin was read from its full PDF. The Fleisch c.2012 figures and the Statoil OGJ figures come from search snippets. The World Bank/Tractebel 1-15 MMscf/d comparison was not read in full: https://seal.matrade.gov.my/neuaxis-e/Record/okr-10986-25917/Description . Galileo and Siemens/Dresser-Rand are named from general knowledge. Mini-GTL readiness is borderline pilot/early commercial.",
    "citation_query": "(\"associated gas\" | \"flare gas\" | \"stranded gas\") + (\"gas-to-liquids\" | \"small-scale LNG\" | \"mini-LNG\" | \"compressed natural gas\")",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"associated gas\" | \"flare gas\" | \"stranded gas\") + (\"gas-to-liquids\" | \"small-scale LNG\" | \"mini-LNG\" | \"compressed natural gas\")",
+    "since_2016": 131,
+    "since_2023": 34,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   },
   {
    "key": "EP12",
@@ -8513,7 +8735,13 @@
    "rationale": "Strong refereed evidence that inventories under-count, but no direct quantified evidence that software itself cuts emissions, and no cost data.",
    "caveats": "The benefit evidence shows the inventory gap, not software performance. No capex or opex source exists, since vendor pricing is not public. Kayrros, SLB, Honeywell and Validere are named from general knowledge. SensorUp and Qube claims are marketing and were not used as evidence. Alvarez and Sherwin figures come from abstracts or search summaries.",
    "citation_query": "(\"methane emissions\" + \"oil and gas\" + (inventory + (\"measurement-based\" | \"measurement-informed\" | reconciliation))) | \"OGMP 2.0\"",
-   "note": "seed: ATC register pilot and extension, Nov 2026"
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "citations": {
+    "query": "(\"methane emissions\" + \"oil and gas\" + (inventory + (\"measurement-based\" | \"measurement-informed\" | reconciliation))) | \"OGMP 2.0\"",
+    "since_2016": 75,
+    "since_2023": 69,
+    "counted_at": "2026-11-05T00:00:00Z"
+   }
   }
  ]
 }
