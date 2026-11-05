@@ -538,6 +538,8 @@ function renderActions(ctx) {
   const refreshPasses = armPasses([...menu.querySelectorAll('a[data-toolbar-tool][data-external="1"]')].filter((a) => PASS_APPS.has(a.getAttribute('data-toolbar-tool'))));
   btn.addEventListener('click', refreshPasses);
   add(host, wrap);
+  // M19: the technology register screened against this project's conditions.
+  add(host, mk('a', 'btn btn-outline btn-sm', 'Technology shortlist', 'Preselección de tecnologías', { href: '/hub/technology.html?project=' + encodeURIComponent(p.id), 'data-action': 'technology', 'data-actions-built': '' }));
   // … overflow (partners): Archive behind a confirm sheet; Restore stays a plain action.
   if (ctx.person && ctx.person.role === 'partner' && !isHoldingProject(p)) {
     if (p.status === 'archived') {

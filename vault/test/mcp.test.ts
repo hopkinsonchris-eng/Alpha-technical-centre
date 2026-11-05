@@ -84,7 +84,7 @@ const mcpEvents = async (db: Db) => (await db.query<any>("SELECT action, scope, 
 test('every tool is listed', async () => {
   const db = await seed(); const { client } = await connect(db, 'chris');
   const names = (await client.listTools()).tools.map(t => t.name).sort();
-  assert.deepEqual(names, ['draft', 'file_item', 'get_item', 'get_lessons', 'get_project_context', 'get_run', 'get_tool_current', 'list_projects', 'list_runs', 'record_lesson', 'search_vault']);
+  assert.deepEqual(names, ['draft', 'file_item', 'find_technologies', 'get_item', 'get_lessons', 'get_project_context', 'get_run', 'get_tool_current', 'list_projects', 'list_runs', 'match_technologies', 'record_lesson', 'search_vault', 'suggest_technology']);
   // W5-AC13: every tool carries a title and read/write hints.
   for (const t of (await client.listTools()).tools) { assert.ok(t.title, t.name + ' has a title'); assert.ok(t.annotations && typeof t.annotations.readOnlyHint === 'boolean', t.name + ' says whether it reads or writes'); }
   await client.close(); await db.close();

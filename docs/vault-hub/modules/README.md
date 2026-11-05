@@ -13,5 +13,8 @@ tiers, waves and the session procedure, and `../schemas/` for the contracts.
 | | M06 Hub shell and Today page | | | M16 Analogue memory |
 | | | | | M17 Evaluation, scorecards, cost |
 
+Later modules: M18 Tool passes; M19 Technology register (wave 10: register API, project matching, monthly citation
+counts, Hub page `hub/technology.html`, seed in `vault/firm/technology/`).
+
 Fixtures referenced by the specs live in `vault/test/fixtures/` once M00 is
 built; until then the examples in `../schemas/` are the contract.

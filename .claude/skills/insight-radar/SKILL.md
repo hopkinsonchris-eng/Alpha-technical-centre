@@ -254,6 +254,32 @@ Confirm the radar table scrolls rather than breaking the layout on a narrow
 viewport, the citation superscripts jump to the right source, and the archive
 list renders once the grid has more than six cards.
 
+### 8a. Feed the technology register
+
+The technology register (M19, `docs/vault-hub/modules/M19-technology-register.md`) holds the firm's curated,
+ranked technologies by application. Each month the radar adds to it, through proposals only. Nothing you write
+here reaches the register until a partner confirms it in the Hub (`hub/technology.html`, Proposals tab).
+
+1. Fetch the current register: `GET /api/technology?full=1`, or the MCP tool `find_technologies`.
+2. For each selected development whose application area is in the register, choose one of three actions:
+   - **New evidence for an existing entry.** Post a revision. `POST /api/technology` with the entry's `key` and
+     the full current body, plus the new item in `evidence`. Give it a tier and `abstract_only: true` if you read
+     only the abstract. Set a `note` such as `"radar <YYYY-MM>: <one line>"`. Change the scores only if the new
+     evidence moves them, and say why in `rationale`.
+   - **A technology the register lacks.** Post a new entry. It needs: application, name, summary, readiness,
+     `screening` limits you have a source for, evidence, providers, the four scores, a `reference_fit`, caveats,
+     and a `citation_query`. The query uses exact phrases; avoid bare abbreviations that mean something else in
+     medicine.
+   - **A genuine negative result.** Post it as evidence on the entry it weakens, and lower the benefit or evidence
+     score if it warrants.
+3. Developments outside the register's application areas stay in the article only. Name them in the PR as
+   candidate new areas.
+4. Evidence must be public. Never cite a client document in a register proposal; the API refuses Vault records
+   that are not firm or public anyway.
+
+Paper counts are not your job: the `atc-vault-tech-citations` cron recounts every entry on the 2nd of each month.
+List the proposals you posted (key, version, one line each) in the PR body and in the report back.
+
 ### 9. Branch, commit, PR
 
 ```bash
@@ -271,7 +297,8 @@ should look at hardest. Do not merge it yourself.
 
 Tell the user, in the chat reply: the developments selected with their tiers and
 readiness, how many items were screened, which disciplines were quiet, anything
-you dropped for being unverifiable, and the PR link. Flag honestly if the month
+you dropped for being unverifiable, the technology-register proposals you posted
+(step 8a), and the PR link. Flag honestly if the month
 was thin — that is useful information, not a failure to hide.
 
 ## Failure modes to watch in yourself

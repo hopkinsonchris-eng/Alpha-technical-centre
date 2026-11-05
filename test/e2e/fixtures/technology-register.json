@@ -1,0 +1,2098 @@
+{
+ "applications": {
+  "applications": [
+   {
+    "id": "artificial-lift",
+    "prefix": "AL",
+    "label": "Artificial lift",
+    "entries": 14,
+    "proposals": 1
+   },
+   {
+    "id": "water-handling",
+    "prefix": "WH",
+    "label": "Produced-water handling",
+    "entries": 0,
+    "proposals": 0
+   },
+   {
+    "id": "ior-eor",
+    "prefix": "IR",
+    "label": "Improved and enhanced oil recovery",
+    "entries": 0,
+    "proposals": 0
+   },
+   {
+    "id": "well-intervention",
+    "prefix": "WI",
+    "label": "Well intervention and production enhancement",
+    "entries": 0,
+    "proposals": 0
+   },
+   {
+    "id": "integrity",
+    "prefix": "IC",
+    "label": "Asset integrity and corrosion",
+    "entries": 0,
+    "proposals": 0
+   },
+   {
+    "id": "emissions-power",
+    "prefix": "EP",
+    "label": "Emissions reduction and field power",
+    "entries": 0,
+    "proposals": 0
+   }
+  ]
+ },
+ "register": {
+  "application": "artificial-lift",
+  "status": "confirmed",
+  "weights": {
+   "citation": 0.2,
+   "cost_benefit": 0.35,
+   "evidence": 0.2,
+   "fit": 0.25
+  },
+  "count": 14,
+  "entries": [
+   {
+    "id": "a48d938d-56d1-4717-a372-0a565855f91d",
+    "key": "AL05",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Gas lift optimisation and allocation (model-based / automated)",
+    "status": "confirmed",
+    "summary": "Reallocating limited lift gas among wells using well and network models, plus automated injection control and monitoring, so that field oil output is maximised for the gas available. Used in mature gas-lifted fields with constrained compression.",
+    "readiness": 4,
+    "components": {
+     "capex": 4,
+     "opex": 4,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 5,
+     "reason": "Directly addresses legacy gas lift with gas shortages, long injection lines and manual chokes. There are Lake Maracaibo precedents (Creole 1974, Maraven 1994), and capex is low compared with changing lift method."
+    },
+    "citations": {
+     "since_2016": 175,
+     "since_2023": 82,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.31,
+     "cost_benefit": 2.4,
+     "evidence": 4,
+     "fit": 5,
+     "overall": 3.55
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.395Z",
+    "rank": 1
+   },
+   {
+    "id": "c0f0c127-b601-4a4d-ab8d-3f0c8d4051d0",
+    "key": "AL04",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Continuous gas lift",
+    "status": "confirmed",
+    "summary": "Gas is injected continuously down the annulus through gas-lift valves into the tubing, lightening the fluid column. It is the incumbent method on most Lake Maracaibo wells and suits deviated, sandy, high-rate wells wherever lift gas and compression are available.",
+    "readiness": 4,
+    "components": {
+     "capex": 3,
+     "opex": 3,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "The incumbent method, with infrastructure in place. It tolerates sand and deviation and needs no platform power. Efficiency falls as water cut rises and reservoir pressure drops, and paraffin is a known weakness."
+    },
+    "citations": {
+     "since_2016": 1859,
+     "since_2023": 765,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 7,
+    "adipec_2026": 3,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 4.99,
+     "cost_benefit": 1.8,
+     "evidence": 4,
+     "fit": 4,
+     "overall": 3.43
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.403Z",
+    "rank": 2
+   },
+   {
+    "id": "77d98fba-10d4-4246-8573-0831c69849c8",
+    "key": "AL01",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Electric submersible pump (ESP), conventional",
+    "status": "confirmed",
+    "summary": "A multistage centrifugal pump driven by a downhole electric induction motor, powered via a cable from surface. Used for medium-to-very-high liquid rates, including high-water-cut wells, where reliable electric power is available.",
+    "readiness": 4,
+    "components": {
+     "capex": 2,
+     "opex": 2,
+     "benefit": 4
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Well suited to high-water-cut, high-rate wells. However, unreliable power, sand, free gas, viscous oil and scarce workover rigs all shorten run life and lengthen downtime. Some lake platforms historically had no electric power (OGJ 1994)."
+    },
+    "citations": {
+     "since_2016": 1879,
+     "since_2023": 819,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 16,
+    "adipec_2026": 10,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 5,
+     "cost_benefit": 1.6,
+     "evidence": 4,
+     "fit": 3,
+     "overall": 3.11
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.410Z",
+    "rank": 3
+   },
+   {
+    "id": "9987cdf9-c4f6-4850-aa31-56c276cfd313",
+    "key": "AL09",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Progressing cavity pump (PCP), elastomer stator",
+    "status": "confirmed",
+    "summary": "A positive-displacement pump: a helical metal rotor turns inside an elastomer stator, usually driven by rods from a surface drive head, or by an ESP motor (ESPCP). Preferred for viscous and heavy oil, sand-laden fluids and low-to-moderate rates.",
+    "readiness": 4,
+    "components": {
+     "capex": 4,
+     "opex": 3,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "Good for the heavy, viscous, sandy, shallow-to-moderate-depth wells, with low energy use. Rod wear in deviated wells, elastomer temperature and fluid-compatibility limits, and high-rate high-WC wells reduce fit; ESPCP is an option on platforms."
+    },
+    "citations": {
+     "since_2016": 345,
+     "since_2023": 124,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 10,
+    "adipec_2026": 4,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.79,
+     "cost_benefit": 2.1,
+     "evidence": 3,
+     "fit": 4,
+     "overall": 3.09
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.417Z",
+    "rank": 4
+   },
+   {
+    "id": "b40a8050-a93f-4830-8a6b-e6c44d333371",
+    "key": "AL06",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Sucker rod (beam) pumping",
+    "status": "confirmed",
+    "summary": "A surface beam pumping unit drives a reciprocating downhole plunger pump through a sucker-rod string. It is the most common onshore lift method for low-to-moderate rates and works with viscous oil.",
+    "readiness": 4,
+    "components": {
+     "capex": 4,
+     "opex": 4,
+     "benefit": 2
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Historically common on electrified Lake wells (Bachaquero-2, JPT 1963) and good for low-rate viscous oil onshore. Limited by platform footprint, deviation, sand, gas and high fluid rates."
+    },
+    "citations": {
+     "since_2016": 1321,
+     "since_2023": 454,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 10,
+    "adipec_2026": 5,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 4.75,
+     "cost_benefit": 1.6,
+     "evidence": 4,
+     "fit": 3,
+     "overall": 3.06
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.424Z",
+    "rank": 5
+   },
+   {
+    "id": "3cf54412-6d08-4832-9548-95061261296e",
+    "key": "AL07",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Rod lift automation: pump-off control and dynamometer analytics",
+    "status": "confirmed",
+    "summary": "Controllers read surface and downhole dynamometer cards to detect pump-off and stop or slow the unit. Analytics, increasingly ML-based, classify card shapes to diagnose failures early. Used to cut fluid pound, rod and pump failures, and energy use on rod-pumped wells.",
+    "readiness": 4,
+    "components": {
+     "capex": 5,
+     "opex": 4,
+     "benefit": 3
+    },
+    "best_tier": "E4",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Low cost, with quick payback on the rod-pumped onshore subset only. Communications and power reliability limit supervisory systems."
+    },
+    "citations": {
+     "since_2016": 215,
+     "since_2023": 83,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 4,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.45,
+     "cost_benefit": 2.7,
+     "evidence": 3,
+     "fit": 3,
+     "overall": 2.99
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.431Z",
+    "rank": 6
+   },
+   {
+    "id": "5130f493-85a7-406c-8f4e-256bcda356c6",
+    "key": "AL03",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Rigless / alternatively deployed ESP (cable, wireline, coiled tubing, through-tubing)",
+    "status": "confirmed",
+    "summary": "ESP systems that can be installed or replaced without a workover rig. Methods include coiled tubing or cable deployment, or retrieving the pump/motor through tubing on wireline or slickline. Used where rigs are costly, scarce or slow to mobilise.",
+    "readiness": 3,
+    "components": {
+     "capex": 2,
+     "opex": 4,
+     "benefit": 4
+    },
+    "best_tier": "E1",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "Directly targets scarce workover rigs and long ESP downtime on platforms. Still needs reliable power and a compatible completion."
+    },
+    "citations": {
+     "since_2016": 54,
+     "since_2023": 20,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 2.47,
+     "cost_benefit": 2.4,
+     "evidence": 2,
+     "fit": 4,
+     "overall": 2.73
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.439Z",
+    "rank": 7
+   },
+   {
+    "id": "5d6812e8-45e4-4602-9c95-4ef58b50ae3a",
+    "key": "AL15",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Downhole gas separators and gas handling for pumps",
+    "status": "confirmed",
+    "summary": "Devices that separate free gas before the pump intake (rotary or vortex separators, rod-pump 'gas anchors') or condition and handle gas in the pump (advanced/multiphase gas-handling stages). Used to prevent gas lock, gas interference and short run life in gassy pumped wells.",
+    "readiness": 4,
+    "components": {
+     "capex": 5,
+     "opex": 4,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Important for any ESP, PCP or rod-pump conversion in gassy, depleted reservoirs. Not relevant to wells left on gas lift."
+    },
+    "citations": {
+     "since_2016": 127,
+     "since_2023": 72,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 5,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.08,
+     "cost_benefit": 2.7,
+     "evidence": 2,
+     "fit": 3,
+     "overall": 2.71
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.449Z",
+    "rank": 8
+   },
+   {
+    "id": "708cac6f-02c9-4449-9e7f-5fa29bbebb88",
+    "key": "AL11",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Hydraulic jet pump",
+    "status": "confirmed",
+    "summary": "High-pressure power fluid (oil or water) pumped from surface goes through a downhole nozzle and throat, and the resulting venturi entrains and lifts well fluids. There are no downhole moving parts, and free pumps can be circulated in and out without a rig.",
+    "readiness": 4,
+    "components": {
+     "capex": 3,
+     "opex": 2,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "No downhole moving parts, tolerance of deviation and heavy oil, and rigless pump changes suit platforms with limited rigs. It can also be set in gas-lift mandrels (Sertecpet). It needs surface power-fluid pumps and is energy-inefficient."
+    },
+    "citations": {
+     "since_2016": 330,
+     "since_2023": 107,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.76,
+     "cost_benefit": 1.5,
+     "evidence": 2,
+     "fit": 4,
+     "overall": 2.68
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.463Z",
+    "rank": 9
+   },
+   {
+    "id": "7a84e3ee-3654-4262-bd0e-6a14e8f76b5d",
+    "key": "AL12",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Plunger lift",
+    "status": "confirmed",
+    "summary": "A free-travelling plunger cycles in the tubing, using the well's own gas energy to lift liquid slugs. Used mainly to deliquify gas wells and high-GLR, low-rate oil wells.",
+    "readiness": 4,
+    "components": {
+     "capex": 5,
+     "opex": 5,
+     "benefit": 2
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 2,
+     "reason": "Very cheap, but it needs high GLR and low liquid rate. That rules out most high-water-cut Maracaibo oil wells, leaving only gassy low-rate wells."
+    },
+    "citations": {
+     "since_2016": 153,
+     "since_2023": 66,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.21,
+     "cost_benefit": 2,
+     "evidence": 4,
+     "fit": 2,
+     "overall": 2.64
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.474Z",
+    "rank": 10
+   },
+   {
+    "id": "ed26b86c-4d16-44dc-834c-d41761b2b8d3",
+    "key": "AL02",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "ESP with permanent-magnet motor",
+    "status": "confirmed",
+    "summary": "An ESP driven by a synchronous permanent-magnet motor (PMM) instead of an induction motor. It gives higher efficiency and power factor, a shorter motor, and a wide speed range. Used to cut power demand and to run in low-rate or high-temperature applications.",
+    "readiness": 4,
+    "components": {
+     "capex": 2,
+     "opex": 3,
+     "benefit": 3
+    },
+    "best_tier": "E3",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Lower kW and kVA demand helps where generation is weak or unreliable. The workover, sand and gas exposure is the same as for any ESP."
+    },
+    "citations": {
+     "since_2016": 133,
+     "since_2023": 70,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 6,
+    "adipec_2026": 2,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.11,
+     "cost_benefit": 1.5,
+     "evidence": 3,
+     "fit": 3,
+     "overall": 2.5
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.486Z",
+    "rank": 11
+   },
+   {
+    "id": "67a1f373-1ac3-4591-bfbc-7b48add406b6",
+    "key": "AL14",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Hybrid ESP plus gas lift (dual system / backup lift)",
+    "status": "confirmed",
+    "summary": "A completion with both an ESP and gas-lift mandrels, or a Y-tool contingency gas-lift path. Gas lift can assist the ESP (reducing pump load) or keep the well flowing when the ESP or power fails, until a rig is available.",
+    "readiness": 3,
+    "components": {
+     "capex": 2,
+     "opex": 3,
+     "benefit": 4
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "Lake wells already have lift gas and mandrels. An ESP adds high-WC drawdown, while gas-lift backup hedges against power outages and rig scarcity. Completion complexity remains, and an ESP repair still needs a rig."
+    },
+    "citations": {
+     "since_2016": 19,
+     "since_2023": 11,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 1.75,
+     "cost_benefit": 2,
+     "evidence": 2,
+     "fit": 4,
+     "overall": 2.45
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.495Z",
+    "rank": 12
+   },
+   {
+    "id": "986d2c3c-12e3-4924-9e96-db7ead2d352f",
+    "key": "AL08",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Long-stroke rod pumping unit",
+    "status": "confirmed",
+    "summary": "A rod-lift surface unit, such as the Weatherford Rotaflex belt/chain type or a hydraulic unit, giving very long, slow strokes (~288 in or more). Used for deeper, higher-rate or failure-prone rod wells, and sometimes as an ESP replacement.",
+    "readiness": 4,
+    "components": {
+     "capex": 3,
+     "opex": 4,
+     "benefit": 3
+    },
+    "best_tier": "E3",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 2,
+     "reason": "Useful for deeper or sandy onshore rod wells. The tall, heavy surface unit is impractical on lake platforms, and deviated wells still suffer rod wear."
+    },
+    "citations": {
+     "since_2016": 6,
+     "since_2023": 2,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 1,
+     "cost_benefit": 2.1,
+     "evidence": 2,
+     "fit": 2,
+     "overall": 1.84
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.502Z",
+    "rank": 13
+   },
+   {
+    "id": "93a53058-6fd7-4f74-bbfd-26203a27f61d",
+    "key": "AL10",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Metal-to-metal PCP",
+    "status": "confirmed",
+    "summary": "A PCP with an all-metal stator, no elastomer. Built for high-temperature (thermal/SAGD/steam) heavy-oil wells and for fluids that destroy elastomers.",
+    "readiness": 3,
+    "components": {
+     "capex": 3,
+     "opex": 3,
+     "benefit": 2
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 2,
+     "reason": "Only relevant where wells are steamed, hot or elastomer-hostile. The depth limit (~3,500 ft), low efficiency and faster wear make it a niche option for most Maracaibo wells."
+    },
+    "citations": {
+     "since_2016": 21,
+     "since_2023": 6,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 1.82,
+     "cost_benefit": 1.2,
+     "evidence": 2,
+     "fit": 2,
+     "overall": 1.68
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.508Z",
+    "rank": 14
+   }
+  ]
+ },
+ "proposals": {
+  "application": "artificial-lift",
+  "status": "proposed",
+  "weights": {
+   "citation": 0.2,
+   "cost_benefit": 0.35,
+   "evidence": 0.2,
+   "fit": 0.25
+  },
+  "count": 1,
+  "entries": [
+   {
+    "id": "23fe92bc-d6d2-4fcd-8bab-43da9b7886f7",
+    "key": "AL13",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Gas-assisted plunger lift and hybrid gas lift",
+    "status": "proposed",
+    "summary": "Hybrids that combine a plunger with injected lift gas: plunger-assisted gas lift (PAGL) and gas-assisted plunger lift (GAPL). The plunger cuts liquid fallback and gas use as wells decline below efficient continuous gas-lift rates, while reusing existing gas-lift infrastructure.",
+    "readiness": 3,
+    "components": {
+     "capex": 4,
+     "opex": 4,
+     "benefit": 2
+    },
+    "best_tier": "E3",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "Fits declining low-rate gas-lifted wells by reusing lake gas-lift infrastructure, and plunger-assisted intermittent gas lift has been studied in Lake Maracaibo (Chacín). High water cut and paraffin can limit plunger cycling."
+    },
+    "citations": {
+     "since_2016": 12,
+     "since_2023": 7,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 5,
+     "cost_benefit": 1.6,
+     "evidence": 2,
+     "fit": 4,
+     "overall": 2.96
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": null,
+    "decided_at": null,
+    "rank": 1
+   }
+  ]
+ },
+ "detail": {
+  "id": "a48d938d-56d1-4717-a372-0a565855f91d",
+  "key": "AL05",
+  "version": 1,
+  "application": "artificial-lift",
+  "name": "Gas lift optimisation and allocation (model-based / automated)",
+  "status": "confirmed",
+  "summary": "Reallocating limited lift gas among wells using well and network models, plus automated injection control and monitoring, so that field oil output is maximised for the gas available. Used in mature gas-lifted fields with constrained compression.",
+  "readiness": 4,
+  "components": {
+   "capex": 4,
+   "opex": 4,
+   "benefit": 3
+  },
+  "best_tier": "E2",
+  "reference_fit": {
+   "case": "maracaibo",
+   "score": 5,
+   "reason": "Directly addresses legacy gas lift with gas shortages, long injection lines and manual chokes. There are Lake Maracaibo precedents (Creole 1974, Maraven 1994), and capex is low compared with changing lift method."
+  },
+  "citations": {
+   "since_2016": 175,
+   "since_2023": 82,
+   "counted_at": "2026-11-05T00:00:00.000Z",
+   "source": "import"
+  },
+  "providers": 3,
+  "adipec_2026": 0,
+  "abstract_only": 0,
+  "scores": {
+   "citation": 5,
+   "cost_benefit": 2.4,
+   "evidence": 4,
+   "fit": 5,
+   "overall": 3.89
+  },
+  "record": {
+   "key": "AL05",
+   "name": "Gas lift optimisation and allocation (model-based / automated)",
+   "note": "seed: ATC register pilot and extension, Nov 2026",
+   "opex": "Maraven's Lake Maracaibo automation logged well variables every 2 minutes and polled monitors every 6 minutes. During compressor-train shortfalls it trimmed low-priority wells to 30% of optimum injection. It targeted up to 20% optimisation of gas-lift injection (OGJ 1994).",
+   "scores": {
+    "opex": 4,
+    "capex": 4,
+    "benefit": 3,
+    "evidence": 4
+   },
+   "caveats": "No capex figures found (null). Evidence is dated (1974, 1994, 2009). Gains depend on how sub-optimal the starting point is: a five-well reallocation study under a 5.5 MMscf/d cap gained only ~0.36% (core.ac.uk), so a field may already be near optimum. The Petroleum Experts listing is based on general knowledge of the GAP product; no URL was opened.",
+   "summary": "Reallocating limited lift gas among wells using well and network models, plus automated injection control and monitoring, so that field oil output is maximised for the gas available. Used in mature gas-lifted fields with constrained compression.",
+   "evidence": [
+    {
+     "who": "Redden, Sherman & Blann (Exxon Production Research), SPE-5150-MS, 1974",
+     "tier": "E2",
+     "claim": "Creole, Lake Maracaibo: a gas-lift optimisation programme on 30 wells raised oil production by 2,050 B/D for an extra 1,920 Mscf/D of injection gas.",
+     "source": "https://doi.org/10.2118/5150-MS"
+    },
+    {
+     "who": "Maraven S.A. / Texas Electronic Resources authors, OGJ 1994",
+     "tier": "E4",
+     "claim": "Maraven (PDVSA) automated gas-lift injection control on more than 1,000 offshore Lake Maracaibo wells, expecting +27,000 b/d of oil over 3 years and up to 20% optimisation of gas injection. This was a projection, not a reported outcome.",
+     "source": "https://www.ogj.com/home/article/17212210/wellhead-monitors-automate-lake-maricaibo-gas-lift"
+    },
+    {
+     "who": "ONGC/SLB, SPE-123799, 2009",
+     "tier": "E2",
+     "claim": "Mumbai High (ONGC): an integrated network optimisation model was implemented on 160 of 700+ wells, giving an immediate gain of over 2,000 bopd and a significant drop in lift-gas need. The model indicated a 2–4% field gain.",
+     "source": "https://slb.com/resource-library/technical-paper/al/spe-123799"
+    }
+   ],
+   "providers": [
+    {
+     "name": "SLB"
+    },
+    {
+     "name": "Weatherford"
+    },
+    {
+     "name": "Petroleum Experts (GAP network optimisation)"
+    }
+   ],
+   "rationale": "Low-capex brownfield lever with Maracaibo-specific evidence. Gains are typically single-digit % field-wide, larger where the baseline is poor.",
+   "readiness": 4,
+   "screening": {},
+   "application": "artificial-lift",
+   "opex_source": "https://www.ogj.com/home/article/17212210/wellhead-monitors-automate-lake-maricaibo-gas-lift",
+   "reference_fit": {
+    "case": "maracaibo",
+    "score": 5,
+    "reason": "Directly addresses legacy gas lift with gas shortages, long injection lines and manual chokes. There are Lake Maracaibo precedents (Creole 1974, Maraven 1994), and capex is low compared with changing lift method."
+   },
+   "citation_query": "\"gas lift optimization\" | \"gas lift optimisation\" | \"gas lift allocation\" | \"gas-lift optimization\"",
+   "operating_window": {
+    "other": "Needs well tests, wellhead and injection metering, and controllable chokes or valves. Gains depend on how far the baseline is from optimum.",
+    "depth_m": null,
+    "rate_bpd": null,
+    "deviation": null,
+    "temperature_C": null,
+    "sand_tolerance": null,
+    "viscosity_or_api": null,
+    "gor_or_gas_tolerance": "Applies where lift gas or compression is constrained"
+   }
+  },
+  "author": "import:register-2026-11",
+  "created_at": "2026-11-05T08:48:30.561Z",
+  "decided_by": "chris",
+  "decided_at": "2026-11-05T08:48:31.395Z",
+  "history": [
+   {
+    "id": "a48d938d-56d1-4717-a372-0a565855f91d",
+    "version": 1,
+    "status": "confirmed",
+    "note": "seed: ATC register pilot and extension, Nov 2026",
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.395Z",
+    "superseded_by": null
+   }
+  ],
+  "citation_history": [
+   {
+    "source": "import",
+    "since_2016": 175,
+    "since_2023": 82,
+    "counted_at": "2026-11-05T00:00:00.000Z",
+    "query": "\"gas lift optimization\" | \"gas lift optimisation\" | \"gas lift allocation\" | \"gas-lift optimization\""
+   }
+  ]
+ },
+ "projects": {
+  "projects": [
+   {
+    "id": "firm",
+    "client_id": null,
+    "name": "ATC internal",
+    "status": "active",
+    "default_legal_tag": "lt-firm",
+    "asset_ids": [],
+    "members": [],
+    "created_at": "2026-11-05T08:48:30.479Z",
+    "closed_at": null,
+    "country": null,
+    "lat": null,
+    "lon": null,
+    "stage": "Initial screen",
+    "stage_history": [],
+    "register": {},
+    "contacts": [],
+    "run_count": 0,
+    "item_count": 2,
+    "stale_count": 0,
+    "last_activity_at": "2026-11-05T08:48:30.479Z"
+   },
+   {
+    "id": "lagunillas-lake",
+    "client_id": null,
+    "name": "Lagunillas Lake block",
+    "status": "active",
+    "default_legal_tag": "lt-firm",
+    "asset_ids": [],
+    "members": [
+     "chris"
+    ],
+    "created_at": "2026-11-05T08:48:31.513Z",
+    "closed_at": null,
+    "country": null,
+    "lat": null,
+    "lon": null,
+    "stage": "Initial screen",
+    "stage_history": [],
+    "register": {},
+    "contacts": [],
+    "run_count": 0,
+    "item_count": 0,
+    "stale_count": 0,
+    "last_activity_at": "2026-11-05T08:48:31.513Z"
+   }
+  ]
+ },
+ "conditions": {
+  "project_id": "lagunillas-lake",
+  "stored": {
+   "conditions": {
+    "api": 24,
+    "sand": "moderate",
+    "depth_m": 2500,
+    "water_cut": 0.85,
+    "environment": "shallow-water",
+    "power_reliable": false,
+    "rigs_available": false
+   },
+   "note": null,
+   "set_by": "chris",
+   "set_at": "2026-11-05T08:48:31.515Z"
+  },
+  "derived": {},
+  "conditions": {
+   "api": 24,
+   "sand": "moderate",
+   "depth_m": 2500,
+   "water_cut": 0.85,
+   "environment": "shallow-water",
+   "power_reliable": false,
+   "rigs_available": false
+  },
+  "sources": {
+   "api": {
+    "value": 24,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "sand": {
+    "value": "moderate",
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "depth_m": {
+    "value": 2500,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "water_cut": {
+    "value": 0.85,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "environment": {
+    "value": "shallow-water",
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "power_reliable": {
+    "value": false,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "rigs_available": {
+    "value": false,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   }
+  }
+ },
+ "match": {
+  "project_id": "lagunillas-lake",
+  "application": "artificial-lift",
+  "weights": {
+   "citation": 0.2,
+   "cost_benefit": 0.35,
+   "evidence": 0.2,
+   "fit": 0.25
+  },
+  "conditions": {
+   "api": 24,
+   "sand": "moderate",
+   "depth_m": 2500,
+   "water_cut": 0.85,
+   "environment": "shallow-water",
+   "power_reliable": false,
+   "rigs_available": false
+  },
+  "sources": {
+   "api": {
+    "value": 24,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "sand": {
+    "value": "moderate",
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "depth_m": {
+    "value": 2500,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "water_cut": {
+    "value": 0.85,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "environment": {
+    "value": "shallow-water",
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "power_reliable": {
+    "value": false,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   },
+   "rigs_available": {
+    "value": false,
+    "from": "stored",
+    "as_of": "2026-11-05T08:48:31.515Z"
+   }
+  },
+  "count": 14,
+  "entries": [
+   {
+    "id": "c0f0c127-b601-4a4d-ab8d-3f0c8d4051d0",
+    "key": "AL04",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Continuous gas lift",
+    "status": "confirmed",
+    "summary": "Gas is injected continuously down the annulus through gas-lift valves into the tubing, lightening the fluid column. It is the incumbent method on most Lake Maracaibo wells and suits deviated, sandy, high-rate wells wherever lift gas and compression are available.",
+    "readiness": 4,
+    "components": {
+     "capex": 3,
+     "opex": 3,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "The incumbent method, with infrastructure in place. It tolerates sand and deviation and needs no platform power. Efficiency falls as water cut rises and reservoir pressure drops, and paraffin is a known weakness."
+    },
+    "citations": {
+     "since_2016": 1859,
+     "since_2023": 765,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 7,
+    "adipec_2026": 3,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 4.99,
+     "cost_benefit": 1.8,
+     "evidence": 4,
+     "fit": 4.5,
+     "overall": 3.55
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.403Z",
+    "rank": 1,
+    "screen": {
+     "verdict": "pass",
+     "fit": 4.5,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 4570,
+        "min": 300
+       },
+       "result": "pass",
+       "why": "within published limits"
+      },
+      {
+       "key": "rate_bpd",
+       "condition": null,
+       "limit": {
+        "max": 80000
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "temperature_c",
+       "condition": null,
+       "limit": {
+        "max": 177
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "sand",
+       "condition": "moderate",
+       "limit": "high",
+       "result": "pass",
+       "why": "tolerates high sand"
+      }
+     ],
+     "counts": {
+      "pass": 2,
+      "marginal": 0,
+      "fail": 0,
+      "unknown": 2
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "9987cdf9-c4f6-4850-aa31-56c276cfd313",
+    "key": "AL09",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Progressing cavity pump (PCP), elastomer stator",
+    "status": "confirmed",
+    "summary": "A positive-displacement pump: a helical metal rotor turns inside an elastomer stator, usually driven by rods from a surface drive head, or by an ESP motor (ESPCP). Preferred for viscous and heavy oil, sand-laden fluids and low-to-moderate rates.",
+    "readiness": 4,
+    "components": {
+     "capex": 4,
+     "opex": 3,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "Good for the heavy, viscous, sandy, shallow-to-moderate-depth wells, with low energy use. Rod wear in deviated wells, elastomer temperature and fluid-compatibility limits, and high-rate high-WC wells reduce fit; ESPCP is an option on platforms."
+    },
+    "citations": {
+     "since_2016": 345,
+     "since_2023": 124,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 10,
+    "adipec_2026": 4,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.79,
+     "cost_benefit": 2.1,
+     "evidence": 3,
+     "fit": 4.5,
+     "overall": 3.22
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.417Z",
+    "rank": 2,
+    "screen": {
+     "verdict": "pass",
+     "fit": 4.5,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 2740,
+        "min": 30
+       },
+       "result": "pass",
+       "why": "within published limits"
+      },
+      {
+       "key": "rate_bpd",
+       "condition": null,
+       "limit": {
+        "max": 5000,
+        "min": 5
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "temperature_c",
+       "condition": null,
+       "limit": {
+        "max": 85
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "sand",
+       "condition": "moderate",
+       "limit": "high",
+       "result": "pass",
+       "why": "tolerates high sand"
+      }
+     ],
+     "counts": {
+      "pass": 2,
+      "marginal": 0,
+      "fail": 0,
+      "unknown": 2
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "b40a8050-a93f-4830-8a6b-e6c44d333371",
+    "key": "AL06",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Sucker rod (beam) pumping",
+    "status": "confirmed",
+    "summary": "A surface beam pumping unit drives a reciprocating downhole plunger pump through a sucker-rod string. It is the most common onshore lift method for low-to-moderate rates and works with viscous oil.",
+    "readiness": 4,
+    "components": {
+     "capex": 4,
+     "opex": 4,
+     "benefit": 2
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Historically common on electrified Lake wells (Bachaquero-2, JPT 1963) and good for low-rate viscous oil onshore. Limited by platform footprint, deviation, sand, gas and high fluid rates."
+    },
+    "citations": {
+     "since_2016": 1321,
+     "since_2023": 454,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 10,
+    "adipec_2026": 5,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 4.75,
+     "cost_benefit": 1.6,
+     "evidence": 4,
+     "fit": 3.5,
+     "overall": 3.19
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.424Z",
+    "rank": 3,
+    "screen": {
+     "verdict": "marginal",
+     "fit": 3.5,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 3050,
+        "min": 30
+       },
+       "result": "pass",
+       "why": "within published limits"
+      },
+      {
+       "key": "rate_bpd",
+       "condition": null,
+       "limit": {
+        "max": 5000
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "temperature_c",
+       "condition": null,
+       "limit": {
+        "max": 288
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "sand",
+       "condition": "moderate",
+       "limit": "low",
+       "result": "marginal",
+       "why": "rated for low sand; wells produce moderate (needs a sand-tolerant design or sand control)"
+      }
+     ],
+     "counts": {
+      "pass": 1,
+      "marginal": 1,
+      "fail": 0,
+      "unknown": 2
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "a48d938d-56d1-4717-a372-0a565855f91d",
+    "key": "AL05",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Gas lift optimisation and allocation (model-based / automated)",
+    "status": "confirmed",
+    "summary": "Reallocating limited lift gas among wells using well and network models, plus automated injection control and monitoring, so that field oil output is maximised for the gas available. Used in mature gas-lifted fields with constrained compression.",
+    "readiness": 4,
+    "components": {
+     "capex": 4,
+     "opex": 4,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 5,
+     "reason": "Directly addresses legacy gas lift with gas shortages, long injection lines and manual chokes. There are Lake Maracaibo precedents (Creole 1974, Maraven 1994), and capex is low compared with changing lift method."
+    },
+    "citations": {
+     "since_2016": 175,
+     "since_2023": 82,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.31,
+     "cost_benefit": 2.4,
+     "evidence": 4,
+     "fit": 3,
+     "overall": 3.05
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.395Z",
+    "rank": 4,
+    "screen": {
+     "verdict": "unscreened",
+     "fit": 3,
+     "checks": [],
+     "counts": {
+      "pass": 0,
+      "marginal": 0,
+      "fail": 0,
+      "unknown": 0
+     }
+    },
+    "suggestion": {
+     "key": "AL05",
+     "entry_id": "a48d938d-56d1-4717-a372-0a565855f91d",
+     "status": "shortlisted",
+     "note": "existing gas lift network",
+     "by_person": "chris",
+     "at": "2026-11-05T08:48:31.529Z"
+    }
+   },
+   {
+    "id": "3cf54412-6d08-4832-9548-95061261296e",
+    "key": "AL07",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Rod lift automation: pump-off control and dynamometer analytics",
+    "status": "confirmed",
+    "summary": "Controllers read surface and downhole dynamometer cards to detect pump-off and stop or slow the unit. Analytics, increasingly ML-based, classify card shapes to diagnose failures early. Used to cut fluid pound, rod and pump failures, and energy use on rod-pumped wells.",
+    "readiness": 4,
+    "components": {
+     "capex": 5,
+     "opex": 4,
+     "benefit": 3
+    },
+    "best_tier": "E4",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Low cost, with quick payback on the rod-pumped onshore subset only. Communications and power reliability limit supervisory systems."
+    },
+    "citations": {
+     "since_2016": 215,
+     "since_2023": 83,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 4,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.45,
+     "cost_benefit": 2.7,
+     "evidence": 3,
+     "fit": 3,
+     "overall": 2.99
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.431Z",
+    "rank": 5,
+    "screen": {
+     "verdict": "unscreened",
+     "fit": 3,
+     "checks": [],
+     "counts": {
+      "pass": 0,
+      "marginal": 0,
+      "fail": 0,
+      "unknown": 0
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "77d98fba-10d4-4246-8573-0831c69849c8",
+    "key": "AL01",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Electric submersible pump (ESP), conventional",
+    "status": "confirmed",
+    "summary": "A multistage centrifugal pump driven by a downhole electric induction motor, powered via a cable from surface. Used for medium-to-very-high liquid rates, including high-water-cut wells, where reliable electric power is available.",
+    "readiness": 4,
+    "components": {
+     "capex": 2,
+     "opex": 2,
+     "benefit": 4
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Well suited to high-water-cut, high-rate wells. However, unreliable power, sand, free gas, viscous oil and scarce workover rigs all shorten run life and lengthen downtime. Some lake platforms historically had no electric power (OGJ 1994)."
+    },
+    "citations": {
+     "since_2016": 1879,
+     "since_2023": 819,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 16,
+    "adipec_2026": 10,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 5,
+     "cost_benefit": 1.6,
+     "evidence": 4,
+     "fit": 2,
+     "overall": 2.86
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.410Z",
+    "rank": 6,
+    "screen": {
+     "verdict": "marginal",
+     "fit": 2,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 4570
+       },
+       "result": "pass",
+       "why": "within published limits"
+      },
+      {
+       "key": "rate_bpd",
+       "condition": null,
+       "limit": {
+        "max": 150000,
+        "min": 50
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "temperature_c",
+       "condition": null,
+       "limit": {
+        "max": 288
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "sand",
+       "condition": "moderate",
+       "limit": "low",
+       "result": "marginal",
+       "why": "rated for low sand; wells produce moderate (needs a sand-tolerant design or sand control)"
+      },
+      {
+       "key": "power",
+       "condition": false,
+       "limit": "needs reliable power",
+       "result": "marginal",
+       "why": "needs reliable power; project power is unreliable (backup generation or a hybrid lift needed)"
+      },
+      {
+       "key": "rig",
+       "condition": false,
+       "limit": "needs a workover rig",
+       "result": "marginal",
+       "why": "install or repair needs a rig; rigs are scarce"
+      }
+     ],
+     "counts": {
+      "pass": 1,
+      "marginal": 3,
+      "fail": 0,
+      "unknown": 2
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "5130f493-85a7-406c-8f4e-256bcda356c6",
+    "key": "AL03",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Rigless / alternatively deployed ESP (cable, wireline, coiled tubing, through-tubing)",
+    "status": "confirmed",
+    "summary": "ESP systems that can be installed or replaced without a workover rig. Methods include coiled tubing or cable deployment, or retrieving the pump/motor through tubing on wireline or slickline. Used where rigs are costly, scarce or slow to mobilise.",
+    "readiness": 3,
+    "components": {
+     "capex": 2,
+     "opex": 4,
+     "benefit": 4
+    },
+    "best_tier": "E1",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "Directly targets scarce workover rigs and long ESP downtime on platforms. Still needs reliable power and a compatible completion."
+    },
+    "citations": {
+     "since_2016": 54,
+     "since_2023": 20,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 2.47,
+     "cost_benefit": 2.4,
+     "evidence": 2,
+     "fit": 4,
+     "overall": 2.73
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.439Z",
+    "rank": 7,
+    "screen": {
+     "verdict": "marginal",
+     "fit": 4,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 3660
+       },
+       "result": "pass",
+       "why": "within published limits"
+      },
+      {
+       "key": "power",
+       "condition": false,
+       "limit": "needs reliable power",
+       "result": "marginal",
+       "why": "needs reliable power; project power is unreliable (backup generation or a hybrid lift needed)"
+      }
+     ],
+     "counts": {
+      "pass": 1,
+      "marginal": 1,
+      "fail": 0,
+      "unknown": 0
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "5d6812e8-45e4-4602-9c95-4ef58b50ae3a",
+    "key": "AL15",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Downhole gas separators and gas handling for pumps",
+    "status": "confirmed",
+    "summary": "Devices that separate free gas before the pump intake (rotary or vortex separators, rod-pump 'gas anchors') or condition and handle gas in the pump (advanced/multiphase gas-handling stages). Used to prevent gas lock, gas interference and short run life in gassy pumped wells.",
+    "readiness": 4,
+    "components": {
+     "capex": 5,
+     "opex": 4,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Important for any ESP, PCP or rod-pump conversion in gassy, depleted reservoirs. Not relevant to wells left on gas lift."
+    },
+    "citations": {
+     "since_2016": 127,
+     "since_2023": 72,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 5,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.08,
+     "cost_benefit": 2.7,
+     "evidence": 2,
+     "fit": 3,
+     "overall": 2.71
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.449Z",
+    "rank": 8,
+    "screen": {
+     "verdict": "unscreened",
+     "fit": 3,
+     "checks": [],
+     "counts": {
+      "pass": 0,
+      "marginal": 0,
+      "fail": 0,
+      "unknown": 0
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "708cac6f-02c9-4449-9e7f-5fa29bbebb88",
+    "key": "AL11",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Hydraulic jet pump",
+    "status": "confirmed",
+    "summary": "High-pressure power fluid (oil or water) pumped from surface goes through a downhole nozzle and throat, and the resulting venturi entrains and lifts well fluids. There are no downhole moving parts, and free pumps can be circulated in and out without a rig.",
+    "readiness": 4,
+    "components": {
+     "capex": 3,
+     "opex": 2,
+     "benefit": 3
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "No downhole moving parts, tolerance of deviation and heavy oil, and rigless pump changes suit platforms with limited rigs. It can also be set in gas-lift mandrels (Sertecpet). It needs surface power-fluid pumps and is energy-inefficient."
+    },
+    "citations": {
+     "since_2016": 330,
+     "since_2023": 107,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.76,
+     "cost_benefit": 1.5,
+     "evidence": 2,
+     "fit": 3.5,
+     "overall": 2.55
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.463Z",
+    "rank": 9,
+    "screen": {
+     "verdict": "marginal",
+     "fit": 3.5,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 5790,
+        "min": 150
+       },
+       "result": "pass",
+       "why": "within published limits"
+      },
+      {
+       "key": "rate_bpd",
+       "condition": null,
+       "limit": {
+        "max": 35000
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "temperature_c",
+       "condition": null,
+       "limit": {
+        "max": 260
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "api",
+       "condition": 24,
+       "limit": {
+        "min": 6
+       },
+       "result": "pass",
+       "why": "within published limits"
+      },
+      {
+       "key": "sand",
+       "condition": "moderate",
+       "limit": "low",
+       "result": "marginal",
+       "why": "rated for low sand; wells produce moderate (needs a sand-tolerant design or sand control)"
+      }
+     ],
+     "counts": {
+      "pass": 2,
+      "marginal": 1,
+      "fail": 0,
+      "unknown": 2
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "ed26b86c-4d16-44dc-834c-d41761b2b8d3",
+    "key": "AL02",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "ESP with permanent-magnet motor",
+    "status": "confirmed",
+    "summary": "An ESP driven by a synchronous permanent-magnet motor (PMM) instead of an induction motor. It gives higher efficiency and power factor, a shorter motor, and a wide speed range. Used to cut power demand and to run in low-rate or high-temperature applications.",
+    "readiness": 4,
+    "components": {
+     "capex": 2,
+     "opex": 3,
+     "benefit": 3
+    },
+    "best_tier": "E3",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 3,
+     "reason": "Lower kW and kVA demand helps where generation is weak or unreliable. The workover, sand and gas exposure is the same as for any ESP."
+    },
+    "citations": {
+     "since_2016": 133,
+     "since_2023": 70,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 6,
+    "adipec_2026": 2,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.11,
+     "cost_benefit": 1.5,
+     "evidence": 3,
+     "fit": 2.75,
+     "overall": 2.43
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.486Z",
+    "rank": 10,
+    "screen": {
+     "verdict": "marginal",
+     "fit": 2.75,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 4570
+       },
+       "result": "pass",
+       "why": "within published limits"
+      },
+      {
+       "key": "temperature_c",
+       "condition": null,
+       "limit": {
+        "max": 249
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "power",
+       "condition": false,
+       "limit": "needs reliable power",
+       "result": "marginal",
+       "why": "needs reliable power; project power is unreliable (backup generation or a hybrid lift needed)"
+      },
+      {
+       "key": "rig",
+       "condition": false,
+       "limit": "needs a workover rig",
+       "result": "marginal",
+       "why": "install or repair needs a rig; rigs are scarce"
+      }
+     ],
+     "counts": {
+      "pass": 1,
+      "marginal": 2,
+      "fail": 0,
+      "unknown": 1
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "7a84e3ee-3654-4262-bd0e-6a14e8f76b5d",
+    "key": "AL12",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Plunger lift",
+    "status": "confirmed",
+    "summary": "A free-travelling plunger cycles in the tubing, using the well's own gas energy to lift liquid slugs. Used mainly to deliquify gas wells and high-GLR, low-rate oil wells.",
+    "readiness": 4,
+    "components": {
+     "capex": 5,
+     "opex": 5,
+     "benefit": 2
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 2,
+     "reason": "Very cheap, but it needs high GLR and low liquid rate. That rules out most high-water-cut Maracaibo oil wells, leaving only gassy low-rate wells."
+    },
+    "citations": {
+     "since_2016": 153,
+     "since_2023": 66,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 3.21,
+     "cost_benefit": 2,
+     "evidence": 4,
+     "fit": 1,
+     "overall": 2.39
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.474Z",
+    "rank": 11,
+    "screen": {
+     "verdict": "fail",
+     "fit": 1,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 1520
+       },
+       "result": "fail",
+       "why": "2,500 exceeds the 1,520 maximum"
+      },
+      {
+       "key": "temperature_c",
+       "condition": null,
+       "limit": {
+        "max": 260,
+        "min": 54
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      }
+     ],
+     "counts": {
+      "pass": 0,
+      "marginal": 0,
+      "fail": 1,
+      "unknown": 1
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "67a1f373-1ac3-4591-bfbc-7b48add406b6",
+    "key": "AL14",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Hybrid ESP plus gas lift (dual system / backup lift)",
+    "status": "confirmed",
+    "summary": "A completion with both an ESP and gas-lift mandrels, or a Y-tool contingency gas-lift path. Gas lift can assist the ESP (reducing pump load) or keep the well flowing when the ESP or power fails, until a rig is available.",
+    "readiness": 3,
+    "components": {
+     "capex": 2,
+     "opex": 3,
+     "benefit": 4
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 4,
+     "reason": "Lake wells already have lift gas and mandrels. An ESP adds high-WC drawdown, while gas-lift backup hedges against power outages and rig scarcity. Completion complexity remains, and an ESP repair still needs a rig."
+    },
+    "citations": {
+     "since_2016": 19,
+     "since_2023": 11,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 1.75,
+     "cost_benefit": 2,
+     "evidence": 2,
+     "fit": 3,
+     "overall": 2.2
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.495Z",
+    "rank": 12,
+    "screen": {
+     "verdict": "marginal",
+     "fit": 3,
+     "checks": [
+      {
+       "key": "power",
+       "condition": false,
+       "limit": "needs reliable power",
+       "result": "marginal",
+       "why": "needs reliable power; project power is unreliable (backup generation or a hybrid lift needed)"
+      },
+      {
+       "key": "rig",
+       "condition": false,
+       "limit": "needs a workover rig",
+       "result": "marginal",
+       "why": "install or repair needs a rig; rigs are scarce"
+      }
+     ],
+     "counts": {
+      "pass": 0,
+      "marginal": 2,
+      "fail": 0,
+      "unknown": 0
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "986d2c3c-12e3-4924-9e96-db7ead2d352f",
+    "key": "AL08",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Long-stroke rod pumping unit",
+    "status": "confirmed",
+    "summary": "A rod-lift surface unit, such as the Weatherford Rotaflex belt/chain type or a hydraulic unit, giving very long, slow strokes (~288 in or more). Used for deeper, higher-rate or failure-prone rod wells, and sometimes as an ESP replacement.",
+    "readiness": 4,
+    "components": {
+     "capex": 3,
+     "opex": 4,
+     "benefit": 3
+    },
+    "best_tier": "E3",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 2,
+     "reason": "Useful for deeper or sandy onshore rod wells. The tall, heavy surface unit is impractical on lake platforms, and deviated wells still suffer rod wear."
+    },
+    "citations": {
+     "since_2016": 6,
+     "since_2023": 2,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 1,
+     "cost_benefit": 2.1,
+     "evidence": 2,
+     "fit": 1,
+     "overall": 1.59
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.502Z",
+    "rank": 13,
+    "screen": {
+     "verdict": "fail",
+     "fit": 1,
+     "checks": [
+      {
+       "key": "environment",
+       "condition": "shallow-water",
+       "limit": [
+        "onshore"
+       ],
+       "result": "fail",
+       "why": "not deployed shallow-water (onshore only)"
+      }
+     ],
+     "counts": {
+      "pass": 0,
+      "marginal": 0,
+      "fail": 1,
+      "unknown": 0
+     }
+    },
+    "suggestion": null
+   },
+   {
+    "id": "93a53058-6fd7-4f74-bbfd-26203a27f61d",
+    "key": "AL10",
+    "version": 1,
+    "application": "artificial-lift",
+    "name": "Metal-to-metal PCP",
+    "status": "confirmed",
+    "summary": "A PCP with an all-metal stator, no elastomer. Built for high-temperature (thermal/SAGD/steam) heavy-oil wells and for fluids that destroy elastomers.",
+    "readiness": 3,
+    "components": {
+     "capex": 3,
+     "opex": 3,
+     "benefit": 2
+    },
+    "best_tier": "E2",
+    "reference_fit": {
+     "case": "maracaibo",
+     "score": 2,
+     "reason": "Only relevant where wells are steamed, hot or elastomer-hostile. The depth limit (~3,500 ft), low efficiency and faster wear make it a niche option for most Maracaibo wells."
+    },
+    "citations": {
+     "since_2016": 21,
+     "since_2023": 6,
+     "counted_at": "2026-11-05T00:00:00.000Z",
+     "source": "import"
+    },
+    "providers": 3,
+    "adipec_2026": 0,
+    "abstract_only": 0,
+    "scores": {
+     "citation": 1.82,
+     "cost_benefit": 1.2,
+     "evidence": 2,
+     "fit": 1,
+     "overall": 1.43
+    },
+    "author": "import:register-2026-11",
+    "created_at": "2026-11-05T08:48:30.561Z",
+    "decided_by": "chris",
+    "decided_at": "2026-11-05T08:48:31.508Z",
+    "rank": 14,
+    "screen": {
+     "verdict": "fail",
+     "fit": 1,
+     "checks": [
+      {
+       "key": "depth_m",
+       "condition": 2500,
+       "limit": {
+        "max": 1070,
+        "min": 30
+       },
+       "result": "fail",
+       "why": "2,500 exceeds the 1,070 maximum"
+      },
+      {
+       "key": "rate_bpd",
+       "condition": null,
+       "limit": {
+        "max": 2500,
+        "min": 350
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      },
+      {
+       "key": "temperature_c",
+       "condition": null,
+       "limit": {
+        "max": 316
+       },
+       "result": "unknown",
+       "why": "project value not set"
+      }
+     ],
+     "counts": {
+      "pass": 0,
+      "marginal": 0,
+      "fail": 1,
+      "unknown": 2
+     }
+    },
+    "suggestion": null
+   }
+  ]
+ }
+}

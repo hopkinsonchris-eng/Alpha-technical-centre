@@ -333,3 +333,18 @@ services:
         value: "40"
       - key: DATABASE_URL
         sync: false
+
+  # Technology register (M19): monthly paper counts per register entry (Semantic Scholar bulk search), appended to
+  # tech_citations. Never edits an entry; changes to what an entry claims go through a proposal and a partner.
+  - type: cron
+    name: atc-vault-tech-citations
+    runtime: node
+    rootDir: vault
+    schedule: "30 5 2 * *"
+    buildCommand: npm ci
+    startCommand: npx tsx src/jobs/tech-citations.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: S2_API_KEY
+        sync: false

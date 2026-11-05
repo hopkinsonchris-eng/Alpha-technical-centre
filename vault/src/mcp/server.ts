@@ -26,6 +26,8 @@ import { runRecord } from '../api/runs.routes.ts';
 import { register as registerLessons } from '../api/lessons.routes.ts';
 import { register as registerDraft } from '../api/draft.routes.ts';
 import { register as registerItems } from '../api/items.routes.ts';
+import { register as registerTechnology } from '../api/technology.routes.ts';
+import { APPLICATION_IDS, type Application } from '../technology/model.ts';
 import { counterpartiesOf } from '../llm/draft.ts';
 import { computeStanding, type Standing } from '../api/standing.routes.ts';
 import { issuerFrom } from '../oauth/server.ts';
@@ -71,6 +73,7 @@ function routeApp(db: Db, person: Person): Hono<Env> {
   registerLessons(app, { db });
   registerDraft(app, { db });
   registerItems(app, { db });
+  registerTechnology(app, { db });
   return app;
 }
 /** A link into the Hub for a project or a record, so an answer in a conversation can point at the page. */
@@ -351,6 +354,46 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     const riskLines = country ? await countryRiskLines(db, country) : [];
     const packLines = pack && packRead ? ['', `## Country pack (${pack.country})`, '', `- Assembled: ${pack.assembled_at ? pack.assembled_at.slice(0, 10) : 'not yet'}; the full pack is vault://countries/${pack.country}/pack.md`, ...termsLines(packRead), ...pack.headlines.map(h => `- ${h.section} (${h.status}${h.due_at ? `, due ${h.due_at}` : ''}): ${h.en || 'not built'}`)] : [];
     return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, pack, markdown: sum.markdown + lines.join('\n') + packLines.join('\n') + riskLines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
+  }));
+
+  /* M19: the technology register. The route handlers do the scope checks; these tools only shape the answer. */
+  const applicationArg = z.enum(APPLICATION_IDS as [Application, ...Application[]]).optional();
+  const slim = (e: any) => ({ key: e.key, id: e.id, name: e.name, application: e.application, rank: e.rank, readiness: e.readiness, best_tier: e.best_tier, scores: e.scores, citations: e.citations, providers: e.providers, adipec_2026: e.adipec_2026, summary: e.summary, ...(e.screen ? { verdict: e.screen.verdict, checks: e.screen.checks.filter((c: any) => c.result !== 'pass') } : {}), ...(e.suggestion !== undefined ? { suggestion: e.suggestion } : {}) });
+
+  server.registerTool('find_technologies', {
+    title: 'Find technologies in the register',
+    description: 'The firm\'s technology register: confirmed field technologies by application (artificial-lift, water-handling, ior-eor, well-intervention, integrity, emissions-power), ranked by overall score from four separate 1–5 scores: citation (literature attention), cost_benefit, evidence (strength and independence) and fit (reference case). Optional weights w = "citation,cost_benefit,evidence,fit". Use match_technologies for a project shortlist.',
+    inputSchema: { application: applicationArg, w: z.string().max(60).optional(), limit: z.number().int().min(1).max(100).optional() },
+    annotations: { readOnlyHint: true },
+  }, ({ application, w, limit }) => tool('find_technologies', async (a) => {
+    const qs = new URLSearchParams({ ...(application ? { application } : {}), ...(w ? { w } : {}) });
+    const body = await callRoute(db, person, 'GET', `/api/technology?${qs}`);
+    a.scope = 'firm'; a.detail = { application: application ?? null, count: body.count };
+    return { application: body.application, weights: body.weights, count: body.count, hub_url: `${issuerFrom()}/hub/technology.html`, entries: body.entries.slice(0, limit ?? 25).map(slim) };
+  }));
+
+  server.registerTool('match_technologies', {
+    title: 'Shortlist technologies for a project',
+    description: 'Screens the technology register against a project\'s conditions (stored on the project, else derived from its figures: depth, API, water cut, temperature, GOR, viscosity) and ranks with project fit in place of the reference fit. Each entry carries a verdict (pass, marginal, fail, unscreened) and the checks that did not pass, with reasons. Returns the conditions used and where each came from.',
+    inputSchema: { project_id: z.string().min(1).max(64), application: applicationArg, w: z.string().max(60).optional(), include_failed: z.boolean().optional(), limit: z.number().int().min(1).max(100).optional() },
+    annotations: { readOnlyHint: true },
+  }, ({ project_id, application, w, include_failed, limit }) => tool('match_technologies', async (a) => {
+    const qs = new URLSearchParams({ ...(application ? { application } : {}), ...(w ? { w } : {}) });
+    const body = await callRoute(db, person, 'GET', `/api/projects/${encodeURIComponent(project_id)}/technology/match?${qs}`);
+    a.scope = `project:${project_id}`; a.refs = [`project:${project_id}`]; a.detail = { application: application ?? null, count: body.count };
+    const entries = body.entries.filter((e: any) => include_failed || e.screen.verdict !== 'fail');
+    return { project_id, conditions: body.conditions, sources: body.sources, count: entries.length, excluded_failed: body.count - entries.length, hub_url: `${issuerFrom()}/hub/technology.html?project=${encodeURIComponent(project_id)}`, entries: entries.slice(0, limit ?? 15).map(slim) };
+  }));
+
+  server.registerTool('suggest_technology', {
+    title: 'Record a project\'s decision on a technology',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    description: 'Record that a project suggests, shortlists or dismisses a register technology (by key, e.g. AL05), with a note saying why. Appends a decision; the latest one per technology is the project\'s current view. Needs write access to the project.',
+    inputSchema: { project_id: z.string().min(1).max(64), key: z.string().regex(/^[A-Z]{2}[0-9]{2,3}$/), status: z.enum(['suggested', 'shortlisted', 'dismissed']), note: z.string().max(600).optional() },
+  }, ({ project_id, key, status, note }) => tool('suggest_technology', async (a) => {
+    const body = await callRoute(db, person, 'POST', `/api/projects/${encodeURIComponent(project_id)}/technology/suggestions`, { key, status, ...(note ? { note } : {}) });
+    a.scope = `project:${project_id}`; a.refs = [`project:${project_id}`, `tech:${key}`]; a.detail = { key, status };
+    return body;
   }));
 
   server.registerTool('get_item', {
