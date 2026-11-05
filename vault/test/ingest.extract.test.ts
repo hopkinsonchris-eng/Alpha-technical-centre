@@ -178,3 +178,12 @@ test('a 50-page PDF extracts every page quickly', async () => {
   assert.ok(Date.now() - t0 < 20_000);
   assert.ok(paragraphs(1)[0].length > 100);
 });
+
+test('scanned PDF with OCR turned off for this call: flagged needs_ocr at once, no OCR attempted', async () => {
+  const bytes = await makeScannedPdf(['SCANNED LETTER Carabobo']);
+  const t0 = Date.now();
+  const r = await extractText(bytes, 'application/pdf', 'scan.pdf', { ocr: false });
+  assert.equal(r.needs_ocr, true);
+  assert.ok(!r.ocr);
+  assert.ok(Date.now() - t0 < 5000);
+});

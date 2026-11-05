@@ -25,8 +25,8 @@ export interface IngestDeps { provider: LlmProvider | null; embedder: Embedder; 
 
 /** Formats whose chunks are rows and cells: a model-written context adds little to them, so they get the template. */
 const DATA_FORMATS = new Set(['xlsx', 'csv', 'json']);
-export interface IngestOptions { force?: boolean; now?: () => Date }
-export type IngestStatus = 'ok' | 'skipped' | 'unsupported' | 'empty' | 'needs_ocr' | 'no_original';
+export interface IngestOptions { force?: boolean; now?: () => Date; /** false: do not OCR a scan now; it comes back 'ocr_deferred', unmarked, for a later run */ ocr?: boolean }
+export type IngestStatus = 'ok' | 'skipped' | 'unsupported' | 'empty' | 'needs_ocr' | 'no_original' | 'ocr_deferred';
 export interface IngestResult {
   item_id: string; version: number; status: IngestStatus; chunks: number; text_chars: number;
   needs_ocr?: boolean; ocr?: boolean; partners_only?: boolean; nda_expiry_review?: string | null;
@@ -68,12 +68,17 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
   };
 
   let ex;
-  try { ex = await extractText(bytes, item.mime ?? '', existing.filename ?? item.title ?? ''); }
+  try { ex = await extractText(bytes, item.mime ?? '', existing.filename ?? item.title ?? '', { ocr: opts.ocr }); }
   catch (e) {
     if (e instanceof UnsupportedFormat) { await mark('unsupported', { text_chars: 0, chunks: 0 }); return { ...base, status: 'unsupported', chunks: 0, text_chars: 0 }; }
     throw e;
   }
   const textChars = ex.text.trim().length;
+  if (opts.ocr === false && ex.needs_ocr && ex.text.replace(/## Page \d+/g, '').trim().length < 200) {
+    // A scan this run had no OCR time left for: left in the queue (not marked needs_ocr) and sorted behind the rest.
+    await db.query(`UPDATE items SET extracted = extracted || jsonb_build_object('ocr_deferred', version) WHERE id = $1`, [item.id]);
+    return { ...base, status: 'ocr_deferred', chunks: 0, text_chars: 0, needs_ocr: true };
+  }
   if (!textChars) {
     const status: IngestStatus = ex.needs_ocr ? 'needs_ocr' : 'empty';
     await mark(status, { text_chars: 0, chunks: 0, format: ex.format, ...(ex.pages ? { pages: ex.pages } : {}), ...(ex.needs_ocr ? { needs_ocr: true } : {}) });

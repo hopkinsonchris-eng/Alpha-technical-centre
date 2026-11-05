@@ -33,6 +33,8 @@ export interface IngestSyncSummary {
   idle?: string;
   /** Set when the run's model-spend cap stopped it, with how many items wait for the next run. */
   stopped_by?: 'budget'; left?: number;
+  /** scans put back because this run's OCR time (VAULT_OCR_RUN_SECONDS, default 300) was spent */
+  ocr_deferred?: number;
   /** Wave 9: records that had never been filed into the project folders, filed this run within what is left of the cap. */
   folders?: BacklogSummary;
 }
@@ -52,8 +54,8 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
     if (wd) summary.workdrive = await syncWorkdrive(db, sink!, wd);
     if (bk) summary.books = await syncBooks(db, sink!, bk);
 
-    const pending = (await db.query<{ id: string; version: number }>(
-      `SELECT i.id, i.version FROM items i
+    const pending = (await db.query<{ id: string; version: number; title: string | null; project_id: string | null }>(
+      `SELECT i.id, i.version, i.title, i.project_id FROM items i
         WHERE NOT i.hidden AND i.storage_key IS NOT NULL
           AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.item_id = i.id AND c.item_version = i.version AND c.current)
           AND coalesce(i.extracted->'ingest'->>'version', '') <> i.version::text
@@ -61,6 +63,8 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
         -- file the extractor chokes on) never holds the queue: before this, the oldest 200 were retried forever.
         ORDER BY CASE WHEN i.extracted->'ingest_error'->>'version' = i.version::text
                       THEN coalesce((i.extracted->'ingest_error'->>'attempts')::int, 1) ELSE 0 END,
+                 -- a scan a run had no OCR time for waits behind the files that need none
+                 CASE WHEN i.extracted->>'ocr_deferred' = i.version::text THEN 1 ELSE 0 END,
                  i.created_at LIMIT $1`, [opts.limit ?? 200])).rows;
     if (!pending.length && !wd && !bk) {
       summary.idle = 'nothing to ingest and no WorkDrive or Books source configured';
@@ -73,14 +77,22 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
     // A per-run cap on model spend (INGEST_BUDGET_GBP, default £2): a backlog is worked through run by run, never in
     // one unbounded sweep; what is left waits for the next run, fifteen minutes on.
     const cap = ingestBudgetGbp(); const spentBefore = processSpendGbp();
+    // OCR time this run may spend; once it is gone, scans are put back for a later run and text files keep flowing.
+    const ocrBudgetMs = 1000 * Number(process.env.VAULT_OCR_RUN_SECONDS ?? 300); let ocrMs = 0;
     for (const [i, it] of pending.entries()) {
       if (processSpendGbp() - spentBefore >= cap) { summary.stopped_by = 'budget'; summary.left = pending.length - i; console.log(`ingest-sync: stopped at £${cap} of model spend this run; ${summary.left} item(s) wait for the next run`); break; }
       try {
-        const r = await ingestItem(db, storage, it.id, deps!);
-        if (r.status === 'ok') summary.ingested++; else if (r.status === 'skipped') summary.skipped++; else summary.needs_attention++;
+        const t0 = Date.now();
+        const r = await ingestItem(db, storage, it.id, deps!, { ocr: ocrMs < ocrBudgetMs });
+        const secs = (Date.now() - t0) / 1000;
+        if (r.ocr) ocrMs += Date.now() - t0;
+        if (r.status === 'ocr_deferred') { summary.ocr_deferred = (summary.ocr_deferred ?? 0) + 1; }
+        else if (r.status === 'ok') summary.ingested++; else if (r.status === 'skipped') summary.skipped++; else summary.needs_attention++;
+        console.log(`ingest-sync: ${r.status}${r.ocr ? ' (ocr)' : ''} ${r.chunks} chunks ${secs.toFixed(1)}s [${it.project_id ?? '-'}] ${(it.title ?? it.id).slice(0, 80)}`);
         await db.query(`UPDATE items SET extracted = extracted - 'ingest_error' WHERE id = $1 AND extracted ? 'ingest_error'`, [it.id]);
         await db.query(`UPDATE jobs SET status = 'ok', finished_at = now() WHERE name = 'ingest-queue' AND finished_at IS NULL AND summary->>'item_id' = $1`, [it.id]);
       } catch (e) {
+        console.log(`ingest-sync: failed [${it.project_id ?? '-'}] ${(it.title ?? it.id).slice(0, 80)}: ${(e as Error).message.slice(0, 200)}`);
         // The day's model budget is spent: every file after this would fail the same way, and none of them is at fault.
         if (e instanceof BudgetExceeded) { summary.stopped_by = 'budget'; summary.left = pending.length - i; summary.errors.push((e as Error).message); break; }
         summary.failed++; summary.errors.push(`${it.id}: ${(e as Error).message}`);

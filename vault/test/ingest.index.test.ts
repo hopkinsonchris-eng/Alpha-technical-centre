@@ -237,3 +237,26 @@ test('indexing runs on the cheap model: chunk context and field proposals go to 
   assert.equal(calls.filter(c => c.purpose === 'context').length, 0, 'no model context for a spreadsheet');
   assert.ok(await chunkCount(sheet, 'AND current') > 0, 'the spreadsheet is still indexed');
 });
+
+test('once a run has used its OCR time, scanned files wait at the back of the queue and the text files behind them are indexed', async () => {
+  const scan = (await h.upload([{ name: 'deferred-scan.pdf', bytes: await makeScannedPdf(['SCANNED LOG']), type: 'application/pdf' }])).body.results[0].item_id;
+  const text = (await h.upload([{ name: 'after-scan.md', bytes: 'Text behind the scan. ' + paragraphs(4).join('\n\n'), type: 'text/markdown' }])).body.results[0].item_id;
+  for (const [id, at] of [[scan, '2019-01-01'], [text, '2019-01-02']] as const) {
+    await h.db.query(`DELETE FROM chunks WHERE item_id = $1`, [id]);
+    await h.db.query(`UPDATE items SET created_at = $2::timestamptz, extracted = extracted - 'ingest' - 'ingest_error' WHERE id = $1`, [id, at]);
+  }
+  await h.db.query(`UPDATE items SET extracted = extracted || jsonb_build_object('ingest', jsonb_build_object('version', version, 'status', 'skipped')) WHERE id <> ALL($1::uuid[]) AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.item_id = items.id AND c.current)`, [[scan, text]]);
+  const prev = process.env.VAULT_OCR_RUN_SECONDS;
+  process.env.VAULT_OCR_RUN_SECONDS = '0';
+  try {
+    const s = await runIngestSync(h.db, { workdrive: false, books: false, folders: false, deps, limit: 1 });
+    assert.equal(s.failed, 0, s.errors.join('; '));
+    assert.equal(s.ocr_deferred, 1);
+    const sc = await item(scan);
+    assert.notEqual(sc.extracted.ingest?.status, 'needs_ocr', 'a deferred scan is not given up on');
+    assert.equal(sc.extracted.ocr_deferred, sc.version);
+    const s2 = await runIngestSync(h.db, { workdrive: false, books: false, folders: false, deps, limit: 1 });
+    assert.equal(s2.ingested, 1, 'the next run takes the text file, not the deferred scan');
+    assert.ok(await chunkCount(text, 'AND current') > 0);
+  } finally { if (prev === undefined) delete process.env.VAULT_OCR_RUN_SECONDS; else process.env.VAULT_OCR_RUN_SECONDS = prev; }
+});

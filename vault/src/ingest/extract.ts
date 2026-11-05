@@ -160,7 +160,7 @@ export function markdownAnchors(text: string): Anchor[] {
 
 /* ── per-format extractors ──────────────────────────────────────────── */
 
-async function extractPdf(bytes: Uint8Array): Promise<Extracted> {
+async function extractPdf(bytes: Uint8Array, opts: ExtractOptions = {}): Promise<Extracted> {
   const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const loading = pdfjs.getDocument({ data: new Uint8Array(bytes), useSystemFonts: false, isEvalSupported: false, verbosity: 0, disableFontFace: true });
   const pdf = await loading.promise;
@@ -180,7 +180,10 @@ async function extractPdf(bytes: Uint8Array): Promise<Extracted> {
     const scanned = pdf.numPages > 0 && empty.length / pdf.numPages >= 0.5;
     let ocr = false, needsOcr = false;
     if (scanned) {
-      const ocrTexts = await ocrPdf(pdf, new Set(empty));
+      // A scan gets at most VAULT_OCR_FILE_SECONDS (default 90) of OCR: scanned well-log strips can take minutes a page and
+      // read as noise, and one of them held a whole run (5 Nov 2026). What was read by the deadline is kept.
+      const deadline = opts.ocrDeadlineMs ?? Date.now() + 1000 * Number(process.env.VAULT_OCR_FILE_SECONDS ?? 90);
+      const ocrTexts = opts.ocr === false ? null : await ocrPdf(pdf, new Set(empty), deadline);
       if (ocrTexts) { ocr = true; for (const i of empty) if (ocrTexts[i]) pageTexts[i] = ocrTexts[i]; }
       else needsOcr = true;
     }
@@ -245,7 +248,7 @@ export function ocrWorkerOptions(dir: string, langs: string): Record<string, unk
 }
 
 /** OCR every page (up to VAULT_OCR_MAX_PAGES). Returns null when OCR cannot run here (no engine, canvas or language data). */
-async function ocrPdf(pdf: any, only: Set<number>): Promise<string[] | null> {
+async function ocrPdf(pdf: any, only: Set<number>, deadlineMs = Infinity): Promise<string[] | null> {
   const dir = tessdataDir();
   const langs = process.env.VAULT_OCR_LANG || 'eng';
   if (!(await ensureLangData(dir, langs))) return null;
@@ -257,7 +260,7 @@ async function ocrPdf(pdf: any, only: Set<number>): Promise<string[] | null> {
     const out: string[] = [];
     const last = Math.min(pdf.numPages, MAX_OCR_PAGES);
     for (let n = 1; n <= pdf.numPages; n++) {
-      if (n > last || !only.has(n - 1)) { out.push(''); continue; }
+      if (n > last || !only.has(n - 1) || Date.now() > deadlineMs) { out.push(''); continue; }
       const page = await pdf.getPage(n);
       const vp = page.getViewport({ scale: 2 });
       const canvas = canvasMod.createCanvas(Math.ceil(vp.width), Math.ceil(vp.height));
@@ -266,7 +269,7 @@ async function ocrPdf(pdf: any, only: Set<number>): Promise<string[] | null> {
       out.push(String(r.data.text ?? ''));
       page.cleanup();
     }
-    return out;
+    return out.some(t => t.trim()) ? out : null;
   } catch { return null; }
   finally { try { await worker?.terminate(); } catch { /* ignore */ } }
 }
@@ -427,12 +430,15 @@ function extractEml(bytes: Uint8Array): Extracted {
 
 /* ── entry point ─────────────────────────────────────────────────────── */
 
-export async function extractText(bytes: Uint8Array, mime: string, filename: string): Promise<Extracted> {
+/** ocr: false skips OCR for this call (a scan comes back needs_ocr); a deadline stops OCR between pages and keeps what it read. */
+export interface ExtractOptions { ocr?: boolean; ocrDeadlineMs?: number }
+
+export async function extractText(bytes: Uint8Array, mime: string, filename: string, opts: ExtractOptions = {}): Promise<Extracted> {
   const format = await detectFormat(bytes, mime, filename);
   if (!format) throw new UnsupportedFormat(filename, mime);
   let r: Extracted;
   switch (format) {
-    case 'pdf': r = await extractPdf(bytes); break;
+    case 'pdf': r = await extractPdf(bytes, opts); break;
     case 'docx': r = await extractDocx(bytes); break;
     case 'xlsx': r = await extractSheets(bytes, false); break;
     case 'csv': r = await extractSheets(bytes, true); break;
