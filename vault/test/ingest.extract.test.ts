@@ -187,3 +187,18 @@ test('scanned PDF with OCR turned off for this call: flagged needs_ocr at once, 
   assert.ok(!r.ocr);
   assert.ok(Date.now() - t0 < 5000);
 });
+
+test('a LAS well log is read as its header (well, API, curves) with the data rows counted, not indexed', async () => {
+  const { extractText } = await import('../src/ingest/extract.ts');
+  const las = ['~VERSION INFORMATION', ' VERS.   2.0 : CWLS LOG ASCII STANDARD', '~WELL INFORMATION', ' STRT.FT 12000.0 : START DEPTH', ' WELL.   FROST 5-10 #2 : WELL', ' API .   23-067-20636 : API NUMBER', ' COMP.   ACACIA OPERATING LLC : COMPANY',
+    '~CURVE INFORMATION', ' DEPT.FT : DEPTH', ' GR  .GAPI : GAMMA RAY', '~A  DEPT   GR', ...Array.from({ length: 500 }, (_, i) => `${12000 + i * 0.5} ${40 + (i % 7)}`)].join('\n');
+  const r = await extractText(new TextEncoder().encode(las), 'application/octet-stream', 'FROST_2_ST.las');
+  assert.equal(r.format, 'las');
+  assert.match(r.text, /FROST 5-10 #2/);
+  assert.match(r.text, /23-067-20636/);
+  assert.match(r.text, /GAMMA RAY/);
+  assert.match(r.text, /500 rows, not indexed/);
+  assert.doesNotMatch(r.text, /12100\.5 /);
+  assert.ok(r.anchors.some(a => a.label === '~W'));
+  assert.equal(r.title, 'FROST 5-10 #2');
+});
