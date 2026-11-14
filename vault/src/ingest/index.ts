@@ -16,7 +16,7 @@ import type { Storage } from '../storage.ts';
 import { ingestProviderFor, type LlmProvider } from '../llm/provider.ts';
 import { chunkText, contextualise } from './chunk.ts';
 import { vectorLiteral, type Embedder } from './embed.ts';
-import { extractText, UnsupportedFormat } from './extract.ts';
+import { extractText, UnsupportedFormat, type Extracted } from './extract.ts';
 import { extractLegalFinance, flatten, isLegalFinanceType, proposeNdaExpiry } from './legal-finance.ts';
 import { extractAssets, proposeAssets } from './entities.ts';
 import { fileItem } from '../folders/classify.ts';
@@ -32,6 +32,19 @@ export interface IngestResult {
   needs_ocr?: boolean; ocr?: boolean; partners_only?: boolean; nda_expiry_review?: string | null;
   /** wave 3: review-queue proposals opened for fields the document names */
   asset_proposals?: number;
+}
+
+/** Fields of `extracted` that hold a record's own text when it has no original; the same ones get_item shows. */
+export const OWN_TEXT_FIELDS = ['quote', 'summary', 'abstract', 'text', 'draft'] as const;
+/** SQL: the record has its own text to index. */
+export const HAS_OWN_TEXT_SQL = `(${OWN_TEXT_FIELDS.map(f => `coalesce(i.extracted->>'${f}', '') <> ''`).join(' OR ')})`;
+
+/** The text Find indexes for a record with no original: its title, then its own text fields, then the source link. */
+export function recordText(title: string | null, ex: any): string | null {
+  const body = OWN_TEXT_FIELDS.map(f => ex?.[f]).filter((t: unknown): t is string => typeof t === 'string' && t.trim() !== '');
+  if (!body.length) return null;
+  const url = ex?.url ?? ex?.source_url;
+  return [title ? `# ${title}` : '', ...body, typeof url === 'string' ? `Source: ${url}` : ''].filter(Boolean).join('\n\n');
 }
 
 const inflight = new Map<string, Promise<IngestResult>>();
@@ -58,17 +71,21 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
     await db.query('UPDATE chunks SET current = false WHERE item_id = $1 AND item_version < $2 AND current', [item.id, version]);
     return { ...base, status: 'skipped', chunks: have, text_chars: Number(existing.text_chars ?? 0) };
   }
-  if (!item.storage_key) return { ...base, status: 'no_original', chunks: 0, text_chars: 0 };
-  const bytes = await storage.get(item.storage_key);
-  if (!bytes) return { ...base, status: 'no_original', chunks: 0, text_chars: 0 };
+  // A record with no original (a research finding, a field dossier, a draft) is indexed from its own text, so Find sees
+  // it: before 14 Nov 2026 these were never chunked, and a project made of them (Fezzan, 118 records) found nothing.
+  const own = item.storage_key ? null : recordText(item.title, existing);
+  if (!item.storage_key && !own) return { ...base, status: 'no_original', chunks: 0, text_chars: 0 };
+  const bytes = item.storage_key ? await storage.get(item.storage_key) : null;
+  if (item.storage_key && !bytes) return { ...base, status: 'no_original', chunks: 0, text_chars: 0 };
 
   const mark = async (status: IngestStatus, patch: Record<string, unknown> = {}) => {
     const at = (opts.now?.() ?? new Date()).toISOString();
     await db.query(`UPDATE items SET extracted = extracted || $2::jsonb WHERE id = $1`, [item.id, JSON.stringify({ ...patch, ingest: { version, status, at } })]);
   };
 
-  let ex;
-  try { ex = await extractText(bytes, item.mime ?? '', existing.filename ?? item.title ?? '', { ocr: opts.ocr }); }
+  let ex: Extracted;
+  if (own) ex = { format: 'md', text: own, anchors: [] };
+  else try { ex = await extractText(bytes!, item.mime ?? '', existing.filename ?? item.title ?? '', { ocr: opts.ocr }); }
   catch (e) {
     if (e instanceof UnsupportedFormat) { await mark('unsupported', { text_chars: 0, chunks: 0 }); return { ...base, status: 'unsupported', chunks: 0, text_chars: 0 }; }
     throw e;
@@ -89,7 +106,7 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
 
   const raw = chunkText(ex.text, ex.anchors);
   const cheap = deps.cheap !== undefined ? deps.cheap : ingestProviderFor(deps.provider);
-  const chunks = await contextualise(raw, { title: item.title || ex.title || 'Untitled', type: item.type, text: ex.text }, DATA_FORMATS.has(ex.format) ? null : cheap);
+  const chunks = await contextualise(raw, { title: item.title || ex.title || 'Untitled', type: item.type, text: ex.text }, DATA_FORMATS.has(ex.format) || own ? null : cheap);
   const vectors = chunks.length ? await deps.embedder.embed(chunks.map(c => `${c.context}\n\n${c.text}`), 'document') : [];
   if (vectors.length !== chunks.length) throw new Error(`embedder returned ${vectors.length} vectors for ${chunks.length} chunks`);
 
@@ -130,7 +147,7 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
   if (lf) review = await proposeNdaExpiry(db, { id: item.id, version, client_id: item.client_id ?? null, project_id: item.project_id, legal_tag: item.legal_tag, title: item.title }, lf);
   // Wave 3: fields the document names become proposals in the review queue (never attachments).
   let assetProposals = 0;
-  if (item.project_id) {
+  if (item.project_id && !own) {
     try {
       const project = (await db.query<any>('SELECT id, country, asset_ids FROM projects WHERE id = $1', [item.project_id])).rows[0];
       if (project) {
@@ -140,7 +157,7 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
     } catch { /* proposals are best effort; the document is indexed either way */ }
   }
   // Wave 9: the record takes its place in the project's folders, now that its text is known (best effort, like the proposals).
-  if (item.project_id) { try { await fileItem(db, item.id, { provider: cheap, text: ex.text }); } catch { /* filed by the next backlog run */ } }
+  if (item.project_id && !own) { try { await fileItem(db, item.id, { provider: cheap, text: ex.text }); } catch { /* filed by the next backlog run */ } }
   return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}), asset_proposals: assetProposals };
 }
 

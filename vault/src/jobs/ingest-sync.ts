@@ -12,7 +12,7 @@ import { migrate } from '../db/migrate.ts';
 import { openStorage, type Storage } from '../storage.ts';
 import { ingestProviderFor, openProvider } from '../llm/provider.ts';
 import { openEmbedder } from '../ingest/embed.ts';
-import { ingestItem, type IngestDeps } from '../ingest/index.ts';
+import { HAS_OWN_TEXT_SQL, ingestItem, type IngestDeps } from '../ingest/index.ts';
 import { serviceSink, type ItemSink } from '../ingest/items-client.ts';
 import { syncWorkdrive, workdriveConfig, type SyncStats, type WorkdriveOptions } from '../ingest/workdrive.ts';
 import { booksConfig, syncBooks, type BooksOptions } from '../ingest/zoho-books.ts';
@@ -56,7 +56,7 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
 
     const pending = (await db.query<{ id: string; version: number; title: string | null; project_id: string | null }>(
       `SELECT i.id, i.version, i.title, i.project_id FROM items i
-        WHERE NOT i.hidden AND i.storage_key IS NOT NULL
+        WHERE NOT i.hidden AND (i.storage_key IS NOT NULL OR ${HAS_OWN_TEXT_SQL})
           AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.item_id = i.id AND c.item_version = i.version AND c.current)
           AND coalesce(i.extracted->'ingest'->>'version', '') <> i.version::text
         -- A file that failed before goes behind every file that has not, so one that fails every run (a bad key, a
