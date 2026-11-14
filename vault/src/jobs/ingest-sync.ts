@@ -35,7 +35,7 @@ export interface IngestSyncSummary {
   idle?: string;
   /** Set when the run's model-spend cap stopped it, with how many items wait for the next run. */
   stopped_by?: 'budget'; left?: number;
-  /** scans put back because this run's OCR time (VAULT_OCR_RUN_SECONDS, default 300) was spent */
+  /** scans put back because this run's OCR time (VAULT_OCR_RUN_SECONDS, default 1200) was spent */
   ocr_deferred?: number;
   /** Wave 9: records that had never been filed into the project folders, filed this run within what is left of the cap. */
   folders?: BacklogSummary;
@@ -86,9 +86,9 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
     // one unbounded sweep; what is left waits for the next run, fifteen minutes on.
     const cap = ingestBudgetGbp(); const spentBefore = processSpendGbp();
     // OCR time this run may spend; once it is gone, scans are put back for a later run and text files keep flowing.
-    // 14 Nov 2026: back to 5 minutes. With 20 (#125) no run finished for two hours (index health: the last finished run
-    // stayed at #16456 and no file carried a crash mark), so the long OCR run itself is the suspect, not one file.
-    const ocrBudgetMs = 1000 * Number(process.env.VAULT_OCR_RUN_SECONDS ?? 300); let ocrMs = 0;
+    // 14 Nov 2026: 20 minutes (was 5). Parker Creek's ~2,000 scans take about 20 s each. The runs that died after #124
+    // were the import cycle fixed in #129, not this setting; Render skips a start while a run is still going.
+    const ocrBudgetMs = 1000 * Number(process.env.VAULT_OCR_RUN_SECONDS ?? 1200); let ocrMs = 0;
     for (const [i, it] of pending.entries()) {
       if (processSpendGbp() - spentBefore >= cap) { summary.stopped_by = 'budget'; summary.left = pending.length - i; console.log(`ingest-sync: stopped at £${cap} of model spend this run; ${summary.left} item(s) wait for the next run`); break; }
       try {
