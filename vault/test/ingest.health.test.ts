@@ -68,3 +68,17 @@ test('a record with no original but its own text (a research finding) is indexed
   const f = (await indexHealth(h.db, P)).files;
   assert.ok(f.no_original >= 1, 'the record with no text is still counted as having nothing to index');
 });
+
+test('unsupported files are broken down by extension, and a zero-byte original is marked empty rather than failed', async () => {
+  await addItem({ storage_key: 'originals/u1', extracted: { filename: 'well-1.LAS', ingest: { version: 1, status: 'unsupported' } } });
+  await addItem({ storage_key: 'originals/u2', extracted: { filename: 'well-2.las', ingest: { version: 1, status: 'unsupported' } } });
+  const r = await indexHealth(h.db, P);
+  assert.equal(r.unsupported_by_ext.find(e => e.ext === 'las')?.n, 2, JSON.stringify(r.unsupported_by_ext));
+  assert.match(healthLines(r).join('\n'), /Unsupported by type: .*las 2/);
+  const { FakeEmbedder } = await import('../src/ingest/embed.ts');
+  const { ingestItem } = await import('../src/ingest/index.ts');
+  await h.storage.put('originals/zero', new Uint8Array(0), 'application/pdf');
+  const id = await addItem({ storage_key: 'originals/zero', extracted: { filename: 'blank.pdf' } });
+  const res = await ingestItem(h.db, h.storage, id, { provider: null, embedder: new FakeEmbedder() });
+  assert.equal(res.status, 'empty');
+});

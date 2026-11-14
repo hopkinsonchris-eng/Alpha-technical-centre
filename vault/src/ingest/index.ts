@@ -83,6 +83,8 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
     await db.query(`UPDATE items SET extracted = extracted || $2::jsonb WHERE id = $1`, [item.id, JSON.stringify({ ...patch, ingest: { version, status, at } })]);
   };
 
+  // A zero-byte original has nothing to read: marked empty, not retried every run as a failure (one was retried 49 times).
+  if (bytes && bytes.length === 0) { await mark('empty', { text_chars: 0, chunks: 0 }); return { ...base, status: 'empty', chunks: 0, text_chars: 0 }; }
   let ex: Extracted;
   if (own) ex = { format: 'md', text: own, anchors: [] };
   else try { ex = await extractText(bytes!, item.mime ?? '', existing.filename ?? item.title ?? '', { ocr: opts.ocr }); }

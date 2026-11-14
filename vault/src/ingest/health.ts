@@ -24,7 +24,7 @@ export const INDEXING_ACTIONS = ['llm.context', 'llm.extract.assets', 'llm.extra
 export interface IndexCounts { total: number; indexed: number; waiting: number; failed: number; ocr_deferred: number; needs_ocr: number; unsupported: number; empty: number; no_original: number; readable: number; pct_indexed: number | null }
 export interface LastRun { id: number; started_at: string; finished_at: string | null; status: string; ingested: number | null; failed: number | null; skipped: number | null; stopped_by: string | null; left: number | null; first_error: string | null }
 export interface Spend { today_gbp: number; total_gbp: number; indexing_today_gbp: number; indexing_total_gbp: number; first_call_at: string | null }
-export interface IndexHealth { project_id: string; as_of: string; files: IndexCounts; last_run: LastRun | null; runs_last_24h: number; ok_runs_last_24h: number; last_file_error: { title: string | null; at: string | null; message: string | null; attempts: number | null } | null; spend: Spend }
+export interface IndexHealth { project_id: string; as_of: string; files: IndexCounts; /** file extensions of the unsupported files, most first */ unsupported_by_ext: Array<{ ext: string; n: number }>; last_run: LastRun | null; runs_last_24h: number; ok_runs_last_24h: number; last_file_error: { title: string | null; at: string | null; message: string | null; attempts: number | null } | null; spend: Spend }
 
 const gbp = (usd: number) => Math.round((usd / USD_PER_GBP) * 100) / 100;
 const n = (v: unknown) => (v == null ? null : Number(v));
@@ -96,8 +96,12 @@ export async function indexHealth(db: Db, projectId: string, now = new Date()): 
     `SELECT title, extracted->'ingest_error' AS e FROM items
       WHERE project_id = $1 AND NOT hidden AND extracted->'ingest_error'->>'version' = version::text
       ORDER BY extracted->'ingest_error'->>'at' DESC NULLS LAST LIMIT 1`, [projectId])).rows[0];
+  const ext = (await db.query<any>(
+    `SELECT lower(coalesce(substring(coalesce(extracted->>'filename', title) from '\\.([A-Za-z0-9]{1,8})$'), '(none)')) AS ext, count(*)::int AS n
+       FROM items WHERE project_id = $1 AND NOT hidden AND extracted->'ingest'->>'status' = 'unsupported' AND extracted->'ingest'->>'version' = version::text
+      GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 15`, [projectId])).rows.map((r: any) => ({ ext: r.ext, n: r.n }));
   return {
-    project_id: projectId, as_of: now.toISOString(), files, last_run: runs.last, runs_last_24h: runs.runs24, ok_runs_last_24h: runs.ok24,
+    project_id: projectId, as_of: now.toISOString(), files, unsupported_by_ext: ext, last_run: runs.last, runs_last_24h: runs.runs24, ok_runs_last_24h: runs.ok24,
     last_file_error: e ? { title: e.title ?? null, at: e.e?.at ?? null, message: e.e?.message ? String(e.e.message).slice(0, 300) : null, attempts: n(e.e?.attempts) } : null,
     spend,
   };
@@ -108,6 +112,7 @@ export function healthLines(h: IndexHealth): string[] {
   const f = h.files, r = h.last_run;
   const lines = ['', '## Index health', '',
     `- Files: ${f.total}; indexed ${f.indexed} of ${f.readable} readable (${f.pct_indexed ?? '-'}%); waiting ${f.waiting} (failed before ${f.failed}, OCR deferred ${f.ocr_deferred}); needs OCR ${f.needs_ocr}; unsupported ${f.unsupported}; empty ${f.empty}; no original ${f.no_original}`,
+    ...(h.unsupported_by_ext.length ? [`- Unsupported by type: ${h.unsupported_by_ext.map(e => `${e.ext} ${e.n}`).join(', ')}`] : []),
     r ? `- Last ingest run #${r.id}: started ${r.started_at}, ${r.finished_at ? `finished ${r.finished_at}` : 'not finished'}, ${r.status}; ingested ${r.ingested ?? '-'}, failed ${r.failed ?? '-'}${r.stopped_by ? `, stopped by ${r.stopped_by} with ${r.left ?? '?'} left` : ''}${r.first_error ? `; first error: ${r.first_error}` : ''}` : '- Last ingest run: none recorded',
     `- Ingest runs in the last 24 hours: ${h.runs_last_24h} (${h.ok_runs_last_24h} ok)`,
     `- Newest file error: ${h.last_file_error ? `${h.last_file_error.title ?? '?'} at ${h.last_file_error.at ?? '?'} (attempt ${h.last_file_error.attempts ?? '?'}): ${h.last_file_error.message ?? ''}` : 'none'}`,
