@@ -101,3 +101,19 @@ test('a LAS file marked unsupported by the older extractor is queued once more a
   const again = await runIngestSync(h.db, { storage: h.storage, deps, workdrive: false, books: false, folders: false });
   assert.equal(again.ingested, 0, 'nothing loops');
 });
+
+test('the queue shows a scan marked unsupported by the older extractor as a retry of a newly read type; a missing original is marked once', async () => {
+  const before = (await indexHealth(h.db, P)).queue;
+  await addItem({ storage_key: 'originals/scan-old', extracted: { filename: 'LOG_HEADER.TIFF', ingest: { version: 1, status: 'unsupported' } } });
+  const q = (await indexHealth(h.db, P)).queue;
+  assert.equal(q.total, before.total + 1, JSON.stringify(q));
+  assert.ok(q.next_batch.retry_new_type >= 1);
+  const md = healthLines(await indexHealth(h.db, P)).join('\n');
+  assert.match(md, /Queue \(firm-wide\): \d+ waiting/);
+  const { FakeEmbedder } = await import('../src/ingest/embed.ts');
+  const { ingestItem } = await import('../src/ingest/index.ts');
+  const gone = await addItem({ storage_key: 'originals/not-there' });
+  assert.equal((await ingestItem(h.db, h.storage, gone, { provider: null, embedder: new FakeEmbedder() })).status, 'no_original');
+  const q2 = (await indexHealth(h.db, P)).queue;
+  assert.equal(q2.total, q.total, 'the missing original is out of the queue once marked');
+});

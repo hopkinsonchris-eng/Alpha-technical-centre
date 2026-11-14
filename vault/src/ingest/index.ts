@@ -76,13 +76,15 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
   const own = item.storage_key ? null : recordText(item.title, existing);
   if (!item.storage_key && !own) return { ...base, status: 'no_original', chunks: 0, text_chars: 0 };
   const bytes = item.storage_key ? await storage.get(item.storage_key) : null;
-  if (item.storage_key && !bytes) return { ...base, status: 'no_original', chunks: 0, text_chars: 0 };
 
   const mark = async (status: IngestStatus, patch: Record<string, unknown> = {}) => {
     const at = (opts.now?.() ?? new Date()).toISOString();
     await db.query(`UPDATE items SET extracted = extracted || $2::jsonb WHERE id = $1`, [item.id, JSON.stringify({ ...patch, ingest: { version, status, at, ext_v: EXTRACTOR_VERSION } })]);
   };
 
+  // The original is not in storage: marked, so the job does not retry it every run ahead of files it can read (an
+  // explicit call still retries: no_original never counts as done). Before 14 Nov 2026 these came back each run.
+  if (item.storage_key && !bytes) { await mark('no_original', { text_chars: 0, chunks: 0 }); return { ...base, status: 'no_original', chunks: 0, text_chars: 0 }; }
   // A zero-byte original has nothing to read: marked empty, not retried every run as a failure (one was retried 49 times).
   if (bytes && bytes.length === 0) { await mark('empty', { text_chars: 0, chunks: 0 }); return { ...base, status: 'empty', chunks: 0, text_chars: 0 }; }
   let ex: Extracted;

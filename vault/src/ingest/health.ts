@@ -17,14 +17,17 @@ import type { Db } from '../db/client.ts';
 import { costOf, DEFAULT_MODEL } from '../prices.ts';
 import { USD_PER_GBP } from '../llm/spend-guard.ts';
 import { HAS_OWN_TEXT_SQL } from './index.ts';
+import { EXTRACTOR_VERSION, SUPPORTED_EXTENSIONS } from './extract.ts';
+import { PENDING_ORDER, PENDING_WHERE } from '../jobs/ingest-sync.ts';
 
 /** Ledger actions the indexer writes (chunk context, field proposals, legal and finance extraction, folder filing). */
 export const INDEXING_ACTIONS = ['llm.context', 'llm.extract.assets', 'llm.extract.legal-finance', 'llm.folders.file'];
 
 export interface IndexCounts { total: number; indexed: number; waiting: number; failed: number; ocr_deferred: number; needs_ocr: number; unsupported: number; empty: number; no_original: number; readable: number; pct_indexed: number | null }
-export interface LastRun { id: number; started_at: string; finished_at: string | null; status: string; ingested: number | null; failed: number | null; skipped: number | null; stopped_by: string | null; left: number | null; first_error: string | null }
+export interface LastRun { id: number; started_at: string; finished_at: string | null; status: string; ingested: number | null; failed: number | null; skipped: number | null; needs_attention: number | null; ocr_deferred: number | null; stopped_by: string | null; left: number | null; first_error: string | null }
+export interface Queue { total: number; this_project: number; next_batch: { size: number; this_project: number; other_projects: number; never_tried: number; retry_new_type: number; failed_before: number; ocr_deferred: number } }
 export interface Spend { today_gbp: number; total_gbp: number; indexing_today_gbp: number; indexing_total_gbp: number; first_call_at: string | null }
-export interface IndexHealth { project_id: string; as_of: string; files: IndexCounts; /** file extensions of the unsupported files, most first */ unsupported_by_ext: Array<{ ext: string; n: number }>; last_run: LastRun | null; runs_last_24h: number; ok_runs_last_24h: number; last_file_error: { title: string | null; at: string | null; message: string | null; attempts: number | null } | null; spend: Spend }
+export interface IndexHealth { project_id: string; as_of: string; files: IndexCounts; /** file extensions of the unsupported files, most first */ unsupported_by_ext: Array<{ ext: string; n: number }>; last_run: LastRun | null; /** the newest run that finished, with its counts */ last_finished: LastRun | null; /** the firm-wide ingest queue and the next batch of 200 the job will take */ queue: Queue; runs_last_24h: number; ok_runs_last_24h: number; last_file_error: { title: string | null; at: string | null; message: string | null; attempts: number | null } | null; spend: Spend }
 
 const gbp = (usd: number) => Math.round((usd / USD_PER_GBP) * 100) / 100;
 const n = (v: unknown) => (v == null ? null : Number(v));
@@ -53,16 +56,33 @@ export async function indexCounts(db: Db, projectId: string): Promise<IndexCount
   return { ...r, readable, pct_indexed: readable ? Math.round((1000 * r.indexed) / readable) / 10 : null };
 }
 
-export async function lastIngestRun(db: Db): Promise<{ last: LastRun | null; runs24: number; ok24: number }> {
-  const row = (await db.query<any>(`SELECT id, started_at, finished_at, status, summary FROM jobs WHERE name = 'ingest-sync' ORDER BY id DESC LIMIT 1`)).rows[0];
-  const c = (await db.query<any>(`SELECT count(*)::int AS n, count(*) FILTER (WHERE status = 'ok')::int AS ok FROM jobs WHERE name = 'ingest-sync' AND started_at > now() - interval '24 hours'`)).rows[0];
-  if (!row) return { last: null, runs24: c.n, ok24: c.ok };
+const iso = (d: any) => (d ? new Date(d).toISOString() : null);
+function toRun(row: any): LastRun | null {
+  if (!row) return null;
   const s = row.summary ?? {};
-  const iso = (d: any) => (d ? new Date(d).toISOString() : null);
-  return {
-    last: { id: Number(row.id), started_at: iso(row.started_at)!, finished_at: iso(row.finished_at), status: row.status, ingested: n(s.ingested), failed: n(s.failed), skipped: n(s.skipped), stopped_by: s.stopped_by ?? null, left: n(s.left), first_error: Array.isArray(s.errors) && s.errors.length ? String(s.errors[0]).slice(0, 300) : null },
-    runs24: c.n, ok24: c.ok,
-  };
+  return { id: Number(row.id), started_at: iso(row.started_at)!, finished_at: iso(row.finished_at), status: row.status, ingested: n(s.ingested), failed: n(s.failed), skipped: n(s.skipped), needs_attention: n(s.needs_attention), ocr_deferred: n(s.ocr_deferred), stopped_by: s.stopped_by ?? null, left: n(s.left), first_error: Array.isArray(s.errors) && s.errors.length ? String(s.errors[0]).slice(0, 300) : null };
+}
+
+export async function lastIngestRun(db: Db): Promise<{ last: LastRun | null; finished: LastRun | null; runs24: number; ok24: number }> {
+  const row = (await db.query<any>(`SELECT id, started_at, finished_at, status, summary FROM jobs WHERE name = 'ingest-sync' ORDER BY id DESC LIMIT 1`)).rows[0];
+  const done = (await db.query<any>(`SELECT id, started_at, finished_at, status, summary FROM jobs WHERE name = 'ingest-sync' AND status <> 'running' ORDER BY id DESC LIMIT 1`)).rows[0];
+  const c = (await db.query<any>(`SELECT count(*)::int AS n, count(*) FILTER (WHERE status = 'ok')::int AS ok FROM jobs WHERE name = 'ingest-sync' AND started_at > now() - interval '24 hours'`)).rows[0];
+  return { last: toRun(row), finished: toRun(done), runs24: c.n, ok24: c.ok };
+}
+
+/** The job's queue, firm-wide, and what its next batch of 200 holds: counts only, no other project's titles. */
+export async function ingestQueue(db: Db, projectId: string, batch = 200): Promise<Queue> {
+  const params = [batch, SUPPORTED_EXTENSIONS, EXTRACTOR_VERSION, projectId];
+  const t = (await db.query<any>(`SELECT count(*)::int AS total, count(*) FILTER (WHERE i.project_id = $4)::int AS mine FROM items i ${PENDING_WHERE} AND $1::int > 0`, params)).rows[0];
+  const b = (await db.query<any>(
+    `WITH h AS (SELECT i.project_id, i.version, i.extracted FROM items i ${PENDING_WHERE} ${PENDING_ORDER} LIMIT $1)
+     SELECT count(*)::int AS size, count(*) FILTER (WHERE project_id = $4)::int AS mine,
+            count(*) FILTER (WHERE coalesce(extracted->'ingest'->>'version', '') <> version::text AND coalesce(extracted->'ingest_error'->>'version', '') <> version::text AND coalesce(extracted->>'ocr_deferred', '') <> version::text)::int AS never,
+            count(*) FILTER (WHERE extracted->'ingest'->>'version' = version::text)::int AS retry,
+            count(*) FILTER (WHERE extracted->'ingest_error'->>'version' = version::text)::int AS failed,
+            count(*) FILTER (WHERE extracted->>'ocr_deferred' = version::text)::int AS deferred
+       FROM h`, params)).rows[0];
+  return { total: t.total, this_project: t.mine, next_batch: { size: b.size, this_project: b.mine, other_projects: b.size - b.mine, never_tried: b.never, retry_new_type: b.retry, failed_before: b.failed, ocr_deferred: b.deferred } };
 }
 
 /** Model spend from the cost ledger, priced as the spend guard prices it: cost_usd when the row has it, else tokens × price. */
@@ -91,7 +111,7 @@ export async function modelSpend(db: Db, now = new Date()): Promise<Spend> {
 }
 
 export async function indexHealth(db: Db, projectId: string, now = new Date()): Promise<IndexHealth> {
-  const [files, runs, spend] = [await indexCounts(db, projectId), await lastIngestRun(db), await modelSpend(db, now)];
+  const [files, runs, spend, queue] = [await indexCounts(db, projectId), await lastIngestRun(db), await modelSpend(db, now), await ingestQueue(db, projectId)];
   const e = (await db.query<any>(
     `SELECT title, extracted->'ingest_error' AS e FROM items
       WHERE project_id = $1 AND NOT hidden AND extracted->'ingest_error'->>'version' = version::text
@@ -101,7 +121,7 @@ export async function indexHealth(db: Db, projectId: string, now = new Date()): 
        FROM items WHERE project_id = $1 AND NOT hidden AND extracted->'ingest'->>'status' = 'unsupported' AND extracted->'ingest'->>'version' = version::text
       GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 15`, [projectId])).rows.map((r: any) => ({ ext: r.ext, n: r.n }));
   return {
-    project_id: projectId, as_of: now.toISOString(), files, unsupported_by_ext: ext, last_run: runs.last, runs_last_24h: runs.runs24, ok_runs_last_24h: runs.ok24,
+    project_id: projectId, as_of: now.toISOString(), files, unsupported_by_ext: ext, last_run: runs.last, last_finished: runs.finished, queue, runs_last_24h: runs.runs24, ok_runs_last_24h: runs.ok24,
     last_file_error: e ? { title: e.title ?? null, at: e.e?.at ?? null, message: e.e?.message ? String(e.e.message).slice(0, 300) : null, attempts: n(e.e?.attempts) } : null,
     spend,
   };
@@ -114,6 +134,8 @@ export function healthLines(h: IndexHealth): string[] {
     `- Files: ${f.total}; indexed ${f.indexed} of ${f.readable} readable (${f.pct_indexed ?? '-'}%); waiting ${f.waiting} (failed before ${f.failed}, OCR deferred ${f.ocr_deferred}); needs OCR ${f.needs_ocr}; unsupported ${f.unsupported}; empty ${f.empty}; no original ${f.no_original}`,
     ...(h.unsupported_by_ext.length ? [`- Unsupported by type: ${h.unsupported_by_ext.map(e => `${e.ext} ${e.n}`).join(', ')}`] : []),
     r ? `- Last ingest run #${r.id}: started ${r.started_at}, ${r.finished_at ? `finished ${r.finished_at}` : 'not finished'}, ${r.status}; ingested ${r.ingested ?? '-'}, failed ${r.failed ?? '-'}${r.stopped_by ? `, stopped by ${r.stopped_by} with ${r.left ?? '?'} left` : ''}${r.first_error ? `; first error: ${r.first_error}` : ''}` : '- Last ingest run: none recorded',
+    ...(h.last_finished && h.last_finished.id !== r?.id ? [`- Last finished run #${h.last_finished.id}: ${h.last_finished.started_at} to ${h.last_finished.finished_at}, ${h.last_finished.status}; ingested ${h.last_finished.ingested ?? '-'}, skipped ${h.last_finished.skipped ?? '-'}, needs attention ${h.last_finished.needs_attention ?? '-'}, OCR deferred ${h.last_finished.ocr_deferred ?? 0}, failed ${h.last_finished.failed ?? '-'}${h.last_finished.stopped_by ? `, stopped by ${h.last_finished.stopped_by}` : ''}${h.last_finished.first_error ? `; first error: ${h.last_finished.first_error}` : ''}`] : []),
+    `- Queue (firm-wide): ${h.queue.total} waiting, ${h.queue.this_project} of them this project's; next batch of ${h.queue.next_batch.size}: ${h.queue.next_batch.this_project} this project, ${h.queue.next_batch.other_projects} other projects; never tried ${h.queue.next_batch.never_tried}, retry of a newly read type ${h.queue.next_batch.retry_new_type}, failed before ${h.queue.next_batch.failed_before}, OCR deferred ${h.queue.next_batch.ocr_deferred}`,
     `- Ingest runs in the last 24 hours: ${h.runs_last_24h} (${h.ok_runs_last_24h} ok)`,
     `- Newest file error: ${h.last_file_error ? `${h.last_file_error.title ?? '?'} at ${h.last_file_error.at ?? '?'} (attempt ${h.last_file_error.attempts ?? '?'}): ${h.last_file_error.message ?? ''}` : 'none'}`,
     `- Model spend (firm-wide): today £${h.spend.today_gbp.toFixed(2)}, indexing £${h.spend.indexing_today_gbp.toFixed(2)}; in total £${h.spend.total_gbp.toFixed(2)}, indexing £${h.spend.indexing_total_gbp.toFixed(2)} (ledger since ${h.spend.first_call_at?.slice(0, 10) ?? '-'})`,
