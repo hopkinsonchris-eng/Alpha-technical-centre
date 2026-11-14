@@ -133,3 +133,22 @@ test('a file whose last read never finished (the process died) is set aside, not
   assert.equal((await h.db.query<any>('SELECT extracted FROM items WHERE id = $1', [ok])).rows[0].extracted.ingest_attempt, undefined);
   assert.equal((await indexHealth(h.db, P)).queue.total, q.total, 'neither is left in the queue');
 });
+
+test('a source sync that never returns is left after SOURCE_SYNC_SECONDS and the run goes on to index; the run records its phase', async () => {
+  const { runIngestSync } = await import('../src/jobs/ingest-sync.ts');
+  const { FakeEmbedder } = await import('../src/ingest/embed.ts');
+  const hang = () => new Promise<never>(() => {});
+  const prev = process.env.SOURCE_SYNC_SECONDS; process.env.SOURCE_SYNC_SECONDS = '1';
+  try {
+    const t0 = Date.now();
+    const s = await runIngestSync(h.db, {
+      storage: h.storage, deps: { provider: null, embedder: new FakeEmbedder(), cheap: null }, books: false, folders: false,
+      sink: { async create() { throw new Error('unused'); } } as any,
+      workdrive: { config: { auth: { headers: hang } as any, apiUrl: 'https://wd.invalid/api/v1', downloadUrl: 'https://wd.invalid/dl' }, fetchImpl: hang as any, map: { folders: [{ folder_id: 'F1', name: 'Hung', project_id: P, recursive: true }] } },
+    });
+    assert.ok(Date.now() - t0 < 20000, 'the run did not wait for the hung source');
+    assert.ok(s.errors.some(e => /workdrive: sync passed 1 s/.test(e)), JSON.stringify(s.errors));
+    const r = (await indexHealth(h.db, P)).last_finished;
+    assert.equal(r?.status, 'ok');
+  } finally { if (prev === undefined) delete process.env.SOURCE_SYNC_SECONDS; else process.env.SOURCE_SYNC_SECONDS = prev; }
+});
