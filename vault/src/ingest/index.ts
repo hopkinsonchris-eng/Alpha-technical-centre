@@ -24,7 +24,7 @@ import { fileItem } from '../folders/classify.ts';
 export interface IngestDeps { provider: LlmProvider | null; embedder: Embedder; /** indexing calls (context, proposals, filing); default ingestProviderFor(provider) */ cheap?: LlmProvider | null }
 
 /** Formats whose chunks are rows and cells: a model-written context adds little to them, so they get the template. */
-const DATA_FORMATS = new Set(['xlsx', 'csv', 'json']);
+const DATA_FORMATS = new Set(['xlsx', 'csv', 'json', 'las']);
 export interface IngestOptions { force?: boolean; now?: () => Date; /** false: do not OCR a scan now; it comes back 'ocr_deferred', unmarked, for a later run */ ocr?: boolean }
 export type IngestStatus = 'ok' | 'skipped' | 'unsupported' | 'empty' | 'needs_ocr' | 'no_original' | 'ocr_deferred';
 export interface IngestResult {

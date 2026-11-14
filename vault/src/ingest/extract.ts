@@ -27,7 +27,7 @@ export interface Extracted {
   title?: string;
   meta?: Record<string, unknown>;
 }
-export type Format = 'pdf' | 'docx' | 'xlsx' | 'csv' | 'pptx' | 'html' | 'md' | 'txt' | 'eml' | 'json';
+export type Format = 'pdf' | 'docx' | 'xlsx' | 'csv' | 'pptx' | 'html' | 'md' | 'txt' | 'eml' | 'json' | 'las';
 
 export class UnsupportedFormat extends Error {
   constructor(public filename: string, public mime: string) { super(`unsupported document format: ${filename || '(unnamed)'} (${mime || 'unknown type'})`); }
@@ -41,7 +41,7 @@ const tessdataDir = () => process.env.VAULT_TESSDATA_DIR || path.join(VAULT_DIR,
 
 const EXT: Record<string, Format> = {
   pdf: 'pdf', docx: 'docx', xlsx: 'xlsx', xlsm: 'xlsx', xls: 'xlsx', csv: 'csv', tsv: 'csv', pptx: 'pptx', html: 'html', htm: 'html',
-  md: 'md', markdown: 'md', txt: 'txt', text: 'txt', log: 'txt', eml: 'eml', json: 'json',
+  las: 'las', md: 'md', markdown: 'md', txt: 'txt', text: 'txt', log: 'txt', eml: 'eml', json: 'json',
 };
 const MIME: Array<[RegExp, Format]> = [
   [/pdf/, 'pdf'], [/wordprocessingml/, 'docx'], [/spreadsheetml|ms-excel/, 'xlsx'], [/csv|tab-separated/, 'csv'], [/presentationml/, 'pptx'],
@@ -431,6 +431,25 @@ function extractEml(bytes: Uint8Array): Extracted {
 /* ── entry point ─────────────────────────────────────────────────────── */
 
 /** ocr: false skips OCR for this call (a scan comes back needs_ocr); a deadline stops OCR between pages and keeps what it read. */
+/**
+ * LAS well logs (14 Nov 2026; Parker Creek holds 318): plain text, a header of sections (~V version, ~W well: name, API/UWI,
+ * company, field, county, dates; ~C curves; ~P parameters; ~O other) and then ~A, the depth-by-curve numbers. The header is
+ * what a search needs (which well, which curves, which interval); the numbers would be thousands of chunks no one reads by
+ * text, so ~A is replaced by a line saying how many data rows it held.
+ */
+export function extractLas(bytes: Uint8Array): Extracted {
+  const raw = decodeUtf8(bytes);
+  const at = raw.search(/^~A/im);
+  const head = (at >= 0 ? raw.slice(0, at) : raw).trimEnd();
+  const rows = at >= 0 ? raw.slice(at).split('\n').slice(1).filter(l => l.trim() && !l.trim().startsWith('#')).length : 0;
+  const text = head + (at >= 0 ? `\n\n~A (log data: ${rows} rows, not indexed as text)` : '');
+  const anchors: Anchor[] = [];
+  const re = /^~([A-Za-z])[^\n]*/gm; let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) anchors.push({ label: `~${m[1].toUpperCase()}`, offset: m.index });
+  const well = /^\s*WELL\s*\.[^:]*?\s+([^:]+?)\s*:/im.exec(head)?.[1]?.trim();
+  return { format: 'las', text, anchors, ...(well ? { title: well } : {}) } as Extracted;
+}
+
 export interface ExtractOptions { ocr?: boolean; ocrDeadlineMs?: number }
 
 export async function extractText(bytes: Uint8Array, mime: string, filename: string, opts: ExtractOptions = {}): Promise<Extracted> {
@@ -448,6 +467,7 @@ export async function extractText(bytes: Uint8Array, mime: string, filename: str
     case 'txt': r = extractPlain(bytes, 'txt'); break;
     case 'eml': r = extractEml(bytes); break;
     case 'json': r = extractJson(bytes); break;
+    case 'las': r = extractLas(bytes); break;
   }
   if (!r.anchors.length && r.text.trim()) r.anchors = [{ label: 'start', offset: 0 }];
   return r;
