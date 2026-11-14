@@ -16,7 +16,7 @@ import type { Storage } from '../storage.ts';
 import { ingestProviderFor, type LlmProvider } from '../llm/provider.ts';
 import { chunkText, contextualise } from './chunk.ts';
 import { vectorLiteral, type Embedder } from './embed.ts';
-import { extractText, UnsupportedFormat, type Extracted } from './extract.ts';
+import { EXTRACTOR_VERSION, extractText, retryUnsupported, UnsupportedFormat, type Extracted } from './extract.ts';
 import { extractLegalFinance, flatten, isLegalFinanceType, proposeNdaExpiry } from './legal-finance.ts';
 import { extractAssets, proposeAssets } from './entities.ts';
 import { fileItem } from '../folders/classify.ts';
@@ -67,7 +67,7 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
   const base = { item_id: item.id as string, version };
 
   const have = Number((await db.query<{ n: number }>('SELECT count(*)::int AS n FROM chunks WHERE item_id = $1 AND item_version = $2', [item.id, version])).rows[0].n);
-  if (!opts.force && (have > 0 || (existing.ingest?.version === version && existing.ingest?.status !== 'no_original'))) {
+  if (!opts.force && (have > 0 || (existing.ingest?.version === version && existing.ingest?.status !== 'no_original' && !retryUnsupported(existing.ingest, existing.filename ?? item.title)))) {
     await db.query('UPDATE chunks SET current = false WHERE item_id = $1 AND item_version < $2 AND current', [item.id, version]);
     return { ...base, status: 'skipped', chunks: have, text_chars: Number(existing.text_chars ?? 0) };
   }
@@ -80,7 +80,7 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
 
   const mark = async (status: IngestStatus, patch: Record<string, unknown> = {}) => {
     const at = (opts.now?.() ?? new Date()).toISOString();
-    await db.query(`UPDATE items SET extracted = extracted || $2::jsonb WHERE id = $1`, [item.id, JSON.stringify({ ...patch, ingest: { version, status, at } })]);
+    await db.query(`UPDATE items SET extracted = extracted || $2::jsonb WHERE id = $1`, [item.id, JSON.stringify({ ...patch, ingest: { version, status, at, ext_v: EXTRACTOR_VERSION } })]);
   };
 
   // A zero-byte original has nothing to read: marked empty, not retried every run as a failure (one was retried 49 times).

@@ -43,6 +43,17 @@ const EXT: Record<string, Format> = {
   pdf: 'pdf', docx: 'docx', xlsx: 'xlsx', xlsm: 'xlsx', xls: 'xlsx', csv: 'csv', tsv: 'csv', pptx: 'pptx', html: 'html', htm: 'html',
   las: 'las', md: 'md', markdown: 'md', txt: 'txt', text: 'txt', log: 'txt', eml: 'eml', json: 'json',
 };
+/** Extensions the extractor reads; a file marked unsupported under an older extractor with one of these is queued again. */
+export const SUPPORTED_EXTENSIONS = Object.keys(EXT);
+/** Raised when the extractor learns a format (2: LAS, 14 Nov 2026). Stamped on every ingest marker as `ext_v`. */
+export const EXTRACTOR_VERSION = 2;
+/** A file marked unsupported by an older extractor whose type this one reads: worth one more try. */
+export function retryUnsupported(marker: any, filename: string | null | undefined): boolean {
+  if (marker?.status !== 'unsupported' || Number(marker?.ext_v ?? 1) >= EXTRACTOR_VERSION) return false;
+  const ext = /\.([A-Za-z0-9]{1,8})$/.exec(filename ?? '')?.[1]?.toLowerCase();
+  return !!ext && SUPPORTED_EXTENSIONS.includes(ext);
+}
+
 const MIME: Array<[RegExp, Format]> = [
   [/pdf/, 'pdf'], [/wordprocessingml/, 'docx'], [/spreadsheetml|ms-excel/, 'xlsx'], [/csv|tab-separated/, 'csv'], [/presentationml/, 'pptx'],
   [/html/, 'html'], [/markdown/, 'md'], [/rfc822/, 'eml'], [/json/, 'json'], [/^text\//, 'txt'],
