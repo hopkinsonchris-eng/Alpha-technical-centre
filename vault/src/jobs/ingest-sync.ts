@@ -12,7 +12,8 @@ import { migrate } from '../db/migrate.ts';
 import { openStorage, type Storage } from '../storage.ts';
 import { ingestProviderFor, openProvider } from '../llm/provider.ts';
 import { openEmbedder } from '../ingest/embed.ts';
-import { HAS_OWN_TEXT_SQL, ingestItem, type IngestDeps } from '../ingest/index.ts';
+import { ingestItem, type IngestDeps } from '../ingest/index.ts';
+import { PENDING_ORDER, PENDING_WHERE } from '../ingest/queue.ts';
 import { EXTRACTOR_VERSION, SUPPORTED_EXTENSIONS } from '../ingest/extract.ts';
 import { serviceSink, type ItemSink } from '../ingest/items-client.ts';
 import { syncWorkdrive, workdriveConfig, type SyncStats, type WorkdriveOptions } from '../ingest/workdrive.ts';
@@ -40,23 +41,6 @@ export interface IngestSyncSummary {
   folders?: BacklogSummary;
 }
 
-/** The ingest queue (params $2 SUPPORTED_EXTENSIONS, $3 EXTRACTOR_VERSION); index health reads the same queue. */
-export const PENDING_WHERE = `
-        WHERE NOT i.hidden AND (i.storage_key IS NOT NULL OR ${HAS_OWN_TEXT_SQL})
-          AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.item_id = i.id AND c.item_version = i.version AND c.current)
-          AND (coalesce(i.extracted->'ingest'->>'version', '') <> i.version::text
-               -- marked unsupported by an older extractor, but its type is read now (LAS from 14 Nov 2026): once more
-               OR (i.extracted->'ingest'->>'status' = 'unsupported' AND coalesce(i.extracted->'ingest'->>'ext_v', '1')::int < $3
-                   AND lower(substring(coalesce(i.extracted->>'filename', i.title) from '\\.([A-Za-z0-9]{1,8})$')) = ANY($2::text[])))`;
-export const PENDING_ORDER = `
-        -- A file that failed before goes behind every file that has not, so one that fails every run (a bad key, a
-        -- file the extractor chokes on) never holds the queue: before this, the oldest 200 were retried forever.
-        ORDER BY CASE WHEN i.extracted->'ingest_error'->>'version' = i.version::text
-                      THEN coalesce((i.extracted->'ingest_error'->>'attempts')::int, 1) ELSE 0 END,
-                 -- a scan a run had no OCR time for waits behind the files that need none
-                 CASE WHEN i.extracted->>'ocr_deferred' = i.version::text THEN 1 ELSE 0 END,
-                 i.created_at`;
-
 /** Pounds of model spend one ingest-sync run may make; INGEST_BUDGET_GBP overrides. */
 export const DEFAULT_INGEST_BUDGET_GBP = 2;
 export function ingestBudgetGbp(env: NodeJS.ProcessEnv = process.env): number { const v = Number(env.INGEST_BUDGET_GBP); return Number.isFinite(v) && v > 0 ? v : DEFAULT_INGEST_BUDGET_GBP; }
@@ -68,7 +52,7 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
     const wd = opts.workdrive === false ? null : (opts.workdrive ?? (workdriveConfig() ? {} : null));
     const bk = opts.books === false ? null : (opts.books ?? (booksConfig() ? {} : null));
     let sink = opts.sink;
-    if ((wd || bk) && !sink) sink = await serviceSink(db);
+    if ((wd || bk) && !sink) { await db.query(`UPDATE jobs SET summary = summary || jsonb_build_object('phase', 'sink', 'phase_at', now()) WHERE id = $1`, [job]).catch(() => {}); sink = await serviceSink(db); }
     // 14 Nov 2026: from 15:20 no run finished and none reached a file (index health: nothing being read), so a source
     // sync is the suspect: a Zoho call with no timeout holds the run until Render ends it. Each source now has
     // SOURCE_SYNC_SECONDS (default 600); past that the run records it and goes on to index what is already stored.

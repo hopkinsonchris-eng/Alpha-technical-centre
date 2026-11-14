@@ -18,7 +18,7 @@ import { costOf, DEFAULT_MODEL } from '../prices.ts';
 import { USD_PER_GBP } from '../llm/spend-guard.ts';
 import { HAS_OWN_TEXT_SQL } from './index.ts';
 import { EXTRACTOR_VERSION, SUPPORTED_EXTENSIONS } from './extract.ts';
-import { PENDING_ORDER, PENDING_WHERE } from '../jobs/ingest-sync.ts';
+import { PENDING_ORDER, PENDING_WHERE } from './queue.ts';
 
 /** Ledger actions the indexer writes (chunk context, field proposals, legal and finance extraction, folder filing). */
 export const INDEXING_ACTIONS = ['llm.context', 'llm.extract.assets', 'llm.extract.legal-finance', 'llm.folders.file'];
