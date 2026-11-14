@@ -1,20 +1,41 @@
 # Status
 
-Updated 14 Nov 2026.
+Updated 14 Nov 2026. Live readings come from `get_project_context` (section "Index health"), which any Claude session with the Vault's MCP tools can read.
 
-## Parker Creek indexing: cap £50 of model spend, from 14 Nov 2026
+## Parker Creek indexing: cap £50 of model spend, from 14 Nov 2026 12:28 UTC
 
-| Reading | Indexed / readable | Waiting | Model spend in total (firm-wide) | Spend since cap started |
-|---|---|---|---|---|
-| (first reading after #119 deploys) | | | | £0.00 |
+The cap is counted from the firm-wide ledger reading at the start: £60.91 in total since 1 Oct 2026 (of which indexing £56.72), spent before this work.
 
-## Done
-- Search for Parker Creek answers with cited hits (14 Nov: "Frost 2 sidetrack" and "Frost #2 sidetrack initial oil rate bopd" both returned at once).
+| Reading (UTC) | Indexed / readable | Waiting | Unsupported | Ledger total | Spend against cap |
+|---|---|---|---|---|---|
+| 14 Nov 12:28 | 2,198 / 2,203 (99.8%) | 5 | 4,128 | £60.91 | £0.00 |
+| 14 Nov 12:50 | 2,199 / 2,203 (99.8%) | 4 | 4,128 | £60.91 | £0.00 |
+| 14 Nov 13:25 | 2,201 / 2,323 (94.7%) | 122 (LAS requeued) | 4,008 | £60.91 | £0.00 |
+| 14 Nov 14:27 | 2,517 / 2,517 (100%) | 0 (all LAS done) | 3,810 | £60.99 | £0.08 |
+| 14 Nov 15:10 | 2,532 / 2,532 (100%) | 2,057 in the queue (scans) | 3,795 | £61.00 | £0.09 |
+
+## Done (checked live)
+- Search for Parker Creek returns cited hits at once ("Frost 2 sidetrack", "Frost #2 sidetrack initial oil rate bopd", "Frost 5-10 #2 gamma ray LAS", "KNIGHT 32-10 LAS well curves").
+- Fezzan search returns hits ("Fezzan" finds "Field dossier: Fezzan"). Cause: research findings and dossiers had no original file and were never indexed (#119).
+- Index health in `get_project_context` (#119, #120).
+- LAS well logs indexed by header (#121, #122). All 318 done; "KNIGHT 32-10 4_2306720635.las" is found by search.
+- Scans by OCR (#123): the first 15 indexed in run #16450 (14:22 to 14:48), 117 deferred for lack of OCR time.
+- Cost: about £0.0003 a file for LAS and scans (the two small Haiku 5.5 calls per file). No model call for chunk context.
 
 ## Open
-- Index health in `get_project_context` (files by state, last ingest run, spend). PR #119.
-- Records with no original file (research findings, dossiers) indexed from their own text, so Fezzan is searchable. PR #119.
-- Index on `chunks.item_id`: per-file checks no longer scan the whole table. PR #119.
+- Scans: about 2,050 left (TIFF, JPG, PNG), about 20 s each. OCR time per run raised from 5 to 20 minutes (#125), which should bring this to under a day. Only the first page of a multi-page TIFF is read.
+- WorkDrive sync re-lists the whole folder each run ("changes token expired; full listing"). It works, but it is slow. Not fixed.
+- Still unsupported, not planned: LPT 456, LIC 347, DAT 137, IDX 136, BLB 76, PDS 57, ALI 56 (log-plot and mapping-project files), ZIP 195, MSG 88, DOC 43, ASC 26.
+- One zero-byte PDF (APWH00199…PEX_MLT_COMBINED.pdf) was retried 51 times. It is marked empty from #120 on.
 
 ## Waiting on the owner
-- Nothing yet.
+- Nothing.
+
+## Making the repository private (read only, nothing changed)
+What reads the repository today and would need access before it goes private:
+- **Render**: every service in `render.yml` (the public site, the Vault API and its cron jobs) builds from this repository on each push. Render's GitHub connection must be allowed to see private repositories; if it was connected as "public only", builds stop.
+- **GitHub Actions CI**: keeps working, but private repositories use the plan's Actions minutes (each run here is about 8 minutes, two per push).
+- **Claude GitHub App**: already installed on the repository; keeps working.
+- **Raw GitHub URLs**: none in the code fetch this repository. The only raw URL is `scripts/build-geo.mjs`, which fetches a different public repository (Natural Earth). Docs link to github.com pages of this repository (`HANDOVER.md`, `vault/SETUP.md`), which only people with access could then open.
+- **Cloudflare**: the two Workers in `cloudflare/` do not read GitHub; they call the Vault API and the site host. Nothing to grant, unless they are deployed through Cloudflare's own Git connection; I could not see that from here.
+- Could not check: the Render dashboard (which GitHub account and access it uses) and Cloudflare's dashboard.
