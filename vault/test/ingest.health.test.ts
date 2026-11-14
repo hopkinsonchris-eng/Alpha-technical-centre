@@ -117,3 +117,19 @@ test('the queue shows a scan marked unsupported by the older extractor as a retr
   const q2 = (await indexHealth(h.db, P)).queue;
   assert.equal(q2.total, q.total, 'the missing original is out of the queue once marked');
 });
+
+test('a file whose last read never finished (the process died) is set aside, not tried again; a normal read leaves no attempt mark', async () => {
+  const { FakeEmbedder } = await import('../src/ingest/embed.ts');
+  const { ingestItem } = await import('../src/ingest/index.ts');
+  await h.storage.put('originals/big-scan', new TextEncoder().encode('# A note\n\nWell header text.'), 'text/markdown');
+  const id = await addItem({ storage_key: 'originals/big-scan', extracted: { filename: 'huge.tif', ingest_attempt: { version: 1, at: '2026-11-14T15:30:00Z' } } });
+  const r = await ingestItem(h.db, h.storage, id, { provider: null, embedder: new FakeEmbedder() });
+  assert.equal(r.status, 'needs_ocr');
+  const ex = (await h.db.query<any>('SELECT extracted FROM items WHERE id = $1', [id])).rows[0].extracted;
+  assert.equal(ex.ingest.status, 'needs_ocr'); assert.ok(ex.crashed); assert.equal(ex.ingest_attempt, undefined);
+  const q = (await indexHealth(h.db, P)).queue;
+  const ok = await addItem({ storage_key: 'originals/big-scan', extracted: { filename: 'note.md' } });
+  assert.equal((await ingestItem(h.db, h.storage, ok, { provider: null, embedder: new FakeEmbedder() })).status, 'ok');
+  assert.equal((await h.db.query<any>('SELECT extracted FROM items WHERE id = $1', [ok])).rows[0].extracted.ingest_attempt, undefined);
+  assert.equal((await indexHealth(h.db, P)).queue.total, q.total, 'neither is left in the queue');
+});

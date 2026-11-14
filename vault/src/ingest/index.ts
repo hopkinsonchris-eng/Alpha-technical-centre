@@ -87,82 +87,96 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
   if (item.storage_key && !bytes) { await mark('no_original', { text_chars: 0, chunks: 0 }); return { ...base, status: 'no_original', chunks: 0, text_chars: 0 }; }
   // A zero-byte original has nothing to read: marked empty, not retried every run as a failure (one was retried 49 times).
   if (bytes && bytes.length === 0) { await mark('empty', { text_chars: 0, chunks: 0 }); return { ...base, status: 'empty', chunks: 0, text_chars: 0 }; }
-  let ex: Extracted;
-  if (own) ex = { format: 'md', text: own, anchors: [] };
-  else try { ex = await extractText(bytes!, item.mime ?? '', existing.filename ?? item.title ?? '', { ocr: opts.ocr }); }
-  catch (e) {
-    if (e instanceof UnsupportedFormat) { await mark('unsupported', { text_chars: 0, chunks: 0 }); return { ...base, status: 'unsupported', chunks: 0, text_chars: 0 }; }
-    throw e;
+  // 14 Nov 2026: a file that killed the process while being read (an oversized scan through OCR ran a 2 GB run out of
+  // memory) left no mark, so every run took it first and died the same way, and nothing behind it was indexed. The
+  // attempt is marked before reading and cleared after, whatever the outcome; one still there means the last attempt
+  // never finished, and the file is set aside as unread (needs_ocr, crashed) instead of being tried again.
+  if (!opts.force && existing.ingest_attempt?.version === version) {
+    await mark('needs_ocr', { text_chars: 0, chunks: 0, crashed: existing.ingest_attempt.at ?? true });
+    await db.query(`UPDATE items SET extracted = extracted - 'ingest_attempt' WHERE id = $1`, [item.id]);
+    return { ...base, status: 'needs_ocr', chunks: 0, text_chars: 0, needs_ocr: true };
   }
-  const textChars = ex.text.trim().length;
-  if (opts.ocr === false && ex.needs_ocr && ex.text.replace(/## Page \d+/g, '').trim().length < 200) {
-    // A scan this run had no OCR time left for: left in the queue (not marked needs_ocr) and sorted behind the rest.
-    await db.query(`UPDATE items SET extracted = extracted || jsonb_build_object('ocr_deferred', version) WHERE id = $1`, [item.id]);
-    return { ...base, status: 'ocr_deferred', chunks: 0, text_chars: 0, needs_ocr: true };
-  }
-  if (!textChars) {
-    const status: IngestStatus = ex.needs_ocr ? 'needs_ocr' : 'empty';
-    await mark(status, { text_chars: 0, chunks: 0, format: ex.format, ...(ex.pages ? { pages: ex.pages } : {}), ...(ex.needs_ocr ? { needs_ocr: true } : {}) });
-    return { ...base, status, chunks: 0, text_chars: 0, ...(ex.needs_ocr ? { needs_ocr: true } : {}) };
-  }
+  await db.query(`UPDATE items SET extracted = extracted || jsonb_build_object('ingest_attempt', jsonb_build_object('version', $2::int, 'at', now())) WHERE id = $1`, [item.id, version]);
+  try {
+    let ex: Extracted;
+    if (own) ex = { format: 'md', text: own, anchors: [] };
+    else try { ex = await extractText(bytes!, item.mime ?? '', existing.filename ?? item.title ?? '', { ocr: opts.ocr }); }
+    catch (e) {
+      if (e instanceof UnsupportedFormat) { await mark('unsupported', { text_chars: 0, chunks: 0 }); return { ...base, status: 'unsupported', chunks: 0, text_chars: 0 }; }
+      throw e;
+    }
+    const textChars = ex.text.trim().length;
+    if (opts.ocr === false && ex.needs_ocr && ex.text.replace(/## Page \d+/g, '').trim().length < 200) {
+      // A scan this run had no OCR time left for: left in the queue (not marked needs_ocr) and sorted behind the rest.
+      await db.query(`UPDATE items SET extracted = extracted || jsonb_build_object('ocr_deferred', version) WHERE id = $1`, [item.id]);
+      return { ...base, status: 'ocr_deferred', chunks: 0, text_chars: 0, needs_ocr: true };
+    }
+    if (!textChars) {
+      const status: IngestStatus = ex.needs_ocr ? 'needs_ocr' : 'empty';
+      await mark(status, { text_chars: 0, chunks: 0, format: ex.format, ...(ex.pages ? { pages: ex.pages } : {}), ...(ex.needs_ocr ? { needs_ocr: true } : {}) });
+      return { ...base, status, chunks: 0, text_chars: 0, ...(ex.needs_ocr ? { needs_ocr: true } : {}) };
+    }
 
-  await storage.put(`derived/${item.id}/text.md`, new TextEncoder().encode(ex.text), 'text/markdown');
+    await storage.put(`derived/${item.id}/text.md`, new TextEncoder().encode(ex.text), 'text/markdown');
 
-  const raw = chunkText(ex.text, ex.anchors);
-  const cheap = deps.cheap !== undefined ? deps.cheap : ingestProviderFor(deps.provider);
-  const chunks = await contextualise(raw, { title: item.title || ex.title || 'Untitled', type: item.type, text: ex.text }, DATA_FORMATS.has(ex.format) || own ? null : cheap);
-  const vectors = chunks.length ? await deps.embedder.embed(chunks.map(c => `${c.context}\n\n${c.text}`), 'document') : [];
-  if (vectors.length !== chunks.length) throw new Error(`embedder returned ${vectors.length} vectors for ${chunks.length} chunks`);
+    const raw = chunkText(ex.text, ex.anchors);
+    const cheap = deps.cheap !== undefined ? deps.cheap : ingestProviderFor(deps.provider);
+    const chunks = await contextualise(raw, { title: item.title || ex.title || 'Untitled', type: item.type, text: ex.text }, DATA_FORMATS.has(ex.format) || own ? null : cheap);
+    const vectors = chunks.length ? await deps.embedder.embed(chunks.map(c => `${c.context}\n\n${c.text}`), 'document') : [];
+    if (vectors.length !== chunks.length) throw new Error(`embedder returned ${vectors.length} vectors for ${chunks.length} chunks`);
 
-  const tag = (await db.query<{ expires_at: string | null; partners_only: boolean }>(`SELECT to_char(expires_at,'YYYY-MM-DD') AS expires_at, partners_only FROM legal_tags WHERE id = $1`, [item.legal_tag])).rows[0];
-  const patch: Record<string, unknown> = { text_chars: textChars, chunks: chunks.length, format: ex.format, anchors: ex.anchors.length };
-  if (ex.pages) patch.pages = ex.pages;
-  if (ex.needs_ocr) patch.needs_ocr = true;
-  if (ex.ocr) patch.ocr = true;
-  let lf = null;
-  if (isLegalFinanceType(item.type)) {
-    lf = await extractLegalFinance(ex.text, item.type, { provider: deps.provider });
-    for (const [k, v] of Object.entries(flatten(lf))) if (k === 'legal_finance' || k === 'partners_only' || existing[k] === undefined) patch[k] = v;
+    const tag = (await db.query<{ expires_at: string | null; partners_only: boolean }>(`SELECT to_char(expires_at,'YYYY-MM-DD') AS expires_at, partners_only FROM legal_tags WHERE id = $1`, [item.legal_tag])).rows[0];
+    const patch: Record<string, unknown> = { text_chars: textChars, chunks: chunks.length, format: ex.format, anchors: ex.anchors.length };
+    if (ex.pages) patch.pages = ex.pages;
+    if (ex.needs_ocr) patch.needs_ocr = true;
+    if (ex.ocr) patch.ocr = true;
+    let lf = null;
+    if (isLegalFinanceType(item.type)) {
+      lf = await extractLegalFinance(ex.text, item.type, { provider: deps.provider });
+      for (const [k, v] of Object.entries(flatten(lf))) if (k === 'legal_finance' || k === 'partners_only' || existing[k] === undefined) patch[k] = v;
+    }
+    // Recorded on the item; a partners-only variant of the legal tag is not created here (no legal-tag helper for variants).
+    const partnersOnly = !!tag?.partners_only || patch.partners_only === true || existing.partners_only === true;
+    if (partnersOnly) patch.partners_only = true;
+
+    if (have > 0) await db.query('DELETE FROM chunks WHERE item_id = $1 AND item_version = $2', [item.id, version]); // forced re-index of derived rows only
+    const BATCH = 20;
+    for (let i = 0; i < chunks.length; i += BATCH) {
+      const rows = chunks.slice(i, i + BATCH);
+      const params: unknown[] = [];
+      const values = rows.map((c, j) => {
+        const k = params.length;
+        params.push(item.id, version, c.ordinal, c.anchor, c.context, c.text, item.legal_tag, item.client_id ?? null, item.project_id, partnersOnly, tag?.expires_at ?? null, vectorLiteral(vectors[i + j]));
+        return `($${k + 1},$${k + 2},$${k + 3},$${k + 4},$${k + 5},$${k + 6},$${k + 7},$${k + 8},$${k + 9},$${k + 10},$${k + 11}::date,true,$${k + 12}::vector)`;
+      });
+      await db.query(
+        `INSERT INTO chunks (item_id, item_version, ordinal, anchor, context, text, legal_tag, client_id, project_id, partners_only, expires_at, current, embedding) VALUES ${values.join(',')}`, params);
+    }
+    await db.query('UPDATE chunks SET current = false WHERE item_id = $1 AND item_version < $2 AND current', [item.id, version]);
+    // A scan that could not be OCRed here is indexed on whatever residual text it has, but stays
+    // marked needs_ocr so the sync job retries it once language data is available.
+    const finalStatus: IngestStatus = ex.needs_ocr ? 'needs_ocr' : 'ok';
+    await mark(finalStatus, patch);
+
+    let review: string | null = null;
+    if (lf) review = await proposeNdaExpiry(db, { id: item.id, version, client_id: item.client_id ?? null, project_id: item.project_id, legal_tag: item.legal_tag, title: item.title }, lf);
+    // Wave 3: fields the document names become proposals in the review queue (never attachments).
+    let assetProposals = 0;
+    if (item.project_id && !own) {
+      try {
+        const project = (await db.query<any>('SELECT id, country, asset_ids FROM projects WHERE id = $1', [item.project_id])).rows[0];
+        if (project) {
+          const mentions = await extractAssets(db, ex.text, ex.anchors, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, cheap);
+          assetProposals = (await proposeAssets(db, { id: item.id, version, title: item.title ?? null, project_id: item.project_id }, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, mentions)).length;
+        }
+      } catch { /* proposals are best effort; the document is indexed either way */ }
+    }
+    // Wave 9: the record takes its place in the project's folders, now that its text is known (best effort, like the proposals).
+    if (item.project_id && !own) { try { await fileItem(db, item.id, { provider: cheap, text: ex.text }); } catch { /* filed by the next backlog run */ } }
+    return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}), asset_proposals: assetProposals };
+  } finally {
+    await db.query(`UPDATE items SET extracted = extracted - 'ingest_attempt' WHERE id = $1 AND extracted ? 'ingest_attempt'`, [item.id]).catch(() => {});
   }
-  // Recorded on the item; a partners-only variant of the legal tag is not created here (no legal-tag helper for variants).
-  const partnersOnly = !!tag?.partners_only || patch.partners_only === true || existing.partners_only === true;
-  if (partnersOnly) patch.partners_only = true;
-
-  if (have > 0) await db.query('DELETE FROM chunks WHERE item_id = $1 AND item_version = $2', [item.id, version]); // forced re-index of derived rows only
-  const BATCH = 20;
-  for (let i = 0; i < chunks.length; i += BATCH) {
-    const rows = chunks.slice(i, i + BATCH);
-    const params: unknown[] = [];
-    const values = rows.map((c, j) => {
-      const k = params.length;
-      params.push(item.id, version, c.ordinal, c.anchor, c.context, c.text, item.legal_tag, item.client_id ?? null, item.project_id, partnersOnly, tag?.expires_at ?? null, vectorLiteral(vectors[i + j]));
-      return `($${k + 1},$${k + 2},$${k + 3},$${k + 4},$${k + 5},$${k + 6},$${k + 7},$${k + 8},$${k + 9},$${k + 10},$${k + 11}::date,true,$${k + 12}::vector)`;
-    });
-    await db.query(
-      `INSERT INTO chunks (item_id, item_version, ordinal, anchor, context, text, legal_tag, client_id, project_id, partners_only, expires_at, current, embedding) VALUES ${values.join(',')}`, params);
-  }
-  await db.query('UPDATE chunks SET current = false WHERE item_id = $1 AND item_version < $2 AND current', [item.id, version]);
-  // A scan that could not be OCRed here is indexed on whatever residual text it has, but stays
-  // marked needs_ocr so the sync job retries it once language data is available.
-  const finalStatus: IngestStatus = ex.needs_ocr ? 'needs_ocr' : 'ok';
-  await mark(finalStatus, patch);
-
-  let review: string | null = null;
-  if (lf) review = await proposeNdaExpiry(db, { id: item.id, version, client_id: item.client_id ?? null, project_id: item.project_id, legal_tag: item.legal_tag, title: item.title }, lf);
-  // Wave 3: fields the document names become proposals in the review queue (never attachments).
-  let assetProposals = 0;
-  if (item.project_id && !own) {
-    try {
-      const project = (await db.query<any>('SELECT id, country, asset_ids FROM projects WHERE id = $1', [item.project_id])).rows[0];
-      if (project) {
-        const mentions = await extractAssets(db, ex.text, ex.anchors, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, cheap);
-        assetProposals = (await proposeAssets(db, { id: item.id, version, title: item.title ?? null, project_id: item.project_id }, { id: project.id, country: project.country ?? null, asset_ids: project.asset_ids ?? [] }, mentions)).length;
-      }
-    } catch { /* proposals are best effort; the document is indexed either way */ }
-  }
-  // Wave 9: the record takes its place in the project's folders, now that its text is known (best effort, like the proposals).
-  if (item.project_id && !own) { try { await fileItem(db, item.id, { provider: cheap, text: ex.text }); } catch { /* filed by the next backlog run */ } }
-  return { ...base, status: finalStatus, chunks: chunks.length, text_chars: textChars, ...(ex.needs_ocr ? { needs_ocr: true } : {}), ...(ex.ocr ? { ocr: true } : {}), ...(partnersOnly ? { partners_only: true } : {}), ...(review ? { nda_expiry_review: review } : {}), asset_proposals: assetProposals };
 }
 
 /* ── runs (wave 7, S31) ──────────────────────────────────────────────── */
