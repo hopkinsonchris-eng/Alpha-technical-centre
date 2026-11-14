@@ -69,8 +69,24 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
     const bk = opts.books === false ? null : (opts.books ?? (booksConfig() ? {} : null));
     let sink = opts.sink;
     if ((wd || bk) && !sink) sink = await serviceSink(db);
-    if (wd) summary.workdrive = await syncWorkdrive(db, sink!, wd);
-    if (bk) summary.books = await syncBooks(db, sink!, bk);
+    // 14 Nov 2026: from 15:20 no run finished and none reached a file (index health: nothing being read), so a source
+    // sync is the suspect: a Zoho call with no timeout holds the run until Render ends it. Each source now has
+    // SOURCE_SYNC_SECONDS (default 600); past that the run records it and goes on to index what is already stored.
+    // The phase is written to the job row as the run goes, so index health shows where a run is.
+    const phase = (p: string) => db.query(`UPDATE jobs SET summary = summary || jsonb_build_object('phase', $2::text, 'phase_at', now()) WHERE id = $1`, [job, p]).catch(() => {});
+    const limitMs = 1000 * Number(process.env.SOURCE_SYNC_SECONDS ?? 600);
+    const capped = async <T>(name: string, work: Promise<T>): Promise<T | null> => {
+      let t: NodeJS.Timeout | undefined;
+      const late = new Promise<null>(res => { t = setTimeout(() => res(null), limitMs); });
+      try {
+        const r = await Promise.race([work, late]);
+        if (r === null) { summary.errors.push(`${name}: sync passed ${limitMs / 1000} s and was left; indexing what is stored`); console.log(`ingest-sync: ${name} sync timed out`); }
+        return r;
+      } finally { if (t) clearTimeout(t); }
+    };
+    if (wd) { await phase('workdrive'); summary.workdrive = await capped('workdrive', syncWorkdrive(db, sink!, wd)); }
+    if (bk) { await phase('books'); summary.books = await capped('books', syncBooks(db, sink!, bk)); }
+    await phase('items');
 
     const pending = (await db.query<{ id: string; version: number; title: string | null; project_id: string | null }>(
       `SELECT i.id, i.version, i.title, i.project_id FROM items i ${PENDING_WHERE} ${PENDING_ORDER} LIMIT $1`, [opts.limit ?? 200, SUPPORTED_EXTENSIONS, EXTRACTOR_VERSION])).rows;
@@ -114,6 +130,7 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
     }
     // Wave 9: records never filed into the project folders (research notes, mail, files from before the folders) are
     // filed here, at most 200 a run, within whatever the cap has left; a run with no model files by the rules alone.
+    await phase('folders');
     if (opts.folders !== false && !summary.stopped_by) {
       const left = cap - (processSpendGbp() - spentBefore);
       let provider = deps?.provider ?? null;
@@ -136,4 +153,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const s = await runIngestSync(db);
   console.log(JSON.stringify(s));
   await db.close();
+  // A source call left running past its limit would keep the process alive after the run is recorded as finished.
+  process.exit(0);
 }
