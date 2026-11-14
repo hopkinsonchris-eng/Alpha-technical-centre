@@ -152,3 +152,13 @@ test('a source sync that never returns is left after SOURCE_SYNC_SECONDS and the
     assert.equal(r?.status, 'ok');
   } finally { if (prev === undefined) delete process.env.SOURCE_SYNC_SECONDS; else process.env.SOURCE_SYNC_SECONDS = prev; }
 });
+
+test('nothing under src/ imports the ingest job file, so the job can build the app without an import cycle that never settles', async () => {
+  const { readdirSync, readFileSync, statSync } = await import('node:fs');
+  const path = await import('node:path');
+  const root = path.resolve(import.meta.dirname, '..', 'src');
+  const offenders: string[] = [];
+  const walk = (d: string) => { for (const f of readdirSync(d)) { const p = path.join(d, f); if (statSync(p).isDirectory()) walk(p); else if (p.endsWith('.ts') && !p.endsWith(path.join('jobs', 'ingest-sync.ts')) && /from\s+['"][^'"]*jobs\/ingest-sync(\.ts)?['"]|import\(\s*['"][^'"]*jobs\/ingest-sync/.test(readFileSync(p, 'utf8'))) offenders.push(path.relative(root, p)); } };
+  walk(root);
+  assert.deepEqual(offenders, []);
+});
