@@ -27,7 +27,7 @@ export interface Extracted {
   title?: string;
   meta?: Record<string, unknown>;
 }
-export type Format = 'pdf' | 'docx' | 'xlsx' | 'csv' | 'pptx' | 'html' | 'md' | 'txt' | 'eml' | 'json' | 'las';
+export type Format = 'pdf' | 'docx' | 'xlsx' | 'csv' | 'pptx' | 'html' | 'md' | 'txt' | 'eml' | 'json' | 'las' | 'image';
 
 export class UnsupportedFormat extends Error {
   constructor(public filename: string, public mime: string) { super(`unsupported document format: ${filename || '(unnamed)'} (${mime || 'unknown type'})`); }
@@ -41,12 +41,12 @@ const tessdataDir = () => process.env.VAULT_TESSDATA_DIR || path.join(VAULT_DIR,
 
 const EXT: Record<string, Format> = {
   pdf: 'pdf', docx: 'docx', xlsx: 'xlsx', xlsm: 'xlsx', xls: 'xlsx', csv: 'csv', tsv: 'csv', pptx: 'pptx', html: 'html', htm: 'html',
-  las: 'las', md: 'md', markdown: 'md', txt: 'txt', text: 'txt', log: 'txt', eml: 'eml', json: 'json',
+  las: 'las', tif: 'image', tiff: 'image', jpg: 'image', jpeg: 'image', png: 'image', md: 'md', markdown: 'md', txt: 'txt', text: 'txt', log: 'txt', eml: 'eml', json: 'json',
 };
 /** Extensions the extractor reads; a file marked unsupported under an older extractor with one of these is queued again. */
 export const SUPPORTED_EXTENSIONS = Object.keys(EXT);
-/** Raised when the extractor learns a format (2: LAS, 14 Nov 2026). Stamped on every ingest marker as `ext_v`. */
-export const EXTRACTOR_VERSION = 2;
+/** Raised when the extractor learns a format (2: LAS; 3: scanned images by OCR; both 14 Nov 2026). Stamped on every ingest marker as `ext_v`. */
+export const EXTRACTOR_VERSION = 3;
 /** A file marked unsupported by an older extractor whose type this one reads: worth one more try. */
 export function retryUnsupported(marker: any, filename: string | null | undefined): boolean {
   if (marker?.status !== 'unsupported' || Number(marker?.ext_v ?? 1) >= EXTRACTOR_VERSION) return false;
@@ -461,6 +461,37 @@ export function extractLas(bytes: Uint8Array): Extracted {
   return { format: 'las', text, anchors, ...(well ? { title: well } : {}) } as Extracted;
 }
 
+/** Images larger than this are not OCRed (a full raster well log can be hundreds of megapixels): left as needs_ocr. */
+const MAX_IMAGE_BYTES = Number(process.env.VAULT_OCR_MAX_IMAGE_MB ?? 25) * 1024 * 1024;
+
+/**
+ * Scanned images (14 Nov 2026; Parker Creek holds 1,891 TIFF and 163 JPG): OCR with the same engine and language data as
+ * scanned PDFs, under the same per-file limit (VAULT_OCR_FILE_SECONDS, default 90). tesseract.js reads TIFF (Group 4
+ * included), JPEG and PNG itself; only the first page of a multi-page TIFF is read. A worker that overruns is terminated,
+ * so one huge image cannot hold the run. With `ocr: false` (the run's OCR time is spent) the image comes back
+ * needs_ocr with no text and the job defers it to a later run.
+ */
+async function extractImage(bytes: Uint8Array, opts: ExtractOptions = {}): Promise<Extracted> {
+  const none: Extracted = { format: 'image', text: '', anchors: [], needs_ocr: true };
+  if (opts.ocr === false || bytes.length > MAX_IMAGE_BYTES) return none;
+  const dir = tessdataDir();
+  const langs = process.env.VAULT_OCR_LANG || 'eng';
+  if (!(await ensureLangData(dir, langs))) return none;
+  let tess: any;
+  try { tess = await import('tesseract.js'); } catch { return none; }
+  const deadline = opts.ocrDeadlineMs ?? Date.now() + 1000 * Number(process.env.VAULT_OCR_FILE_SECONDS ?? 90);
+  let worker: any; let timer: NodeJS.Timeout | undefined;
+  try {
+    worker = await tess.createWorker(langs, 1, ocrWorkerOptions(dir, langs));
+    const timeout = new Promise<null>(res => { timer = setTimeout(() => res(null), Math.max(1000, deadline - Date.now())); });
+    const r: any = await Promise.race([worker.recognize(Buffer.from(bytes)), timeout]);
+    const text = String(r?.data?.text ?? '').trim();
+    if (!text) return none;
+    return { format: 'image', text, anchors: [{ label: 'page 1', offset: 0 }], pages: 1, ocr: true };
+  } catch { return none; }
+  finally { if (timer) clearTimeout(timer); try { await worker?.terminate(); } catch { /* ignore */ } }
+}
+
 export interface ExtractOptions { ocr?: boolean; ocrDeadlineMs?: number }
 
 export async function extractText(bytes: Uint8Array, mime: string, filename: string, opts: ExtractOptions = {}): Promise<Extracted> {
@@ -479,6 +510,7 @@ export async function extractText(bytes: Uint8Array, mime: string, filename: str
     case 'eml': r = extractEml(bytes); break;
     case 'json': r = extractJson(bytes); break;
     case 'las': r = extractLas(bytes); break;
+    case 'image': r = await extractImage(bytes, opts); break;
   }
   if (!r.anchors.length && r.text.trim()) r.anchors = [{ label: 'start', offset: 0 }];
   return r;

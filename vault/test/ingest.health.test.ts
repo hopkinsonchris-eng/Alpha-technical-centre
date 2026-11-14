@@ -89,15 +89,15 @@ test('a LAS file marked unsupported by the older extractor is queued once more a
   const las = '~VERSION\n VERS. 2.0 : LAS\n~WELL\n WELL. KNIGHT 32-10 #4 : WELL\n~A DEPT GR\n100 50\n';
   await h.storage.put('originals/las1', new TextEncoder().encode(las), 'application/octet-stream');
   const lasId = await addItem({ storage_key: 'originals/las1', extracted: { filename: 'KNIGHT_32_10_4.las', ingest: { version: 1, status: 'unsupported' } } });
-  await h.storage.put('originals/tif1', new Uint8Array([0x49, 0x49, 0x2a, 0, 1, 2, 3, 4]), 'image/tiff');
-  const tifId = await addItem({ storage_key: 'originals/tif1', extracted: { filename: 'scan.tif', ingest: { version: 1, status: 'unsupported' } } });
+  await h.storage.put('originals/tif1', new Uint8Array([0x4c, 0x50, 0x54, 0, 1, 2, 3, 4]), 'application/octet-stream');
+  const tifId = await addItem({ storage_key: 'originals/tif1', extracted: { filename: 'plot.lpt', ingest: { version: 1, status: 'unsupported' } } });
   const deps = { provider: null, embedder: new FakeEmbedder(), cheap: null };
   await runIngestSync(h.db, { storage: h.storage, deps, workdrive: false, books: false, folders: false });
   const n = (await h.db.query<any>('SELECT count(*)::int AS n FROM chunks WHERE item_id = $1 AND current', [lasId])).rows[0].n;
   assert.ok(n >= 1, 'the LAS header is indexed');
   const tif = (await h.db.query<any>('SELECT extracted FROM items WHERE id = $1', [tifId])).rows[0].extracted;
   assert.equal(tif.ingest.status, 'unsupported');
-  assert.equal(tif.ingest.ext_v, undefined, 'a TIFF is not a type this extractor reads, so it is not retried');
+  assert.equal(tif.ingest.ext_v, undefined, 'an LPT plot is not a type this extractor reads, so it is not retried');
   const again = await runIngestSync(h.db, { storage: h.storage, deps, workdrive: false, books: false, folders: false });
   assert.equal(again.ingested, 0, 'nothing loops');
 });

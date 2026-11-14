@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { extractText, UnsupportedFormat, detectFormat, ensureLangData, ocrLangUrl, ocrWorkerOptions } from '../src/ingest/extract.ts';
@@ -201,4 +201,27 @@ test('a LAS well log is read as its header (well, API, curves) with the data row
   assert.doesNotMatch(r.text, /12100\.5 /);
   assert.ok(r.anchors.some(a => a.label === '~W'));
   assert.equal(r.title, 'FROST 5-10 #2');
+});
+
+test('a scanned TIFF is an image for OCR: needs_ocr without language data or when the run has no OCR time left', async () => {
+  const { extractText } = await import('../src/ingest/extract.ts');
+  const tif = readFileSync(path.join(VAULT_DIR, 'test', 'fixtures', 'ingest', 'scan-header.tif'));
+  const prev = process.env.VAULT_TESSDATA_DIR;
+  process.env.VAULT_TESSDATA_DIR = mkdtempSync(path.join(os.tmpdir(), 'no-tessdata-'));
+  try {
+    const r = await extractText(tif, 'image/tiff', 'scan.tif');
+    assert.equal(r.format, 'image'); assert.equal(r.needs_ocr, true); assert.equal(r.text, '');
+  } finally { if (prev === undefined) delete process.env.VAULT_TESSDATA_DIR; else process.env.VAULT_TESSDATA_DIR = prev; }
+  const deferred = await extractText(tif, 'image/tiff', 'scan.tif', { ocr: false });
+  assert.equal(deferred.needs_ocr, true);
+});
+
+test('a scanned TIFF is read by OCR when language data is present', async (t) => {
+  const { extractText } = await import('../src/ingest/extract.ts');
+  const dir = path.join(VAULT_DIR, '.storage', 'tessdata');
+  if (!existsSync(path.join(dir, 'eng.traineddata.gz')) && !existsSync(path.join(dir, 'eng.traineddata'))) { t.skip('no local tesseract language data'); return; }
+  const r = await extractText(readFileSync(path.join(VAULT_DIR, 'test', 'fixtures', 'ingest', 'scan-header.tif')), 'image/tiff', 'scan.tif');
+  assert.equal(r.ocr, true);
+  assert.match(r.text, /FROST 5-10 #2/);
+  assert.match(r.text, /23-067-20636/);
 });
