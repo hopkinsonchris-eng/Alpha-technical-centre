@@ -10,6 +10,7 @@
  * Every tool call appends exactly one audit event `mcp.<tool>` (scope, refs, query hash, status; never content).
  * Resource reads append `mcp.resource.read`.
  */
+import { healthLines, indexHealth } from '../ingest/health.ts';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -333,7 +334,7 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
 
   server.registerTool('get_project_context', {
     title: 'Get a project\'s context',
-    description: 'Everything to read before working on a project: the brief (status, client, members, counterparties from the register: current owner, government, licence, partners), the activity, the contacts, and the standing (stage and since, next action and due date, figures with unit, date and source, open items, counterparties with last contact, deadlines, stale counts, last activity), as `standing` and in the markdown. Start here before drafting or filing. Use search_vault for a question across records and get_item for one record\'s text.',
+    description: 'Everything to read before working on a project: the index health (files indexed, waiting, failed; last ingest run; model spend today and in total), the brief (status, client, members, counterparties from the register: current owner, government, licence, partners), the activity, the contacts, and the standing (stage and since, next action and due date, figures with unit, date and source, open items, counterparties with last contact, deadlines, stale counts, last activity), as `standing` and in the markdown. Start here before drafting or filing. Use search_vault for a question across records and get_item for one record\'s text.',
     inputSchema: { project_id: z.string().min(1).max(64) },
     annotations: { readOnlyHint: true },
   }, ({ project_id }) => tool('get_project_context', async (a) => {
@@ -350,7 +351,10 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     // Wave 8 (W8-AC6): the country's World Monitor reading and advisories, with the change since the previous reading; nothing without a key.
     const riskLines = country ? await countryRiskLines(db, country) : [];
     const packLines = pack && packRead ? ['', `## Country pack (${pack.country})`, '', `- Assembled: ${pack.assembled_at ? pack.assembled_at.slice(0, 10) : 'not yet'}; the full pack is vault://countries/${pack.country}/pack.md`, ...termsLines(packRead), ...pack.headlines.map(h => `- ${h.section} (${h.status}${h.due_at ? `, due ${h.due_at}` : ''}): ${h.en || 'not built'}`)] : [];
-    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, pack, markdown: sum.markdown + lines.join('\n') + packLines.join('\n') + riskLines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') };
+    // 14 Nov 2026: the project's indexing state (files by state, last ingest run, model spend), so a session reads it here, not from screenshots.
+    const index = await indexHealth(db, project_id, now()).catch((e: Error) => ({ error: e.message.slice(0, 200) }));
+    const idxLines = 'files' in index ? healthLines(index) : ['', '## Index health', '', `- could not be read: ${index.error}`];
+    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, pack, index, markdown: sum.markdown + lines.join('\n') + packLines.join('\n') + riskLines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') + idxLines.join('\n') };
   }));
 
   server.registerTool('get_item', {
