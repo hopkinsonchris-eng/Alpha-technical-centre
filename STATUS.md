@@ -15,6 +15,7 @@ The cap is counted from the firm-wide ledger reading at the start: £60.91 in to
 | 14 Nov 15:10 | 2,532 / 2,532 (100%) | 2,057 in the queue (scans) | 3,795 | £61.00 | £0.09 |
 | 14 Nov 17:13 | 2,532 / 2,532 (100%) | 2,057 (no run finished since 15:15) | 3,795 | £61.00 | £0.09 |
 | 14 Nov 19:59 | 2,594 / 2,594 (100%) | 1,995 scans in the queue; runs finish again (#129) | 3,733 | £61.01 | £0.10 |
+| 14 Nov 21:05 | 2,726 / 2,776 (98.2%) | 1,812 scans in the queue; run #16543 indexed 122 in 39 min | 3,550 | £61.04 | £0.13 |
 
 ## Done (checked live)
 - Search for Parker Creek returns cited hits at once ("Frost 2 sidetrack", "Frost #2 sidetrack initial oil rate bopd", "Frost 5-10 #2 gamma ray LAS", "KNIGHT 32-10 LAS well curves").
@@ -29,6 +30,12 @@ The cap is counted from the firm-wide ledger reading at the start: £60.91 in to
 - WorkDrive sync re-lists the whole folder each run ("changes token expired; full listing") and now passes its 10-minute limit (#128), so new WorkDrive files are not picked up until that is fixed. Files already stored keep indexing. Not fixed.
 - Still unsupported, not planned: LPT 456, LIC 347, DAT 137, IDX 136, BLB 76, PDS 57, ALI 56 (log-plot and mapping-project files), ZIP 195, MSG 88, DOC 43, ASC 26.
 - One zero-byte PDF (APWH00199…PEX_MLT_COMBINED.pdf) was retried 51 times. It is marked empty from #120 on.
+
+## Projection
+- About £0.0003 a file. The 1,812 scans left come to about £0.55, far inside the £50 cap.
+- About 130 files a run, a run about every 40 minutes: about 10 hours from 21:05 on 14 Nov.
+- 50 scans OCRed to no text (or were over 25 MB): counted as needs OCR, not indexed.
+- Counting the queued scans as readable, 2,726 of about 4,590 (59%) are indexed today. The 95% mark comes when the queue clears.
 
 ## Waiting on the owner
 - Nothing.
