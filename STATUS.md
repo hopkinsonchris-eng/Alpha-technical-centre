@@ -14,6 +14,7 @@ The cap is counted from the firm-wide ledger reading at the start: £60.91 in to
 | 14 Nov 14:27 | 2,517 / 2,517 (100%) | 0 (all LAS done) | 3,810 | £60.99 | £0.08 |
 | 14 Nov 15:10 | 2,532 / 2,532 (100%) | 2,057 in the queue (scans) | 3,795 | £61.00 | £0.09 |
 | 14 Nov 17:13 | 2,532 / 2,532 (100%) | 2,057 (no run finished since 15:15) | 3,795 | £61.00 | £0.09 |
+| 14 Nov 19:59 | 2,594 / 2,594 (100%) | 1,995 scans in the queue; runs finish again (#129) | 3,733 | £61.01 | £0.10 |
 
 ## Done (checked live)
 - Search for Parker Creek returns cited hits at once ("Frost 2 sidetrack", "Frost #2 sidetrack initial oil rate bopd", "Frost 5-10 #2 gamma ray LAS", "KNIGHT 32-10 LAS well curves").
@@ -24,8 +25,8 @@ The cap is counted from the firm-wide ledger reading at the start: £60.91 in to
 - Cost: about £0.0003 a file for LAS and scans (the two small Haiku 5.5 calls per file). No model call for chunk context.
 
 ## Open
-- Scans: about 2,050 left (TIFF, JPG, PNG), about 20 s each, 15 a run. Raising OCR time to 20 minutes a run (#125) stopped every run from finishing (15:20 to 17:13, nothing indexed); put back to 5 minutes (#127). At 5 minutes the scans take about 2.5 days. Only the first page of a multi-page TIFF is read.
-- WorkDrive sync re-lists the whole folder each run ("changes token expired; full listing"). It works, but it is slow. Not fixed.
+- Scans: about 1,995 left (TIFF, JPG, PNG), about 20 s each. From #124 to #129 every ingest run exited at start (an import cycle I introduced; code 13, unsettled top-level await) and nothing was indexed from 15:15 to 19:36. Fixed in #129, checked live: run #16532 finished and indexed 31. OCR time back to 20 minutes a run (#130), so the scans should clear within a day. Only the first page of a multi-page TIFF is read.
+- WorkDrive sync re-lists the whole folder each run ("changes token expired; full listing") and now passes its 10-minute limit (#128), so new WorkDrive files are not picked up until that is fixed. Files already stored keep indexing. Not fixed.
 - Still unsupported, not planned: LPT 456, LIC 347, DAT 137, IDX 136, BLB 76, PDS 57, ALI 56 (log-plot and mapping-project files), ZIP 195, MSG 88, DOC 43, ASC 26.
 - One zero-byte PDF (APWH00199…PEX_MLT_COMBINED.pdf) was retried 51 times. It is marked empty from #120 on.
 
