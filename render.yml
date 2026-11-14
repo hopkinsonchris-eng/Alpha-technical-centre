@@ -147,6 +147,9 @@ services:
         value: "40"
       - key: INGEST_BUDGET_GBP
         value: "5"
+      # OCR time one run may spend on scans (src/jobs/ingest-sync.ts); the rest are deferred to the next run.
+      - key: VAULT_OCR_RUN_SECONDS
+        value: "1200"
       - key: VAULT_STORAGE
         value: supabase
       - key: VAULT_STORAGE_BUCKET
