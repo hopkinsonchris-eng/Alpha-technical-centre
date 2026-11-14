@@ -13,6 +13,7 @@ import { openStorage, type Storage } from '../storage.ts';
 import { ingestProviderFor, openProvider } from '../llm/provider.ts';
 import { openEmbedder } from '../ingest/embed.ts';
 import { HAS_OWN_TEXT_SQL, ingestItem, type IngestDeps } from '../ingest/index.ts';
+import { EXTRACTOR_VERSION, SUPPORTED_EXTENSIONS } from '../ingest/extract.ts';
 import { serviceSink, type ItemSink } from '../ingest/items-client.ts';
 import { syncWorkdrive, workdriveConfig, type SyncStats, type WorkdriveOptions } from '../ingest/workdrive.ts';
 import { booksConfig, syncBooks, type BooksOptions } from '../ingest/zoho-books.ts';
@@ -58,14 +59,17 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
       `SELECT i.id, i.version, i.title, i.project_id FROM items i
         WHERE NOT i.hidden AND (i.storage_key IS NOT NULL OR ${HAS_OWN_TEXT_SQL})
           AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.item_id = i.id AND c.item_version = i.version AND c.current)
-          AND coalesce(i.extracted->'ingest'->>'version', '') <> i.version::text
+          AND (coalesce(i.extracted->'ingest'->>'version', '') <> i.version::text
+               -- marked unsupported by an older extractor, but its type is read now (LAS from 14 Nov 2026): once more
+               OR (i.extracted->'ingest'->>'status' = 'unsupported' AND coalesce(i.extracted->'ingest'->>'ext_v', '1')::int < $3
+                   AND lower(substring(coalesce(i.extracted->>'filename', i.title) from '\\.([A-Za-z0-9]{1,8})$')) = ANY($2::text[])))
         -- A file that failed before goes behind every file that has not, so one that fails every run (a bad key, a
         -- file the extractor chokes on) never holds the queue: before this, the oldest 200 were retried forever.
         ORDER BY CASE WHEN i.extracted->'ingest_error'->>'version' = i.version::text
                       THEN coalesce((i.extracted->'ingest_error'->>'attempts')::int, 1) ELSE 0 END,
                  -- a scan a run had no OCR time for waits behind the files that need none
                  CASE WHEN i.extracted->>'ocr_deferred' = i.version::text THEN 1 ELSE 0 END,
-                 i.created_at LIMIT $1`, [opts.limit ?? 200])).rows;
+                 i.created_at LIMIT $1`, [opts.limit ?? 200, SUPPORTED_EXTENSIONS, EXTRACTOR_VERSION])).rows;
     if (!pending.length && !wd && !bk) {
       summary.idle = 'nothing to ingest and no WorkDrive or Books source configured';
       console.log(`ingest-sync: ${summary.idle}`);
