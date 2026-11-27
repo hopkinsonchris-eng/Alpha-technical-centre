@@ -11,6 +11,7 @@
  * Resource reads append `mcp.resource.read`.
  */
 import { healthLines, indexHealth } from '../ingest/health.ts';
+import { searchDiagnostics, searchHealthLines } from '../gateway/diagnostics.ts';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -354,7 +355,10 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     // 14 Nov 2026: the project's indexing state (files by state, last ingest run, model spend), so a session reads it here, not from screenshots.
     const index = await indexHealth(db, project_id, now()).catch((e: Error) => ({ error: e.message.slice(0, 200) }));
     const idxLines = 'files' in index ? healthLines(index) : ['', '## Index health', '', `- could not be read: ${index.error}`];
-    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, pack, index, markdown: sum.markdown + lines.join('\n') + packLines.join('\n') + riskLines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') + idxLines.join('\n') };
+    // 27 Nov 2026: why search is slow, measured live (chunk counts, sizes, settings, running statements, stage timings).
+    const search = await searchDiagnostics(db, project_id, person, await loadProjects(db), now()).catch((e: Error) => ({ error: e.message.slice(0, 200) }));
+    const searchLines = 'chunks' in search ? searchHealthLines(search) : ['', '## Search health', '', `- could not be read: ${search.error}`];
+    return { project_id, hub_url: hubUrl(project_id), last_modified: sum.lastModified, open_proposals: open, counterparties: cp, standing: sum.standing, pack, index, search, markdown: sum.markdown + lines.join('\n') + packLines.join('\n') + riskLines.join('\n') + (open ? `\n\n## Open proposals\n\n- ${open} waiting for a decision in the Hub queue` : '') + idxLines.join('\n') + searchLines.join('\n') };
   }));
 
   server.registerTool('get_item', {

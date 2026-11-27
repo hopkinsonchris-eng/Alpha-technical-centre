@@ -12,6 +12,16 @@ export interface Db {
   exec(sql: string): Promise<void>;
   close(): Promise<void>;
   backend: 'pg' | 'pglite';
+  /**
+   * Run read-only statements on one connection with a server-side time limit on each (statement_timeout), so a
+   * statement that overruns is cancelled in the database, not left running. Absent on a backend that cannot do it.
+   */
+  bounded?<T>(ms: number, fn: (query: Db['query']) => Promise<T>): Promise<T>;
+}
+
+/** `db.bounded` where the backend has it; otherwise the statements run unbounded (PGlite, test doubles). */
+export function bounded<T>(db: Db, ms: number, fn: (query: Db['query']) => Promise<T>): Promise<T> {
+  return db.bounded ? db.bounded(ms, fn) : fn(db.query.bind(db));
 }
 
 export interface PgPoolConfig {
@@ -82,6 +92,20 @@ async function openDbRaw(url: string | undefined): Promise<Db> {
       },
       exec: async (sql) => { await pool.query(sql); },
       close: () => pool.end(),
+      bounded: async (ms, fn) => {
+        const client = await pool.connect();
+        let broken: Error | undefined;
+        try {
+          await client.query('BEGIN READ ONLY');
+          await client.query(`SET LOCAL statement_timeout = ${Math.max(1, Math.round(ms))}`);
+          const out = await fn(async <T,>(sql: string, params?: unknown[]) => ({ rows: (await client.query(sql, params as any[])).rows as T[] }));
+          await client.query('COMMIT');
+          return out;
+        } catch (e) {
+          await client.query('ROLLBACK').catch((r: Error) => { broken = r; });
+          throw e;
+        } finally { client.release(broken); }
+      },
     };
   }
   const { PGlite } = await import('@electric-sql/pglite');
