@@ -1,6 +1,40 @@
 # Status
 
-Updated 14 Nov 2026. Live readings come from `get_project_context` (section "Index health"), which any Claude session with the Vault's MCP tools can read.
+Updated 27 Nov 2026, 16:45 UTC. Live readings come from `get_project_context`: section "Index health" for indexing and, since #132, section "Search health" for search.
+
+## Search (27 Nov 2026)
+
+**Search works again, by word match. The meaning-based half works for small projects only.**
+
+### Done (checked live)
+- #132 Search health in `get_project_context`: chunk counts, sizes, database settings, running statements, query plans and the time each search stage took.
+- #133 Search answers or fails clearly within about 20 seconds and leaves nothing running in the database. Checked at 16:26 UTC: Parker Creek ("Frost 2 sidetrack"), Fezzan ("Sharara field fire") and firm ("EPSA IV cost recovery") each returned cited hits in 8.3 to 9.0 s, marked `partial: true` (word matches only); three searches sent together all answered in 8.2 to 8.9 s. Search health at 16:37 showed no statement left running.
+- #134 Scope is applied before distance. Checked at 16:37 UTC: Fezzan "who operates the Sharara oil field" returned the El Sharara field dossier in 7.2 s, not partial (word match 541 ms, embedding call 145 ms, meaning-based match 6,216 ms).
+
+### What the live system says (16:13 and 16:37 UTC)
+- 943,264 chunks; 935,788 are Parker Creek's, 7,302 the firm's, 114 Fezzan's.
+- 197 Parker Creek spreadsheets (daily workover and completion reports) hold 922,432 of them; the largest two hold about 25,040 each.
+- 1,733 Parker Creek files are stored more than once: 3,670 extra copies carrying 218,114 chunks.
+- The chunks table is 6.27 GB (rows 729 MB, embeddings 5.30 GB, indexes 269 MB); the database is 6.37 GB.
+- Postgres 17.6, pgvector 0.8.2, shared_buffers 256 MB, maintenance_work_mem 64 MB, statements cancelled by the database at 120 s.
+- No vector index. Every meaning-based search computed the distance to every chunk it could reach.
+
+### Open
+- Parker Creek and firm scope: the meaning-based half still runs out of its 7 s and is stopped, so results are word matches only. Fezzan's meaning-based match takes 6.2 s of its 7 s, so it will sometimes come back partial.
+- Results repeat a file once per stored copy and once per slice.
+- Not built: an approximate vector index. At today's size it would be about 7 GB (a local build of 60,000 chunks took 5 min 20 s and 469 MB with 64 MB of build memory).
+- WorkDrive sync still re-lists the whole folder each run and is left at 600 s. Not started.
+
+### Waiting on the owner
+- A yes to stop the meaning-based search reading every slice of the 197 large spreadsheets: keep every slice for word search, keep the embedding of the first 40 slices of each file, clear the rest. No file, record or text is removed. What stops being findable: a meaning-based match inside the later slices of those spreadsheets; a word match still finds them. Tested locally only.
+- Whether the 3,670 duplicate copies should be hidden from search (not deleted).
+
+### Model spend
+- £0.00 for this work. Ledger: £61.72 in total, £0.00 today (16:37 UTC).
+
+## Earlier: Parker Creek indexing (14 Nov 2026)
+
+The sections below are as written on 14 Nov. Since then the scan queue has cleared: 4,091 of 4,588 readable files indexed, queue empty, 497 scans read to no text (27 Nov 16:13 UTC).
 
 ## Parker Creek indexing: cap £50 of model spend, from 14 Nov 2026 12:28 UTC
 
