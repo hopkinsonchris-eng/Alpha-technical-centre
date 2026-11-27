@@ -12,7 +12,7 @@ const KEEP = 20;
 const ring: SearchTiming[] = [];
 const clock = () => performance.now();
 
-export interface SearchTimer { stage<T>(name: 'embed' | 'lexical' | 'vector', fn: () => Promise<T>, count?: (v: T) => number): Promise<T>; done(): void; fail(e: unknown): void }
+export interface SearchTimer { stage<T>(name: 'embed' | 'lexical' | 'vector', fn: () => Promise<T>, count?: (v: T) => number): Promise<T>; done(): void; fail(e: unknown): void; /** something worth showing about a search that still answered (the vector half was skipped) */ note(text: string): void }
 
 /** Start timing one search. No query text is kept: only the scope label and the numbers. */
 export function startSearchTiming(scope: string, now = new Date()): SearchTimer {
@@ -23,13 +23,14 @@ export function startSearchTiming(scope: string, now = new Date()): SearchTimer 
   return {
     async stage(name, fn, count) {
       const s = clock(); t.stage = name; t.stage_started_ms = s;
-      const v = await fn();
-      t[`${name}_ms`] = Math.round(clock() - s);
+      let v: Awaited<ReturnType<typeof fn>>;
+      try { v = await fn(); } finally { t[`${name}_ms`] = Math.round(clock() - s); }
       if (count && name !== 'embed') t[`${name}_n`] = count(v);
       return v;
     },
     done() { if (t.stage === 'error') return; t.stage = 'done'; t.total_ms = Math.round(clock() - t0); },
     fail,
+    note(text) { t.error = text.slice(0, 200); },
   };
 }
 

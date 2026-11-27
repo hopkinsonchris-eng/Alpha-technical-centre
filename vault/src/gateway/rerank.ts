@@ -14,6 +14,8 @@ export const RERANK_MODEL = 'rerank-2.5';
 const ENDPOINT = 'https://api.voyageai.com/v1/rerank';
 /** Characters of a candidate sent to the reranker: title plus snippet is enough to judge relevance. */
 const DOC_CHARS = 1200;
+/** Time allowed for reranking, retries included (27 Nov 2026: the fetch had no limit). */
+export const RERANK_MS = 3000;
 
 export class VoyageReranker implements Reranker {
   readonly name = 'voyage';
@@ -28,13 +30,16 @@ export class VoyageReranker implements Reranker {
     if (hits.length <= 1) return hits.slice(0, topK);
     const documents = hits.map(h => `${h.title ? h.title + '\n' : ''}${h.snippet}`.slice(0, DOC_CHARS));
     let lastErr = '';
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // The whole rerank, retries included, fits in RERANK_MS: past it the fused order is the answer.
+    const deadline = Date.now() + RERANK_MS;
+    for (let attempt = 0; attempt < 3 && Date.now() < deadline; attempt++) {
       let res: Response;
       try {
         res = await this.fetchImpl(ENDPOINT, {
           method: 'POST',
           headers: { 'content-type': 'application/json', authorization: `Bearer ${this.apiKey}` },
           body: JSON.stringify({ query, documents, model: this.model, top_k: Math.min(topK, documents.length), truncation: true }),
+          signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
         });
       } catch (e) { lastErr = `voyage rerank network error: ${(e as Error).message}`; await this.wait(attempt); continue; }
       if (res.ok) {

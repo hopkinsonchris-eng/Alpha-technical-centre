@@ -10,7 +10,7 @@
  * at the last place of one candidate list is not a result. A query that
  * matches nothing therefore returns [].
  */
-import type { Db } from '../db/client.ts';
+import { bounded, type Db } from '../db/client.ts';
 import type { Person } from '../auth.ts';
 import { buildPredicate, type Predicate, type ProjectInfo, type ResolvedScope } from './scope.ts';
 import { startSearchTiming } from './timings.ts';
@@ -18,6 +18,31 @@ import { startSearchTiming } from './timings.ts';
 export interface SearchHit { ref: string; item_id: string | null; run_id: string | null; version: number | null; ordinal: number; score: number; snippet: string; anchor: string | null; legal_tag: string; project_id: string; title?: string }
 export interface Reranker { rerank(query: string, hits: SearchHit[], topK: number): Promise<SearchHit[]> }
 export const passthroughReranker: Reranker = { async rerank(_q, hits, k) { return hits.slice(0, k); } };
+
+/**
+ * Time limits (27 Nov 2026). A caller gets an answer or a clear error in about 20 seconds: each statement runs under
+ * a server-side statement_timeout (Db.bounded), so one that overruns is cancelled in the database and nothing is left
+ * running after the caller has gone; the embedding call and the rerank have their own limits (embed.ts, rerank.ts).
+ * When the meaning-based half fails or runs out of time, the word matches are returned and marked partial.
+ */
+export const SEARCH_LIMITS = { lexicalMs: 6000, embedMs: 4000, vectorMs: 7000 };
+export class SearchTimeoutError extends Error {
+  readonly status = 504; readonly code = 'search_timeout';
+  constructor(message: string) { super(message); }
+}
+export class SearchAbortedError extends Error {
+  readonly status = 499; readonly code = 'search_aborted';
+  constructor() { super('the caller went away before the search finished'); }
+}
+/** Postgres 57014 query_canceled: what statement_timeout raises. */
+const timedOut = (e: unknown) => (e as any)?.code === '57014' || /statement timeout|canceling statement/i.test(String((e as Error)?.message ?? ''));
+const within = <T,>(p: Promise<T>, ms: number, what: string): Promise<T> => new Promise<T>((resolve, reject) => {
+  const t = setTimeout(() => reject(new Error(`${what}: no answer in ${Math.round(ms / 1000)} s`)), ms);
+  p.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+});
+
+export interface SearchResult { hits: SearchHit[]; /** set when only the word matches could be returned */ partial: { reason: string } | null }
+export interface SearchOptions { k?: number; candidates?: number; now?: Date; maxDistance?: number; /** the caller's abort signal: no further stage starts once it has fired */ signal?: AbortSignal; limits?: Partial<typeof SEARCH_LIMITS> }
 
 export interface SearchDeps { embed?: (text: string) => Promise<number[]>; reranker?: Reranker; /** the embedder's own cosine ceiling; see Embedder.maxDistance */ maxDistance?: number }
 
@@ -45,19 +70,44 @@ export const lexicalSql = (pred: Predicate, cand: number) =>
 export const vectorSql = (pred: Predicate, cand: number) =>
   `SELECT ${COLS}, (c.embedding <=> $1::vector) AS d FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE c.embedding IS NOT NULL AND (c.embedding <=> $1::vector) <= $2 AND ${pred.sql} ORDER BY d ASC LIMIT ${cand}`;
 
-export async function hybridSearch(db: Db, q: string, scope: ResolvedScope, person: Person, projects: Map<string, ProjectInfo>, deps: SearchDeps = {}, opts: { k?: number; candidates?: number; now?: Date; maxDistance?: number } = {}): Promise<SearchHit[]> {
+/** The hits alone, for callers that do not report partial results. */
+export async function hybridSearch(db: Db, q: string, scope: ResolvedScope, person: Person, projects: Map<string, ProjectInfo>, deps: SearchDeps = {}, opts: SearchOptions = {}): Promise<SearchHit[]> {
+  return (await searchWithStatus(db, q, scope, person, projects, deps, opts)).hits;
+}
+
+export async function searchWithStatus(db: Db, q: string, scope: ResolvedScope, person: Person, projects: Map<string, ProjectInfo>, deps: SearchDeps = {}, opts: SearchOptions = {}): Promise<SearchResult> {
   const k = opts.k ?? 20, cand = opts.candidates ?? 50, now = opts.now ?? new Date(), maxd = opts.maxDistance ?? deps.maxDistance ?? maxDistance();
-  if (!q.trim()) return [];
+  const lim = { ...SEARCH_LIMITS, ...opts.limits };
+  if (!q.trim()) return { hits: [], partial: null };
+  const gone = () => { if (opts.signal?.aborted) throw new SearchAbortedError(); };
   const timer = startSearchTiming(scope.label, now);
-  let lexical: any[], vector: any[] = [];
+  let lexical: any[], vector: any[] = [], partial: SearchResult['partial'] = null;
   try {
+    gone();
     const pred = buildPredicate(scope, person, now, projects, 2);
-    lexical = await timer.stage('lexical', async () => (await db.query<any>(lexicalSql(pred, cand), [q, ...pred.params])).rows, r => r.length);
+    try {
+      lexical = await timer.stage('lexical', () => bounded(db, lim.lexicalMs, async (query) => (await query<any>(lexicalSql(pred, cand), [q, ...pred.params])).rows), r => r.length);
+    } catch (e) {
+      if (timedOut(e)) throw new SearchTimeoutError(`search ran out of time: the word match passed ${Math.round(lim.lexicalMs / 1000)} s and was stopped. Try again, or use fewer or rarer words.`);
+      throw e;
+    }
     if (deps.embed) {
-      const e = await timer.stage('embed', () => deps.embed!(q));
-      const vec = '[' + e.join(',') + ']';
-      const pred2 = buildPredicate(scope, person, now, projects, 3);
-      vector = await timer.stage('vector', async () => (await db.query<any>(vectorSql(pred2, cand), [vec, maxd, ...pred2.params])).rows, r => r.length);
+      // The meaning-based half. Its failure is not the search's failure: the word matches stand, marked partial.
+      try {
+        gone();
+        const e = await timer.stage('embed', () => within(deps.embed!(q), lim.embedMs, 'embedding'));
+        if (!e.length) throw new Error('embedding: none returned');
+        gone();
+        const vec = '[' + e.join(',') + ']';
+        const pred2 = buildPredicate(scope, person, now, projects, 3);
+        vector = await timer.stage('vector', () => bounded(db, lim.vectorMs, async (query) => (await query<any>(vectorSql(pred2, cand), [vec, maxd, ...pred2.params])).rows), r => r.length);
+      } catch (e) {
+        if (e instanceof SearchAbortedError) throw e;
+        const reason = timedOut(e) ? `the meaning-based match passed ${Math.round(lim.vectorMs / 1000)} s and was stopped` : String((e as Error)?.message ?? e).slice(0, 160);
+        partial = { reason: `word matches only: ${reason}` };
+        timer.note(partial.reason);
+        vector = [];
+      }
     }
     timer.done();
   } catch (e) { timer.fail(e); throw e; }
@@ -71,7 +121,8 @@ export async function hybridSearch(db: Db, q: string, scope: ResolvedScope, pers
     ref: row.item_id ? `doc:${row.item_id}` : `run:${row.run_id}`, item_id: row.item_id, run_id: row.run_id, version: row.version, ordinal: row.ordinal,
     score, snippet: snippetFor(row.text, q), anchor: row.anchor, legal_tag: row.legal_tag, project_id: row.project_id, title: row.title ?? undefined,
   }));
-  return (deps.reranker ?? passthroughReranker).rerank(q, hits, k);
+  if (opts.signal?.aborted) throw new SearchAbortedError();
+  return { hits: await (deps.reranker ?? passthroughReranker).rerank(q, hits, k), partial };
 }
 
 function snippetFor(text: string, q: string, width = 240): string {

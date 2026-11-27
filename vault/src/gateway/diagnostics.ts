@@ -134,7 +134,7 @@ export function searchHealthLines(d: SearchDiagnostics): string[] {
     out.push('- Plan, vector query (this project):', ...p.vector.map(l => `      ${l}`));
   }
   out.push(`- Recent searches in this API process (newest first): ${d.recent_searches.length ? '' : 'none since it started'}`);
-  for (const t of d.recent_searches) out.push(`  - ${t.started_at} ${t.scope}: ${t.stage === 'done' ? `done in ${ms(t.total_ms)}` : t.stage === 'error' ? `failed after ${ms(t.total_ms)} (${t.error})` : `STILL IN ${t.stage} for ${ms(t.running_ms)}`}; lexical ${ms(t.lexical_ms)} (${t.lexical_n ?? '-'} rows), embedding ${ms(t.embed_ms)}, vector ${ms(t.vector_ms)} (${t.vector_n ?? '-'} rows)`);
+  for (const t of d.recent_searches) out.push(`  - ${t.started_at} ${t.scope}: ${t.stage === 'done' ? `done in ${ms(t.total_ms)}${t.error ? ` (${t.error})` : ''}` : t.stage === 'error' ? `failed after ${ms(t.total_ms)} (${t.error})` : `STILL IN ${t.stage} for ${ms(t.running_ms)}`}; lexical ${ms(t.lexical_ms)} (${t.lexical_n ?? '-'} rows), embedding ${ms(t.embed_ms)}, vector ${ms(t.vector_ms)} (${t.vector_n ?? '-'} rows)`);
   const f = d.largest_files;
   if ('error' in f) failed('Largest files', f); else {
     out.push(`- Files over 100 chunks (this project): ${f.files_over_100_chunks}, holding ${f.chunks_in_them} chunks`);
