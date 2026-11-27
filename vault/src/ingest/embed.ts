@@ -15,8 +15,12 @@ export interface Embedder {
   readonly dims: number;
   /** Cosine distance beyond which a neighbour is not a match for this embedder (the search's vector ceiling). */
   readonly maxDistance: number;
-  embed(texts: string[], inputType?: InputType): Promise<number[][]>;
+  /** `timeoutMs` bounds the whole call, retries included; without it each request still has EMBED_REQUEST_MS. */
+  embed(texts: string[], inputType?: InputType, opts?: EmbedOptions): Promise<number[][]>;
 }
+export interface EmbedOptions { timeoutMs?: number }
+/** No single request to the embedding provider waits longer than this (27 Nov 2026: the fetch had no limit at all). */
+export const EMBED_REQUEST_MS = 60_000;
 
 export class VoyageEmbedder implements Embedder {
   readonly name = 'voyage';
@@ -30,20 +34,31 @@ export class VoyageEmbedder implements Embedder {
     private readonly batchSize = 64,
   ) {}
 
-  async embed(texts: string[], inputType: InputType = 'document'): Promise<number[][]> {
+  async embed(texts: string[], inputType: InputType = 'document', opts: EmbedOptions = {}): Promise<number[][]> {
     const out: number[][] = [];
-    for (let i = 0; i < texts.length; i += this.batchSize) out.push(...await this.batch(texts.slice(i, i + this.batchSize), inputType));
+    const deadline = opts.timeoutMs ? Date.now() + opts.timeoutMs : null;
+    for (let i = 0; i < texts.length; i += this.batchSize) out.push(...await this.batch(texts.slice(i, i + this.batchSize), inputType, deadline));
     return out;
   }
 
-  private async batch(input: string[], inputType: InputType): Promise<number[][]> {
+  private async batch(input: string[], inputType: InputType, deadline: number | null): Promise<number[][]> {
     let lastErr = '';
     for (let attempt = 0; attempt < 4; attempt++) {
-      const res = await this.fetchImpl('https://api.voyageai.com/v1/embeddings', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${this.apiKey}` },
-        body: JSON.stringify({ input, model: this.model, input_type: inputType, output_dimension: this.dims, truncation: true }),
-      });
+      const left = deadline === null ? EMBED_REQUEST_MS : Math.min(EMBED_REQUEST_MS, deadline - Date.now());
+      if (left <= 0) throw new Error(`voyage: no answer within the time allowed${lastErr ? ` (last: ${lastErr})` : ''}`);
+      let res: Response;
+      try {
+        res = await this.fetchImpl('https://api.voyageai.com/v1/embeddings', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${this.apiKey}` },
+          body: JSON.stringify({ input, model: this.model, input_type: inputType, output_dimension: this.dims, truncation: true }),
+          signal: AbortSignal.timeout(left),
+        });
+      } catch (e) {
+        if ((e as Error)?.name !== 'TimeoutError' && (e as Error)?.name !== 'AbortError') throw e;
+        lastErr = `voyage: no answer in ${Math.round(left / 1000)} s`;
+        continue;
+      }
       if (res.ok) {
         const j: any = await res.json();
         const data = [...(j.data ?? [])].sort((a: any, b: any) => a.index - b.index).map((d: any) => d.embedding as number[]);

@@ -15,7 +15,7 @@ import { ApiError, bad, intParam, requirePartner, route, sha256Hex, sinceParam, 
 import { configureDraft } from './draft.routes.ts';
 import { openEmbedder } from '../ingest/embed.ts';
 import { indexPendingRuns } from '../ingest/index.ts';
-import { hybridSearch, loadProjects, peopleWhoWorked, resolveScope, runsFor, ScopeError, searchDeps, type ResolvedScope, type SearchHit } from '../gateway/index.ts';
+import { loadProjects, peopleWhoWorked, resolveScope, runsFor, ScopeError, searchDeps, searchWithStatus, SearchTimeoutError, type ResolvedScope, type SearchHit } from '../gateway/index.ts';
 
 export interface FoundHit extends SearchHit { type: string; date: string | null; authors: string[]; stale: boolean }
 
@@ -60,6 +60,9 @@ async function enrich(x: Ctx, hits: SearchHit[]): Promise<FoundHit[]> {
   return out;
 }
 
+/** A search that ran out of time is a 504 with a message a person can act on, not a 500. */
+const timeoutAsApiError = (e: unknown): never => { throw e instanceof SearchTimeoutError ? new ApiError(504, e.code, e.message) : e; };
+
 export function register(app: Hono<Env>, _deps: RouteDeps): void {
   configureDraft({ search: searchDeps() });
 
@@ -70,20 +73,21 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     for (const t of types) if (!TYPE_RE.test(t)) throw bad(`unknown type "${t.slice(0, 40)}"`, '?types');
     const t0 = performance.now();
     // Type filtering and hidden records are dropped after ranking, so ask for more than k.
-    const found = await hybridSearch(x.db, q, scope, x.person, projects, searchDeps(), { k: types.length ? 50 : Math.min(50, k + 10), now: x.now });
-    let hits = await enrich(x, found);
+    // An answer or a clear error in about 20 s; nothing keeps running in the database after that (gateway/search.ts).
+    const found = await searchWithStatus(x.db, q, scope, x.person, projects, searchDeps(), { k: types.length ? 50 : Math.min(50, k + 10), now: x.now, signal: x.c.req.raw.signal }).catch(timeoutAsApiError);
+    let hits = await enrich(x, found.hits);
     if (types.length) hits = hits.filter(h => types.includes(h.type));
     hits = hits.slice(0, k);
     const took_ms = Math.round(performance.now() - t0);
     x.a.refs = [...new Set(hits.map(h => h.ref))];
-    x.a.detail = { ...x.a.detail, k, types, count: hits.length, took_ms };
-    return { body: { hits, scope: scope.label, took_ms } };
+    x.a.detail = { ...x.a.detail, k, types, count: hits.length, took_ms, ...(found.partial ? { partial: found.partial.reason } : {}) };
+    return { body: { hits, scope: scope.label, took_ms, ...(found.partial ? { partial: true, note: found.partial.reason } : {}) } };
   });
 
   route(app, 'GET', '/api/search/people', 'search.people', async (x) => {
     const { q, scope, projects } = await scopeAndQuery(x, true);
     const t0 = performance.now();
-    const people = await peopleWhoWorked(x.db, q, scope, x.person, projects, searchDeps(), { limit: intParam(x.c, 'k', 10, 25), now: x.now });
+    const people = await peopleWhoWorked(x.db, q, scope, x.person, projects, searchDeps(), { limit: intParam(x.c, 'k', 10, 25), now: x.now }).catch(timeoutAsApiError);
     const took_ms = Math.round(performance.now() - t0);
     x.a.refs = [...new Set(people.flatMap(p => p.refs))];
     x.a.detail = { ...x.a.detail, count: people.length, took_ms };

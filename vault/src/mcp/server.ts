@@ -32,7 +32,7 @@ import { counterpartiesOf } from '../llm/draft.ts';
 import { computeStanding, type Standing } from '../api/standing.routes.ts';
 import { issuerFrom } from '../oauth/server.ts';
 import { randomUUID } from 'node:crypto';
-import { hybridSearch, loadProjects, resolveScope, runsFor, ScopeError, searchDeps, type SearchHit } from '../gateway/index.ts';
+import { loadProjects, resolveScope, runsFor, ScopeError, searchDeps, searchWithStatus, SearchAbortedError, SearchTimeoutError, type SearchHit } from '../gateway/index.ts';
 import { firmDir } from '../jobs/lessons-index.ts';
 import { buildCatalog, resolve, type Catalog } from '../catalog.ts';
 import { countriesWithPack, loadPack, packHeadlines, packMarkdown, termsLines } from '../llm/country-pack.ts';
@@ -62,6 +62,7 @@ function toApiError(e: unknown): ApiError {
   if (e instanceof ApiError) return e;
   if (e instanceof ScopeError) return new ApiError(e.status, e.status === 403 ? 'forbidden' : 'invalid', e.message);
   if ((e as any)?.status === 404) return notFound((e as Error).message);
+  if (e instanceof SearchTimeoutError || e instanceof SearchAbortedError) return new ApiError(e.status, e.code, e.message);
   console.error('[mcp]', e);
   return new ApiError(500, 'error', (e as Error).message);
 }
@@ -198,10 +199,10 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
 
   server.registerTool('search_vault', {
     title: 'Search the Vault',
-    description: 'Hybrid (lexical + vector) search of documents and runs. scope is required: project:<id> | client:<id> | firm | public. Returns hits with ref (run:<id> or doc:<id>), title, snippet, date and stale flag.',
+    description: 'Hybrid (lexical + vector) search of documents and runs. scope is required: project:<id> | client:<id> | firm | public. Returns hits with ref (run:<id> or doc:<id>), title, snippet, date and stale flag. Answers or fails clearly within about 20 seconds; `partial: true` with a `note` means only the word matches came back.',
     inputSchema: { q: z.string().min(1).max(500), scope: z.string().min(1).max(200), k: z.number().int().min(1).max(50).optional() },
     annotations: { readOnlyHint: true },
-  }, ({ q, scope: raw, k }) => tool('search_vault', async (a) => {
+  }, ({ q, scope: raw, k }, extra) => tool('search_vault', async (a) => {
     const query = q.trim(), limit = k ?? 20;
     a.scope = raw.trim().slice(0, 200);
     a.detail.query_hash = queryHash(query);
@@ -209,11 +210,13 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     const scope = resolveScope(raw.trim(), person, projects);
     a.scope = scope.label;
     const at = now();
-    const found = await hybridSearch(db, query, scope, person, projects, searchDeps(), { k: Math.min(50, limit + 10), now: at });
-    const hits = (await enrich(db, found)).slice(0, limit);
+    const t0 = performance.now();
+    const found = await searchWithStatus(db, query, scope, person, projects, searchDeps(), { k: Math.min(50, limit + 10), now: at, signal: extra?.signal });
+    const hits = (await enrich(db, found.hits)).slice(0, limit);
+    const took_ms = Math.round(performance.now() - t0);
     a.refs = [...new Set(hits.map(h => h.ref))];
-    a.detail = { ...a.detail, k: limit, count: hits.length };
-    return { hits, scope: scope.label };
+    a.detail = { ...a.detail, k: limit, count: hits.length, took_ms, ...(found.partial ? { partial: found.partial.reason } : {}) };
+    return { hits, scope: scope.label, took_ms, ...(found.partial ? { partial: true, note: found.partial.reason } : {}) };
   }));
 
   server.registerTool('get_run', {
