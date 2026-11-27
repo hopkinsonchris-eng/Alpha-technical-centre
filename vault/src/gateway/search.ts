@@ -66,9 +66,20 @@ export const lexicalSql = (pred: Predicate, cand: number) =>
 /**
  * The vector half: $1 is the query vector, $2 the distance ceiling, the predicate's parameters start at $3.
  * Only neighbours within the distance floor: the nearest of a far-away list is not a match (S30).
+ *
+ * Scope first, distance second (27 Nov 2026). Written as one WHERE, Postgres evaluated the distance before the scope
+ * terms, so a search in a 114-chunk project read the embedding of every chunk in the firm (5 GB of TOAST) before
+ * discarding them. The inner query admits rows by scope alone and computes the distance only for those; OFFSET 0
+ * keeps the planner from pushing the distance test back inside. The rows admitted are exactly the ones the single
+ * WHERE admitted.
  */
 export const vectorSql = (pred: Predicate, cand: number) =>
-  `SELECT ${COLS}, (c.embedding <=> $1::vector) AS d FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE c.embedding IS NOT NULL AND (c.embedding <=> $1::vector) <= $2 AND ${pred.sql} ORDER BY d ASC LIMIT ${cand}`;
+  `SELECT ${COLS.replaceAll('c.', 's.')}, s.d
+     FROM (SELECT c.id, c.item_id, c.run_id, c.item_version, c.ordinal, c.anchor, c.text, c.legal_tag, c.project_id, (c.embedding <=> $1::vector) AS d
+             FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag
+            WHERE c.embedding IS NOT NULL AND ${pred.sql} OFFSET 0) s
+     LEFT JOIN items i ON i.id = s.item_id
+    WHERE s.d <= $2 ORDER BY s.d ASC LIMIT ${cand}`;
 
 /** The hits alone, for callers that do not report partial results. */
 export async function hybridSearch(db: Db, q: string, scope: ResolvedScope, person: Person, projects: Map<string, ProjectInfo>, deps: SearchDeps = {}, opts: SearchOptions = {}): Promise<SearchHit[]> {
