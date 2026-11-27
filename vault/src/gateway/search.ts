@@ -12,7 +12,8 @@
  */
 import type { Db } from '../db/client.ts';
 import type { Person } from '../auth.ts';
-import { buildPredicate, type ProjectInfo, type ResolvedScope } from './scope.ts';
+import { buildPredicate, type Predicate, type ProjectInfo, type ResolvedScope } from './scope.ts';
+import { startSearchTiming } from './timings.ts';
 
 export interface SearchHit { ref: string; item_id: string | null; run_id: string | null; version: number | null; ordinal: number; score: number; snippet: string; anchor: string | null; legal_tag: string; project_id: string; title?: string }
 export interface Reranker { rerank(query: string, hits: SearchHit[], topK: number): Promise<SearchHit[]> }
@@ -34,24 +35,32 @@ export function maxDistance(env: NodeJS.ProcessEnv = process.env): number {
 
 const COLS = 'c.id, c.item_id::text AS item_id, c.run_id::text AS run_id, c.item_version AS version, c.ordinal, c.anchor, c.text, c.legal_tag, c.project_id, i.title';
 
+/** The lexical half: $1 is the query text, the predicate's parameters start at $2. */
+export const lexicalSql = (pred: Predicate, cand: number) =>
+  `SELECT ${COLS}, ts_rank_cd(c.tsv, plainto_tsquery('simple', $1)) AS s FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE ${pred.sql} AND c.tsv @@ plainto_tsquery('simple', $1) ORDER BY s DESC LIMIT ${cand}`;
+/**
+ * The vector half: $1 is the query vector, $2 the distance ceiling, the predicate's parameters start at $3.
+ * Only neighbours within the distance floor: the nearest of a far-away list is not a match (S30).
+ */
+export const vectorSql = (pred: Predicate, cand: number) =>
+  `SELECT ${COLS}, (c.embedding <=> $1::vector) AS d FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE c.embedding IS NOT NULL AND (c.embedding <=> $1::vector) <= $2 AND ${pred.sql} ORDER BY d ASC LIMIT ${cand}`;
+
 export async function hybridSearch(db: Db, q: string, scope: ResolvedScope, person: Person, projects: Map<string, ProjectInfo>, deps: SearchDeps = {}, opts: { k?: number; candidates?: number; now?: Date; maxDistance?: number } = {}): Promise<SearchHit[]> {
   const k = opts.k ?? 20, cand = opts.candidates ?? 50, now = opts.now ?? new Date(), maxd = opts.maxDistance ?? deps.maxDistance ?? maxDistance();
   if (!q.trim()) return [];
-  const pred = buildPredicate(scope, person, now, projects, 2);
-  const base = `FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE ${pred.sql}`;
-  const lexical = (await db.query<any>(
-    `SELECT ${COLS}, ts_rank_cd(c.tsv, plainto_tsquery('simple', $1)) AS s ${base} AND c.tsv @@ plainto_tsquery('simple', $1) ORDER BY s DESC LIMIT ${cand}`,
-    [q, ...pred.params])).rows;
-  let vector: any[] = [];
-  if (deps.embed) {
-    const e = await deps.embed(q);
-    const vec = '[' + e.join(',') + ']';
-    const pred2 = buildPredicate(scope, person, now, projects, 3);
-    // Only neighbours within the distance floor: the nearest of a far-away list is not a match (S30).
-    vector = (await db.query<any>(
-      `SELECT ${COLS}, (c.embedding <=> $1::vector) AS d FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE c.embedding IS NOT NULL AND (c.embedding <=> $1::vector) <= $2 AND ${pred2.sql} ORDER BY d ASC LIMIT ${cand}`,
-      [vec, maxd, ...pred2.params])).rows;
-  }
+  const timer = startSearchTiming(scope.label, now);
+  let lexical: any[], vector: any[] = [];
+  try {
+    const pred = buildPredicate(scope, person, now, projects, 2);
+    lexical = await timer.stage('lexical', async () => (await db.query<any>(lexicalSql(pred, cand), [q, ...pred.params])).rows, r => r.length);
+    if (deps.embed) {
+      const e = await timer.stage('embed', () => deps.embed!(q));
+      const vec = '[' + e.join(',') + ']';
+      const pred2 = buildPredicate(scope, person, now, projects, 3);
+      vector = await timer.stage('vector', async () => (await db.query<any>(vectorSql(pred2, cand), [vec, maxd, ...pred2.params])).rows, r => r.length);
+    }
+    timer.done();
+  } catch (e) { timer.fail(e); throw e; }
   // Reciprocal rank fusion (k=60), lexical ranks first so exact identifiers win ties.
   const fused = new Map<number, { row: any; score: number }>();
   const add = (rows: any[], weight: number) => rows.forEach((r, i) => { const f = fused.get(r.id) ?? { row: r, score: 0 }; f.score += weight / (RRF_K + i + 1); fused.set(r.id, f); });
