@@ -42,7 +42,7 @@ const within = <T,>(p: Promise<T>, ms: number, what: string): Promise<T> => new 
 });
 
 export interface SearchResult { hits: SearchHit[]; /** set when only the word matches could be returned */ partial: { reason: string } | null }
-export interface SearchOptions { k?: number; candidates?: number; now?: Date; maxDistance?: number; /** the caller's abort signal: no further stage starts once it has fired */ signal?: AbortSignal; limits?: Partial<typeof SEARCH_LIMITS> }
+export interface SearchOptions { k?: number; candidates?: number; now?: Date; maxDistance?: number; /** the caller's abort signal: no further stage starts once it has fired */ signal?: AbortSignal; limits?: Partial<typeof SEARCH_LIMITS>; /** one hit per file, and per set of identical copies */ perFile?: boolean }
 
 export interface SearchDeps { embed?: (text: string) => Promise<number[]>; reranker?: Reranker; /** the embedder's own cosine ceiling; see Embedder.maxDistance */ maxDistance?: number }
 
@@ -60,9 +60,20 @@ export function maxDistance(env: NodeJS.ProcessEnv = process.env): number {
 
 const COLS = 'c.id, c.item_id::text AS item_id, c.run_id::text AS run_id, c.item_version AS version, c.ordinal, c.anchor, c.text, c.legal_tag, c.project_id, i.title';
 
+/**
+ * One hit per file (28 Nov 2026): a large spreadsheet has thousands of slices and many files are stored two or three
+ * times, so a well name returned fifty slices of one report. With `perFile` each statement keeps the best chunk of
+ * each record, and of each set of records holding the same bytes (items.content_hash), before the candidates are cut.
+ */
+const FILE_KEY = (t: string) => `coalesce(i.content_hash, ${t}.item_id::text, ${t}.run_id::text, 'chunk:' || ${t}.id)`;
+
 /** The lexical half: $1 is the query text, the predicate's parameters start at $2. */
-export const lexicalSql = (pred: Predicate, cand: number) =>
-  `SELECT ${COLS}, ts_rank_cd(c.tsv, plainto_tsquery('simple', $1)) AS s FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE ${pred.sql} AND c.tsv @@ plainto_tsquery('simple', $1) ORDER BY s DESC LIMIT ${cand}`;
+export const lexicalSql = (pred: Predicate, cand: number, perFile = false) => {
+  const body = `${COLS}, ts_rank_cd(c.tsv, plainto_tsquery('simple', $1)) AS s FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag LEFT JOIN items i ON i.id = c.item_id WHERE ${pred.sql} AND c.tsv @@ plainto_tsquery('simple', $1)`;
+  return perFile
+    ? `SELECT * FROM (SELECT DISTINCT ON (${FILE_KEY('c')}) ${FILE_KEY('c')} AS fk, ${body} ORDER BY ${FILE_KEY('c')}, s DESC, c.ordinal, c.id) f ORDER BY f.s DESC LIMIT ${cand}`
+    : `SELECT ${body} ORDER BY s DESC LIMIT ${cand}`;
+};
 /**
  * The vector half: $1 is the query vector, $2 the distance ceiling, the predicate's parameters start at $3.
  * Only neighbours within the distance floor: the nearest of a far-away list is not a match (S30).
@@ -71,15 +82,19 @@ export const lexicalSql = (pred: Predicate, cand: number) =>
  * terms, so a search in a 114-chunk project read the embedding of every chunk in the firm (5 GB of TOAST) before
  * discarding them. The inner query admits rows by scope alone and computes the distance only for those; OFFSET 0
  * keeps the planner from pushing the distance test back inside. The rows admitted are exactly the ones the single
- * WHERE admitted.
+ * WHERE admitted. `c.embedding IS NOT NULL` is the predicate of chunks_embedded_idx (ingest/embed-cap.ts).
  */
-export const vectorSql = (pred: Predicate, cand: number) =>
-  `SELECT ${COLS.replaceAll('c.', 's.')}, s.d
+export const vectorSql = (pred: Predicate, cand: number, perFile = false) => {
+  const body = `${COLS.replaceAll('c.', 's.')}, s.d
      FROM (SELECT c.id, c.item_id, c.run_id, c.item_version, c.ordinal, c.anchor, c.text, c.legal_tag, c.project_id, (c.embedding <=> $1::vector) AS d
              FROM chunks c JOIN legal_tags lt ON lt.id = c.legal_tag
             WHERE c.embedding IS NOT NULL AND ${pred.sql} OFFSET 0) s
      LEFT JOIN items i ON i.id = s.item_id
-    WHERE s.d <= $2 ORDER BY s.d ASC LIMIT ${cand}`;
+    WHERE s.d <= $2`;
+  return perFile
+    ? `SELECT * FROM (SELECT DISTINCT ON (${FILE_KEY('s')}) ${FILE_KEY('s')} AS fk, ${body} ORDER BY ${FILE_KEY('s')}, s.d ASC, s.ordinal, s.id) f ORDER BY f.d ASC LIMIT ${cand}`
+    : `SELECT ${body} ORDER BY s.d ASC LIMIT ${cand}`;
+};
 
 /** The hits alone, for callers that do not report partial results. */
 export async function hybridSearch(db: Db, q: string, scope: ResolvedScope, person: Person, projects: Map<string, ProjectInfo>, deps: SearchDeps = {}, opts: SearchOptions = {}): Promise<SearchHit[]> {
@@ -97,7 +112,7 @@ export async function searchWithStatus(db: Db, q: string, scope: ResolvedScope, 
     gone();
     const pred = buildPredicate(scope, person, now, projects, 2);
     try {
-      lexical = await timer.stage('lexical', () => bounded(db, lim.lexicalMs, async (query) => (await query<any>(lexicalSql(pred, cand), [q, ...pred.params])).rows), r => r.length);
+      lexical = await timer.stage('lexical', () => bounded(db, lim.lexicalMs, async (query) => (await query<any>(lexicalSql(pred, cand, opts.perFile), [q, ...pred.params])).rows), r => r.length);
     } catch (e) {
       if (timedOut(e)) throw new SearchTimeoutError(`search ran out of time: the word match passed ${Math.round(lim.lexicalMs / 1000)} s and was stopped. Try again, or use fewer or rarer words.`);
       throw e;
@@ -111,7 +126,7 @@ export async function searchWithStatus(db: Db, q: string, scope: ResolvedScope, 
         gone();
         const vec = '[' + e.join(',') + ']';
         const pred2 = buildPredicate(scope, person, now, projects, 3);
-        vector = await timer.stage('vector', () => bounded(db, lim.vectorMs, async (query) => (await query<any>(vectorSql(pred2, cand), [vec, maxd, ...pred2.params])).rows), r => r.length);
+        vector = await timer.stage('vector', () => bounded(db, lim.vectorMs, async (query) => (await query<any>(vectorSql(pred2, cand, opts.perFile), [vec, maxd, ...pred2.params])).rows), r => r.length);
       } catch (e) {
         if (e instanceof SearchAbortedError) throw e;
         const reason = timedOut(e) ? `the meaning-based match passed ${Math.round(lim.vectorMs / 1000)} s and was stopped` : String((e as Error)?.message ?? e).slice(0, 160);
@@ -123,8 +138,10 @@ export async function searchWithStatus(db: Db, q: string, scope: ResolvedScope, 
     timer.done();
   } catch (e) { timer.fail(e); throw e; }
   // Reciprocal rank fusion (k=60), lexical ranks first so exact identifiers win ties.
-  const fused = new Map<number, { row: any; score: number }>();
-  const add = (rows: any[], weight: number) => rows.forEach((r, i) => { const f = fused.get(r.id) ?? { row: r, score: 0 }; f.score += weight / (RRF_K + i + 1); fused.set(r.id, f); });
+  // With perFile the two lists are fused by file (fk), so a file whose best word match and best neighbour are different
+  // slices, or different copies, is still one hit; the word-match slice is the one shown.
+  const fused = new Map<number | string, { row: any; score: number }>();
+  const add = (rows: any[], weight: number) => rows.forEach((r, i) => { const key = r.fk ?? r.id; const f = fused.get(key) ?? { row: r, score: 0 }; f.score += weight / (RRF_K + i + 1); fused.set(key, f); });
   add(lexical, 1.0); add(vector, 1.0);
   // The floor: a chunk seen only at the last place of one list scores exactly 1 / (RRF_K + cand); it is not a result.
   const floor = 1 / (RRF_K + cand);

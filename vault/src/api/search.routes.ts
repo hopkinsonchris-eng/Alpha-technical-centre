@@ -74,7 +74,7 @@ export function register(app: Hono<Env>, _deps: RouteDeps): void {
     const t0 = performance.now();
     // Type filtering and hidden records are dropped after ranking, so ask for more than k.
     // An answer or a clear error in about 20 s; nothing keeps running in the database after that (gateway/search.ts).
-    const found = await searchWithStatus(x.db, q, scope, x.person, projects, searchDeps(), { k: types.length ? 50 : Math.min(50, k + 10), now: x.now, signal: x.c.req.raw.signal }).catch(timeoutAsApiError);
+    const found = await searchWithStatus(x.db, q, scope, x.person, projects, searchDeps(), { k: types.length ? 50 : Math.min(50, k + 10), now: x.now, signal: x.c.req.raw.signal, perFile: true }).catch(timeoutAsApiError);
     let hits = await enrich(x, found.hits);
     if (types.length) hits = hits.filter(h => types.includes(h.type));
     hits = hits.slice(0, k);
