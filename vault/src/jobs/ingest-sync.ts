@@ -14,6 +14,7 @@ import { ingestProviderFor, openProvider } from '../llm/provider.ts';
 import { openEmbedder } from '../ingest/embed.ts';
 import { ingestItem, type IngestDeps } from '../ingest/index.ts';
 import { PENDING_ORDER, PENDING_WHERE } from '../ingest/queue.ts';
+import { capEmbeddings, type CapSummary } from '../ingest/embed-cap.ts';
 import { EXTRACTOR_VERSION, SUPPORTED_EXTENSIONS } from '../ingest/extract.ts';
 import { serviceSink, type ItemSink } from '../ingest/items-client.ts';
 import { syncWorkdrive, workdriveConfig, type SyncStats, type WorkdriveOptions } from '../ingest/workdrive.ts';
@@ -35,6 +36,7 @@ export interface IngestSyncSummary {
   idle?: string;
   /** Set when the run's model-spend cap stopped it, with how many items wait for the next run. */
   stopped_by?: 'budget'; left?: number;
+  embed_cap?: CapSummary;
   /** scans put back because this run's OCR time (VAULT_OCR_RUN_SECONDS, default 1200) was spent */
   ocr_deferred?: number;
   /** Wave 9: records that had never been filed into the project folders, filed this run within what is left of the cap. */
@@ -68,6 +70,11 @@ export async function runIngestSync(db: Db, opts: IngestSyncOptions = {}): Promi
         return r;
       } finally { if (t) clearTimeout(t); }
     };
+    // 28 Nov 2026: clear the embeddings beyond the cap on large spreadsheets indexed before the cap (ingest/embed-cap.ts).
+    // First, because the WorkDrive sync below can take the run's whole 10 minutes; a no-op once nothing is left.
+    await phase('embed-cap');
+    summary.embed_cap = await capEmbeddings(db, { budgetMs: 1000 * Number(process.env.EMBED_CAP_SECONDS ?? 300) });
+    if (summary.embed_cap.error) summary.errors.push(`embed-cap: ${summary.embed_cap.error}`);
     if (wd) { await phase('workdrive'); summary.workdrive = await capped('workdrive', syncWorkdrive(db, sink!, wd)); }
     if (bk) { await phase('books'); summary.books = await capped('books', syncBooks(db, sink!, bk)); }
     await phase('items');

@@ -16,6 +16,7 @@ import type { Storage } from '../storage.ts';
 import { ingestProviderFor, type LlmProvider } from '../llm/provider.ts';
 import { chunkText, contextualise } from './chunk.ts';
 import { vectorLiteral, type Embedder } from './embed.ts';
+import { embedLimit } from './embed-cap.ts';
 import { EXTRACTOR_VERSION, extractText, retryUnsupported, UnsupportedFormat, type Extracted } from './extract.ts';
 import { extractLegalFinance, flatten, isLegalFinanceType, proposeNdaExpiry } from './legal-finance.ts';
 import { extractAssets, proposeAssets } from './entities.ts';
@@ -122,11 +123,14 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
     const raw = chunkText(ex.text, ex.anchors);
     const cheap = deps.cheap !== undefined ? deps.cheap : ingestProviderFor(deps.provider);
     const chunks = await contextualise(raw, { title: item.title || ex.title || 'Untitled', type: item.type, text: ex.text }, DATA_FORMATS.has(ex.format) || own ? null : cheap);
-    const vectors = chunks.length ? await deps.embedder.embed(chunks.map(c => `${c.context}\n\n${c.text}`), 'document') : [];
-    if (vectors.length !== chunks.length) throw new Error(`embedder returned ${vectors.length} vectors for ${chunks.length} chunks`);
+    // 28 Nov 2026: a large spreadsheet keeps every slice for word search but embeds only its first slices (embed-cap.ts).
+    const embedN = embedLimit(ex.format, chunks.length);
+    const vectors = embedN ? await deps.embedder.embed(chunks.slice(0, embedN).map(c => `${c.context}\n\n${c.text}`), 'document') : [];
+    if (vectors.length !== embedN) throw new Error(`embedder returned ${vectors.length} vectors for ${embedN} chunks`);
 
     const tag = (await db.query<{ expires_at: string | null; partners_only: boolean }>(`SELECT to_char(expires_at,'YYYY-MM-DD') AS expires_at, partners_only FROM legal_tags WHERE id = $1`, [item.legal_tag])).rows[0];
     const patch: Record<string, unknown> = { text_chars: textChars, chunks: chunks.length, format: ex.format, anchors: ex.anchors.length };
+    if (embedN < chunks.length) patch.embed_cap = { keep: embedN, at: new Date().toISOString() };
     if (ex.pages) patch.pages = ex.pages;
     if (ex.needs_ocr) patch.needs_ocr = true;
     if (ex.ocr) patch.ocr = true;
@@ -146,7 +150,7 @@ async function run(db: Db, storage: Storage, itemId: string, deps: IngestDeps, o
       const params: unknown[] = [];
       const values = rows.map((c, j) => {
         const k = params.length;
-        params.push(item.id, version, c.ordinal, c.anchor, c.context, c.text, item.legal_tag, item.client_id ?? null, item.project_id, partnersOnly, tag?.expires_at ?? null, vectorLiteral(vectors[i + j]));
+        params.push(item.id, version, c.ordinal, c.anchor, c.context, c.text, item.legal_tag, item.client_id ?? null, item.project_id, partnersOnly, tag?.expires_at ?? null, i + j < embedN ? vectorLiteral(vectors[i + j]) : null);
         return `($${k + 1},$${k + 2},$${k + 3},$${k + 4},$${k + 5},$${k + 6},$${k + 7},$${k + 8},$${k + 9},$${k + 10},$${k + 11}::date,true,$${k + 12}::vector)`;
       });
       await db.query(

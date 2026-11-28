@@ -211,7 +211,7 @@ export function buildMcpServer({ db, person, now = () => new Date() }: McpDeps):
     a.scope = scope.label;
     const at = now();
     const t0 = performance.now();
-    const found = await searchWithStatus(db, query, scope, person, projects, searchDeps(), { k: Math.min(50, limit + 10), now: at, signal: extra?.signal });
+    const found = await searchWithStatus(db, query, scope, person, projects, searchDeps(), { k: Math.min(50, limit + 10), now: at, signal: extra?.signal, perFile: true });
     const hits = (await enrich(db, found.hits)).slice(0, limit);
     const took_ms = Math.round(performance.now() - t0);
     a.refs = [...new Set(hits.map(h => h.ref))];
