@@ -1,36 +1,46 @@
 # Status
 
-Updated 27 Nov 2026, 16:45 UTC. Live readings come from `get_project_context`: section "Index health" for indexing and, since #132, section "Search health" for search.
+Updated 28 Nov 2026, 14:00 UTC. Live readings come from `get_project_context`: section "Index health" for indexing and section "Search health" for search.
 
-## Search (27 Nov 2026)
+## Search (27 and 28 Nov 2026)
 
-**Search works again, by word match. The meaning-based half works for small projects only.**
+**Search works in every scope, word match and meaning-based together, in 2 to 6 seconds.**
 
 ### Done (checked live)
-- #132 Search health in `get_project_context`: chunk counts, sizes, database settings, running statements, query plans and the time each search stage took.
-- #133 Search answers or fails clearly within about 20 seconds and leaves nothing running in the database. Checked at 16:26 UTC: Parker Creek ("Frost 2 sidetrack"), Fezzan ("Sharara field fire") and firm ("EPSA IV cost recovery") each returned cited hits in 8.3 to 9.0 s, marked `partial: true` (word matches only); three searches sent together all answered in 8.2 to 8.9 s. Search health at 16:37 showed no statement left running.
-- #134 Scope is applied before distance. Checked at 16:37 UTC: Fezzan "who operates the Sharara oil field" returned the El Sharara field dossier in 7.2 s, not partial (word match 541 ms, embedding call 145 ms, meaning-based match 6,216 ms).
+- #132 Search health in `get_project_context`: sizes, database settings, running statements, query plans and the time each search stage took.
+- #133 Search answers or fails clearly within about 20 seconds and leaves nothing running in the database.
+- #134 Scope is applied before distance.
+- #136 (owner's yes, 28 Nov) Large spreadsheets keep every slice for word search and only their first 40 slices keep an embedding; one result per file and per set of identical copies. The ingest job cleared the old embeddings over three runs (13:15, 13:31 and 13:46 UTC) and built `chunks_embedded_idx` (valid, 0.2 MB). Nothing was deleted.
+- Checked 13:53 to 13:58 UTC, none partial:
+  - Parker Creek "letter to working interest owners proposing to sidetrack a well": the Frost 2 working-interest letter and two related files, 4.6 s.
+  - Fezzan "who operates the Sharara oil field": the El Sharara field dossier, 2.1 s (7.2 s on 27 Nov).
+  - Firm "what royalty does the government take on federal onshore leases": the BLM royalty note among the hits, 5.9 s.
+  - Three at once (Parker Creek, Fezzan, firm): all answered with relevant hits in 3.1 to 5.5 s.
+  - "Frost 2 sidetrack" returns `AFE 1000 Frost 2.pdf` once, not three times.
 
-### What the live system says (16:13 and 16:37 UTC)
+### What stops being findable
+- A meaning-based match inside slices 41 onward of a spreadsheet or CSV with more than 100 slices. A word match still finds every row.
+
+### Open
+- Speed: 2 to 6 s, not the under one second seen locally. The meaning-based statement took 5.2 s for Parker Creek at 13:53; the embeddings it reads are scattered through a 5.3 GB table on a database with 256 MB of shared buffers. Not yet investigated further.
+- A question with no close match returns nothing: "why was the Frost 2 well sidetracked" gave no hits (no word match, and no chunk within the distance ceiling of 0.6).
+- The chunk counts in Search health timed out at their 8 s limit at 13:24 and 13:53, so the number of chunks that still carry an embedding has not been read; the evidence that clearing finished is the index and the searches above.
+- Size: the database went from 6.37 GB to 6.80 GB during the clearing (chunk rows 729 MB to 1.02 GB, indexes 269 MB to 384 MB). The space freed inside the table is reused, not returned to disk.
+- WorkDrive sync still re-lists the whole folder each run and is left at 600 s. Not started.
+
+### Waiting on the owner
+- Nothing.
+
+### Model spend
+- £0.00 for this work. Ledger: £61.72 in total, £0.00 today (28 Nov 13:53 UTC).
+
+### What the live system said on 27 Nov, before #136 (16:13 and 16:37 UTC)
 - 943,264 chunks; 935,788 are Parker Creek's, 7,302 the firm's, 114 Fezzan's.
 - 197 Parker Creek spreadsheets (daily workover and completion reports) hold 922,432 of them; the largest two hold about 25,040 each.
 - 1,733 Parker Creek files are stored more than once: 3,670 extra copies carrying 218,114 chunks.
 - The chunks table is 6.27 GB (rows 729 MB, embeddings 5.30 GB, indexes 269 MB); the database is 6.37 GB.
 - Postgres 17.6, pgvector 0.8.2, shared_buffers 256 MB, maintenance_work_mem 64 MB, statements cancelled by the database at 120 s.
 - No vector index. Every meaning-based search computed the distance to every chunk it could reach.
-
-### Open
-- Parker Creek and firm scope: the meaning-based half still runs out of its 7 s and is stopped, so results are word matches only. Fezzan's meaning-based match takes 6.2 s of its 7 s, so it will sometimes come back partial.
-- Results repeat a file once per stored copy and once per slice.
-- Not built: an approximate vector index. At today's size it would be about 7 GB (a local build of 60,000 chunks took 5 min 20 s and 469 MB with 64 MB of build memory).
-- WorkDrive sync still re-lists the whole folder each run and is left at 600 s. Not started.
-
-### Waiting on the owner
-- A yes to stop the meaning-based search reading every slice of the 197 large spreadsheets: keep every slice for word search, keep the embedding of the first 40 slices of each file, clear the rest. No file, record or text is removed. What stops being findable: a meaning-based match inside the later slices of those spreadsheets; a word match still finds them. Tested locally only.
-- Whether the 3,670 duplicate copies should be hidden from search (not deleted).
-
-### Model spend
-- £0.00 for this work. Ledger: £61.72 in total, £0.00 today (16:37 UTC).
 
 ## Earlier: Parker Creek indexing (14 Nov 2026)
 
